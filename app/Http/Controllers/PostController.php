@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
+use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
 {
@@ -29,7 +30,23 @@ class PostController extends Controller
      */
     public function store(StorePostRequest $request)
     {
-        //
+        logger($request->file('image_file'));
+        $post = Auth::user()->posts()->create([
+            'content' => $request['content'],
+        ]);
+
+        if ($request->hasFile('image_file')) {
+            $post->addMediaFromRequest('image_file')->toMediaCollection('posts_images');
+        }
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Publicación creada correctamente',
+            'action' => [
+                'label' => 'Ver publicación',
+                'url' => route('profile.show')
+            ]
+        ]);
     }
 
     /**

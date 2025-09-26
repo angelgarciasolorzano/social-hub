@@ -3,9 +3,18 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Link } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import {CiCirclePlus} from "react-icons/ci";
 import { IoIosNotificationsOutline } from "react-icons/io";
+
+import { home } from '@/routes';
+
+import profile from '@/routes/profile';
+import PostController from '@/actions/App/Http/Controllers/PostController';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { LoaderCircle } from 'lucide-react';
 
 function Header() {
   return (
@@ -22,99 +31,160 @@ function Header() {
 function HeaderAction() {
     return (
         <div className='flex items-center gap-4'>
-            <div>
-                <Dialog>
-                    <Tooltip>
-                        <DialogTrigger asChild>
-                            <TooltipTrigger asChild>
-                                <CiCirclePlus className='w-8 h-8 cursor-pointer text-gray-600' />
-                            </TooltipTrigger>
-                        </DialogTrigger>
+            <HeaderActionPublication />
+            <HeaderActionNotifications />
+            <HeaderActionProfile />
+        </div>
+    )
+};
 
-                        <TooltipContent>
-                            Crear publicación
-                        </TooltipContent>
-                    </Tooltip>
-
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Crear publicación</DialogTitle>
-                            <DialogDescription>
-                                Aquí va el formulario para crear una publicación
-                            </DialogDescription>
-                        </DialogHeader>
-
-                       Hola
-
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button type='button' variant="outline">Cancelar</Button>
-                            </DialogClose>
-
-                            <Button type='button'>Crear</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
-
-            <div>
+function HeaderActionPublication() {
+    return (
+        <div>
+            <Dialog>
                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <IoIosNotificationsOutline className='w-8 h-8 cursor-pointer text-gray-600' />
-                    </TooltipTrigger>
+                    <DialogTrigger asChild>
+                        <TooltipTrigger asChild>
+                            <CiCirclePlus className='w-8 h-8 cursor-pointer text-gray-600' />
+                        </TooltipTrigger>
+                    </DialogTrigger>
+
                     <TooltipContent>
-                        Notificaciones
+                        Crear publicación
                     </TooltipContent>
                 </Tooltip>
-            </div>
 
-            <div>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Skeleton className='w-10 h-10 rounded-full cursor-pointer' />
-                    </DropdownMenuTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Crear publicación</DialogTitle>
 
-                    <DropdownMenuContent>
-                        <DropdownMenuLabel>Mi Perfil</DropdownMenuLabel>
+                        <DialogDescription>
+                            Comparte tus pensamientos con el mundo
+                        </DialogDescription>
+                    </DialogHeader>
 
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href="/home"
-                                    method="get"
-                                    as="button"
-                                    className='w-full'
-                                >
-                                    Inicio
-                                </Link>
-                            </DropdownMenuItem>
+                    <Form
+                        {...PostController.store.form()}
+                        id='post-form'
+                        className='my-2.5'
+                    >
+                        {({ processing}) => (
+                            <>
+                                <div className='grid gap-4'>
+                                    <div className='grid gap-1.5'>
+                                        <Label htmlFor="content">Contenido</Label>
 
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href="/home/profile"
-                                    method="get"
-                                    as="button"
-                                    className='w-full'
-                                >
-                                    Perfil
-                                </Link>
-                            </DropdownMenuItem>
+                                        <Textarea
+                                            id="content"
+                                            name="content"
+                                            required
+                                            minLength={10}
+                                            placeholder='Escribe tu publicación'
+                                        />
+                                    </div>
 
-                            <DropdownMenuItem>Configuración</DropdownMenuItem>
+                                    <div>
+                                        <Label htmlFor="image_file">Imagen</Label>
 
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href="/logout"
-                                    method="post"
-                                    as="button"
-                                >
-                                    Cerrar sesión
-                                </Link>
-                            </DropdownMenuItem>
+                                        <Input
+                                            id="image_file"
+                                            type="file"
+                                            name="image_file"
+                                            accept='image/*'
+                                        />
+                                    </div>
+                                </div>
+
+                                {processing && (
+                                    <div className='flex items-center gap-2'>
+                                        <LoaderCircle className='h-4 w-4 animate-spin' />
+                                        <span>Publicando...</span>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </Form>
+
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type='button' variant="outline">Cancelar</Button>
+                        </DialogClose>
+
+                        <Button 
+                            type='submit'
+                            form='post-form'
+                        >
+                            Crear
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    )
+}
+
+function HeaderActionNotifications() {
+    return (
+        <div>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <IoIosNotificationsOutline className='w-8 h-8 cursor-pointer text-gray-600' />
+                </TooltipTrigger>
+
+                <TooltipContent>
+                    Notificaciones
+                </TooltipContent>
+            </Tooltip>
+        </div>
+    )
+};
+
+function HeaderActionProfile() {
+    return (
+        <div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Skeleton className='w-10 h-10 rounded-full cursor-pointer' />
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent>
+                    <DropdownMenuLabel>Mi Perfil</DropdownMenuLabel>
+
+                    <DropdownMenuGroup>
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href={home.url()}
+                                as="button"
+                                className='w-full'
+                            >
+                                Inicio
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href={profile.show.url()}
+                                as="button"
+                                className='w-full'
+                            >
+                                Perfil
+                            </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem>Configuración</DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href="/logout"
+                                method="post"
+                                as="button"
+                            >
+                                Cerrar sesión
+                            </Link>
+                        </DropdownMenuItem>
                         </DropdownMenuGroup>
                     </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+            </DropdownMenu>
         </div>
     )
 }
