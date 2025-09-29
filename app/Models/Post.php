@@ -19,7 +19,7 @@ class Post extends Model implements HasMedia
     /**
      * Register the media collections.
      * Registrar las colecciones de medios
-     * 
+     *
      * @return void
      */
     public function registerMediaCollections(): void
@@ -30,7 +30,7 @@ class Post extends Model implements HasMedia
     /**
      * Get the user that owns the post.
      * Obtener el usuario que posee el post
-     * 
+     *
      * @return BelongsTo
      */
     public function user(): BelongsTo
@@ -41,7 +41,7 @@ class Post extends Model implements HasMedia
     /**
      * Get all of the post's comments.
      * Obtener todos los comentarios del post
-     * 
+     *
      * @return MorphMany
      */
     public function comments(): MorphMany
@@ -52,7 +52,7 @@ class Post extends Model implements HasMedia
     /**
      * Get all of the post's likes.
      * Obtener todos los likes del post
-     * 
+     *
      * @return MorphMany
      */
     public function likes(): MorphMany

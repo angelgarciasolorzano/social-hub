@@ -28,9 +28,8 @@ class PostController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePostRequest $request)
+    public function store(StorePostRequest $request): \Illuminate\Http\RedirectResponse
     {
-        logger($request->file('image_file'));
         $post = Auth::user()->posts()->create([
             'content' => $request['content'],
         ]);
