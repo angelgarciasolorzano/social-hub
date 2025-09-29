@@ -24,7 +24,7 @@ class StorePostRequest extends FormRequest
     {
         return [
             'content' => ['required', 'string', 'max:500', 'min:10'],
-            'image_file' => ['nullable', 'mimes:jpeg,png,jpg,svg,webp', 'max:10240'],
+            'image_file' => ['nullable', 'mimes:jpeg,png,jpg,svg,webp', 'max:2048'],
         ];
     }
 
@@ -41,7 +41,7 @@ class StorePostRequest extends FormRequest
             'content.min' => 'El contenido de la publicación no debe ser menor a 10 caracteres',
             'content.max' => 'El contenido de la publicación no debe ser mayor a 500 caracteres',
             'image_file.mimes' => 'El archivo debe ser de tipo jpeg, png, jpg, svg o webp',
-            'image_file.max' => 'El archivo no debe ser mayor a 10MB',
+            'image_file.max' => 'El archivo no debe ser mayor a 2MB',
         ];
     }
 }

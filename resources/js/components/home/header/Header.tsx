@@ -2,7 +2,10 @@ import { Form, Link } from '@inertiajs/react';
 
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { CiCirclePlus } from "react-icons/ci";
-import { LoaderCircle } from 'lucide-react';
+import { FaRegUser } from "react-icons/fa6";
+import { MdOutlineLogout } from "react-icons/md";
+import { FiHome } from "react-icons/fi";
+import { PiNutBold } from "react-icons/pi";
 
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -36,6 +39,8 @@ import { home, logout } from '@/routes';
 import profile from '@/routes/profile';
 import PostController from '@/actions/App/Http/Controllers/PostController';
 import InputError from '@/components/input-error';
+import { Loader2Icon } from 'lucide-react';
+import { Dispatch, SetStateAction, useState } from 'react';
 
 function Header() {
   return (
@@ -50,19 +55,26 @@ function Header() {
 }
 
 function HeaderAction() {
+  const [isOpenModal, setIsOpenModal] = useState<boolean>(false);
+
   return (
     <div className='flex items-center gap-4'>
-      <HeaderActionPublication />
+      <HeaderActionPublication isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
       <HeaderActionNotifications />
       <HeaderActionProfile />
     </div>
   )
 };
 
-function HeaderActionPublication() {
+interface HeaderActionPublicationProps {
+  isOpenModal: boolean;
+  setIsOpenModal: Dispatch<SetStateAction<boolean>>;
+};
+
+function HeaderActionPublication({ isOpenModal, setIsOpenModal }: HeaderActionPublicationProps) {
   return (
     <div>
-      <Dialog>
+      <Dialog open={isOpenModal} onOpenChange={setIsOpenModal}>
         <Tooltip>
           <DialogTrigger asChild>
             <TooltipTrigger asChild>
@@ -73,7 +85,7 @@ function HeaderActionPublication() {
           <TooltipContent>Crear publicación</TooltipContent>
         </Tooltip>
 
-        <DialogContent>
+        <DialogContent className='pb-2.5'>
           <DialogHeader>
             <DialogTitle>Crear publicación</DialogTitle>
 
@@ -82,31 +94,21 @@ function HeaderActionPublication() {
             </DialogDescription>
           </DialogHeader>
 
-          <HeaderActionPublicationForm />
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type='button' variant="outline">Cancelar</Button>
-            </DialogClose>
-
-            <Button 
-              type='submit'
-              form='post-form'
-            >
-              Crear
-            </Button>
-          </DialogFooter>
+          <HeaderActionPublicationForm setIsOpenModal={setIsOpenModal} />
         </DialogContent>
       </Dialog>
     </div>
   )
-}
+};
 
-function HeaderActionPublicationForm() {
+type HeaderActionPublicationFormProps = Pick<HeaderActionPublicationProps, 'setIsOpenModal'>;
+
+function HeaderActionPublicationForm({ setIsOpenModal }: HeaderActionPublicationFormProps) {
   return (
     <Form
       {...PostController.store.form()}
       id='post-form'
+      onSuccess={() => setIsOpenModal(false)}
       className='my-2.5'
     >
       {({ processing, errors }) => (
@@ -140,12 +142,26 @@ function HeaderActionPublicationForm() {
             </div>
           </div>
 
-          {processing && (
-            <div className='flex items-center gap-2'>
-              <LoaderCircle className='h-4 w-4 animate-spin' />
-              <span>Publicando...</span>
-            </div>
-          )}
+          <DialogFooter className='mt-6'>
+            <DialogClose asChild>
+              <Button type='button' variant="outline">Cancelar</Button>
+            </DialogClose>
+
+            <Button 
+              type='submit'
+              form='post-form'
+              disabled={processing}
+            >
+              {processing ? (
+                <>
+                  <Loader2Icon className='h-4 w-4 animate-spin' />
+                  Publicando...
+                </>
+              ) : (
+                'Publicar'
+              )}
+            </Button>
+          </DialogFooter>
         </>
       )}
     </Form>
@@ -186,6 +202,7 @@ function HeaderActionProfile() {
                 as="button"
                 className='w-full'
               >
+                <FiHome className='w-4 h-4 text-gray-600' />
                 Inicio
               </Link>
             </DropdownMenuItem>
@@ -196,11 +213,15 @@ function HeaderActionProfile() {
                 as="button"
                 className='w-full'
               >
+                <FaRegUser className='w-4 h-4 text-gray-600' />
                 Perfil
               </Link>
             </DropdownMenuItem>
 
-            <DropdownMenuItem>Configuración</DropdownMenuItem>
+            <DropdownMenuItem>
+              <PiNutBold className='w-4 h-4 text-gray-600' />
+              Configuración
+            </DropdownMenuItem>
 
             <DropdownMenuItem asChild>
               <Link
@@ -208,6 +229,7 @@ function HeaderActionProfile() {
                 method="post"
                 as="button"
               >
+                <MdOutlineLogout className='w-4 h-4 text-gray-600' />
                 Cerrar sesión
               </Link>
             </DropdownMenuItem>

@@ -1,8 +1,7 @@
 import { Header, SidebarLeft, SidebarRight } from '@/components';
 import { usePage, router } from '@inertiajs/react';
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useEffect } from 'react'
 import { toast } from 'sonner';
-//import { toast, Toaster } from 'sonner';
 
 function HomeLayout({ children }: PropsWithChildren) {
   const {props} = usePage();
@@ -15,23 +14,24 @@ function HomeLayout({ children }: PropsWithChildren) {
       url: string
     }
   } | null
-  console.log(props);
 
-  if (notification) {
-    toast(notification.message, {
-      action: notification.action && {
-        label: notification.action.label,
-        onClick: () => router.visit(notification.action!.url)
-      }
-    })
-  }
+  useEffect(() => {
+    if (notification) {
+      toast(notification.message, {
+        action: notification.action && {
+          label: notification.action.label,
+          onClick: () => router.visit(notification.action!.url)
+        }
+      })
+    }
+  }, [notification]);
 
   return (
     <div className='flex flex-col h-screen'>
         <Header />
-        <div className='flex flex-1'>
+        <div className='flex flex-1 overflow-hidden'>
             <SidebarLeft />
-            <div className='flex-1 flex flex-col gap-4'>
+            <div className='flex-1 flex flex-col gap-4 overflow-y-auto'>
                 {children}
             </div>
             <SidebarRight />
