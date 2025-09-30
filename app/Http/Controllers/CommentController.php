@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
+use App\Models\Post;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 class CommentController extends Controller
 {
@@ -29,7 +32,21 @@ class CommentController extends Controller
      */
     public function store(StoreCommentRequest $request)
     {
-        //
+        $commentableType = $request['commentable_type'];
+        $commentableId = $request['commentable_id'];
+
+        /** @var Model & (Post | Comment) $commentable */
+        $commentable = $commentableType::findOrFail($commentableId);
+
+        $commentable->comments()->create([
+            'user_id' => auth()->id(),
+            'content' => $request['content'],
+        ]);
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Comentario publicado correctamente',
+        ]);
     }
 
     /**

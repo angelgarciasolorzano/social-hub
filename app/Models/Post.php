@@ -21,7 +21,7 @@ class Post extends Model implements HasMedia
     /** @use HasFactory<\Database\Factories\PostFactory> */
     use HasFactory, InteractsWithMedia;
 
-    protected $fillable = ['content', 'image_file'];
+    protected $fillable = ['content', 'image_file', 'user_id'];
 
     /**
      * Register the media collections.

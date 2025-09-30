@@ -2,24 +2,36 @@ import React, { useState } from 'react'
 import { Button } from '../ui/button';
 import { FaRegComment, FaRegHeart } from "react-icons/fa";
 import { SharedData } from '@/types';
-import { usePage } from '@inertiajs/react';
+import { Form, router, usePage } from '@inertiajs/react';
 import { Separator } from '../ui/separator';
 import { RiTimeZoneLine } from "react-icons/ri";
-import { IoSend } from "react-icons/io5";
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog';
 import { Input } from '../ui/input';
+import CommentController from '@/actions/App/Http/Controllers/CommentController';
+import InputError from '../input-error';
+import { Loader2Icon } from 'lucide-react';
 
 interface PublicationProps {
   id: number;
   content: string;
   image: string;
   created_at: string;
+  comments: {
+    id: number;
+    content: string;
+    created_at: string;
+    user: {
+      id: number;
+      name: string;
+    }
+  }[];
 };
 
-function Publication({ content, image, created_at }: PublicationProps) {
+function Publication({ id, content, image, created_at, comments }: PublicationProps) {
   const { auth } = usePage<SharedData>().props;
   const [open, setOpen] = useState<boolean>(false);
+  console.log(comments);
   
   return (
     <div className='px-4 py-3'>
@@ -126,17 +138,65 @@ function Publication({ content, image, created_at }: PublicationProps) {
                 <Separator />
 
                 <div className='flex-1 overflow-y-auto space-y-4 my-4 text-sm'>
-                  {[...Array(30)].map((_, i) => (
-                    <div key={i} className="p-3 border rounded-lg">
-                      Comentario {i + 1}
-                    </div>
-                  ))}
+                  {comments.length === 0 ? (
+                    <p>No hay comentarios</p>
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id}>
+                        <div className='border p-2 rounded-md bg-gray-50 space-y-1'>
+                          <div className='flex items-center gap-2'>
+                          <img src="https://avatars.dicebear.com/api/initials/1.svg" alt="Foto de perfil" className="w-10 h-10 rounded-full" />
+
+                          <div>
+                            <p className="font-semibold text-sm">{comment.user.name}</p>
+                            <span className="text-xs text-gray-500">{comment.created_at}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-gray-600 mt-2.5">{comment.content}</p>
+                        </div>
+
+                        <div className='flex items-center gap-4 mt-1 px-2'>
+                          <span>Me gusta</span>
+                          <span>Responder</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
-                <div className='flex items-center justify-center gap-2'>
-                  <Input placeholder='Escribe tu comentario' className='w-full' />
-                  <IoSend className='w-7 h-7 text-gray-600' />
-                </div>
+                <Form
+                  {...CommentController.store.form()}
+                  resetOnSuccess
+                  onSuccess={() => {
+                    router.reload({
+                      only: ['posts'],
+                    })
+                  }}
+                >
+                  {({ processing, errors}) => (
+                    <>
+                      <div className='flex items-center justify-center gap-2'>
+                        <Input type='hidden' name='commentable_type' value='App\Models\Post' />
+                        <Input type='hidden' name='commentable_id' value={id} />
+                        <Input placeholder='Escribe tu comentario' className='w-full' name='content' />
+
+                        <Button>
+                          {processing ? (
+                            <>
+                              <Loader2Icon className='h-4 w-4 animate-spin' />
+                              Publicando...
+                            </>
+                          ) : (
+                            'Publicar'
+                          )}
+                        </Button>
+                      </div>
+
+                      <InputError message={errors.content} />
+                    </>
+                  )}
+                </Form>
               </div>
             </DialogContent>
           </Dialog>

@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 
 function Profile() {
   const { auth, posts } = usePage<SharedData>().props;
-  console.log(auth, posts.data);
 
   console.log(auth, posts.data);
 

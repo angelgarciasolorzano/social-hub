@@ -8,6 +8,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
+/**
+ * @property int $id
+ * @property string $name
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -50,7 +54,7 @@ class User extends Authenticatable
     /**
      * Get the posts for the user.
      * Obtener los posts de un usuario
-     * 
+     *
      * @return HasMany
      */
     public function posts(): HasMany
@@ -61,7 +65,7 @@ class User extends Authenticatable
     /**
      * Get the comments for the user.
      * Obtener los comentarios de un usuario
-     * 
+     *
      * @return HasMany
      */
     public function comments(): HasMany
@@ -72,7 +76,7 @@ class User extends Authenticatable
     /**
      * Get the likes for the user.
      * Obtener los likes de un usuario
-     * 
+     *
      * @return HasMany
      */
     public function likes(): HasMany
@@ -83,7 +87,7 @@ class User extends Authenticatable
     /**
      * Get the friendships requested sent by the user.
      * Obtener las solicitudes de amistad enviadas por el usuario
-     * 
+     *
      * @return HasMany
      */
     public function sentFriendRequest(): HasMany
@@ -94,7 +98,7 @@ class User extends Authenticatable
     /**
      * Get the friendships requested received by the user.
      * Obtener las solicitudes de amistad recibidas por el usuario
-     * 
+     *
      * @return HasMany
      */
     public function receivedFriendRequests(): HasMany

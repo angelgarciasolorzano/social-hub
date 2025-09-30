@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Post;
+use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin Post */
-class PostResource extends JsonResource
+/** @mixin Comment */
+class CommentResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,12 +16,14 @@ class PostResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return  [
+        return [
             'id' => $this->id,
             'content' => $this->content,
-            'created_at' => $this->created_at->toDateTimeString(),
-            'image' => $this->getFirstMediaUrl('posts_images'),
-            'comments' => CommentResource::collection($this->whenLoaded('comments')),
+            'created_at' => $this->created_at->diffForHumans(),
+            'user' => [
+                'id' => $this->user->id,
+                'name' => $this->user->name
+            ]
         ];
     }
 }

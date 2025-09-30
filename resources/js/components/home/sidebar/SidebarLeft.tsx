@@ -2,7 +2,7 @@ import React from 'react'
 
 function SidebarLeft() {
   return (
-    <div className='border-r border-gray-200 px-4 py-3.5'>
+    <div className='border-r border-gray-200 px-4 py-3.5 w-64'>
       Sidebar left
     </div>
   )
