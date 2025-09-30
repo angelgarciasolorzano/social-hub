@@ -10,8 +10,6 @@ import { Button } from '@/components/ui/button';
 function Profile() {
   const { auth, posts } = usePage<SharedData>().props;
 
-  console.log(auth, posts.data);
-
   return (
     <HomeLayout>
       <div className='relative py-3 px-4'>
@@ -19,6 +17,7 @@ function Profile() {
 
         <div className='absolute left-10 -bottom-17 z-50'>
           <div className='rounded-full w-24 h-24 bg-red-400'></div>
+
           <h4 className='font-bold text-lg mt-1'>{auth.user.name}</h4>
           <span className='text-sm text-gray-600'>344 amigos</span>
         </div>

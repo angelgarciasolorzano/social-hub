@@ -26,6 +26,7 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    posts: PostData;
     sidebarOpen: boolean;
     [key: string]: unknown;
 }
@@ -41,3 +42,22 @@ export interface User {
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
 }
+
+export interface PostData {
+  data: Post[];
+};
+
+export interface Post {
+  id: number;
+  content: string;
+  image: string;
+  created_at: string;
+  comments: Comment[];
+};
+
+export interface Comment {
+  id: number;
+  content: string;
+  created_at: string;
+  user: User;
+};
