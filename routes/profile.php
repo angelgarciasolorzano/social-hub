@@ -10,7 +10,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('home')->group(function () {
         Route::get('/profile', function () {
             /** @var  $posts Post */
-            $posts = Post::with(['comments.user'])->where('user_id', Auth::id())->latest()->get();
+            $posts = Post::with(['comments.user', 'comments.comments.user'])->where('user_id', Auth::id())->latest()->get();
 
             return Inertia::render('profile/Profile', [
                 'posts' => PostResource::collection($posts),

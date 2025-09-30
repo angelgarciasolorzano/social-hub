@@ -1,11 +1,13 @@
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { Form, router } from '@inertiajs/react';
 
 import { Loader2Icon } from 'lucide-react';
 import { RiTimeZoneLine } from 'react-icons/ri';
 import { FaRegComment } from "react-icons/fa";
+//import { IoHeart } from "react-icons/io5";
 
-import { SharedData } from '@/types';
+import { Comment, Post, SharedData } from '@/types';
+import { cn } from '@/lib/utils';
 
 import CommentController from '@/actions/App/Http/Controllers/CommentController';
 
@@ -16,32 +18,20 @@ import { Separator } from '../ui/separator';
 
 import InputError from '../input-error';
 
-
 interface CommentsProps {
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
-  auth: SharedData['auth'];
-  id: number;
-  content: string;
-  image: string;
-  created_at: string;
-  comments: {
-    id: number;
-    content: string;
-    created_at: string;
-    user: {
-      id: number;
-      name: string;
-    }
-  } [];
+  auth: SharedData["auth"];
+  post: Post;
 };
 
 function Comments(props: CommentsProps) {
-  const { open, setOpen, id, comments, content, image, created_at, auth } = props;
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [showReplies, setShowReplies] = useState<number | null>(null);
+
+  const { post, auth } = props;
 
   return (
     <div>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" className='cursor-pointer'>
             <FaRegComment className='w-4 h-4' />
@@ -51,9 +41,9 @@ function Comments(props: CommentsProps) {
 
         <DialogContent className='flex mx-w-[85%] min-w-[80%] h-[90vh] overflow-hidden'>
           <Publicación 
-            content={content} 
-            image={image} 
-            created_at={created_at} 
+            content={post.content} 
+            image={post.image} 
+            created_at={post.created_at} 
             auth={auth} 
           />
 
@@ -64,10 +54,22 @@ function Comments(props: CommentsProps) {
             </h3>
 
             <Separator />
-            <CommentsUsers comments={comments} />
+
+            <CommentsUsers 
+              comments={post.comments} 
+              replyTo={replyTo} 
+              showReplies={showReplies} 
+              setShowReplies={setShowReplies} 
+              setReplyTo={setReplyTo}
+            />
 
             <Separator className='mb-4' />
-            <CommentForm id={id} />
+
+            <CommentForm 
+              id={post.id} 
+              commentableType='post'
+              setReplyTo={setReplyTo}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -75,12 +77,7 @@ function Comments(props: CommentsProps) {
   )
 };
 
-type PublicaciónProps = {
-  content: string;
-  image: string;
-  created_at: string;
-  auth: SharedData['auth'];
-};
+type PublicaciónProps = Omit<Post, 'comments' | 'id'> & { auth: SharedData['auth'] };
 
 function Publicación(props: PublicaciónProps) {
   const { content, image, created_at, auth } = props;
@@ -127,30 +124,30 @@ function Publicación(props: PublicaciónProps) {
   )
 };
 
-type CommentsUsersProps = {
-  comments: {
-    id: number;
-    content: string;
-    created_at: string;
-    user: {
-      id: number;
-      name: string;
-    }
-  } [];
+interface CommentsUsersProps {
+  comments: Comment[];
+  replyTo: number | null;
+  showReplies: number | null;
+  setShowReplies: Dispatch<SetStateAction<number | null>>;
+  setReplyTo: Dispatch<SetStateAction<number | null>>;
 };
 
-function CommentsUsers(props: CommentsUsersProps) {
-  const { comments } = props;
-
+function CommentsUsers({ comments, replyTo, showReplies, setShowReplies, setReplyTo }: CommentsUsersProps) {
   if (comments.length === 0) {
-    return <p>No hay comentarios en esta publicacion para mostrar</p>
+    return (
+      <div className='flex-1 flex items-center justify-center'>
+        <p className='text-sm text-gray-600'>
+          No hay comentarios en esta publicacion para mostrar
+        </p>
+      </div>
+    )
   };
 
   return (
-    <div className='flex-1 overflow-y-auto space-y-4 my-4 text-sm'>
+    <div className='flex-1 overflow-y-auto space-y-4 my-4 text-sm px-2.5'>
       {comments.map((comment) => (
         <div key={comment.id}>
-          <div className='border p-2 rounded-md bg-gray-50 space-y-1'>
+          <div className='border p-2 rounded-md bg-gray-50/50 space-y-1'>
             <div className='flex items-center gap-2'>
               <img 
                 src="https://avatars.dicebear.com/api/initials/1.svg" 
@@ -175,25 +172,88 @@ function CommentsUsers(props: CommentsUsersProps) {
           </div>
 
           <div className='flex items-center gap-4 mt-1 px-2'>
-            <span>Me gusta</span>
-            <span>Responder</span>
+            <button 
+              className='text-xs text-gray-600 font-medium hover:text-red-600 transition-colors cursor-pointer'
+            >
+              Me gusta
+            </button>
+
+            <button
+              type='button'
+              className='cursor-pointer text-xs text-gray-600 font-medium hover:text-black/80 transition-colors'
+              onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
+            >
+              Responder
+            </button>
+
+            {comment.replies && comment.replies.length > 0 && (
+              <button
+                type='button'
+                className='cursor-pointer text-xs text-gray-600 font-medium hover:text-blue-600 transition-colors'
+                onClick={() => setShowReplies(showReplies === comment.id ? null : comment.id)}
+              >
+                {showReplies === comment.id ? 'Ocultar respuestas' : `Mostrar ${comment.replies.length} respuestas`}
+              </button>
+            )}
           </div>
+
+          {replyTo === comment.id && (
+            <CommentForm 
+              commentableType='comment'
+              id={comment.id} className='mt-2.5' 
+              setReplyTo={setReplyTo} 
+            />
+          )}
+
+          {showReplies === comment.id && (
+            <>
+              {comment.replies && comment.replies.map((reply) => (
+                <div key={reply.id} className='space-y-1.5 my-1.5 px-4 pt-2.5'>
+                  <div className='flex items-center gap-2'>
+                    <img 
+                      src="https://avatars.dicebear.com/api/initials/1.svg" 
+                      alt="Foto de perfil" 
+                      className="w-6 h-6 rounded-full" 
+                    />
+
+                    <div>
+                      <h5 className='font-medium text-sm'>{reply.user.name}</h5>
+                      <span className='text-gray-500 text-xs'>{reply.created_at}</span>
+                    </div>
+                  </div>
+
+                  <p className='text-gray-600 text-sm'>{reply.content}</p>
+
+                  {/* <div className='inline-flex items-center gap-1 group cursor-pointer mt-1'>
+                    <IoHeart className='w-4 h-4 text-gray-600 group-hover:text-red-500' />
+                    <span className='text-gray-600 text-xs group-hover:text-red-500'>Me gusta</span>
+                  </div> */}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       ))}
     </div>
   )
 };
 
-type CommentFormProps = {
+type CommentFormProps = Pick<CommentsUsersProps, 'setReplyTo'> & {
   id: number;
-};
+  commentableType: string
+  className?: string
+};;
 
-function CommentForm({ id }: CommentFormProps) {
+function CommentForm({ id, commentableType, className, setReplyTo }: CommentFormProps) {
   return (
     <Form
       {...CommentController.store.form()}
+      className={cn(
+        className
+      )}
       resetOnSuccess
       onSuccess={() => {
+        setReplyTo(null);
         router.reload({
           only: ['posts'],
         })
@@ -202,7 +262,7 @@ function CommentForm({ id }: CommentFormProps) {
       {({ processing, errors}) => (
         <>
           <div className='flex items-center justify-center gap-2'>
-            <Input type='hidden' name='commentable_type' value='App\Models\Post' />
+            <Input type='hidden' name='commentable_type' value={commentableType} />
             <Input type='hidden' name='commentable_id' value={id} />
             <Input placeholder='Escribe tu comentario' className='w-full' name='content' />
 

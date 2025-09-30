@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Comment */
-class CommentResource extends JsonResource
+class ReplyResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -22,9 +22,8 @@ class CommentResource extends JsonResource
             'created_at' => $this->created_at->diffForHumans(),
             'user' => [
                 'id' => $this->user->id,
-                'name' => $this->user->name
-            ],
-            'replies' => ReplyResource::collection($this->whenLoaded('comments')),
+                'name' => $this->user->name,
+            ]
         ];
     }
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { FaRegHeart } from 'react-icons/fa';
 import { RiTimeZoneLine } from "react-icons/ri";
 import { usePage } from '@inertiajs/react';
@@ -14,7 +13,6 @@ import Comments from './Comments';
 type PublicationProps = Post;
 
 function Publication({ id, content, image, created_at, comments }: PublicationProps) {
-  const [open, setOpen] = useState<boolean>(false);
   const { auth } = usePage<SharedData>().props;
   
   return (
@@ -75,13 +73,7 @@ function Publication({ id, content, image, created_at, comments }: PublicationPr
           </Button>
 
           <Comments
-            open={open}
-            setOpen={setOpen}
-            id={id}
-            comments={comments}
-            content={content}
-            image={image}
-            created_at={created_at}
+            post={{ id, content, image, created_at, comments}}
             auth={auth}
           />
         </div>

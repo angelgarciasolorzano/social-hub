@@ -54,6 +54,11 @@ class Comment extends Model
         return $this->morphTo();
     }
 
+    public function comments(): MorphMany
+    {
+        return $this->morphMany(Comment::class, 'commentable')->with('user');
+    }
+
     /**
      * Get all of the comment's likes.
      * Obtener todos los likes del comentario

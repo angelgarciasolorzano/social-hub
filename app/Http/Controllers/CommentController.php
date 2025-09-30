@@ -8,6 +8,7 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class CommentController extends Controller
 {
@@ -32,8 +33,16 @@ class CommentController extends Controller
      */
     public function store(StoreCommentRequest $request)
     {
-        $commentableType = $request['commentable_type'];
+        //$commentableType = $request['commentable_type'];
+        $commentableType = Relation::getMorphedModel($request['commentable_type']);
         $commentableId = $request['commentable_id'];
+
+        if (! $commentableType) {
+            return back()->with([
+                'type' => 'error',
+                'message' => 'El tipo de comentario es invalido.'
+            ]);
+        };
 
         /** @var Model & (Post | Comment) $commentable */
         $commentable = $commentableType::findOrFail($commentableId);

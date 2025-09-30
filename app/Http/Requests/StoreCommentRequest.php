@@ -23,6 +23,8 @@ class StoreCommentRequest extends FormRequest
     {
         return [
             'content' => ['required', 'min:10', 'max:1000'],
+            'commentable_type' => ['required', 'in:post,comment'],
+            'commentable_id' => ['required', 'integer']
         ];
     }
 
