@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Resources\PostResource;
+use App\Models\Post;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -9,7 +12,15 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/home', function () {
-        return Inertia::render('dashboard/dashboard');
+        $friendsId = Auth::user()->friends()->pluck('id')->toArray();
+
+        $posts = Post::with(['user', 'comments.user', 'comments.comments.user'])
+            ->whereIn('user_id', $friendsId)
+            ->latest()->get();
+
+        return Inertia::render('dashboard/dashboard', [
+            'posts' => PostResource::collection($posts),
+        ]);
     })->name('home');
 });
 
@@ -29,3 +40,4 @@ require __DIR__.'/auth.php';
 require __DIR__.'/profile.php';
 require __DIR__.'/post.php';
 require __DIR__.'/comment.php';
+require __DIR__.'/friendship.php';

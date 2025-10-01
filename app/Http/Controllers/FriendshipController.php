@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreFriendshipRequest;
 use App\Http\Requests\UpdateFriendshipRequest;
 use App\Models\Friendship;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class FriendshipController extends Controller
 {
@@ -62,5 +65,25 @@ class FriendshipController extends Controller
     public function destroy(Friendship $friendship)
     {
         //
+    }
+
+    public function search(Request $request)
+    {
+        logger($request->all());
+        $search = $request->input('q');
+
+        $users = User::query()
+            ->where('id', '!=', Auth::id())
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%'.$search.'%');
+                });
+            })
+            ->limit(10)
+            ->get();
+
+        logger($users);
+
+        return back()->with('search_results', $users);
     }
 }

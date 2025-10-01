@@ -1,10 +1,12 @@
-import { Form, Link } from '@inertiajs/react';
+import { Form, Link, usePage } from '@inertiajs/react';
 
 import { IoIosNotificationsOutline } from "react-icons/io";
 import { CiCirclePlus } from "react-icons/ci";
 import { FaRegUser } from "react-icons/fa6";
 import { MdOutlineLogout } from "react-icons/md";
 import { FiHome } from "react-icons/fi";
+import { LuUserRoundPlus } from "react-icons/lu";
+import { LuCircleUserRound } from "react-icons/lu";
 import { PiNutBold } from "react-icons/pi";
 
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +43,7 @@ import PostController from '@/actions/App/Http/Controllers/PostController';
 import InputError from '@/components/input-error';
 import { Loader2Icon } from 'lucide-react';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 function Header() {
   return (
@@ -56,15 +59,96 @@ function Header() {
 
 function HeaderAction() {
   const [isOpenModal, setIsOpenModal] = useState<boolean>(false);
+  const {props} = usePage();
+
+  console.log(props.search_results);
 
   return (
     <div className='flex items-center gap-4'>
+      <HeaderActionSearch />
       <HeaderActionPublication isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
       <HeaderActionNotifications />
       <HeaderActionProfile />
     </div>
   )
 };
+
+function HeaderActionSearch() {
+  return (
+    <div>
+      <Dialog>
+        <Tooltip>
+          <DialogTrigger asChild>
+            <TooltipTrigger asChild>
+              <CiCirclePlus className='w-8 h-8 cursor-pointer text-gray-600' />
+            </TooltipTrigger>
+          </DialogTrigger>
+
+          <TooltipContent>Crear publicación</TooltipContent>
+        </Tooltip>
+
+        <DialogContent className='max-w-[90%] min-w-[70%] min-h-[80%] max-h-[90%]'>
+          <DialogHeader>
+            <DialogTitle>Buscar amigos</DialogTitle>
+
+            <DialogDescription>
+              Encuentra a tus amigos y comparte tus pensamientos
+            </DialogDescription>
+            
+            <Form
+              method='get'
+              action='/friends/search'
+              className='flex gap-2 items-center mt-1.5'
+            >
+              <Input
+                type="text"
+                name="q"
+                placeholder="Buscar amigos"
+              />
+
+              <Button
+                type="submit"
+              >
+                Buscar
+              </Button>
+            </Form>
+          </DialogHeader>
+
+          <div className='flex flex-col gap-4'>
+            {[1,2,3,4,5].map((friend) => (
+              <div className='flex justify-between items-center py-2 px-2' key={friend}>
+                <div className='flex gap-2 items-center'>
+                  <img 
+                    src='https://avatars.dicebear.com/api/initials/1.svg' 
+                    alt='Foto de perfil' 
+                    className='w-12 h-12 rounded-full' 
+                  />
+
+                  <div className='space-y-1.5'>
+                    <h4 className='text-sm font-semibold'>Angel Noe Garcia Solorzano</h4>
+                    <p className='text-xs text-gray-600 font-medium'>Se unio a SOCIAL HUB en 2022</p>
+                  </div>
+                </div>
+
+                <div className='flex gap-2'>
+                  <Badge variant="secondary" className='text-sm dark:text-white/80 cursor-pointer'>
+                    <LuUserRoundPlus className='w-4 h-4' />
+                    Agregar amigo
+                  </Badge>
+
+                  <Badge variant="outline" className='cursor-pointer text-sm'>
+                    <LuCircleUserRound className='w-4 h-4' />
+                    Ver perfil
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
 
 interface HeaderActionPublicationProps {
   isOpenModal: boolean;
