@@ -44,6 +44,7 @@ import InputError from '@/components/input-error';
 import { Loader2Icon } from 'lucide-react';
 import { Dispatch, SetStateAction, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import FriendshipController from '@/actions/App/Http/Controllers/FriendshipController';
 
 function Header() {
   return (
@@ -74,6 +75,8 @@ function HeaderAction() {
 };
 
 function HeaderActionSearch() {
+  const {props} = usePage();
+
   return (
     <div>
       <Dialog>
@@ -96,9 +99,14 @@ function HeaderActionSearch() {
             </DialogDescription>
             
             <Form
-              method='get'
-              action='/friends/search'
+              // method='get'
+              // action='/friends/search'
+              {...FriendshipController.search.form.get()}
               className='flex gap-2 items-center mt-1.5'
+              onSuccess={(page) => console.log(page.props)}
+              options={{
+                preserveState: true,
+              }}
             >
               <Input
                 type="text"
@@ -115,6 +123,9 @@ function HeaderActionSearch() {
           </DialogHeader>
 
           <div className='flex flex-col gap-4'>
+            {props.search_results && props.search_results.map((user) => (
+              <p>{user.name}</p>
+            ))}
             {[1,2,3,4,5].map((friend) => (
               <div className='flex justify-between items-center py-2 px-2' key={friend}>
                 <div className='flex gap-2 items-center'>
