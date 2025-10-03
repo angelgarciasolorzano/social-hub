@@ -26,7 +26,9 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    user: User;
     posts: PostData;
+    search_results: User[];
     sidebarOpen: boolean;
     [key: string]: unknown;
 }

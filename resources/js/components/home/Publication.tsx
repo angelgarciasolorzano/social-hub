@@ -13,7 +13,7 @@ import Comments from './Comments';
 type PublicationProps = Post;
 
 function Publication({ id, content, image, created_at, comments }: PublicationProps) {
-  const { auth } = usePage<SharedData>().props;
+  const { user } = usePage<SharedData>().props;
   
   return (
     <div className='px-4 py-3'>
@@ -29,7 +29,7 @@ function Publication({ id, content, image, created_at, comments }: PublicationPr
 
           <div className='grid gap-2'>
             <h4 className='font-bold text-lg'>
-              {auth.user.name}
+              {user.name}
               <span className='ml-2 text-gray-600 text-sm font-medium'>
                 agregó una publicación
               </span>
@@ -74,7 +74,7 @@ function Publication({ id, content, image, created_at, comments }: PublicationPr
 
           <Comments
             post={{ id, content, image, created_at, comments}}
-            auth={auth}
+            auth={user}
           />
         </div>
       </div>

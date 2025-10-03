@@ -12,9 +12,15 @@ class Friendship extends Model
     /** @use HasFactory<\Database\Factories\FriendshipFactory> */
     use HasFactory;
 
+    protected $fillable = [
+        'requester_id',
+        'receiver_id',
+        'status',
+    ];
+
     /**
      * Get the attributes that should be cast.
-     * 
+     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -29,7 +35,7 @@ class Friendship extends Model
     /**
      * Get the user that sent the friend request.
      * Obtener el usuario que envió la solicitud de amistad
-     * 
+     *
      * @return BelongsTo
      */
     public function requester(): BelongsTo
@@ -40,7 +46,7 @@ class Friendship extends Model
     /**
      * Get the user that received the friend request.
      * Obtener el usuario que recibió la solicitud de amistad
-     * 
+     *
      * @return BelongsTo
      */
     public function receiver(): BelongsTo

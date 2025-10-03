@@ -19,7 +19,7 @@ import { Separator } from '../ui/separator';
 import InputError from '../input-error';
 
 interface CommentsProps {
-  auth: SharedData["auth"];
+  auth: SharedData["user"];
   post: Post;
 };
 
@@ -77,7 +77,7 @@ function Comments(props: CommentsProps) {
   )
 };
 
-type PublicaciónProps = Omit<Post, 'comments' | 'id'> & { auth: SharedData['auth'] };
+type PublicaciónProps = Omit<Post, 'comments' | 'id'> & { auth: SharedData['user'] };
 
 function Publicación(props: PublicaciónProps) {
   const { content, image, created_at, auth } = props;
@@ -95,7 +95,7 @@ function Publicación(props: PublicaciónProps) {
 
         <div className="grid gap-2 ml-2">
           <h4 className="font-bold text-lg">
-            {auth.user.name}
+            {auth.name}
 
             <span className="ml-2 text-gray-600 text-sm font-medium">
               agregó una publicación

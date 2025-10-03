@@ -56,7 +56,7 @@ class PostController extends Controller
             'message' => 'Publicación creada correctamente',
             'action' => [
                 'label' => 'Ver publicación',
-                'url' => route('profile.show')
+                'url' => route('profile.index')
             ]
         ]);
     }

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
+use App\Notifications\CommentNotification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
@@ -33,7 +34,6 @@ class CommentController extends Controller
      */
     public function store(StoreCommentRequest $request)
     {
-        //$commentableType = $request['commentable_type'];
         $commentableType = Relation::getMorphedModel($request['commentable_type']);
         $commentableId = $request['commentable_id'];
 
@@ -47,10 +47,16 @@ class CommentController extends Controller
         /** @var Model & (Post | Comment) $commentable */
         $commentable = $commentableType::findOrFail($commentableId);
 
-        $commentable->comments()->create([
+         $comment = $commentable->comments()->create([
             'user_id' => auth()->id(),
             'content' => $request['content'],
         ]);
+
+        if ($commentable instanceof Post) {
+            $commentable->user->notify(new CommentNotification($comment));
+        } else if ($commentable instanceof Comment) {
+            $commentable->user->notify(new CommentNotification($comment));
+        }
 
         return back()->with('notification', [
             'type' => 'success',

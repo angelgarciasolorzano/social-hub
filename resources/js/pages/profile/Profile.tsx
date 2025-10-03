@@ -8,7 +8,7 @@ import Publication from '@/components/home/Publication';
 import { Button } from '@/components/ui/button';
 
 function Profile() {
-  const { auth, posts } = usePage<SharedData>().props;
+  const { user, posts, auth } = usePage<SharedData>().props;
 
   return (
     <HomeLayout>
@@ -18,21 +18,25 @@ function Profile() {
         <div className='absolute left-10 -bottom-17 z-50'>
           <div className='rounded-full w-24 h-24 bg-red-400'></div>
 
-          <h4 className='font-bold text-lg mt-1'>{auth.user.name}</h4>
+          <h4 className='font-bold text-lg mt-1'>{user.name}</h4>
           <span className='text-sm text-gray-600'>344 amigos</span>
         </div>
       </div>
 
       <div className='flex items-center gap-4 pt-16 px-4'>
-        <Button className='bg-blue-700 cursor-pointer hover:bg-blue-800'>
-          <GoPlus className='w-4 h-4' />
-          Agregar publicación
-        </Button>
+        {auth.user.id === user.id && (
+          <>
+            <Button className='bg-blue-700 cursor-pointer hover:bg-blue-800'>
+              <GoPlus className='w-4 h-4' />
+              Agregar publicación
+            </Button>
 
-        <Button variant="secondary" className='cursor-pointer'>
-          <MdOutlineEditNote className='w-4 h-4' />
-          Editar perfil
-        </Button>
+            <Button variant="secondary" className='cursor-pointer'>
+              <MdOutlineEditNote className='w-4 h-4' />
+              Editar perfil
+            </Button>
+          </>
+        )}
       </div>
 
       <div className='pb-6'>

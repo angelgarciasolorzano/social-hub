@@ -120,7 +120,7 @@ class User extends Authenticatable
         return $this->belongsToMany(
             self::class,
             'friendships',
-            'requester_id', 'receiver_id'
+            'receiver_id', 'requester_id'
         )->wherePivot('status', 'accepted');
     }
 
