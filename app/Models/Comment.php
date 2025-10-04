@@ -34,7 +34,6 @@ class Comment extends Model
 
     /**
      * Get the user that wrote the comment.
-     * Obtener el usuario que escribió el comentario
      *
      * @return BelongsTo
      */
@@ -45,7 +44,6 @@ class Comment extends Model
 
     /**
      * Get the parent model that the comment belongs to (e.g., Post).
-     * Obtener el modelo padre al que pertenece el comentario (p.ej., Post)
      *
      * @return MorphTo
      */
@@ -61,7 +59,6 @@ class Comment extends Model
 
     /**
      * Get all of the comment's likes.
-     * Obtener todos los likes del comentario
      *
      * @return MorphMany
      */

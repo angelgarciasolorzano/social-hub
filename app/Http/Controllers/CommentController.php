@@ -45,18 +45,16 @@ class CommentController extends Controller
         };
 
         /** @var Model & (Post | Comment) $commentable */
-        $commentable = $commentableType::findOrFail($commentableId);
+        $commentable = $commentableType::query()->findOrFail($commentableId);
 
          $comment = $commentable->comments()->create([
             'user_id' => auth()->id(),
             'content' => $request['content'],
         ]);
 
-        if ($commentable instanceof Post) {
+        if ($commentable instanceof Post || $commentable instanceof Comment) {
             $commentable->user->notify(new CommentNotification($comment));
-        } else if ($commentable instanceof Comment) {
-            $commentable->user->notify(new CommentNotification($comment));
-        }
+        };
 
         return back()->with('notification', [
             'type' => 'success',

@@ -53,7 +53,7 @@ export interface Post {
   id: number;
   content: string;
   image: string;
-  created_at: string;
+  createdAt: string;
   comments: Comment[];
 };
 

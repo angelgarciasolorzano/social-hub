@@ -16,12 +16,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $content
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
+ *
  */
 class Post extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\PostFactory> */
     use HasFactory, InteractsWithMedia;
 
+    /** @var string[]  */
     protected $fillable = ['content', 'image_file', 'user_id'];
 
     /**
@@ -37,9 +39,8 @@ class Post extends Model implements HasMedia
 
     /**
      * Get the user that owns the post.
-     * Obtener el usuario que posee el post
      *
-     * @return BelongsTo
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
@@ -48,7 +49,6 @@ class Post extends Model implements HasMedia
 
     /**
      * Get all of the post's comments.
-     * Obtener todos los comentarios del post
      *
      * @return MorphMany
      */
@@ -59,7 +59,6 @@ class Post extends Model implements HasMedia
 
     /**
      * Get all of the post's likes.
-     * Obtener todos los likes del post
      *
      * @return MorphMany
      */
