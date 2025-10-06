@@ -9,12 +9,12 @@ import CommentModal from '../comment/CommentModal';
 import { Post, SharedData } from '@/types';
 
 interface PublicacionCardProps {
-  posts: Post;
+  post: Post;
   user: SharedData["user"];
 };
 
-function PublicationCard({ posts, user }: PublicacionCardProps) {
-  const { comments, ...post } = posts;
+function PublicationCard({ post, user }: PublicacionCardProps) {
+  const { comments, ...postDetail } = post;
 
   return (
     <article className='grid gap-2 border rounded-lg shadow-md p-3 dark:border-gray-700'>
@@ -77,7 +77,7 @@ function PublicationCard({ posts, user }: PublicacionCardProps) {
           Me gusta
         </Button>
         
-        <CommentModal postDetail={post} comments={comments} user={user} />
+        <CommentModal postDetail={postDetail} comments={comments} user={user} />
       </footer>
     </article>
   )

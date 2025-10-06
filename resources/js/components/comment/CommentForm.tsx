@@ -2,7 +2,7 @@ import { Form, router } from '@inertiajs/react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Loader2Icon } from 'lucide-react';
-import InputError from '../input-error';
+import InputError from '../form/input-error';
 import CommentController from '@/actions/App/Http/Controllers/CommentController';
 import { Dispatch, SetStateAction } from 'react';
 

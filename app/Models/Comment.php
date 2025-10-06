@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  *
- * @property-read User $user
+// * @property-read User $user
  */
 class Comment extends Model
 {
