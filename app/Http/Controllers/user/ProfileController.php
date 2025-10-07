@@ -12,6 +12,8 @@ use Inertia\Response;
 use App\Models\{Post, User};
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 
 
 class ProfileController extends Controller
@@ -94,5 +96,30 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    public function updatedProfilePicture(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => ['required', 'file', 'image', 'max:2048'],
+        ]);
+
+        logger($request->file('profile_picture'));
+
+        $user = Auth::user();
+
+        try {
+            $user->addMediaFromRequest('profile_picture')->toMediaCollection('profile_picture');
+        } catch (FileDoesNotExist | FileIsTooBig $error) {
+            return back()->with('notification', [
+                'type' => 'error',
+                'message' => 'Ha ocurrido un error al intentar subir el archivo.',
+            ]);
+        }
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Foto de perfil actualizada correctamente',
+        ]);
     }
 }

@@ -1,11 +1,12 @@
 import { SharedData } from '@/types';
-import { usePage } from '@inertiajs/react'
+import { Form, usePage } from '@inertiajs/react'
 import { MdOutlineEditNote } from "react-icons/md";
 import { GoPlus } from "react-icons/go";
 
 import HomeLayout from '@/layouts/home/HomeLayout'
 import { Button } from '@/components/ui/button';
 import PublicationCard from '@/components/publication/PublicationCard';
+import ProfileController from '@/actions/App/Http/Controllers/user/ProfileController';
 
 function Profile() {
   const { user, posts, auth } = usePage<SharedData>().props;
@@ -17,7 +18,19 @@ function Profile() {
           <div className='w-full h-[300px] bg-amber-300 rounded-md'></div>
 
           <div className='absolute left-5 -bottom-20 z-50'>
-            <div className='rounded-full w-24 h-24 bg-red-400'></div>
+            <img className='rounded-full w-24 h-24 bg-red-400' />
+
+            <Form
+              {...ProfileController.updatedProfilePicture.form()}
+            >
+              <input type='file' accept='image/*' name='profile_picture' />
+
+              <Button
+                type='submit'
+              >
+                Subir foto
+              </Button>
+            </Form>
 
             <h4 className='font-bold text-lg mt-1 dark:text-white'>{user.name}</h4>
             <span className='text-sm text-gray-600 dark:text-gray-400 font-medium'>344 amigos</span>
