@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class User extends Authenticatable
+/**
+ * @property int $id
+ * @property string $name
+ */
+class User extends Authenticatable implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, InteractsWithMedia;
 
     /**
      * The attributes that are mass assignable.
@@ -45,5 +51,89 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('profile_picture')->singleFile();
+        $this->addMediaCollection('cover_image')->singleFile();
+    }
+
+    /**
+     * Get the posts for the user.
+     * Obtener los posts de un usuario
+     *
+     * @return HasMany
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    /**
+     * Get the comments for the user.
+     * Obtener los comentarios de un usuario
+     *
+     * @return HasMany
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Get the likes for the user.
+     * Obtener los likes de un usuario
+     *
+     * @return HasMany
+     */
+    public function likes(): HasMany
+    {
+        return $this->hasMany(Like::class);
+    }
+
+    /**
+     * Get the friendships requested sent by the user.
+     * Obtener las solicitudes de amistad enviadas por el usuario
+     *
+     * @return HasMany
+     */
+    public function sentFriendRequest(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'requester_id');
+    }
+
+    /**
+     * Get the friendships requested received by the user.
+     * Obtener las solicitudes de amistad recibidas por el usuario
+     *
+     * @return HasMany
+     */
+    public function receivedFriendRequests(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'receiver_id');
+    }
+
+    public function friendsOfMine()
+    {
+        return $this->belongsToMany(
+            self::class,
+            'friendships',
+            'requester_id', 'receiver_id'
+        )->wherePivot('status', 'accepted');
+    }
+
+    public function friendsOf()
+    {
+        return $this->belongsToMany(
+            self::class,
+            'friendships',
+            'receiver_id', 'requester_id'
+        )->wherePivot('status', 'accepted');
+    }
+
+    public function friends()
+    {
+        return $this->friendsOfMine->merge($this->friendsOf);
     }
 }

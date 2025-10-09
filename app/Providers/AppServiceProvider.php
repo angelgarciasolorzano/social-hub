@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Comment;
+use App\Models\Like;
+use App\Models\Post;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Relation::enforceMorphMap([
+            'user' => User::class,
+            'post' => Post::class,
+            'like' => Like::class,
+            'comment' => Comment::class
+        ]);
     }
 }

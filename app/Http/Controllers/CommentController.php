@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
+use App\Models\Post;
+use App\Models\User;
+use App\Notifications\CommentNotification;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class CommentController extends Controller
 {
@@ -29,7 +34,32 @@ class CommentController extends Controller
      */
     public function store(StoreCommentRequest $request)
     {
-        //
+        $commentableType = Relation::getMorphedModel($request['commentable_type']);
+        $commentableId = $request['commentable_id'];
+
+        if (! $commentableType) {
+            return back()->with([
+                'type' => 'error',
+                'message' => 'El tipo de comentario es invalido.'
+            ]);
+        };
+
+        /** @var Model & (Post | Comment) $commentable */
+        $commentable = $commentableType::query()->findOrFail($commentableId);
+
+         $comment = $commentable->comments()->create([
+            'user_id' => auth()->id(),
+            'content' => $request['content'],
+        ]);
+
+        if ($commentable instanceof Post || $commentable instanceof Comment) {
+            $commentable->user->notify(new CommentNotification($comment));
+        };
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Comentario publicado correctamente',
+        ]);
     }
 
     /**
