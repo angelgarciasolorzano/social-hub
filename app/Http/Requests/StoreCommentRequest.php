@@ -11,7 +11,7 @@ class StoreCommentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user() !== null;
     }
 
     /**
@@ -22,7 +22,22 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'content' => ['required', 'min:10', 'max:1000'],
+            'commentable_type' => ['required', 'in:post,comment'],
+            'commentable_id' => ['required', 'integer']
+        ];
+    }
+
+    /**
+     * Get the custom message for the validator errors.
+     * Obtener los mensajes personalizados para los errores de validacion
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return  [
+            'content.required' => 'El mensaje de comentario es obligatorio',
         ];
     }
 }

@@ -1,0 +1,147 @@
+<?php
+
+namespace App\Http\Controllers\user;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Http\Resources\PostResource;
+use App\Http\Resources\UserResource;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Response;
+use App\Models\{Post, User};
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
+
+
+class ProfileController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        $posts = Post::with(['comments.user', 'comments.comments.user'])
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get();
+
+        return Inertia::render('home/profile/Profile', [
+            'user' => new UserResource(Auth::user()),
+            'posts' => PostResource::collection($posts),
+        ]);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(User $user)
+    {
+        $posts = Post::with(['comments.user', 'comments.comments.user'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return Inertia::render('home/profile/Profile', [
+            'user' => new UserResource($user),
+            'posts' => PostResource::collection($posts),
+        ]);
+    }
+
+    /**
+     * Show the user's profile settings page.
+     */
+    public function edit(Request $request): Response
+    {
+        return Inertia::render('home/profile/settings/ProfileEdit', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+        ]);
+    }
+
+    /**
+     * Update the user's profile settings.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return to_route('profile.edit');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        Auth::logout();
+
+        $user->delete();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+
+    public function updatedProfilePicture(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => ['required', 'file', 'image', 'max:2048'],
+        ]);
+
+        $user = Auth::user();
+
+        try {
+            $user->addMediaFromRequest('profile_picture')->toMediaCollection('profile_picture');
+        } catch (FileDoesNotExist | FileIsTooBig $error) {
+            return back()->with('notification', [
+                'type' => 'error',
+                'message' => 'Ha ocurrido un error al intentar subir el archivo.',
+            ]);
+        }
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Foto de perfil actualizada correctamente',
+        ]);
+    }
+
+    public function updatedCoverImage(Request $request)
+    {
+        $request->validate([
+            'cover_image' => ['required', 'file', 'image', 'max:2048'],
+        ]);
+
+        $user = Auth::user();
+
+        try {
+            $user->addMediaFromRequest('cover_image')->toMediaCollection('cover_image');
+        } catch (FileDoesNotExist | FileIsTooBig $error) {
+            return back()->with('notification', [
+                'type' => 'error',
+                'message' => 'Ha ocurrido un error al intentar subir el archivo.',
+            ]);
+        };
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Foto de portada actualizada correctamente',
+        ]);
+    }
+}
