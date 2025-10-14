@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /** @mixin User */
 class UserResource extends JsonResource
 {
+    public static $wrap = null;
     /**
      * Transform the resource into an array.
      *
@@ -18,7 +19,9 @@ class UserResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name
+            'name' => $this->name,
+            'avatar' => $this->getFirstMediaUrl('profile_picture'),
+            'cover_image' => $this->getFirstMediaUrl('cover_image'),
         ];
     }
 }

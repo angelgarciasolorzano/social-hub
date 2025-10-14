@@ -8,6 +8,8 @@ Route::prefix('profile')->group(function () {
 
     Route::post('/photo-profile', [ProfileController::class, 'updatedProfilePicture'])->name('profile.picture-profile-updated');
 
+    Route::post('/cover-profile', [ProfileController::class, 'updatedCoverImage'])->name('profile.cover-profile-updated');
+
     Route::prefix('settings')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
 

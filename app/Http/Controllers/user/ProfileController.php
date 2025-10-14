@@ -5,6 +5,7 @@ namespace App\Http\Controllers\user;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Http\Resources\PostResource;
+use App\Http\Resources\UserResource;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class ProfileController extends Controller
             ->get();
 
         return Inertia::render('home/profile/Profile', [
-            'user' => Auth::user(),
+            'user' => new UserResource(Auth::user()),
             'posts' => PostResource::collection($posts),
         ]);
     }
@@ -45,7 +46,7 @@ class ProfileController extends Controller
             ->get();
 
         return Inertia::render('home/profile/Profile', [
-            'user' => $user,
+            'user' => new UserResource($user),
             'posts' => PostResource::collection($posts),
         ]);
     }
@@ -104,8 +105,6 @@ class ProfileController extends Controller
             'profile_picture' => ['required', 'file', 'image', 'max:2048'],
         ]);
 
-        logger($request->file('profile_picture'));
-
         $user = Auth::user();
 
         try {
@@ -120,6 +119,29 @@ class ProfileController extends Controller
         return back()->with('notification', [
             'type' => 'success',
             'message' => 'Foto de perfil actualizada correctamente',
+        ]);
+    }
+
+    public function updatedCoverImage(Request $request)
+    {
+        $request->validate([
+            'cover_image' => ['required', 'file', 'image', 'max:2048'],
+        ]);
+
+        $user = Auth::user();
+
+        try {
+            $user->addMediaFromRequest('cover_image')->toMediaCollection('cover_image');
+        } catch (FileDoesNotExist | FileIsTooBig $error) {
+            return back()->with('notification', [
+                'type' => 'error',
+                'message' => 'Ha ocurrido un error al intentar subir el archivo.',
+            ]);
+        };
+
+        return back()->with('notification', [
+            'type' => 'success',
+            'message' => 'Foto de portada actualizada correctamente',
         ]);
     }
 }
