@@ -2,8 +2,8 @@
 
 namespace App\Auth\Login\Requests;
 
-use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -39,11 +39,11 @@ class LoginRequest extends FormRequest
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function validateCredentials(): User
+    public function validateCredentials(): Authenticatable
     {
         $this->ensureIsNotRateLimited();
 
-        /** @var User|null $user */
+        /** @var Authenticatable|null $user */
         $user = Auth::getProvider()->retrieveByCredentials($this->only('email', 'password'));
 
         if (! $user || ! Auth::getProvider()->validateCredentials($user, $this->only('password'))) {
