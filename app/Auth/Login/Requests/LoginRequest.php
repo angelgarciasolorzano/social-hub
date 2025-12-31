@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Auth\Login\Requests;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
@@ -13,6 +13,8 @@ class LoginRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     * 
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -82,6 +84,8 @@ class LoginRequest extends FormRequest
 
     /**
      * Get the rate-limiting throttle key for the request.
+     * 
+     * @return string
      */
     public function throttleKey(): string
     {
