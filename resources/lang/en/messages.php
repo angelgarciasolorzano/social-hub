@@ -1,0 +1,5 @@
+<?php
+
+return [
+    'A reset link will be sent if the account exists.' => 'A reset link will be sent if the account exists.',
+];
