@@ -1,16 +1,24 @@
-import { SharedData } from '@/types';
+import { useModal } from '@/hooks/useModal';
+import { PostData, SharedData, User } from '@/types';
 import { usePage } from '@inertiajs/react'
 import { MdOutlineEditNote } from "react-icons/md";
 import { GoPlus } from "react-icons/go";
+import PublicationForm from '@/components/publication/PublicationForm';
 
-import HomeLayout from '@/layouts/home/HomeLayout'
+import HomeLayout from '@/pages/home/layouts/HomeLayout'
 import { Button } from '@/components/ui/button';
 import PublicationCard from '@/components/publication/PublicationCard';
-import ProfilePicture from '@/components/profile/ProfilePicture';
-import ProfileCover from '@/components/profile/ProfileCover';
+import ProfilePicture from './components/ProfilePicture';
+import ProfileCover from '@/pages/profile/components/ProfileCover';
 
-function Profile() {
-  const { user, posts, auth } = usePage<SharedData>().props;
+interface ProfileProps {
+  user: User;
+  posts: PostData;
+};
+
+function Profile({ user, posts }: ProfileProps) {
+  const { open, setOpen } = useModal();
+  const { auth } = usePage<SharedData>().props;
 
   return (
     <HomeLayout>
@@ -28,7 +36,10 @@ function Profile() {
         <div className='flex items-center gap-4'>
           {auth.user.id === user.id && (
             <>
-              <Button className='bg-blue-700 cursor-pointer hover:bg-blue-800 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700'>
+              <Button 
+                className='bg-blue-700 cursor-pointer hover:bg-blue-800 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700'
+                onClick={() => setOpen(true)}
+              >
                 <GoPlus className='w-4 h-4' />
                 Agregar publicación
               </Button>
@@ -47,6 +58,8 @@ function Profile() {
           ))}
         </div>
       </div>
+
+      <PublicationForm open={open} setOpen={setOpen} />
     </HomeLayout>
   )
 }
