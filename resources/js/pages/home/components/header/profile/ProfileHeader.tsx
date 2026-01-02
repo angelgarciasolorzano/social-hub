@@ -1,12 +1,12 @@
 import { Avatar, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import React from 'react'
-import { menuItems } from './data/items'
+import { menuItems } from './items'
 import { Link } from '@inertiajs/react'
 import { useModal } from '@/hooks/useModal'
-import ProfileModal from './components/ProfileModal'
+import ProfileModal from '../../../../profile/components/ProfileModal'
 
-function Profile() {
+function ProfileHeader() {
   const {open, setOpen} = useModal();
 
   const handleAction = (action: string) => {
@@ -62,4 +62,4 @@ function Profile() {
   )
 }
 
-export default Profile;
+export default ProfileHeader;

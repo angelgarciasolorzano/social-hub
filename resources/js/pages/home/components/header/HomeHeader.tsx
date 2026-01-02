@@ -1,19 +1,17 @@
-import { HiOutlinePlus } from "react-icons/hi2";
 import { IoIosNotificationsOutline } from "react-icons/io";
 
 
 import { useModal} from "@/hooks/useModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { Dispatch, SetStateAction } from 'react';
 import { SharedData } from '@/types';
 
 import { useEchoNotification } from "@laravel/echo-react";
 import { toast } from 'sonner';
-import PublicationForm from '@/components/publication/PublicationForm';
-import Profile from '../../profile/Profile'
+import Profile from './profile/ProfileHeader'
 import { usePage } from "@inertiajs/react";
 import SearchHeader from "./search/SearchHeader";
+import PublicationHeader from "./PublicationHeader";
 
 
 function HomeHeader() {
@@ -61,39 +59,13 @@ function HeaderAction() {
   return (
     <div className='flex items-center gap-4'>
       <SearchHeader />
-      <HeaderActionPublication isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
+      <PublicationHeader isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
       <HeaderActionNotifications />
       {/* <HeaderActionProfile /> */}
 
       <Profile  />
     </div>
   )
-};
-
-interface HeaderActionPublicationProps {
-  isOpenModal: boolean;
-  setIsOpenModal: Dispatch<SetStateAction<boolean>>;
-};
-
-function HeaderActionPublication({ isOpenModal, setIsOpenModal }: HeaderActionPublicationProps) {
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className='border rounded-md border-gray-200 dark:border-gray-700'>
-            <HiOutlinePlus
-              className='h-8 w-8 cursor-pointer text-gray-600 dark:text-gray-200'
-              onClick={() => setIsOpenModal(true)}
-            />
-          </div>
-        </TooltipTrigger>
-
-        <TooltipContent>Crear publicación</TooltipContent>
-      </Tooltip>
-
-      <PublicationForm open={isOpenModal} setOpen={setIsOpenModal} />
-    </>
-  );
 };
 
 function HeaderActionNotifications() {
