@@ -1,4 +1,4 @@
-import { HeaderHome } from '@/components/header';
+import HomeHeader from '../components/HomeHeader';
 import { SidebarLeft, SidebarRight } from '@/components/sidebar';
 import { usePage, router } from '@inertiajs/react';
 import { PropsWithChildren, useEffect } from 'react'
@@ -29,7 +29,7 @@ function HomeLayout({ children }: PropsWithChildren) {
 
   return (
     <div className='flex flex-col h-screen'>
-        <HeaderHome />
+        <HomeHeader />
 
         <div className='flex flex-1 overflow-hidden'>
             <SidebarLeft />
