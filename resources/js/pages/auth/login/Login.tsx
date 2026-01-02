@@ -14,7 +14,7 @@ import { LoaderCircle } from "lucide-react";
 interface LoginProps {
   status?: string;
   canResetPassword?: boolean;
-}
+};
 
 function Login({ status, canResetPassword }: LoginProps) {
   return (
@@ -33,7 +33,7 @@ function Login({ status, canResetPassword }: LoginProps) {
           <>
             <div className="grid gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email">Correo electrónico</Label>
 
                 <Input
                   id="email"
@@ -51,7 +51,7 @@ function Login({ status, canResetPassword }: LoginProps) {
 
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Contraseña</Label>
 
                   {canResetPassword && (
                     <TextLink
@@ -59,7 +59,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                       className="ml-auto text-sm"
                       tabIndex={5}
                     >
-                      Forgot password?
+                      ¿Olvidaste tu contraseña?
                     </TextLink>
                   )}
                 </div>
@@ -71,7 +71,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                   required
                   tabIndex={2}
                   autoComplete="current-password"
-                  placeholder="Password"
+                  placeholder="**********"
                 />
 
                 <InputError message={errors.password} />
@@ -84,7 +84,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                   tabIndex={3}
                 />
 
-                <Label htmlFor="remember">Remember me</Label>
+                <Label htmlFor="remember">Recuérdame</Label>
               </div>
 
               <Button
@@ -98,15 +98,15 @@ function Login({ status, canResetPassword }: LoginProps) {
                   <LoaderCircle className="h-4 w-4 animate-spin" />
                 )}
 
-                Log in
+                Iniciar sesión
               </Button>
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              ¿No tienes una cuenta?{' '}
 
               <TextLink href={register()} tabIndex={5}>
-                Sign up
+                Regístrate
               </TextLink>
             </div>
           </>
