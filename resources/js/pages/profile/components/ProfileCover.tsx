@@ -1,35 +1,18 @@
-import ProfileController from '@/actions/App/Http/Controllers/user/ProfileController';
 import { router } from '@inertiajs/react';
-import React, { ChangeEvent, useState } from 'react'
 import { RiImageEditLine } from 'react-icons/ri';
-import ImageUploadModal from '../ImageUploadModal';
+import ProfileImageUploadModal from './modals/ProfileImageUploadModal';
+import { useImageUpload } from '@/hooks/useImageUpload';
+import ProfileController from '@/actions/App/Http/Controllers/user/ProfileController';
 
 interface ProfileCoverProps {
   profilePicture?: string;
 };
 
 function ProfileCover({ profilePicture }: ProfileCoverProps) {
-  const [isHover, setIsHover] = useState<boolean>(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  
-  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    if (file) {
-      setImageFile(file);
-      setImageUrl(URL.createObjectURL(file));
-      setIsModalOpen(true);
-    }
-  };
-
-  const onClose = () => {
-    setIsModalOpen(false);
-    setImageUrl(null);
-    setImageFile(null);
-    setIsHover(false);
-  };
+  const {
+    isHover, isModalOpen, imageFile, imageUrl, 
+    onClose, setIsHover, handleFileUpload
+  } = useImageUpload();
   
   const handleImageUpload = () => {
     if (!imageFile) return;
@@ -75,7 +58,7 @@ function ProfileCover({ profilePicture }: ProfileCoverProps) {
       />
 
       {isModalOpen && imageUrl && (
-        <ImageUploadModal
+        <ProfileImageUploadModal
           type="cover"
           preview={imageUrl} 
           onClose={onClose} 
