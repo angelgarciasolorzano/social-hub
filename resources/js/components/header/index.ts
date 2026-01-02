@@ -1,1 +1,0 @@
-export { default as HeaderHome } from "./home/Header";
