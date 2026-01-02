@@ -4,7 +4,7 @@ import React from 'react'
 import { menuItems } from './items'
 import { Link } from '@inertiajs/react'
 import { useModal } from '@/hooks/useModal'
-import ProfileModal from '../../../../profile/components/ProfileModal'
+import ProfileModal from '../../../../profile/components/modals/ProfileModal'
 
 function ProfileHeader() {
   const {open, setOpen} = useModal();
