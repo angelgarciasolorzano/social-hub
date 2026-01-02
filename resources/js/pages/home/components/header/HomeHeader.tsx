@@ -1,17 +1,14 @@
-import { IoIosNotificationsOutline } from "react-icons/io";
-
-
 import { useModal} from "@/hooks/useModal";
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { SharedData } from '@/types';
 
 import { useEchoNotification } from "@laravel/echo-react";
 import { toast } from 'sonner';
-import Profile from './profile/ProfileHeader'
 import { usePage } from "@inertiajs/react";
 import SearchHeader from "./search/SearchHeader";
 import PublicationHeader from "./PublicationHeader";
+import NotificationsHeader from "./NotificationsHeader";
+import ProfileHeader from "./profile/ProfileHeader";
 
 
 function HomeHeader() {
@@ -60,27 +57,9 @@ function HeaderAction() {
     <div className='flex items-center gap-4'>
       <SearchHeader />
       <PublicationHeader isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
-      <HeaderActionNotifications />
-      {/* <HeaderActionProfile /> */}
-
-      <Profile  />
+      <NotificationsHeader />
+      <ProfileHeader  />
     </div>
-  )
-};
-
-function HeaderActionNotifications() {
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <IoIosNotificationsOutline className='w-8 h-8 cursor-pointer text-gray-600' />
-        </TooltipTrigger>
-
-        <TooltipContent>
-          Notificaciones
-        </TooltipContent>
-      </Tooltip>
-    </>
   )
 };
 

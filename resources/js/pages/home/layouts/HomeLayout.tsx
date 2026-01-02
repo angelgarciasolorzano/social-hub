@@ -1,4 +1,4 @@
-import HomeHeader from '../components/HomeHeader';
+import HomeHeader from '../components/header/HomeHeader';
 import { SidebarLeft, SidebarRight } from '@/components/sidebar';
 import { usePage, router } from '@inertiajs/react';
 import { PropsWithChildren, useEffect } from 'react'
