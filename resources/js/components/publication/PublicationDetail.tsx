@@ -2,12 +2,21 @@ import { Post, SharedData } from '@/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { RiTimeZoneLine } from "react-icons/ri";
 
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/es';
+
+dayjs.extend(relativeTime);
+dayjs.locale('es');
+
 interface PublicationDetailProps {
   user: SharedData["user"];
   post: Omit<Post, 'comments'>;
 };
 
 function PublicationDetail({ user, post }: PublicationDetailProps) {
+  const createdAt = dayjs(post.createdAt);
+
   return (
     <article className='grid gap-2'>
       <header className='flex items-center gap-3'>
@@ -30,7 +39,7 @@ function PublicationDetail({ user, post }: PublicationDetailProps) {
 
           <time className='flex items-center gap-1 text-gray-500 text-xs dark:text-gray-400'>
             <RiTimeZoneLine className='w-4 h-4 text-gray-600 dark:text-gray-500' />
-            {post.createdAt}
+            {createdAt.fromNow()} - {createdAt.format('D [de] MMMM [del] YYYY')}
           </time>
         </div>
       </header>

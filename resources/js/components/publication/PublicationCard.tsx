@@ -6,22 +6,30 @@ import { Separator } from '../ui/separator';
 import { FaRegHeart } from "react-icons/fa6";
 import { FaRegComment } from "react-icons/fa";
 import CommentModal from '../comment/CommentModal';
-import { Post, SharedData } from '@/types';
+import { Post, User } from '@/types';
+
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/es';
+
+dayjs.extend(relativeTime);
+dayjs.locale('es');
 
 interface PublicacionCardProps {
   post: Post;
-  user: SharedData["user"];
+  user: User;
 };
 
 function PublicationCard({ post, user }: PublicacionCardProps) {
   const { comments, ...postDetail } = post;
+  const createdAt = dayjs(post.createdAt);
 
   return (
     <article className='grid gap-2 border rounded-lg shadow-md p-3 dark:border-gray-700'>
       <header className='flex items-center gap-3'>
         <Avatar>
           <AvatarImage 
-            src='https://picsum.photos/200'
+            src={user.avatar ?? 'https://avatars.dicebear.com/api/initials/1.svg'}
             alt='Foto de perfil'
           />
 
@@ -41,7 +49,7 @@ function PublicationCard({ post, user }: PublicacionCardProps) {
 
           <time className='flex items-center gap-1 text-gray-500 text-xs dark:text-gray-400'>
             <RiTimeZoneLine className='w-4 h-4 text-gray-600 dark:text-gray-500' />
-            12 de agosto de 2022
+            {createdAt.fromNow()} - {createdAt.format('D [de] MMMM [del] YYYY')}
           </time>
         </div>
       </header>
