@@ -1,35 +1,40 @@
+import { Form, Head } from "@inertiajs/react";
+
+import { LoaderCircle } from "lucide-react";
+
 import AuthenticatedSessionController from "@/actions/App/Auth/Login/Controllers/AuthenticatedSessionController";
+
+import { register } from "@/routes";
+import { request } from "@/routes/password";
+
 import InputError from "@/components/form/InputError";
 import TextLink from "@/components/TextLink";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import AuthLayout from "@/layouts/auth-layout";
-import { register } from "@/routes";
-import { request } from "@/routes/password";
-import { Form, Head } from "@inertiajs/react";
-import { LoaderCircle } from "lucide-react";
+
+import AuthCardLayout from "../layouts/AuthCardLayout";
 
 interface LoginProps {
   status?: string;
   canResetPassword?: boolean;
-};
+}
 
 function Login({ status, canResetPassword }: LoginProps) {
   return (
-    <AuthLayout 
-      title="Inicia sesión en tu cuenta" 
+    <AuthCardLayout
+      title="Inicia sesión en tu cuenta"
       description="Ingrese su correo electrónico y contraseña a continuación para iniciar sesión"
     >
       <Head title="Inicia sesión" />
-      
+
       <Form
         {...AuthenticatedSessionController.store.form()}
         resetOnSuccess={["password"]}
         className="flex flex-col gap-6"
       >
-        {({ processing, errors}) => (
+        {({ processing, errors }) => (
           <>
             <div className="grid gap-6">
               <div className="grid gap-2">
@@ -54,11 +59,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                   <Label htmlFor="password">Contraseña</Label>
 
                   {canResetPassword && (
-                    <TextLink
-                      href={request()}
-                      className="ml-auto text-sm"
-                      tabIndex={5}
-                    >
+                    <TextLink href={request()} className="ml-auto text-sm" tabIndex={5}>
                       ¿Olvidaste tu contraseña?
                     </TextLink>
                   )}
@@ -78,11 +79,7 @@ function Login({ status, canResetPassword }: LoginProps) {
               </div>
 
               <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="remember"
-                  name="remember"
-                  tabIndex={3}
-                />
+                <Checkbox id="remember" name="remember" tabIndex={3} />
 
                 <Label htmlFor="remember">Recuérdame</Label>
               </div>
@@ -94,17 +91,13 @@ function Login({ status, canResetPassword }: LoginProps) {
                 disabled={processing}
                 data-test="login-button"
               >
-                {processing && (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                )}
-
+                {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                 Iniciar sesión
               </Button>
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-              ¿No tienes una cuenta?{' '}
-
+              ¿No tienes una cuenta?{" "}
               <TextLink href={register()} tabIndex={5}>
                 Regístrate
               </TextLink>
@@ -114,12 +107,10 @@ function Login({ status, canResetPassword }: LoginProps) {
       </Form>
 
       {status && (
-        <div className="mb-4 text-center text-sm font-medium text-green-600">
-          {status}
-        </div>
+        <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>
       )}
-    </AuthLayout>
-  )
+    </AuthCardLayout>
+  );
 }
 
 export default Login;

@@ -1,31 +1,33 @@
-import PasswordResetLinkController from '@/actions/App/Auth/Password/Controllers/PasswordResetLinkController';
-import { login } from '@/routes';
-import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Form, Head } from "@inertiajs/react";
 
-import InputError from '@/components/form/InputError';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/auth-layout';
+import { LoaderCircle } from "lucide-react";
+
+import PasswordResetLinkController from "@/actions/App/Auth/Password/Controllers/PasswordResetLinkController";
+
+import { login } from "@/routes";
+
+import InputError from "@/components/form/InputError";
+import TextLink from "@/components/text-link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import AuthCardLayout from "../layouts/AuthCardLayout";
 
 interface ForgotPasswordProps {
   status?: string;
-};
+}
 
 function ForgotPassword({ status }: ForgotPasswordProps) {
   return (
-    <AuthLayout
+    <AuthCardLayout
       title="Restablecer la contraseña"
       description="Ingrese su correo electrónico para recibir un enlace para restablecer la contraseña"
     >
       <Head title="Restablecer contraseña" />
 
       {status && (
-        <div className="mb-4 text-center text-sm font-medium text-green-600">
-          {status}
-        </div>
+        <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>
       )}
 
       <div className="space-y-6">
@@ -53,10 +55,7 @@ function ForgotPassword({ status }: ForgotPasswordProps) {
                   disabled={processing}
                   data-test="email-password-reset-link-button"
                 >
-                  {processing && (
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                  )}
-
+                  {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                   Enviar enlace para restablecer la contraseña
                 </Button>
               </div>
@@ -70,7 +69,7 @@ function ForgotPassword({ status }: ForgotPasswordProps) {
           <TextLink href={login()}>iniciar sesión</TextLink>
         </div>
       </div>
-    </AuthLayout>
+    </AuthCardLayout>
   );
 }
 
