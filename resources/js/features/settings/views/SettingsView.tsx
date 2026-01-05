@@ -1,5 +1,6 @@
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
 import Appearance from "./Appearance";
+import Password from "./Password";
 
 interface SettingsViewProps {
   active: SettingLabelSidebar;
@@ -13,7 +14,7 @@ function SettingsView({ active }: SettingsViewProps) {
           case SettingLabelSidebar.Perfil:
             return <div>Perfil View</div>;
           case SettingLabelSidebar.Contraseña:
-            return <div>Contraseña View</div>;
+            return <Password />;
           case SettingLabelSidebar.TwoFactor:
             return <div>Two Factor Authentication View</div>;
           case SettingLabelSidebar.Apariencia:

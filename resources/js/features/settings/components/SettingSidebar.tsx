@@ -17,11 +17,11 @@ function SettingsSidebar({ active, setActive }: SettingsSidebarProps) {
           {settingSidebarItems.map((item, index) => (
             <li key={index}>
               <Button
-                variant={active === item.label ? "default" : "ghost"}
                 className="w-full cursor-pointer justify-start focus-visible:ring-0"
                 onClick={() => setActive(item.label)}
+                variant={active === item.label ? "default" : "ghost"}
               >
-                <item.icon className="mr-2 inline-block" />
+                <item.icon />
                 {item.label}
               </Button>
             </li>

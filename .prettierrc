@@ -7,7 +7,11 @@
   "trailingComma": "all",
   "htmlWhitespaceSensitivity": "css",
   "printWidth": 100,
-  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
+  "plugins": [
+    "@trivago/prettier-plugin-sort-imports",
+    "prettier-plugin-tailwindcss",
+    "@xeonlink/prettier-plugin-organize-attributes"
+  ],
   "importOrder": [
     "^react$",
     "^@inertiajs/react$",
@@ -21,6 +25,17 @@
     "^@/utils(.*)$",
     "^@/types(.*)$",
     "^[./]"
+  ],
+  "attributeSort": "ASC",
+  "attributeGroups": [
+    "^id$",
+    "^name$",
+    "^type$",
+    "^autoComplete$",
+    "^aria-",
+    "^class(Name)?$",
+    "^on[A-Z]",
+    "$DEFAULT"
   ],
   "importOrderSeparation": true,
   "importOrderCaseInsensitive": true,
