@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 
 import {
   Dialog,
@@ -9,14 +9,18 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
-import SettingsSidebar from "./components/SettingSidebar";
+import SettingSidebar from "./components/SettingSidebar";
+import { SettingLabelSidebar } from "./data/settingsSidebarItems";
+import Appearance from "./views/Appearance";
 
 interface SettingsModalProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function SettingModal({ open, setOpen }: SettingsModalProps) {
+function SettingsModal({ open, setOpen }: SettingsModalProps) {
+  const [active, setActive] = useState<SettingLabelSidebar>("Perfil");
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="mx-w-[80%] flex h-[80%] min-w-[65%] flex-col overflow-hidden">
@@ -28,11 +32,14 @@ function SettingModal({ open, setOpen }: SettingsModalProps) {
 
         <Separator />
 
-        {/* <div>Contenido de configuración va aquí</div> */}
-        <SettingsSidebar />
+        <div className="flex h-full">
+          <SettingSidebar active={active} setActive={setActive} />
+
+          <main>{active === "Apariencia" && <Appearance />}</main>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-export default SettingModal;
+export default SettingsModal;

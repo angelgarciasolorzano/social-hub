@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { Dispatch, SetStateAction } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { settingSidebarItems } from "../data/settingSidebarItems";
+import { SettingLabelSidebar, settingSidebarItems } from "../data/settingsSidebarItems";
 
-function SettingSidebar() {
-  const [active, setActive] = useState<string>("Perfil");
+interface SettingsSidebarProps {
+  active: SettingLabelSidebar;
+  setActive: Dispatch<SetStateAction<SettingLabelSidebar>>;
+}
 
+function SettingsSidebar({ active, setActive }: SettingsSidebarProps) {
   return (
     <aside className="flex h-full w-60 flex-col items-center border-r">
       <nav className="w-full pr-2">
@@ -29,4 +32,4 @@ function SettingSidebar() {
   );
 }
 
-export default SettingSidebar;
+export default SettingsSidebar;
