@@ -1,6 +1,7 @@
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
 import Appearance from "./Appearance";
 import Password from "./Password";
+import ProfileEdit from "./ProfileEdit";
 
 interface SettingsViewProps {
   active: SettingLabelSidebar;
@@ -8,11 +9,11 @@ interface SettingsViewProps {
 
 function SettingsView({ active }: SettingsViewProps) {
   return (
-    <main className="flex-1">
+    <main className="mt-4 flex-1">
       {(() => {
         switch (active) {
           case SettingLabelSidebar.Perfil:
-            return <div>Perfil View</div>;
+            return <ProfileEdit />;
           case SettingLabelSidebar.Contraseña:
             return <Password />;
           case SettingLabelSidebar.TwoFactor:

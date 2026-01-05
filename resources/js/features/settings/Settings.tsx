@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
-import SettingSidebar from "./components/SettingSidebar";
-import SettingViewHeader from "./components/SettingViewHeader";
+import SettingsSidebar from "./components/SettingsSidebar";
+import SettingsViewFooter from "./components/SettingsViewFooter";
+import SettingsViewHeader from "./components/SettingsViewHeader";
 import { SettingLabelSidebar } from "./data/settingsSidebarItems";
 import SettingsView from "./views/SettingsView";
 
@@ -23,7 +24,7 @@ function Settings({ open, setOpen }: SettingsModalProps) {
   const [active, setActive] = useState<SettingLabelSidebar>(SettingLabelSidebar.Perfil);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogContent className="mx-w-[80%] flex h-[80%] min-w-[65%] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Configuracion</DialogTitle>
@@ -46,13 +47,15 @@ interface SettingsBodyProps {
 
 function SettingsBody({ active, setActive }: SettingsBodyProps) {
   return (
-    <div className="flex h-full">
-      <SettingSidebar active={active} setActive={setActive} />
+    <div className="flex h-full min-h-0">
+      <SettingsSidebar active={active} setActive={setActive} />
 
-      <div className="flex flex-1 flex-col gap-2.5 px-4">
-        <SettingViewHeader active={active} />
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4">
+        <SettingsViewHeader active={active} />
 
         <SettingsView active={active} />
+
+        <SettingsViewFooter active={active} />
       </div>
     </div>
   );

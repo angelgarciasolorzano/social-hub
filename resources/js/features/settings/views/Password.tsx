@@ -17,7 +17,7 @@ export default function Password() {
   const currentPasswordInput = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="mt-4 space-y-6">
+    <div className="space-y-6">
       <Form
         {...PasswordController.update.form()}
         className="space-y-6"
