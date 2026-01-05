@@ -32,6 +32,8 @@ export default [
       "prettier/prettier": "warn",
       "sort-imports": "off",
       "import/order": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "error",
       "import/no-duplicates": "error",
       "import/newline-after-import": "warn",
       "import/named": "error",
