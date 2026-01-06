@@ -1,6 +1,6 @@
 import { IconType } from "react-icons";
-import { FaUserLock, FaUserShield } from "react-icons/fa6";
-import { LuCircleUser, LuMonitorSmartphone } from "react-icons/lu";
+import { FaCircleUser, FaUserLock, FaUserShield } from "react-icons/fa6";
+import { LuMonitorSmartphone } from "react-icons/lu";
 
 import { SettingLabelSidebar } from "./settingsSidebarItems";
 
@@ -14,7 +14,7 @@ export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> =
   [SettingLabelSidebar.Perfil]: {
     label: "Información de perfil",
     description: "Configura tu información personal.",
-    icon: LuCircleUser,
+    icon: FaCircleUser,
   },
   [SettingLabelSidebar.Contraseña]: {
     label: "Contraseña",
