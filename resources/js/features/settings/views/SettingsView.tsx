@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
 import Appearance from "./Appearance";
 import Password from "./Password";
@@ -10,7 +12,7 @@ interface SettingsViewProps {
 
 function SettingsView({ active }: SettingsViewProps) {
   return (
-    <main className="my-4 flex-1">
+    <main className={cn("my-4 flex-1", active !== SettingLabelSidebar.TwoFactor ? "my-4" : "my-1")}>
       {(() => {
         switch (active) {
           case SettingLabelSidebar.Perfil:

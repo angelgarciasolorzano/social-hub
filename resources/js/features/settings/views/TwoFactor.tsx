@@ -9,7 +9,6 @@ import ConfirmedPasswordStatusController from "@/actions/Laravel/Fortify/Http/Co
 import { disable, enable } from "@/routes/two-factor";
 
 import { TwoFactorRecoveryCodes, TwoFactorSetupModal } from "@/components/twoFactor";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { useTwoFactorAuth } from "@/hooks/use-two-factor-auth";
@@ -62,8 +61,6 @@ export default function TwoFactor() {
     <div className="space-y-6">
       {twoFactorEnabled ? (
         <div className="flex flex-col items-start justify-start space-y-4">
-          <Badge variant="default">Enabled</Badge>
-
           <p className="text-muted-foreground">
             Con la autenticación de dos factores habilitada, se le solicitará un PIN aleatorio y
             seguro durante el inicio de sesión, que puede recuperar desde la aplicación compatible
@@ -79,7 +76,11 @@ export default function TwoFactor() {
           <div className="relative inline">
             <Form {...disable.form()}>
               {({ processing }) => (
-                <Button type="submit" disabled={processing} variant="destructive">
+                <Button
+                  type="submit"
+                  className="cursor-pointer bg-destructive hover:bg-destructive/90 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+                  disabled={processing}
+                >
                   <ShieldBan /> Deshabilitar 2FA
                 </Button>
               )}
@@ -88,8 +89,6 @@ export default function TwoFactor() {
         </div>
       ) : (
         <div className="flex flex-col items-start justify-start space-y-4">
-          <Badge variant="destructive">Disabled</Badge>
-
           <p className="text-muted-foreground">
             Al activar la autenticación de dos factores, se le solicitará un PIN seguro al iniciar
             sesión. Puede obtener este PIN desde una aplicación compatible con TOTP en su teléfono.
@@ -97,12 +96,12 @@ export default function TwoFactor() {
 
           <div>
             {hasSetupData ? (
-              <Button onClick={() => setShowSetupModal(true)}>
+              <Button className="cursor-pointer" onClick={() => setShowSetupModal(true)}>
                 <ShieldCheck />
                 Continuar configuración
               </Button>
             ) : (
-              <Button onClick={() => handleEnable2FA()}>
+              <Button className="cursor-pointer" onClick={() => handleEnable2FA()}>
                 <ShieldCheck />
                 Enable 2FA
               </Button>

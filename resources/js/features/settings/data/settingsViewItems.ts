@@ -8,6 +8,7 @@ interface SettingsViewItems {
   label: string;
   description: string;
   icon: IconType;
+  headerAddon?: boolean;
 }
 
 export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> = {
@@ -15,6 +16,7 @@ export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> =
     label: "Información de perfil",
     description: "Configura tu información personal.",
     icon: FaCircleUser,
+    headerAddon: true,
   },
   [SettingLabelSidebar.Contraseña]: {
     label: "Contraseña",
@@ -25,6 +27,7 @@ export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> =
     label: "Two Factor Authentication",
     description: "Añade una capa extra de seguridad a tu cuenta.",
     icon: FaUserShield,
+    headerAddon: true,
   },
   [SettingLabelSidebar.Apariencia]: {
     label: "Apariencia",

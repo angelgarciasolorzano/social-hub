@@ -43,7 +43,7 @@ export default function Password() {
                 Current password
               </LabelForm>
 
-              <InputGroup className="dark:has-[[data-slot][aria-invalid=true]]:border-red-500">
+              <InputGroup className="dark:has-[[data-slot][aria-invalid=true]]:border-red-600">
                 <InputGroupInput
                   id="current_password"
                   name="current_password"
@@ -67,7 +67,7 @@ export default function Password() {
                 New password
               </LabelForm>
 
-              <InputGroup className="dark:has-[[data-slot][aria-invalid=true]]:border-red-500">
+              <InputGroup className="dark:has-[[data-slot][aria-invalid=true]]:border-red-600">
                 <InputGroupInput
                   id="password"
                   name="password"
@@ -91,7 +91,7 @@ export default function Password() {
                 Confirm password
               </LabelForm>
 
-              <InputGroup className="dark:has-[[data-slot][aria-invalid=true]]:border-red-500">
+              <InputGroup className="dark:has-[[data-slot][aria-invalid=true]]:border-red-600">
                 <InputGroupInput
                   id="password_confirmation"
                   name="password_confirmation"
