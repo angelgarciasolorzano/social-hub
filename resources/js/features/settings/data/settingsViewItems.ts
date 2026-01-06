@@ -12,13 +12,13 @@ interface SettingsViewItems {
 }
 
 export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> = {
-  [SettingLabelSidebar.Perfil]: {
+  [SettingLabelSidebar.Profile]: {
     label: "Información de perfil",
     description: "Configura tu información personal.",
     icon: FaCircleUser,
     headerAddon: true,
   },
-  [SettingLabelSidebar.Contraseña]: {
+  [SettingLabelSidebar.Password]: {
     label: "Contraseña",
     description: "Cambia tu contraseña para mantener tu cuenta segura.",
     icon: FaUserLock,
@@ -29,7 +29,7 @@ export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> =
     icon: FaUserShield,
     headerAddon: true,
   },
-  [SettingLabelSidebar.Apariencia]: {
+  [SettingLabelSidebar.Appearance]: {
     label: "Apariencia",
     description: "Personaliza el tema y la apariencia de la aplicación.",
     icon: LuMonitorSmartphone,

@@ -3,10 +3,10 @@ import { LuUserRoundCog } from "react-icons/lu";
 import { MdLockOutline, MdMonitor, MdOutlineSecurity } from "react-icons/md";
 
 export enum SettingLabelSidebar {
-  Perfil = "Perfil",
-  Contraseña = "Contraseña",
+  Profile = "Perfil",
+  Password = "Contraseña",
   TwoFactor = "Two Factor Authentication",
-  Apariencia = "Apariencia",
+  Appearance = "Apariencia",
 }
 
 interface SettingItemSidebar {
@@ -16,11 +16,11 @@ interface SettingItemSidebar {
 
 export const settingSidebarItems: SettingItemSidebar[] = [
   {
-    label: SettingLabelSidebar.Perfil,
+    label: SettingLabelSidebar.Profile,
     icon: LuUserRoundCog,
   },
   {
-    label: SettingLabelSidebar.Contraseña,
+    label: SettingLabelSidebar.Password,
     icon: MdLockOutline,
   },
   {
@@ -28,7 +28,7 @@ export const settingSidebarItems: SettingItemSidebar[] = [
     icon: MdOutlineSecurity,
   },
   {
-    label: SettingLabelSidebar.Apariencia,
+    label: SettingLabelSidebar.Appearance,
     icon: MdMonitor,
   },
 ];

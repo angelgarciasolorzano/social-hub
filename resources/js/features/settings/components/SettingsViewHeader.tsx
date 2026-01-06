@@ -43,7 +43,7 @@ function SettingsViewHeaderAddon({ active }: SettingsViewHeaderAddonProps) {
     <>
       {(() => {
         switch (active) {
-          case SettingLabelSidebar.Perfil:
+          case SettingLabelSidebar.Profile:
             return <DeleteUser />;
           case SettingLabelSidebar.TwoFactor:
             return (

@@ -21,7 +21,7 @@ interface SettingsModalProps {
 }
 
 function Settings({ open, setOpen }: SettingsModalProps) {
-  const [active, setActive] = useState<SettingLabelSidebar>(SettingLabelSidebar.Perfil);
+  const [active, setActive] = useState<SettingLabelSidebar>(SettingLabelSidebar.Profile);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
