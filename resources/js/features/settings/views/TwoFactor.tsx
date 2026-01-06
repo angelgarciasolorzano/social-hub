@@ -1,12 +1,14 @@
 import { useState } from "react";
 
-import { Form, usePage } from "@inertiajs/react";
+import { Form, router, usePage } from "@inertiajs/react";
 
 import { ShieldBan, ShieldCheck } from "lucide-react";
 
+import ConfirmedPasswordStatusController from "@/actions/Laravel/Fortify/Http/Controllers/ConfirmedPasswordStatusController";
+
 import { disable, enable } from "@/routes/two-factor";
 
-import HeadingSmall from "@/components/header/heading-small";
+import ConfirmPassword from "@/components/ConfirmPassword";
 import { TwoFactorRecoveryCodes, TwoFactorSetupModal } from "@/components/twoFactor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,21 +33,40 @@ export default function TwoFactor() {
   } = useTwoFactorAuth();
 
   const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
+
+  const handleEnable2FA = async () => {
+    const response = await fetch(ConfirmedPasswordStatusController.show.url(), {
+      headers: { Accept: "application/json" },
+    });
+
+    const data = await response.json();
+
+    if (data.confirmed) {
+      router.post(
+        enable.url(),
+        {},
+        {
+          onSuccess: () => {
+            setShowSetupModal(true);
+          },
+        },
+      );
+    } else {
+      setShowConfirmationModal(true);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <HeadingSmall
-        description="Manage your two-factor authentication settings"
-        title="Two-Factor Authentication"
-      />
-
       {twoFactorEnabled ? (
         <div className="flex flex-col items-start justify-start space-y-4">
           <Badge variant="default">Enabled</Badge>
 
           <p className="text-muted-foreground">
-            With two-factor authentication enabled, you will be prompted for a secure, random pin
-            during login, which you can retrieve from the TOTP-supported application on your phone.
+            Con la autenticación de dos factores habilitada, se le solicitará un PIN aleatorio y
+            seguro durante el inicio de sesión, que puede recuperar desde la aplicación compatible
+            con TOTP en su teléfono.
           </p>
 
           <TwoFactorRecoveryCodes
@@ -69,28 +90,32 @@ export default function TwoFactor() {
           <Badge variant="destructive">Disabled</Badge>
 
           <p className="text-muted-foreground">
-            When you enable two-factor authentication, you will be prompted for a secure pin during
-            login. This pin can be retrieved from a TOTP-supported application on your phone.
+            Al activar la autenticación de dos factores, se le solicitará un PIN seguro al iniciar
+            sesión. Puede obtener este PIN desde una aplicación compatible con TOTP en su teléfono.
           </p>
 
           <div>
             {hasSetupData ? (
               <Button onClick={() => setShowSetupModal(true)}>
                 <ShieldCheck />
-                Continue Setup
+                Continuar configuración
               </Button>
             ) : (
-              <Form {...enable.form()} onSuccess={() => setShowSetupModal(true)}>
-                {({ processing }) => (
-                  <Button type="submit" disabled={processing}>
-                    <ShieldCheck />
-                    Enable 2FA
-                  </Button>
-                )}
-              </Form>
+              <Button onClick={() => handleEnable2FA()}>
+                <ShieldCheck />
+                Enable 2FA
+              </Button>
             )}
           </div>
         </div>
+      )}
+
+      {showConfirmationModal && (
+        <ConfirmPassword
+          onConfirmed={handleEnable2FA}
+          open={showConfirmationModal}
+          setOpen={setShowConfirmationModal}
+        />
       )}
 
       <TwoFactorSetupModal
