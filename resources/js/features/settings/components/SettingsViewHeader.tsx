@@ -8,7 +8,7 @@ interface SettingViewHeaderProps {
 function SettingsViewHeader({ active }: SettingViewHeaderProps) {
   const Icon = settingsViewItems[active].icon;
   return (
-    <header className="space-y-2 rounded-md border p-3">
+    <header className="space-y-2 rounded-md border p-3 shadow-xs">
       <h2 className="flex gap-2 text-lg leading-none font-semibold text-primary">
         <Icon />
 

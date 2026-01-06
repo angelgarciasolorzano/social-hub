@@ -12,8 +12,14 @@ import InputError from "@/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "./ui/input-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "./../../../components/ui/input-group";
 
 interface ConfirmPasswordProps {
   open: boolean;

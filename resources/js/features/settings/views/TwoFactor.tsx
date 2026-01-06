@@ -8,7 +8,6 @@ import ConfirmedPasswordStatusController from "@/actions/Laravel/Fortify/Http/Co
 
 import { disable, enable } from "@/routes/two-factor";
 
-import ConfirmPassword from "@/components/ConfirmPassword";
 import { TwoFactorRecoveryCodes, TwoFactorSetupModal } from "@/components/twoFactor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { useTwoFactorAuth } from "@/hooks/use-two-factor-auth";
 
 import { SharedData } from "@/types";
+
+import ConfirmPassword from "../components/ConfirmPassword";
 
 export default function TwoFactor() {
   const { auth } = usePage<SharedData>().props;
@@ -79,7 +80,7 @@ export default function TwoFactor() {
             <Form {...disable.form()}>
               {({ processing }) => (
                 <Button type="submit" disabled={processing} variant="destructive">
-                  <ShieldBan /> Disable 2FA
+                  <ShieldBan /> Deshabilitar 2FA
                 </Button>
               )}
             </Form>
