@@ -40,11 +40,11 @@ export const usePasswordConfirmation = (active: SettingLabelSidebar) => {
   }, [active]);
 
   return {
-    isPasswordConfirmed,
     isConfirmPasswordModal,
+    isPasswordConfirmed,
     loading,
-    passwordConfirmed,
     openConfirmPasswordModal,
+    passwordConfirmed,
     setIsConfirmPasswordModal,
   };
 };

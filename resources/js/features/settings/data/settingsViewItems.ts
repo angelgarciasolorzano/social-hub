@@ -5,33 +5,33 @@ import { LuMonitorSmartphone } from "react-icons/lu";
 import { SettingLabelSidebar } from "./settingsSidebarItems";
 
 interface SettingsViewItems {
-  label: string;
   description: string;
-  icon: IconType;
   headerAddon?: boolean;
+  icon: IconType;
+  label: string;
 }
 
 export const settingsViewItems: Record<SettingLabelSidebar, SettingsViewItems> = {
-  [SettingLabelSidebar.Profile]: {
-    label: "Información de perfil",
-    description: "Configura tu información personal.",
-    icon: FaCircleUser,
-    headerAddon: true,
-  },
-  [SettingLabelSidebar.Password]: {
-    label: "Contraseña",
-    description: "Cambia tu contraseña para mantener tu cuenta segura.",
-    icon: FaUserLock,
-  },
-  [SettingLabelSidebar.TwoFactor]: {
-    label: "Two Factor Authentication",
-    description: "Añade una capa extra de seguridad a tu cuenta.",
-    icon: FaUserShield,
-    headerAddon: true,
-  },
   [SettingLabelSidebar.Appearance]: {
-    label: "Apariencia",
     description: "Personaliza el tema y la apariencia de la aplicación.",
     icon: LuMonitorSmartphone,
+    label: "Apariencia",
+  },
+  [SettingLabelSidebar.Password]: {
+    description: "Cambia tu contraseña para mantener tu cuenta segura.",
+    icon: FaUserLock,
+    label: "Contraseña",
+  },
+  [SettingLabelSidebar.Profile]: {
+    description: "Configura tu información personal.",
+    headerAddon: true,
+    icon: FaCircleUser,
+    label: "Información de perfil",
+  },
+  [SettingLabelSidebar.TwoFactor]: {
+    description: "Añade una capa extra de seguridad a tu cuenta.",
+    headerAddon: true,
+    icon: FaUserShield,
+    label: "Two Factor Authentication",
   },
 };

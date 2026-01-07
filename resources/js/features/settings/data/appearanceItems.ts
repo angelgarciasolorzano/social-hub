@@ -3,25 +3,25 @@ import { LucideIcon, Monitor, Moon, Sun } from "lucide-react";
 import { Appearance as AppearanceType } from "@/hooks/use-appearance";
 
 interface AppearanceItem {
+  icon: LucideIcon;
   label: string;
   value: AppearanceType;
-  icon: LucideIcon;
 }
 
 export const appearanceItems: AppearanceItem[] = [
   {
-    label: "Light",
     icon: Sun,
+    label: "Light",
     value: "light",
   },
   {
-    label: "Dark",
     icon: Moon,
+    label: "Dark",
     value: "dark",
   },
   {
-    label: "System",
     icon: Monitor,
+    label: "System",
     value: "system",
   },
 ];
