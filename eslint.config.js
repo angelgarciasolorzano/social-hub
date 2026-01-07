@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier/flat";
 import importPlugin from "eslint-plugin-import";
+import perfectionist from "eslint-plugin-perfectionist";
 import prettierPlugin from "eslint-plugin-prettier";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -16,6 +17,7 @@ export default [
     plugins: {
       prettier: prettierPlugin,
       import: importPlugin,
+      perfectionist: perfectionist,
     },
     settings: {
       "import/resolver": {
@@ -39,6 +41,11 @@ export default [
       "import/named": "error",
       "import/default": "error",
       "import/no-unresolved": "error",
+      "perfectionist/sort-enums": "warn",
+      "perfectionist/sort-union-types": "warn",
+      "perfectionist/sort-switch-case": "warn",
+      "perfectionist/sort-interfaces": "warn",
+      "perfectionist/sort-objects": "warn",
     },
   },
   {
@@ -77,6 +84,12 @@ export default [
       "bootstrap/ssr",
       "tailwind.config.js",
       "resources/js/components/ui",
+      "resources/js/actions",
+      "resources/js/routes",
+      "resources/js/wayfinder",
+      "eslint.config.js",
+      "vite.config.js",
+      "tsconfig.json",
     ],
   },
   prettier, // Turn off all rules that might conflict with Prettier
