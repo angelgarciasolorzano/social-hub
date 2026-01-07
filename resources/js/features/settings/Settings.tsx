@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
+import PasswordProtectedView from "./components/PasswordProtectedView";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsViewFooter from "./components/SettingsViewFooter";
 import SettingsViewHeader from "./components/SettingsViewHeader";
@@ -51,11 +52,18 @@ function SettingsBody({ active, setActive }: SettingsBodyProps) {
       <SettingsSidebar active={active} setActive={setActive} />
 
       <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4">
-        <SettingsViewHeader active={active} />
+        <PasswordProtectedView
+          active={active}
+          description="Debes confirmar tu contraseña para gestionar la autenticación de dos factores."
+          requiredFor={SettingLabelSidebar.TwoFactor}
+          title="Two Factor Authentication"
+        >
+          <SettingsViewHeader active={active} />
 
-        <SettingsView active={active} />
+          <SettingsView active={active} />
 
-        <SettingsViewFooter active={active} />
+          <SettingsViewFooter active={active} />
+        </PasswordProtectedView>
       </div>
     </div>
   );

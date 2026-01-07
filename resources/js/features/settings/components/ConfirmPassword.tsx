@@ -24,7 +24,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "./../../../compone
 interface ConfirmPasswordProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
-  onConfirmed: () => void;
+  onConfirmed?: () => void;
 }
 
 export default function ConfirmPassword({ open, setOpen, onConfirmed }: ConfirmPasswordProps) {
@@ -42,7 +42,7 @@ export default function ConfirmPassword({ open, setOpen, onConfirmed }: ConfirmP
           {...store.form()}
           onSuccess={() => {
             setOpen(false);
-            onConfirmed();
+            onConfirmed?.();
           }}
           resetOnSuccess={["password"]}
         >
@@ -71,7 +71,7 @@ export default function ConfirmPassword({ open, setOpen, onConfirmed }: ConfirmP
 
               <div className="flex items-center">
                 <Button
-                  className="w-full"
+                  className="w-full cursor-pointer"
                   data-test="confirm-password-button"
                   disabled={processing}
                 >

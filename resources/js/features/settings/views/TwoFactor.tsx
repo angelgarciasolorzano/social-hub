@@ -4,8 +4,6 @@ import { Form, router, usePage } from "@inertiajs/react";
 
 import { ShieldBan, ShieldCheck } from "lucide-react";
 
-import ConfirmedPasswordStatusController from "@/actions/Laravel/Fortify/Http/Controllers/ConfirmedPasswordStatusController";
-
 import { disable, enable } from "@/routes/two-factor";
 
 import { TwoFactorRecoveryCodes, TwoFactorSetupModal } from "@/components/twoFactor";
@@ -35,26 +33,16 @@ export default function TwoFactor() {
   const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
 
-  const handleEnable2FA = async () => {
-    const response = await fetch(ConfirmedPasswordStatusController.show.url(), {
-      headers: { Accept: "application/json" },
-    });
-
-    const data = await response.json();
-
-    if (data.confirmed) {
-      router.post(
-        enable.url(),
-        {},
-        {
-          onSuccess: () => {
-            setShowSetupModal(true);
-          },
+  const handleEnable2FA = () => {
+    router.post(
+      enable.url(),
+      {},
+      {
+        onSuccess: () => {
+          setShowSetupModal(true);
         },
-      );
-    } else {
-      setShowConfirmationModal(true);
-    }
+      },
+    );
   };
 
   return (
