@@ -7,29 +7,29 @@ import { Badge } from "@/components/ui/badge";
 
 import { SharedData } from "@/types";
 
+import { settingsHeaderItems } from "../data/settingsHeaderItems";
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
-import { settingsViewItems } from "../data/settingsViewItems";
 
 interface SettingViewHeaderProps {
   active: SettingLabelSidebar;
 }
 
 function SettingsViewHeader({ active }: SettingViewHeaderProps) {
-  const Icon = settingsViewItems[active].icon;
+  const Icon = settingsHeaderItems[active].icon;
 
   return (
-    <header className="space-y-2 rounded-md border p-3 shadow-xs">
+    <header className="space-y-2 border-b pb-2">
       <div className="flex items-center justify-between">
         <h2 className="flex gap-2 text-lg leading-none font-semibold text-primary">
           <Icon />
 
-          {settingsViewItems[active].label}
+          {settingsHeaderItems[active].label}
         </h2>
 
         <SettingsViewHeaderAddon active={active} />
       </div>
 
-      <p className="text-sm text-muted-foreground">{settingsViewItems[active].description}</p>
+      <p className="text-sm text-muted-foreground">{settingsHeaderItems[active].description}</p>
     </header>
   );
 }
