@@ -20,7 +20,7 @@ function SettingsViewHeader({ active }: SettingViewHeaderProps) {
   return (
     <header className="space-y-2 border-b pb-2">
       <div className="flex items-center justify-between">
-        <h2 className="flex gap-2 text-lg leading-none font-semibold text-primary">
+        <h2 className="flex gap-2 leading-none font-semibold text-primary">
           <Icon />
 
           {settingsHeaderItems[active].label}
@@ -29,7 +29,7 @@ function SettingsViewHeader({ active }: SettingViewHeaderProps) {
         <SettingsViewHeaderAddon active={active} />
       </div>
 
-      <p className="text-sm text-muted-foreground">{settingsHeaderItems[active].description}</p>
+      <p className="text-xs text-muted-foreground">{settingsHeaderItems[active].description}</p>
     </header>
   );
 }
