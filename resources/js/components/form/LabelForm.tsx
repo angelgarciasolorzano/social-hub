@@ -6,7 +6,7 @@ interface LabelFormProps extends ComponentProps<typeof Label> {
   error?: string;
 }
 
-function LabelForm({ error, className, ...props }: LabelFormProps) {
+function LabelForm({ className, error, ...props }: LabelFormProps) {
   return (
     <Label
       className={`${className ?? ""} ${error ? "text-destructive dark:text-destructive-foreground" : ""}`.trim()}

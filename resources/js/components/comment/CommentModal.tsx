@@ -18,16 +18,16 @@ import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
 
 interface CommentModalProps {
-  user: SharedData["user"];
-  postDetail: Omit<Post, "comments">;
   comments: Comment[];
+  postDetail: Omit<Post, "comments">;
+  user: SharedData["user"];
 }
 
-function CommentModal({ postDetail, comments, user }: CommentModalProps) {
+function CommentModal({ comments, postDetail, user }: CommentModalProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="cursor-pointer">
+        <Button className="cursor-pointer" variant="outline">
           Comentar
         </Button>
       </DialogTrigger>
@@ -47,8 +47,8 @@ function CommentModal({ postDetail, comments, user }: CommentModalProps) {
         <Separator className="dark:bg-gray-700" />
 
         <div className="flex flex-1 gap-4 overflow-hidden">
-          <CommentModalPublication user={user} postDetail={postDetail} />
-          <CommentModalCommentsContent idPost={postDetail.id} comments={comments} />
+          <CommentModalPublication postDetail={postDetail} user={user} />
+          <CommentModalCommentsContent comments={comments} idPost={postDetail.id} />
         </div>
       </DialogContent>
     </Dialog>
@@ -60,7 +60,7 @@ type CommentModalPublicationProps = Omit<CommentModalProps, "comments">;
 function CommentModalPublication({ postDetail, user }: CommentModalPublicationProps) {
   return (
     <div className="h-full w-1/2 overflow-y-auto border-r pr-3 dark:border-r-gray-700">
-      <PublicationDetail user={user} post={postDetail} />
+      <PublicationDetail post={postDetail} user={user} />
     </div>
   );
 }
@@ -69,7 +69,7 @@ type CommentModalCommentsContentProps = Pick<CommentModalProps, "comments"> & {
   idPost: Post["id"];
 };
 
-function CommentModalCommentsContent({ idPost, comments }: CommentModalCommentsContentProps) {
+function CommentModalCommentsContent({ comments, idPost }: CommentModalCommentsContentProps) {
   return (
     <div className="mb-1 flex w-1/2 flex-col gap-2">
       <CommentModalCommentsHeader />

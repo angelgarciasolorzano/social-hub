@@ -1,16 +1,20 @@
-import { Form, router } from '@inertiajs/react';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Loader2Icon } from 'lucide-react';
-import InputError from '../form/InputError';
-import CommentController from '@/actions/App/Http/Controllers/CommentController';
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction } from "react";
+
+import { Form, router } from "@inertiajs/react";
+
+import { Loader2Icon } from "lucide-react";
+
+import CommentController from "@/actions/App/Http/Controllers/CommentController";
+
+import InputError from "../form/InputError";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 interface CommentFormProps {
   commentableId: number;
   commentableType: string;
   setReplyTo?: Dispatch<SetStateAction<number | null>>;
-};
+}
 
 function CommentForm(props: CommentFormProps) {
   const { commentableId, commentableType, setReplyTo } = props;
@@ -18,50 +22,38 @@ function CommentForm(props: CommentFormProps) {
   return (
     <Form
       {...CommentController.store.form()}
-      resetOnSuccess
       onSuccess={() => {
         if (setReplyTo) setReplyTo(null);
         router.reload({
-          only: ['posts'],
-        })
+          only: ["posts"],
+        });
       }}
+      resetOnSuccess
     >
-      {({ processing, errors}) => (
-        <div className='flex items-center justify-center gap-2'>
-          <Input 
-            type='hidden'
-            name='commentable_type'
-            value={commentableType}
-          />
+      {({ errors, processing }) => (
+        <div className="flex items-center justify-center gap-2">
+          <Input name="commentable_type" type="hidden" value={commentableType} />
 
-          <Input
-            type='hidden'
-            name='commentable_id'
-            value={commentableId}
-          />
+          <Input name="commentable_id" type="hidden" value={commentableId} />
 
-          <Input
-            placeholder='Escribe tu comentario'
-            className='w-full'
-            name='content'
-          />
+          <Input name="content" className="w-full" placeholder="Escribe tu comentario" />
 
           <Button>
             {processing ? (
               <>
-                <Loader2Icon className='h-4 w-4 animate-spin' />
+                <Loader2Icon className="h-4 w-4 animate-spin" />
                 Publicando...
               </>
             ) : (
-              'Publicar'
+              "Publicar"
             )}
           </Button>
 
-          <InputError message={errors.content} className='mt-1' />
+          <InputError className="mt-1" message={errors.content} />
         </div>
       )}
     </Form>
-  )
+  );
 }
 
 export default CommentForm;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { Comment } from "@/types";
 
@@ -26,12 +26,12 @@ function CommentList({ comments }: CommentListProps) {
     <div className="flex h-full flex-col gap-4 overflow-y-auto pr-2.5">
       {comments.map((comment) => (
         <CommentItem
-          key={comment.id}
           comment={comment}
+          key={comment.id}
           replyTo={replyTo}
-          showReplies={showReplies}
           setReplyTo={setReplyTo}
           setShowReplies={setShowReplies}
+          showReplies={showReplies}
         />
       ))}
     </div>

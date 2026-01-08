@@ -1,66 +1,64 @@
-import React, { Dispatch, SetStateAction } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Dispatch, SetStateAction } from "react";
+
 import { IoMdTime } from "react-icons/io";
-import { Comment } from '@/types';
-import { cn } from '@/lib/utils';
-import CommentForm from './CommentForm';
+
+import { cn } from "@/lib/utils";
+
+import { Comment } from "@/types";
+
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import CommentForm from "./CommentForm";
 
 interface CommentItemProps {
   comment: Comment;
   isReply?: boolean;
   replyTo: number | null;
-  showReplies: number | null;
   setReplyTo: Dispatch<SetStateAction<number | null>>;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
-};
+  showReplies: number | null;
+}
 
 function CommentItem(props: CommentItemProps) {
-  const { comment, isReply = false, replyTo, showReplies, setReplyTo, setShowReplies } = props;
+  const { comment, isReply = false, replyTo, setReplyTo, setShowReplies, showReplies } = props;
 
   return (
-    <article className={cn(
-      "space-y-1",
-      isReply && "ml-2"
-    )}>
-      <div className={cn(
-        !isReply && "border rounded-md bg-gray-50/50 dark:bg-gray-700/20 dark:border-gray-500/40",
-        "p-2 space-y-1",
-      )}>
-        <header className='flex items-center gap-2'>
+    <article className={cn("space-y-1", isReply && "ml-2")}>
+      <div
+        className={cn(
+          !isReply && "rounded-md border bg-gray-50/50 dark:border-gray-500/40 dark:bg-gray-700/20",
+          "space-y-1 p-2",
+        )}
+      >
+        <header className="flex items-center gap-2">
           <Avatar>
-            <AvatarImage
-              src='https://picsum.photos/200'
-              alt='Foto de perfil'
-            />
+            <AvatarImage alt="Foto de perfil" src="https://picsum.photos/200" />
 
             <AvatarFallback>Foto de perfil</AvatarFallback>
           </Avatar>
 
-          <div className='block'>
-            <p className='font-bold text-sm dark:text-white'>
-              {comment.user.name}
-            </p>
+          <div className="block">
+            <p className="text-sm font-bold dark:text-white">{comment.user.name}</p>
 
-            <time className='text-xs text-gray-500 flex items-center gap-1 dark:text-gray-400'>
-              <IoMdTime className='w-3 h-3 text-gray-600 dark:text-gray-500' />
+            <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <IoMdTime className="h-3 w-3 text-gray-600 dark:text-gray-500" />
               {comment.created_at}
             </time>
           </div>
         </header>
 
         <section>
-          <p className='text-sm text-gray-700 dark:text-gray-300'>{comment.content}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
         </section>
       </div>
 
-      <footer className='flex items-center gap-4 text-xs text-gray-600 font-medium dark:text-gray-400'>
-        <button className='hover:text-red-600 dark:hover:text-red-500 cursor-pointer'>
+      <footer className="flex items-center gap-4 text-xs font-medium text-gray-600 dark:text-gray-400">
+        <button className="cursor-pointer hover:text-red-600 dark:hover:text-red-500">
           Me gusta
         </button>
 
         <button
-          type='button'
-          className='cursor-pointer hover:text-black/80 dark:hover:text-white/80 transition-colors'
+          type="button"
+          className="cursor-pointer transition-colors hover:text-black/80 dark:hover:text-white/80"
           onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
         >
           Responder
@@ -68,41 +66,40 @@ function CommentItem(props: CommentItemProps) {
 
         {comment.replies && comment.replies.length > 0 && (
           <button
-            type='button'
-            className='cursor-pointer hover:text-blue-600 dark:hover:text-blue-500transition-colors'
+            type="button"
+            className="dark:hover:text-blue-500transition-colors cursor-pointer hover:text-blue-600"
             onClick={() => setShowReplies(showReplies === comment.id ? null : comment.id)}
           >
-            {showReplies === comment.id ? 'Ocultar respuestas' : `Mostrar ${comment.replies.length} respuestas`}
+            {showReplies === comment.id
+              ? "Ocultar respuestas"
+              : `Mostrar ${comment.replies.length} respuestas`}
           </button>
         )}
       </footer>
 
       {replyTo === comment.id && (
-        <CommentForm
-          commentableType='comment'
-          commentableId={comment.id}
-          setReplyTo={setReplyTo}
-        />
+        <CommentForm commentableId={comment.id} commentableType="comment" setReplyTo={setReplyTo} />
       )}
 
       {showReplies === comment.id && (
         <>
-          {comment.replies && comment.replies.map((replie) => (
-            <div className='mt-4' key={replie.id} >
-              <CommentItem 
-                comment={replie} 
-                isReply
-                replyTo={replyTo} 
-                showReplies={showReplies} 
-                setReplyTo={setReplyTo} 
-                setShowReplies={setShowReplies}
-              />
-            </div>
-          ))}
+          {comment.replies &&
+            comment.replies.map((replie) => (
+              <div className="mt-4" key={replie.id}>
+                <CommentItem
+                  comment={replie}
+                  isReply
+                  replyTo={replyTo}
+                  setReplyTo={setReplyTo}
+                  setShowReplies={setShowReplies}
+                  showReplies={showReplies}
+                />
+              </div>
+            ))}
         </>
       )}
     </article>
-  )
+  );
 }
 
 export default CommentItem;
