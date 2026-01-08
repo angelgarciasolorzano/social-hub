@@ -2,7 +2,7 @@ import { HTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { useAppearance } from "@/hooks/use-appearance";
+import { useAppearance } from "@/hooks/useAppearance";
 
 import { appearanceItems } from "../data/settingsAppearanceItems";
 

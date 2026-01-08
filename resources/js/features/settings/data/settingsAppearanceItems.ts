@@ -1,6 +1,6 @@
 import { LucideIcon, Monitor, Moon, Sun } from "lucide-react";
 
-import { Appearance as AppearanceType } from "@/hooks/use-appearance";
+import { Appearance as AppearanceType } from "@/hooks/useAppearance";
 
 interface AppearanceItem {
   icon: LucideIcon;

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import { OTP_MAX_LENGTH } from "@/features/settings/hooks/useTwoFactorAuth";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { Check, Copy, Loader2, ScanLine } from "lucide-react";
 
@@ -21,6 +20,7 @@ import {
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 import { useClipboard } from "@/hooks/useClipboard";
+import { OTP_MAX_LENGTH } from "@/hooks/useTwoFactorAuth";
 
 function GridScanIcon() {
   return (
