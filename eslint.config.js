@@ -42,7 +42,6 @@ export default [
       "import/default": "error",
       "import/no-unresolved": "error",
       "perfectionist/sort-enums": "warn",
-      "perfectionist/sort-union-types": "warn",
       "perfectionist/sort-switch-case": "warn",
       "perfectionist/sort-interfaces": "warn",
       "perfectionist/sort-objects": "warn",

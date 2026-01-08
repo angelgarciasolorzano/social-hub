@@ -8,25 +8,25 @@ import ConfirmPassword from "./ConfirmPassword";
 
 interface PasswordProtectedViewProps extends PropsWithChildren {
   active: SettingLabelSidebar;
+  description: string;
   requiredFor: SettingLabelSidebar;
   title: string;
-  description: string;
 }
 
 function PasswordProtectedView({
   active,
-  requiredFor,
   children,
-  title,
   description,
+  requiredFor,
+  title,
 }: PasswordProtectedViewProps) {
   const {
     isConfirmPasswordModal,
     isPasswordConfirmed,
     loading,
-    setIsConfirmPasswordModal,
-    passwordConfirmed,
     openConfirmPasswordModal,
+    passwordConfirmed,
+    setIsConfirmPasswordModal,
   } = usePasswordConfirmation(active);
 
   if (active === requiredFor && !isPasswordConfirmed) {

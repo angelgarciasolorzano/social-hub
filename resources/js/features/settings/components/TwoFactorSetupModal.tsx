@@ -44,11 +44,11 @@ function GridScanIcon() {
 }
 
 function TwoFactorSetupStep({
-  qrCodeSvg,
-  manualSetupKey,
   buttonText,
-  onNextStep,
   errors,
+  manualSetupKey,
+  onNextStep,
+  qrCodeSvg,
 }: {
   qrCodeSvg: string | null;
   manualSetupKey: string | null;
@@ -123,8 +123,8 @@ function TwoFactorSetupStep({
 }
 
 function TwoFactorVerificationStep({
-  onClose,
   onBack,
+  onClose,
 }: {
   onClose: () => void;
   onBack: () => void;
@@ -141,8 +141,8 @@ function TwoFactorVerificationStep({
   return (
     <Form {...confirm.form()} onSuccess={() => onClose()} resetOnError resetOnSuccess>
       {({
-        processing,
         errors,
+        processing,
       }: {
         processing: boolean;
         errors?: { confirmTwoFactorAuthentication?: { code?: string } };
@@ -193,27 +193,27 @@ function TwoFactorVerificationStep({
 }
 
 interface TwoFactorSetupModalProps {
+  clearSetupData: () => void;
+  errors: string[];
+  fetchSetupData: () => Promise<void>;
   isOpen: boolean;
+  manualSetupKey: string | null;
   onClose: () => void;
+  qrCodeSvg: string | null;
   requiresConfirmation: boolean;
   twoFactorEnabled: boolean;
-  qrCodeSvg: string | null;
-  manualSetupKey: string | null;
-  clearSetupData: () => void;
-  fetchSetupData: () => Promise<void>;
-  errors: string[];
 }
 
 export default function TwoFactorSetupModal({
+  clearSetupData,
+  errors,
+  fetchSetupData,
   isOpen,
+  manualSetupKey,
   onClose,
+  qrCodeSvg,
   requiresConfirmation,
   twoFactorEnabled,
-  qrCodeSvg,
-  manualSetupKey,
-  clearSetupData,
-  fetchSetupData,
-  errors,
 }: TwoFactorSetupModalProps) {
   const [showVerificationStep, setShowVerificationStep] = useState<boolean>(false);
 
@@ -224,26 +224,26 @@ export default function TwoFactorSetupModal({
   }>(() => {
     if (twoFactorEnabled) {
       return {
-        title: "Two-Factor Authentication Habilitada",
+        buttonText: "Cerrar",
         description:
           "La autenticación de dos factores ya está habilitada. Escanea el código QR o introduce la clave de configuración en tu app de autenticación.",
-        buttonText: "Cerrar",
+        title: "Two-Factor Authentication Habilitada",
       };
     }
 
     if (showVerificationStep) {
       return {
-        title: "Verificar código de autenticación",
-        description: "Ingresa el código de 6 dígitos de tu aplicación de autenticación",
         buttonText: "Continuar",
+        description: "Ingresa el código de 6 dígitos de tu aplicación de autenticación",
+        title: "Verificar código de autenticación",
       };
     }
 
     return {
-      title: "Habilitar Two-Factor Authentication",
+      buttonText: "Continuar",
       description:
         "Para terminar de habilitar la autenticación de dos factores, escanee el código QR o ingrese la clave de configuración en su aplicación de autenticación.",
-      buttonText: "Continuar",
+      title: "Habilitar Two-Factor Authentication",
     };
   }, [twoFactorEnabled, showVerificationStep]);
 

@@ -22,12 +22,12 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "./../../../components/ui/input-group";
 
 interface ConfirmPasswordProps {
+  onConfirmed?: () => void;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
-  onConfirmed?: () => void;
 }
 
-export default function ConfirmPassword({ open, setOpen, onConfirmed }: ConfirmPasswordProps) {
+export default function ConfirmPassword({ onConfirmed, open, setOpen }: ConfirmPasswordProps) {
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogContent className="w-[30%]">
@@ -46,7 +46,7 @@ export default function ConfirmPassword({ open, setOpen, onConfirmed }: ConfirmP
           }}
           resetOnSuccess={["password"]}
         >
-          {({ processing, errors }) => (
+          {({ errors, processing }) => (
             <div className="space-y-6">
               <div className="grid gap-2">
                 <Label htmlFor="password">Contraseña</Label>

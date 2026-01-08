@@ -12,15 +12,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import AlertError from "../../../components/alert-error";
 
 interface TwoFactorRecoveryCodesProps {
-  recoveryCodesList: string[];
-  fetchRecoveryCodes: () => Promise<void>;
   errors: string[];
+  fetchRecoveryCodes: () => Promise<void>;
+  recoveryCodesList: string[];
 }
 
 export default function TwoFactorRecoveryCodes({
-  recoveryCodesList,
-  fetchRecoveryCodes,
   errors,
+  fetchRecoveryCodes,
+  recoveryCodesList,
 }: TwoFactorRecoveryCodesProps) {
   const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
   const codesSectionRef = useRef<HTMLDivElement | null>(null);
