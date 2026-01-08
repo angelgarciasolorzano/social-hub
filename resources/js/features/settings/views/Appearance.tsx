@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 import { useAppearance } from "@/hooks/use-appearance";
 
-import { appearanceItems } from "../data/appearanceItems";
+import { appearanceItems } from "../data/settingsAppearanceItems";
 
 function Appearance({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   const { appearance, updateAppearance } = useAppearance();
