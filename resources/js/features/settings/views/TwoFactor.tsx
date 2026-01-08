@@ -2,13 +2,12 @@ import { useState } from "react";
 
 import { Form, router, usePage } from "@inertiajs/react";
 
+import { useTwoFactorAuth } from "@/features/settings/hooks/useTwoFactorAuth";
 import { ShieldBan, ShieldCheck } from "lucide-react";
 
 import { disable, enable } from "@/routes/two-factor";
 
 import { Button } from "@/components/ui/button";
-
-import { useTwoFactorAuth } from "@/hooks/use-two-factor-auth";
 
 import { SharedData } from "@/types";
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Form, Head } from "@inertiajs/react";
 
+import { OTP_MAX_LENGTH } from "@/features/settings/hooks/useTwoFactorAuth";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 import { store } from "@/routes/two-factor/login";
@@ -10,8 +11,6 @@ import InputError from "@/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-
-import { OTP_MAX_LENGTH } from "@/hooks/use-two-factor-auth";
 
 import AuthCardLayout from "./layouts/AuthCardLayout";
 
