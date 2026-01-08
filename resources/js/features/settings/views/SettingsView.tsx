@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
-import Appearance from "./Appearance";
-import Password from "./Password";
-import ProfileEdit from "./ProfileEdit";
-import TwoFactor from "./TwoFactor";
+import SettingsAppearanceView from "./SettingsAppearanceView";
+import SettingsPasswordView from "./SettingsPasswordView";
+import SettingsProfileEditView from "./SettingsProfileEditView";
+import SettingsTwoFactorView from "./SettingsTwoFactorView";
 
 interface SettingsViewProps {
   active: SettingLabelSidebar;
@@ -16,13 +16,13 @@ function SettingsView({ active }: SettingsViewProps) {
       {(() => {
         switch (active) {
           case SettingLabelSidebar.Appearance:
-            return <Appearance />;
+            return <SettingsAppearanceView />;
           case SettingLabelSidebar.Password:
-            return <Password />;
+            return <SettingsPasswordView />;
           case SettingLabelSidebar.Profile:
-            return <ProfileEdit />;
+            return <SettingsProfileEditView />;
           case SettingLabelSidebar.TwoFactor:
-            return <TwoFactor />;
+            return <SettingsTwoFactorView />;
           default:
             return <div>Perfil View</div>;
         }

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 
 import { type SharedData } from "@/types";
 
-export default function ProfileEdit() {
+export default function SettingsProfileEditView() {
   const { auth } = usePage<SharedData>().props;
   const { mustVerifyEmail, sessionStatus } = auth.user;
 

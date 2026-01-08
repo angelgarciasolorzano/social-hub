@@ -15,7 +15,7 @@ import ConfirmPassword from "../components/password/ConfirmPassword";
 import TwoFactorRecoveryCodes from "../components/twofactor/TwoFactorRecoveryCodes";
 import TwoFactorSetupModal from "../components/twofactor/TwoFactorSetupModal";
 
-export default function TwoFactor() {
+export default function SettingsTwoFactorView() {
   const { auth } = usePage<SharedData>().props;
   const { requiresConfirmation = false, twoFactorEnabled = false } = auth.user;
 

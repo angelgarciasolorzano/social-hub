@@ -6,7 +6,7 @@ import { useAppearance } from "@/hooks/use-appearance";
 
 import { appearanceItems } from "../data/settingsAppearanceItems";
 
-function Appearance({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
+function SettingsAppearanceView({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   const { appearance, updateAppearance } = useAppearance();
 
   return (
@@ -36,4 +36,4 @@ function Appearance({ className = "", ...props }: HTMLAttributes<HTMLDivElement>
   );
 }
 
-export default Appearance;
+export default SettingsAppearanceView;
