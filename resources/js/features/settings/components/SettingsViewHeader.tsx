@@ -2,13 +2,13 @@ import { usePage } from "@inertiajs/react";
 
 import { cn } from "@/lib/utils";
 
-import DeleteUser from "@/components/delete-user";
 import { Badge } from "@/components/ui/badge";
 
 import { SharedData } from "@/types";
 
 import { settingsHeaderItems } from "../data/settingsHeaderItems";
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
+import DeleteUser from "./DeleteUser";
 
 interface SettingViewHeaderProps {
   active: SettingLabelSidebar;

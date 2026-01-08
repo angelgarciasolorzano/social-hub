@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
-import PasswordProtectedView from "./components/PasswordProtectedView";
+import PasswordProtectedView from "./components/password/PasswordProtectedView";
 import SettingsSidebar from "./components/SettingsSidebar";
 import SettingsViewFooter from "./components/SettingsViewFooter";
 import SettingsViewHeader from "./components/SettingsViewHeader";

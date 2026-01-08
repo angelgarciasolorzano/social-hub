@@ -7,6 +7,7 @@ import { Check, Copy, Loader2, ScanLine } from "lucide-react";
 
 import { confirm } from "@/routes/two-factor";
 
+import AlertError from "@/components/AlertError";
 import InputError from "@/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +21,6 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 
 import { useClipboard } from "@/hooks/use-clipboard";
 import { OTP_MAX_LENGTH } from "@/hooks/use-two-factor-auth";
-
-import AlertError from "../../../components/alert-error";
 
 function GridScanIcon() {
   return (

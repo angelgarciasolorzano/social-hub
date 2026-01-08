@@ -27,7 +27,7 @@ export default function ProfileEdit() {
             preserveScroll: true,
           }}
         >
-          {({ processing, recentlySuccessful, errors }) => (
+          {({ errors, processing, recentlySuccessful }) => (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="name">Name</Label>

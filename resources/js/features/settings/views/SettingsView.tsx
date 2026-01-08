@@ -15,14 +15,14 @@ function SettingsView({ active }: SettingsViewProps) {
     <main className={cn("my-4 flex-1", active !== SettingLabelSidebar.TwoFactor ? "my-4" : "my-1")}>
       {(() => {
         switch (active) {
-          case SettingLabelSidebar.Profile:
-            return <ProfileEdit />;
-          case SettingLabelSidebar.Password:
-            return <Password />;
-          case SettingLabelSidebar.TwoFactor:
-            return <TwoFactor />;
           case SettingLabelSidebar.Appearance:
             return <Appearance />;
+          case SettingLabelSidebar.Password:
+            return <Password />;
+          case SettingLabelSidebar.Profile:
+            return <ProfileEdit />;
+          case SettingLabelSidebar.TwoFactor:
+            return <TwoFactor />;
           default:
             return <div>Perfil View</div>;
         }

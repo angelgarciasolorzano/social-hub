@@ -6,28 +6,29 @@ import { ShieldBan, ShieldCheck } from "lucide-react";
 
 import { disable, enable } from "@/routes/two-factor";
 
-import { TwoFactorRecoveryCodes, TwoFactorSetupModal } from "@/components/twoFactor";
 import { Button } from "@/components/ui/button";
 
 import { useTwoFactorAuth } from "@/hooks/use-two-factor-auth";
 
 import { SharedData } from "@/types";
 
-import ConfirmPassword from "../components/ConfirmPassword";
+import ConfirmPassword from "../components/password/ConfirmPassword";
+import TwoFactorRecoveryCodes from "../components/twofactor/TwoFactorRecoveryCodes";
+import TwoFactorSetupModal from "../components/twofactor/TwoFactorSetupModal";
 
 export default function TwoFactor() {
   const { auth } = usePage<SharedData>().props;
   const { requiresConfirmation = false, twoFactorEnabled = false } = auth.user;
 
   const {
-    qrCodeSvg,
+    clearSetupData,
+    errors,
+    fetchRecoveryCodes,
+    fetchSetupData,
     hasSetupData,
     manualSetupKey,
-    clearSetupData,
-    fetchSetupData,
+    qrCodeSvg,
     recoveryCodesList,
-    fetchRecoveryCodes,
-    errors,
   } = useTwoFactorAuth();
 
   const [showSetupModal, setShowSetupModal] = useState<boolean>(false);

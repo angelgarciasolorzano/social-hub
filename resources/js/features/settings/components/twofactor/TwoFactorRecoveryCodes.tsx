@@ -6,10 +6,9 @@ import { Eye, EyeOff, LockKeyhole, RefreshCw } from "lucide-react";
 
 import { regenerateRecoveryCodes } from "@/routes/two-factor";
 
+import AlertError from "@/components/AlertError";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-import AlertError from "../../../components/alert-error";
 
 interface TwoFactorRecoveryCodesProps {
   errors: string[];
