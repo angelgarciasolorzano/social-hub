@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type LinkProps = ComponentProps<typeof Link>;
 
-function TextLink({ className = "", children, ...props }: LinkProps) {
+function TextLink({ children, className = "", ...props }: LinkProps) {
   return (
     <Link
       className={cn(
