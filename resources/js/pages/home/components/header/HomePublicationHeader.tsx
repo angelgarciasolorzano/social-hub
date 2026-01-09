@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction } from "react";
 
 import { HiOutlinePlus } from "react-icons/hi2";
 
-import PublicationForm from "@/features/publication/PublicationForm";
+import { Publication } from "@/features/publication";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -27,7 +27,7 @@ function PublicationHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderPro
         <TooltipContent>Crear publicación</TooltipContent>
       </Tooltip>
 
-      <PublicationForm open={isOpenModal} setOpen={setIsOpenModal} />
+      <Publication open={isOpenModal} setOpen={setIsOpenModal} />
     </>
   );
 }

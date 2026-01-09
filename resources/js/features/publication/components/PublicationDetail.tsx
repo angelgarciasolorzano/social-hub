@@ -12,18 +12,18 @@ dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 interface PublicationDetailProps {
-  user: SharedData["user"];
   post: Omit<Post, "comments">;
+  user: SharedData["user"];
 }
 
-function PublicationDetail({ user, post }: PublicationDetailProps) {
+function PublicationDetail({ post, user }: PublicationDetailProps) {
   const createdAt = dayjs(post.createdAt);
 
   return (
     <article className="grid gap-2">
       <header className="flex items-center gap-3">
         <Avatar>
-          <AvatarImage src="https://picsum.photos/200" alt="Foto de perfil" />
+          <AvatarImage alt="Foto de perfil" src="https://picsum.photos/200" />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
         </Avatar>
@@ -48,9 +48,9 @@ function PublicationDetail({ user, post }: PublicationDetailProps) {
 
         {post.image && (
           <img
-            src={post.image}
-            alt="Imagen de la publicación"
             className="my-2 max-h-[400px] w-full rounded-md object-cover"
+            alt="Imagen de la publicación"
+            src={post.image}
           />
         )}
       </section>

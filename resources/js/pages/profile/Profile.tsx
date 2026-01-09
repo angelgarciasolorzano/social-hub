@@ -3,7 +3,7 @@ import { usePage } from "@inertiajs/react";
 import { GoPlus } from "react-icons/go";
 import { MdOutlineEditNote } from "react-icons/md";
 
-import { PublicationCard, PublicationForm } from "@/features/publication";
+import { Publication, PublicationCard } from "@/features/publication";
 
 import { Button } from "@/components/ui/button";
 
@@ -64,7 +64,7 @@ function Profile({ posts, user }: ProfileProps) {
         </div>
       </div>
 
-      <PublicationForm open={open} setOpen={setOpen} />
+      <Publication open={open} setOpen={setOpen} />
     </HomeLayout>
   );
 }

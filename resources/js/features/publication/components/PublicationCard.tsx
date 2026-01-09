@@ -30,8 +30,8 @@ function PublicationCard({ post, user }: PublicationCardProps) {
       <header className="flex items-center gap-3">
         <Avatar>
           <AvatarImage
-            src={user.avatar ?? "https://avatars.dicebear.com/api/initials/1.svg"}
             alt="Foto de perfil"
+            src={user.avatar ?? "https://avatars.dicebear.com/api/initials/1.svg"}
           />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
@@ -58,9 +58,9 @@ function PublicationCard({ post, user }: PublicationCardProps) {
 
         {post.image && (
           <img
-            src={post.image}
-            alt="Imagen de la publicación"
             className="my-2 max-h-[400px] w-full rounded-md object-cover"
+            alt="Imagen de la publicación"
+            src={post.image}
           />
         )}
       </section>
@@ -80,11 +80,11 @@ function PublicationCard({ post, user }: PublicationCardProps) {
       <Separator className="my-1 dark:bg-gray-700" />
 
       <footer className="flex items-center justify-between">
-        <Button variant="outline" className="cursor-pointer">
+        <Button className="cursor-pointer" variant="outline">
           Me gusta
         </Button>
 
-        <CommentModal postDetail={postDetail} comments={comments} user={user} />
+        <CommentModal comments={comments} postDetail={postDetail} user={user} />
       </footer>
     </article>
   );
