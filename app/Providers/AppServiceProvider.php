@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use App\Models\Comment;
 use App\Models\Like;
-use App\Models\Post;
 use App\Models\User;
+use App\Post\Models\Post;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
