@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import PostController from "@/actions/App/Http/Controllers/PostController";
+import PostController from "@/actions/App/Post/Controllers/PostController";
 
 import InputError from "@/components/form/InputError";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ interface PublicationFormContentProps {
 function PublicationForm({ setOpen, setProcessing }: PublicationFormContentProps) {
   return (
     <Form
-      {...PostController.store.form()}
+      {...PostController.form()}
       id="post-form"
       className="flex flex-col gap-5"
       onFinish={() => setProcessing(false)}

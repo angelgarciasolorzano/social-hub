@@ -4,7 +4,7 @@ import { Form } from "@inertiajs/react";
 
 import { MdLockOutline, MdOutlineCheckCircle, MdOutlineVpnKey } from "react-icons/md";
 
-import PasswordController from "@/actions/App/Http/Controllers/user/PasswordController";
+import PasswordController from "@/actions/App/Auth/Password/Controllers/PasswordController";
 
 import InputError from "@/components/form/InputError";
 import LabelForm from "@/components/form/LabelForm";
@@ -19,7 +19,7 @@ export default function SettingsPasswordView() {
   return (
     <div className="space-y-6">
       <Form
-        {...PasswordController.update.form()}
+        {...PasswordController.form()}
         className="space-y-6"
         onError={(errors) => {
           if (errors.password) {
