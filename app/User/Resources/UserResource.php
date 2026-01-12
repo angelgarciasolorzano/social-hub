@@ -1,26 +1,24 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\User\Resources;
 
-use App\Models\User;
-use Illuminate\Http\Request;
+use App\User\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin User */
-class UserResource extends JsonResource
-{
-    public static $wrap = null;
+class UserResource extends JsonResource {
     /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray($request): array
     {
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'avatar' => $this->getFirstMediaUrl('profile_picture'),
+            'email' => $this->email,
+            'profile_picture' => $this->getFirstMediaUrl('profile_picture'),
             'cover_image' => $this->getFirstMediaUrl('cover_image'),
         ];
     }
