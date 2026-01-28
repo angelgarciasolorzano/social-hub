@@ -1,19 +1,20 @@
 import { RiTimeZoneLine } from "react-icons/ri";
 
+import placeholderPost from "@/assets/post-placeholder.png";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { Post, SharedData } from "@/types";
+import { Post, User } from "@/types";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
 interface PublicationDetailProps {
   post: Omit<Post, "comments">;
-  user: SharedData["user"];
+  user: User;
 }
 
 function PublicationDetail({ post, user }: PublicationDetailProps) {
@@ -23,7 +24,7 @@ function PublicationDetail({ post, user }: PublicationDetailProps) {
     <article className="grid gap-2">
       <header className="flex items-center gap-3">
         <Avatar>
-          <AvatarImage alt="Foto de perfil" src="https://picsum.photos/200" />
+          <AvatarImage alt="Foto de perfil" src={user.avatar ?? "https://picsum.photos/200"} />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
         </Avatar>
@@ -49,6 +50,7 @@ function PublicationDetail({ post, user }: PublicationDetailProps) {
         {post.image && (
           <img
             className="my-2 max-h-[400px] w-full rounded-md object-cover"
+            onError={(e) => (e.currentTarget.src = placeholderPost)}
             alt="Imagen de la publicación"
             src={post.image}
           />

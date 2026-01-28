@@ -17,8 +17,8 @@ import { Label } from "@/components/ui/label";
 import AuthCardLayout from "../layouts/AuthCardLayout";
 
 interface LoginProps {
-  status?: string;
   canResetPassword?: boolean;
+  status?: string;
 }
 
 function Login({ status, canResetPassword }: LoginProps) {

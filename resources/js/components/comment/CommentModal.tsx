@@ -2,7 +2,7 @@ import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
 import { PublicationDetail } from "@/features/publication";
 
-import { Comment, Post, SharedData } from "@/types";
+import { Comment, Post, User } from "@/types";
 
 import { Button } from "../ui/button";
 import {
@@ -20,7 +20,7 @@ import CommentList from "./CommentList";
 interface CommentModalProps {
   comments: Comment[];
   postDetail: Omit<Post, "comments">;
-  user: SharedData["user"];
+  user: User;
 }
 
 function CommentModal({ comments, postDetail, user }: CommentModalProps) {

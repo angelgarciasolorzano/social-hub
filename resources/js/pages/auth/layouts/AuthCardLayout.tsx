@@ -8,9 +8,9 @@ import AppLogoIcon from "@/components/AppLogoIcon";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AuthCardLayoutProps {
+  description?: string;
   name?: string;
   title?: string;
-  description?: string;
 }
 
 function AuthCardLayout({ title, description, children }: PropsWithChildren<AuthCardLayoutProps>) {
