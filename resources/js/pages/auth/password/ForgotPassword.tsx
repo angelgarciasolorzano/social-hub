@@ -7,7 +7,7 @@ import PasswordResetLinkController from "@/actions/App/Auth/Password/Controllers
 import { login } from "@/routes";
 
 import InputError from "@/components/form/InputError";
-import TextLink from "@/components/text-link";
+import TextLink from "@/components/TextLink";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,8 +21,8 @@ interface ForgotPasswordProps {
 function ForgotPassword({ status }: ForgotPasswordProps) {
   return (
     <AuthCardLayout
-      title="Restablecer la contraseña"
       description="Ingrese su correo electrónico para recibir un enlace para restablecer la contraseña"
+      title="Restablecer la contraseña"
     >
       <Head title="Restablecer contraseña" />
 
@@ -39,8 +39,8 @@ function ForgotPassword({ status }: ForgotPasswordProps) {
 
                 <Input
                   id="email"
-                  type="email"
                   name="email"
+                  type="email"
                   autoComplete="off"
                   autoFocus
                   placeholder="email@example.com"
@@ -52,8 +52,8 @@ function ForgotPassword({ status }: ForgotPasswordProps) {
               <div className="my-6 flex items-center justify-start">
                 <Button
                   className="w-full cursor-pointer"
-                  disabled={processing}
                   data-test="email-password-reset-link-button"
+                  disabled={processing}
                 >
                   {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                   Enviar enlace para restablecer la contraseña

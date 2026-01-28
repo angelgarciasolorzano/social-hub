@@ -12,19 +12,19 @@ import { Label } from "@/components/ui/label";
 import AuthCardLayout from "../layouts/AuthCardLayout";
 
 interface ResetPasswordProps {
-  token: string;
   email: string;
+  token: string;
 }
 
 export default function ResetPassword({ token, email }: ResetPasswordProps) {
   return (
-    <AuthCardLayout title="Reset password" description="Please enter your new password below">
+    <AuthCardLayout description="Please enter your new password below" title="Reset password">
       <Head title="Reset password" />
 
       <Form
         {...NewPasswordController.store.form()}
-        transform={(data) => ({ ...data, token, email })}
         resetOnSuccess={["password", "password_confirmation"]}
+        transform={(data) => ({ ...data, token, email })}
       >
         {({ processing, errors }) => (
           <div className="grid gap-6">
@@ -32,22 +32,22 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                type="email"
                 name="email"
+                type="email"
                 autoComplete="email"
-                value={email}
                 className="mt-1 block w-full"
                 readOnly
+                value={email}
               />
-              <InputError message={errors.email} className="mt-2" />
+              <InputError className="mt-2" message={errors.email} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
-                type="password"
                 name="password"
+                type="password"
                 autoComplete="new-password"
                 className="mt-1 block w-full"
                 autoFocus
@@ -60,20 +60,20 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
               <Label htmlFor="password_confirmation">Confirm password</Label>
               <Input
                 id="password_confirmation"
-                type="password"
                 name="password_confirmation"
+                type="password"
                 autoComplete="new-password"
                 className="mt-1 block w-full"
                 placeholder="Confirm password"
               />
-              <InputError message={errors.password_confirmation} className="mt-2" />
+              <InputError className="mt-2" message={errors.password_confirmation} />
             </div>
 
             <Button
               type="submit"
               className="mt-4 w-full"
-              disabled={processing}
               data-test="reset-password-button"
+              disabled={processing}
             >
               {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
               Reset password
