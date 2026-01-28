@@ -32,10 +32,7 @@ class Post extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('posts_images')
-            ->useFallbackUrl(asset('post-placeholder.png'))
-            ->useFallbackPath(public_path('post-placeholder.png'))
-            ->singleFile();
+        $this->addMediaCollection('posts_images')->singleFile();
     }
 
     public function user(): BelongsTo

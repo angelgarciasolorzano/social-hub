@@ -11,7 +11,7 @@ class UserImageUpdateRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->field = UserImageType::tryFrom($this->route('type')) ?? UserImageType::PROFILE_PICTURE;
+        $this->field = $this->route('type');
     }
 
     public function authorize(): bool

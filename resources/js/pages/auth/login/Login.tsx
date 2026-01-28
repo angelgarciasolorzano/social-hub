@@ -24,15 +24,15 @@ interface LoginProps {
 function Login({ status, canResetPassword }: LoginProps) {
   return (
     <AuthCardLayout
-      title="Inicia sesión en tu cuenta"
       description="Ingrese su correo electrónico y contraseña a continuación para iniciar sesión"
+      title="Inicia sesión en tu cuenta"
     >
       <Head title="Inicia sesión" />
 
       <Form
         {...AuthenticatedSessionController.store.form()}
-        resetOnSuccess={["password"]}
         className="flex flex-col gap-6"
+        resetOnSuccess={["password"]}
       >
         {({ processing, errors }) => (
           <>
@@ -42,13 +42,13 @@ function Login({ status, canResetPassword }: LoginProps) {
 
                 <Input
                   id="email"
-                  type="email"
                   name="email"
-                  required
-                  autoFocus
-                  tabIndex={1}
+                  type="email"
                   autoComplete="email"
+                  autoFocus
                   placeholder="email@example.com"
+                  required
+                  tabIndex={1}
                 />
 
                 <InputError message={errors.email} />
@@ -59,7 +59,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                   <Label htmlFor="password">Contraseña</Label>
 
                   {canResetPassword && (
-                    <TextLink href={request()} className="ml-auto text-sm" tabIndex={5}>
+                    <TextLink className="ml-auto text-sm" href={request()} tabIndex={5}>
                       ¿Olvidaste tu contraseña?
                     </TextLink>
                   )}
@@ -67,12 +67,12 @@ function Login({ status, canResetPassword }: LoginProps) {
 
                 <Input
                   id="password"
-                  type="password"
                   name="password"
-                  required
-                  tabIndex={2}
+                  type="password"
                   autoComplete="current-password"
                   placeholder="**********"
+                  required
+                  tabIndex={2}
                 />
 
                 <InputError message={errors.password} />
@@ -87,9 +87,9 @@ function Login({ status, canResetPassword }: LoginProps) {
               <Button
                 type="submit"
                 className="mt-4 w-full cursor-pointer"
-                tabIndex={4}
-                disabled={processing}
                 data-test="login-button"
+                disabled={processing}
+                tabIndex={4}
               >
                 {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                 Iniciar sesión

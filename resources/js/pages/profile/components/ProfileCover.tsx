@@ -28,7 +28,7 @@ function ProfileCover({ coverImage }: ProfileCoverProps) {
       <img
         className="h-full w-full rounded-md object-cover"
         alt="Foto de portada"
-        src={coverImage ?? "https://picsum.photos/200"}
+        src={coverImage}
       />
 
       {isHover && (

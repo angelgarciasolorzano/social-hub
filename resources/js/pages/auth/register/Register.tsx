@@ -1,28 +1,32 @@
-import RegisteredUserController from '@/actions/App/Auth/Register/Controllers/RegisteredUserController';
-import { login } from '@/routes';
-import { Form, Head } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
+import { Form, Head } from "@inertiajs/react";
 
-import InputError from '@/components/form/InputError';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthLayout from '@/layouts/auth-layout';
+import { LoaderCircle } from "lucide-react";
+
+import RegisteredUserController from "@/actions/App/Auth/Register/Controllers/RegisteredUserController";
+
+import { login } from "@/routes";
+
+import InputError from "@/components/form/InputError";
+import TextLink from "@/components/TextLink";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import AuthCardLayout from "../layouts/AuthCardLayout";
 
 function Register() {
   return (
-    <AuthLayout
-      title="Crea una cuenta"
+    <AuthCardLayout
       description="Ingrese sus datos a continuación para crear su cuenta"
+      title="Crea una cuenta"
     >
       <Head title="Register" />
-        
+
       <Form
         {...RegisteredUserController.store.form()}
-        resetOnSuccess={['password', 'password_confirmation']}
-        disableWhileProcessing
         className="flex flex-col gap-6"
+        disableWhileProcessing
+        resetOnSuccess={["password", "password_confirmation"]}
       >
         {({ processing, errors }) => (
           <>
@@ -32,16 +36,16 @@ function Register() {
 
                 <Input
                   id="name"
-                  type="text"
-                  required
-                  autoFocus
-                  tabIndex={1}
-                  autoComplete="name"
                   name="name"
+                  type="text"
+                  autoComplete="name"
+                  autoFocus
                   placeholder="Full name"
+                  required
+                  tabIndex={1}
                 />
 
-                <InputError message={errors.name} className="mt-2" />
+                <InputError className="mt-2" message={errors.name} />
               </div>
 
               <div className="grid gap-2">
@@ -49,12 +53,12 @@ function Register() {
 
                 <Input
                   id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
+                  placeholder="email@example.com"
                   required
                   tabIndex={2}
-                  autoComplete="email"
-                  name="email"
-                  placeholder="email@example.com"
                 />
 
                 <InputError message={errors.email} />
@@ -65,30 +69,28 @@ function Register() {
 
                 <Input
                   id="password"
+                  name="password"
                   type="password"
+                  autoComplete="new-password"
+                  placeholder="Password"
                   required
                   tabIndex={3}
-                  autoComplete="new-password"
-                  name="password"
-                  placeholder="Password"
                 />
 
                 <InputError message={errors.password} />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="password_confirmation">
-                  Confirmar contraseña
-                </Label>
+                <Label htmlFor="password_confirmation">Confirmar contraseña</Label>
 
                 <Input
                   id="password_confirmation"
+                  name="password_confirmation"
                   type="password"
+                  autoComplete="new-password"
+                  placeholder="Confirm password"
                   required
                   tabIndex={4}
-                  autoComplete="new-password"
-                  name="password_confirmation"
-                  placeholder="Confirm password"
                 />
 
                 <InputError message={errors.password_confirmation} />
@@ -97,20 +99,16 @@ function Register() {
               <Button
                 type="submit"
                 className="mt-2 w-full cursor-pointer"
-                tabIndex={5}
                 data-test="register-user-button"
+                tabIndex={5}
               >
-                {processing && (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                )}
-
+                {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
                 Crear cuenta
               </Button>
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-              ¿Ya tienes una cuenta?{' '}
-
+              ¿Ya tienes una cuenta?{" "}
               <TextLink href={login()} tabIndex={6}>
                 Iniciar sesión
               </TextLink>
@@ -118,7 +116,7 @@ function Register() {
           </>
         )}
       </Form>
-    </AuthLayout>
+    </AuthCardLayout>
   );
 }
 

@@ -29,8 +29,8 @@ function Profile({ posts, user }: ProfileProps) {
     <HomeLayout>
       <div className="flex flex-col gap-4 px-4 py-3">
         <div className="relative">
-          <ProfileCover profilePicture={user.cover_image} />
-          <ProfilePicture profilePicture={user.avatar} />
+          <ProfileCover coverImage={user.coverImage ?? "https://picsum.photos/200"} />
+          <ProfilePicture profilePicture={user.profilePicture ?? "https://picsum.photos/200"} />
         </div>
 
         <div className="px-6 pt-8">

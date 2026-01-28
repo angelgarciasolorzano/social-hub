@@ -20,8 +20,8 @@ class UserResource extends JsonResource {
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'profile_picture' => $this->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
-            'cover_image' => $this->getFirstMediaUrl(UserImageType::COVER_IMAGE->value()),
+            'profilePicture' => $this->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+            'coverImage' => $this->getFirstMediaUrl(UserImageType::COVER_IMAGE->value()),
             'twoFactorEnabled' => $this->hasEnabledTwoFactorAuthentication(),
             'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm')
         ];

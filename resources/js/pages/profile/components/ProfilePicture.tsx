@@ -30,7 +30,7 @@ function ProfilePicture({ profilePicture }: ProfilePictureProps) {
       <img
         className="h-full w-full rounded-full border border-white object-cover shadow-md dark:border-gray-600"
         alt="Foto de perfil"
-        src={profilePicture ?? "https://picsum.photos/200"}
+        src={profilePicture}
       />
 
       {isHover && (

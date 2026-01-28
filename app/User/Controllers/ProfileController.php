@@ -19,7 +19,7 @@ class ProfileController extends Controller {
             ->get();
 
         return Inertia::render('profile/Profile', [
-            'user' => new UserResource(Auth::user())->withoutWrapping(),
+            'user' => new UserResource(Auth::user())->resolve(request()),
             'posts' => PostResource::collection($posts),
         ]);
     }
@@ -31,7 +31,7 @@ class ProfileController extends Controller {
             ->get();
 
         return Inertia::render('profile/Profile', [
-            'user'=> new UserResource($user)->withoutWrapping(),
+            'user'=> new UserResource($user)->resolve(request()),
             'posts'=> PostResource::collection($posts),
         ]);
     }
