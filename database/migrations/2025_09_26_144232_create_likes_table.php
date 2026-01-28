@@ -15,10 +15,7 @@ return new class extends Migration
         Schema::create('likes', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class);
-
-            $table->unsignedBigInteger('likeable_id');
-            $table->string('likeable_type');
-            
+            $table->morphs('likeable');
             $table->timestamps();
         });
     }
