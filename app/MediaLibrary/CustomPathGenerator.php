@@ -18,7 +18,7 @@ class CustomPathGenerator implements PathGenerator
     public function getPath(Media $media): string
     {
         return match ($media->model_type) {
-            Post::class => Post::PATH . DIRECTORY_SEPARATOR . $media->id . DIRECTORY_SEPARATOR,
+            Post::MORPH_NAME => Post::PATH . DIRECTORY_SEPARATOR . $media->id . DIRECTORY_SEPARATOR,
             default => $media->id . DIRECTORY_SEPARATOR,
         };
     }

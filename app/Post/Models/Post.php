@@ -21,6 +21,8 @@ class Post extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
 
+    public const MORPH_NAME = 'post';
+
     public const PATH = 'posts';
     
     protected $fillable = [
