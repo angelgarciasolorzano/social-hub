@@ -14,9 +14,6 @@ use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    /**
-     * Store a newly created resource in storage.
-     */
     public function __invoke(CommentStoreRequest $request)
     {
         $commentableType = Relation::getMorphedModel($request['commentable_type']);

@@ -32,7 +32,6 @@ class CommentStoreRequest extends FormRequest
 
     /**
      * Get the custom message for the validator errors.
-     * Obtener los mensajes personalizados para los errores de validacion
      *
      * @return array<string, string>
      */
