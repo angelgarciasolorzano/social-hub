@@ -1,8 +1,8 @@
 import { useRef } from "react";
 
-import { Form } from "@inertiajs/react";
+import { Form, usePage } from "@inertiajs/react";
 
-import ProfileController from "@/actions/App/Http/Controllers/user/ProfileController";
+import UserController from "@/actions/App/User/Controllers/UserController";
 
 import InputError from "@/components/form/InputError";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { SharedData } from "@/types";
+
 import { Badge } from "../../../components/ui/badge";
 
 export default function DeleteUser() {
   const passwordInput = useRef<HTMLInputElement>(null);
+  const { auth } = usePage<SharedData>().props;
 
   return (
     <Dialog>
@@ -35,6 +38,7 @@ export default function DeleteUser() {
       </DialogTrigger>
       <DialogContent>
         <DialogTitle>Are you sure you want to delete your account?</DialogTitle>
+
         <DialogDescription>
           Once your account is deleted, all of its resources and data will also be permanently
           deleted. Please enter your password to confirm you would like to permanently delete your
@@ -42,7 +46,7 @@ export default function DeleteUser() {
         </DialogDescription>
 
         <Form
-          {...ProfileController.destroy.form()}
+          {...UserController.destroy.form(auth.user.id)}
           className="space-y-6"
           onError={() => passwordInput.current?.focus()}
           options={{
