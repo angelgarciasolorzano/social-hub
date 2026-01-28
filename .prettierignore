@@ -1,2 +1,14 @@
 resources/js/components/ui/*
 resources/views/mail/*
+composer.lock
+composer.json
+package-lock.json
+yarn.lock
+.env
+.env.testing
+.env.local
+.env.production
+/storage/*
+/public/storage
+/node_modules/*
+/vendor/*
