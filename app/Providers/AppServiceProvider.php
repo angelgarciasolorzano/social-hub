@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Comment;
+use App\Comment\Models\Comment;
 use App\Models\Like;
 use App\Models\User;
 use App\Post\Models\Post;
@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             Post::MORPH_NAME => Post::class,
             'like' => Like::class,
-            'comment' => Comment::class
+            Comment::MORPH_NAME => Comment::class,
         ]);
     }
 }

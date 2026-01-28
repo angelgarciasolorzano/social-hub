@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Comment\Resources;
 
-use App\Models\Comment;
+use App\Comment\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Comment */
-class ReplyResource extends JsonResource
+class CommentResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -22,8 +22,9 @@ class ReplyResource extends JsonResource
             'created_at' => $this->created_at->diffForHumans(),
             'user' => [
                 'id' => $this->user->id,
-                'name' => $this->user->name,
-            ]
+                'name' => $this->user->name
+            ],
+            'replies' => CommentResource::collection($this->whenLoaded('comments')),
         ];
     }
 }

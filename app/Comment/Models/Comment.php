@@ -1,28 +1,23 @@
 <?php
 
-namespace App\Models;
+namespace App\Comment\Models;
 
+use App\Models\Like;
+use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
-/**
- * @property int $id
- * @property int $commentable_id
- * @property int $commentable_type
- * @property string $content
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
- *
-// * @property-read User $user
- */
 class Comment extends Model
 {
     /** @use HasFactory<\Database\Factories\CommentFactory> */
     use HasFactory;
+
+    public const MORPH_NAME = 'comment';
+
+    public const MORPH_COLUMN = 'commentable';
 
     /** @var string[]  */
     protected $fillable = [
@@ -54,7 +49,7 @@ class Comment extends Model
 
     public function comments(): MorphMany
     {
-        return $this->morphMany(Comment::class, 'commentable')->with('user');
+        return $this->morphMany(Comment::class, self::MORPH_COLUMN)->with('user');
     }
 
     /**

@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Comment\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCommentRequest extends FormRequest
+class CommentStoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
+     *
+     * @return bool
      */
     public function authorize(): bool
     {
@@ -22,9 +24,9 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => ['required', 'min:10', 'max:1000'],
+            'content' => ['required', 'string', 'max:1000'],
             'commentable_type' => ['required', 'in:post,comment'],
-            'commentable_id' => ['required', 'integer']
+            'commentable_id' => ['required', 'integer'],
         ];
     }
 
@@ -37,7 +39,7 @@ class StoreCommentRequest extends FormRequest
     public function messages(): array
     {
         return  [
-            'content.required' => 'El mensaje de comentario es obligatorio',
+            'content.required' => 'El comentario es obligatorio',
         ];
     }
 }
