@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { SettingLabelSidebar } from "../data/settingsSidebarItems";
 import SettingsAppearanceView from "./SettingsAppearanceView";
 import SettingsPasswordView from "./SettingsPasswordView";
-import SettingsProfileEditView from "./SettingsProfileEditView";
+import SettingsProfileView from "./SettingsProfileView";
 import SettingsTwoFactorView from "./SettingsTwoFactorView";
 
 interface SettingsViewProps {
@@ -20,7 +20,7 @@ function SettingsView({ active }: SettingsViewProps) {
           case SettingLabelSidebar.Password:
             return <SettingsPasswordView />;
           case SettingLabelSidebar.Profile:
-            return <SettingsProfileEditView />;
+            return <SettingsProfileView />;
           case SettingLabelSidebar.TwoFactor:
             return <SettingsTwoFactorView />;
           default:

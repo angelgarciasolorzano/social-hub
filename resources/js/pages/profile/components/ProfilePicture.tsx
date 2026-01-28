@@ -5,7 +5,7 @@ import { useUserImageUpload } from "../hooks/useUserImageUpload";
 import ProfileImageUploadModal from "./modals/ProfileImageUploadModal";
 
 interface ProfilePictureProps {
-  profilePicture?: string;
+  profilePicture: string;
 }
 
 function ProfilePicture({ profilePicture }: ProfilePictureProps) {

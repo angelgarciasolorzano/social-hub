@@ -2,7 +2,7 @@ import { Form, Link, usePage } from "@inertiajs/react";
 
 import { Transition } from "@headlessui/react";
 
-import ProfileController from "@/actions/App/Http/Controllers/user/ProfileController";
+import UserController from "@/actions/App/User/Controllers/UserController";
 
 import { send } from "@/routes/verification";
 
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 
 import { type SharedData } from "@/types";
 
-export default function SettingsProfileEditView() {
+export default function SettingsProfileView() {
   const { auth } = usePage<SharedData>().props;
   const { mustVerifyEmail, sessionStatus } = auth.user;
 
@@ -21,7 +21,7 @@ export default function SettingsProfileEditView() {
     <>
       <div className="space-y-6">
         <Form
-          {...ProfileController.update.form()}
+          {...UserController.update.form(auth.user.id)}
           className="space-y-6"
           options={{
             preserveScroll: true,

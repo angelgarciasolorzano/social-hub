@@ -5,7 +5,7 @@ import { useUserImageUpload } from "../hooks/useUserImageUpload";
 import ProfileImageUploadModal from "./modals/ProfileImageUploadModal";
 
 interface ProfileCoverProps {
-  coverImage?: string;
+  coverImage: string;
 }
 
 function ProfileCover({ coverImage }: ProfileCoverProps) {
