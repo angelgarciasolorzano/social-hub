@@ -2,7 +2,7 @@
 
 namespace App\Post\Models;
 
-use App\Models\Comment;
+use App\Comment\Models\Comment;
 use App\Models\Like;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -24,6 +24,8 @@ class Post extends Model implements HasMedia
     public const MORPH_NAME = 'post';
 
     public const PATH = 'posts';
+
+    public const POSTS_IMAGES_MEDIA_COLLECTION = 'posts_images';
     
     protected $fillable = [
         'content',
@@ -32,7 +34,7 @@ class Post extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('posts_images')->singleFile();
+        $this->addMediaCollection(self::POSTS_IMAGES_MEDIA_COLLECTION)->singleFile();
     }
 
     public function user(): BelongsTo
@@ -42,7 +44,7 @@ class Post extends Model implements HasMedia
 
     public function comments(): MorphMany
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->morphMany(Comment::class, Comment::MORPH_COLUMN);
     }
 
     public function likes(): MorphMany
