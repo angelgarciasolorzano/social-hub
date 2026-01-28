@@ -44,7 +44,6 @@ export default [
       "perfectionist/sort-enums": "warn",
       "perfectionist/sort-switch-case": "warn",
       "perfectionist/sort-interfaces": "warn",
-      "perfectionist/sort-objects": "warn",
       "perfectionist/sort-variable-declarations": "warn",
     },
   },

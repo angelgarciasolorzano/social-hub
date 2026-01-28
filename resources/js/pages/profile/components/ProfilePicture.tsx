@@ -1,76 +1,67 @@
 import { RiImageEditLine } from "react-icons/ri";
-import ProfileImageUploadModal from './modals/ProfileImageUploadModal';
-import { router } from '@inertiajs/react';
-import { toast } from 'sonner';
-import { useImageUpload } from '@/hooks/useImageUpload';
-import ProfileController from "@/actions/App/Http/Controllers/user/ProfileController";
+
+import { UserImageType } from "../enums/userImageType";
+import { useUserImageUpload } from "../hooks/useUserImageUpload";
+import ProfileImageUploadModal from "./modals/ProfileImageUploadModal";
 
 interface ProfilePictureProps {
   profilePicture?: string;
-};
+}
 
 function ProfilePicture({ profilePicture }: ProfilePictureProps) {
   const {
-    isHover, isModalOpen, imageFile, imageUrl, 
-    onClose, setIsHover, handleFileUpload
-  } = useImageUpload();
-  
-  const handleImageUpload = () => {
-    if (!imageFile) return;
-
-    router.post(ProfileController.updatedProfilePicture.url(), {
-      profile_picture: imageFile
-    }, {
-      onSuccess: () => {
-        onClose();
-        router.reload({
-          only: ['user'],
-        })
-      },
-      onError: (error) => {
-        toast.error(error.profile_picture);
-      }
-    })
-  };
+    isHover,
+    isModalOpen,
+    imageUrl,
+    onClose,
+    setIsHover,
+    handleFileUpload,
+    handleImageUpload,
+  } = useUserImageUpload({
+    typeImage: UserImageType.PROFILE_PICTURE,
+  });
 
   return (
     <div
+      className="absolute -bottom-10 left-5 z-50 h-24 w-24 rounded-full"
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
-      className='absolute w-24 h-24 rounded-full left-5 -bottom-10 z-50'
-    > 
+    >
       <img
-        src={profilePicture ?? 'https://picsum.photos/200'}
-        alt='Foto de perfil'
-        className='w-full h-full rounded-full border border-white shadow-md object-cover dark:border-gray-600'
+        className="h-full w-full rounded-full border border-white object-cover shadow-md dark:border-gray-600"
+        alt="Foto de perfil"
+        src={profilePicture ?? "https://picsum.photos/200"}
       />
 
       {isHover && (
-        <div className='absolute inset-0 rounded-full flex items-center justify-center bg-black/40'>
-          <label htmlFor='profile-picture-upload' className='cursor-pointer text-white/70 hover:text-white'>
-            <RiImageEditLine className='w-9 h-9' />
+        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+          <label
+            className="cursor-pointer text-white/70 hover:text-white"
+            htmlFor="profile-picture-upload"
+          >
+            <RiImageEditLine className="h-9 w-9" />
           </label>
         </div>
       )}
 
       <input
-        id='profile-picture-upload'
-        type='file'
-        accept='image/*'
-        className='hidden'
+        id="profile-picture-upload"
+        type="file"
+        className="hidden"
         onChange={handleFileUpload}
+        accept="image/*"
       />
 
       {isModalOpen && imageUrl && (
         <ProfileImageUploadModal
           type="profile"
-          preview={imageUrl} 
-          onClose={onClose} 
-          onConfirm={handleImageUpload} 
+          onClose={onClose}
+          onConfirm={handleImageUpload}
+          preview={imageUrl}
         />
       )}
     </div>
-  )
+  );
 }
 
 export default ProfilePicture;
