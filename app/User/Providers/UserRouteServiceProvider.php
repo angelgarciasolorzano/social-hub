@@ -16,7 +16,7 @@ class UserRouteServiceProvider extends RouteServiceProvider
     {
         $this->routes(function () {
             Route::middleware('web')
-                ->group(__DIR__ . '/../routes/profile.php');
+                ->group(__DIR__ . '/../routes/routes.php');
         });
     }
 }
