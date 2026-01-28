@@ -12,5 +12,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/home', HomeController::class)->name('home');
 });
 
-require __DIR__.'/comment.php';
 require __DIR__.'/friendship.php';
