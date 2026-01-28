@@ -3,6 +3,8 @@ import { usePage } from "@inertiajs/react";
 import { GoPlus } from "react-icons/go";
 import { MdOutlineEditNote } from "react-icons/md";
 
+import coverPlaceholder from "@/assets/cover-placeholder.svg";
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 import { Publication, PublicationCard } from "@/features/publication";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,7 @@ import { useModal } from "@/hooks/useModal";
 import { PostData, SharedData, User } from "@/types";
 
 import ProfilePicture from "./components/ProfilePicture";
+import { validImage } from "./utils/validImage";
 
 interface ProfileProps {
   posts: PostData;
@@ -29,8 +32,8 @@ function Profile({ posts, user }: ProfileProps) {
     <HomeLayout>
       <div className="flex flex-col gap-4 px-4 py-3">
         <div className="relative">
-          <ProfileCover coverImage={user.coverImage ?? "https://picsum.photos/200"} />
-          <ProfilePicture profilePicture={user.profilePicture ?? "https://picsum.photos/200"} />
+          <ProfileCover coverImage={validImage(user.coverImage, coverPlaceholder)} />
+          <ProfilePicture profilePicture={validImage(user.profilePicture, profilePlaceholder)} />
         </div>
 
         <div className="px-6 pt-8">
