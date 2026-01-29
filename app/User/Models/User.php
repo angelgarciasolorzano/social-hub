@@ -5,6 +5,7 @@ namespace App\User\Models;
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;
+use App\User\Enums\UserImageType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -38,8 +39,15 @@ class User extends Authenticatable implements HasMedia {
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('profile_picture')->singleFile();
-        $this->addMediaCollection('cover_image')->singleFile();
+        $this->addMediaCollection(UserImageType::PROFILE_PICTURE->value())
+            ->useFallbackUrl('/default-profile-picture.png')
+            ->useFallbackPath(public_path('/default-profile-picture.png'))
+            ->singleFile();
+        
+        $this->addMediaCollection(UserImageType::COVER_IMAGE->value())
+            ->useFallbackUrl('/default-cover.svg')
+            ->useFallbackPath(public_path('/default-cover.svg'))
+            ->singleFile();
     }
 
     public function posts(): HasMany {
