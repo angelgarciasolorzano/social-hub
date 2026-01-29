@@ -2,7 +2,7 @@
 
 namespace App\Auth\Login\Requests;
 
-use App\Models\User;
+use App\User\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
