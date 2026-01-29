@@ -12,14 +12,15 @@ class HomeController extends Controller
 {
     public function __invoke()
     {
-        $friendsId = Auth::user()->friends()->pluck('id')->toArray();
+        //$friendsId = Auth::user()->friends()->pluck('id')->toArray();
 
         $posts = Post::with(['user'])
-            ->whereIn('user_id', $friendsId)
+            //->whereIn('user_id', $friendsId)
             ->latest()
             ->get();
 
         return Inertia::render('home/Home', [
+            'user' => Auth::user(),
             'posts' => PostResource::collection($posts),
         ]);
     }

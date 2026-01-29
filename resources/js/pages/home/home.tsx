@@ -1,14 +1,15 @@
-import { usePage } from "@inertiajs/react";
-
 import { PublicationCard } from "@/features/publication";
 
-import { SharedData } from "@/types";
+import { PostData, User } from "@/types";
 
 import HomeLayout from "./layouts/HomeLayout";
 
-function Home() {
-  const { posts, user } = usePage<SharedData>().props;
+interface HomeProps {
+  posts: PostData;
+  user: User;
+}
 
+function Home({ posts, user }: HomeProps) {
   return (
     <HomeLayout>
       {posts.data.map((post) => (

@@ -5,7 +5,7 @@ import { LuCircleUserRound, LuUserRoundPlus } from "react-icons/lu";
 
 import { Loader2Icon } from "lucide-react";
 
-import FriendshipController from "@/actions/App/Http/Controllers/FriendshipController";
+import FriendshipController from "@/actions/App/Friendship/Controllers/FriendshipController";
 
 import profile from "@/routes/profile";
 

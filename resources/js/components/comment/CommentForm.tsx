@@ -4,7 +4,7 @@ import { Form, router } from "@inertiajs/react";
 
 import { Loader2Icon } from "lucide-react";
 
-import CommentController from "@/actions/App/Http/Controllers/CommentController";
+import CommentController from "@/actions/App/Comment/Controllers/CommentController";
 
 import InputError from "../form/InputError";
 import { Button } from "../ui/button";
@@ -21,7 +21,7 @@ function CommentForm(props: CommentFormProps) {
 
   return (
     <Form
-      {...CommentController.store.form()}
+      {...CommentController.form()}
       onSuccess={() => {
         if (setReplyTo) setReplyTo(null);
         router.reload({
