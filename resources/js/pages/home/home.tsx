@@ -1,11 +1,11 @@
 import { PublicationCard } from "@/features/publication";
 
-import { PostData, User } from "@/types";
+import { PostCollection, User } from "@/types";
 
 import HomeLayout from "./layouts/HomeLayout";
 
 interface HomeProps {
-  posts: PostData;
+  posts: PostCollection;
   user: User;
 }
 

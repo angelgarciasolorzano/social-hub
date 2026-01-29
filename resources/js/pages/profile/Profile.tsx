@@ -14,13 +14,13 @@ import ProfileCover from "@/pages/profile/components/ProfileCover";
 
 import { useModal } from "@/hooks/useModal";
 
-import { PostData, SharedData, User } from "@/types";
+import { PostCollection, SharedData, User } from "@/types";
 
 import ProfilePicture from "./components/ProfilePicture";
 import { validImage } from "./utils/validImage";
 
 interface ProfileProps {
-  posts: PostData;
+  posts: PostCollection;
   user: User;
 }
 
