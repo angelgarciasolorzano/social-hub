@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Friendship\Models;
 
-use App\Enums\FriendshipStatus;
+use App\Friendship\Enums\FriendshipStatus;
+use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,7 +35,6 @@ class Friendship extends Model
 
     /**
      * Get the user that sent the friend request.
-     * Obtener el usuario que envió la solicitud de amistad
      *
      * @return BelongsTo
      */
@@ -45,7 +45,6 @@ class Friendship extends Model
 
     /**
      * Get the user that received the friend request.
-     * Obtener el usuario que recibió la solicitud de amistad
      *
      * @return BelongsTo
      */
