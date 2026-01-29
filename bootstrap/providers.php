@@ -6,5 +6,6 @@ return [
     App\User\Providers\UserServiceProvider::class,
     App\Post\Providers\PostServiceProvider::class,
     App\Comment\Providers\CommentServiceProvider::class,
+    App\Friendship\Providers\FriendshipServiceProvider::class,
     App\Providers\FortifyServiceProvider::class,
 ];

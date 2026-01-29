@@ -1,7 +1,6 @@
 <?php
 
-use App\Http\Controllers\FriendshipController;
-use App\Http\Controllers\PostController;
+use App\Friendship\Controllers\FriendshipController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
