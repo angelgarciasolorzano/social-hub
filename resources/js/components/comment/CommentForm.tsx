@@ -21,7 +21,7 @@ function CommentForm(props: CommentFormProps) {
 
   return (
     <Form
-      {...CommentController.form()}
+      {...CommentController.store.form()}
       onSuccess={() => {
         if (setReplyTo) setReplyTo(null);
         router.reload({

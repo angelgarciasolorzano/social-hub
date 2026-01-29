@@ -3,7 +3,6 @@ export interface PostCollection {
 }
 
 export interface Post {
-  comments: Comment[];
   content: string;
   createdAt: string;
   id: number;

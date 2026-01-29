@@ -26,7 +26,6 @@ interface PublicationCardProps {
 }
 
 function PublicationCard({ post, user }: PublicationCardProps) {
-  const { comments, ...postDetail } = post;
   const createdAt = dayjs(post.createdAt);
 
   return (
@@ -89,7 +88,7 @@ function PublicationCard({ post, user }: PublicationCardProps) {
           Me gusta
         </Button>
 
-        <CommentModal comments={comments} postDetail={postDetail} user={user} />
+        <CommentModal postDetail={post} user={user} />
       </footer>
     </article>
   );

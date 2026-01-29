@@ -1,11 +1,14 @@
 import { RiTimeZoneLine } from "react-icons/ri";
 
 import placeholderPost from "@/assets/post-placeholder.png";
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+import { validImage } from "@/utils";
 
 import { Post, User } from "@/types";
 
@@ -24,7 +27,10 @@ function PublicationDetail({ post, user }: PublicationDetailProps) {
     <article className="grid gap-2">
       <header className="flex items-center gap-3">
         <Avatar>
-          <AvatarImage alt="Foto de perfil" src={user.avatar ?? "https://picsum.photos/200"} />
+          <AvatarImage
+            alt="Foto de perfil"
+            src={validImage(user.profilePicture, profilePlaceholder)}
+          />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
         </Avatar>
