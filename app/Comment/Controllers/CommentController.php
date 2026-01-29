@@ -5,7 +5,6 @@ namespace App\Comment\Controllers;
 use App\Comment\Models\Comment;
 use App\Comment\Requests\CommentStoreRequest;
 use App\Http\Controllers\Controller;
-use App\Notifications\CommentNotification;
 use App\Post\Models\Post;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -29,14 +28,10 @@ class CommentController extends Controller
         /** @var Model & (Post | Comment) $commentable */
         $commentable = $commentableType::query()->findOrFail($commentableId);
 
-         $comment = $commentable->comments()->create([
+        $commentable->comments()->create([
             'user_id' => Auth::id(),
             'content' => $request['content'],
         ]);
-
-        if ($commentable instanceof Post || $commentable instanceof Comment) {
-            $commentable->user->notify(new CommentNotification($comment));
-        };
 
         return Inertia::flash([
             'type' => 'success',
