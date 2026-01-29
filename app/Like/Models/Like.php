@@ -15,6 +15,8 @@ class Like extends Model
 
     public const MORPH_NAME = 'like';
 
+    public const MORPH_COLUMN = 'likeable';
+
     /**
      * Get the user that owns the like.
      * 

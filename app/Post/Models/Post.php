@@ -3,8 +3,8 @@
 namespace App\Post\Models;
 
 use App\Comment\Models\Comment;
-use App\Models\Like;
-use App\Models\User;
+use App\Like\Models\Like;
+use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,6 +49,6 @@ class Post extends Model implements HasMedia
 
     public function likes(): MorphMany
     {
-        return $this->morphMany(Like::class, 'likeable');
+        return $this->morphMany(Like::class, Like::MORPH_COLUMN);
     }
 }
