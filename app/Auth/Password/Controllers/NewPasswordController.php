@@ -4,7 +4,7 @@ namespace App\Auth\Password\Controllers;
 
 use App\Auth\Password\Requests\NewPasswordRequest;
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\User\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
