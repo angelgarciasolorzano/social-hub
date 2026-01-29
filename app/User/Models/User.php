@@ -2,7 +2,7 @@
 
 namespace App\User\Models;
 
-use App\Models\Comment;
+use App\Comment\Models\Comment;
 use App\Models\Like;
 use App\Post\Models\Post;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +14,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class User extends Authenticatable implements HasMedia {
     use HasFactory, TwoFactorAuthenticatable, InteractsWithMedia;
+
+    public const MORPH_NAME = 'user';
 
     protected $fillable = [
         'name',
