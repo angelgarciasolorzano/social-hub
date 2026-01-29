@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Models;
+namespace App\Like\Models;
 
+use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Like extends Model
@@ -11,20 +13,20 @@ class Like extends Model
     /** @use HasFactory<\Database\Factories\LikeFactory> */
     use HasFactory;
 
+    public const MORPH_NAME = 'like';
+
     /**
      * Get the user that owns the like.
-     * Obtener el usuario que posee el like
      * 
      * @return BelongsTo
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
      * Get the parent model that the like belongs to (e.g., Post).
-     * Obtener el modelo padre al que pertenece el like (p.ej., Post)
      *
      * @return MorphTo
      */
