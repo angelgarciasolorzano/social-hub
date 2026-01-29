@@ -3,6 +3,7 @@ import { FaRegHeart } from "react-icons/fa6";
 import { RiTimeZoneLine } from "react-icons/ri";
 
 import placeholderPost from "@/assets/post-placeholder.png";
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -11,6 +12,8 @@ import CommentModal from "@/components/comment/CommentModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+
+import { validImage } from "@/utils";
 
 import { Post, User } from "@/types";
 
@@ -32,7 +35,7 @@ function PublicationCard({ post, user }: PublicationCardProps) {
         <Avatar>
           <AvatarImage
             alt="Foto de perfil"
-            src={user.avatar ?? "https://avatars.dicebear.com/api/initials/1.svg"}
+            src={validImage(user.profilePicture, profilePlaceholder)}
           />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>

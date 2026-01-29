@@ -1,5 +1,6 @@
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 import Settings from "@/features/settings/Settings";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -14,10 +15,15 @@ import {
 
 import { useModal } from "@/hooks/useModal";
 
+import { validImage } from "@/utils";
+
+import { SharedData } from "@/types";
+
 import { menuItems } from "../../data/homeProfileItems";
 
 function ProfileHeader() {
   const { open, setOpen } = useModal();
+  const { auth } = usePage<SharedData>().props;
 
   const handleAction = (action: string) => {
     if (action === "openModal") {
@@ -29,7 +35,7 @@ function ProfileHeader() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar>
-          <AvatarImage src="" />
+          <AvatarImage src={validImage(auth.user.profilePicture, profilePlaceholder)} />
         </Avatar>
       </DropdownMenuTrigger>
 

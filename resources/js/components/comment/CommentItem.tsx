@@ -2,7 +2,10 @@ import { Dispatch, SetStateAction } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 import { cn } from "@/lib/utils";
+
+import { validImage } from "@/utils";
 
 import { Comment } from "@/types";
 
@@ -31,7 +34,10 @@ function CommentItem(props: CommentItemProps) {
       >
         <header className="flex items-center gap-2">
           <Avatar>
-            <AvatarImage alt="Foto de perfil" src="https://picsum.photos/200" />
+            <AvatarImage
+              alt="Foto de perfil"
+              src={validImage(comment.user.profilePicture, profilePlaceholder)}
+            />
 
             <AvatarFallback>Foto de perfil</AvatarFallback>
           </Avatar>
