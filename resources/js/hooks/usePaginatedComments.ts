@@ -26,6 +26,8 @@ export function usePaginatedComments(
   const loadingRef = useRef(false);
   const lastRequestedUrl = useRef<string | null>(null);
 
+  const hasMoreComments = !!commentsPage?.links.next;
+
   const uploadedComments = useCallback(() => {
     if (loadingRef.current) return;
 
@@ -100,8 +102,6 @@ export function usePaginatedComments(
   useEffect(() => {
     uploadedComments();
   }, [uploadedComments]);
-
-  const hasMoreComments = !!commentsPage?.links.next;
 
   return { commentsPage, loading, loadMoreComments, uploadedComments, hasMoreComments };
 }

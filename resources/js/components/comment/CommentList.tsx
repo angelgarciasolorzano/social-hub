@@ -14,12 +14,12 @@ function CommentList({ postId }: CommentListProps) {
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [showReplies, setShowReplies] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreTimer = useRef<number | null>(null);
 
   const { commentsPage, loading, loadMoreComments, hasMoreComments } = usePaginatedComments(
     "post",
     postId,
   );
-  const loadMoreTimer = useRef<number | null>(null);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
