@@ -11,7 +11,7 @@ export function hasPaginatedKey<T = unknown>(
 
   if (typeof paginatedData !== "object" || paginatedData === null) return false;
 
-  const paginatedObject = paginatedData as Record<string, unknown>;
+  const paginatedObject = paginatedData as PaginatedResponse<T>;
 
   return (
     Array.isArray(paginatedObject.data) &&
