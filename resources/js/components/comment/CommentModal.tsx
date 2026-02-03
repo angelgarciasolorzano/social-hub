@@ -75,7 +75,7 @@ function CommentModalContent({ idPost }: CommentModalContent) {
 
       <Separator className="dark:bg-gray-700" />
 
-      <CommentList />
+      <CommentList postId={idPost} />
 
       <Separator className="dark:bg-gray-700" />
 

@@ -50,7 +50,7 @@ export function usePaginatedComments(
           },
         },
       );
-    }, 10000);
+    }, 300);
   }, [commentableType, commentableId]);
 
   const loadMoreComments = useCallback(() => {

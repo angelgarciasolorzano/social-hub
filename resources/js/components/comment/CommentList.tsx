@@ -1,18 +1,60 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { Comment } from "@/types";
+import { useIntersectionObserver } from "usehooks-ts";
+
+import { usePaginatedComments } from "@/hooks";
 
 import CommentItem from "./CommentItem";
 
 interface CommentListProps {
-  comments: Comment[];
+  postId: number;
 }
 
-function CommentList({ comments }: CommentListProps) {
+function CommentList({ postId }: CommentListProps) {
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [showReplies, setShowReplies] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  if (comments.length === 0) {
+  const { commentsPage, loading, loadMoreComments, hasMoreComments } = usePaginatedComments(
+    "post",
+    postId,
+  );
+  const loadMoreTimer = useRef<number | null>(null);
+
+  const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
+    threshold: 0,
+    root: scrollRef.current,
+    rootMargin: "200px",
+  });
+
+  useEffect(() => {
+    if (!isIntersecting || loading || !hasMoreComments) return;
+    if (loadMoreTimer.current !== null) return;
+
+    loadMoreTimer.current = window.setTimeout(() => {
+      loadMoreTimer.current = null;
+      loadMoreComments();
+    }, 300);
+
+    return () => {
+      if (loadMoreTimer.current !== null) {
+        clearTimeout(loadMoreTimer.current);
+        loadMoreTimer.current = null;
+      }
+    };
+  }, [loadMoreComments, isIntersecting, loading, hasMoreComments]);
+
+  if (loading && !commentsPage) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-center text-sm text-gray-600 dark:text-white/90">
+          Cargando comentarios...
+        </p>
+      </div>
+    );
+  }
+
+  if (!commentsPage) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-center text-sm text-gray-600 dark:text-white/90">
@@ -23,8 +65,8 @@ function CommentList({ comments }: CommentListProps) {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto pr-2.5">
-      {comments.map((comment) => (
+    <div className="flex h-full flex-col gap-4 overflow-y-auto pr-2.5" ref={scrollRef}>
+      {commentsPage.data.map((comment) => (
         <CommentItem
           comment={comment}
           key={comment.id}
@@ -34,6 +76,14 @@ function CommentList({ comments }: CommentListProps) {
           showReplies={showReplies}
         />
       ))}
+
+      <div className="h-1 w-full" ref={sentinelRef} />
+
+      {(loading || hasMoreComments) && (
+        <div className="py-2 text-center text-sm text-gray-500">
+          {loading ? "Cargando más..." : "Desliza para cargar más..."}
+        </div>
+      )}
     </div>
   );
 }
