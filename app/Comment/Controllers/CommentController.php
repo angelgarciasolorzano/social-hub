@@ -2,8 +2,10 @@
 
 namespace App\Comment\Controllers;
 
+use App\Comment\Enums\CommentableType;
 use App\Comment\Models\Comment;
 use App\Comment\Requests\CommentStoreRequest;
+use App\Comment\Resources\CommentCollection;
 use App\Http\Controllers\Controller;
 use App\Post\Models\Post;
 use Illuminate\Database\Eloquent\Model;
@@ -13,12 +15,28 @@ use Inertia\Inertia;
 
 class CommentController extends Controller
 {
-    public function __invoke(CommentStoreRequest $request)
+    public function index(CommentableType $commentableType, int $commentableId)
     {
-        $commentableType = Relation::getMorphedModel($request['commentable_type']);
+        $modelType = $commentableType->modelClass();
+
+        /** @var Model & (Post | Comment) $commentable */
+        $commentable = $modelType::query()->findOrFail($commentableId);
+
+        $comments = $commentable->comments()
+            ->with('user')
+            ->latest()
+            ->paginate(2);
+
+        return Inertia::flash(['comments' => new CommentCollection($comments)])->back();
+    }
+
+    public function store(CommentStoreRequest $request)
+    {
+        $modelType = Relation::getMorphedModel($request['commentable_type']);
+
         $commentableId = $request['commentable_id'];
 
-        if (! $commentableType) {
+        if (! $modelType) {
             return back()->with([
                 'type' => 'error',
                 'message' => 'El tipo de comentario es invalido.'
@@ -26,7 +44,7 @@ class CommentController extends Controller
         };
 
         /** @var Model & (Post | Comment) $commentable */
-        $commentable = $commentableType::query()->findOrFail($commentableId);
+        $commentable = $modelType::query()->findOrFail($commentableId);
 
         $commentable->comments()->create([
             'user_id' => Auth::id(),

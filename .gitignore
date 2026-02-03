@@ -9,6 +9,8 @@
 /resources/js/wayfinder
 /storage/*.key
 /storage/pail
+/.agents
+/.windsurf
 /vendor
 .DS_Store
 .env
