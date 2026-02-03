@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
+import { CommentableType } from "@/enums";
+
 import CommentController from "@/actions/App/Comment/Controllers/CommentController";
 
 import { hasPaginatedKey } from "@/utils";
@@ -17,7 +19,7 @@ interface UsePaginatedCommentsReturn {
 }
 
 export function usePaginatedComments(
-  commentableType: string,
+  commentableType: CommentableType,
   commentableId: number,
 ): UsePaginatedCommentsReturn {
   const [commentsPage, setCommentsPage] = useState<PaginatedComments | null>(null);

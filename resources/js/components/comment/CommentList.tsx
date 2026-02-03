@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { CommentableType } from "@/enums";
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { usePaginatedComments } from "@/hooks";
@@ -17,7 +18,7 @@ function CommentList({ postId }: CommentListProps) {
   const loadMoreTimer = useRef<number | null>(null);
 
   const { commentsPage, loading, loadMoreComments, hasMoreComments } = usePaginatedComments(
-    "post",
+    CommentableType.POST,
     postId,
   );
 

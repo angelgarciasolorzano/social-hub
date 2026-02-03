@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction } from "react";
 
 import { Form, router } from "@inertiajs/react";
 
+import { CommentableType } from "@/enums";
 import { Loader2Icon } from "lucide-react";
 
 import CommentController from "@/actions/App/Comment/Controllers/CommentController";
@@ -12,7 +13,7 @@ import { Input } from "../ui/input";
 
 interface CommentFormProps {
   commentableId: number;
-  commentableType: string;
+  commentableType: CommentableType;
   setReplyTo?: Dispatch<SetStateAction<number | null>>;
 }
 

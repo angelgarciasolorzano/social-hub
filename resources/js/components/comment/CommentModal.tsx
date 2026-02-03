@@ -1,5 +1,6 @@
 import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
+import { CommentableType } from "@/enums";
 import { PublicationDetail } from "@/features/publication";
 
 import { Post, User } from "@/types";
@@ -18,7 +19,7 @@ import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
 
 interface CommentModalProps {
-  postDetail: Omit<Post, "comments">;
+  postDetail: Post;
   user: User;
 }
 
@@ -79,7 +80,7 @@ function CommentModalContent({ idPost }: CommentModalContent) {
 
       <Separator className="dark:bg-gray-700" />
 
-      <CommentForm commentableId={idPost} commentableType="post" />
+      <CommentForm commentableId={idPost} commentableType={CommentableType.POST} />
     </div>
   );
 }

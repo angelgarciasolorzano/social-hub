@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from "react";
 import { IoMdTime } from "react-icons/io";
 
 import profilePlaceholder from "@/assets/profile-placeholder.png";
+import { CommentableType } from "@/enums";
 import { cn } from "@/lib/utils";
 
 import { validImage } from "@/utils";
@@ -84,7 +85,11 @@ function CommentItem(props: CommentItemProps) {
       </footer>
 
       {replyTo === comment.id && (
-        <CommentForm commentableId={comment.id} commentableType="comment" setReplyTo={setReplyTo} />
+        <CommentForm
+          commentableId={comment.id}
+          commentableType={CommentableType.COMMENT}
+          setReplyTo={setReplyTo}
+        />
       )}
 
       {showReplies === comment.id && (
