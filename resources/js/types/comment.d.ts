@@ -1,10 +1,15 @@
 import { PaginatedResponse } from "./pagination";
 
+interface CommentReplies {
+  hasReplies: boolean;
+  repliesCount: number;
+}
+
 export interface Comment {
   content: string;
-  created_at: string;
+  createdAt: string;
   id: number;
-  replies?: Comment[];
+  repliesInfo: CommentReplies;
   user: User;
 }
 

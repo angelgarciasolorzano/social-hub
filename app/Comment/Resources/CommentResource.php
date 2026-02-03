@@ -19,12 +19,15 @@ class CommentResource extends JsonResource
         return [
             'id' => $this->id,
             'content' => $this->content,
-            'created_at' => $this->created_at->diffForHumans(),
+            'createdAt' => $this->created_at->diffForHumans(),
             'user' => [
                 'id' => $this->user->id,
                 'name' => $this->user->name
             ],
-            'replies' => CommentResource::collection($this->whenLoaded('comments')),
+            'repliesInfo' => [
+                'hasReplies' => $this->hasReplies(),
+                'repliesCount' => $this->repliesCount(),
+            ],
         ];
     }
 }

@@ -15,8 +15,14 @@ class Comment extends Model
     /** @use HasFactory<\Database\Factories\CommentFactory> */
     use HasFactory;
 
+    /**
+     * The morph name used for polymorphic relations.
+     */
     public const MORPH_NAME = 'comment';
 
+    /**
+     * The morph column name for child comments.
+     */
     public const MORPH_COLUMN = 'commentable';
 
     /** @var string[]  */
@@ -47,9 +53,37 @@ class Comment extends Model
         return $this->morphTo();
     }
 
+
+    /**
+     * Get all replies (child comments) for this comment.
+     *
+     * @return MorphMany
+     */
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, self::MORPH_COLUMN)->with('user');
+    }
+
+
+    /**
+     * Check if this comment has replies.
+     * 
+     * @return bool
+     */
+    public function hasReplies(): bool
+    {
+        return $this->comments()->exists();
+    }
+
+
+    /**
+     * Get the total number of replies for this comment.
+     * 
+     * @return int
+     */
+    public function repliesCount(): int
+    {
+        return $this->comments()->count();
     }
 
     /**
