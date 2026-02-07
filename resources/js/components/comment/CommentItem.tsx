@@ -2,16 +2,19 @@ import { Dispatch, SetStateAction } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
-import profilePlaceholder from "@/assets/profile-placeholder.png";
-import { CommentableType } from "@/enums";
 import { cn } from "@/lib/utils";
+
+import { CommentableType } from "@/enums";
 
 import { validImage } from "@/utils";
 
 import { Comment } from "@/types";
 
+import { profilePlaceholder } from "@/assets";
+
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import CommentForm from "./CommentForm";
+import RepliesList from "./RepliesList";
 
 interface CommentItemProps {
   comment: Comment;
@@ -48,7 +51,7 @@ function CommentItem(props: CommentItemProps) {
 
             <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <IoMdTime className="h-3 w-3 text-gray-600 dark:text-gray-500" />
-              {comment.created_at}
+              {comment.createdAt}
             </time>
           </div>
         </header>
@@ -71,7 +74,7 @@ function CommentItem(props: CommentItemProps) {
           Responder
         </button>
 
-        {comment.replies && comment.replies.length > 0 && (
+        {comment.repliesInfo.hasReplies && (
           <button
             type="button"
             className="dark:hover:text-blue-500transition-colors cursor-pointer hover:text-blue-600"
@@ -79,7 +82,7 @@ function CommentItem(props: CommentItemProps) {
           >
             {showReplies === comment.id
               ? "Ocultar respuestas"
-              : `Mostrar ${comment.replies.length} respuestas`}
+              : `Mostrar ${comment.repliesInfo.repliesCount} respuestas `}
           </button>
         )}
       </footer>
@@ -93,21 +96,13 @@ function CommentItem(props: CommentItemProps) {
       )}
 
       {showReplies === comment.id && (
-        <>
-          {comment.replies &&
-            comment.replies.map((replie) => (
-              <div className="mt-4" key={replie.id}>
-                <CommentItem
-                  comment={replie}
-                  isReply
-                  replyTo={replyTo}
-                  setReplyTo={setReplyTo}
-                  setShowReplies={setShowReplies}
-                  showReplies={showReplies}
-                />
-              </div>
-            ))}
-        </>
+        <RepliesList
+          commentId={comment.id}
+          replyTo={replyTo}
+          setReplyTo={setReplyTo}
+          setShowReplies={setShowReplies}
+          showReplies={showReplies}
+        />
       )}
     </article>
   );

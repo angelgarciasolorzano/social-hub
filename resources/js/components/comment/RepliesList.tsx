@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef } from "react";
 
-import { cn } from "@/lib/utils";
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { usePaginatedComments } from "@/hooks";
@@ -9,19 +8,27 @@ import { CommentableType } from "@/enums";
 
 import CommentItem from "./CommentItem";
 
-interface CommentListProps {
-  postId: number;
+interface RepliesListProps {
+  commentId: number;
+  replyTo: number | null;
+  setReplyTo: Dispatch<SetStateAction<number | null>>;
+  setShowReplies: Dispatch<SetStateAction<number | null>>;
+  showReplies: number | null;
 }
 
-function CommentList({ postId }: CommentListProps) {
-  const [replyTo, setReplyTo] = useState<number | null>(null);
-  const [showReplies, setShowReplies] = useState<number | null>(null);
+function RepliesList({
+  commentId,
+  replyTo,
+  setReplyTo,
+  showReplies,
+  setShowReplies,
+}: RepliesListProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
 
   const { commentsPage, loading, loadMoreComments, hasMoreComments } = usePaginatedComments(
-    CommentableType.POST,
-    postId,
+    CommentableType.COMMENT,
+    commentId,
   );
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
@@ -49,30 +56,23 @@ function CommentList({ postId }: CommentListProps) {
 
   if (loading && !commentsPage) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
-          Cargando comentarios...
+      <div className="mt-4 flex flex-1 items-center justify-center">
+        <p className="text-center text-xs text-gray-500 dark:text-white/80">
+          Cargando respuestas...
         </p>
       </div>
     );
   }
 
-  if (!commentsPage) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
-          No hay comentarios en esta publicación para mostrar
-        </p>
-      </div>
-    );
-  }
+  if (!commentsPage) return null;
 
   return (
-    <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={scrollRef}>
-      {commentsPage.data.map((comment) => (
+    <div className="ml-4 flex max-h-72 flex-col gap-2 overflow-auto" ref={scrollRef}>
+      {commentsPage.data.map((reply) => (
         <CommentItem
-          comment={comment}
-          key={comment.id}
+          comment={reply}
+          isReply
+          key={reply.id}
           replyTo={replyTo}
           setReplyTo={setReplyTo}
           setShowReplies={setShowReplies}
@@ -83,12 +83,12 @@ function CommentList({ postId }: CommentListProps) {
       <div className="h-1 w-full" ref={sentinelRef} />
 
       {(loading || hasMoreComments) && (
-        <div className="py-2 text-center text-sm text-gray-500">
-          {loading ? "Cargando más..." : "Desliza para cargar más..."}
+        <div className="py-1 text-center text-xs text-gray-500">
+          {loading ? "Cargando más respuestas..." : "Desliza para cargar más..."}
         </div>
       )}
     </div>
   );
 }
 
-export default CommentList;
+export default RepliesList;
