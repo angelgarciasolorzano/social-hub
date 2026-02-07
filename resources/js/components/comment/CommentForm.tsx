@@ -1,11 +1,13 @@
 import { Dispatch, SetStateAction } from "react";
 
-import { Form, router } from "@inertiajs/react";
+import { Form } from "@inertiajs/react";
 
-import { CommentableType } from "@/enums";
+import { cn } from "@/lib/utils";
 import { Loader2Icon } from "lucide-react";
 
 import CommentController from "@/actions/App/Comment/Controllers/CommentController";
+
+import { CommentableType } from "@/enums";
 
 import InputError from "../form/InputError";
 import { Button } from "../ui/button";
@@ -14,20 +16,20 @@ import { Input } from "../ui/input";
 interface CommentFormProps {
   commentableId: number;
   commentableType: CommentableType;
+  onCommentPosted?: () => void;
   setReplyTo?: Dispatch<SetStateAction<number | null>>;
 }
 
 function CommentForm(props: CommentFormProps) {
-  const { commentableId, commentableType, setReplyTo } = props;
+  const { commentableId, commentableType, onCommentPosted, setReplyTo } = props;
 
   return (
     <Form
       {...CommentController.store.form()}
+      className={cn(setReplyTo && "mt-4")}
       onSuccess={() => {
         if (setReplyTo) setReplyTo(null);
-        router.reload({
-          only: ["posts"],
-        });
+        if (onCommentPosted) onCommentPosted();
       }}
       resetOnSuccess
     >

@@ -7,6 +7,8 @@ import { usePaginatedComments } from "@/hooks";
 
 import { CommentableType } from "@/enums";
 
+import { Separator } from "../ui/separator";
+import CommentForm from "./CommentForm";
 import CommentItem from "./CommentItem";
 
 interface CommentListProps {
@@ -19,10 +21,8 @@ function CommentList({ postId }: CommentListProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
 
-  const { commentsPage, loading, loadMoreComments, hasMoreComments } = usePaginatedComments(
-    CommentableType.POST,
-    postId,
-  );
+  const { commentsPage, loading, loadMoreComments, hasMoreComments, uploadedComments } =
+    usePaginatedComments(CommentableType.POST, postId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
@@ -68,26 +68,36 @@ function CommentList({ postId }: CommentListProps) {
   }
 
   return (
-    <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={scrollRef}>
-      {commentsPage.data.map((comment) => (
-        <CommentItem
-          comment={comment}
-          key={comment.id}
-          replyTo={replyTo}
-          setReplyTo={setReplyTo}
-          setShowReplies={setShowReplies}
-          showReplies={showReplies}
-        />
-      ))}
+    <>
+      <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={scrollRef}>
+        {commentsPage.data.map((comment) => (
+          <CommentItem
+            comment={comment}
+            key={comment.id}
+            replyTo={replyTo}
+            setReplyTo={setReplyTo}
+            setShowReplies={setShowReplies}
+            showReplies={showReplies}
+          />
+        ))}
 
-      <div className="h-1 w-full" ref={sentinelRef} />
+        <div className="h-1 w-full" ref={sentinelRef} />
 
-      {(loading || hasMoreComments) && (
-        <div className="py-2 text-center text-sm text-gray-500">
-          {loading ? "Cargando más..." : "Desliza para cargar más..."}
-        </div>
-      )}
-    </div>
+        {(loading || hasMoreComments) && (
+          <div className="py-2 text-center text-sm text-gray-500">
+            {loading ? "Cargando más..." : "Desliza para cargar más..."}
+          </div>
+        )}
+      </div>
+
+      <Separator className="dark:bg-gray-700" />
+
+      <CommentForm
+        onCommentPosted={uploadedComments}
+        commentableId={postId}
+        commentableType={CommentableType.POST}
+      />
+    </>
   );
 }
 
