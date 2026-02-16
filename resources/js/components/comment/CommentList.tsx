@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { usePaginatedComments } from "@/hooks";
+import { useModal } from "@/hooks/useModal";
 
 import { CommentableType } from "@/enums";
 
+import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
-import CommentForm from "./CommentForm";
+import CommentInputModal from "./CommentInputModal";
 import CommentItem from "./CommentItem";
 
 interface CommentListProps {
@@ -18,8 +20,11 @@ interface CommentListProps {
 function CommentList({ postId }: CommentListProps) {
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [showReplies, setShowReplies] = useState<number | null>(null);
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
+
+  const { open, setOpen } = useModal();
 
   const { commentsPage, loading, loadMoreComments, hasMoreComments, uploadedComments } =
     usePaginatedComments(CommentableType.POST, postId);
@@ -49,21 +54,23 @@ function CommentList({ postId }: CommentListProps) {
 
   if (loading && !commentsPage) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
-          Cargando comentarios...
-        </p>
-      </div>
+      <RenderLoadingState
+        open={open}
+        postId={postId}
+        setOpen={setOpen}
+        uploadedComments={uploadedComments}
+      />
     );
   }
 
-  if (!commentsPage) {
+  if (!commentsPage || !commentsPage.data.length) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
-          No hay comentarios en esta publicación para mostrar
-        </p>
-      </div>
+      <RenderEmptyState
+        open={open}
+        postId={postId}
+        setOpen={setOpen}
+        uploadedComments={uploadedComments}
+      />
     );
   }
 
@@ -90,12 +97,89 @@ function CommentList({ postId }: CommentListProps) {
         )}
       </div>
 
+      <RenderCommentInput
+        open={open}
+        postId={postId}
+        setOpen={setOpen}
+        uploadedComments={uploadedComments}
+      />
+    </>
+  );
+}
+
+type RenderCommentBaseProps = CommentListProps & {
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+  uploadedComments?: () => void;
+};
+
+type RenderLoadingStateProps = RenderCommentBaseProps;
+
+function RenderLoadingState({ open, setOpen, uploadedComments, postId }: RenderLoadingStateProps) {
+  return (
+    <>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-center text-sm text-gray-600 dark:text-white/90">
+          Cargando comentarios...
+        </p>
+      </div>
+
+      <RenderCommentInput
+        open={open}
+        postId={postId}
+        setOpen={setOpen}
+        uploadedComments={uploadedComments}
+      />
+    </>
+  );
+}
+
+type RenderEmptyStateProps = RenderCommentBaseProps;
+
+function RenderEmptyState({ postId, open, setOpen, uploadedComments }: RenderEmptyStateProps) {
+  return (
+    <>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-center text-sm text-gray-600 dark:text-white/90">
+          No hay comentarios en esta publicación para mostrar
+        </p>
+      </div>
+
+      <RenderCommentInput
+        open={open}
+        postId={postId}
+        setOpen={setOpen}
+        uploadedComments={uploadedComments}
+      />
+    </>
+  );
+}
+
+type RenderCommentInputProps = RenderCommentBaseProps;
+
+function RenderCommentInput(props: RenderCommentInputProps) {
+  const { postId, open, setOpen, uploadedComments } = props;
+
+  return (
+    <>
       <Separator className="dark:bg-gray-700" />
 
-      <CommentForm
+      <Input
+        className="cursor-pointer"
+        onClick={() => setOpen(true)}
+        autoFocus={false}
+        placeholder="Escribe tu comentario"
+        readOnly
+      />
+
+      <CommentInputModal
         onCommentPosted={uploadedComments}
+        onOpenChange={setOpen}
         commentableId={postId}
         commentableType={CommentableType.POST}
+        open={open}
+        setOpen={setOpen}
+        title="Nuevo comentario"
       />
     </>
   );

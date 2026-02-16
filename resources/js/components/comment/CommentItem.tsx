@@ -4,6 +4,8 @@ import { IoMdTime } from "react-icons/io";
 
 import { cn } from "@/lib/utils";
 
+import { useModal } from "@/hooks/useModal";
+
 import { CommentableType } from "@/enums";
 
 import { validImage } from "@/utils";
@@ -13,7 +15,7 @@ import { Comment } from "@/types";
 import { profilePlaceholder } from "@/assets";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import CommentForm from "./CommentForm";
+import CommentInputModal from "./CommentInputModal";
 import RepliesList from "./RepliesList";
 
 interface CommentItemProps {
@@ -23,10 +25,21 @@ interface CommentItemProps {
   setReplyTo: Dispatch<SetStateAction<number | null>>;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
   showReplies: number | null;
+  uploadedComments?: () => void;
 }
 
 function CommentItem(props: CommentItemProps) {
-  const { comment, isReply = false, replyTo, setReplyTo, setShowReplies, showReplies } = props;
+  const {
+    comment,
+    isReply = false,
+    replyTo,
+    setReplyTo,
+    setShowReplies,
+    showReplies,
+    uploadedComments,
+  } = props;
+
+  const { open, setOpen } = useModal();
 
   return (
     <article className={cn("space-y-1", isReply && "ml-2")}>
@@ -69,7 +82,7 @@ function CommentItem(props: CommentItemProps) {
         <button
           type="button"
           className="cursor-pointer transition-colors hover:text-black/80 dark:hover:text-white/80"
-          onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
+          onClick={() => setOpen(true)}
         >
           Responder
         </button>
@@ -77,7 +90,7 @@ function CommentItem(props: CommentItemProps) {
         {comment.repliesInfo.hasReplies && (
           <button
             type="button"
-            className="dark:hover:text-blue-500transition-colors cursor-pointer hover:text-blue-600"
+            className="cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-500"
             onClick={() => setShowReplies(showReplies === comment.id ? null : comment.id)}
           >
             {showReplies === comment.id
@@ -87,13 +100,15 @@ function CommentItem(props: CommentItemProps) {
         )}
       </footer>
 
-      {replyTo === comment.id && (
-        <CommentForm
-          commentableId={comment.id}
-          commentableType={CommentableType.COMMENT}
-          setReplyTo={setReplyTo}
-        />
-      )}
+      <CommentInputModal
+        onCommentPosted={uploadedComments}
+        onOpenChange={setOpen}
+        commentableId={comment.id}
+        commentableType={CommentableType.COMMENT}
+        open={open}
+        setOpen={setOpen}
+        title="Responder a este comentario"
+      />
 
       {showReplies === comment.id && (
         <RepliesList
