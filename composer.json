@@ -21,6 +21,7 @@
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.6",
+        "driftingly/rector-laravel": "^2.1",
         "fakerphp/faker": "^1.24.1",
         "fruitcake/laravel-debugbar": "^4.0",
         "larastan/larastan": "^3.8.1",
@@ -72,6 +73,22 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ]
+        ,
+        "pint": "vendor/bin/pint",
+        "pint-dirty": "vendor/bin/pint --dirty",
+        "larastan": "vendor/bin/phpstan analyse --memory-limit=2G",
+        "rector": "vendor/bin/rector process",
+        "rector:dry": "vendor/bin/rector process --dry-run"
+    },
+    "script-descriptions": {
+        "dev": "Start the development environment with hot reloading and concurrent processes.",
+        "dev:ssr": "Start the development environment with server-side rendering support.",
+        "test": "Run the test suite.",
+        "pint": "Run Laravel Pint to check code style.",
+        "pint-dirty": "Run Laravel Pint only on changed files.",
+        "larastan": "Run Larastan for static analysis of the codebase.",
+        "rector": "Run Rector to automatically refactor code.",
+        "rector:dry": "Run Rector in dry-run mode to see potential changes without applying them."
     },
     "extra": {
         "laravel": {
