@@ -13,7 +13,8 @@ use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 
-class UserController extends Controller {
+class UserController extends Controller
+{
     public function update(UserUpdateRequest $request): RedirectResponse
     {
         $request->user()->fill($request->validated());
@@ -54,13 +55,13 @@ class UserController extends Controller {
 
         try {
             $user->addMediaFromRequest($type->value())->toMediaCollection($type->value());
-        } catch (FileDoesNotExist | FileIsTooBig $exception) {
+        } catch (FileDoesNotExist|FileIsTooBig $exception) {
             return Inertia::flash([
                 'type' => 'error',
                 'message' => $type->errorMessage(),
             ])->back();
         }
-        
+
         return Inertia::flash([
             'type' => 'success',
             'message' => $type->successMessage(),

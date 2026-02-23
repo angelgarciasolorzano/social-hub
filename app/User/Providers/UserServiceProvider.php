@@ -8,8 +8,6 @@ class UserServiceProvider extends RouteServiceProvider
 {
     /**
      * Bootstrap any application services.
-     * 
-     * @return void
      */
     public function boot(): void
     {

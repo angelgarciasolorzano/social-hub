@@ -21,8 +21,8 @@ class PostController extends Controller
         if ($request->hasFile('image_file')) {
             try {
                 $post->addMediaFromRequest('image_file')->toMediaCollection('posts_images');
-            } catch (FileDoesNotExist | FileIsTooBig $error) {
-                return  back()->with('notification', [
+            } catch (FileDoesNotExist|FileIsTooBig $error) {
+                return back()->with('notification', [
                     'type' => 'error',
                     'message' => 'No fue posible subir la imagen, por favor intente de nuevo',
                 ]);
@@ -34,8 +34,8 @@ class PostController extends Controller
             'message' => 'Publicación creada correctamente',
             'action' => [
                 'label' => 'Ver publicación',
-                'url' => route('profile.index')
-            ]
+                'url' => route('profile.index'),
+            ],
         ])->back();
     }
 }

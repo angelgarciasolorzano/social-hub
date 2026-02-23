@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class ProfileController extends Controller {
-    public function index(): Response {
+class ProfileController extends Controller
+{
+    public function index(): Response
+    {
         $posts = Post::query()
             ->where('user_id', Auth::id())
             ->latest()
@@ -24,15 +26,16 @@ class ProfileController extends Controller {
         ]);
     }
 
-    public function show(User $user): Response {
+    public function show(User $user): Response
+    {
         $posts = Post::query()
             ->where('user_id', $user->id)
             ->latest()
             ->get();
 
         return Inertia::render('profile/Profile', [
-            'user'=> new UserResource($user)->resolve(request()),
-            'posts'=> PostResource::collection($posts),
+            'user' => new UserResource($user)->resolve(request()),
+            'posts' => PostResource::collection($posts),
         ]);
     }
 }

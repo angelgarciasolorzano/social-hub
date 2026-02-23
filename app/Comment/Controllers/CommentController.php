@@ -39,9 +39,9 @@ class CommentController extends Controller
         if (! $modelType) {
             return back()->with([
                 'type' => 'error',
-                'message' => 'El tipo de comentario es invalido.'
+                'message' => 'El tipo de comentario es invalido.',
             ]);
-        };
+        }
 
         /** @var Model & (Post | Comment) $commentable */
         $commentable = $modelType::query()->findOrFail($commentableId);

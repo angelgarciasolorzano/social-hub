@@ -8,7 +8,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Laravel\Fortify\Features;
 
 /** @mixin User */
-class UserResource extends JsonResource {
+class UserResource extends JsonResource
+{
     /**
      * Transform the resource into an array.
      *
@@ -23,7 +24,7 @@ class UserResource extends JsonResource {
             'profilePicture' => $this->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
             'coverImage' => $this->getFirstMediaUrl(UserImageType::COVER_IMAGE->value()),
             'twoFactorEnabled' => $this->hasEnabledTwoFactorAuthentication(),
-            'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm')
+            'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
         ];
     }
 }

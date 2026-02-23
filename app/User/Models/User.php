@@ -13,8 +13,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-class User extends Authenticatable implements HasMedia {
-    use HasFactory, TwoFactorAuthenticatable, InteractsWithMedia;
+class User extends Authenticatable implements HasMedia
+{
+    use HasFactory, InteractsWithMedia, TwoFactorAuthenticatable;
 
     public const MORPH_NAME = 'user';
 
@@ -43,22 +44,25 @@ class User extends Authenticatable implements HasMedia {
             ->useFallbackUrl('/default-profile-picture.png')
             ->useFallbackPath(public_path('/default-profile-picture.png'))
             ->singleFile();
-        
+
         $this->addMediaCollection(UserImageType::COVER_IMAGE->value())
             ->useFallbackUrl('/default-cover.svg')
             ->useFallbackPath(public_path('/default-cover.svg'))
             ->singleFile();
     }
 
-    public function posts(): HasMany {
+    public function posts(): HasMany
+    {
         return $this->hasMany(Post::class);
     }
 
-    public function comments(): HasMany {
+    public function comments(): HasMany
+    {
         return $this->hasMany(Comment::class);
     }
 
-    public function likes(): HasMany {
+    public function likes(): HasMany
+    {
         return $this->hasMany(Like::class);
     }
 }

@@ -22,7 +22,7 @@ class CommentResource extends JsonResource
             'createdAt' => $this->created_at->diffForHumans(),
             'user' => [
                 'id' => $this->user->id,
-                'name' => $this->user->name
+                'name' => $this->user->name,
             ],
             'repliesInfo' => [
                 'hasReplies' => $this->hasReplies(),

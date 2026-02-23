@@ -22,7 +22,7 @@ class UserImageUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            $this->field->value() => ['required', 'mimes:png,jpg,jpeg,webp', 'max:2048']
+            $this->field->value() => ['required', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ];
     }
 

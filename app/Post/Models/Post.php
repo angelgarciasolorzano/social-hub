@@ -15,6 +15,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @mixin IdeHelperPost
+ *
  * @property CarbonImmutable|null $created_at
  */
 class Post extends Model implements HasMedia
@@ -26,7 +27,7 @@ class Post extends Model implements HasMedia
     public const PATH = 'posts';
 
     public const POSTS_IMAGES_MEDIA_COLLECTION = 'posts_images';
-    
+
     protected $fillable = [
         'content',
         'user_id',

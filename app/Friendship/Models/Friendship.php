@@ -35,8 +35,6 @@ class Friendship extends Model
 
     /**
      * Get the user that sent the friend request.
-     *
-     * @return BelongsTo
      */
     public function requester(): BelongsTo
     {
@@ -45,8 +43,6 @@ class Friendship extends Model
 
     /**
      * Get the user that received the friend request.
-     *
-     * @return BelongsTo
      */
     public function receiver(): BelongsTo
     {

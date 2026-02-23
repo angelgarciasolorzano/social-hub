@@ -25,18 +25,16 @@ class Comment extends Model
      */
     public const MORPH_COLUMN = 'commentable';
 
-    /** @var string[]  */
+    /** @var string[] */
     protected $fillable = [
         'user_id',
         'commentable_id',
         'commentable_type',
-        'content'
+        'content',
     ];
 
     /**
      * Get the user that wrote the comment.
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -45,41 +43,30 @@ class Comment extends Model
 
     /**
      * Get the parent model that the comment belongs to (e.g., Post).
-     *
-     * @return MorphTo
      */
     public function commentable(): MorphTo
     {
         return $this->morphTo();
     }
 
-
     /**
      * Get all replies (child comments) for this comment.
-     *
-     * @return MorphMany
      */
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, self::MORPH_COLUMN)->with('user');
     }
 
-
     /**
      * Check if this comment has replies.
-     * 
-     * @return bool
      */
     public function hasReplies(): bool
     {
         return $this->comments()->exists();
     }
 
-
     /**
      * Get the total number of replies for this comment.
-     * 
-     * @return int
      */
     public function repliesCount(): int
     {
@@ -88,8 +75,6 @@ class Comment extends Model
 
     /**
      * Get all of the comment's likes.
-     *
-     * @return MorphMany
      */
     public function likes(): MorphMany
     {

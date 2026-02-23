@@ -28,14 +28,15 @@ class CleanMediaLibraryFolders extends Command
     {
         $paths = [
             storage_path('app/public'),
-            public_path('storage')
+            public_path('storage'),
         ];
 
         $totalDeleted = 0;
 
         foreach ($paths as $mediaPath) {
-            if (!File::exists($mediaPath)) {
+            if (! File::exists($mediaPath)) {
                 $this->warn("The path {$mediaPath} does not exist.");
+
                 continue;
             }
 

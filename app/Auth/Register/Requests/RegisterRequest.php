@@ -7,7 +7,7 @@ use Illuminate\Validation\Rules\Password;
 
 /**
  * Summary of RegisterRequest
- * 
+ *
  * @property-read string $name
  * @property-read string $email
  * @property-read string $password
@@ -16,8 +16,6 @@ class RegisterRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     * 
-     * @return bool
      */
     public function authorize(): bool
     {

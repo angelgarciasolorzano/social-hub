@@ -19,8 +19,6 @@ class Like extends Model
 
     /**
      * Get the user that owns the like.
-     * 
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -29,8 +27,6 @@ class Like extends Model
 
     /**
      * Get the parent model that the like belongs to (e.g., Post).
-     *
-     * @return MorphTo
      */
     public function likeable(): MorphTo
     {

@@ -6,15 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Summary of PasswordResetRequest
- * 
+ *
  * @property-read string $email
  */
 class PasswordResetLinkRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     * 
-     * @return bool
      */
     public function authorize(): bool
     {

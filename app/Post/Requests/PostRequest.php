@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Summary of PostRequest
- * 
+ *
  * @property-read string $content
  * @property-read \Illuminate\Http\UploadedFile|null $image
  */
@@ -14,8 +14,6 @@ class PostRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -31,12 +29,13 @@ class PostRequest extends FormRequest
     {
         return [
             'content' => ['required', 'string', 'min:10'],
-            'image' => ['nullable', 'mimes:png,jpg, webp', 'max:5120'], 
+            'image' => ['nullable', 'mimes:png,jpg, webp', 'max:5120'],
         ];
     }
 
     /**
      * Get the custom messages for the validator errors.
+     *
      * @return array<string, string>
      */
     public function messages(): array

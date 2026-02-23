@@ -17,8 +17,8 @@ class NewPasswordController extends Controller
 {
     /**
      * Show the password reset page.
-     * 
-     * @param Request&object{email: string} $request
+     *
+     * @param  Request&object{email: string}  $request
      * @return \Inertia\Response
      */
     public function create(Request $request)
@@ -31,8 +31,7 @@ class NewPasswordController extends Controller
 
     /**
      * Handle an incoming new password request.
-     * 
-     * @param NewPasswordRequest $request
+     *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(NewPasswordRequest $request)
