@@ -34,17 +34,32 @@ class User extends Authenticatable implements HasMedia
 
     public const DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
     ];
 
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var list<string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -53,6 +68,9 @@ class User extends Authenticatable implements HasMedia
         ];
     }
 
+    /**
+     * Register user media collections for profile and cover images.
+     */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(UserImageType::PROFILE_PICTURE->value())
@@ -67,7 +85,7 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
-     * Summary of posts
+     * Get all posts created by the user.
      *
      * @return HasMany<Post, $this>
      */
@@ -77,7 +95,7 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
-     * Summary of comments
+     * Get all comments made by the user.
      *
      * @return HasMany<Comment, $this>
      */
@@ -87,7 +105,7 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
-     * Summary of likes
+     * Get all likes given by the user.
      *
      * @return HasMany<Like, $this>
      */

@@ -16,9 +16,18 @@ class Friendship extends Model
     /** @use HasFactory<\Database\Factories\FriendshipFactory> */
     use HasFactory;
 
+    public const REQUESTER_ID = 'requester_id';
+
+    public const RECEIVER_ID = 'receiver_id';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
-        'requester_id',
-        'receiver_id',
+        self::REQUESTER_ID,
+        self::RECEIVER_ID,
         'status',
     ];
 
@@ -30,8 +39,8 @@ class Friendship extends Model
     protected function casts(): array
     {
         return [
-            'requester_id' => 'integer',
-            'receiver_id' => 'integer',
+            self::REQUESTER_ID => 'integer',
+            self::RECEIVER_ID => 'integer',
             'status' => FriendshipStatus::class,
         ];
     }
@@ -39,20 +48,20 @@ class Friendship extends Model
     /**
      * Get the user that sent the friend request.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\User\Models\User, $this>
+     * @return BelongsTo<User, $this>
      */
     public function requester(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'requester_id');
+        return $this->belongsTo(User::class, self::REQUESTER_ID);
     }
 
     /**
      * Get the user that received the friend request.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\User\Models\User, $this>
+     * @return BelongsTo<User, $this>
      */
     public function receiver(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'receiver_id');
+        return $this->belongsTo(User::class, self::RECEIVER_ID);
     }
 }
