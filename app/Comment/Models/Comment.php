@@ -1,15 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Comment\Models;
 
 use App\Like\Models\Like;
 use App\User\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @mixin IdeHelperComment
+ *
+ * @property int $id
+ * @property string $content
+ * @property CarbonImmutable|null $created_at
+ * @property-read User|null $user
+ */
 class Comment extends Model
 {
     /** @use HasFactory<\Database\Factories\CommentFactory> */
@@ -25,7 +36,7 @@ class Comment extends Model
      */
     public const MORPH_COLUMN = 'commentable';
 
-    /** @var string[] */
+    /** @var list<string> */
     protected $fillable = [
         'user_id',
         'commentable_id',
@@ -35,6 +46,8 @@ class Comment extends Model
 
     /**
      * Get the user that wrote the comment.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
@@ -43,6 +56,8 @@ class Comment extends Model
 
     /**
      * Get the parent model that the comment belongs to (e.g., Post).
+     *
+     * @return MorphTo<Model, $this>
      */
     public function commentable(): MorphTo
     {
@@ -51,6 +66,8 @@ class Comment extends Model
 
     /**
      * Get all replies (child comments) for this comment.
+     *
+     * @return MorphMany<Comment, $this>
      */
     public function comments(): MorphMany
     {
@@ -75,6 +92,8 @@ class Comment extends Model
 
     /**
      * Get all of the comment's likes.
+     *
+     * @return MorphMany<Like, $this>
      */
     public function likes(): MorphMany
     {

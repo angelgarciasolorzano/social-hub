@@ -7,7 +7,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
- * @mixin LengthAwarePaginator
+ * @mixin LengthAwarePaginator<int, CommentResource>
  */
 class CommentCollection extends ResourceCollection
 {
