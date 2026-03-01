@@ -11,14 +11,25 @@ class UserImageUpdateRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->field = $this->route('type');
+        /** @var UserImageType $type */
+        $type = $this->route('type');
+
+        $this->field = $type;
     }
 
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
         return $this->user() !== null;
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
@@ -26,6 +37,11 @@ class UserImageUpdateRequest extends FormRequest
         ];
     }
 
+    /**
+     * Get the custom messages for the validator errors.
+     *
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [

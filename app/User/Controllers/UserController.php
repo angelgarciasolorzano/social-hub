@@ -4,26 +4,40 @@ namespace App\User\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\User\Enums\UserImageType;
+use App\User\Models\User;
 use App\User\Requests\UserImageUpdateRequest;
 use App\User\Requests\UserUpdateRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class UserController extends Controller
 {
-    public function update(UserUpdateRequest $request): RedirectResponse
+    private function getAuthenticatedUser(): User
     {
-        $request->user()->fill($request->validated());
+        $user = Auth::user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        if (! $user) {
+            abort(401);
         }
 
-        $request->user()->save();
+        return $user;
+    }
+
+    public function update(UserUpdateRequest $request): RedirectResponse
+    {
+        $user = $this->getAuthenticatedUser();
+
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return Inertia::flash([
             'type' => 'success',
@@ -37,7 +51,7 @@ class UserController extends Controller
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
+        $user = $this->getAuthenticatedUser();
 
         Auth::logout();
 
@@ -51,7 +65,7 @@ class UserController extends Controller
 
     public function updateImage(UserImageUpdateRequest $request, UserImageType $type): RedirectResponse
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser();
 
         try {
             $user->addMediaFromRequest($type->value())->toMediaCollection($type->value());
