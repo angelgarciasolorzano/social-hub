@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @mixin IdeHelperLike
+ */
 class Like extends Model
 {
     /** @use HasFactory<\Database\Factories\LikeFactory> */
@@ -19,6 +22,8 @@ class Like extends Model
 
     /**
      * Get the user that owns the like.
+     *
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
@@ -27,6 +32,8 @@ class Like extends Model
 
     /**
      * Get the parent model that the like belongs to (e.g., Post).
+     *
+     * @return MorphTo<Model, $this>
      */
     public function likeable(): MorphTo
     {

@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @mixin IdeHelperFriendship
+ */
 class Friendship extends Model
 {
     /** @use HasFactory<\Database\Factories\FriendshipFactory> */
@@ -35,6 +38,8 @@ class Friendship extends Model
 
     /**
      * Get the user that sent the friend request.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\User\Models\User, $this>
      */
     public function requester(): BelongsTo
     {
@@ -43,6 +48,8 @@ class Friendship extends Model
 
     /**
      * Get the user that received the friend request.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\User\Models\User, $this>
      */
     public function receiver(): BelongsTo
     {

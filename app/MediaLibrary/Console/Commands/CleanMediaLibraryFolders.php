@@ -43,6 +43,7 @@ class CleanMediaLibraryFolders extends Command
             $folders = File::directories($mediaPath);
 
             foreach ($folders as $folder) {
+                /** @var string $folder */
                 File::deleteDirectory($folder);
                 $this->info("Deleted folder: {$folder}");
                 $totalDeleted++;

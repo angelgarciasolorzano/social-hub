@@ -9,12 +9,13 @@ use App\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class FriendshipController extends Controller
 {
-    public function sendRequest($receiver_id)
+    public function sendRequest(User $user): RedirectResponse
     {
-        $exists = Friendship::query()->where('receiver_id', $receiver_id)->exists();
+        $exists = Friendship::query()->where('receiver_id', $user->id)->exists();
 
         if ($exists) {
             return Inertia::flash('notification', [
@@ -23,9 +24,9 @@ class FriendshipController extends Controller
             ])->back();
         }
 
-        Friendship::create([
+        Friendship::query()->create([
             'requester_id' => Auth::id(),
-            'receiver_id' => $receiver_id,
+            'receiver_id' => $user->id,
             'status' => FriendshipStatus::PENDING,
         ]);
 
@@ -35,8 +36,9 @@ class FriendshipController extends Controller
         ])->back();
     }
 
-    public function search(Request $request)
+    public function search(Request $request): RedirectResponse
     {
+        /** @var string $search */
         $search = $request->input('search');
 
         $users = User::query()
