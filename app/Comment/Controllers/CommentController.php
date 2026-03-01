@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Comment\Controllers;
 
 use App\Comment\Enums\CommentableType;
@@ -12,11 +14,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class CommentController extends Controller
 {
-    public function index(CommentableType $commentableType, int $commentableId)
+    public function index(CommentableType $commentableType, int $commentableId): RedirectResponse
     {
+        /** @var class-string<Post | Comment> $modelType */
         $modelType = $commentableType->modelClass();
 
         /** @var Model & (Post | Comment) $commentable */
@@ -30,9 +34,12 @@ class CommentController extends Controller
         return Inertia::flash(['comments' => new CommentCollection($comments)])->back();
     }
 
-    public function store(CommentStoreRequest $request)
+    public function store(CommentStoreRequest $request): RedirectResponse
     {
-        $modelType = Relation::getMorphedModel($request['commentable_type']);
+        /** @var string $commentableType */
+        $commentableType = $request->input('commentable_type');
+
+        $modelType = Relation::getMorphedModel($commentableType);
 
         $commentableId = $request['commentable_id'];
 
