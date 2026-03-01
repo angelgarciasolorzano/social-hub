@@ -36,7 +36,11 @@ class Comment extends Model
      */
     public const MORPH_COLUMN = 'commentable';
 
-    /** @var list<string> */
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'user_id',
         'commentable_id',

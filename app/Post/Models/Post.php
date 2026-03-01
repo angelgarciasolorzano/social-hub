@@ -20,34 +20,69 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  */
 class Post extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    /** @use HasFactory<\Database\Factories\PostFactory> */
+    use HasFactory;
 
+    use InteractsWithMedia;
+
+    /**
+     * The morph name used for polymorphic relations.
+     */
     public const MORPH_NAME = 'post';
 
+    /**
+     * The base path for posts.
+     */
     public const PATH = 'posts';
 
+    /**
+     * The media collection name for post images.
+     */
     public const POSTS_IMAGES_MEDIA_COLLECTION = 'posts_images';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
         'content',
         'user_id',
     ];
 
+    /**
+     * Register the media collections for the post images.
+     */
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(self::POSTS_IMAGES_MEDIA_COLLECTION)->singleFile();
     }
 
+    /**
+     * Get the user who created the post.
+     *
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Get all comments for this post.
+     *
+     * @return MorphMany<Comment, $this>
+     */
     public function comments(): MorphMany
     {
         return $this->morphMany(Comment::class, Comment::MORPH_COLUMN);
     }
 
+    /**
+     * Get all likes for this post.
+     *
+     * @return MorphMany<Like, $this>
+     */
     public function likes(): MorphMany
     {
         return $this->morphMany(Like::class, Like::MORPH_COLUMN);

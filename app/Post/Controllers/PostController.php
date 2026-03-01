@@ -4,17 +4,25 @@ namespace App\Post\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Post\Requests\PostRequest;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class PostController extends Controller
 {
     public function __invoke(PostRequest $request): RedirectResponse
     {
-        $post = Auth::user()->posts()->create([
+        $user = $request->user();
+
+        if (! $user) {
+            return back()->with('notification', [
+                'type' => 'error',
+                'message' => 'No se pudo crear la publicación, por favor intente de nuevo',
+            ]);
+        }
+
+        $post = $user->posts()->create([
             'content' => $request['content'],
         ]);
 
