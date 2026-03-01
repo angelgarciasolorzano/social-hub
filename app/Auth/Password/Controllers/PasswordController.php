@@ -14,8 +14,17 @@ class PasswordController extends Controller
      */
     public function __invoke(PasswordRequest $request): RedirectResponse
     {
-        $request->user()->update([
-            'password' => Hash::make($request->input('password')),
+        $user = $request->user();
+
+        /** @var string $password */
+        $password = $request->input('password');
+
+        if (! $user || ! $password) {
+            abort(401);
+        }
+
+        $user->update([
+            'password' => Hash::make($password),
         ]);
 
         return back();
