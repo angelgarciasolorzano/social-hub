@@ -8,11 +8,11 @@ use RectorLaravel\Set\LaravelSetProvider;
 
 return RectorConfig::configure()
     ->withPaths([
-        __DIR__ . '/app',
-        __DIR__ . '/config',
-        __DIR__ . '/database',
-        __DIR__ . '/routes',
-        __DIR__ . '/tests',
+        __DIR__.'/app',
+        __DIR__.'/config',
+        __DIR__.'/database',
+        __DIR__.'/routes',
+        __DIR__.'/tests',
     ])
     ->withSetProviders(LaravelSetProvider::class)
     ->withComposerBased(laravel: true)
@@ -26,5 +26,5 @@ return RectorConfig::configure()
         LaravelSetList::LARAVEL_ELOQUENT_MAGIC_METHOD_TO_QUERY_BUILDER,
         LaravelSetList::LARAVEL_ARRAY_STR_FUNCTION_TO_STATIC_CALL,
         LaravelSetList::LARAVEL_ARRAYACCESS_TO_METHOD_CALL,
-        LaravelSetList::LARAVEL_LEGACY_FACTORIES_TO_CLASSES
+        LaravelSetList::LARAVEL_LEGACY_FACTORIES_TO_CLASSES,
     ]);

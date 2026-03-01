@@ -20,6 +20,9 @@ parameters:
     noEnvCallsOutsideOfConfig: true
     noUnnecessaryEnumerableToArrayCalls: true
 
+    scanFiles:
+        - _ide_helper_models.php
+
     excludePaths:
         analyse:
             - bootstrap/cache
