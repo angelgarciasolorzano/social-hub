@@ -26,3 +26,4 @@ parameters:
     excludePaths:
         analyse:
             - bootstrap/cache
+            - app/Http/Middleware/HandleInertiaRequests.php

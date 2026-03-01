@@ -7,10 +7,11 @@ use App\Post\Models\Post;
 use App\Post\Resources\PostResource;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function __invoke()
+    public function __invoke(): Response
     {
         // $friendsId = Auth::user()->friends()->pluck('id')->toArray();
 
@@ -19,7 +20,7 @@ class HomeController extends Controller
             ->latest()
             ->get();
 
-        return Inertia::render('home/Home', [
+        return Inertia::render('home/home', [
             'user' => Auth::user(),
             'posts' => PostResource::collection($posts),
         ]);
