@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Comment\Models;
 
+use App\Comment\Enums\CommentableType;
 use App\Like\Models\Like;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -47,6 +48,13 @@ class Comment extends Model
         'commentable_type',
         'content',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'commentable_type' => CommentableType::class,
+        ];
+    }
 
     /**
      * Get the user that wrote the comment.
