@@ -30,6 +30,8 @@ function CommentInputModal(props: CommentInputModalProps) {
   const { commentableId, commentableType, onCommentPosted, onOpenChange, open, title, setOpen } =
     props;
 
+  const formId = `comment-form-${commentableType}-${commentableId}`;
+
   const [processing, setProcessing] = useState<boolean>(false);
 
   return (
@@ -49,6 +51,7 @@ function CommentInputModal(props: CommentInputModalProps) {
           commentableType={commentableType}
           setOpen={setOpen}
           setProcessing={setProcessing}
+          formId={formId}
         />
 
         <DialogFooter>
@@ -62,7 +65,7 @@ function CommentInputModal(props: CommentInputModalProps) {
             type="submit"
             className="cursor-pointer"
             disabled={processing}
-            form="comment-form"
+            form={formId}
           >
             {processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
           </Button>

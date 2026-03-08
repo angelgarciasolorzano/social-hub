@@ -26,10 +26,8 @@ function RepliesList({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
 
-  const { commentsPage, loading, loadMoreComments, hasMoreComments } = usePaginatedComments(
-    CommentableType.COMMENT,
-    commentId,
-  );
+  const { commentsPage, isLoadingMore, isRefreshing, loadMoreComments, hasMoreComments } =
+    usePaginatedComments(CommentableType.COMMENT, commentId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
@@ -38,7 +36,7 @@ function RepliesList({
   });
 
   useEffect(() => {
-    if (!isIntersecting || loading || !hasMoreComments) return;
+    if (!isIntersecting || isRefreshing || isLoadingMore || !hasMoreComments) return;
     if (loadMoreTimer.current !== null) return;
 
     loadMoreTimer.current = window.setTimeout(() => {
@@ -52,9 +50,9 @@ function RepliesList({
         loadMoreTimer.current = null;
       }
     };
-  }, [loadMoreComments, isIntersecting, loading, hasMoreComments]);
+  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments]);
 
-  if (loading && !commentsPage) {
+  if (isRefreshing && !commentsPage) {
     return (
       <div className="mt-4 flex flex-1 items-center justify-center">
         <p className="text-center text-xs text-gray-500 dark:text-white/80">
@@ -82,9 +80,9 @@ function RepliesList({
 
       <div className="h-1 w-full" ref={sentinelRef} />
 
-      {(loading || hasMoreComments) && (
+      {hasMoreComments && (
         <div className="py-1 text-center text-xs text-gray-500">
-          {loading ? "Cargando más respuestas..." : "Desliza para cargar más..."}
+          {isLoadingMore ? "Cargando más respuestas..." : "Desliza para cargar más..."}
         </div>
       )}
     </div>

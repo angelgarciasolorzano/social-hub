@@ -13,7 +13,9 @@ import { Comment, PaginatedComments } from "@/types";
 interface UsePaginatedCommentsReturn {
   commentsPage: PaginatedComments | null;
   hasMoreComments: boolean;
-  loading: boolean;
+  increaseRepliesCount: (commentId: number) => void;
+  isLoadingMore: boolean;
+  isRefreshing: boolean;
   loadMoreComments: () => void;
   uploadedComments: () => void;
 }
@@ -23,7 +25,8 @@ export function usePaginatedComments(
   commentableId: number,
 ): UsePaginatedCommentsReturn {
   const [commentsPage, setCommentsPage] = useState<PaginatedComments | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadingRef = useRef(false);
   const lastRequestedUrl = useRef<string | null>(null);
@@ -34,7 +37,7 @@ export function usePaginatedComments(
     if (loadingRef.current) return;
 
     loadingRef.current = true;
-    setLoading(true);
+    setIsRefreshing(true);
 
     setTimeout(() => {
       router.get(
@@ -45,12 +48,34 @@ export function usePaginatedComments(
           replace: true,
           onSuccess: (data) => {
             if (hasPaginatedKey<Comment>(data.flash, "comments")) {
-              setCommentsPage(data.flash.comments as PaginatedComments);
+              const incoming = data.flash.comments as PaginatedComments;
+
+              setCommentsPage((prev) => {
+                if (!prev) return incoming;
+
+                const wasFullyLoaded = prev.links.next === null;
+
+                if (!wasFullyLoaded) return incoming;
+
+                const map = new Map<number, Comment>();
+
+                prev.data.forEach((comment) => map.set(comment.id, comment));
+                incoming.data.forEach((comment) => map.set(comment.id, comment));
+
+                return {
+                  ...incoming,
+                  data: Array.from(map.values()),
+                  links: {
+                    ...incoming.links,
+                    next: null,
+                  },
+                };
+              });
             }
           },
           onFinish: () => {
             loadingRef.current = false;
-            setLoading(false);
+            setIsRefreshing(false);
           },
         },
       );
@@ -65,7 +90,7 @@ export function usePaginatedComments(
     loadingRef.current = true;
     lastRequestedUrl.current = commentsPage.links.next;
 
-    setLoading(true);
+    setIsLoadingMore(true);
 
     router.get(
       commentsPage.links.next,
@@ -94,11 +119,36 @@ export function usePaginatedComments(
         },
         onFinish: () => {
           loadingRef.current = false;
-          setLoading(false);
+          setIsLoadingMore(false);
         },
       },
     );
   }, [commentsPage?.links.next]);
+
+  const increaseRepliesCount = useCallback((commentId: number) => {
+    setCommentsPage((prev) => {
+      if (!prev) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        data: prev.data.map((comment) => {
+          if (comment.id !== commentId) {
+            return comment;
+          }
+
+          return {
+            ...comment,
+            repliesInfo: {
+              hasReplies: true,
+              repliesCount: comment.repliesInfo.repliesCount + 1,
+            },
+          };
+        }),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (commentsPage?.links.next && lastRequestedUrl.current !== commentsPage.links.next) {
@@ -110,5 +160,13 @@ export function usePaginatedComments(
     uploadedComments();
   }, [uploadedComments]);
 
-  return { commentsPage, loading, loadMoreComments, uploadedComments, hasMoreComments };
+  return {
+    commentsPage,
+    hasMoreComments,
+    increaseRepliesCount,
+    isLoadingMore,
+    isRefreshing,
+    loadMoreComments,
+    uploadedComments,
+  };
 }

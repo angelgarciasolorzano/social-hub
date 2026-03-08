@@ -26,8 +26,15 @@ function CommentList({ postId }: CommentListProps) {
 
   const { open, setOpen } = useModal();
 
-  const { commentsPage, loading, loadMoreComments, hasMoreComments, uploadedComments } =
-    usePaginatedComments(CommentableType.POST, postId);
+  const {
+    commentsPage,
+    isLoadingMore,
+    isRefreshing,
+    loadMoreComments,
+    hasMoreComments,
+    increaseRepliesCount,
+    uploadedComments,
+  } = usePaginatedComments(CommentableType.POST, postId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
@@ -36,7 +43,7 @@ function CommentList({ postId }: CommentListProps) {
   });
 
   useEffect(() => {
-    if (!isIntersecting || loading || !hasMoreComments) return;
+    if (!isIntersecting || isRefreshing || isLoadingMore || !hasMoreComments) return;
     if (loadMoreTimer.current !== null) return;
 
     loadMoreTimer.current = window.setTimeout(() => {
@@ -50,9 +57,9 @@ function CommentList({ postId }: CommentListProps) {
         loadMoreTimer.current = null;
       }
     };
-  }, [loadMoreComments, isIntersecting, loading, hasMoreComments]);
+  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments]);
 
-  if (loading && !commentsPage) {
+  if (isRefreshing && !commentsPage) {
     return (
       <RenderLoadingState
         open={open}
@@ -85,14 +92,16 @@ function CommentList({ postId }: CommentListProps) {
             setReplyTo={setReplyTo}
             setShowReplies={setShowReplies}
             showReplies={showReplies}
+            onReplyCreated={increaseRepliesCount}
+            uploadedComments={uploadedComments}
           />
         ))}
 
         <div className="h-1 w-full" ref={sentinelRef} />
 
-        {(loading || hasMoreComments) && (
+        {hasMoreComments && (
           <div className="py-2 text-center text-sm text-gray-500">
-            {loading ? "Cargando más..." : "Desliza para cargar más..."}
+            {isLoadingMore ? "Cargando más..." : "Desliza para cargar más..."}
           </div>
         )}
       </div>

@@ -4,20 +4,18 @@ import { Form } from "@inertiajs/react";
 
 import { cn } from "@/lib/utils";
 
-//import { Loader2Icon } from "lucide-react";
-
 import CommentController from "@/actions/App/Comment/Controllers/CommentController";
 
 import { CommentableType } from "@/enums";
 
 import InputError from "../form/InputError";
-//import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 
 interface CommentFormProps {
   commentableId: number;
   commentableType: CommentableType;
+  formId: string;
   onCommentPosted?: () => void;
   setOpen: Dispatch<SetStateAction<boolean>>;
   setProcessing: Dispatch<SetStateAction<boolean>>;
@@ -25,13 +23,13 @@ interface CommentFormProps {
 }
 
 function CommentForm(props: CommentFormProps) {
-  const { commentableId, commentableType, onCommentPosted, setReplyTo, setProcessing, setOpen } =
+  const { commentableId, commentableType, formId, onCommentPosted, setReplyTo, setProcessing, setOpen } =
     props;
 
   return (
     <Form
       {...CommentController.store.form()}
-      id="comment-form"
+      id={formId}
       className={cn(setReplyTo && "mt-4")}
       onFinish={() => setProcessing(false)}
       onStart={() => setProcessing(true)}
@@ -49,20 +47,8 @@ function CommentForm(props: CommentFormProps) {
 
           <Input name="commentable_id" type="hidden" value={commentableId} />
 
-          {/* <Input name="content" className="w-full" placeholder="Escribe tu comentario" /> */}
 
           <Textarea name="content" className="w-full" placeholder="Escribe tu comentario" />
-
-          {/* <Button>
-            {processing ? (
-              <>
-                <Loader2Icon className="h-4 w-4 animate-spin" />
-                Publicando...
-              </>
-            ) : (
-              "Publicar"
-            )}
-          </Button> */}
 
           <InputError className="mt-1" message={errors.content} />
         </div>

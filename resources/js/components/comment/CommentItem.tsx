@@ -12,6 +12,8 @@ import { validImage } from "@/utils";
 
 import { Comment } from "@/types";
 
+
+
 import { profilePlaceholder } from "@/assets";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -21,6 +23,7 @@ import RepliesList from "./RepliesList";
 interface CommentItemProps {
   comment: Comment;
   isReply?: boolean;
+  onReplyCreated?: (commentId: number) => void;
   replyTo: number | null;
   setReplyTo: Dispatch<SetStateAction<number | null>>;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
@@ -32,6 +35,7 @@ function CommentItem(props: CommentItemProps) {
   const {
     comment,
     isReply = false,
+    onReplyCreated,
     replyTo,
     setReplyTo,
     setShowReplies,
@@ -101,7 +105,10 @@ function CommentItem(props: CommentItemProps) {
       </footer>
 
       <CommentInputModal
-        onCommentPosted={uploadedComments}
+        onCommentPosted={() => {
+          onReplyCreated?.(comment.id);
+          uploadedComments?.();
+        }}
         onOpenChange={setOpen}
         commentableId={comment.id}
         commentableType={CommentableType.COMMENT}
