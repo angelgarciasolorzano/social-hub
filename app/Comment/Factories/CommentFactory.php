@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Factories;
+namespace App\Comment\Factories;
 
 use App\Comment\Models\Comment;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,7 +25,10 @@ class CommentFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => null,
+            'commentable_id' => null,
+            'commentable_type' => null,
+            'content' => fake()->paragraph(rand(1, 30)),
         ];
     }
 }

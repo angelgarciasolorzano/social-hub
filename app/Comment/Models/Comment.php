@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Comment\Models;
 
 use App\Comment\Enums\CommentableType;
+use App\Comment\Factories\CommentFactory;
 use App\Like\Models\Like;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,9 +24,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property CarbonImmutable|null $created_at
  * @property-read User|null $user
  */
+#[UseFactory(CommentFactory::class)]
 class Comment extends Model
 {
-    /** @use HasFactory<\Database\Factories\CommentFactory> */
+    /** @use HasFactory<CommentFactory> */
     use HasFactory;
 
     /**
