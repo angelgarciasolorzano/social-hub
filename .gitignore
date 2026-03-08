@@ -31,3 +31,4 @@ yarn-error.log
 /_ide_helper_models.php
 AGENTS.md
 boost.json
+/app/Post/Seeders/Images/*

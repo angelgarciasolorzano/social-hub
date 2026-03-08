@@ -4,8 +4,10 @@ namespace App\Post\Models;
 
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
+use App\Post\Factories\PostFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,9 +20,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  *
  * @property CarbonImmutable|null $created_at
  */
+#[UseFactory(PostFactory::class)]
 class Post extends Model implements HasMedia
 {
-    /** @use HasFactory<\Database\Factories\PostFactory> */
+    /** @use HasFactory<PostFactory> */
     use HasFactory;
 
     use InteractsWithMedia;
@@ -39,6 +42,11 @@ class Post extends Model implements HasMedia
      * The media collection name for post images.
      */
     public const POSTS_IMAGES_MEDIA_COLLECTION = 'posts_images';
+
+    /**
+     * Glob pattern for test images used in seeding.
+     */
+    public const TEST_IMAGES_GLOB_PATH = 'Post/Seeders/Images/*.{jpg,jpeg,png}';
 
     /**
      * The attributes that are mass assignable.
