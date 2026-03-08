@@ -10,8 +10,6 @@
 /storage/*.key
 /storage/pail
 /storage/phpstan
-/.agents
-/.windsurf
 /vendor
 .DS_Store
 .env

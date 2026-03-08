@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "eloquent-best-practices": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "370e1502efc9d179f5df7470a45a10302de81de9cf378641403e4ade9eb7d67f"
+    },
+    "laravel-architecture": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "7fc262ad5fce956586f7a09313b6e981898b2f142c9e4db4dc4227952d42b782"
+    },
+    "laravel-best-practices": {
+      "source": "asyrafhussin/agent-skills",
+      "sourceType": "github",
+      "computedHash": "82fd2887e1b49b46230325fa16e0a1e4f4d20a9dca7a2cef510d5b26ea3695e7"
+    },
+    "laravel-enums": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "e5df60646a28a2b9eb009f5cda01012b36c557bb65102852998b70f2d84eec9a"
+    },
+    "laravel-inertia-react": {
+      "source": "asyrafhussin/agent-skills",
+      "sourceType": "github",
+      "computedHash": "065829d2ce2e9b97cc2a92721a5c0163532aa5ceae85c743a11ab95a08bac5a4"
+    },
+    "laravel-models": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "7c07107585d47d754463bea92a59c913ecdb77abcd6ad4f4cb82b7351de019ed"
+    },
+    "laravel-testing": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "3d7f5629789cc2743146d4430307da7b8207123a28865a69b3b854d158c0cca4"
+    },
+    "laravel:constants-and-configuration": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "9419a6b62795ae7c376ffa9491e8cfba6f03ae2d89ee54e0271d4fdcf1e31d7d"
+    },
+    "laravel:eloquent-relationships": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "881c7413c9f23567606cf9c1fe1d05d7a134fb768f522ba70edb200dcd6f7133"
+    },
+    "laravel:migrations-and-factories": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "54a2dcd29a96f0f2d02ff4f3770b3ab7e652606900793881593c4eb13b85aa13"
+    },
+    "laravel:policies-and-authorization": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "6394260dafa86eca55b80705cd6547856ba28aed9cb4885d973b1f788f10422c"
+    },
+    "laravel:routes-best-practices": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "3ba8961bd4d134fca3f3c469ca9d1a1610c921479d1e542edc68e174d46db06f"
+    }
+  }
+}
