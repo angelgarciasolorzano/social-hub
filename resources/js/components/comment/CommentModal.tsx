@@ -2,7 +2,7 @@ import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
 import { PublicationDetail } from "@/features/publication";
 
-import { Post, User } from "@/types";
+import type { Post, User } from "@/types";
 
 import { Button } from "../ui/button";
 import {
@@ -63,11 +63,11 @@ function CommentModalPublication({ postDetail, user }: CommentModalPublicationPr
   );
 }
 
-interface CommentModalContent {
+interface CommentModalContentProps {
   idPost: Post["id"];
 }
 
-function CommentModalContent({ idPost }: CommentModalContent) {
+function CommentModalContent({ idPost }: CommentModalContentProps) {
   return (
     <div className="mb-1 flex w-1/2 flex-col gap-2">
       <CommentModalHeader />
