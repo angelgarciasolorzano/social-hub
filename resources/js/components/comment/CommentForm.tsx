@@ -23,8 +23,15 @@ interface CommentFormProps {
 }
 
 function CommentForm(props: CommentFormProps) {
-  const { commentableId, commentableType, formId, onCommentPosted, setReplyTo, setProcessing, setOpen } =
-    props;
+  const {
+    commentableId,
+    commentableType,
+    formId,
+    onCommentPosted,
+    setReplyTo,
+    setProcessing,
+    setOpen,
+  } = props;
 
   return (
     <Form
@@ -46,7 +53,6 @@ function CommentForm(props: CommentFormProps) {
           <Input name="commentable_type" type="hidden" value={commentableType} />
 
           <Input name="commentable_id" type="hidden" value={commentableId} />
-
 
           <Textarea name="content" className="w-full" placeholder="Escribe tu comentario" />
 

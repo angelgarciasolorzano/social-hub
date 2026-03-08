@@ -86,13 +86,13 @@ function CommentList({ postId }: CommentListProps) {
       <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={scrollRef}>
         {commentsPage.data.map((comment) => (
           <CommentItem
+            onReplyCreated={increaseRepliesCount}
             comment={comment}
             key={comment.id}
             replyTo={replyTo}
             setReplyTo={setReplyTo}
             setShowReplies={setShowReplies}
             showReplies={showReplies}
-            onReplyCreated={increaseRepliesCount}
             uploadedComments={uploadedComments}
           />
         ))}

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { CommentableType } from "@/enums";
-
 import CommentController from "@/actions/App/Comment/Controllers/CommentController";
+
+import { CommentableType } from "@/enums";
 
 import { hasPaginatedKey } from "@/utils";
 

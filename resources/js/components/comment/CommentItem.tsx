@@ -12,8 +12,6 @@ import { validImage } from "@/utils";
 
 import { Comment } from "@/types";
 
-
-
 import { profilePlaceholder } from "@/assets";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
