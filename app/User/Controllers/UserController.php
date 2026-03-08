@@ -20,9 +20,7 @@ class UserController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user) {
-            abort(401);
-        }
+        abort_unless($user instanceof User, 401);
 
         return $user;
     }

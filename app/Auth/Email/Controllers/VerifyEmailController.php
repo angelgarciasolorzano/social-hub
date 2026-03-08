@@ -3,6 +3,7 @@
 namespace App\Auth\Email\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\User\Models\User;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 
@@ -15,9 +16,7 @@ class VerifyEmailController extends Controller
     {
         $user = $request->user();
 
-        if (! $user) {
-            abort(401);
-        }
+        abort_unless($user instanceof User, 401);
 
         if ($user->hasVerifiedEmail()) {
             return redirect()->intended(route('home', absolute: false).'?verified=1');

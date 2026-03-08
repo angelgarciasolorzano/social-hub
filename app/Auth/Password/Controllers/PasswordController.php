@@ -19,9 +19,7 @@ class PasswordController extends Controller
         /** @var string $password */
         $password = $request->input('password');
 
-        if (! $user || ! $password) {
-            abort(401);
-        }
+        abort_if(! $user || ! $password, 401);
 
         $user->update([
             'password' => Hash::make($password),

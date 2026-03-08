@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Email\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\User\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,9 +20,7 @@ class EmailVerificationPromptController extends Controller
     {
         $user = $request->user();
 
-        if ($user === null) {
-            abort(403, 'Unauthorized');
-        }
+        abort_if(! $user instanceof User, 403, 'Unauthorized');
 
         return $user->hasVerifiedEmail()
             ? redirect()->intended(route('home', absolute: false))

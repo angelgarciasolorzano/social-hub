@@ -8,7 +8,8 @@ use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;
 use App\User\Enums\UserImageType;
-use Database\Factories\UserFactory;
+use App\User\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -19,6 +20,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 /**
  * @mixin IdeHelperUser
  */
+#[UseFactory(UserFactory::class)]
 class User extends Authenticatable implements HasMedia
 {
     /**
