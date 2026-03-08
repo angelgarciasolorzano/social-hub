@@ -2,6 +2,7 @@
 
 namespace App\User\Factories;
 
+use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -48,5 +49,31 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (User $user) {
+            if (rand(0, 1)) {
+                $imagesProfile = glob(app_path(User::TEST_PROFILE_IMAGES_GLOB_PATH), GLOB_BRACE);
+                $imagesCover = glob(app_path(User::TEST_COVER_IMAGES_GLOB_PATH), GLOB_BRACE);
+
+                if ($imagesProfile && $imagesCover) {
+                    $randomImageProfile = $imagesProfile[array_rand($imagesProfile)];
+                    $randomImageCover = $imagesCover[array_rand($imagesCover)];
+
+                    $mediaAdder = $user->addMedia($randomImageProfile);
+                    $mediaCoverAdder = $user->addMedia($randomImageCover);
+
+                    if (app()->environment(['local', 'testing'])) {
+                        $mediaAdder->preservingOriginal();
+                        $mediaCoverAdder->preservingOriginal();
+                    }
+
+                    $mediaAdder->toMediaCollection(UserImageType::PROFILE_PICTURE->value());
+                    $mediaCoverAdder->toMediaCollection(UserImageType::COVER_IMAGE->value());
+                }
+            }
+        });
     }
 }

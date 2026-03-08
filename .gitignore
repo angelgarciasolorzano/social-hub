@@ -32,3 +32,4 @@ yarn-error.log
 AGENTS.md
 boost.json
 /app/Post/Seeders/Images/*
+/app/User/Seeders/Images/*

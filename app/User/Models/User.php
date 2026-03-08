@@ -37,6 +37,26 @@ class User extends Authenticatable implements HasMedia
     public const DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
 
     /**
+     * Glob pattern for all test profile images.
+     */
+    public const TEST_PROFILE_IMAGES_GLOB_PATH = 'User/Seeders/Images/profile/*.{jpg,jpeg,png}';
+
+    /**
+     * Glob pattern for all test cover images.
+     */
+    public const TEST_COVER_IMAGES_GLOB_PATH = 'User/Seeders/Images/cover/*.{jpg,jpeg,png}';
+
+    /**
+     * Glob pattern for the test user's profile image.
+     */
+    public const TEST_USER_IMAGE_GLOB_PATH = 'User/Seeders/Images/profile/user-test.{jpg,jpeg,png}';
+
+    /**
+     * Glob pattern for the test user's cover image.
+     */
+    public const TEST_COVER_IMAGE_GLOB_PATH = 'User/Seeders/Images/cover/user-cover-test.{jpg,jpeg,png}';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
