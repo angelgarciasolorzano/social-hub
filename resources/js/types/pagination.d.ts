@@ -1,8 +1,8 @@
 export interface PaginationMeta {
-  current_page: number;
-  last_page: number;
   per_page: number;
-  total: number;
+  next_cursor: string | null;
+  prev_cursor: string | null;
+  has_more: boolean;
 }
 
 export interface PaginationLinks {

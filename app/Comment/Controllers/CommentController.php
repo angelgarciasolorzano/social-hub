@@ -28,8 +28,8 @@ class CommentController extends Controller
 
         $comments = $commentable->comments()
             ->with('user')
-            ->latest()
-            ->paginate(2);
+            ->orderByDesc('id')
+            ->cursorPaginate(10);
 
         return Inertia::flash(['comments' => new CommentCollection($comments)])->back();
     }

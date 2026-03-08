@@ -4,10 +4,10 @@ namespace App\Comment\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\CursorPaginator;
 
 /**
- * @mixin LengthAwarePaginator<int, CommentResource>
+ * @mixin CursorPaginator<int, CommentResource>
  */
 class CommentCollection extends ResourceCollection
 {
@@ -21,14 +21,14 @@ class CommentCollection extends ResourceCollection
         return [
             'data' => CommentResource::collection($this->collection),
             'meta' => [
-                'current_page' => $this->currentPage(),
-                'last_page' => $this->lastPage(),
                 'per_page' => $this->perPage(),
-                'total' => $this->total(),
+                'next_cursor' => $this->nextCursor()?->encode(),
+                'prev_cursor' => $this->previousCursor()?->encode(),
+                'has_more' => $this->hasMorePages(),
             ],
             'links' => [
-                'first' => $this->url(1),
-                'last' => $this->url($this->lastPage()),
+                'first' => null,
+                'last' => null,
                 'prev' => $this->previousPageUrl(),
                 'next' => $this->nextPageUrl(),
             ],

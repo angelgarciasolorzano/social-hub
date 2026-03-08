@@ -80,9 +80,14 @@ export function usePaginatedComments(
 
               if (!prev) return newPageData;
 
+              const map = new Map<number, Comment>();
+
+              prev.data.forEach((comment) => map.set(comment.id, comment));
+              newPageData.data.forEach((comment) => map.set(comment.id, comment));
+
               return {
                 ...newPageData,
-                data: [...prev.data, ...newPageData.data],
+                data: Array.from(map.values()),
               };
             });
           }
