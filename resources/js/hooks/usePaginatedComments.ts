@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import CommentController from "@/actions/App/Comment/Controllers/CommentController";
+import { index as commentIndex } from "@/actions/App/Comment/Controllers/CommentController";
 
-import { CommentableType } from "@/enums";
+import type { CommentableType } from "@/enums";
 
 import { hasPaginatedKey } from "@/utils";
 
-import { Comment, PaginatedComments } from "@/types";
+import type { Comment, PaginatedComments } from "@/types";
 
 interface UsePaginatedCommentsReturn {
   commentsPage: PaginatedComments | null;
@@ -31,7 +31,8 @@ export function usePaginatedComments(
   const loadingRef = useRef(false);
   const lastRequestedUrl = useRef<string | null>(null);
 
-  const hasMoreComments = !!commentsPage?.links.next;
+  const nextCommentsUrl = commentsPage?.links.next ?? null;
+  const hasMoreComments = nextCommentsUrl !== null;
 
   const uploadedComments = useCallback(() => {
     if (loadingRef.current) return;
@@ -41,10 +42,12 @@ export function usePaginatedComments(
 
     setTimeout(() => {
       router.get(
-        CommentController.index.url({ commentableType, commentableId }),
+        commentIndex.url({ commentableType, commentableId }),
         {},
         {
+          only: ["flash"],
           preserveState: true,
+          preserveScroll: true,
           replace: true,
           onSuccess: (data) => {
             if (hasPaginatedKey<Comment>(data.flash, "comments")) {
@@ -84,19 +87,21 @@ export function usePaginatedComments(
 
   const loadMoreComments = useCallback(() => {
     if (loadingRef.current) return;
-    if (!commentsPage?.links.next) return;
-    if (lastRequestedUrl.current === commentsPage.links.next) return;
+    if (!nextCommentsUrl) return;
+    if (lastRequestedUrl.current === nextCommentsUrl) return;
 
     loadingRef.current = true;
-    lastRequestedUrl.current = commentsPage.links.next;
+    lastRequestedUrl.current = nextCommentsUrl;
 
     setIsLoadingMore(true);
 
     router.get(
-      commentsPage.links.next,
+      nextCommentsUrl,
       {},
       {
+        only: ["flash"],
         preserveState: true,
+        preserveScroll: true,
         replace: true,
         onSuccess: (data) => {
           if (hasPaginatedKey<Comment>(data.flash, "comments")) {
@@ -123,7 +128,7 @@ export function usePaginatedComments(
         },
       },
     );
-  }, [commentsPage?.links.next]);
+  }, [nextCommentsUrl]);
 
   const increaseRepliesCount = useCallback((commentId: number) => {
     setCommentsPage((prev) => {
@@ -151,13 +156,19 @@ export function usePaginatedComments(
   }, []);
 
   useEffect(() => {
-    if (commentsPage?.links.next && lastRequestedUrl.current !== commentsPage.links.next) {
+    if (nextCommentsUrl && lastRequestedUrl.current !== nextCommentsUrl) {
       lastRequestedUrl.current = null;
     }
-  }, [commentsPage?.links.next]);
+  }, [nextCommentsUrl]);
 
   useEffect(() => {
-    uploadedComments();
+    const initialLoadTimer = window.setTimeout(() => {
+      uploadedComments();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(initialLoadTimer);
+    };
   }, [uploadedComments]);
 
   return {

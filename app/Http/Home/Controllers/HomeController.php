@@ -17,12 +17,12 @@ class HomeController extends Controller
 
         $posts = Post::with(['user'])
             // ->whereIn('user_id', $friendsId)
-            ->latest()
-            ->get();
+            ->orderByDesc('id')
+            ->cursorPaginate(10);
 
         return Inertia::render('home/home', [
             'user' => Auth::user(),
-            'posts' => PostResource::collection($posts),
+            'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
         ]);
     }
 }
