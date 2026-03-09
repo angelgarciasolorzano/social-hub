@@ -17,12 +17,12 @@ class ProfileController extends Controller
     {
         $posts = Post::query()
             ->where('user_id', Auth::id())
-            ->latest()
-            ->get();
+            ->orderByDesc('id')
+            ->cursorPaginate(10);
 
         return Inertia::render('profile/Profile', [
             'user' => new UserResource(Auth::user())->resolve(request()),
-            'posts' => PostResource::collection($posts),
+            'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
         ]);
     }
 
@@ -30,12 +30,12 @@ class ProfileController extends Controller
     {
         $posts = Post::query()
             ->where('user_id', $user->id)
-            ->latest()
-            ->get();
+            ->orderByDesc('id')
+            ->cursorPaginate(10);
 
         return Inertia::render('profile/Profile', [
             'user' => new UserResource($user)->resolve(request()),
-            'posts' => PostResource::collection($posts),
+            'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
         ]);
     }
 }

@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import { Form } from "@inertiajs/react";
 
@@ -23,6 +23,9 @@ function PublicationForm({ setOpen, setProcessing }: PublicationFormContentProps
       onFinish={() => setProcessing(false)}
       onStart={() => setProcessing(true)}
       onSuccess={() => setOpen(false)}
+      options={{
+        reset: ["posts"],
+      }}
     >
       {({ errors }) => (
         <>

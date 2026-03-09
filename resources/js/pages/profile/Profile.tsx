@@ -1,10 +1,8 @@
-import { usePage } from "@inertiajs/react";
+import { InfiniteScroll, usePage } from "@inertiajs/react";
 
 import { GoPlus } from "react-icons/go";
 import { MdOutlineEditNote } from "react-icons/md";
 
-import coverPlaceholder from "@/assets/cover-placeholder.svg";
-import profilePlaceholder from "@/assets/profile-placeholder.png";
 import { Publication, PublicationCard } from "@/features/publication";
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +14,10 @@ import { useModal } from "@/hooks/useModal";
 
 import { validImage } from "@/utils";
 
-import { PostCollection, SharedData, User } from "@/types";
+import type { PostCollection, SharedData, User } from "@/types";
+
+import coverPlaceholder from "@/assets/cover-placeholder.svg";
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 
 import ProfilePicture from "./components/ProfilePicture";
 
@@ -61,11 +62,21 @@ function Profile({ posts, user }: ProfileProps) {
           )}
         </div>
 
-        <div className="flex flex-col gap-8">
-          {posts.data.map((post) => (
-            <PublicationCard key={post.id} post={post} user={user} />
-          ))}
-        </div>
+        <InfiniteScroll buffer={200} data="posts" preserveUrl>
+          {({ loadingNext }) => (
+            <div className="flex flex-col gap-8">
+              {posts.data.map((post) => (
+                <PublicationCard key={post.id} post={post} user={user} />
+              ))}
+
+              {loadingNext && (
+                <div className="my-4">
+                  <div className="h-24 animate-pulse rounded bg-gray-200" />
+                </div>
+              )}
+            </div>
+          )}
+        </InfiniteScroll>
       </div>
 
       <Publication open={open} setOpen={setOpen} />

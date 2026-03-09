@@ -2,8 +2,6 @@ import { FaRegComment } from "react-icons/fa";
 import { FaRegHeart } from "react-icons/fa6";
 import { RiTimeZoneLine } from "react-icons/ri";
 
-import placeholderPost from "@/assets/post-placeholder.png";
-import profilePlaceholder from "@/assets/profile-placeholder.png";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -15,7 +13,10 @@ import { Separator } from "@/components/ui/separator";
 
 import { validImage } from "@/utils";
 
-import { Post, User } from "@/types";
+import type { Post, User } from "@/types";
+
+import placeholderPost from "@/assets/post-placeholder.png";
+import profilePlaceholder from "@/assets/profile-placeholder.png";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
