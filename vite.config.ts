@@ -19,6 +19,7 @@ export default defineConfig({
         }),
         tailwindcss(),
         wayfinder({
+            path: 'resources/js/shared/wayfinder',
             formVariants: true,
         }),
     ],
