@@ -2,17 +2,17 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import AuthenticatedSessionController from "@/actions/App/Auth/Login/Controllers/AuthenticatedSessionController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Login/Controllers/AuthenticatedSessionController";
 
-import { register } from "@/routes";
-import { request } from "@/routes/password";
+import { register } from "@/shared/wayfinder/routes";
+import { request } from "@/shared/wayfinder/routes/password";
 
-import InputError from "@/components/form/InputError";
-import TextLink from "@/components/TextLink";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { InputError } from "@/shared/components/form";
+import TextLink from "@/shared/components/TextLink";
+import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 
 import AuthCardLayout from "../layouts/AuthCardLayout";
 
@@ -29,11 +29,7 @@ function Login({ status, canResetPassword }: LoginProps) {
     >
       <Head title="Inicia sesión" />
 
-      <Form
-        {...AuthenticatedSessionController.store.form()}
-        className="flex flex-col gap-6"
-        resetOnSuccess={["password"]}
-      >
+      <Form {...store.form()} className="flex flex-col gap-6" resetOnSuccess={["password"]}>
         {({ processing, errors }) => (
           <>
             <div className="grid gap-6">
