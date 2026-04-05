@@ -2,15 +2,15 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import RegisteredUserController from "@/actions/App/Auth/Register/Controllers/RegisteredUserController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Register/Controllers/RegisteredUserController";
 
-import { login } from "@/routes";
+import { login } from "@/shared/wayfinder/routes";
 
-import InputError from "@/components/form/InputError";
-import TextLink from "@/components/TextLink";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import InputError from "@/shared/components/form/InputError";
+import TextLink from "@/shared/components/TextLink";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 
 import AuthCardLayout from "../layouts/AuthCardLayout";
 
@@ -23,7 +23,7 @@ function Register() {
       <Head title="Register" />
 
       <Form
-        {...RegisteredUserController.store.form()}
+        {...store.form()}
         className="flex flex-col gap-6"
         disableWhileProcessing
         resetOnSuccess={["password", "password_confirmation"]}
