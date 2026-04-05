@@ -24,6 +24,7 @@
     "^@/shared/hooks(.*)$",
     "^@/shared/enums(.*)$",
     "^@/shared/utils(.*)$",
+    "^@/shared/lib(.*)$",
     "^@/shared/types(.*)$",
     "^@/shared/assets(.*)$",
     "^[./]"
