@@ -1,6 +1,6 @@
-import { ComponentProps } from "react";
+import type { ComponentProps } from "react";
 
-import { Label } from "../ui/label";
+import { Label } from "../../../components/ui/label";
 
 interface LabelFormProps extends ComponentProps<typeof Label> {
   error?: string;
