@@ -6,7 +6,7 @@ use App\Friendship\Models\Friendship;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<Friendship>
+ * @extends Factory<Friendship>
  */
 class FriendshipFactory extends Factory
 {

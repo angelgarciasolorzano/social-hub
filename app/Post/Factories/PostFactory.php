@@ -7,7 +7,7 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<Post>
+ * @extends Factory<Post>
  */
 class PostFactory extends Factory
 {

@@ -2,13 +2,15 @@
 
 namespace App\Post\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 
 /**
  * Summary of PostRequest
  *
  * @property-read string $content
- * @property-read \Illuminate\Http\UploadedFile|null $image
+ * @property-read UploadedFile|null $image
  */
 class PostRequest extends FormRequest
 {
@@ -23,7 +25,7 @@ class PostRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

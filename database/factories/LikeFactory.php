@@ -6,7 +6,7 @@ use App\Like\Models\Like;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<Like>
+ * @extends Factory<Like>
  */
 class LikeFactory extends Factory
 {

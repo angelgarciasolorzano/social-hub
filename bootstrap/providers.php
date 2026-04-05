@@ -1,12 +1,21 @@
 <?php
 
+use App\Auth\Providers\AuthServiceProvider;
+use App\Comment\Providers\CommentServiceProvider;
+use App\Friendship\Providers\FriendshipServiceProvider;
+use App\MediaLibrary\Providers\MediaLibraryServiceProvider;
+use App\Post\Providers\PostServiceProvider;
+use App\Providers\AppServiceProvider;
+use App\Providers\FortifyServiceProvider;
+use App\User\Providers\UserServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Auth\Providers\AuthServiceProvider::class,
-    App\User\Providers\UserServiceProvider::class,
-    App\Post\Providers\PostServiceProvider::class,
-    App\Comment\Providers\CommentServiceProvider::class,
-    App\Friendship\Providers\FriendshipServiceProvider::class,
-    App\MediaLibrary\Providers\MediaLibraryServiceProvider::class,
-    App\Providers\FortifyServiceProvider::class,
+    AppServiceProvider::class,
+    AuthServiceProvider::class,
+    UserServiceProvider::class,
+    PostServiceProvider::class,
+    CommentServiceProvider::class,
+    FriendshipServiceProvider::class,
+    MediaLibraryServiceProvider::class,
+    FortifyServiceProvider::class,
 ];

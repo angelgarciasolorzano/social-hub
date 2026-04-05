@@ -6,12 +6,14 @@ use App\Auth\Password\Requests\NewPasswordRequest;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class NewPasswordController extends Controller
 {
@@ -19,7 +21,7 @@ class NewPasswordController extends Controller
      * Show the password reset page.
      *
      * @param  Request&object{email: string}  $request
-     * @return \Inertia\Response
+     * @return Response
      */
     public function create(Request $request)
     {
@@ -32,7 +34,7 @@ class NewPasswordController extends Controller
     /**
      * Handle an incoming new password request.
      *
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function store(NewPasswordRequest $request)
     {

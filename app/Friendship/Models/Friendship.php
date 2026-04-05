@@ -4,6 +4,7 @@ namespace App\Friendship\Models;
 
 use App\Friendship\Enums\FriendshipStatus;
 use App\User\Models\User;
+use Database\Factories\FriendshipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Friendship extends Model
 {
-    /** @use HasFactory<\Database\Factories\FriendshipFactory> */
+    /** @use HasFactory<FriendshipFactory> */
     use HasFactory;
 
     public const REQUESTER_ID = 'requester_id';

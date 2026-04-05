@@ -6,7 +6,7 @@ use App\Comment\Models\Comment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<Comment>
+ * @extends Factory<Comment>
  */
 class CommentFactory extends Factory
 {
