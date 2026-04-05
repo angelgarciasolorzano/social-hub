@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { qrCode, recoveryCodes, secretKey } from "@/routes/two-factor";
+import { qrCode, recoveryCodes, secretKey } from "../wayfinder/routes/two-factor";
 
 interface TwoFactorSetupData {
   svg: string;
