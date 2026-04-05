@@ -19,7 +19,7 @@ configureEcho({
 const appName = import.meta.env["VITE_APP_NAME"] || "Laravel";
 
 createInertiaApp({
-  pages: "../pages",
+  pages: "../modules",
   title: (title) => (title ? `${title} - ${appName}` : appName),
   strictMode: true,
   withApp(app) {
