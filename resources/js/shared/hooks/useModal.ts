@@ -1,4 +1,5 @@
-import { Dispatch, SetStateAction,useState } from 'react';
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 
 interface UseModalReturn {
   open: boolean;
@@ -9,4 +10,4 @@ export function useModal(initialState: boolean = false): UseModalReturn {
   const [open, setOpen] = useState(initialState);
 
   return { open, setOpen };
-};
+}
