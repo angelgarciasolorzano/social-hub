@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Home\Controllers\HomeController;
+use App\Http\Dashboard\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -9,5 +9,5 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/home', HomeController::class)->name('home');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 });
