@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { Loader2Icon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -12,16 +12,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/shared/components/ui/dialog";
 
-import PublicationForm from "./components/PublicationForm";
+import PostForm from "./forms/PostForm";
 
-interface PublicationProps {
+interface PostDialogProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function Publication({ open, setOpen }: PublicationProps) {
+function PostDialog({ open, setOpen }: PostDialogProps) {
   const [processing, setProcessing] = useState<boolean>(false);
 
   return (
@@ -33,7 +33,7 @@ function Publication({ open, setOpen }: PublicationProps) {
           <DialogDescription>Comparte tus ideas y pensamientos con el mundo.</DialogDescription>
         </DialogHeader>
 
-        <PublicationForm setOpen={setOpen} setProcessing={setProcessing} />
+        <PostForm setOpen={setOpen} setProcessing={setProcessing} />
 
         <DialogFooter>
           <DialogClose asChild>
@@ -51,4 +51,4 @@ function Publication({ open, setOpen }: PublicationProps) {
   );
 }
 
-export default Publication;
+export default PostDialog;

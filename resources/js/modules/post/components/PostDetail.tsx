@@ -1,26 +1,28 @@
 import { RiTimeZoneLine } from "react-icons/ri";
 
-import placeholderPost from "@/assets/post-placeholder.png";
-import profilePlaceholder from "@/assets/profile-placeholder.png";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 
-import { validImage } from "@/utils";
+import { validImage } from "@/shared/lib";
 
-import { Post, User } from "@/types";
+import type { Post, User } from "@/shared/types";
+
+import { profilePlaceholder } from "@/shared/assets";
+
+import placeholderPost from "../assets/cover-placeholder.svg";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
-interface PublicationDetailProps {
+interface PostDetailProps {
   post: Omit<Post, "comments">;
   user: User;
 }
 
-function PublicationDetail({ post, user }: PublicationDetailProps) {
+function PostDetail({ post, user }: PostDetailProps) {
   const createdAt = dayjs(post.createdAt);
 
   return (
@@ -66,4 +68,4 @@ function PublicationDetail({ post, user }: PublicationDetailProps) {
   );
 }
 
-export default PublicationDetail;
+export default PostDetail;

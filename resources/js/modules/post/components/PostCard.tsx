@@ -2,31 +2,31 @@ import { FaRegComment } from "react-icons/fa";
 import { FaRegHeart } from "react-icons/fa6";
 import { RiTimeZoneLine } from "react-icons/ri";
 
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import relativeTime from "dayjs/plugin/relativeTime";
-
 import CommentModal from "@/components/comment/CommentModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import relativeTime from "dayjs/plugin/relativeTime";
 
-import { validImage } from "@/utils";
+import { validImage } from "@/shared/lib";
 
-import type { Post, User } from "@/types";
+import type { Post, User } from "@/shared/types";
 
-import placeholderPost from "@/assets/post-placeholder.png";
-import profilePlaceholder from "@/assets/profile-placeholder.png";
+import { profilePlaceholder } from "@/shared/assets";
+
+import placeholderPost from "../assets/cover-placeholder.svg";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
 
-interface PublicationCardProps {
+interface PostCardProps {
   post: Post;
   user: User;
 }
 
-function PublicationCard({ post, user }: PublicationCardProps) {
+function PostCard({ post, user }: PostCardProps) {
   const createdAt = dayjs(post.createdAt);
 
   return (
@@ -95,4 +95,4 @@ function PublicationCard({ post, user }: PublicationCardProps) {
   );
 }
 
-export default PublicationCard;
+export default PostCard;

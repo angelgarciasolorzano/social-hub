@@ -2,19 +2,19 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import PostController from "@/actions/App/Post/Controllers/PostController";
+import PostController from "@/shared/wayfinder/actions/App/Post/Controllers/PostController";
 
-import InputError from "@/components/form/InputError";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import InputError from "@/shared/components/form/InputError";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
+import { Textarea } from "@/shared/components/ui/textarea";
 
-interface PublicationFormContentProps {
+interface PostFormtProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
   setProcessing: Dispatch<SetStateAction<boolean>>;
 }
 
-function PublicationForm({ setOpen, setProcessing }: PublicationFormContentProps) {
+function PostForm({ setOpen, setProcessing }: PostFormtProps) {
   return (
     <Form
       {...PostController.form()}
@@ -57,4 +57,4 @@ function PublicationForm({ setOpen, setProcessing }: PublicationFormContentProps
   );
 }
 
-export default PublicationForm;
+export default PostForm;
