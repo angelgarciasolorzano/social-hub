@@ -1,4 +1,4 @@
-import { PaginatedResponse } from "@/types/pagination";
+import type { PaginatedResponse } from "../types/pagination";
 
 export function hasPaginatedKey<T = unknown>(
   data: unknown,
