@@ -2,12 +2,12 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import NewPasswordController from "@/actions/App/Auth/Password/Controllers/NewPasswordController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/NewPasswordController";
 
-import InputError from "@/components/form/InputError";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import InputError from "@/shared/components/form/InputError";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 
 import AuthCardLayout from "../layouts/AuthCardLayout";
 
@@ -22,7 +22,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
       <Head title="Reset password" />
 
       <Form
-        {...NewPasswordController.store.form()}
+        {...store.form()}
         resetOnSuccess={["password", "password_confirmation"]}
         transform={(data) => ({ ...data, token, email })}
       >
@@ -30,6 +30,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
           <div className="grid gap-6">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
+
               <Input
                 id="email"
                 name="email"
@@ -39,11 +40,13 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 readOnly
                 value={email}
               />
+
               <InputError className="mt-2" message={errors.email} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
+
               <Input
                 id="password"
                 name="password"
@@ -53,11 +56,13 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 autoFocus
                 placeholder="Password"
               />
+
               <InputError message={errors.password} />
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="password_confirmation">Confirm password</Label>
+
               <Input
                 id="password_confirmation"
                 name="password_confirmation"
@@ -66,6 +71,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 className="mt-1 block w-full"
                 placeholder="Confirm password"
               />
+
               <InputError className="mt-2" message={errors.password_confirmation} />
             </div>
 

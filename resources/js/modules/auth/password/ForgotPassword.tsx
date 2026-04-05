@@ -2,15 +2,15 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import PasswordResetLinkController from "@/actions/App/Auth/Password/Controllers/PasswordResetLinkController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordResetLinkController";
 
-import { login } from "@/routes";
+import { login } from "@/shared/wayfinder/routes";
 
-import InputError from "@/components/form/InputError";
-import TextLink from "@/components/TextLink";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import InputError from "@/shared/components/form/InputError";
+import TextLink from "@/shared/components/TextLink";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Label } from "@/shared/components/ui/label";
 
 import AuthCardLayout from "../layouts/AuthCardLayout";
 
@@ -31,7 +31,7 @@ function ForgotPassword({ status }: ForgotPasswordProps) {
       )}
 
       <div className="space-y-6">
-        <Form {...PasswordResetLinkController.store.form()}>
+        <Form {...store.form()}>
           {({ processing, errors }) => (
             <>
               <div className="grid gap-2">
