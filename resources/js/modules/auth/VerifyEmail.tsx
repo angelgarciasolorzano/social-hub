@@ -2,12 +2,12 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import EmailVerificationNotificationController from "@/actions/App/Auth/Email/Controllers/EmailVerificationNotificationController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Email/Controllers/EmailVerificationNotificationController";
 
-import { logout } from "@/routes";
+import { logout } from "@/shared/wayfinder/routes";
 
-import TextLink from "@/components/TextLink";
-import { Button } from "@/components/ui/button";
+import TextLink from "@/shared/components/TextLink";
+import { Button } from "@/shared/components/ui/button";
 
 import AuthCardLayout from "./layouts/AuthCardLayout";
 
@@ -26,10 +26,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
         </div>
       )}
 
-      <Form
-        {...EmailVerificationNotificationController.store.form()}
-        className="space-y-6 text-center"
-      >
+      <Form {...store.form()} className="space-y-6 text-center">
         {({ processing }) => (
           <>
             <Button disabled={processing} variant="secondary">

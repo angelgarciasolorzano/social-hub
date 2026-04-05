@@ -71,8 +71,7 @@ export const useTwoFactorAuth = () => {
       clearErrors();
       const codes = await fetchJson<string[]>(recoveryCodes.url());
       setRecoveryCodesList(codes);
-    } catch (error) {
-      console.error(error);
+    } catch {
       setErrors((prev) => [...prev, "Failed to fetch recovery codes"]);
       setRecoveryCodesList([]);
     }

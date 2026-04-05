@@ -91,6 +91,8 @@ export default defineConfig([
     "resources/js/actions/**",
     "resources/js/routes/**",
     "resources/js/wayfinder/**",
+    "resources/js/shared/wayfinder/**",
+    "resources/js/shared/components/ui/**",
     "eslint.config.ts",
     "vite.config.ts",
     "tsconfig.json",

@@ -4,14 +4,14 @@ import { Form, Head } from "@inertiajs/react";
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
-import { store } from "@/routes/two-factor/login";
+import { store } from "@/shared/wayfinder/routes/two-factor/login";
 
-import InputError from "@/components/form/InputError";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import InputError from "@/shared/components/form/InputError";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/input-otp";
 
-import { OTP_MAX_LENGTH } from "@/hooks/useTwoFactorAuth";
+import { OTP_MAX_LENGTH } from "@/shared/hooks/useTwoFactorAuth";
 
 import AuthCardLayout from "./layouts/AuthCardLayout";
 
@@ -78,6 +78,7 @@ export default function TwoFactorChallenge() {
                     placeholder="Enter recovery code"
                     required
                   />
+
                   <InputError message={errors.recovery_code} />
                 </>
               ) : (
@@ -111,6 +112,7 @@ export default function TwoFactorChallenge() {
 
               <div className="text-center text-sm text-muted-foreground">
                 <span>or you can </span>
+
                 <button
                   type="button"
                   className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
