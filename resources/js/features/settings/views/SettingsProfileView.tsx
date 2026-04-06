@@ -6,7 +6,7 @@ import UserController from "@/actions/App/User/Controllers/UserController";
 
 import { send } from "@/routes/verification";
 
-import InputError from "@/components/form/InputError";
+import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

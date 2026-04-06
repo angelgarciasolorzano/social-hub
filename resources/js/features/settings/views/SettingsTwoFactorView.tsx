@@ -8,7 +8,7 @@ import { disable, enable } from "@/routes/two-factor";
 
 import { Button } from "@/components/ui/button";
 
-import { useTwoFactorAuth } from "@/hooks/useTwoFactorAuth";
+import { useTwoFactorAuth } from "@/shared/hooks/useTwoFactorAuth";
 
 import { SharedData } from "@/types";
 

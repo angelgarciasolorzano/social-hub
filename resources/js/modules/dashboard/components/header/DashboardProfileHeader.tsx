@@ -2,8 +2,10 @@ import { Link, usePage } from "@inertiajs/react";
 
 import profilePlaceholder from "@/assets/profile-placeholder.png";
 import Settings from "@/features/settings/Settings";
+import { validImage } from "@/shared/lib/validImage";
+import type { SharedData } from "@/types";
 
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/shared/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,15 +13,11 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/dropdown-menu";
 
-import { useModal } from "@/hooks/useModal";
+import { useModal } from "@/shared/hooks/useModal";
 
-import { validImage } from "@/utils";
-
-import { SharedData } from "@/types";
-
-import { menuItems } from "../../data/homeProfileItems";
+import { menuItems } from "../../data/dashboardProfileItems";
 
 function ProfileHeader() {
   const { open, setOpen } = useModal();

@@ -2,25 +2,25 @@ import { InfiniteScroll } from "@inertiajs/react";
 
 import { PublicationCard } from "@/features/publication";
 
-import type { PostCollection, User } from "@/types";
+import type { PostCollection, User } from "@/shared/types";
 
-import HomeLayout from "./layouts/HomeLayout";
+import DashboardLayout from "./layouts/DashboadLayout";
 
 interface HomeProps {
   posts: PostCollection;
   user: User;
 }
 
-function Home({ posts, user }: HomeProps) {
+function Dashboard({ posts, user }: HomeProps) {
   return (
-    <HomeLayout>
+    <DashboardLayout>
       <InfiniteScroll buffer={200} data="posts" preserveUrl>
         {posts.data.map((post) => (
           <PublicationCard key={post.id} post={post} user={user} />
         ))}
       </InfiniteScroll>
-    </HomeLayout>
+    </DashboardLayout>
   );
 }
 
-export default Home;
+export default Dashboard;

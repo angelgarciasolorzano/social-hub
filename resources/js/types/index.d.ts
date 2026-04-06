@@ -1,4 +1,4 @@
-import { Auth } from "./user";
+import type { Auth } from "../shared/types/user";
 
 export interface BreadcrumbItem {
   href: string;
@@ -15,5 +15,5 @@ export interface SharedData {
 }
 
 export * from "./comment";
-export * from "./post";
-export * from "./user";
+//export * from "../shared/types/post";
+export * from "../shared/types/user";

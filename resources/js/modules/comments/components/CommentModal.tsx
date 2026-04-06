@@ -1,10 +1,8 @@
 import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
-import { PublicationDetail } from "@/features/publication";
+import { PostDetail } from "@/modules/post";
 
-import type { Post, User } from "@/types";
-
-import { Button } from "../ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,9 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog";
-import { Separator } from "../ui/separator";
-import CommentList from "./CommentList";
+} from "@/shared/components/ui/dialog";
+import { Separator } from "@/shared/components/ui/separator";
+
+import type { Post, User } from "@/shared/types";
+
+import CommentList from "../../../components/comment/CommentList";
 
 interface CommentModalProps {
   postDetail: Post;
@@ -58,7 +59,7 @@ type CommentModalPublicationProps = CommentModalProps;
 function CommentModalPublication({ postDetail, user }: CommentModalPublicationProps) {
   return (
     <div className="h-full w-1/2 overflow-y-auto border-r pr-3 dark:border-r-gray-700">
-      <PublicationDetail post={postDetail} user={user} />
+      <PostDetail post={postDetail} user={user} />
     </div>
   );
 }

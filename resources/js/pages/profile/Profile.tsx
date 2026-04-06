@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import HomeLayout from "@/pages/home/layouts/HomeLayout";
 import ProfileCover from "@/pages/profile/components/ProfileCover";
 
-import { useModal } from "@/hooks/useModal";
+import { useModal } from "@/shared/hooks/useModal";
 
 import { validImage } from "@/utils";
 

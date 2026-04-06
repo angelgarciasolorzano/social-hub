@@ -1,17 +1,17 @@
-import { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import { HiOutlinePlus } from "react-icons/hi2";
 
 import { Publication } from "@/features/publication";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
 interface PublicationHeaderProps {
   isOpenModal: boolean;
   setIsOpenModal: Dispatch<SetStateAction<boolean>>;
 }
 
-function PublicationHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderProps) {
+function DashboardPostHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderProps) {
   return (
     <>
       <Tooltip>
@@ -32,4 +32,4 @@ function PublicationHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderPro
   );
 }
 
-export default PublicationHeader;
+export default DashboardPostHeader;

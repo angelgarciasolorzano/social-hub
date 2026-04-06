@@ -2,13 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { Check, Copy, Loader2, ScanLine } from "lucide-react";
-
-import { confirm } from "@/routes/two-factor";
-
 import AlertError from "@/components/AlertError";
-import InputError from "@/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,9 +12,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { confirm } from "@/routes/two-factor";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { Check, Copy, Loader2, ScanLine } from "lucide-react";
 
-import { useClipboard } from "@/hooks/useClipboard";
-import { OTP_MAX_LENGTH } from "@/hooks/useTwoFactorAuth";
+import InputError from "@/shared/components/form/InputError";
+
+import { useClipboard } from "@/shared/hooks/useClipboard";
+import { OTP_MAX_LENGTH } from "@/shared/hooks/useTwoFactorAuth";
 
 function GridScanIcon() {
   return (

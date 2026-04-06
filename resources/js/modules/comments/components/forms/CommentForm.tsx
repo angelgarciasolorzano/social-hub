@@ -1,16 +1,16 @@
-import { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import { cn } from "@/lib/utils";
+import { store } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
 
-import CommentController from "@/actions/App/Comment/Controllers/CommentController";
+import { InputError } from "@/shared/components/form";
+import { Input } from "@/shared/components/ui/input";
+import { Textarea } from "@/shared/components/ui/textarea";
 
-import { CommentableType } from "@/enums";
+import { cn } from "@/shared/lib/utils";
 
-import InputError from "../form/InputError";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
+import type { CommentableType } from "../../enums/commentableType";
 
 interface CommentFormProps {
   commentableId: number;
@@ -35,7 +35,7 @@ function CommentForm(props: CommentFormProps) {
 
   return (
     <Form
-      {...CommentController.store.form()}
+      {...store.form()}
       id={formId}
       className={cn(setReplyTo && "mt-4")}
       onFinish={() => setProcessing(false)}

@@ -1,6 +1,6 @@
 import { usePage } from "@inertiajs/react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
 

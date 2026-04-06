@@ -4,7 +4,7 @@ import { Form, usePage } from "@inertiajs/react";
 
 import UserController from "@/actions/App/User/Controllers/UserController";
 
-import InputError from "@/components/form/InputError";
+import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

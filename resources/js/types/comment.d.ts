@@ -1,4 +1,4 @@
-import { PaginatedResponse } from "./pagination";
+import { PaginatedResponse } from "../shared/types/pagination";
 
 interface CommentReplies {
   hasReplies: boolean;

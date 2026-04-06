@@ -1,16 +1,16 @@
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { usePaginatedComments } from "@/hooks";
-import { useModal } from "@/hooks/useModal";
+import { useModal } from "@/shared/hooks/useModal";
 
 import { CommentableType } from "@/enums";
 
 import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
-import CommentInputModal from "./CommentInputModal";
+import CommentInputModal from "../../modules/comments/components/CommentInputModal";
 import CommentItem from "./CommentItem";
 
 interface CommentListProps {

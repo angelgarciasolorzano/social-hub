@@ -1,10 +1,9 @@
-import { Dispatch, SetStateAction, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { useState } from "react";
 
 import { Loader2Icon } from "lucide-react";
 
-import { CommentableType } from "@/enums";
-
-import { Button } from "../ui/button";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -13,8 +12,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
-import CommentForm from "./CommentForm";
+} from "@/shared/components/ui/dialog";
+
+import type { CommentableType } from "../enums/commentableType";
+import CommentForm from "./forms/CommentForm";
 
 interface CommentInputModalProps {
   commentableId: number;
@@ -49,9 +50,9 @@ function CommentInputModal(props: CommentInputModalProps) {
           onCommentPosted={onCommentPosted}
           commentableId={commentableId}
           commentableType={commentableType}
+          formId={formId}
           setOpen={setOpen}
           setProcessing={setProcessing}
-          formId={formId}
         />
 
         <DialogFooter>
@@ -61,12 +62,7 @@ function CommentInputModal(props: CommentInputModalProps) {
             </Button>
           </DialogClose>
 
-          <Button
-            type="submit"
-            className="cursor-pointer"
-            disabled={processing}
-            form={formId}
-          >
+          <Button type="submit" className="cursor-pointer" disabled={processing} form={formId}>
             {processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
           </Button>
         </DialogFooter>

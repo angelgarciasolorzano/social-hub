@@ -8,7 +8,7 @@ import { LoaderCircle } from "lucide-react";
 
 import { store } from "@/routes/password/confirm";
 
-import InputError from "@/components/form/InputError";
+import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 

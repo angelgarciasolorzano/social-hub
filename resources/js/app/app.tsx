@@ -2,9 +2,10 @@ import { createInertiaApp } from "@inertiajs/react";
 
 import { configureEcho } from "@laravel/echo-react";
 
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
+
 import "../../css/app.css";
-import { TooltipProvider } from "../components/ui/tooltip";
-import { initializeTheme } from "../hooks/useAppearance";
+import { initializeTheme } from "../shared/hooks/useAppearance";
 
 configureEcho({
   broadcaster: "reverb",

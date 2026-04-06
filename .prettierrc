@@ -17,6 +17,7 @@
     "^@inertiajs/react$",
     "^react-icons",
     "<THIRD_PARTY_MODULES>",
+    "@/modules(.*)$",
     "^@/shared/wayfinder/actions(.*)$",
     "^@/shared/wayfinder/routes(.*)$",
     "^@/shared/components(.*)$",
