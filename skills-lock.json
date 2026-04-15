@@ -60,6 +60,21 @@
       "source": "jpcaparas/superpowers-laravel",
       "sourceType": "github",
       "computedHash": "3ba8961bd4d134fca3f3c469ca9d1a1610c921479d1e542edc68e174d46db06f"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "computedHash": "873c67922d80775a9fdf596db7964b579f0408c30ec6e3d11989f6055bbec89f"
+    },
+    "tailwindcss": {
+      "source": "hairyf/skills",
+      "sourceType": "github",
+      "computedHash": "676d95536c3c4a64215535ff09128d6e8d5163eb3fc204ed2cfde61e87b5d892"
+    },
+    "tailwindcss-best-practices": {
+      "source": "biggora/claude-plugins-registry",
+      "sourceType": "github",
+      "computedHash": "f3232875fe708536d4c4f5f7811bc2f1f12d746f4f792114dd5bed72dd095b54"
     }
   }
 }
