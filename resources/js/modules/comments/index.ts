@@ -1,1 +1,1 @@
-export { default as CommentModal } from "./components/CommentModal";
+export { default as CommentModal } from "./components/modal/CommentModal";

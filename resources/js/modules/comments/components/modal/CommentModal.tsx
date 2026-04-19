@@ -15,7 +15,7 @@ import { Separator } from "@/shared/components/ui/separator";
 
 import type { Post, User } from "@/shared/types";
 
-import CommentList from "../../../components/comment/CommentList";
+import CommentList from "../CommentList";
 
 interface CommentModalProps {
   postDetail: Post;
