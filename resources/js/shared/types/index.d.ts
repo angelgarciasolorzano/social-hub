@@ -1,4 +1,4 @@
-import type { Auth } from "../shared/types/user";
+import type { Auth, User } from "./user";
 
 export interface BreadcrumbItem {
   href: string;
@@ -14,6 +14,5 @@ export interface SharedData {
   sidebarOpen: boolean;
 }
 
-export * from "./comment";
-//export * from "../shared/types/post";
-export * from "../shared/types/user";
+export * from "./pagination";
+export * from "./user";
