@@ -6,6 +6,7 @@ import { FiInstagram } from "react-icons/fi";
 import { IoLogoFacebook, IoLogoGithub, IoLogoLinkedin, IoLogoTwitch } from "react-icons/io5";
 
 import type { VariantProps } from "class-variance-authority";
+import { motion } from "motion/react";
 
 import { AppLogoIcon } from "@/shared/components/logo";
 import { GradientText, LightRays, LogoLoop, ShinyText } from "@/shared/components/reactBits";
@@ -73,19 +74,29 @@ function HomeHeader() {
         "dark:border-t-2 dark:bg-neutral-900/30 dark:backdrop-blur-lg",
       )}
     >
-      <div className="flex items-center gap-4 text-black dark:text-white">
+      <motion.div
+        className="flex items-center gap-4 text-black dark:text-white"
+        animate={{ x: 0, opacity: 1 }}
+        initial={{ x: -60, opacity: 0 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
+      >
         <AppLogoIcon className="size-7 fill-current" />
 
         <h1 className="text-lg font-bold">Social Hub</h1>
-      </div>
+      </motion.div>
 
-      <nav className="flex items-center gap-4">
+      <motion.nav
+        className="flex items-center gap-4"
+        animate={{ x: 0, opacity: 1 }}
+        initial={{ x: 60, opacity: 0 }}
+        transition={{ duration: 0.7, ease: "easeInOut" }}
+      >
         {headerOptions.map((option) => (
           <Button className="cursor-pointer" asChild key={option.href} variant={option.variant}>
             <Link href={option.href}>{option.label}</Link>
           </Button>
         ))}
-      </nav>
+      </motion.nav>
     </header>
   );
 }
@@ -113,7 +124,12 @@ function HomeBody({ resolvedAppearance }: HomeBodyProps) {
 
   return (
     <main className="flex flex-1 items-center justify-center">
-      <section className="flex max-w-2xl flex-col items-center gap-6 text-center">
+      <motion.section
+        className="flex max-w-2xl flex-col items-center gap-6 text-center"
+        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.7, ease: "easeInOut", delay: 0.3 }}
+      >
         <span
           className={cn(
             isLightAppearance ? "home-announcement-badge-light" : "home-announcement-badge-dark",
@@ -164,7 +180,7 @@ function HomeBody({ resolvedAppearance }: HomeBodyProps) {
             speed={10}
           />
         </div>
-      </section>
+      </motion.section>
     </main>
   );
 }
@@ -173,14 +189,17 @@ type HomeFooterProps = Pick<HomeBodyProps, "resolvedAppearance">;
 
 function HomeFooter({ resolvedAppearance }: HomeFooterProps) {
   return (
-    <footer
+    <motion.footer
       className={cn(
         "mx-auto my-4 text-sm text-gray-600 dark:text-gray-400",
         resolvedAppearance === "light" && "font-medium",
       )}
+      animate={{ y: 0, opacity: 1 }}
+      initial={{ y: 40, opacity: 0 }}
+      transition={{ duration: 0.7, ease: "easeInOut", delay: 0.4 }}
     >
       &copy; 2026 - {new Date().getFullYear()} Social Hub. Todos los derechos reservados.
-    </footer>
+    </motion.footer>
   );
 }
 
