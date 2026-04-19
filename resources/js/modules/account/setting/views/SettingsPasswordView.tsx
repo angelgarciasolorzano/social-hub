@@ -4,13 +4,14 @@ import { Form } from "@inertiajs/react";
 
 import { MdLockOutline, MdOutlineCheckCircle, MdOutlineVpnKey } from "react-icons/md";
 
-import PasswordController from "@/actions/App/Auth/Password/Controllers/PasswordController";
-
-import InputError from "@/shared/components/form/InputError";
-import LabelForm from "@/shared/components/form/LabelForm";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
+
+import PasswordController from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordController";
+
+import InputError from "@/shared/components/form/InputError";
+import LabelForm from "@/shared/components/form/LabelForm";
 
 export default function SettingsPasswordView() {
   const passwordInput = useRef<HTMLInputElement>(null);

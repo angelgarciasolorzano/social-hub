@@ -1,17 +1,16 @@
 import { Form, Link, usePage } from "@inertiajs/react";
 
-import { Transition } from "@headlessui/react";
-
-import UserController from "@/actions/App/User/Controllers/UserController";
-
-import { send } from "@/routes/verification";
-
-import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { type SharedData } from "@/types";
+import { Transition } from "@headlessui/react";
+
+import UserController from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
+
+import { send } from "@/shared/wayfinder/routes/verification";
+
+import InputError from "@/shared/components/form/InputError";
 
 export default function SettingsProfileView() {
   const { auth } = usePage<SharedData>().props;

@@ -1,16 +1,16 @@
-import { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
 import { Form } from "@inertiajs/react";
 
 import { MdOutlineVpnKey } from "react-icons/md";
 
-import { LoaderCircle } from "lucide-react";
-
-import { store } from "@/routes/password/confirm";
-
-import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { LoaderCircle } from "lucide-react";
+
+import { store } from "@/shared/wayfinder/routes/password/confirm";
+
+import InputError from "@/shared/components/form/InputError";
 
 import {
   Dialog,

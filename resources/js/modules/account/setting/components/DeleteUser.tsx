@@ -2,9 +2,6 @@ import { useRef } from "react";
 
 import { Form, usePage } from "@inertiajs/react";
 
-import UserController from "@/actions/App/User/Controllers/UserController";
-
-import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,8 +14,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { type SharedData } from "@/types";
+
+import UserController from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
+
+import InputError from "@/shared/components/form/InputError";
 
 import { Badge } from "../../../components/ui/badge";
 

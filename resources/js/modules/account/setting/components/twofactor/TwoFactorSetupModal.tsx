@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import AlertError from "@/components/AlertError";
+import AlertError from "@/shared/components/AlertError";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,9 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { confirm } from "@/routes/two-factor";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { Check, Copy, Loader2, ScanLine } from "lucide-react";
+
+import { confirm } from "@/shared/wayfinder/routes/two-factor";
 
 import InputError from "@/shared/components/form/InputError";
 

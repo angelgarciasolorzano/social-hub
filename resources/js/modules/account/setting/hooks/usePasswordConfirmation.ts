@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import ConfirmedPasswordStatusController from "@/actions/Laravel/Fortify/Http/Controllers/ConfirmedPasswordStatusController";
+import ConfirmedPasswordStatusController from "@/shared/wayfinder/actions/Laravel/Fortify/Http/Controllers/ConfirmedPasswordStatusController";
 
-import { SettingLabelSidebar } from "../data/settingsSidebarItems";
+import { SettingLabelSidebar } from "../../../modules/account/setting/data/settingsSidebarItems";
 
 export const usePasswordConfirmation = (active: SettingLabelSidebar) => {
   const [isPasswordConfirmed, setIsPasswordConfirmed] = useState<boolean>(false);
