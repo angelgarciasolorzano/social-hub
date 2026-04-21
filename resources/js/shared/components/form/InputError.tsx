@@ -6,7 +6,7 @@ function InputError({
   className = "",
   message,
   ...props
-}: HTMLAttributes<HTMLParagraphElement> & { message?: string }) {
+}: HTMLAttributes<HTMLParagraphElement> & { message?: string | undefined }) {
   return message ? (
     <p {...props} className={cn("text-sm text-red-600 dark:text-red-400", className)}>
       {message}

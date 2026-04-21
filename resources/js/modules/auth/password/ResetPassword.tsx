@@ -41,7 +41,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 value={email}
               />
 
-              <InputError className="mt-2" message={errors.email} />
+              <InputError className="mt-2" message={errors["email"]} />
             </div>
 
             <div className="grid gap-2">
@@ -57,7 +57,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 placeholder="Password"
               />
 
-              <InputError message={errors.password} />
+              <InputError message={errors["password"]} />
             </div>
 
             <div className="grid gap-2">
@@ -72,7 +72,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 placeholder="Confirm password"
               />
 
-              <InputError className="mt-2" message={errors.password_confirmation} />
+              <InputError className="mt-2" message={errors["password_confirmation"]} />
             </div>
 
             <Button

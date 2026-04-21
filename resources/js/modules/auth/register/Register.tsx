@@ -45,7 +45,7 @@ function Register() {
                   tabIndex={1}
                 />
 
-                <InputError className="mt-2" message={errors.name} />
+                <InputError className="mt-2" message={errors["name"]} />
               </div>
 
               <div className="grid gap-2">
@@ -61,7 +61,7 @@ function Register() {
                   tabIndex={2}
                 />
 
-                <InputError message={errors.email} />
+                <InputError message={errors["email"]} />
               </div>
 
               <div className="grid gap-2">
@@ -77,7 +77,7 @@ function Register() {
                   tabIndex={3}
                 />
 
-                <InputError message={errors.password} />
+                <InputError message={errors["password"]} />
               </div>
 
               <div className="grid gap-2">
@@ -93,7 +93,7 @@ function Register() {
                   tabIndex={4}
                 />
 
-                <InputError message={errors.password_confirmation} />
+                <InputError message={errors["password_confirmation"]} />
               </div>
 
               <Button

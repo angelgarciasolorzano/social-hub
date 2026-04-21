@@ -47,7 +47,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                   tabIndex={1}
                 />
 
-                <InputError message={errors.email} />
+                <InputError message={errors["email"]} />
               </div>
 
               <div className="grid gap-2">
@@ -71,7 +71,7 @@ function Login({ status, canResetPassword }: LoginProps) {
                   tabIndex={2}
                 />
 
-                <InputError message={errors.password} />
+                <InputError message={errors["password"]} />
               </div>
 
               <div className="flex items-center space-x-3">
