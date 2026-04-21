@@ -4,26 +4,21 @@ import { Form } from "@inertiajs/react";
 
 import { MdOutlineVpnKey } from "react-icons/md";
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { LoaderCircle } from "lucide-react";
 
 import { store } from "@/shared/wayfinder/routes/password/confirm";
 
 import InputError from "@/shared/components/form/InputError";
-
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../../components/ui/dialog";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "../../../../components/ui/input-group";
+} from "@/shared/components/ui/dialog";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/shared/components/ui/input-group";
+import { Label } from "@/shared/components/ui/label";
 
 interface ConfirmPasswordProps {
   onConfirmed?: () => void;
@@ -70,7 +65,7 @@ export default function ConfirmPassword({ onConfirmed, open, setOpen }: ConfirmP
                   </InputGroupAddon>
                 </InputGroup>
 
-                <InputError message={errors.password} />
+                <InputError message={errors["password"]} />
               </div>
 
               <div className="flex items-center">

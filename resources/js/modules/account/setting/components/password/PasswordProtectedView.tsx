@@ -1,9 +1,9 @@
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
-import { SettingLabelSidebar } from "../../data/settingsSidebarItems";
-import { usePasswordConfirmation } from "../../../../../features/settings/hooks/usePasswordConfirmation";
+import type { SettingLabelSidebar } from "../../data/settingSidebarItems";
+import { usePasswordConfirmation } from "../../hooks/usePasswordConfirmation";
 import ConfirmPassword from "./ConfirmPassword";
 
 interface PasswordProtectedViewProps extends PropsWithChildren {
