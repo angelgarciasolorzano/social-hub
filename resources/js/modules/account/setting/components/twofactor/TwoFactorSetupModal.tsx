@@ -2,22 +2,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Form } from "@inertiajs/react";
 
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { Check, Copy, Loader2, ScanLine } from "lucide-react";
+
+import { confirm } from "@/shared/wayfinder/routes/two-factor";
+
 import AlertError from "@/shared/components/AlertError";
-import { Button } from "@/components/ui/button";
+import InputError from "@/shared/components/form/InputError";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { Check, Copy, Loader2, ScanLine } from "lucide-react";
-
-import { confirm } from "@/shared/wayfinder/routes/two-factor";
-
-import InputError from "@/shared/components/form/InputError";
+} from "@/shared/components/ui/dialog";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/input-otp";
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
 import { OTP_MAX_LENGTH } from "@/shared/hooks/useTwoFactorAuth";
@@ -266,7 +266,9 @@ export default function TwoFactorSetupModal({
 
   useEffect(() => {
     if (!isOpen) {
-      resetModalState();
+      setTimeout(() => {
+        resetModalState();
+      }, 0);
 
       return;
     }

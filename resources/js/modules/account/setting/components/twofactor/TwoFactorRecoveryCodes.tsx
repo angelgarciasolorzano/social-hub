@@ -2,12 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import AlertError from "@/shared/components/AlertError";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, LockKeyhole, RefreshCw } from "lucide-react";
 
 import { regenerateRecoveryCodes } from "@/shared/wayfinder/routes/two-factor";
+
+import AlertError from "@/shared/components/AlertError";
+import { Button } from "@/shared/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 
 interface TwoFactorRecoveryCodesProps {
   errors: string[];
