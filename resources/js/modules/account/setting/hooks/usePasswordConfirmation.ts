@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import ConfirmedPasswordStatusController from "@/shared/wayfinder/actions/Laravel/Fortify/Http/Controllers/ConfirmedPasswordStatusController";
+import { show } from "@/shared/wayfinder/actions/Laravel/Fortify/Http/Controllers/ConfirmedPasswordStatusController";
 
-import { SettingLabelSidebar } from "../../../modules/account/setting/data/settingsSidebarItems";
+import { SettingLabelSidebar } from "../data/settingSidebarItems";
 
 export const usePasswordConfirmation = (active: SettingLabelSidebar) => {
   const [isPasswordConfirmed, setIsPasswordConfirmed] = useState<boolean>(false);
@@ -11,7 +11,7 @@ export const usePasswordConfirmation = (active: SettingLabelSidebar) => {
 
   const checkPasswordConfirmation = async (): Promise<boolean> => {
     try {
-      const response = await fetch(ConfirmedPasswordStatusController.show.url(), {
+      const response = await fetch(show.url(), {
         headers: { Accept: "application/json" },
       }).then((res) => res.json());
 
@@ -21,21 +21,27 @@ export const usePasswordConfirmation = (active: SettingLabelSidebar) => {
     }
   };
 
-  const passwordConfirmed = (confirmed: boolean) => {
+  const passwordConfirmed = (confirmed: boolean): void => {
     setIsPasswordConfirmed(confirmed);
   };
 
-  const openConfirmPasswordModal = () => setIsConfirmPasswordModal(true);
+  const openConfirmPasswordModal = (): void => setIsConfirmPasswordModal(true);
 
   useEffect(() => {
     if (active === SettingLabelSidebar.TwoFactor) {
-      setLoading(true);
-      checkPasswordConfirmation()
-        .then((data) => {
+      const passwordConfirmation = async (): Promise<void> => {
+        setLoading(true);
+
+        try {
+          const data = await checkPasswordConfirmation();
           setIsPasswordConfirmed(data);
           setIsConfirmPasswordModal(!data);
-        })
-        .finally(() => setLoading(false));
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      passwordConfirmation();
     }
   }, [active]);
 
