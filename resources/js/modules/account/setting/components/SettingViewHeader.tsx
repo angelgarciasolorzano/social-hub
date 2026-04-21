@@ -6,7 +6,7 @@ import { cn } from "@/shared/lib/utils";
 
 import type { SharedData } from "@/shared/types";
 
-import { settingHeaderItems } from "../data/settingsHeaderItems";
+import { settingHeaderItems } from "../data/settingHeaderItems";
 import { SettingLabelSidebar } from "../data/settingSidebarItems";
 import DeleteUser from "./DeleteUser";
 
