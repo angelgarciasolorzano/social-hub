@@ -1,10 +1,10 @@
-import { HTMLAttributes } from "react";
-
-import { cn } from "@/shared/lib/utils";
+import type { HTMLAttributes } from "react";
 
 import { useAppearance } from "@/shared/hooks/useAppearance";
 
-import { appearanceItems } from "../data/settingsAppearanceItems";
+import { cn } from "@/shared/lib/utils";
+
+import { appearanceItems } from "../data/settingAppearanceItems";
 
 function SettingsAppearanceView({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   const { appearance, updateAppearance } = useAppearance();
