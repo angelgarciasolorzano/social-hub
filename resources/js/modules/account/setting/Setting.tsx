@@ -7,8 +7,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
+} from "@/shared/components/ui/dialog";
+import { Separator } from "@/shared/components/ui/separator";
 
 import PasswordProtectedView from "./components/password/PasswordProtectedView";
 import SettingsSidebar from "./components/SettingsSidebar";
