@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib";
 import { Label } from "../ui/label";
 
 interface LabelFormProps extends ComponentProps<typeof Label> {
-  error?: string;
+  error?: string | undefined;
 }
 
 function LabelForm({ className, error, ...props }: LabelFormProps) {

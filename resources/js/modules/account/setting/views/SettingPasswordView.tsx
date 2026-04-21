@@ -4,14 +4,13 @@ import { Form } from "@inertiajs/react";
 
 import { MdLockOutline, MdOutlineCheckCircle, MdOutlineVpnKey } from "react-icons/md";
 
-import { Button } from "@/components/ui/button";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Spinner } from "@/components/ui/spinner";
-
 import PasswordController from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordController";
 
 import InputError from "@/shared/components/form/InputError";
 import LabelForm from "@/shared/components/form/LabelForm";
+import { Button } from "@/shared/components/ui/button";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/shared/components/ui/input-group";
+import { Spinner } from "@/shared/components/ui/spinner";
 
 export default function SettingsPasswordView() {
   const passwordInput = useRef<HTMLInputElement>(null);
@@ -23,11 +22,11 @@ export default function SettingsPasswordView() {
         {...PasswordController.form()}
         className="space-y-6"
         onError={(errors) => {
-          if (errors.password) {
+          if (errors["password"]) {
             passwordInput.current?.focus();
           }
 
-          if (errors.current_password) {
+          if (errors["current_password"]) {
             currentPasswordInput.current?.focus();
           }
         }}
@@ -40,7 +39,7 @@ export default function SettingsPasswordView() {
         {({ errors, processing }) => (
           <>
             <div className="grid gap-2">
-              <LabelForm error={errors.current_password} htmlFor="current_password">
+              <LabelForm error={errors["current_password"]} htmlFor="current_password">
                 Current password
               </LabelForm>
 
@@ -50,7 +49,7 @@ export default function SettingsPasswordView() {
                   name="current_password"
                   type="password"
                   autoComplete="current-password"
-                  aria-invalid={errors.current_password ? true : false}
+                  aria-invalid={errors["current_password"] ? true : false}
                   placeholder="Current password"
                   ref={currentPasswordInput}
                 />
@@ -60,11 +59,11 @@ export default function SettingsPasswordView() {
                 </InputGroupAddon>
               </InputGroup>
 
-              <InputError message={errors.current_password} />
+              <InputError message={errors["current_password"]} />
             </div>
 
             <div className="grid gap-2">
-              <LabelForm error={errors.password} htmlFor="password">
+              <LabelForm error={errors["password"]} htmlFor="password">
                 New password
               </LabelForm>
 
@@ -74,7 +73,7 @@ export default function SettingsPasswordView() {
                   name="password"
                   type="password"
                   autoComplete="new-password"
-                  aria-invalid={errors.password ? true : false}
+                  aria-invalid={errors["password"] ? true : false}
                   placeholder="New password"
                   ref={passwordInput}
                 />
@@ -84,11 +83,11 @@ export default function SettingsPasswordView() {
                 </InputGroupAddon>
               </InputGroup>
 
-              <InputError message={errors.password} />
+              <InputError message={errors["password"]} />
             </div>
 
             <div className="grid gap-2">
-              <LabelForm error={errors.password_confirmation} htmlFor="password_confirmation">
+              <LabelForm error={errors["password_confirmation"]} htmlFor="password_confirmation">
                 Confirm password
               </LabelForm>
 
@@ -98,7 +97,7 @@ export default function SettingsPasswordView() {
                   name="password_confirmation"
                   type="password"
                   autoComplete="new-password"
-                  aria-invalid={errors.password_confirmation ? true : false}
+                  aria-invalid={errors["password_confirmation"] ? true : false}
                   placeholder="Confirm password"
                 />
 
@@ -107,7 +106,7 @@ export default function SettingsPasswordView() {
                 </InputGroupAddon>
               </InputGroup>
 
-              <InputError message={errors.password_confirmation} />
+              <InputError message={errors["password_confirmation"]} />
             </div>
 
             <div className="flex items-center gap-4">
