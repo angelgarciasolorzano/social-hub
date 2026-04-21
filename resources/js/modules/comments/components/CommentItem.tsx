@@ -2,18 +2,18 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
-import { CommentableType } from "@/enums";
-import type { Comment } from "@/types";
-import { validImage } from "@/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 
 import { useModal } from "@/shared/hooks/useModal";
 
-import type { cn } from "@/shared/lib/utils";
+import { validImage } from "@/shared/lib";
+import { cn } from "@/shared/lib/utils";
 
 import { profilePlaceholder } from "@/shared/assets";
 
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import CommentInputModal from "../../modules/comments/components/CommentInputModal";
+import { CommentableType } from "../enums/commentableType";
+import type { Comment } from "../types/comment";
+import CommentInputModal from "./modal/CommentInputModal";
 import RepliesList from "./RepliesList";
 
 interface CommentItemProps {

@@ -14,13 +14,13 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 
-import type { CommentableType } from "../enums/commentableType";
-import CommentForm from "./forms/CommentForm";
+import type { CommentableType } from "../../enums/commentableType";
+import CommentForm from "../forms/CommentForm";
 
 interface CommentInputModalProps {
   commentableId: number;
   commentableType: CommentableType;
-  onCommentPosted?: () => void;
+  onCommentPosted: (() => void) | undefined;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;

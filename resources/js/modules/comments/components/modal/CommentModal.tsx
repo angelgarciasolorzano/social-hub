@@ -1,5 +1,6 @@
 import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
+import type { Post } from "@/modules/post";
 import { PostDetail } from "@/modules/post";
 
 import { Button } from "@/shared/components/ui/button";
@@ -13,7 +14,7 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Separator } from "@/shared/components/ui/separator";
 
-import type { Post, User } from "@/shared/types";
+import type { User } from "@/shared/types";
 
 import CommentList from "../CommentList";
 

@@ -1,18 +1,19 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { CommentableType } from "@/enums";
-import { usePaginatedComments } from "@/hooks";
 import { useIntersectionObserver } from "usehooks-ts";
+
+import { Input } from "@/shared/components/ui/input";
+import { Separator } from "@/shared/components/ui/separator";
 
 import { useModal } from "@/shared/hooks/useModal";
 
 import { cn } from "@/shared/lib/utils";
 
-import { Input } from "../../../components/ui/input";
-import { Separator } from "../../../components/ui/separator";
-import CommentInputModal from "./CommentInputModal";
+import { CommentableType } from "../enums/commentableType";
+import { usePaginatedComments } from "../hooks/usePaginatedComments";
 import CommentItem from "./CommentItem";
+import CommentInputModal from "./modal/CommentInputModal";
 
 interface CommentListProps {
   postId: number;
@@ -22,7 +23,7 @@ function CommentList({ postId }: CommentListProps) {
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
 
   const { open, setOpen } = useModal();
@@ -39,7 +40,7 @@ function CommentList({ postId }: CommentListProps) {
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
-    root: scrollRef.current,
+    root: scrollRoot,
     rootMargin: "200px",
   });
 
@@ -84,7 +85,7 @@ function CommentList({ postId }: CommentListProps) {
 
   return (
     <>
-      <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={scrollRef}>
+      <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={setScrollRoot}>
         {commentsPage.data.map((comment) => (
           <CommentItem
             onReplyCreated={increaseRepliesCount}
@@ -120,7 +121,7 @@ function CommentList({ postId }: CommentListProps) {
 type RenderCommentBaseProps = CommentListProps & {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
-  uploadedComments?: () => void;
+  uploadedComments: (() => void) | undefined;
 };
 
 type RenderLoadingStateProps = RenderCommentBaseProps;

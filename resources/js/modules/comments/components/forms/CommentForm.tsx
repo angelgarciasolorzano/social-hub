@@ -16,7 +16,7 @@ interface CommentFormProps {
   commentableId: number;
   commentableType: CommentableType;
   formId: string;
-  onCommentPosted?: () => void;
+  onCommentPosted: (() => void) | undefined;
   setOpen: Dispatch<SetStateAction<boolean>>;
   setProcessing: Dispatch<SetStateAction<boolean>>;
   setReplyTo?: Dispatch<SetStateAction<number | null>>;
@@ -56,7 +56,7 @@ function CommentForm(props: CommentFormProps) {
 
           <Textarea name="content" className="w-full" placeholder="Escribe tu comentario" />
 
-          <InputError className="mt-1" message={errors.content} />
+          <InputError className="mt-1" message={errors["content"]} />
         </div>
       )}
     </Form>

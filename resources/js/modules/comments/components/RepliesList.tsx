@@ -1,11 +1,10 @@
-import { Dispatch, SetStateAction, useEffect, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useIntersectionObserver } from "usehooks-ts";
 
-import { usePaginatedComments } from "@/hooks";
-
-import { CommentableType } from "@/enums";
-
+import { CommentableType } from "../enums/commentableType";
+import { usePaginatedComments } from "../hooks/usePaginatedComments";
 import CommentItem from "./CommentItem";
 
 interface RepliesListProps {
@@ -23,7 +22,8 @@ function RepliesList({
   showReplies,
   setShowReplies,
 }: RepliesListProps) {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
+
   const loadMoreTimer = useRef<number | null>(null);
 
   const { commentsPage, isLoadingMore, isRefreshing, loadMoreComments, hasMoreComments } =
@@ -31,7 +31,7 @@ function RepliesList({
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
-    root: scrollRef.current,
+    root: scrollRoot,
     rootMargin: "200px",
   });
 
@@ -65,7 +65,7 @@ function RepliesList({
   if (!commentsPage) return null;
 
   return (
-    <div className="ml-4 flex max-h-72 flex-col gap-2 overflow-auto" ref={scrollRef}>
+    <div className="ml-4 flex max-h-72 flex-col gap-2 overflow-auto" ref={setScrollRoot}>
       {commentsPage.data.map((reply) => (
         <CommentItem
           comment={reply}
