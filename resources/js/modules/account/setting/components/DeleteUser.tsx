@@ -2,7 +2,12 @@ import { useRef } from "react";
 
 import { Form, usePage } from "@inertiajs/react";
 
-import { Button } from "@/components/ui/button";
+import { destroy } from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
+
+import { LabelForm } from "@/shared/components/form";
+import InputError from "@/shared/components/form/InputError";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -11,16 +16,10 @@ import {
   DialogFooter,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { type SharedData } from "@/types";
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
 
-import UserController from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
-
-import InputError from "@/shared/components/form/InputError";
-
-import { Badge } from "../../../components/ui/badge";
+import type { SharedData } from "@/shared/types";
 
 export default function DeleteUser() {
   const passwordInput = useRef<HTMLInputElement>(null);
@@ -46,7 +45,7 @@ export default function DeleteUser() {
         </DialogDescription>
 
         <Form
-          {...UserController.destroy.form(auth.user.id)}
+          {...destroy.form(auth.user.id)}
           className="space-y-6"
           onError={() => passwordInput.current?.focus()}
           options={{
@@ -57,9 +56,9 @@ export default function DeleteUser() {
           {({ errors, processing, resetAndClearErrors }) => (
             <>
               <div className="grid gap-2">
-                <Label className="sr-only" htmlFor="password">
+                <LabelForm className="sr-only" error={errors["password"]} htmlFor="password">
                   Password
-                </Label>
+                </LabelForm>
 
                 <Input
                   id="password"
@@ -70,7 +69,7 @@ export default function DeleteUser() {
                   ref={passwordInput}
                 />
 
-                <InputError message={errors.password} />
+                <InputError message={errors["password"]} />
               </div>
 
               <DialogFooter className="gap-2">
