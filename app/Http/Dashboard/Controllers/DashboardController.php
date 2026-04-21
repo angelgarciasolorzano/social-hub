@@ -20,7 +20,7 @@ class DashboardController extends Controller
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
-        return Inertia::render('dashboard/dashboard', [
+        return Inertia::render('dashboard/Dashboard', [
             'user' => Auth::user(),
             'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
         ]);
