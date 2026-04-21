@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { HiOutlinePlus } from "react-icons/hi2";
 
-import { Publication } from "@/features/publication";
+import PostDialog from "@/modules/post/components/CreatePostDialog";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
@@ -27,7 +27,7 @@ function DashboardPostHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderP
         <TooltipContent>Crear publicación</TooltipContent>
       </Tooltip>
 
-      <Publication open={isOpenModal} setOpen={setIsOpenModal} />
+      <PostDialog open={isOpenModal} setOpen={setIsOpenModal} />
     </>
   );
 }

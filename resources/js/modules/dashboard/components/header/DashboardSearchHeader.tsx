@@ -5,12 +5,15 @@ import { LuCircleUserRound, LuUserRoundPlus } from "react-icons/lu";
 
 import { Loader2Icon } from "lucide-react";
 
-import FriendshipController from "@/actions/App/Friendship/Controllers/FriendshipController";
+import {
+  search,
+  sendRequest,
+} from "@/shared/wayfinder/actions/App/Friendship/Controllers/FriendshipController";
 
-import profile from "@/routes/profile";
+import { show } from "@/shared/wayfinder/routes/profile";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -18,11 +21,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+} from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
-import { SharedData } from "@/types";
+import type { SharedData } from "@/shared/types";
 
 function SearchHeader() {
   const { search_results } = usePage<SharedData>().props;
@@ -49,7 +52,7 @@ function SearchHeader() {
             </DialogDescription>
 
             <Form
-              {...FriendshipController.search.form()}
+              {...search.form()}
               className="mt-1.5 flex items-center gap-2"
               onSuccess={(page) => console.log(page.props)}
               options={{
@@ -95,9 +98,7 @@ function SearchHeader() {
                   <div className="flex gap-2">
                     <Badge
                       className="cursor-pointer text-sm dark:text-white/80"
-                      onClick={() =>
-                        router.post(FriendshipController.sendRequest.url({ user: user.id }))
-                      }
+                      onClick={() => router.post(sendRequest.url({ user: user.id }))}
                       variant="secondary"
                     >
                       <LuUserRoundPlus className="h-4 w-4" />
@@ -105,7 +106,7 @@ function SearchHeader() {
                     </Badge>
 
                     <Badge className="cursor-pointer text-sm" asChild variant="outline">
-                      <Link href={profile.show(user.id)}>
+                      <Link href={show(user.id)}>
                         <LuCircleUserRound className="h-4 w-4" />
                         Ver perfil
                       </Link>

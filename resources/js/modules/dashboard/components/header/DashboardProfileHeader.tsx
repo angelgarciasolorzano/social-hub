@@ -1,9 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 
-import profilePlaceholder from "@/assets/profile-placeholder.png";
-import Settings from "@/features/settings/Settings";
-import { validImage } from "@/shared/lib/validImage";
-import type { SharedData } from "@/types";
+import Settings from "@/modules/account/setting/Setting";
 
 import { Avatar, AvatarImage } from "@/shared/components/ui/avatar";
 import {
@@ -17,6 +14,12 @@ import {
 
 import { useModal } from "@/shared/hooks/useModal";
 
+import { validImage } from "@/shared/lib/validImage";
+
+import type { SharedData } from "@/shared/types";
+
+import { profilePlaceholder } from "@/shared/assets";
+
 import { menuItems } from "../../data/dashboardProfileItems";
 
 function ProfileHeader() {
@@ -24,7 +27,7 @@ function ProfileHeader() {
   const { auth } = usePage<SharedData>().props;
 
   const handleAction = (action: string) => {
-    if (action === "openModal") {
+    if (action === "openConfigModal") {
       setOpen(true);
     }
   };
@@ -50,7 +53,12 @@ function ProfileHeader() {
               key={index}
             >
               {item.url ? (
-                <Link className="w-full" as="button" href={item.url} method={item.method}>
+                <Link
+                  className="w-full"
+                  as="button"
+                  href={item.url}
+                  {...(item.method ? { method: item.method } : {})}
+                >
                   <item.icon className="h-4 w-4 text-gray-600" />
 
                   {item.text}
