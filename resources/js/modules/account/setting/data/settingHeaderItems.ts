@@ -1,18 +1,18 @@
-import { IconType } from "react-icons";
+import type { IconType } from "react-icons";
 import { GrShieldSecurity } from "react-icons/gr";
 import { LuCircleUserRound, LuMonitorSmartphone } from "react-icons/lu";
 import { MdOutlineLockPerson } from "react-icons/md";
 
-import { SettingLabelSidebar } from "./settingsSidebarItems";
+import { SettingLabelSidebar } from "./settingSidebarItems";
 
-interface SettingsHeaderItems {
+interface SettingHeaderItems {
   description: string;
   headerAddon?: boolean;
   icon: IconType;
   label: string;
 }
 
-export const settingsHeaderItems: Record<SettingLabelSidebar, SettingsHeaderItems> = {
+export const settingHeaderItems: Record<SettingLabelSidebar, SettingHeaderItems> = {
   [SettingLabelSidebar.Appearance]: {
     description: "Personaliza el tema y la apariencia de la aplicación.",
     icon: LuMonitorSmartphone,

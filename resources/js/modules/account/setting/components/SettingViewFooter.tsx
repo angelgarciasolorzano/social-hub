@@ -1,5 +1,5 @@
-import { settingsFooterItems } from "../data/settingsFooterItems";
-import { SettingLabelSidebar } from "../data/settingsSidebarItems";
+import { settingFooterItems } from "../data/settingFooterItems";
+import type { SettingLabelSidebar } from "../data/settingSidebarItems";
 
 interface SettingsViewFooterProps {
   active: SettingLabelSidebar;
@@ -26,7 +26,7 @@ function SettingsViewFooterDefault() {
       </small>
 
       <div className="flex items-center justify-center gap-4">
-        {settingsFooterItems.map((item, index) => (
+        {settingFooterItems.map((item, index) => (
           <item.icon key={index} />
         ))}
       </div>

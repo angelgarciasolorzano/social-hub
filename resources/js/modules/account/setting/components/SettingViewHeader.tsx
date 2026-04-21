@@ -1,13 +1,13 @@
 import { usePage } from "@inertiajs/react";
 
+import { Badge } from "@/shared/components/ui/badge";
+
 import { cn } from "@/shared/lib/utils";
 
-import { Badge } from "@/components/ui/badge";
+import type { SharedData } from "@/shared/types";
 
-import { SharedData } from "@/types";
-
-import { settingsHeaderItems } from "../data/settingsHeaderItems";
-import { SettingLabelSidebar } from "../data/settingsSidebarItems";
+import { settingHeaderItems } from "../data/settingsHeaderItems";
+import { SettingLabelSidebar } from "../data/settingSidebarItems";
 import DeleteUser from "./DeleteUser";
 
 interface SettingViewHeaderProps {
@@ -15,7 +15,7 @@ interface SettingViewHeaderProps {
 }
 
 function SettingsViewHeader({ active }: SettingViewHeaderProps) {
-  const Icon = settingsHeaderItems[active].icon;
+  const Icon = settingHeaderItems[active].icon;
 
   return (
     <header className="space-y-2 border-b pb-2">
@@ -23,13 +23,13 @@ function SettingsViewHeader({ active }: SettingViewHeaderProps) {
         <h2 className="flex gap-2 leading-none font-semibold text-primary">
           <Icon />
 
-          {settingsHeaderItems[active].label}
+          {settingHeaderItems[active].label}
         </h2>
 
         <SettingsViewHeaderAddon active={active} />
       </div>
 
-      <p className="text-xs text-muted-foreground">{settingsHeaderItems[active].description}</p>
+      <p className="text-xs text-muted-foreground">{settingHeaderItems[active].description}</p>
     </header>
   );
 }

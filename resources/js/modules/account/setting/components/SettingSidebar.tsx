@@ -1,8 +1,9 @@
-import { Dispatch, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 
-import { SettingLabelSidebar, settingSidebarItems } from "../data/settingsSidebarItems";
+import type { SettingLabelSidebar } from "../data/settingSidebarItems";
+import { settingSidebarItems } from "../data/settingSidebarItems";
 
 interface SettingsSidebarProps {
   active: SettingLabelSidebar;

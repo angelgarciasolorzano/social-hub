@@ -1,14 +1,14 @@
-import { IconType } from "react-icons";
+import type { IconType } from "react-icons";
 import { FaFacebookSquare } from "react-icons/fa";
 import { FaInstagram } from "react-icons/fa6";
 import { ImWhatsapp } from "react-icons/im";
 import { RiTwitterXLine } from "react-icons/ri";
 
-interface SettingsFooterItems {
+interface SettingFooterItems {
   icon: IconType;
 }
 
-export const settingsFooterItems: SettingsFooterItems[] = [
+export const settingFooterItems: SettingFooterItems[] = [
   {
     icon: RiTwitterXLine,
   },
