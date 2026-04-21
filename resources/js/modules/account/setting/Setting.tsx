@@ -11,11 +11,11 @@ import {
 import { Separator } from "@/shared/components/ui/separator";
 
 import PasswordProtectedView from "./components/password/PasswordProtectedView";
-import SettingsSidebar from "./components/SettingsSidebar";
-import SettingsViewFooter from "./components/SettingsViewFooter";
-import SettingsViewHeader from "./components/SettingsViewHeader";
-import { SettingLabelSidebar } from "./data/settingsSidebarItems";
-import SettingsView from "./views/SettingsView";
+import SettingSidebar from "./components/SettingSidebar";
+import SettingViewFooter from "./components/SettingViewFooter";
+import SettingViewHeader from "./components/SettingViewHeader";
+import { SettingLabelSidebar } from "./data/settingSidebarItems";
+import SettingView from "./views/SettingView";
 
 interface SettingsModalProps {
   open: boolean;
@@ -50,7 +50,7 @@ interface SettingsBodyProps {
 function SettingsBody({ active, setActive }: SettingsBodyProps) {
   return (
     <div className="flex h-full min-h-0">
-      <SettingsSidebar active={active} setActive={setActive} />
+      <SettingSidebar active={active} setActive={setActive} />
 
       <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4">
         <PasswordProtectedView
@@ -59,11 +59,11 @@ function SettingsBody({ active, setActive }: SettingsBodyProps) {
           requiredFor={SettingLabelSidebar.TwoFactor}
           title="Two Factor Authentication"
         >
-          <SettingsViewHeader active={active} />
+          <SettingViewHeader active={active} />
 
-          <SettingsView active={active} />
+          <SettingView active={active} />
 
-          <SettingsViewFooter active={active} />
+          <SettingViewFooter active={active} />
         </PasswordProtectedView>
       </div>
     </div>
