@@ -2,13 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { index as commentIndex } from "@/actions/App/Comment/Controllers/CommentController";
+import { index as commentIndex } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
 
-import type { CommentableType } from "@/enums";
+import { hasPaginatedKey } from "@/shared/lib";
 
-import { hasPaginatedKey } from "@/utils";
-
-import type { Comment, PaginatedComments } from "@/types";
+import type { CommentableType } from "../enums/commentableType";
+import type { Comment, PaginatedComments } from "../types/comment";
 
 interface UsePaginatedCommentsReturn {
   commentsPage: PaginatedComments | null;
@@ -50,26 +49,26 @@ export function usePaginatedComments(
           preserveScroll: true,
           replace: true,
           onSuccess: (data) => {
-            if (hasPaginatedKey<Comment>(data.flash, "comments")) {
-              const incoming = data.flash.comments as PaginatedComments;
+            if (hasPaginatedKey<Comment, "comments">(data.flash, "comments")) {
+              const incomingComments = data.flash["comments"];
 
               setCommentsPage((prev) => {
-                if (!prev) return incoming;
+                if (!prev) return incomingComments;
 
                 const wasFullyLoaded = prev.links.next === null;
 
-                if (!wasFullyLoaded) return incoming;
+                if (!wasFullyLoaded) return incomingComments;
 
                 const map = new Map<number, Comment>();
 
                 prev.data.forEach((comment) => map.set(comment.id, comment));
-                incoming.data.forEach((comment) => map.set(comment.id, comment));
+                incomingComments.data.forEach((comment) => map.set(comment.id, comment));
 
                 return {
-                  ...incoming,
+                  ...incomingComments,
                   data: Array.from(map.values()),
                   links: {
-                    ...incoming.links,
+                    ...incomingComments.links,
                     next: null,
                   },
                 };
@@ -104,19 +103,19 @@ export function usePaginatedComments(
         preserveScroll: true,
         replace: true,
         onSuccess: (data) => {
-          if (hasPaginatedKey<Comment>(data.flash, "comments")) {
-            setCommentsPage((prev) => {
-              const newPageData = data.flash.comments as PaginatedComments;
+          if (hasPaginatedKey<Comment, "comments">(data.flash, "comments")) {
+            const newPageComments = data.flash["comments"];
 
-              if (!prev) return newPageData;
+            setCommentsPage((prev) => {
+              if (!prev) return newPageComments;
 
               const map = new Map<number, Comment>();
 
               prev.data.forEach((comment) => map.set(comment.id, comment));
-              newPageData.data.forEach((comment) => map.set(comment.id, comment));
+              newPageComments.data.forEach((comment) => map.set(comment.id, comment));
 
               return {
-                ...newPageData,
+                ...newPageComments,
                 data: Array.from(map.values()),
               };
             });

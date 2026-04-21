@@ -7,10 +7,10 @@ import type { PaginatedResponse } from "../types/pagination";
  * @param key The property name to look for
  * @returns Returns true if the value matches the PaginatedResponse shape.
  */
-export function hasPaginatedKey<T = unknown>(
+export function hasPaginatedKey<T = unknown, K extends string = string>(
   data: unknown,
-  key: string,
-): data is { [K in typeof key]: PaginatedResponse<T> } {
+  key: K,
+): data is Record<K, PaginatedResponse<T>> {
   if (typeof data !== "object" || data === null) return false;
 
   const objectData = data as Record<string, unknown>;
