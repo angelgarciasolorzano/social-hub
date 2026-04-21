@@ -1,4 +1,4 @@
-import { IconType } from "react-icons";
+import type { IconType } from "react-icons";
 import { LuUserRoundCog } from "react-icons/lu";
 import { MdLockOutline, MdMonitor, MdOutlineSecurity } from "react-icons/md";
 
