@@ -1,16 +1,17 @@
 import { Form, Link, usePage } from "@inertiajs/react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { type SharedData } from "@/types";
 import { Transition } from "@headlessui/react";
 
-import UserController from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
+import { update } from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
 
 import { send } from "@/shared/wayfinder/routes/verification";
 
+import { LabelForm } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+
+import type { SharedData } from "@/shared/types";
 
 export default function SettingsProfileView() {
   const { auth } = usePage<SharedData>().props;
@@ -20,7 +21,7 @@ export default function SettingsProfileView() {
     <>
       <div className="space-y-6">
         <Form
-          {...UserController.update.form(auth.user.id)}
+          {...update.form(auth.user.id)}
           className="space-y-6"
           options={{
             preserveScroll: true,
@@ -29,7 +30,9 @@ export default function SettingsProfileView() {
           {({ errors, processing, recentlySuccessful }) => (
             <>
               <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
+                <LabelForm error={errors["name"]} htmlFor="name">
+                  Name
+                </LabelForm>
 
                 <Input
                   id="name"
@@ -41,11 +44,13 @@ export default function SettingsProfileView() {
                   required
                 />
 
-                <InputError className="mt-2" message={errors.name} />
+                <InputError className="mt-2" message={errors["name"]} />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="email">Email address</Label>
+                <LabelForm error={errors["email"]} htmlFor="email">
+                  Email address
+                </LabelForm>
 
                 <Input
                   id="email"
@@ -58,7 +63,7 @@ export default function SettingsProfileView() {
                   required
                 />
 
-                <InputError className="mt-2" message={errors.email} />
+                <InputError className="mt-2" message={errors["email"]} />
               </div>
 
               {mustVerifyEmail && auth.user.email_verified_at === null && (
