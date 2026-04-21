@@ -41,7 +41,7 @@ function PostForm({ setOpen, setProcessing }: PostFormtProps) {
               required
             />
 
-            <InputError message={errors.content} />
+            <InputError message={errors["content"]} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -49,7 +49,7 @@ function PostForm({ setOpen, setProcessing }: PostFormtProps) {
 
             <Input id="post-image" name="image_file" type="file" accept="image/*" />
 
-            <InputError message={errors.image_file} />
+            <InputError message={errors["image_file"]} />
           </div>
         </>
       )}

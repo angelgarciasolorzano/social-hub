@@ -8,11 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avat
 
 import { validImage } from "@/shared/lib";
 
-import type { Post, User } from "@/shared/types";
+import type { User } from "@/shared/types";
 
 import { profilePlaceholder } from "@/shared/assets";
 
 import placeholderPost from "../assets/cover-placeholder.svg";
+import type { Post } from "../types/post";
 
 dayjs.extend(relativeTime);
 dayjs.locale("es");
