@@ -1,5 +1,12 @@
 import type { PaginatedResponse } from "../types/pagination";
 
+/**
+ * Checks if an object has a paginated response under the given key.
+ *
+ * @param data The object to check
+ * @param key The property name to look for
+ * @returns Returns true if the value matches the PaginatedResponse shape.
+ */
 export function hasPaginatedKey<T = unknown>(
   data: unknown,
   key: string,
