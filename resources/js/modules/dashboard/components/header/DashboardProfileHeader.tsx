@@ -20,14 +20,15 @@ import type { SharedData } from "@/shared/types";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import { menuItems } from "../../data/dashboardProfileItems";
+import type { ActionItemType } from "../../data/dashboardProfileItems";
+import { ActionItem, menuItems } from "../../data/dashboardProfileItems";
 
 function ProfileHeader() {
   const { open, setOpen } = useModal();
   const { auth } = usePage<SharedData>().props;
 
-  const handleAction = (action: string) => {
-    if (action === "openConfigModal") {
+  const handleAction = (action: ActionItemType) => {
+    if (action === ActionItem.OpenConfigModal) {
       setOpen(true);
     }
   };

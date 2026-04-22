@@ -1,13 +1,13 @@
 import type { PropsWithChildren } from "react";
 
-import HomeHeader from "../components/header/DashboardHeader";
+import DashboardHeader from "../components/header/DashboardHeader";
 import DashboardSidebarLeft from "../components/sidebar/DashboardSidebarLeft";
 import DashboardSidebarRight from "../components/sidebar/DashboardSidebarRight";
 
 function DashboardLayout({ children }: PropsWithChildren) {
   return (
     <div className="flex h-screen flex-col">
-      <HomeHeader />
+      <DashboardHeader />
 
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebarLeft />

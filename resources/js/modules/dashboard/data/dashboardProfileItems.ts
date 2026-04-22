@@ -9,11 +9,24 @@ import type { RouteDefinition } from "@/shared/wayfinder/wayfinder";
 import { dashboard, logout } from "@/shared/wayfinder/routes";
 import { index } from "@/shared/wayfinder/routes/profile";
 
+export const UrlMethod = {
+  Post: "post",
+  Get: "get",
+} as const;
+
+export const ActionItem = {
+  OpenConfigModal: "openConfigModal",
+} as const;
+
+export type UrlsMethodType = (typeof UrlMethod)[keyof typeof UrlMethod];
+
+export type ActionItemType = (typeof ActionItem)[keyof typeof ActionItem];
+
 interface MenuItem {
   text: string;
   url?: string | RouteDefinition<"get" | "post">;
-  method?: "post" | "get";
-  action?: "openConfigModal";
+  method?: UrlsMethodType;
+  action?: ActionItemType;
   icon: IconType;
 }
 
@@ -30,13 +43,13 @@ export const menuItems: MenuItem[] = [
   },
   {
     text: "Configuración",
-    action: "openConfigModal",
+    action: ActionItem.OpenConfigModal,
     icon: PiNutBold,
   },
   {
     text: "Cerrar Sesión",
     url: logout(),
-    method: "post",
+    method: UrlMethod.Post,
     icon: MdOutlineLogout,
   },
 ];
