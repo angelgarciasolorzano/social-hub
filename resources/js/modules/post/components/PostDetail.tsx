@@ -10,9 +10,9 @@ import { validImage } from "@/shared/lib";
 
 import type { User } from "@/shared/types";
 
-import { profilePlaceholder } from "@/shared/assets";
+import { profilePicturePlaceholder } from "@/shared/assets";
 
-import placeholderPost from "../assets/cover-placeholder.svg";
+import postPlaceholder from "../assets/post-placeholder.png";
 import type { Post } from "../types/post";
 
 dayjs.extend(relativeTime);
@@ -32,7 +32,7 @@ function PostDetail({ post, user }: PostDetailProps) {
         <Avatar>
           <AvatarImage
             alt="Foto de perfil"
-            src={validImage(user.profilePicture, profilePlaceholder)}
+            src={validImage(user.profilePicture, profilePicturePlaceholder)}
           />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
@@ -59,7 +59,7 @@ function PostDetail({ post, user }: PostDetailProps) {
         {post.image && (
           <img
             className="my-2 max-h-[400px] w-full rounded-md object-cover"
-            onError={(e) => (e.currentTarget.src = placeholderPost)}
+            onError={(e) => (e.currentTarget.src = postPlaceholder)}
             alt="Imagen de la publicación"
             src={post.image}
           />

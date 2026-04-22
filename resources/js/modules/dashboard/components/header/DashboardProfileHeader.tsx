@@ -18,7 +18,7 @@ import { validImage } from "@/shared/lib/validImage";
 
 import type { SharedData } from "@/shared/types";
 
-import { profilePlaceholder } from "@/shared/assets";
+import { profilePicturePlaceholder } from "@/shared/assets";
 
 import { menuItems } from "../../data/dashboardProfileItems";
 
@@ -36,7 +36,7 @@ function ProfileHeader() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar>
-          <AvatarImage src={validImage(auth.user.profilePicture, profilePlaceholder)} />
+          <AvatarImage src={validImage(auth.user.profilePicture, profilePicturePlaceholder)} />
         </Avatar>
       </DropdownMenuTrigger>
 

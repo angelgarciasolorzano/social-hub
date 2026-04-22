@@ -9,7 +9,7 @@ import { useModal } from "@/shared/hooks/useModal";
 import { validImage } from "@/shared/lib";
 import { cn } from "@/shared/lib/utils";
 
-import { profilePlaceholder } from "@/shared/assets";
+import { profilePicturePlaceholder } from "@/shared/assets";
 
 import { CommentableType } from "../enums/commentableType";
 import type { Comment } from "../types/comment";
@@ -53,7 +53,7 @@ function CommentItem(props: CommentItemProps) {
           <Avatar>
             <AvatarImage
               alt="Foto de perfil"
-              src={validImage(comment.user.profilePicture, profilePlaceholder)}
+              src={validImage(comment.user.profilePicture, profilePicturePlaceholder)}
             />
 
             <AvatarFallback>Foto de perfil</AvatarFallback>
