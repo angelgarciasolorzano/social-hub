@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { HiOutlinePlus } from "react-icons/hi2";
 
-import PostDialog from "@/modules/post/components/CreatePostDialog";
+import PostDialog from "@/modules/post/components/PostDialog";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
