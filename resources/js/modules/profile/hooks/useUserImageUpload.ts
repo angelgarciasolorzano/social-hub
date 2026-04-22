@@ -1,10 +1,11 @@
-import { ChangeEvent, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useState } from "react";
 
 import { router } from "@inertiajs/react";
 
 import { toast } from "sonner";
 
-import UserController from "@/actions/App/User/Controllers/UserController";
+import { updateImage } from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
 
 import { UserImageType } from "../enums/userImageType";
 
@@ -51,7 +52,7 @@ export function useUserImageUpload({
     if (!imageFile) return;
 
     router.post(
-      UserController.updateImage.url({ type: typeImage }),
+      updateImage.url({ type: typeImage }),
       {
         [typeImage]: imageFile,
       },

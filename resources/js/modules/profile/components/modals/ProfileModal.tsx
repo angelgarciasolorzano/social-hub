@@ -1,5 +1,12 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from "react";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/components/ui/dialog";
 
 interface ProfileModalProps {
   open: boolean;
@@ -8,22 +15,18 @@ interface ProfileModalProps {
 
 function ProfileModal({ open, setOpen }: ProfileModalProps) {
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className='flex flex-col mx-w-[80%] min-w-[65%] h-[80%] overflow-hidden'>
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogContent className="mx-w-[80%] flex h-[80%] min-w-[65%] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Configuracion</DialogTitle>
-          
-          <DialogDescription>
-            Aquí puedes configurar tu perfil y preferencias.
-          </DialogDescription>
+
+          <DialogDescription>Aquí puedes configurar tu perfil y preferencias.</DialogDescription>
         </DialogHeader>
 
-        <div>
-          {/* Contenido de configuración va aquí */}
-        </div>
+        <div>{/* Contenido de configuración va aquí */}</div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 export default ProfileModal;

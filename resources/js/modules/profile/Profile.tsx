@@ -3,22 +3,19 @@ import { InfiniteScroll, usePage } from "@inertiajs/react";
 import { GoPlus } from "react-icons/go";
 import { MdOutlineEditNote } from "react-icons/md";
 
-import { Publication, PublicationCard } from "@/features/publication";
-
-import { Button } from "@/components/ui/button";
-
-import HomeLayout from "@/pages/home/layouts/HomeLayout";
-import ProfileCover from "@/pages/profile/components/ProfileCover";
+import { Button } from "@/shared/components/ui/button";
 
 import { useModal } from "@/shared/hooks/useModal";
 
-import { validImage } from "@/utils";
+import { validImage } from "@/shared/lib";
 
-import type { PostCollection, SharedData, User } from "@/types";
+import type { SharedData, User } from "@/shared/types";
 
-import coverPlaceholder from "@/assets/cover-placeholder.svg";
-import profilePlaceholder from "@/assets/profile-placeholder.png";
+import { profileCoverPlaceholder, profilePicturePlaceholder } from "@/shared/assets";
 
+import { DashboardLayout } from "../dashboard";
+import { PostCard, type PostCollection, PostDialog } from "../post";
+import ProfileCover from "./components/ProfileCover";
 import ProfilePicture from "./components/ProfilePicture";
 
 interface ProfileProps {
@@ -31,11 +28,13 @@ function Profile({ posts, user }: ProfileProps) {
   const { auth } = usePage<SharedData>().props;
 
   return (
-    <HomeLayout>
+    <DashboardLayout>
       <div className="flex flex-col gap-4 px-4 py-3">
         <div className="relative">
-          <ProfileCover coverImage={validImage(user.coverImage, coverPlaceholder)} />
-          <ProfilePicture profilePicture={validImage(user.profilePicture, profilePlaceholder)} />
+          <ProfileCover coverImage={validImage(user.coverImage, profileCoverPlaceholder)} />
+          <ProfilePicture
+            profilePicture={validImage(user.profilePicture, profilePicturePlaceholder)}
+          />
         </div>
 
         <div className="px-6 pt-8">
@@ -66,7 +65,7 @@ function Profile({ posts, user }: ProfileProps) {
           {({ loadingNext }) => (
             <div className="flex flex-col gap-8">
               {posts.data.map((post) => (
-                <PublicationCard key={post.id} post={post} user={user} />
+                <PostCard key={post.id} post={post} user={user} />
               ))}
 
               {loadingNext && (
@@ -79,8 +78,8 @@ function Profile({ posts, user }: ProfileProps) {
         </InfiniteScroll>
       </div>
 
-      <Publication open={open} setOpen={setOpen} />
-    </HomeLayout>
+      <PostDialog open={open} setOpen={setOpen} />
+    </DashboardLayout>
   );
 }
 

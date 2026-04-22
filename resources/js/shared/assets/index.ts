@@ -1,4 +1,4 @@
 import profileCoverPlaceholder from "./profile-cover-placeholder.svg";
-import profilePlaceholder from "./profile-picture-placeholder.png";
+import profilePicturePlaceholder from "./profile-picture-placeholder.png";
 
-export { profilePlaceholder, profileCoverPlaceholder };
+export { profilePicturePlaceholder, profileCoverPlaceholder };
