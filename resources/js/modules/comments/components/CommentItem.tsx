@@ -13,7 +13,7 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 
 import { CommentableType } from "../enums/commentableType";
 import type { Comment } from "../types/comment";
-import CommentInputModal from "./modal/CommentInputModal";
+import CommentInputDialog from "./modal/CommentInputDialog";
 import RepliesList from "./RepliesList";
 
 interface CommentItemProps {
@@ -100,7 +100,7 @@ function CommentItem(props: CommentItemProps) {
         )}
       </footer>
 
-      <CommentInputModal
+      <CommentInputDialog
         onCommentPosted={() => {
           onReplyCreated?.(comment.id);
           uploadedComments?.();

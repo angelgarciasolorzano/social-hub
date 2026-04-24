@@ -13,7 +13,7 @@ import { cn } from "@/shared/lib/utils";
 import { CommentableType } from "../enums/commentableType";
 import { usePaginatedComments } from "../hooks/usePaginatedComments";
 import CommentItem from "./CommentItem";
-import CommentInputModal from "./modal/CommentInputModal";
+import CommentInputDialog from "./modal/CommentInputDialog";
 
 interface CommentListProps {
   postId: number;
@@ -193,7 +193,7 @@ function RenderCommentInput(props: RenderCommentInputProps) {
         readOnly
       />
 
-      <CommentInputModal
+      <CommentInputDialog
         onCommentPosted={uploadedComments}
         onOpenChange={setOpenModalComment}
         commentableId={postId}

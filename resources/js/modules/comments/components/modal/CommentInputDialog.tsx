@@ -17,7 +17,7 @@ import {
 import type { CommentableType } from "../../enums/commentableType";
 import CommentForm from "../forms/CommentForm";
 
-interface CommentInputModalProps {
+interface CommentInputDialogProps {
   commentableId: number;
   commentableType: CommentableType;
   onCommentPosted: (() => void) | undefined;
@@ -27,7 +27,7 @@ interface CommentInputModalProps {
   title: string;
 }
 
-function CommentInputModal(props: CommentInputModalProps) {
+function CommentInputDialog(props: CommentInputDialogProps) {
   const {
     commentableId,
     commentableType,
@@ -78,4 +78,4 @@ function CommentInputModal(props: CommentInputModalProps) {
   );
 }
 
-export default CommentInputModal;
+export default CommentInputDialog;
