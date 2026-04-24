@@ -18,12 +18,12 @@ import type { User } from "@/shared/types";
 
 import CommentList from "../CommentList";
 
-interface CommentModalProps {
+interface CommentDialogProps {
   postDetail: Post;
   user: User;
 }
 
-function CommentModal({ postDetail, user }: CommentModalProps) {
+function CommentDialog({ postDetail, user }: CommentDialogProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -47,17 +47,17 @@ function CommentModal({ postDetail, user }: CommentModalProps) {
         <Separator />
 
         <div className="flex flex-1 gap-4 overflow-hidden">
-          <CommentModalPublication postDetail={postDetail} user={user} />
-          <CommentModalContent idPost={postDetail.id} />
+          <CommentDialogPublication postDetail={postDetail} user={user} />
+          <CommentDialogContent idPost={postDetail.id} />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-type CommentModalPublicationProps = CommentModalProps;
+type CommentDialogPublicationProps = CommentDialogProps;
 
-function CommentModalPublication({ postDetail, user }: CommentModalPublicationProps) {
+function CommentDialogPublication({ postDetail, user }: CommentDialogPublicationProps) {
   return (
     <div className="h-full w-1/2 overflow-y-auto border-r pr-3 dark:border-[#343434]">
       <PostDetail post={postDetail} user={user} />
@@ -65,14 +65,14 @@ function CommentModalPublication({ postDetail, user }: CommentModalPublicationPr
   );
 }
 
-interface CommentModalContentProps {
+interface CommentDialogContentProps {
   idPost: Post["id"];
 }
 
-function CommentModalContent({ idPost }: CommentModalContentProps) {
+function CommentDialogContent({ idPost }: CommentDialogContentProps) {
   return (
     <div className="mb-1 flex w-1/2 flex-col gap-2">
-      <CommentModalHeader />
+      <CommentDialogHeader />
 
       <Separator />
 
@@ -81,7 +81,7 @@ function CommentModalContent({ idPost }: CommentModalContentProps) {
   );
 }
 
-function CommentModalHeader() {
+function CommentDialogHeader() {
   return (
     <div className="flex items-center gap-2 text-[15px] font-bold dark:text-gray-200">
       <RiWechatLine className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -90,4 +90,4 @@ function CommentModalHeader() {
   );
 }
 
-export default CommentModal;
+export default CommentDialog;

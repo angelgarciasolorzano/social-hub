@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-import { CommentModal } from "@/modules/comments";
+import { CommentDialog } from "@/modules/comments";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Button } from "@/shared/components/ui/button";
@@ -92,7 +92,7 @@ function PostCard({ post, user }: PostCardProps) {
           Me gusta
         </Button>
 
-        <CommentModal postDetail={post} user={user} />
+        <CommentDialog postDetail={post} user={user} />
       </footer>
     </article>
   );
