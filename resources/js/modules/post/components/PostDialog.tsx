@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
+
+import { useForm } from "@inertiajs/react";
 
 import { Loader2Icon } from "lucide-react";
 
@@ -14,6 +15,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 
+import type { PostFormData } from "../types/post";
 import PostForm from "./forms/PostForm";
 
 interface PostDialogProps {
@@ -22,10 +24,21 @@ interface PostDialogProps {
 }
 
 function PostDialog({ open, setOpen }: PostDialogProps) {
-  const [processing, setProcessing] = useState<boolean>(false);
+  const form = useForm<PostFormData>({
+    content: "",
+  });
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        if (form.processing && !nextOpen) {
+          return;
+        }
+
+        setOpen(nextOpen);
+      }}
+      open={open}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Crear publicación</DialogTitle>
@@ -33,17 +46,17 @@ function PostDialog({ open, setOpen }: PostDialogProps) {
           <DialogDescription>Comparte tus ideas y pensamientos con el mundo.</DialogDescription>
         </DialogHeader>
 
-        <PostForm setOpen={setOpen} setProcessing={setProcessing} />
+        <PostForm form={form} setOpen={setOpen} />
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button type="button" disabled={form.processing} variant="outline">
               Cancelar
             </Button>
           </DialogClose>
 
-          <Button type="submit" disabled={processing} form="post-form">
-            {processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
+          <Button type="submit" disabled={form.processing} form="post-form">
+            {form.processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
           </Button>
         </DialogFooter>
       </DialogContent>

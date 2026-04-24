@@ -8,3 +8,7 @@ export interface Post {
   id: number;
   image?: string;
 }
+
+export type PostFormData = Pick<Post, "content"> & {
+  image_file?: File;
+};
