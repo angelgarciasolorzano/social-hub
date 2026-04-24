@@ -26,7 +26,7 @@ function CommentList({ postId }: CommentListProps) {
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
 
-  const { open, setOpen } = useModal();
+  const { open: openModalComment, setOpen: setOpenModalComment } = useModal();
 
   const {
     commentsPage,
@@ -64,9 +64,9 @@ function CommentList({ postId }: CommentListProps) {
   if (isRefreshing && !commentsPage) {
     return (
       <RenderLoadingState
-        open={open}
+        openModalComment={openModalComment}
         postId={postId}
-        setOpen={setOpen}
+        setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
     );
@@ -75,9 +75,9 @@ function CommentList({ postId }: CommentListProps) {
   if (!commentsPage || !commentsPage.data.length) {
     return (
       <RenderEmptyState
-        open={open}
+        openModalComment={openModalComment}
         postId={postId}
-        setOpen={setOpen}
+        setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
     );
@@ -109,9 +109,9 @@ function CommentList({ postId }: CommentListProps) {
       </div>
 
       <RenderCommentInput
-        open={open}
+        openModalComment={openModalComment}
         postId={postId}
-        setOpen={setOpen}
+        setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
     </>
@@ -119,14 +119,19 @@ function CommentList({ postId }: CommentListProps) {
 }
 
 type RenderCommentBaseProps = CommentListProps & {
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  openModalComment: boolean;
+  setOpenModalComment: Dispatch<SetStateAction<boolean>>;
   uploadedComments: (() => void) | undefined;
 };
 
 type RenderLoadingStateProps = RenderCommentBaseProps;
 
-function RenderLoadingState({ open, setOpen, uploadedComments, postId }: RenderLoadingStateProps) {
+function RenderLoadingState({
+  openModalComment,
+  setOpenModalComment,
+  uploadedComments,
+  postId,
+}: RenderLoadingStateProps) {
   return (
     <>
       <div className="flex flex-1 items-center justify-center">
@@ -136,9 +141,9 @@ function RenderLoadingState({ open, setOpen, uploadedComments, postId }: RenderL
       </div>
 
       <RenderCommentInput
-        open={open}
+        openModalComment={openModalComment}
         postId={postId}
-        setOpen={setOpen}
+        setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
     </>
@@ -147,7 +152,12 @@ function RenderLoadingState({ open, setOpen, uploadedComments, postId }: RenderL
 
 type RenderEmptyStateProps = RenderCommentBaseProps;
 
-function RenderEmptyState({ postId, open, setOpen, uploadedComments }: RenderEmptyStateProps) {
+function RenderEmptyState({
+  postId,
+  openModalComment,
+  setOpenModalComment,
+  uploadedComments,
+}: RenderEmptyStateProps) {
   return (
     <>
       <div className="flex flex-1 items-center justify-center">
@@ -157,9 +167,9 @@ function RenderEmptyState({ postId, open, setOpen, uploadedComments }: RenderEmp
       </div>
 
       <RenderCommentInput
-        open={open}
+        openModalComment={openModalComment}
         postId={postId}
-        setOpen={setOpen}
+        setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
     </>
@@ -169,15 +179,15 @@ function RenderEmptyState({ postId, open, setOpen, uploadedComments }: RenderEmp
 type RenderCommentInputProps = RenderCommentBaseProps;
 
 function RenderCommentInput(props: RenderCommentInputProps) {
-  const { postId, open, setOpen, uploadedComments } = props;
+  const { postId, openModalComment, setOpenModalComment, uploadedComments } = props;
 
   return (
     <>
-      <Separator className="dark:bg-gray-700" />
+      <Separator />
 
       <Input
         className="cursor-pointer"
-        onClick={() => setOpen(true)}
+        onClick={() => setOpenModalComment(true)}
         autoFocus={false}
         placeholder="Escribe tu comentario"
         readOnly
@@ -185,11 +195,11 @@ function RenderCommentInput(props: RenderCommentInputProps) {
 
       <CommentInputModal
         onCommentPosted={uploadedComments}
-        onOpenChange={setOpen}
+        onOpenChange={setOpenModalComment}
         commentableId={postId}
         commentableType={CommentableType.POST}
-        open={open}
-        setOpen={setOpen}
+        openModalComment={openModalComment}
+        setOpenModalComment={setOpenModalComment}
         title="Nuevo comentario"
       />
     </>

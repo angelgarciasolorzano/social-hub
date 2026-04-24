@@ -17,7 +17,7 @@ interface CommentFormProps {
   commentableType: CommentableType;
   formId: string;
   onCommentPosted: (() => void) | undefined;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpenModalComment: Dispatch<SetStateAction<boolean>>;
   setProcessing: Dispatch<SetStateAction<boolean>>;
   setReplyTo?: Dispatch<SetStateAction<number | null>>;
 }
@@ -30,7 +30,7 @@ function CommentForm(props: CommentFormProps) {
     onCommentPosted,
     setReplyTo,
     setProcessing,
-    setOpen,
+    setOpenModalComment,
   } = props;
 
   return (
@@ -44,7 +44,7 @@ function CommentForm(props: CommentFormProps) {
         if (setReplyTo) setReplyTo(null);
         if (onCommentPosted) onCommentPosted();
 
-        setOpen(false);
+        setOpenModalComment(false);
       }}
       resetOnSuccess
     >

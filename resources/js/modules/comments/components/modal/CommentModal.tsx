@@ -44,7 +44,7 @@ function CommentModal({ postDetail, user }: CommentModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <Separator className="dark:bg-gray-700" />
+        <Separator />
 
         <div className="flex flex-1 gap-4 overflow-hidden">
           <CommentModalPublication postDetail={postDetail} user={user} />
@@ -59,7 +59,7 @@ type CommentModalPublicationProps = CommentModalProps;
 
 function CommentModalPublication({ postDetail, user }: CommentModalPublicationProps) {
   return (
-    <div className="h-full w-1/2 overflow-y-auto border-r pr-3 dark:border-r-gray-700">
+    <div className="h-full w-1/2 overflow-y-auto border-r pr-3 dark:border-[#343434]">
       <PostDetail post={postDetail} user={user} />
     </div>
   );
@@ -74,7 +74,7 @@ function CommentModalContent({ idPost }: CommentModalContentProps) {
     <div className="mb-1 flex w-1/2 flex-col gap-2">
       <CommentModalHeader />
 
-      <Separator className="dark:bg-gray-700" />
+      <Separator />
 
       <CommentList postId={idPost} />
     </div>

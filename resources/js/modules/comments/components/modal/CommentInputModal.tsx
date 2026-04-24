@@ -22,21 +22,28 @@ interface CommentInputModalProps {
   commentableType: CommentableType;
   onCommentPosted: (() => void) | undefined;
   onOpenChange: (open: boolean) => void;
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  openModalComment: boolean;
+  setOpenModalComment: Dispatch<SetStateAction<boolean>>;
   title: string;
 }
 
 function CommentInputModal(props: CommentInputModalProps) {
-  const { commentableId, commentableType, onCommentPosted, onOpenChange, open, title, setOpen } =
-    props;
+  const {
+    commentableId,
+    commentableType,
+    onCommentPosted,
+    onOpenChange,
+    openModalComment,
+    title,
+    setOpenModalComment,
+  } = props;
 
   const formId = `comment-form-${commentableType}-${commentableId}`;
 
   const [processing, setProcessing] = useState<boolean>(false);
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog onOpenChange={onOpenChange} open={openModalComment}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -51,7 +58,7 @@ function CommentInputModal(props: CommentInputModalProps) {
           commentableId={commentableId}
           commentableType={commentableType}
           formId={formId}
-          setOpen={setOpen}
+          setOpenModalComment={setOpenModalComment}
           setProcessing={setProcessing}
         />
 

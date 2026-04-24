@@ -39,7 +39,7 @@ function CommentItem(props: CommentItemProps) {
     uploadedComments,
   } = props;
 
-  const { open, setOpen } = useModal();
+  const { open: openModalComment, setOpen: setOpenModalComment } = useModal();
 
   return (
     <article className={cn("space-y-1", isReply && "ml-2")}>
@@ -82,7 +82,7 @@ function CommentItem(props: CommentItemProps) {
         <button
           type="button"
           className="cursor-pointer transition-colors hover:text-black/80 dark:hover:text-white/80"
-          onClick={() => setOpen(true)}
+          onClick={() => setOpenModalComment(true)}
         >
           Responder
         </button>
@@ -105,11 +105,11 @@ function CommentItem(props: CommentItemProps) {
           onReplyCreated?.(comment.id);
           uploadedComments?.();
         }}
-        onOpenChange={setOpen}
+        onOpenChange={setOpenModalComment}
         commentableId={comment.id}
         commentableType={CommentableType.COMMENT}
-        open={open}
-        setOpen={setOpen}
+        openModalComment={openModalComment}
+        setOpenModalComment={setOpenModalComment}
         title="Responder a este comentario"
       />
 
