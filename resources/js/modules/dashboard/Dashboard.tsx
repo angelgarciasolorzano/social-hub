@@ -14,9 +14,11 @@ function Dashboard({ posts, user }: HomeProps) {
   return (
     <DashboardLayout>
       <InfiniteScroll buffer={200} data="posts" preserveUrl>
-        {posts.data.map((post) => (
-          <PostCard key={post.id} post={post} user={user} />
-        ))}
+        <div className="flex flex-col gap-6">
+          {posts.data.map((post) => (
+            <PostCard key={post.id} post={post} user={user} />
+          ))}
+        </div>
       </InfiniteScroll>
     </DashboardLayout>
   );

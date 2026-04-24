@@ -12,7 +12,7 @@ function DashboardLayout({ children }: PropsWithChildren) {
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebarLeft />
 
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto">{children}</div>
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">{children}</div>
 
         <DashboardSidebarRight />
       </div>

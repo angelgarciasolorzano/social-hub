@@ -33,8 +33,8 @@ function PostCard({ post, user }: PostCardProps) {
   const createdAt = dayjs(post.createdAt);
 
   return (
-    <article className="grid gap-2 rounded-lg border p-3 shadow-md dark:border-gray-700">
-      <header className="flex items-center gap-3">
+    <article className="grid gap-2 rounded-xl border p-3 shadow-sm dark:border-[#343434] dark:bg-[#1D1D1D]/30">
+      <header className="flex items-center gap-3 px-3">
         <Avatar>
           <AvatarImage
             alt="Foto de perfil"
@@ -48,19 +48,19 @@ function PostCard({ post, user }: PostCardProps) {
           <div className="flex items-baseline gap-1">
             <h4 className="text-lg font-bold dark:text-white">{user.name}</h4>
 
-            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            <span className="text-sm font-medium text-muted-foreground">
               agregó una publicación
             </span>
           </div>
 
-          <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+          <time className="flex items-center gap-1 text-xs text-muted-foreground">
             <RiTimeZoneLine className="h-4 w-4 text-gray-600 dark:text-gray-500" />
             {createdAt.fromNow()} - {createdAt.format("D [de] MMMM [del] YYYY")}
           </time>
         </div>
       </header>
 
-      <section>
+      <section className="mb-2">
         <p className="text-[15px] text-gray-700 dark:text-gray-200">{post.content}</p>
 
         {post.image && (
@@ -73,7 +73,7 @@ function PostCard({ post, user }: PostCardProps) {
         )}
       </section>
 
-      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span className="flex items-center gap-1">
           <FaRegHeart className="h-4 w-4" />
           122 me gustas
@@ -85,7 +85,7 @@ function PostCard({ post, user }: PostCardProps) {
         </span>
       </div>
 
-      <Separator className="my-1 dark:bg-gray-700" />
+      <Separator className="my-1" />
 
       <footer className="flex items-center justify-between">
         <Button className="cursor-pointer" variant="outline">
