@@ -109,7 +109,7 @@ function Register() {
 
             <div className="text-center text-sm text-muted-foreground">
               ¿Ya tienes una cuenta?{" "}
-              <TextLink href={login()} tabIndex={6}>
+              <TextLink href={login()} tabIndex={6} viewTransition>
                 Iniciar sesión
               </TextLink>
             </div>

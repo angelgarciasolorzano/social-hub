@@ -93,7 +93,9 @@ function HomeHeader() {
       >
         {headerOptions.map((option) => (
           <Button className="cursor-pointer" asChild key={option.href} variant={option.variant}>
-            <Link href={option.href}>{option.label}</Link>
+            <Link href={option.href} viewTransition>
+              {option.label}
+            </Link>
           </Button>
         ))}
       </motion.nav>

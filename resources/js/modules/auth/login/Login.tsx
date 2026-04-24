@@ -55,7 +55,12 @@ function Login({ status, canResetPassword }: LoginProps) {
                   <Label htmlFor="password">Contraseña</Label>
 
                   {canResetPassword && (
-                    <TextLink className="ml-auto text-sm" href={request()} tabIndex={5}>
+                    <TextLink
+                      className="ml-auto text-sm"
+                      href={request()}
+                      tabIndex={5}
+                      viewTransition
+                    >
                       ¿Olvidaste tu contraseña?
                     </TextLink>
                   )}
@@ -94,7 +99,7 @@ function Login({ status, canResetPassword }: LoginProps) {
 
             <div className="text-center text-sm text-muted-foreground">
               ¿No tienes una cuenta?{" "}
-              <TextLink href={register()} tabIndex={5}>
+              <TextLink href={register()} tabIndex={5} viewTransition>
                 Regístrate
               </TextLink>
             </div>
