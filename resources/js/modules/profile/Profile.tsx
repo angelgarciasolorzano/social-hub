@@ -32,6 +32,7 @@ function Profile({ posts, user }: ProfileProps) {
       <div className="flex flex-col gap-4 px-4 py-3">
         <div className="relative">
           <ProfileCover coverImage={validImage(user.coverImage, profileCoverPlaceholder)} />
+
           <ProfilePicture
             profilePicture={validImage(user.profilePicture, profilePicturePlaceholder)}
           />

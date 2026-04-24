@@ -34,7 +34,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
               Resend verification email
             </Button>
 
-            <TextLink className="mx-auto block text-sm" href={logout()}>
+            <TextLink className="mx-auto block text-sm" href={logout()} viewTransition>
               Log out
             </TextLink>
           </>
