@@ -6,10 +6,13 @@ import PostController from "@/shared/wayfinder/actions/App/Post/Controllers/Post
 
 import { LabelForm } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";
-import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 
+import { useAppearance } from "@/shared/hooks";
+
+import { usePostImage } from "../../hooks/usePostImage";
 import type { PostFormData } from "../../types/post";
+import PostImageCard from "./PostImageCard";
 
 interface PostFormtProps {
   form: InertiaFormProps<PostFormData>;
@@ -18,6 +21,19 @@ interface PostFormtProps {
 
 function PostForm({ form, setOpen }: PostFormtProps) {
   const { submit, errors, setData } = form;
+
+  const { appearance } = useAppearance();
+
+  const {
+    fileInputRef,
+    imageUrl,
+    isHoverImage,
+    handleImageBoxClick,
+    handleUpdateImage,
+    handleRemoveImage,
+    handleImageChange,
+    setIsHoverImage,
+  } = usePostImage({ setData });
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -53,17 +69,17 @@ function PostForm({ form, setOpen }: PostFormtProps) {
           <InputError message={errors.content} />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <LabelForm error={errors.image_file} htmlFor="post-image">
-            Imagen
-          </LabelForm>
-
-          <Input
-            id="post-image"
-            name="image_file"
-            type="file"
-            onChange={(e) => setData("image_file", e.target.files?.[0])}
-            accept="image/*"
+        <div className="space-y-1">
+          <PostImageCard
+            appearance={appearance}
+            fileInputRef={fileInputRef}
+            handleImageBoxClick={handleImageBoxClick}
+            handleImageChange={handleImageChange}
+            handleRemoveImage={handleRemoveImage}
+            handleUpdateImage={handleUpdateImage}
+            imageUrl={imageUrl}
+            isHoverImage={isHoverImage}
+            setIsHoverImage={setIsHoverImage}
           />
 
           <InputError message={errors.image_file} />

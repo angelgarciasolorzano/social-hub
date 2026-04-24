@@ -39,7 +39,7 @@ function PostDialog({ open, setOpen }: PostDialogProps) {
       }}
       open={open}
     >
-      <DialogContent>
+      <DialogContent className="max-w-[50%] min-w-[40%]">
         <DialogHeader>
           <DialogTitle>Crear publicación</DialogTitle>
 
