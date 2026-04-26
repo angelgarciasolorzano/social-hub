@@ -84,7 +84,7 @@ function CommentList({ postId }: CommentListProps) {
 
   return (
     <>
-      <div className={cn("flex h-full flex-col gap-4 overflow-y-auto pr-2.5")} ref={setScrollRoot}>
+      <div className={cn("flex h-full flex-col gap-6 overflow-y-auto pr-2.5")} ref={setScrollRoot}>
         {commentsPage.data.map((comment) => (
           <CommentItem
             onReplyCreated={increaseRepliesCount}
@@ -96,7 +96,7 @@ function CommentList({ postId }: CommentListProps) {
           />
         ))}
 
-        <div className="h-1 w-full" ref={sentinelRef} />
+        <div className="w-full" ref={sentinelRef} />
 
         {hasMoreComments && (
           <div className="py-2 text-center text-sm text-gray-500">

@@ -57,7 +57,7 @@ function RepliesList({ commentId, showReplies, setShowReplies }: RepliesListProp
   if (!commentsPage) return null;
 
   return (
-    <div className="ml-4 flex max-h-72 flex-col gap-2 overflow-auto" ref={setScrollRoot}>
+    <div className="mt-4 ml-4 flex max-h-72 flex-col gap-4 overflow-auto" ref={setScrollRoot}>
       {commentsPage.data.map((reply) => (
         <CommentItem
           comment={reply}
@@ -68,7 +68,7 @@ function RepliesList({ commentId, showReplies, setShowReplies }: RepliesListProp
         />
       ))}
 
-      <div className="h-1 w-full" ref={sentinelRef} />
+      <div className="w-full" ref={sentinelRef} />
 
       {hasMoreComments && (
         <div className="py-1 text-center text-xs text-gray-500">

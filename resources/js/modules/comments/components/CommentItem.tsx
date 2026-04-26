@@ -41,8 +41,8 @@ function CommentItem(props: CommentItemProps) {
     <article className={cn("space-y-1", isReply && "ml-2")}>
       <div
         className={cn(
-          !isReply && "rounded-md border bg-gray-50/50 dark:border-gray-500/40 dark:bg-gray-700/20",
-          "space-y-1 p-2",
+          !isReply && "rounded-md border bg-gray-50/50 dark:border-[#343434] dark:bg-[#1D1D1D]/30",
+          "flex flex-col gap-2 p-2",
         )}
       >
         <header className="flex items-center gap-2">
