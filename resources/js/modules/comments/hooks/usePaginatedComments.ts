@@ -50,7 +50,7 @@ export function usePaginatedComments(
           replace: true,
           onSuccess: (data) => {
             if (hasPaginatedKey<Comment, "comments">(data.flash, "comments")) {
-              const incomingComments = data.flash["comments"];
+              const incomingComments = data.flash.comments;
 
               setCommentsPage((prev) => {
                 if (!prev) return incomingComments;
@@ -59,14 +59,16 @@ export function usePaginatedComments(
 
                 if (!wasFullyLoaded) return incomingComments;
 
-                const map = new Map<number, Comment>();
-
-                prev.data.forEach((comment) => map.set(comment.id, comment));
-                incomingComments.data.forEach((comment) => map.set(comment.id, comment));
+                const incomingCommentIds = new Set(
+                  incomingComments.data.map((comment) => comment.id),
+                );
 
                 return {
                   ...incomingComments,
-                  data: Array.from(map.values()),
+                  data: [
+                    ...incomingComments.data,
+                    ...prev.data.filter((comment) => !incomingCommentIds.has(comment.id)),
+                  ],
                   links: {
                     ...incomingComments.links,
                     next: null,
@@ -104,7 +106,7 @@ export function usePaginatedComments(
         replace: true,
         onSuccess: (data) => {
           if (hasPaginatedKey<Comment, "comments">(data.flash, "comments")) {
-            const newPageComments = data.flash["comments"];
+            const newPageComments = data.flash.comments;
 
             setCommentsPage((prev) => {
               if (!prev) return newPageComments;
