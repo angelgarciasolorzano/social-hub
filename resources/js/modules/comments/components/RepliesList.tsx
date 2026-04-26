@@ -9,17 +9,24 @@ import CommentItem from "./CommentItem";
 
 interface RepliesListProps {
   commentId: number;
+  refreshCounter: number;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
   showReplies: number | null;
 }
 
-function RepliesList({ commentId, showReplies, setShowReplies }: RepliesListProps) {
+function RepliesList({ commentId, refreshCounter, showReplies, setShowReplies }: RepliesListProps) {
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
 
   const loadMoreTimer = useRef<number | null>(null);
 
-  const { commentsPage, isLoadingMore, isRefreshing, loadMoreComments, hasMoreComments } =
-    usePaginatedComments(CommentableType.COMMENT, commentId);
+  const {
+    commentsPage,
+    isLoadingMore,
+    isRefreshing,
+    loadMoreComments,
+    hasMoreComments,
+    uploadedComments,
+  } = usePaginatedComments(CommentableType.COMMENT, commentId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
@@ -44,6 +51,12 @@ function RepliesList({ commentId, showReplies, setShowReplies }: RepliesListProp
     };
   }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments]);
 
+  useEffect(() => {
+    if (refreshCounter === 0) return;
+
+    uploadedComments();
+  }, [refreshCounter, uploadedComments]);
+
   if (isRefreshing && !commentsPage) {
     return (
       <div className="mt-4 flex flex-1 items-center justify-center">
@@ -65,6 +78,7 @@ function RepliesList({ commentId, showReplies, setShowReplies }: RepliesListProp
           key={reply.id}
           setShowReplies={setShowReplies}
           showReplies={showReplies}
+          uploadedComments={uploadedComments}
         />
       ))}
 

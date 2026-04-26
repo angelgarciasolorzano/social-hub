@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
@@ -36,6 +36,8 @@ function CommentItem(props: CommentItemProps) {
   } = props;
 
   const { open: openModalComment, setOpen: setOpenModalComment } = useModal();
+
+  const [repliesRefreshCounter, setRepliesRefreshCounter] = useState<number>(0);
 
   return (
     <article className={cn("space-y-1", isReply && "ml-2")}>
@@ -105,6 +107,9 @@ function CommentItem(props: CommentItemProps) {
         title="Responder a este comentario"
         uploadedComments={() => {
           onReplyCreated?.(comment.id);
+          if (showReplies === comment.id) {
+            setRepliesRefreshCounter((currentValue) => currentValue + 1);
+          }
           uploadedComments?.();
         }}
       />
@@ -112,6 +117,7 @@ function CommentItem(props: CommentItemProps) {
       {showReplies === comment.id && (
         <RepliesList
           commentId={comment.id}
+          refreshCounter={repliesRefreshCounter}
           setShowReplies={setShowReplies}
           showReplies={showReplies}
         />
