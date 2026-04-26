@@ -20,7 +20,6 @@ interface CommentListProps {
 }
 
 function CommentList({ postId }: CommentListProps) {
-  const [replyTo, setReplyTo] = useState<number | null>(null);
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
@@ -91,8 +90,6 @@ function CommentList({ postId }: CommentListProps) {
             onReplyCreated={increaseRepliesCount}
             comment={comment}
             key={comment.id}
-            replyTo={replyTo}
-            setReplyTo={setReplyTo}
             setShowReplies={setShowReplies}
             showReplies={showReplies}
             uploadedComments={uploadedComments}
@@ -194,13 +191,13 @@ function RenderCommentInput(props: RenderCommentInputProps) {
       />
 
       <CommentInputDialog
-        onCommentPosted={uploadedComments}
         onOpenChange={setOpenModalComment}
         commentableId={postId}
         commentableType={CommentableType.POST}
         openModalComment={openModalComment}
         setOpenModalComment={setOpenModalComment}
         title="Nuevo comentario"
+        uploadedComments={uploadedComments}
       />
     </>
   );

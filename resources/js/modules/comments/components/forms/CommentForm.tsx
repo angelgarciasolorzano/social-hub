@@ -1,6 +1,6 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, FormEvent, SetStateAction } from "react";
 
-import { Form } from "@inertiajs/react";
+import type { InertiaFormProps } from "@inertiajs/react";
 
 import { store } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
 
@@ -10,56 +10,60 @@ import { Textarea } from "@/shared/components/ui/textarea";
 
 import { cn } from "@/shared/lib/utils";
 
-import type { CommentableType } from "../../enums/commentableType";
+import type { CommentableTypeValues } from "../../enums/commentableType";
+import type { CommentFormData } from "../../types/comment";
 
 interface CommentFormProps {
+  formComment: InertiaFormProps<CommentFormData>;
   commentableId: number;
-  commentableType: CommentableType;
+  commentableType: CommentableTypeValues;
   formId: string;
-  onCommentPosted: (() => void) | undefined;
+  uploadedComments?: () => void;
   setOpenModalComment: Dispatch<SetStateAction<boolean>>;
-  setProcessing: Dispatch<SetStateAction<boolean>>;
-  setReplyTo?: Dispatch<SetStateAction<number | null>>;
 }
 
 function CommentForm(props: CommentFormProps) {
   const {
+    formComment,
     commentableId,
     commentableType,
     formId,
-    onCommentPosted,
-    setReplyTo,
-    setProcessing,
+    uploadedComments,
     setOpenModalComment,
   } = props;
 
-  return (
-    <Form
-      {...store.form()}
-      id={formId}
-      className={cn(setReplyTo && "mt-4")}
-      onFinish={() => setProcessing(false)}
-      onStart={() => setProcessing(true)}
-      onSuccess={() => {
-        if (setReplyTo) setReplyTo(null);
-        if (onCommentPosted) onCommentPosted();
+  const { setData, errors, submit } = formComment;
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+
+    submit(store(), {
+      onSuccess: () => {
+        if (uploadedComments) uploadedComments();
 
         setOpenModalComment(false);
-      }}
-      resetOnSuccess
-    >
-      {({ errors }) => (
-        <div className="flex items-center justify-center gap-2">
-          <Input name="commentable_type" type="hidden" value={commentableType} />
+      },
+      reset: ["content"],
+    });
+  };
 
-          <Input name="commentable_id" type="hidden" value={commentableId} />
+  return (
+    <form id={formId} className={cn("mt-4")} onSubmit={handleSubmit}>
+      <div className="flex items-center justify-center gap-2">
+        <Input name="commentable_type" type="hidden" value={commentableType} />
 
-          <Textarea name="content" className="w-full" placeholder="Escribe tu comentario" />
+        <Input name="commentable_id" type="hidden" value={commentableId} />
 
-          <InputError className="mt-1" message={errors["content"]} />
-        </div>
-      )}
-    </Form>
+        <Textarea
+          name="content"
+          className="w-full"
+          onChange={(e) => setData("content", e.target.value)}
+          placeholder="Escribe tu comentario"
+        />
+
+        <InputError className="mt-1" message={errors.content} />
+      </div>
+    </form>
   );
 }
 

@@ -20,8 +20,6 @@ interface CommentItemProps {
   comment: Comment;
   isReply?: boolean;
   onReplyCreated?: (commentId: number) => void;
-  replyTo: number | null;
-  setReplyTo: Dispatch<SetStateAction<number | null>>;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
   showReplies: number | null;
   uploadedComments?: () => void;
@@ -32,8 +30,6 @@ function CommentItem(props: CommentItemProps) {
     comment,
     isReply = false,
     onReplyCreated,
-    replyTo,
-    setReplyTo,
     setShowReplies,
     showReplies,
     uploadedComments,
@@ -101,23 +97,21 @@ function CommentItem(props: CommentItemProps) {
       </footer>
 
       <CommentInputDialog
-        onCommentPosted={() => {
-          onReplyCreated?.(comment.id);
-          uploadedComments?.();
-        }}
         onOpenChange={setOpenModalComment}
         commentableId={comment.id}
         commentableType={CommentableType.COMMENT}
         openModalComment={openModalComment}
         setOpenModalComment={setOpenModalComment}
         title="Responder a este comentario"
+        uploadedComments={() => {
+          onReplyCreated?.(comment.id);
+          uploadedComments?.();
+        }}
       />
 
       {showReplies === comment.id && (
         <RepliesList
           commentId={comment.id}
-          replyTo={replyTo}
-          setReplyTo={setReplyTo}
           setShowReplies={setShowReplies}
           showReplies={showReplies}
         />

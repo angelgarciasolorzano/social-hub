@@ -9,19 +9,11 @@ import CommentItem from "./CommentItem";
 
 interface RepliesListProps {
   commentId: number;
-  replyTo: number | null;
-  setReplyTo: Dispatch<SetStateAction<number | null>>;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
   showReplies: number | null;
 }
 
-function RepliesList({
-  commentId,
-  replyTo,
-  setReplyTo,
-  showReplies,
-  setShowReplies,
-}: RepliesListProps) {
+function RepliesList({ commentId, showReplies, setShowReplies }: RepliesListProps) {
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
 
   const loadMoreTimer = useRef<number | null>(null);
@@ -71,8 +63,6 @@ function RepliesList({
           comment={reply}
           isReply
           key={reply.id}
-          replyTo={replyTo}
-          setReplyTo={setReplyTo}
           setShowReplies={setShowReplies}
           showReplies={showReplies}
         />

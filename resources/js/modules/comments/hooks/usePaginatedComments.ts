@@ -6,7 +6,7 @@ import { index as commentIndex } from "@/shared/wayfinder/actions/App/Comment/Co
 
 import { hasPaginatedKey } from "@/shared/lib";
 
-import type { CommentableType } from "../enums/commentableType";
+import type { CommentableTypeValues } from "../enums/commentableType";
 import type { Comment, PaginatedComments } from "../types/comment";
 
 interface UsePaginatedCommentsReturn {
@@ -20,7 +20,7 @@ interface UsePaginatedCommentsReturn {
 }
 
 export function usePaginatedComments(
-  commentableType: CommentableType,
+  commentableType: CommentableTypeValues,
   commentableId: number,
 ): UsePaginatedCommentsReturn {
   const [commentsPage, setCommentsPage] = useState<PaginatedComments | null>(null);

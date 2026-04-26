@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
-import { useState } from "react";
+
+import { useForm } from "@inertiajs/react";
 
 import { Loader2Icon } from "lucide-react";
 
@@ -14,13 +15,14 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 
-import type { CommentableType } from "../../enums/commentableType";
+import type { CommentableTypeValues } from "../../enums/commentableType";
+import type { CommentFormData } from "../../types/comment";
 import CommentForm from "../forms/CommentForm";
 
 interface CommentInputDialogProps {
   commentableId: number;
-  commentableType: CommentableType;
-  onCommentPosted: (() => void) | undefined;
+  commentableType: CommentableTypeValues;
+  uploadedComments?: () => void;
   onOpenChange: (open: boolean) => void;
   openModalComment: boolean;
   setOpenModalComment: Dispatch<SetStateAction<boolean>>;
@@ -31,16 +33,20 @@ function CommentInputDialog(props: CommentInputDialogProps) {
   const {
     commentableId,
     commentableType,
-    onCommentPosted,
+    uploadedComments,
     onOpenChange,
     openModalComment,
     title,
     setOpenModalComment,
   } = props;
 
-  const formId = `comment-form-${commentableType}-${commentableId}`;
+  const formComment = useForm<CommentFormData>({
+    commentable_id: commentableId,
+    commentable_type: commentableType,
+    content: "",
+  });
 
-  const [processing, setProcessing] = useState<boolean>(false);
+  const formId = `comment-form-${commentableType}-${commentableId}`;
 
   return (
     <Dialog onOpenChange={onOpenChange} open={openModalComment}>
@@ -54,23 +60,33 @@ function CommentInputDialog(props: CommentInputDialogProps) {
         </DialogHeader>
 
         <CommentForm
-          onCommentPosted={onCommentPosted}
           commentableId={commentableId}
           commentableType={commentableType}
+          formComment={formComment}
           formId={formId}
           setOpenModalComment={setOpenModalComment}
-          setProcessing={setProcessing}
+          uploadedComments={uploadedComments}
         />
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" className="cursor-pointer" variant="outline">
+            <Button
+              type="button"
+              className="cursor-pointer"
+              disabled={formComment.processing}
+              variant="outline"
+            >
               Cancelar
             </Button>
           </DialogClose>
 
-          <Button type="submit" className="cursor-pointer" disabled={processing} form={formId}>
-            {processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
+          <Button
+            type="submit"
+            className="cursor-pointer"
+            disabled={formComment.processing}
+            form={formId}
+          >
+            {formComment.processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
           </Button>
         </DialogFooter>
       </DialogContent>
