@@ -25,11 +25,11 @@ import { validImage } from "@/shared/lib";
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import type { CommentableTypeValues } from "../../enums/commentableType";
-import type { Comment, CommentFormData } from "../../types/comment";
+import type { CommentContextPreview, CommentFormData } from "../../types/comment";
 import CommentForm from "../forms/CommentForm";
 
 interface CommentInputDialogProps {
-  comment?: Comment;
+  previewContext?: CommentContextPreview;
   commentableId: number;
   commentableType: CommentableTypeValues;
   uploadedComments?: () => void;
@@ -41,7 +41,7 @@ interface CommentInputDialogProps {
 
 function CommentInputDialog(props: CommentInputDialogProps) {
   const {
-    comment,
+    previewContext,
     commentableId,
     commentableType,
     uploadedComments,
@@ -72,13 +72,15 @@ function CommentInputDialog(props: CommentInputDialogProps) {
           </DialogTitle>
 
           <DialogDescription>
-            {comment ? (
+            {previewContext ? (
               <>
-                Estás respondiendo al comentario de <strong>{comment?.user.name}</strong>. Deja tu
-                respuesta y comparte tus pensamientos con el autor del comentario.
+                {previewContext.kind === "comment"
+                  ? "Estás respondiendo al comentario de "
+                  : "Estás comentando la publicación de "}
+                <strong>{previewContext.authorName}</strong>.
               </>
             ) : (
-              <>Deja tu comentario y comparte tus pensamientos con el autor de la publicacion.</>
+              <>Deja tu comentario y comparte tus pensamientos.</>
             )}
           </DialogDescription>
 
@@ -86,7 +88,7 @@ function CommentInputDialog(props: CommentInputDialogProps) {
         </DialogHeader>
 
         <div className="no-scrollbar -mx-4 max-h-[62vh] overflow-y-auto px-4">
-          {comment && renderContentDescription({ comment })}
+          {previewContext && renderContentDescription({ previewContext })}
 
           <CommentForm
             commentableId={commentableId}
@@ -124,31 +126,33 @@ function CommentInputDialog(props: CommentInputDialogProps) {
   );
 }
 
-type RenderContentDescriptionProps = Pick<CommentInputDialogProps, "comment">;
+type RenderContentDescriptionProps = Pick<CommentInputDialogProps, "previewContext">;
 
-function renderContentDescription({ comment }: RenderContentDescriptionProps) {
+function renderContentDescription({ previewContext }: RenderContentDescriptionProps) {
   return (
     <div className="mb-4 flex flex-col gap-2 px-2">
       <div className="flex items-center gap-2">
         <Avatar>
           <AvatarImage
-            alt={comment?.user.name}
-            src={validImage(comment?.user.profilePicture, profilePicturePlaceholder)}
+            alt={previewContext?.authorName}
+            src={validImage(previewContext?.authorProfilePicture, profilePicturePlaceholder)}
           />
-          <AvatarFallback>{comment?.user.name}</AvatarFallback>
+          <AvatarFallback>{previewContext?.authorName}</AvatarFallback>
         </Avatar>
 
         <div className="block">
-          <span className="text-sm font-bold dark:text-white">{comment?.user.name}</span>
+          <span className="text-sm font-bold dark:text-white">{previewContext?.authorName}</span>
 
           <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <IoMdTime className="h-3 w-3 text-gray-600 dark:text-gray-500" />
-            {comment?.createdAt}
+            {previewContext?.createdAt}
           </time>
         </div>
       </div>
 
-      <p className="line-clamp-8 text-sm text-gray-700 dark:text-gray-300">{comment?.content}</p>
+      <p className="line-clamp-8 text-sm text-gray-700 dark:text-gray-300">
+        {previewContext?.content}
+      </p>
     </div>
   );
 }

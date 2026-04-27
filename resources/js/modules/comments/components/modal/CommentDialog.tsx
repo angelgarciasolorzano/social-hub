@@ -16,6 +16,8 @@ import { Separator } from "@/shared/components/ui/separator";
 
 import type { User } from "@/shared/types";
 
+import { CommentableType } from "../../enums/commentableType";
+import type { CommentContextPreview } from "../../types/comment";
 import CommentList from "../CommentList";
 
 interface CommentDialogProps {
@@ -48,7 +50,7 @@ function CommentDialog({ postDetail, user }: CommentDialogProps) {
 
         <div className="flex flex-1 gap-4 overflow-hidden">
           <CommentDialogPublication postDetail={postDetail} user={user} />
-          <CommentDialogContent idPost={postDetail.id} />
+          <CommentDialogContent postDetail={postDetail} user={user} />
         </div>
       </DialogContent>
     </Dialog>
@@ -65,18 +67,24 @@ function CommentDialogPublication({ postDetail, user }: CommentDialogPublication
   );
 }
 
-interface CommentDialogContentProps {
-  idPost: Post["id"];
-}
+type CommentDialogContentProps = CommentDialogProps;
 
-function CommentDialogContent({ idPost }: CommentDialogContentProps) {
+function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
+  const previewContext: CommentContextPreview = {
+    authorName: user.name,
+    authorProfilePicture: user.profilePicture,
+    content: postDetail.content,
+    createdAt: postDetail.createdAt,
+    kind: CommentableType.POST,
+  };
+
   return (
     <div className="mb-1 flex w-1/2 flex-col gap-2">
       <CommentDialogHeader />
 
       <Separator />
 
-      <CommentList postId={idPost} />
+      <CommentList postId={postDetail.id} previewContext={previewContext} />
     </div>
   );
 }

@@ -12,7 +12,7 @@ import { cn } from "@/shared/lib/utils";
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import { CommentableType } from "../enums/commentableType";
-import type { Comment } from "../types/comment";
+import type { Comment, CommentContextPreview } from "../types/comment";
 import CommentInputDialog from "./modal/CommentInputDialog";
 import RepliesList from "./RepliesList";
 
@@ -38,6 +38,14 @@ function CommentItem(props: CommentItemProps) {
   const { open: openModalComment, setOpen: setOpenModalComment } = useModal();
 
   const [repliesRefreshCounter, setRepliesRefreshCounter] = useState<number>(0);
+
+  const previewContext: CommentContextPreview = {
+    authorName: comment.user.name,
+    authorProfilePicture: comment.user.profilePicture,
+    content: comment.content,
+    kind: CommentableType.COMMENT,
+    createdAt: comment.createdAt,
+  };
 
   return (
     <article className={cn("space-y-1", isReply && "ml-2")}>
@@ -100,10 +108,10 @@ function CommentItem(props: CommentItemProps) {
 
       <CommentInputDialog
         onOpenChange={setOpenModalComment}
-        comment={comment}
         commentableId={comment.id}
         commentableType={CommentableType.COMMENT}
         openModalComment={openModalComment}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         title={`Responder al comentario de ${comment.user.name}`}
         uploadedComments={() => {

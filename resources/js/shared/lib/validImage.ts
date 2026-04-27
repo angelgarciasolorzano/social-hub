@@ -5,6 +5,6 @@
  * @param fallback The fallback image source
  * @returns The valid image source
  */
-export function validImage(src: string | undefined, fallback: string): string {
+export function validImage(src: string | undefined | null, fallback: string): string {
   return src && src.trim() !== "" ? src : fallback;
 }

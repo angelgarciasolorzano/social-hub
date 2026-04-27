@@ -21,3 +21,11 @@ export type CommentFormData = Pick<Comment, "content"> & {
 };
 
 export type PaginatedComments = PaginatedResponse<Comment>;
+
+export interface CommentContextPreview {
+  authorName: string;
+  authorProfilePicture: string | null | undefined;
+  content: string;
+  createdAt: string;
+  kind: CommentableTypeValues;
+}

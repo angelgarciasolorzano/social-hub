@@ -12,14 +12,16 @@ import { cn } from "@/shared/lib/utils";
 
 import { CommentableType } from "../enums/commentableType";
 import { usePaginatedComments } from "../hooks/usePaginatedComments";
+import type { CommentContextPreview } from "../types/comment";
 import CommentItem from "./CommentItem";
 import CommentInputDialog from "./modal/CommentInputDialog";
 
 interface CommentListProps {
   postId: number;
+  previewContext: CommentContextPreview;
 }
 
-function CommentList({ postId }: CommentListProps) {
+function CommentList({ postId, previewContext }: CommentListProps) {
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
@@ -65,6 +67,7 @@ function CommentList({ postId }: CommentListProps) {
       <RenderLoadingState
         openModalComment={openModalComment}
         postId={postId}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
@@ -76,6 +79,7 @@ function CommentList({ postId }: CommentListProps) {
       <RenderEmptyState
         openModalComment={openModalComment}
         postId={postId}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
@@ -108,6 +112,7 @@ function CommentList({ postId }: CommentListProps) {
       <RenderCommentInput
         openModalComment={openModalComment}
         postId={postId}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
@@ -128,6 +133,7 @@ function RenderLoadingState({
   setOpenModalComment,
   uploadedComments,
   postId,
+  previewContext,
 }: RenderLoadingStateProps) {
   return (
     <>
@@ -140,6 +146,7 @@ function RenderLoadingState({
       <RenderCommentInput
         openModalComment={openModalComment}
         postId={postId}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
@@ -154,6 +161,7 @@ function RenderEmptyState({
   openModalComment,
   setOpenModalComment,
   uploadedComments,
+  previewContext,
 }: RenderEmptyStateProps) {
   return (
     <>
@@ -166,6 +174,7 @@ function RenderEmptyState({
       <RenderCommentInput
         openModalComment={openModalComment}
         postId={postId}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         uploadedComments={uploadedComments}
       />
@@ -176,7 +185,7 @@ function RenderEmptyState({
 type RenderCommentInputProps = RenderCommentBaseProps;
 
 function RenderCommentInput(props: RenderCommentInputProps) {
-  const { postId, openModalComment, setOpenModalComment, uploadedComments } = props;
+  const { postId, openModalComment, setOpenModalComment, uploadedComments, previewContext } = props;
 
   return (
     <>
@@ -195,6 +204,7 @@ function RenderCommentInput(props: RenderCommentInputProps) {
         commentableId={postId}
         commentableType={CommentableType.POST}
         openModalComment={openModalComment}
+        previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
         title="Nuevo comentario"
         uploadedComments={uploadedComments}
