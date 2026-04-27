@@ -8,8 +8,6 @@ import { InputError } from "@/shared/components/form";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 
-import { cn } from "@/shared/lib/utils";
-
 import type { CommentableTypeValues } from "../../enums/commentableType";
 import type { CommentFormData } from "../../types/comment";
 
@@ -48,15 +46,15 @@ function CommentForm(props: CommentFormProps) {
   };
 
   return (
-    <form id={formId} className={cn("mt-4")} onSubmit={handleSubmit}>
-      <div className="flex items-center justify-center gap-2">
+    <form id={formId} className="mt-2" onSubmit={handleSubmit}>
+      <div className="flex flex-col justify-center gap-2">
         <Input name="commentable_type" type="hidden" value={commentableType} />
 
         <Input name="commentable_id" type="hidden" value={commentableId} />
 
         <Textarea
           name="content"
-          className="w-full"
+          className="min-h-72 w-full resize-none"
           onChange={(e) => setData("content", e.target.value)}
           placeholder="Escribe tu comentario"
         />

@@ -100,11 +100,12 @@ function CommentItem(props: CommentItemProps) {
 
       <CommentInputDialog
         onOpenChange={setOpenModalComment}
+        comment={comment}
         commentableId={comment.id}
         commentableType={CommentableType.COMMENT}
         openModalComment={openModalComment}
         setOpenModalComment={setOpenModalComment}
-        title="Responder a este comentario"
+        title={`Responder al comentario de ${comment.user.name}`}
         uploadedComments={() => {
           onReplyCreated?.(comment.id);
           if (showReplies === comment.id) {
