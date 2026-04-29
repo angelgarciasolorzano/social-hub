@@ -88,7 +88,7 @@ function CommentInputDialog(props: CommentInputDialogProps) {
         </DialogHeader>
 
         <div className="no-scrollbar -mx-4 max-h-[62vh] overflow-y-auto px-4">
-          {previewContext && renderContentDescription({ previewContext })}
+          {previewContext && <CommentPreviewContent previewContext={previewContext} />}
 
           <CommentForm
             commentableId={commentableId}
@@ -126,9 +126,9 @@ function CommentInputDialog(props: CommentInputDialogProps) {
   );
 }
 
-type RenderContentDescriptionProps = Pick<CommentInputDialogProps, "previewContext">;
+type CommentPreviewContentProps = Pick<CommentInputDialogProps, "previewContext">;
 
-function renderContentDescription({ previewContext }: RenderContentDescriptionProps) {
+function CommentPreviewContent({ previewContext }: CommentPreviewContentProps) {
   return (
     <div className="mb-4 flex flex-col gap-2 px-2">
       <div className="flex items-center gap-2">
