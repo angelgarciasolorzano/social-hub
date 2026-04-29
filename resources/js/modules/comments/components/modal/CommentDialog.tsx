@@ -1,5 +1,7 @@
 import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
+import dayjs from "dayjs";
+
 import type { Post } from "@/modules/post";
 import { PostDetail } from "@/modules/post";
 
@@ -70,11 +72,13 @@ function CommentDialogPublication({ postDetail, user }: CommentDialogPublication
 type CommentDialogContentProps = CommentDialogProps;
 
 function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
+  const createdAt = dayjs(postDetail.createdAt);
+
   const previewContext: CommentContextPreview = {
     authorName: user.name,
     authorProfilePicture: user.profilePicture,
     content: postDetail.content,
-    createdAt: postDetail.createdAt,
+    createdAt: createdAt.fromNow() + " - " + createdAt.format("D [de] MMMM [del] YYYY"),
     kind: CommentableType.POST,
   };
 

@@ -1,11 +1,17 @@
 import { createInertiaApp } from "@inertiajs/react";
 
 import { configureEcho } from "@laravel/echo-react";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import relativeTime from "dayjs/plugin/relativeTime";
 
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 
 import "../../css/app.css";
 import { initializeTheme } from "../shared/hooks/useAppearance";
+
+dayjs.extend(relativeTime);
+dayjs.locale("es");
 
 configureEcho({
   broadcaster: "reverb",

@@ -3,8 +3,6 @@ import { FaRegHeart } from "react-icons/fa6";
 import { RiTimeZoneLine } from "react-icons/ri";
 
 import dayjs from "dayjs";
-import "dayjs/locale/es";
-import relativeTime from "dayjs/plugin/relativeTime";
 
 import { CommentDialog } from "@/modules/comments";
 
@@ -20,9 +18,6 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 
 import postPlaceholder from "../assets/post-placeholder.png";
 import type { Post } from "../types/post";
-
-dayjs.extend(relativeTime);
-dayjs.locale("es");
 
 interface PostCardProps {
   post: Post;

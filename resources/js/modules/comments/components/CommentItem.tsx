@@ -2,6 +2,8 @@ import { type Dispatch, type SetStateAction, useState } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
+import dayjs from "dayjs";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 
 import { useModal } from "@/shared/hooks/useModal";
@@ -39,12 +41,14 @@ function CommentItem(props: CommentItemProps) {
 
   const [repliesRefreshCounter, setRepliesRefreshCounter] = useState<number>(0);
 
+  const createdAt = dayjs(comment.createdAt).fromNow();
+
   const previewContext: CommentContextPreview = {
     authorName: comment.user.name,
     authorProfilePicture: comment.user.profilePicture,
     content: comment.content,
     kind: CommentableType.COMMENT,
-    createdAt: comment.createdAt,
+    createdAt: createdAt + " - " + dayjs(comment.createdAt).format("D [de] MMMM [del] YYYY"),
   };
 
   return (
@@ -70,7 +74,7 @@ function CommentItem(props: CommentItemProps) {
 
             <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <IoMdTime className="h-3 w-3 text-gray-600 dark:text-gray-500" />
-              {comment.createdAt}
+              {createdAt}
             </time>
           </div>
         </header>
