@@ -65,7 +65,7 @@ function CommentInputDialog(props: CommentInputDialogProps) {
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
-              <LuMessagesSquare className="mb-1 inline-block h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <LuMessagesSquare className="h-5 w-5 text-gray-600 dark:text-gray-400" />
 
               {title}
             </div>
@@ -87,7 +87,7 @@ function CommentInputDialog(props: CommentInputDialogProps) {
           <Separator />
         </DialogHeader>
 
-        <div className="no-scrollbar -mx-4 max-h-[62vh] overflow-y-auto px-4">
+        <div className="-mx-4 max-h-[62vh] overflow-y-auto px-4">
           {previewContext && <CommentPreviewContent previewContext={previewContext} />}
 
           <CommentForm

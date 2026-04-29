@@ -2,6 +2,8 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { useForm } from "@inertiajs/react";
 
+import { MdOutlinePostAdd } from "react-icons/md";
+
 import { Loader2Icon } from "lucide-react";
 
 import { Button } from "@/shared/components/ui/button";
@@ -14,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { Separator } from "@/shared/components/ui/separator";
 
 import type { PostFormData } from "../types/post";
 import PostForm from "./forms/PostForm";
@@ -41,12 +44,21 @@ function PostDialog({ open, setOpen }: PostDialogProps) {
     >
       <DialogContent className="max-w-[50%] min-w-[40%]">
         <DialogHeader>
-          <DialogTitle>Crear publicación</DialogTitle>
+          <DialogTitle asChild>
+            <div className="flex items-center gap-2">
+              <MdOutlinePostAdd className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              Crear publicación
+            </div>
+          </DialogTitle>
 
           <DialogDescription>Comparte tus ideas y pensamientos con el mundo.</DialogDescription>
+
+          <Separator />
         </DialogHeader>
 
-        <PostForm form={form} setOpen={setOpen} />
+        <div className="-mx-4 max-h-[70vh] overflow-y-auto px-4">
+          <PostForm form={form} setOpen={setOpen} />
+        </div>
 
         <DialogFooter>
           <DialogClose asChild>

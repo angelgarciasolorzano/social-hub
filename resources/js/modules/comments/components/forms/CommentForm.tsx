@@ -54,7 +54,7 @@ function CommentForm(props: CommentFormProps) {
 
         <Textarea
           name="content"
-          className="min-h-72 w-full resize-none"
+          className="min-h-72 resize-none"
           onChange={(e) => setData("content", e.target.value)}
           placeholder="Escribe tu comentario"
         />
