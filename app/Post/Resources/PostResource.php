@@ -20,7 +20,7 @@ class PostResource extends JsonResource
             'id' => $this->id,
             'content' => $this->content,
             'image' => $this->getFirstMediaUrl('posts_images'),
-            'createdAt' => $this->created_at?->toISOString(),
+            'createdAt' => $this->created_at?->toIso8601String(),
         ];
     }
 }
