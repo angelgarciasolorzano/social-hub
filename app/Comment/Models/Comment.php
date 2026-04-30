@@ -17,12 +17,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * @mixin IdeHelperComment
- *
  * @property int $id
  * @property string $content
  * @property CarbonImmutable|null $created_at
  * @property-read User|null $user
+ * @mixin IdeHelperComment
  */
 #[UseFactory(CommentFactory::class)]
 class Comment extends Model

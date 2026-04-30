@@ -78,8 +78,11 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
-        ]
-        ,
+        ],
+        "ide-helper": [
+            "@php artisan ide-helper:generate",
+            "@php artisan ide-helper:models -RM"
+        ],
         "pint": "vendor/bin/pint",
         "pint-dirty": "vendor/bin/pint --dirty",
         "larastan": "vendor/bin/phpstan analyse --memory-limit=2G",
@@ -93,7 +96,8 @@
         "pint-dirty": "Run Laravel Pint only on changed files.",
         "larastan": "Run Larastan for static analysis of the codebase.",
         "rector": "Run Rector to automatically refactor code.",
-        "rector:dry": "Run Rector in dry-run mode to see potential changes without applying them."
+        "rector:dry": "Run Rector in dry-run mode to see potential changes without applying them.",
+        "ide-helper": "Generate IDE helper files for better autocompletion."
     },
     "extra": {
         "laravel": {

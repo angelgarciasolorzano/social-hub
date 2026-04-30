@@ -16,9 +16,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
- * @mixin IdeHelperPost
- *
  * @property CarbonImmutable|null $created_at
+ * @mixin IdeHelperPost
  */
 #[UseFactory(PostFactory::class)]
 class Post extends Model implements HasMedia
