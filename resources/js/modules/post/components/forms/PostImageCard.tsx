@@ -84,81 +84,18 @@ function PostImageCard(props: PostImageCardProps) {
     >
       <div className="items-center">
         {imageUrl ? (
-          <div className="relative h-full w-full">
-            <img
-              className={cn(
-                "h-full w-full rounded-md object-cover transition-opacity",
-                isLoadingImage ? "dark:opacity-20" : "opacity-100",
-              )}
-              onError={handleImageError}
-              onLoad={handleImageLoad}
-              alt="Vista previa de la imagen seleccionada"
-              src={imageUrl}
-            />
-
-            {isLoadingImage && (
-              <div
-                className={cn(
-                  "absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-md",
-                  "bg-black/80 backdrop-blur-[1px] dark:bg-black/50",
-                )}
-              >
-                <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground dark:text-white" />
-
-                <span className="text-sm font-medium text-muted-foreground dark:text-white">
-                  Cargando imagen...
-                </span>
-              </div>
-            )}
-
-            {!isLoadingImage && isHoverImage && (
-              <div
-                className={cn(
-                  "absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-md transition-opacity",
-                  "bg-black/80 dark:bg-black/90",
-                )}
-              >
-                <span className="text-sm font-medium text-white">
-                  ¿Desea actualizar la imagen o eliminarla?
-                </span>
-
-                <div className="flex items-center gap-4">
-                  <Button
-                    className="cursor-pointer"
-                    onClick={handleUpdateImage}
-                    variant={appearance === "light" ? "outline" : "default"}
-                  >
-                    Actualizar
-                  </Button>
-
-                  <Button
-                    className={cn(
-                      "cursor-pointer",
-                      "dark:bg-red-700 dark:text-white dark:hover:bg-red-800",
-                    )}
-                    onClick={handleRemoveImage}
-                    variant={appearance === "light" ? "destructive" : null}
-                  >
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+          <ImagePreview
+            appearance={appearance}
+            handleImageError={handleImageError}
+            handleImageLoad={handleImageLoad}
+            handleRemoveImage={handleRemoveImage}
+            handleUpdateImage={handleUpdateImage}
+            imageUrl={imageUrl}
+            isHoverImage={isHoverImage}
+            isLoadingImage={isLoadingImage}
+          />
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div className="bg-accent p-2 rounded-full">
-              <IoCloudUploadOutline className="h-6 w-6 text-muted-foreground" />
-            </div>
-
-            <p className="text-sm font-medium dark:text-white">
-              Seleccione un archivo o arrástrelo y suéltelo aquí.
-            </p>
-
-            <span className="text-xs dark:text-white/70">
-              JPG, PNG, WebP. El archivo no debe superar los 5 MB
-            </span>
-          </div>
+          <ImageEmptyState />
         )}
       </div>
 
@@ -172,6 +109,128 @@ function PostImageCard(props: PostImageCardProps) {
         ref={fileInputRef}
         tabIndex={-1}
       />
+    </div>
+  );
+}
+
+type ImageEmptyStateProps = Omit<
+  PostImageCardProps,
+  | "fileInputRef"
+  | "handleImageChange"
+  | "handleImageDrop"
+  | "setIsHoverImage"
+  | "handleImageBoxClick"
+>;
+
+function ImagePreview(props: ImageEmptyStateProps) {
+  const {
+    appearance,
+    isLoadingImage,
+    handleImageError,
+    handleImageLoad,
+    isHoverImage,
+    imageUrl,
+    handleRemoveImage,
+    handleUpdateImage,
+  } = props;
+
+  return (
+    <div className="relative h-full w-full">
+      <img
+        className={cn(
+          "h-full w-full rounded-md object-cover transition-opacity",
+          isLoadingImage ? "dark:opacity-20" : "opacity-100",
+        )}
+        onError={handleImageError}
+        onLoad={handleImageLoad}
+        alt="Vista previa de la imagen seleccionada"
+        src={imageUrl}
+      />
+
+      {isLoadingImage && <ImageLoadingOverlay />}
+
+      {!isLoadingImage && isHoverImage && (
+        <ImageHoverOverlay
+          appearance={appearance}
+          handleRemoveImage={handleRemoveImage}
+          handleUpdateImage={handleUpdateImage}
+        />
+      )}
+    </div>
+  );
+}
+
+function ImageLoadingOverlay() {
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-md",
+        "bg-black/80 backdrop-blur-[1px] dark:bg-black/50",
+      )}
+    >
+      <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground dark:text-white" />
+
+      <span className="text-sm font-medium text-muted-foreground dark:text-white">
+        Cargando imagen...
+      </span>
+    </div>
+  );
+}
+
+type ImageHoverOverlayProps = Pick<
+  PostImageCardProps,
+  "appearance" | "handleRemoveImage" | "handleUpdateImage"
+>;
+
+function ImageHoverOverlay(props: ImageHoverOverlayProps) {
+  const { appearance, handleRemoveImage, handleUpdateImage } = props;
+
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-md transition-opacity",
+        "bg-black/80 dark:bg-black/90",
+      )}
+    >
+      <span className="text-sm font-medium text-white">
+        ¿Desea actualizar la imagen o eliminarla?
+      </span>
+
+      <div className="flex items-center gap-4">
+        <Button
+          className="cursor-pointer"
+          onClick={handleUpdateImage}
+          variant={appearance === "light" ? "outline" : "default"}
+        >
+          Actualizar
+        </Button>
+
+        <Button
+          className={cn("cursor-pointer", "dark:bg-red-700 dark:text-white dark:hover:bg-red-800")}
+          onClick={handleRemoveImage}
+          variant={appearance === "light" ? "destructive" : null}
+        >
+          Eliminar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ImageEmptyState() {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="bg-accent p-2 rounded-full">
+        <IoCloudUploadOutline className="h-6 w-6 text-muted-foreground" />
+      </div>
+
+      <p className="text-sm font-medium dark:text-white">
+        Seleccione un archivo o arrástrelo y suéltelo aquí.
+      </p>
+
+      <span className="text-xs dark:text-white/70">
+        JPG, PNG, WebP. El archivo no debe superar los 5 MB
+      </span>
     </div>
   );
 }
