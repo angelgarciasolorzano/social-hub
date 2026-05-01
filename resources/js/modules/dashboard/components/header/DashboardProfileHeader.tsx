@@ -59,6 +59,7 @@ function ProfileHeader() {
                   as="button"
                   href={item.url}
                   {...(item.method ? { method: item.method } : {})}
+                  viewTransition
                 >
                   <item.icon className="h-4 w-4 text-gray-600" />
 
