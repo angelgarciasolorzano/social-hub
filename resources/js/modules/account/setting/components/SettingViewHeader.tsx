@@ -15,7 +15,7 @@ interface SettingViewHeaderProps {
   active: SettingLabelSidebarValue;
 }
 
-function SettingsViewHeader({ active }: SettingViewHeaderProps) {
+function SettingViewHeader({ active }: SettingViewHeaderProps) {
   const Icon = settingHeaderItems[active].icon;
 
   return (
@@ -27,7 +27,7 @@ function SettingsViewHeader({ active }: SettingViewHeaderProps) {
           {settingHeaderItems[active].label}
         </h2>
 
-        <SettingsViewHeaderAddon active={active} />
+        <SettingViewHeaderAddon active={active} />
       </div>
 
       <p className="text-xs text-muted-foreground">{settingHeaderItems[active].description}</p>
@@ -35,9 +35,9 @@ function SettingsViewHeader({ active }: SettingViewHeaderProps) {
   );
 }
 
-type SettingsViewHeaderAddonProps = SettingViewHeaderProps;
+type SettingViewHeaderAddonProps = SettingViewHeaderProps;
 
-function SettingsViewHeaderAddon({ active }: SettingsViewHeaderAddonProps) {
+function SettingViewHeaderAddon({ active }: SettingViewHeaderAddonProps) {
   const { twoFactorEnabled } = usePage<SharedData>().props.auth.user;
 
   return (
@@ -66,4 +66,4 @@ function SettingsViewHeaderAddon({ active }: SettingsViewHeaderAddonProps) {
   );
 }
 
-export default SettingsViewHeader;
+export default SettingViewHeader;

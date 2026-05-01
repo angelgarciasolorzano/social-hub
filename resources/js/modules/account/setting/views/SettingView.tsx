@@ -11,7 +11,7 @@ interface SettingsViewProps {
   active: SettingLabelSidebarValue;
 }
 
-function SettingsView({ active }: SettingsViewProps) {
+function SettingView({ active }: SettingsViewProps) {
   return (
     <main className={cn("my-4 flex-1", active !== SettingLabelSidebar.TwoFactor ? "my-4" : "my-1")}>
       {(() => {
@@ -32,4 +32,4 @@ function SettingsView({ active }: SettingsViewProps) {
   );
 }
 
-export default SettingsView;
+export default SettingView;

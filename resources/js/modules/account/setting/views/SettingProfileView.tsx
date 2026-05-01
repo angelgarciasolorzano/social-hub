@@ -13,7 +13,7 @@ import { Input } from "@/shared/components/ui/input";
 
 import type { SharedData } from "@/shared/types";
 
-export default function SettingsProfileView() {
+export default function SettingProfileView() {
   const { auth } = usePage<SharedData>().props;
   const { mustVerifyEmail, sessionStatus } = auth.user;
 

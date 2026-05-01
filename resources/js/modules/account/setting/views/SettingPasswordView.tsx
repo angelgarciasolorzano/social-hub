@@ -12,7 +12,7 @@ import { Button } from "@/shared/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/shared/components/ui/input-group";
 import { Spinner } from "@/shared/components/ui/spinner";
 
-export default function SettingsPasswordView() {
+export default function SettingPasswordView() {
   const passwordInput = useRef<HTMLInputElement>(null);
   const currentPasswordInput = useRef<HTMLInputElement>(null);
 

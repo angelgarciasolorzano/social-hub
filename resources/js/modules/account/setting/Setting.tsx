@@ -26,7 +26,7 @@ interface SettingsModalProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function Settings({ open, setOpen }: SettingsModalProps) {
+function Setting({ open, setOpen }: SettingsModalProps) {
   const [active, setActive] = useState<SettingLabelSidebarValue>(SettingLabelSidebar.Profile);
 
   return (
@@ -82,4 +82,4 @@ function SettingsBody({ active, setActive }: SettingsBodyProps) {
   );
 }
 
-export default Settings;
+export default Setting;

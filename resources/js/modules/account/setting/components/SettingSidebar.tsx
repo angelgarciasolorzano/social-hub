@@ -5,12 +5,12 @@ import { Button } from "@/shared/components/ui/button";
 import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
 import { settingSidebarItems } from "../data/settingSidebarItems";
 
-interface SettingsSidebarProps {
+interface SettingSidebarProps {
   active: SettingLabelSidebarValue;
   setActive: Dispatch<SetStateAction<SettingLabelSidebarValue>>;
 }
 
-function SettingsSidebar({ active, setActive }: SettingsSidebarProps) {
+function SettingSidebar({ active, setActive }: SettingSidebarProps) {
   return (
     <aside className="flex h-full w-60 flex-col items-center border-r">
       <nav className="w-full pr-2">
@@ -33,4 +33,4 @@ function SettingsSidebar({ active, setActive }: SettingsSidebarProps) {
   );
 }
 
-export default SettingsSidebar;
+export default SettingSidebar;

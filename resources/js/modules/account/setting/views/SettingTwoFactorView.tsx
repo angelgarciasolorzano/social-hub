@@ -16,7 +16,7 @@ import ConfirmPassword from "../components/password/ConfirmPassword";
 import TwoFactorRecoveryCodes from "../components/twofactor/TwoFactorRecoveryCodes";
 import TwoFactorSetupModal from "../components/twofactor/TwoFactorSetupModal";
 
-export default function SettingsTwoFactorView() {
+export default function SettingTwoFactorView() {
   const { auth } = usePage<SharedData>().props;
   const { requiresConfirmation = false, twoFactorEnabled = false } = auth.user;
 
@@ -92,7 +92,7 @@ export default function SettingsTwoFactorView() {
             ) : (
               <Button className="cursor-pointer" onClick={() => handleEnable2FA()}>
                 <ShieldCheck />
-                Enable 2FA
+                Habilitar 2FA
               </Button>
             )}
           </div>

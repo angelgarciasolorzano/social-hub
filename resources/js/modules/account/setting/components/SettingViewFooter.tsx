@@ -1,24 +1,24 @@
 import { settingFooterItems } from "../data/settingFooterItems";
-import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
+import { type SettingLabelSidebarValue } from "../data/settingSidebarItems";
 
-interface SettingsViewFooterProps {
+interface SettingViewFooterProps {
   active: SettingLabelSidebarValue;
 }
 
-function SettingsViewFooter({ active }: SettingsViewFooterProps) {
+function SettingViewFooter({ active }: SettingViewFooterProps) {
   return (
     <footer className="border-t pt-4">
       {(() => {
         switch (active) {
           default:
-            return <SettingsViewFooterDefault />;
+            return <SettingViewFooterDefault />;
         }
       })()}
     </footer>
   );
 }
 
-function SettingsViewFooterDefault() {
+function SettingViewFooterDefault() {
   return (
     <div className="flex items-center justify-between">
       <small className="text-xs">
@@ -36,4 +36,4 @@ function SettingsViewFooterDefault() {
   );
 }
 
-export default SettingsViewFooter;
+export default SettingViewFooter;
