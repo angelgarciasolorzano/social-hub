@@ -1,6 +1,8 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 
+import { MdOutlineSettings } from "react-icons/md";
+
 import {
   Dialog,
   DialogContent,
@@ -29,7 +31,12 @@ function Settings({ open, setOpen }: SettingsModalProps) {
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogContent className="mx-w-[80%] flex h-[80%] min-w-[65%] flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Configuracion</DialogTitle>
+          <DialogTitle asChild>
+            <div className="flex items-center gap-2">
+              <MdOutlineSettings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              Configuración
+            </div>
+          </DialogTitle>
 
           <DialogDescription>Aquí puedes configurar tu perfil y preferencias.</DialogDescription>
         </DialogHeader>
