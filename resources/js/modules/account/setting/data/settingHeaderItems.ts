@@ -3,6 +3,7 @@ import { GrShieldSecurity } from "react-icons/gr";
 import { LuCircleUserRound, LuMonitorSmartphone } from "react-icons/lu";
 import { MdOutlineLockPerson } from "react-icons/md";
 
+import type { SettingLabelSidebarValue } from "./settingSidebarItems";
 import { SettingLabelSidebar } from "./settingSidebarItems";
 
 interface SettingHeaderItems {
@@ -12,7 +13,7 @@ interface SettingHeaderItems {
   label: string;
 }
 
-export const settingHeaderItems: Record<SettingLabelSidebar, SettingHeaderItems> = {
+export const settingHeaderItems: Record<SettingLabelSidebarValue, SettingHeaderItems> = {
   [SettingLabelSidebar.Appearance]: {
     description: "Personaliza el tema y la apariencia de la aplicación.",
     icon: LuMonitorSmartphone,

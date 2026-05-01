@@ -7,11 +7,12 @@ import { cn } from "@/shared/lib/utils";
 import type { SharedData } from "@/shared/types";
 
 import { settingHeaderItems } from "../data/settingHeaderItems";
+import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
 import { SettingLabelSidebar } from "../data/settingSidebarItems";
 import DeleteUser from "./DeleteUser";
 
 interface SettingViewHeaderProps {
-  active: SettingLabelSidebar;
+  active: SettingLabelSidebarValue;
 }
 
 function SettingsViewHeader({ active }: SettingViewHeaderProps) {

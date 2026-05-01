@@ -1,8 +1,8 @@
 import { settingFooterItems } from "../data/settingFooterItems";
-import type { SettingLabelSidebar } from "../data/settingSidebarItems";
+import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
 
 interface SettingsViewFooterProps {
-  active: SettingLabelSidebar;
+  active: SettingLabelSidebarValue;
 }
 
 function SettingsViewFooter({ active }: SettingsViewFooterProps) {

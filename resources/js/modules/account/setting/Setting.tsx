@@ -16,6 +16,8 @@ import PasswordProtectedView from "./components/password/PasswordProtectedView";
 import SettingSidebar from "./components/SettingSidebar";
 import SettingViewFooter from "./components/SettingViewFooter";
 import SettingViewHeader from "./components/SettingViewHeader";
+import { passwordProtectedViewMeta } from "./data/passwordProtectedViewMeta";
+import type { SettingLabelSidebarValue } from "./data/settingSidebarItems";
 import { SettingLabelSidebar } from "./data/settingSidebarItems";
 import SettingView from "./views/SettingView";
 
@@ -25,7 +27,7 @@ interface SettingsModalProps {
 }
 
 function Settings({ open, setOpen }: SettingsModalProps) {
-  const [active, setActive] = useState<SettingLabelSidebar>(SettingLabelSidebar.Profile);
+  const [active, setActive] = useState<SettingLabelSidebarValue>(SettingLabelSidebar.Profile);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>
@@ -50,11 +52,13 @@ function Settings({ open, setOpen }: SettingsModalProps) {
 }
 
 interface SettingsBodyProps {
-  active: SettingLabelSidebar;
-  setActive: Dispatch<SetStateAction<SettingLabelSidebar>>;
+  active: SettingLabelSidebarValue;
+  setActive: Dispatch<SetStateAction<SettingLabelSidebarValue>>;
 }
 
 function SettingsBody({ active, setActive }: SettingsBodyProps) {
+  const meta = passwordProtectedViewMeta[active];
+
   return (
     <div className="flex h-full min-h-0">
       <SettingSidebar active={active} setActive={setActive} />
@@ -62,9 +66,10 @@ function SettingsBody({ active, setActive }: SettingsBodyProps) {
       <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-4">
         <PasswordProtectedView
           active={active}
-          description="Debes confirmar tu contraseña para gestionar la autenticación de dos factores."
-          requiredFor={SettingLabelSidebar.TwoFactor}
-          title="Two Factor Authentication"
+          description={meta?.description}
+          icon={meta?.icon}
+          requiredFor={meta?.requiredFor}
+          title={meta?.title}
         >
           <SettingViewHeader active={active} />
 

@@ -1,16 +1,19 @@
 import type { PropsWithChildren } from "react";
 
+import type { IconType } from "react-icons";
+
 import { Button } from "@/shared/components/ui/button";
 
-import type { SettingLabelSidebar } from "../../data/settingSidebarItems";
+import type { SettingLabelSidebarValue } from "../../data/settingSidebarItems";
 import { usePasswordConfirmation } from "../../hooks/usePasswordConfirmation";
 import ConfirmPassword from "./ConfirmPassword";
 
 interface PasswordProtectedViewProps extends PropsWithChildren {
-  active: SettingLabelSidebar;
-  description: string;
-  requiredFor: SettingLabelSidebar;
-  title: string;
+  active: SettingLabelSidebarValue;
+  description?: string;
+  requiredFor?: SettingLabelSidebarValue;
+  title?: string;
+  icon?: IconType;
 }
 
 function PasswordProtectedView({
@@ -19,6 +22,7 @@ function PasswordProtectedView({
   description,
   requiredFor,
   title,
+  icon: Icon,
 }: PasswordProtectedViewProps) {
   const {
     isConfirmPasswordModal,
@@ -44,9 +48,13 @@ function PasswordProtectedView({
 
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-20 text-center">
-        <h2 className="font-semibold">{title}</h2>
+        <div className="flex flex-col gap-2 justify-center items-center">
+          {Icon && <Icon className="w-12 h-12" />}
 
-        <p>{description}</p>
+          <h2 className="font-semibold">{title ?? "Debes confirmar tu contraseña"}</h2>
+        </div>
+
+        <p>{description ?? "Debes confirmar tu contraseña para continuar."}</p>
 
         <Button className="cursor-pointer" onClick={() => openConfirmPasswordModal()}>
           Confirmar Contraseña

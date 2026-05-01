@@ -2,16 +2,19 @@ import type { IconType } from "react-icons";
 import { LuUserRoundCog } from "react-icons/lu";
 import { MdLockOutline, MdMonitor, MdOutlineSecurity } from "react-icons/md";
 
-export enum SettingLabelSidebar {
-  Appearance = "Apariencia",
-  Password = "Contraseña",
-  Profile = "Perfil",
-  TwoFactor = "Two Factor Authentication",
-}
+export const SettingLabelSidebar = {
+  Appearance: "Apariencia",
+  Password: "Contraseña",
+  Profile: "Perfil",
+  TwoFactor: "Two Factor Authentication",
+} as const;
+
+export type SettingLabelSidebarValue =
+  (typeof SettingLabelSidebar)[keyof typeof SettingLabelSidebar];
 
 interface SettingItemSidebar {
   icon: IconType;
-  label: SettingLabelSidebar;
+  label: SettingLabelSidebarValue;
 }
 
 export const settingSidebarItems: SettingItemSidebar[] = [

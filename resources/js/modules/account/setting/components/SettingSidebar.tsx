@@ -2,12 +2,12 @@ import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "@/shared/components/ui/button";
 
-import type { SettingLabelSidebar } from "../data/settingSidebarItems";
+import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
 import { settingSidebarItems } from "../data/settingSidebarItems";
 
 interface SettingsSidebarProps {
-  active: SettingLabelSidebar;
-  setActive: Dispatch<SetStateAction<SettingLabelSidebar>>;
+  active: SettingLabelSidebarValue;
+  setActive: Dispatch<SetStateAction<SettingLabelSidebarValue>>;
 }
 
 function SettingsSidebar({ active, setActive }: SettingsSidebarProps) {

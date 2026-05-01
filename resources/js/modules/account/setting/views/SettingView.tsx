@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib/utils";
 
+import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
 import { SettingLabelSidebar } from "../data/settingSidebarItems";
 import SettingAppearanceView from "./SettingAppearanceView";
 import SettingPasswordView from "./SettingPasswordView";
@@ -7,7 +8,7 @@ import SettingProfileView from "./SettingProfileView";
 import SettingTwoFactorView from "./SettingTwoFactorView";
 
 interface SettingsViewProps {
-  active: SettingLabelSidebar;
+  active: SettingLabelSidebarValue;
 }
 
 function SettingsView({ active }: SettingsViewProps) {
