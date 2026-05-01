@@ -4,8 +4,6 @@ import { useForm } from "@inertiajs/react";
 
 import { MdOutlinePostAdd } from "react-icons/md";
 
-import { Loader2Icon } from "lucide-react";
-
 import { Button } from "@/shared/components/ui/button";
 import {
   Dialog,
@@ -17,6 +15,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Separator } from "@/shared/components/ui/separator";
+import { Spinner } from "@/shared/components/ui/spinner";
 
 import type { PostFormData } from "../types/post";
 import PostForm from "./forms/PostForm";
@@ -62,13 +61,30 @@ function PostDialog({ open, setOpen }: PostDialogProps) {
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" disabled={form.processing} variant="outline">
+            <Button
+              type="button"
+              className="cursor-pointer"
+              disabled={form.processing}
+              variant="outline"
+            >
               Cancelar
             </Button>
           </DialogClose>
 
-          <Button type="submit" disabled={form.processing} form="post-form">
-            {form.processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
+          <Button
+            type="submit"
+            className="cursor-pointer"
+            disabled={form.processing}
+            form="post-form"
+          >
+            {form.processing ? (
+              <>
+                <Spinner />
+                Publicando...
+              </>
+            ) : (
+              "Publicar"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

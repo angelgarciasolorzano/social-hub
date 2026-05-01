@@ -5,8 +5,6 @@ import { useForm } from "@inertiajs/react";
 import { IoMdTime } from "react-icons/io";
 import { LuMessagesSquare } from "react-icons/lu";
 
-import { Loader2Icon } from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -19,6 +17,7 @@ import {
   DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Separator } from "@/shared/components/ui/separator";
+import { Spinner } from "@/shared/components/ui/spinner";
 
 import { validImage } from "@/shared/lib";
 
@@ -118,7 +117,14 @@ function CommentInputDialog(props: CommentInputDialogProps) {
             disabled={formComment.processing}
             form={formId}
           >
-            {formComment.processing ? <Loader2Icon className="h-4 w-4 animate-spin" /> : "Publicar"}
+            {formComment.processing ? (
+              <>
+                <Spinner />
+                Publicando...
+              </>
+            ) : (
+              "Publicar"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
