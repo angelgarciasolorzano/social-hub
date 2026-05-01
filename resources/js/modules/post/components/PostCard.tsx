@@ -60,7 +60,7 @@ function PostCard({ post, user }: PostCardProps) {
 
         {post.image && (
           <img
-            className="my-2 max-h-[400px] w-full rounded-md object-cover"
+            className="my-2 max-h-100 w-full rounded-md object-cover"
             onError={(e) => (e.currentTarget.src = postPlaceholder)}
             alt="Imagen de la publicación"
             src={post.image}
