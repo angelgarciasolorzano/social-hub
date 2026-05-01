@@ -43,7 +43,7 @@ function CommentDialog({ postDetail, user }: CommentDialogProps) {
             Publicacion de {user.name}
           </DialogTitle>
 
-          <DialogDescription className="dark:text-gray-400">
+          <DialogDescription>
             Echa un vistazo a su publicación, dale like o deja tu comentario
           </DialogDescription>
         </DialogHeader>
