@@ -2,6 +2,8 @@ import { useRef } from "react";
 
 import { Form, usePage } from "@inertiajs/react";
 
+import { MdOutlineVpnKey } from "react-icons/md";
+
 import { destroy } from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
 
 import { LabelForm } from "@/shared/components/form";
@@ -17,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/components/ui/dialog";
-import { Input } from "@/shared/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/shared/components/ui/input-group";
 
 import type { SharedData } from "@/shared/types";
 
@@ -36,12 +38,12 @@ export default function DeleteUser() {
         </Badge>
       </DialogTrigger>
       <DialogContent>
-        <DialogTitle>Are you sure you want to delete your account?</DialogTitle>
+        <DialogTitle>¿Estás seguro/a de que quieres eliminar tu cuenta?</DialogTitle>
 
         <DialogDescription>
-          Once your account is deleted, all of its resources and data will also be permanently
-          deleted. Please enter your password to confirm you would like to permanently delete your
-          account.
+          Una vez que tu cuenta sea eliminada, todos sus recursos y datos también serán eliminados
+          permanentemente. Por favor, ingresa tu contraseña para confirmar que deseas eliminar
+          permanentemente tu cuenta.
         </DialogDescription>
 
         <Form
@@ -60,14 +62,20 @@ export default function DeleteUser() {
                   Password
                 </LabelForm>
 
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Password"
-                  ref={passwordInput}
-                />
+                <InputGroup>
+                  <InputGroupInput
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    autoFocus
+                    placeholder="Contraseña"
+                  />
+
+                  <InputGroupAddon>
+                    <MdOutlineVpnKey />
+                  </InputGroupAddon>
+                </InputGroup>
 
                 <InputError message={errors["password"]} />
               </div>
