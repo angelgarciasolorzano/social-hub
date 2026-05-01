@@ -1,6 +1,15 @@
-import type { Dispatch, FormEvent, MouseEvent, RefObject } from "react";
+import type {
+  ChangeEvent,
+  Dispatch,
+  DragEvent,
+  DragEventHandler,
+  MouseEvent,
+  RefObject,
+} from "react";
 
 import { IoCloudUploadOutline } from "react-icons/io5";
+
+import { Loader2Icon } from "lucide-react";
 
 import { Button } from "@/shared/components/ui/button";
 
@@ -16,8 +25,12 @@ interface PostImageCardProps {
   handleUpdateImage: (event: MouseEvent<HTMLButtonElement>) => void;
   handleRemoveImage: (event: MouseEvent<HTMLButtonElement>) => void;
   fileInputRef: RefObject<HTMLInputElement | null>;
-  handleImageChange: (event: FormEvent<HTMLInputElement>) => void;
+  handleImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  handleImageDrop: (event: DragEvent<HTMLDivElement>) => void;
   setIsHoverImage: Dispatch<React.SetStateAction<boolean>>;
+  isLoadingImage: boolean;
+  handleImageLoad: () => void;
+  handleImageError: () => void;
 }
 
 function PostImageCard(props: PostImageCardProps) {
@@ -27,11 +40,31 @@ function PostImageCard(props: PostImageCardProps) {
     handleImageChange,
     handleUpdateImage,
     handleImageBoxClick,
+    handleImageDrop,
     setIsHoverImage,
     isHoverImage,
     imageUrl,
     appearance,
+    handleImageLoad,
+    handleImageError,
+    isLoadingImage,
   } = props;
+
+  const handleDragOver: DragEventHandler<HTMLDivElement> = (event) => {
+    event.preventDefault();
+    setIsHoverImage(true);
+  };
+
+  const handleDragLeave: DragEventHandler<HTMLDivElement> = (event) => {
+    event.preventDefault();
+    setIsHoverImage(false);
+  };
+
+  const handleCardClick = (): void => {
+    if (imageUrl) return;
+
+    handleImageBoxClick();
+  };
 
   return (
     <div
@@ -41,7 +74,10 @@ function PostImageCard(props: PostImageCardProps) {
         !imageUrl && isHoverImage && "cursor-pointer hover:bg-gray-50 dark:hover:bg-[#1D1D1D]/30",
         "dark:border-[#343434]",
       )}
-      onClick={handleImageBoxClick}
+      onClick={handleCardClick}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleImageDrop}
       onMouseEnter={() => setIsHoverImage(true)}
       onMouseLeave={() => setIsHoverImage(false)}
       role="button"
@@ -50,12 +86,32 @@ function PostImageCard(props: PostImageCardProps) {
         {imageUrl ? (
           <div className="relative h-full w-full">
             <img
-              className="h-full w-full rounded-md object-cover"
+              className={cn(
+                "h-full w-full rounded-md object-cover transition-opacity",
+                isLoadingImage ? "dark:opacity-20" : "opacity-100",
+              )}
+              onError={handleImageError}
+              onLoad={handleImageLoad}
               alt="Vista previa de la imagen seleccionada"
               src={imageUrl}
             />
 
-            {isHoverImage && (
+            {isLoadingImage && (
+              <div
+                className={cn(
+                  "absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-md",
+                  "bg-black/80 backdrop-blur-[1px] dark:bg-black/50",
+                )}
+              >
+                <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground dark:text-white" />
+
+                <span className="text-sm font-medium text-muted-foreground dark:text-white">
+                  Cargando imagen...
+                </span>
+              </div>
+            )}
+
+            {!isLoadingImage && isHoverImage && (
               <div
                 className={cn(
                   "absolute inset-0 flex flex-col items-center justify-center gap-4 rounded-md transition-opacity",
@@ -91,14 +147,16 @@ function PostImageCard(props: PostImageCardProps) {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
-            <IoCloudUploadOutline className="h-6 w-6 text-muted-foreground" />
+            <div className="bg-accent p-2 rounded-full">
+              <IoCloudUploadOutline className="h-6 w-6 text-muted-foreground" />
+            </div>
 
             <p className="text-sm font-medium dark:text-white">
               Seleccione un archivo o arrástrelo y suéltelo aquí.
             </p>
 
             <span className="text-xs dark:text-white/70">
-              JPG, PNG, WebP. El archivo no debe superar los 2 MB{" "}
+              JPG, PNG, WebP. El archivo no debe superar los 5 MB
             </span>
           </div>
         )}

@@ -1,4 +1,4 @@
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import type { Dispatch, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
@@ -28,14 +28,18 @@ function PostForm({ form, setOpen }: PostFormtProps) {
     fileInputRef,
     imageUrl,
     isHoverImage,
+    isLoadingImage,
+    handleImageError,
+    handleImageLoad,
     handleImageBoxClick,
     handleUpdateImage,
     handleRemoveImage,
     handleImageChange,
     setIsHoverImage,
+    handleImageDrop,
   } = usePostImage({ setData });
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
     submit(PostController(), {
@@ -70,15 +74,23 @@ function PostForm({ form, setOpen }: PostFormtProps) {
         </div>
 
         <div className="space-y-1">
+          <LabelForm className="mb-2" error={errors.image_file} htmlFor="post-image">
+            Imagen (opcional)
+          </LabelForm>
+
           <PostImageCard
             appearance={appearance}
             fileInputRef={fileInputRef}
             handleImageBoxClick={handleImageBoxClick}
             handleImageChange={handleImageChange}
+            handleImageDrop={handleImageDrop}
+            handleImageError={handleImageError}
+            handleImageLoad={handleImageLoad}
             handleRemoveImage={handleRemoveImage}
             handleUpdateImage={handleUpdateImage}
             imageUrl={imageUrl}
             isHoverImage={isHoverImage}
+            isLoadingImage={isLoadingImage}
             setIsHoverImage={setIsHoverImage}
           />
 
