@@ -75,6 +75,12 @@
       "source": "biggora/claude-plugins-registry",
       "sourceType": "github",
       "computedHash": "f3232875fe708536d4c4f5f7811bc2f1f12d746f4f792114dd5bed72dd095b54"
+    },
+    "tanstack-virtual": {
+      "source": "tanstack-skills/tanstack-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/tanstack-virtual/skills/tanstack-virtual/SKILL.md",
+      "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"
     }
   }
 }
