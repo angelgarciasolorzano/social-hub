@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Dashboard\Controllers;
+namespace App\Home\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Post\Models\Post;
@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class DashboardController extends Controller
+class HomeController extends Controller
 {
     public function __invoke(): Response
     {
