@@ -2,7 +2,7 @@ import { type PropsWithChildren } from "react";
 
 import { Link } from "@inertiajs/react";
 
-import { dashboard } from "@/shared/wayfinder/routes";
+import { home } from "@/shared/wayfinder/routes";
 
 import { AppLogoIcon } from "@/shared/components/logo";
 import {
@@ -25,7 +25,7 @@ function AuthCardLayout({ title, description, children }: PropsWithChildren<Auth
       <div className="flex w-full max-w-md flex-col gap-6">
         <Link
           className="flex items-center gap-2 self-center font-medium"
-          href={dashboard()}
+          href={home()}
           viewTransition
         >
           <div className="flex h-9 w-9 items-center justify-center">

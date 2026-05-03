@@ -20,7 +20,7 @@ class HomeController extends Controller
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
-        return Inertia::render('dashboard/Dashboard', [
+        return Inertia::render('home/Home', [
             'user' => Auth::user(),
             'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
         ]);
