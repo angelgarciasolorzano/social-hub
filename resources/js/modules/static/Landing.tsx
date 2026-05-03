@@ -17,7 +17,7 @@ import { useAppearance } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 
-function Home() {
+function Landing() {
   const { resolvedAppearance } = useAppearance();
 
   return (
@@ -46,22 +46,22 @@ function Home() {
       )}
 
       <div className="relative z-10 flex min-h-screen flex-col">
-        <HomeHeader />
-        <HomeBody resolvedAppearance={resolvedAppearance} />
-        <HomeFooter resolvedAppearance={resolvedAppearance} />
+        <LandingHeader />
+        <LandingBody resolvedAppearance={resolvedAppearance} />
+        <LandingFooter resolvedAppearance={resolvedAppearance} />
       </div>
     </div>
   );
 }
 
-interface HomeHeaderOptions {
+interface LandingHeaderOptions {
   label: string;
   href: string;
   variant: VariantProps<typeof Button>["variant"];
 }
 
-function HomeHeader() {
-  const headerOptions: HomeHeaderOptions[] = [
+function LandingHeader() {
+  const headerOptions: LandingHeaderOptions[] = [
     { label: "Login", href: "/login", variant: "ghost" },
     { label: "Register", href: "/register", variant: "default" },
   ];
@@ -103,20 +103,20 @@ function HomeHeader() {
   );
 }
 
-interface HomeBodyProps {
+interface LandingBodyProps {
   resolvedAppearance: ResolvedAppearance;
 }
 
-interface HomeBodySocialInfo {
+interface LandingBodySocialInfo {
   node: JSX.Element;
   title: string;
   href?: string;
 }
 
-function HomeBody({ resolvedAppearance }: HomeBodyProps) {
+function LandingBody({ resolvedAppearance }: LandingBodyProps) {
   const isLightAppearance = resolvedAppearance === "light";
 
-  const socialInfo: HomeBodySocialInfo[] = [
+  const socialInfo: LandingBodySocialInfo[] = [
     { node: <IoLogoFacebook />, title: "Facebook", href: "https://www.facebook.com" },
     { node: <FiInstagram />, title: "Instagram", href: "https://www.instagram.com" },
     { node: <IoLogoGithub />, title: "GitHub", href: "https://github.com" },
@@ -187,9 +187,9 @@ function HomeBody({ resolvedAppearance }: HomeBodyProps) {
   );
 }
 
-type HomeFooterProps = Pick<HomeBodyProps, "resolvedAppearance">;
+type LandingFooterProps = Pick<LandingBodyProps, "resolvedAppearance">;
 
-function HomeFooter({ resolvedAppearance }: HomeFooterProps) {
+function LandingFooter({ resolvedAppearance }: LandingFooterProps) {
   return (
     <motion.footer
       className={cn(
@@ -205,4 +205,4 @@ function HomeFooter({ resolvedAppearance }: HomeFooterProps) {
   );
 }
 
-export default Home;
+export default Landing;
