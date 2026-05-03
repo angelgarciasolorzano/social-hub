@@ -13,7 +13,7 @@ import type { SharedData, User } from "@/shared/types";
 
 import { profileCoverPlaceholder, profilePicturePlaceholder } from "@/shared/assets";
 
-import { DashboardLayout } from "../dashboard";
+import { HomeLayout } from "../home";
 import { PostCard, type PostCollection, PostDialog } from "../post";
 import ProfileCover from "./components/ProfileCover";
 import ProfilePicture from "./components/ProfilePicture";
@@ -28,7 +28,7 @@ function Profile({ posts, user }: ProfileProps) {
   const { auth } = usePage<SharedData>().props;
 
   return (
-    <DashboardLayout>
+    <HomeLayout>
       <div className="flex flex-col gap-4 px-4 py-3">
         <div className="relative">
           <ProfileCover coverImage={validImage(user.coverImage, profileCoverPlaceholder)} />
@@ -80,7 +80,7 @@ function Profile({ posts, user }: ProfileProps) {
       </div>
 
       <PostDialog open={open} setOpen={setOpen} />
-    </DashboardLayout>
+    </HomeLayout>
   );
 }
 

@@ -1,8 +1,8 @@
 import type { PropsWithChildren, Ref } from "react";
 
-import DashboardHeader from "../components/header/HomeHeader";
-import DashboardSidebarLeft from "../components/sidebar/DashboardSidebarLeft";
-import DashboardSidebarRight from "../components/sidebar/DashboardSidebarRight";
+import HomeHeader from "../components/header/HomeHeader";
+import HomeSidebarLeft from "../components/sidebar/HomeSidebarLeft";
+import HomeSidebarRight from "../components/sidebar/HomeSidebarRight";
 
 interface HomeLayoutProps extends PropsWithChildren {
   contentRef?: Ref<HTMLDivElement>;
@@ -11,16 +11,16 @@ interface HomeLayoutProps extends PropsWithChildren {
 function HomeLayout({ children, contentRef }: HomeLayoutProps) {
   return (
     <div className="flex h-screen flex-col">
-      <DashboardHeader />
+      <HomeHeader />
 
       <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebarLeft />
+        <HomeSidebarLeft />
 
         <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4" ref={contentRef}>
           {children}
         </div>
 
-        <DashboardSidebarRight />
+        <HomeSidebarRight />
       </div>
     </div>
   );
