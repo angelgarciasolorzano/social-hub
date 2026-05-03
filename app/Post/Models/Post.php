@@ -7,6 +7,7 @@ use App\Like\Models\Like;
 use App\Post\Factories\PostFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,9 +18,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property CarbonImmutable|null $created_at
+ *
  * @mixin IdeHelperPost
  */
 #[UseFactory(PostFactory::class)]
+#[Fillable([
+    'content',
+    'user_id',
+])]
 class Post extends Model implements HasMedia
 {
     /** @use HasFactory<PostFactory> */
@@ -46,16 +52,6 @@ class Post extends Model implements HasMedia
      * Glob pattern for test images used in seeding.
      */
     public const TEST_IMAGES_GLOB_PATH = 'Post/Seeders/Images/*.{jpg,jpeg,png}';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'content',
-        'user_id',
-    ];
 
     /**
      * Register the media collections for the post images.

@@ -9,6 +9,7 @@ use App\Comment\Factories\CommentFactory;
 use App\Like\Models\Like;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,9 +22,16 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $content
  * @property CarbonImmutable|null $created_at
  * @property-read User|null $user
+ *
  * @mixin IdeHelperComment
  */
 #[UseFactory(CommentFactory::class)]
+#[Fillable([
+    'user_id',
+    'commentable_id',
+    'commentable_type',
+    'content',
+])]
 class Comment extends Model
 {
     /** @use HasFactory<CommentFactory> */
@@ -38,18 +46,6 @@ class Comment extends Model
      * The morph column name for child comments.
      */
     public const MORPH_COLUMN = 'commentable';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'user_id',
-        'commentable_id',
-        'commentable_type',
-        'content',
-    ];
 
     protected function casts(): array
     {

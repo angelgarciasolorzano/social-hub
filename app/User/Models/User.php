@@ -9,6 +9,8 @@ use App\Like\Models\Like;
 use App\Post\Models\Post;
 use App\User\Enums\UserImageType;
 use App\User\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +23,15 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @mixin IdeHelperUser
  */
 #[UseFactory(UserFactory::class)]
+#[Fillable([
+    'name',
+    'email',
+    'password',
+])]
+#[Hidden([
+    'password',
+    'remember_token',
+])]
 class User extends Authenticatable implements HasMedia
 {
     /**
@@ -55,27 +66,6 @@ class User extends Authenticatable implements HasMedia
      * Glob pattern for the test user's cover image.
      */
     public const TEST_COVER_IMAGE_GLOB_PATH = 'User/Seeders/Images/cover/user-cover-test.{jpg,jpeg,png}';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
-
-    /**
-     * The attributes that should be hidden for arrays.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
 
     /**
      * The attributes that should be cast.
