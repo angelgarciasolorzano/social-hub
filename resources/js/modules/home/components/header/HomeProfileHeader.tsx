@@ -20,10 +20,10 @@ import type { SharedData } from "@/shared/types";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import type { ActionItemType } from "../../data/dashboardProfileItems";
-import { ActionItem, menuItems } from "../../data/dashboardProfileItems";
+import type { ActionItemType } from "../../data/homeProfileItems";
+import { ActionItem, homeHeaderProfileMenuItems } from "../../data/homeProfileItems";
 
-function ProfileHeader() {
+function HomeProfileHeader() {
   const { open, setOpen } = useModal();
   const { auth } = usePage<SharedData>().props;
 
@@ -45,7 +45,7 @@ function ProfileHeader() {
         <DropdownMenuLabel>Mi Perfil</DropdownMenuLabel>
 
         <DropdownMenuGroup>
-          {menuItems.map((item, index) => (
+          {homeHeaderProfileMenuItems.map((item, index) => (
             <DropdownMenuItem
               onSelect={() => {
                 if (item.action) handleAction(item.action);
@@ -81,4 +81,4 @@ function ProfileHeader() {
   );
 }
 
-export default ProfileHeader;
+export default HomeProfileHeader;

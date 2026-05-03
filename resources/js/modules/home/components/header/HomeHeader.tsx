@@ -1,11 +1,11 @@
 import { useModal } from "@/shared/hooks/useModal";
 
-import NotificationsHeader from "./DashboardNotificationsHeader";
-import PostHeader from "./DashboardPostHeader";
-import ProfileHeader from "./DashboardProfileHeader";
-import SearchHeader from "./DashboardSearchHeader";
+import HomeNotificationHeader from "./HomeNotificationHeader";
+import HomePostHeader from "./HomePostHeader";
+import HomeProfileHeader from "./HomeProfileHeader";
+import HomeSearchHeader from "./HomeSearchHeader";
 
-function DashboardHeader() {
+function HomeHeader() {
   return (
     <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3.5">
       <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">SOCIAL HUB</h3>
@@ -20,12 +20,12 @@ function HeaderAction() {
 
   return (
     <div className="flex items-center gap-4">
-      <SearchHeader />
-      <PostHeader isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
-      <NotificationsHeader />
-      <ProfileHeader />
+      <HomeSearchHeader />
+      <HomePostHeader isOpenModal={isOpenModal} setIsOpenModal={setIsOpenModal} />
+      <HomeNotificationHeader />
+      <HomeProfileHeader />
     </div>
   );
 }
 
-export default DashboardHeader;
+export default HomeHeader;

@@ -2,7 +2,7 @@ import { IoIosNotificationsOutline } from "react-icons/io";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
-function DashboardNotificationsHeader() {
+function HomeNotificationHeader() {
   return (
     <>
       <Tooltip>
@@ -16,4 +16,4 @@ function DashboardNotificationsHeader() {
   );
 }
 
-export default DashboardNotificationsHeader;
+export default HomeNotificationHeader;

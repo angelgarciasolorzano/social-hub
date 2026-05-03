@@ -7,14 +7,14 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type { User } from "@/shared/types";
 
 import { PostCard, type PostCollection } from "../post";
-import DashboardLayout from "./layouts/DashboadLayout";
+import HomeLayout from "./layouts/HomeLayout";
 
 interface HomeProps {
   posts: PostCollection;
   user: User;
 }
 
-function Dashboard({ posts, user }: HomeProps) {
+function Home({ posts, user }: HomeProps) {
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -26,7 +26,7 @@ function Dashboard({ posts, user }: HomeProps) {
   });
 
   return (
-    <DashboardLayout contentRef={setScrollElement}>
+    <HomeLayout contentRef={setScrollElement}>
       <InfiniteScroll buffer={200} data="posts" preserveUrl>
         <div className="relative w-full" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -54,8 +54,8 @@ function Dashboard({ posts, user }: HomeProps) {
           })}
         </div>
       </InfiniteScroll>
-    </DashboardLayout>
+    </HomeLayout>
   );
 }
 
-export default Dashboard;
+export default Home;

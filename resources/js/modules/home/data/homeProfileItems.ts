@@ -6,7 +6,7 @@ import { PiNutBold } from "react-icons/pi";
 
 import type { RouteDefinition } from "@/shared/wayfinder/wayfinder";
 
-import { dashboard, logout } from "@/shared/wayfinder/routes";
+import { home, logout } from "@/shared/wayfinder/routes";
 import { index } from "@/shared/wayfinder/routes/profile";
 
 export const UrlMethod = {
@@ -30,10 +30,10 @@ interface MenuItem {
   icon: IconType;
 }
 
-export const menuItems: MenuItem[] = [
+export const homeHeaderProfileMenuItems: MenuItem[] = [
   {
     text: "Inicio",
-    url: dashboard.url(),
+    url: home.url(),
     icon: FiHome,
   },
   {

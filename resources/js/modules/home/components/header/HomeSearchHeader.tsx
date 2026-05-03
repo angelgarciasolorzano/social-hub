@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/
 
 import type { SharedData } from "@/shared/types";
 
-function SearchHeader() {
+function HomeSearchHeader() {
   const { search_results } = usePage<SharedData>().props;
 
   return (
@@ -121,4 +121,4 @@ function SearchHeader() {
   );
 }
 
-export default SearchHeader;
+export default HomeSearchHeader;

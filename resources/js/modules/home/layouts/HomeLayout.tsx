@@ -1,14 +1,14 @@
 import type { PropsWithChildren, Ref } from "react";
 
-import DashboardHeader from "../components/header/DashboardHeader";
+import DashboardHeader from "../components/header/HomeHeader";
 import DashboardSidebarLeft from "../components/sidebar/DashboardSidebarLeft";
 import DashboardSidebarRight from "../components/sidebar/DashboardSidebarRight";
 
-interface DashboardLayoutProps extends PropsWithChildren {
+interface HomeLayoutProps extends PropsWithChildren {
   contentRef?: Ref<HTMLDivElement>;
 }
 
-function DashboardLayout({ children, contentRef }: DashboardLayoutProps) {
+function HomeLayout({ children, contentRef }: HomeLayoutProps) {
   return (
     <div className="flex h-screen flex-col">
       <DashboardHeader />
@@ -26,4 +26,4 @@ function DashboardLayout({ children, contentRef }: DashboardLayoutProps) {
   );
 }
 
-export default DashboardLayout;
+export default HomeLayout;

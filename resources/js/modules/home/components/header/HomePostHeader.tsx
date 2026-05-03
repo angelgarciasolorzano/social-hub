@@ -6,12 +6,12 @@ import PostDialog from "@/modules/post/components/PostDialog";
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
 
-interface PublicationHeaderProps {
+interface HomePostHeaderProps {
   isOpenModal: boolean;
   setIsOpenModal: Dispatch<SetStateAction<boolean>>;
 }
 
-function DashboardPostHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderProps) {
+function HomePostHeader({ isOpenModal, setIsOpenModal }: HomePostHeaderProps) {
   return (
     <>
       <Tooltip>
@@ -32,4 +32,4 @@ function DashboardPostHeader({ isOpenModal, setIsOpenModal }: PublicationHeaderP
   );
 }
 
-export default DashboardPostHeader;
+export default HomePostHeader;
