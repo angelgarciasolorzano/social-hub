@@ -24,10 +24,10 @@ export function usePaginatedComments(
   commentableId: number,
 ): UsePaginatedCommentsReturn {
   const [commentsPage, setCommentsPage] = useState<PaginatedComments | null>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  const loadingRef = useRef(false);
+  const loadingRef = useRef<boolean>(false);
   const lastRequestedUrl = useRef<string | null>(null);
 
   const nextCommentsUrl = commentsPage?.links.next ?? null;
@@ -167,9 +167,7 @@ export function usePaginatedComments(
       uploadedComments();
     }, 0);
 
-    return () => {
-      window.clearTimeout(initialLoadTimer);
-    };
+    return () => window.clearTimeout(initialLoadTimer);
   }, [uploadedComments]);
 
   return {
