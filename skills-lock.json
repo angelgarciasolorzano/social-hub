@@ -31,6 +31,12 @@
       "sourceType": "github",
       "computedHash": "7c07107585d47d754463bea92a59c913ecdb77abcd6ad4f4cb82b7351de019ed"
     },
+    "laravel-specialist": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-specialist/SKILL.md",
+      "computedHash": "d58e2ed3488398cb94a039f25b9d270e55dc434e16102abff9035608bec3db90"
+    },
     "laravel-testing": {
       "source": "leeovery/claude-laravel",
       "sourceType": "github",
@@ -60,6 +66,12 @@
       "source": "jpcaparas/superpowers-laravel",
       "sourceType": "github",
       "computedHash": "3ba8961bd4d134fca3f3c469ca9d1a1610c921479d1e542edc68e174d46db06f"
+    },
+    "php-pro": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/php-pro/SKILL.md",
+      "computedHash": "c163f6d5d26ddbf4a4d79e8dc95d3b41e447f1659486cf0aae8c070d950a9d86"
     },
     "shadcn": {
       "source": "shadcn/ui",
