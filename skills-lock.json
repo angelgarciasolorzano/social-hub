@@ -6,6 +6,12 @@
       "sourceType": "github",
       "computedHash": "370e1502efc9d179f5df7470a45a10302de81de9cf378641403e4ade9eb7d67f"
     },
+    "html-semantic-engineering": {
+      "source": "matthewharwood/fantasy-phonics",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/html/SKILL.md",
+      "computedHash": "0c6c28b953dbd794cdfe2c2e54a14eba02e92b9d6bd5bf8a06a15e55620c88cb"
+    },
     "laravel-architecture": {
       "source": "leeovery/claude-laravel",
       "sourceType": "github",
@@ -117,6 +123,24 @@
       "sourceType": "github",
       "skillPath": "plugins/tanstack-virtual/skills/tanstack-virtual/SKILL.md",
       "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"
+    },
+    "typescript-advanced": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript-advanced/SKILL.md",
+      "computedHash": "5e39d1321dd676555c39ddf873ffa2ac605a6de7841f8093f86d53314d36ef3e"
+    },
+    "typescript-best-practices": {
+      "source": "jwynia/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tech/development/tooling/typescript-best-practices/SKILL.md",
+      "computedHash": "db4675b9948beee1b029809ac861474048ac334c80f6dea60435a96afc122d38"
+    },
+    "typescript-conventions": {
+      "source": "exceptionless/exceptionless",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/typescript-conventions/SKILL.md",
+      "computedHash": "6943b91c2771d4a86e29959035301642f4862fe5a48f8dc68f1431dfb2d1135c"
     }
   }
 }
