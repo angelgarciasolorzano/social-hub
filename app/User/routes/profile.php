@@ -3,8 +3,14 @@
 use App\User\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('profile')->group(function () {
-    Route::get('/', [ProfileController::class, 'index'])->name('profile.index');
+Route::controller(ProfileController::class)->prefix('profile')->group(function () {
+    Route::get('/', 'index')->name('profile.index');
 
-    Route::get('/{user}', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/{user}', 'show')->name('profile.show');
+});
+
+Route::controller(ProfileController::class)->prefix('setting')->group(function () {
+    Route::get('/profile', 'edit')->name('profile.edit');
+
+    Route::patch('/profile', 'update')->name('profile.update');
 });
