@@ -13,12 +13,14 @@ import { Input } from "@/shared/components/ui/input";
 
 import type { SharedData } from "@/shared/types";
 
+import SettingLayout from "../../shared/layouts/SettingLayout";
+
 export default function SettingProfileView() {
   const { auth } = usePage<SharedData>().props;
   const { mustVerifyEmail, sessionStatus } = auth.user;
 
   return (
-    <>
+    <SettingLayout>
       <div className="space-y-6">
         <Form
           {...update.form(auth.user.id)}
@@ -106,6 +108,6 @@ export default function SettingProfileView() {
           )}
         </Form>
       </div>
-    </>
+    </SettingLayout>
   );
 }
