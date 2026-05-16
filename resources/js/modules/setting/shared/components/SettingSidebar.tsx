@@ -5,6 +5,7 @@ import { Link } from "@inertiajs/react";
 import { BookOpen, Bot, Command, SquareTerminal } from "lucide-react";
 
 import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/HomeController";
+import { appearance } from "@/shared/wayfinder/actions/App/User/Controllers/PreferenceController";
 import { edit } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
 
 import {
@@ -47,7 +48,7 @@ const data = {
       items: [
         {
           title: "Apariencia",
-          url: "#",
+          url: appearance.url(),
         },
       ],
     },
