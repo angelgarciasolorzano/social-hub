@@ -55,8 +55,7 @@ function HomeProfileHeader() {
             >
               {item.url ? (
                 <Link
-                  className="w-full"
-                  as="button"
+                  className="cursor-pointer"
                   href={item.url}
                   {...(item.method ? { method: item.method } : {})}
                   viewTransition

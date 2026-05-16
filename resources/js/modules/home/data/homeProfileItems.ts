@@ -6,12 +6,14 @@ import { PiNutBold } from "react-icons/pi";
 
 import type { RouteDefinition } from "@/shared/wayfinder/wayfinder";
 
+import { edit } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
+
 import { home, logout } from "@/shared/wayfinder/routes";
 import { index } from "@/shared/wayfinder/routes/profile";
 
 export const UrlMethod = {
-  Post: "post",
-  Get: "get",
+  POST: "post",
+  GET: "get",
 } as const;
 
 export const ActionItem = {
@@ -43,13 +45,13 @@ export const homeHeaderProfileMenuItems: MenuItem[] = [
   },
   {
     text: "Configuración",
-    action: ActionItem.OpenConfigModal,
+    url: edit.url(),
     icon: PiNutBold,
   },
   {
     text: "Cerrar Sesión",
     url: logout(),
-    method: UrlMethod.Post,
+    method: UrlMethod.POST,
     icon: MdOutlineLogout,
   },
 ];
