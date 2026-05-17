@@ -2,9 +2,9 @@
 
 namespace App\User\Providers;
 
-use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
-class UserServiceProvider extends RouteServiceProvider
+class UserServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap any application services.
