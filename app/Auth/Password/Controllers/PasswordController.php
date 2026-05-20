@@ -4,15 +4,19 @@ namespace App\Auth\Password\Controllers;
 
 use App\Auth\Password\Requests\PasswordRequest;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
+use Inertia\Response;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class PasswordController extends Controller
 {
-    /**
-     * Update the user's password.
-     */
-    public function __invoke(PasswordRequest $request): RedirectResponse
+    public function edit(): Response
+    {
+        return Inertia::render('setting/modules/password/EditPassword');
+    }
+
+    public function update(PasswordRequest $request): RedirectResponse
     {
         $user = $request->user();
 
@@ -25,6 +29,6 @@ class PasswordController extends Controller
             'password' => Hash::make($password),
         ]);
 
-        return back();
+        return Inertia::flash('success', 'Contraseña actualizada correctamente')->back();
     }
 }
