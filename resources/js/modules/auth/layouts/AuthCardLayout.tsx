@@ -41,7 +41,7 @@ function AuthCardLayout({ title, description, children }: PropsWithChildren<Auth
               <CardDescription>{description}</CardDescription>
             </CardHeader>
 
-            <CardContent className="px-10 py-8">{children}</CardContent>
+            <CardContent className="px-10 py-4">{children}</CardContent>
           </Card>
         </div>
       </div>
