@@ -7,6 +7,7 @@ import { BookOpen, Bot, Command, SquareTerminal } from "lucide-react";
 import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/HomeController";
 import { appearance } from "@/shared/wayfinder/actions/App/User/Controllers/PreferenceController";
 import { edit } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
+import { editTwoFactorAuthentication } from "@/shared/wayfinder/actions/App/User/Controllers/SecurityController";
 
 import {
   Sidebar,
@@ -59,7 +60,7 @@ const data = {
       items: [
         {
           title: "Autenticación en dos pasos",
-          url: "#",
+          url: editTwoFactorAuthentication.url(),
         },
       ],
     },

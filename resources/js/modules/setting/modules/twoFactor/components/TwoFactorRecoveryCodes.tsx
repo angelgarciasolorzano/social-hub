@@ -28,7 +28,9 @@ export default function TwoFactorRecoveryCodes({
   recoveryCodesList,
 }: TwoFactorRecoveryCodesProps) {
   const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
+
   const codesSectionRef = useRef<HTMLDivElement | null>(null);
+
   const canRegenerateCodes = recoveryCodesList.length > 0 && codesAreVisible;
 
   const toggleCodesVisibility = useCallback(async () => {
