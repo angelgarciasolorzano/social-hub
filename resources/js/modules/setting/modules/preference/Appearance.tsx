@@ -5,13 +5,12 @@ import { useAppearance } from "@/shared/hooks/useAppearance";
 import { cn } from "@/shared/lib/utils";
 
 import { appearanceItems } from "../../../account/setting/data/settingAppearanceItems";
-import SettingLayout from "../../shared/layouts/SettingLayout";
 
 function Appearance({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   const { appearance, updateAppearance } = useAppearance();
 
   return (
-    <SettingLayout>
+    <>
       <div
         className={cn(
           "inline-flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800",
@@ -35,7 +34,7 @@ function Appearance({ className = "", ...props }: HTMLAttributes<HTMLDivElement>
           </button>
         ))}
       </div>
-    </SettingLayout>
+    </>
   );
 }
 

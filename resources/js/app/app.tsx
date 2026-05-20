@@ -5,6 +5,9 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
+import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
+import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
+
 import { TooltipProvider } from "@/shared/components/ui/tooltip";
 
 import "../../css/app.css";
@@ -29,6 +32,16 @@ createInertiaApp({
   pages: "../modules",
   title: (title) => (title ? `${title} - ${appName}` : appName),
   strictMode: true,
+  layout: (name) => {
+    switch (true) {
+      case name.startsWith("auth/"):
+        return AuthCardLayout;
+      case name.startsWith("setting/"):
+        return SettingLayout;
+      default:
+        return undefined;
+    }
+  },
   withApp(app) {
     return <TooltipProvider>{app}</TooltipProvider>;
   },
