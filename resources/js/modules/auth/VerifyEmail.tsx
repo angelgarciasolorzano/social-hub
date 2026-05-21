@@ -9,20 +9,15 @@ import { logout } from "@/shared/wayfinder/routes";
 import TextLink from "@/shared/components/TextLink";
 import { Button } from "@/shared/components/ui/button";
 
-import AuthCardLayout from "./layouts/AuthCardLayout";
-
 export default function VerifyEmail({ status }: { status?: string }) {
   return (
-    <AuthCardLayout
-      description="Please verify your email address by clicking on the link we just emailed to you."
-      title="Verify email"
-    >
+    <>
       <Head title="Email verification" />
 
       {status === "verification-link-sent" && (
         <div className="mb-4 text-center text-sm font-medium text-green-600">
-          A new verification link has been sent to the email address you provided during
-          registration.
+          Se ha enviado un nuevo enlace de verificación a la dirección de correo electrónico que
+          proporcionaste durante el registro.
         </div>
       )}
 
@@ -31,15 +26,21 @@ export default function VerifyEmail({ status }: { status?: string }) {
           <>
             <Button disabled={processing} variant="secondary">
               {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-              Resend verification email
+              Reenviar correo de verificación
             </Button>
 
             <TextLink className="mx-auto block text-sm" href={logout()} viewTransition>
-              Log out
+              Cerrar sesión
             </TextLink>
           </>
         )}
       </Form>
-    </AuthCardLayout>
+    </>
   );
 }
+
+VerifyEmail.layout = {
+  title: "Verificar correo electrónico",
+  description:
+    "Por favor, verifica tu dirección de correo electrónico haciendo clic en el enlace que acabamos de enviarte.",
+};
