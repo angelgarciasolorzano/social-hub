@@ -15,7 +15,6 @@ export default function ConfirmPassword() {
         {...store.form()}
         options={{
           replace: true,
-          preserveState: false,
         }}
         resetOnSuccess={["password"]}
       >
@@ -30,6 +29,7 @@ export default function ConfirmPassword() {
                 id="password"
                 name="password"
                 autoComplete="current-password"
+                aria-invalid={!!errors["password"]}
                 autoFocus
                 placeholder="Password"
               />
