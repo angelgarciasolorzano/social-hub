@@ -1,25 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { Form, Head } from "@inertiajs/react";
+import { Form, Head, setLayoutProps } from "@inertiajs/react";
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 import { store } from "@/shared/wayfinder/routes/two-factor/login";
 
-import InputError from "@/shared/components/form/InputError";
+import { InputError } from "@/shared/components/form";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/input-otp";
 
-import { OTP_MAX_LENGTH } from "@/shared/hooks/useTwoFactorAuth";
-
-import AuthCardLayout from "./layouts/AuthCardLayout";
+import { OTP_MAX_LENGTH } from "@/shared/hooks";
 
 export default function TwoFactorChallenge() {
   const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
   const [code, setCode] = useState<string>("");
-
-  const pinInputContainerRef = useRef<HTMLDivElement>(null);
 
   const authConfigContent = useMemo<{
     title: string;
@@ -28,19 +24,24 @@ export default function TwoFactorChallenge() {
   }>(() => {
     if (showRecoveryInput) {
       return {
+        title: "Recovery code",
         description:
           "Please confirm access to your account by entering one of your emergency recovery codes.",
-        title: "Recovery Code",
         toggleText: "login using an authentication code",
       };
     }
 
     return {
+      title: "Authentication code",
       description: "Enter the authentication code provided by your authenticator application.",
-      title: "Authentication Code",
       toggleText: "login using a recovery code",
     };
   }, [showRecoveryInput]);
+
+  setLayoutProps({
+    title: authConfigContent.title,
+    description: authConfigContent.description,
+  });
 
   const toggleRecoveryMode = (clearErrors: () => void): void => {
     setShowRecoveryInput(!showRecoveryInput);
@@ -48,17 +49,9 @@ export default function TwoFactorChallenge() {
     setCode("");
   };
 
-  useEffect(() => {
-    if (!showRecoveryInput) {
-      setTimeout(() => {
-        pinInputContainerRef.current?.querySelector("input")?.focus();
-      });
-    }
-  }, [showRecoveryInput]);
-
   return (
-    <AuthCardLayout description={authConfigContent.description} title={authConfigContent.title}>
-      <Head title="Two-Factor Authentication" />
+    <>
+      <Head title="Two-factor authentication" />
 
       <div className="space-y-6">
         <Form
@@ -67,7 +60,7 @@ export default function TwoFactorChallenge() {
           resetOnError
           resetOnSuccess={!showRecoveryInput}
         >
-          {({ clearErrors, errors, processing }) => (
+          {({ errors, processing, clearErrors }) => (
             <>
               {showRecoveryInput ? (
                 <>
@@ -83,13 +76,11 @@ export default function TwoFactorChallenge() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center space-y-3 text-center">
-                  <div
-                    className="flex w-full items-center justify-center"
-                    ref={pinInputContainerRef}
-                  >
+                  <div className="flex w-full items-center justify-center">
                     <InputOTP
                       name="code"
                       onChange={(value) => setCode(value)}
+                      autoFocus
                       disabled={processing}
                       maxLength={OTP_MAX_LENGTH}
                       pattern={REGEXP_ONLY_DIGITS}
@@ -125,6 +116,6 @@ export default function TwoFactorChallenge() {
           )}
         </Form>
       </div>
-    </AuthCardLayout>
+    </>
   );
 }
