@@ -12,14 +12,9 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import AuthCardLayout from "../layouts/AuthCardLayout";
-
-function Register() {
+export default function Register() {
   return (
-    <AuthCardLayout
-      description="Ingrese sus datos a continuación para crear su cuenta"
-      title="Crea una cuenta"
-    >
+    <>
       <Head title="Register" />
 
       <Form
@@ -116,8 +111,11 @@ function Register() {
           </>
         )}
       </Form>
-    </AuthCardLayout>
+    </>
   );
 }
 
-export default Register;
+Register.layout = {
+  title: "Crea una cuenta",
+  description: "Ingrese sus datos a continuación para crear su cuenta",
+};

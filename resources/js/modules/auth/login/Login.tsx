@@ -14,19 +14,14 @@ import { Checkbox } from "@/shared/components/ui/checkbox";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import AuthCardLayout from "../layouts/AuthCardLayout";
-
 interface LoginProps {
   canResetPassword?: boolean;
   status?: string;
 }
 
-function Login({ status, canResetPassword }: LoginProps) {
+export default function Login({ status, canResetPassword }: LoginProps) {
   return (
-    <AuthCardLayout
-      description="Ingrese su correo electrónico y contraseña a continuación para iniciar sesión"
-      title="Inicia sesión en tu cuenta"
-    >
+    <>
       <Head title="Inicia sesión" />
 
       <Form {...store.form()} className="flex flex-col gap-6" resetOnSuccess={["password"]}>
@@ -110,8 +105,11 @@ function Login({ status, canResetPassword }: LoginProps) {
       {status && (
         <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>
       )}
-    </AuthCardLayout>
+    </>
   );
 }
 
-export default Login;
+Login.layout = {
+  title: "Inicia sesión en tu cuenta",
+  description: "Ingrese su correo electrónico y contraseña a continuación para iniciar sesión",
+};
