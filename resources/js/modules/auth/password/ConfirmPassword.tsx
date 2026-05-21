@@ -22,7 +22,7 @@ export default function ConfirmPassword() {
           <div className="space-y-6">
             <div className="grid gap-2">
               <LabelForm error={errors["password"]} htmlFor="password">
-                Password
+                Contraseña
               </LabelForm>
 
               <PasswordInput
@@ -31,7 +31,7 @@ export default function ConfirmPassword() {
                 autoComplete="current-password"
                 aria-invalid={!!errors["password"]}
                 autoFocus
-                placeholder="Password"
+                placeholder="Contraseña"
               />
 
               <InputError message={errors["password"]} />
@@ -40,7 +40,7 @@ export default function ConfirmPassword() {
             <div className="flex items-center">
               <Button className="w-full" data-test="confirm-password-button" disabled={processing}>
                 {processing && <Spinner />}
-                Confirm password
+                Confirmar contraseña
               </Button>
             </div>
           </div>
@@ -51,7 +51,7 @@ export default function ConfirmPassword() {
 }
 
 ConfirmPassword.layout = {
-  title: "Confirm your password",
+  title: "Confirmar contraseña",
   description:
-    "This is a secure area of the application. Please confirm your password before continuing.",
+    "Esta es un área segura de la aplicación. Por favor, confirme su contraseña antes de continuar.",
 };
