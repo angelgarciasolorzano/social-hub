@@ -4,9 +4,10 @@ import { Link } from "@inertiajs/react";
 
 import { BookOpen, Bot, Command, SquareTerminal } from "lucide-react";
 
+import { edit as editPassword } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordController";
 import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/HomeController";
 import { appearance } from "@/shared/wayfinder/actions/App/User/Controllers/PreferenceController";
-import { edit } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
+import { edit as editProfile } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
 import { editTwoFactorAuthentication } from "@/shared/wayfinder/actions/App/User/Controllers/SecurityController";
 
 import {
@@ -38,7 +39,7 @@ const data = {
       items: [
         {
           title: "Perfil",
-          url: edit.url(),
+          url: editProfile.url(),
         },
       ],
     },
@@ -58,6 +59,10 @@ const data = {
       url: "#",
       icon: BookOpen,
       items: [
+        {
+          title: "Cambiar contraseña",
+          url: editPassword.url(),
+        },
         {
           title: "Autenticación en dos pasos",
           url: editTwoFactorAuthentication.url(),

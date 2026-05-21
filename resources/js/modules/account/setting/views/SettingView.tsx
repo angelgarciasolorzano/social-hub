@@ -1,11 +1,11 @@
 import { cn } from "@/shared/lib/utils";
 
+import SettingPasswordView from "../../../setting/modules/password/EditPassword";
+import SettingAppearanceView from "../../../setting/modules/preference/Appearance";
+import SettingProfileView from "../../../setting/modules/profile/EditProfile";
+import SettingTwoFactorView from "../../../setting/modules/twoFactor/TwoFactorAuthentication";
 import type { SettingLabelSidebarValue } from "../data/settingSidebarItems";
 import { SettingLabelSidebar } from "../data/settingSidebarItems";
-import SettingAppearanceView from "./SettingAppearanceView";
-import SettingPasswordView from "./SettingPasswordView";
-import SettingProfileView from "./SettingProfileView";
-import SettingTwoFactorView from "./SettingTwoFactorView";
 
 interface SettingsViewProps {
   active: SettingLabelSidebarValue;
