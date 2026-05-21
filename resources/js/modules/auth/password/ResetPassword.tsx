@@ -9,8 +9,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import AuthCardLayout from "../layouts/AuthCardLayout";
-
 interface ResetPasswordProps {
   email: string;
   token: string;
@@ -18,8 +16,8 @@ interface ResetPasswordProps {
 
 export default function ResetPassword({ token, email }: ResetPasswordProps) {
   return (
-    <AuthCardLayout description="Please enter your new password below" title="Reset password">
-      <Head title="Reset password" />
+    <>
+      <Head title="Restablecer contraseña" />
 
       <Form
         {...store.form()}
@@ -87,6 +85,11 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
           </div>
         )}
       </Form>
-    </AuthCardLayout>
+    </>
   );
 }
+
+ResetPassword.layout = {
+  title: "Restablecer contraseña",
+  description: "Ingrese su nueva contraseña a continuación",
+};

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -39,7 +40,7 @@ class User extends Authenticatable implements HasMedia
      */
     use HasFactory;
 
-    use InteractsWithMedia, TwoFactorAuthenticatable;
+    use InteractsWithMedia, Notifiable, TwoFactorAuthenticatable;
 
     public const MORPH_NAME = 'user';
 

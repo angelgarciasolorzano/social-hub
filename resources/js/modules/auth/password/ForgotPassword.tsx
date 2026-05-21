@@ -12,18 +12,13 @@ import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 
-import AuthCardLayout from "../layouts/AuthCardLayout";
-
 interface ForgotPasswordProps {
   status?: string;
 }
 
-function ForgotPassword({ status }: ForgotPasswordProps) {
+export default function ForgotPassword({ status }: ForgotPasswordProps) {
   return (
-    <AuthCardLayout
-      description="Ingrese su correo electrónico para recibir un enlace para restablecer la contraseña"
-      title="Restablecer la contraseña"
-    >
+    <>
       <Head title="Restablecer contraseña" />
 
       {status && (
@@ -69,8 +64,12 @@ function ForgotPassword({ status }: ForgotPasswordProps) {
           <TextLink href={login()}>iniciar sesión</TextLink>
         </div>
       </div>
-    </AuthCardLayout>
+    </>
   );
 }
 
-export default ForgotPassword;
+ForgotPassword.layout = {
+  title: "Restablecer contraseña",
+  description:
+    "Ingrese su correo electrónico para recibir un enlace para restablecer la contraseña",
+};
