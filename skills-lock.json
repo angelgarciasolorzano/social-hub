@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "chrome-extensions": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/chrome-extensions/SKILL.md",
+      "computedHash": "1aaf29f8efed83acd69e33bec79fb69a0cb7a8e4c0a5a43328c9182cd733b8f9"
+    },
     "eloquent-best-practices": {
       "source": "iserter/laravel-claude-agents",
       "sourceType": "github",
@@ -72,6 +78,12 @@
       "source": "jpcaparas/superpowers-laravel",
       "sourceType": "github",
       "computedHash": "3ba8961bd4d134fca3f3c469ca9d1a1610c921479d1e542edc68e174d46db06f"
+    },
+    "modern-web-guidance": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "9f19aa0e3b554d33b2709c66bb16ad342403e323761f62d6665fbb424c23148d"
     },
     "php-pro": {
       "source": "jeffallan/claude-skills",
