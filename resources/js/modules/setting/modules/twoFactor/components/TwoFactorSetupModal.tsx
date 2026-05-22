@@ -31,11 +31,13 @@ function GridScanIcon() {
             <div className="border-r border-border last:border-r-0" key={`col-${i + 1}`} />
           ))}
         </div>
+
         <div className="absolute inset-0 grid grid-rows-5 opacity-50">
           {Array.from({ length: 5 }, (_, i) => (
             <div className="border-b border-border last:border-b-0" key={`row-${i + 1}`} />
           ))}
         </div>
+
         <ScanLine className="relative z-20 size-6 text-foreground" />
       </div>
     </div>
@@ -81,13 +83,14 @@ function TwoFactorSetupStep({
           </div>
 
           <div className="flex w-full space-x-5">
-            <Button className="w-full" onClick={onNextStep}>
+            <Button className="w-full cursor-pointer" onClick={onNextStep}>
               {buttonText}
             </Button>
           </div>
 
           <div className="relative flex w-full items-center justify-center">
             <div className="absolute inset-0 top-1/2 h-px w-full bg-border" />
+
             <span className="relative bg-card px-2 py-1">o ingrese el código manualmente</span>
           </div>
 
@@ -105,6 +108,7 @@ function TwoFactorSetupStep({
                     readOnly
                     value={manualSetupKey}
                   />
+
                   <button
                     className="border-l border-border px-3 hover:bg-muted"
                     onClick={() => copy(manualSetupKey)}
@@ -169,16 +173,17 @@ function TwoFactorVerificationStep({
             <div className="flex w-full space-x-5">
               <Button
                 type="button"
-                className="flex-1"
+                className="flex-1 cursor-pointer"
                 onClick={onBack}
                 disabled={processing}
                 variant="outline"
               >
                 Back
               </Button>
+
               <Button
                 type="submit"
-                className="flex-1"
+                className="flex-1 cursor-pointer"
                 disabled={processing || code.length < OTP_MAX_LENGTH}
               >
                 Confirm
@@ -283,7 +288,9 @@ export default function TwoFactorSetupModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="flex items-center justify-center">
           <GridScanIcon />
+
           <DialogTitle>{modalConfig.title}</DialogTitle>
+
           <DialogDescription className="text-center">{modalConfig.description}</DialogDescription>
         </DialogHeader>
 

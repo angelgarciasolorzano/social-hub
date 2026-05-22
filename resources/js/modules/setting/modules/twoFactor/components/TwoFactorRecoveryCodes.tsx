@@ -65,6 +65,7 @@ export default function TwoFactorRecoveryCodes({
           <LockKeyhole aria-hidden="true" className="size-4" />
           2FA Códigos de recuperación
         </CardTitle>
+
         <CardDescription>
           Los códigos de recuperación te permiten recuperar el acceso si pierdes tu dispositivo con
           autenticación de dos factores. Guárdalos en un gestor de contraseñas seguro.

@@ -19,7 +19,7 @@ type Props = {
   twoFactorEnabled?: boolean;
 };
 
-export default function Security({
+export default function TwoFactorAuthentication({
   canManageTwoFactor = false,
   requiresConfirmation = false,
   twoFactorEnabled = false,
@@ -49,9 +49,7 @@ export default function Security({
 
   return (
     <>
-      <Head title="Security settings" />
-
-      <h1 className="sr-only">Security settings</h1>
+      <Head title="Two Factor Authentication" />
 
       {canManageTwoFactor && (
         <div className="space-y-6">
@@ -65,7 +63,12 @@ export default function Security({
               <div className="relative inline">
                 <Form {...disable.form()}>
                   {({ processing }) => (
-                    <Button type="submit" disabled={processing} variant="destructive">
+                    <Button
+                      type="submit"
+                      className="cursor-pointer"
+                      disabled={processing}
+                      variant="destructive"
+                    >
                       Desactivar 2FA
                     </Button>
                   )}
@@ -95,7 +98,7 @@ export default function Security({
                 ) : (
                   <Form {...enable.form()} onSuccess={() => setShowSetupModal(true)}>
                     {({ processing }) => (
-                      <Button type="submit" disabled={processing}>
+                      <Button type="submit" className="cursor-pointer" disabled={processing}>
                         Activar 2FA
                       </Button>
                     )}
@@ -121,3 +124,8 @@ export default function Security({
     </>
   );
 }
+
+TwoFactorAuthentication.layout = {
+  title: "Two Factor Authentication",
+  description: "Agrega una capa adicional de seguridad a tu cuenta.",
+};
