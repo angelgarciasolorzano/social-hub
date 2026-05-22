@@ -153,6 +153,12 @@
       "sourceType": "github",
       "skillPath": ".agents/skills/typescript-conventions/SKILL.md",
       "computedHash": "6943b91c2771d4a86e29959035301642f4862fe5a48f8dc68f1431dfb2d1135c"
+    },
+    "ui-ux-design-pro": {
+      "source": "saifyxpro/ui-ux-design-pro-skill",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-design-pro/SKILL.md",
+      "computedHash": "78db7907b61510b5d708d4b595a261fc198170bb4b21416ec67e1dd779e64890"
     }
   }
 }
