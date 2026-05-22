@@ -11,45 +11,54 @@ import { edit } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileCon
 import { home, logout } from "@/shared/wayfinder/routes";
 import { index } from "@/shared/wayfinder/routes/profile";
 
+const LabelProfile = {
+  HOME: "Inicio",
+  MY_PROFILE: "Mi Perfil",
+  SETTING: "Configuración",
+  LOGOUT: "Cerrar Sesión",
+} as const;
+
+export type LabelProfileType = (typeof LabelProfile)[keyof typeof LabelProfile];
+
+type LabelProfileTypeKey = keyof typeof LabelProfile;
+
 export const UrlMethod = {
   POST: "post",
   GET: "get",
 } as const;
 
-export const ActionItem = {
-  OpenConfigModal: "openConfigModal",
-} as const;
-
 export type UrlsMethodType = (typeof UrlMethod)[keyof typeof UrlMethod];
 
-export type ActionItemType = (typeof ActionItem)[keyof typeof ActionItem];
-
 interface MenuItem {
-  text: string;
-  url?: string | RouteDefinition<"get" | "post">;
+  key: LabelProfileTypeKey;
+  label: LabelProfileType;
+  url: string | RouteDefinition<"get" | "post">;
   method?: UrlsMethodType;
-  action?: ActionItemType;
   icon: IconType;
 }
 
 export const homeHeaderProfileMenuItems: MenuItem[] = [
   {
-    text: "Inicio",
+    key: "HOME",
+    label: LabelProfile.HOME,
     url: home.url(),
     icon: FiHome,
   },
   {
-    text: "Perfil",
+    key: "MY_PROFILE",
+    label: LabelProfile.MY_PROFILE,
     url: index.url(),
     icon: FaRegUser,
   },
   {
-    text: "Configuración",
+    key: "SETTING",
+    label: LabelProfile.SETTING,
     url: edit.url(),
     icon: PiNutBold,
   },
   {
-    text: "Cerrar Sesión",
+    key: "LOGOUT",
+    label: LabelProfile.LOGOUT,
     url: logout(),
     method: UrlMethod.POST,
     icon: MdOutlineLogout,

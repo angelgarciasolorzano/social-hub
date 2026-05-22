@@ -1,7 +1,5 @@
 import { Link, usePage } from "@inertiajs/react";
 
-import Settings from "@/modules/account/setting/Setting";
-
 import { Avatar, AvatarImage } from "@/shared/components/ui/avatar";
 import {
   DropdownMenu,
@@ -12,26 +10,16 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
 
-import { useModal } from "@/shared/hooks/useModal";
-
 import { validImage } from "@/shared/lib/validImage";
 
 import type { SharedData } from "@/shared/types";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import type { ActionItemType } from "../../data/homeProfileItems";
-import { ActionItem, homeHeaderProfileMenuItems } from "../../data/homeProfileItems";
+import { homeHeaderProfileMenuItems } from "../../data/homeProfileItems";
 
 function HomeProfileHeader() {
-  const { open, setOpen } = useModal();
   const { auth } = usePage<SharedData>().props;
-
-  const handleAction = (action: ActionItemType) => {
-    if (action === ActionItem.OpenConfigModal) {
-      setOpen(true);
-    }
-  };
 
   return (
     <DropdownMenu>
@@ -45,37 +33,21 @@ function HomeProfileHeader() {
         <DropdownMenuLabel>Mi Perfil</DropdownMenuLabel>
 
         <DropdownMenuGroup>
-          {homeHeaderProfileMenuItems.map((item, index) => (
-            <DropdownMenuItem
-              onSelect={() => {
-                if (item.action) handleAction(item.action);
-              }}
-              asChild={!item.action}
-              key={index}
-            >
-              {item.url ? (
-                <Link
-                  className="cursor-pointer"
-                  href={item.url}
-                  {...(item.method ? { method: item.method } : {})}
-                  viewTransition
-                >
-                  <item.icon className="h-4 w-4 text-gray-600" />
-
-                  {item.text}
-                </Link>
-              ) : (
-                <>
-                  <item.icon className="h-4 w-4 text-gray-600" />
-                  {item.text}
-                </>
-              )}
+          {homeHeaderProfileMenuItems.map((item) => (
+            <DropdownMenuItem asChild key={item.key}>
+              <Link
+                className="cursor-pointer"
+                href={item.url}
+                viewTransition
+                {...(item.method ? { method: item.method } : {})}
+              >
+                <item.icon className="h-4 w-4 text-gray-600" />
+                {item.label}
+              </Link>
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
       </DropdownMenuContent>
-
-      <Settings open={open} setOpen={setOpen} />
     </DropdownMenu>
   );
 }
