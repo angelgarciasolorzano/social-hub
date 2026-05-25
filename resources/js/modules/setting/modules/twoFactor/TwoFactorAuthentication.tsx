@@ -2,16 +2,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { Form, Head } from "@inertiajs/react";
 
-import { ShieldCheck } from "lucide-react";
-
-import { disable, enable } from "@/shared/wayfinder/routes/two-factor";
+import { disable } from "@/shared/wayfinder/routes/two-factor";
 
 import { Button } from "@/shared/components/ui/button";
 
 import { useTwoFactorAuth } from "@/shared/hooks";
 
 import TwoFactorRecoveryCodes from "./components/TwoFactorRecoveryCodes";
-import TwoFactorSetupModal from "./components/TwoFactorSetupModal";
+import TwoFactorAuthenticationDisabled from "./views/TwoFactorAuthenticationDisabled";
 
 type Props = {
   canManageTwoFactor?: boolean;
@@ -52,7 +50,7 @@ export default function TwoFactorAuthentication({
       <Head title="Two Factor Authentication" />
 
       {canManageTwoFactor && (
-        <div className="space-y-6">
+        <>
           {twoFactorEnabled ? (
             <div className="flex flex-col items-start justify-start space-y-4">
               <p className="text-sm text-muted-foreground">
@@ -82,50 +80,24 @@ export default function TwoFactorAuthentication({
               />
             </div>
           ) : (
-            <div className="flex flex-col items-start justify-start space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Al activar la autenticación de dos factores, se le solicitará un PIN seguro durante
-                el inicio de sesión. Este PIN se puede obtener desde una aplicación compatible con
-                TOTP en su teléfono.
-              </p>
-
-              <div>
-                {hasSetupData ? (
-                  <Button onClick={() => setShowSetupModal(true)}>
-                    <ShieldCheck />
-                    Continuar configuración
-                  </Button>
-                ) : (
-                  <Form {...enable.form()} onSuccess={() => setShowSetupModal(true)}>
-                    {({ processing }) => (
-                      <Button type="submit" className="cursor-pointer" disabled={processing}>
-                        Activar 2FA
-                      </Button>
-                    )}
-                  </Form>
-                )}
-              </div>
-            </div>
+            <>
+              <TwoFactorAuthenticationDisabled
+                hasSetupData={hasSetupData}
+                setShowSetupModal={setShowSetupModal}
+                clearSetupData={clearSetupData}
+                errors={errors}
+                fetchSetupData={fetchSetupData}
+                isOpen={showSetupModal}
+                manualSetupKey={manualSetupKey}
+                onClose={() => setShowSetupModal(false)}
+                qrCodeSvg={qrCodeSvg}
+                requiresConfirmation={requiresConfirmation}
+                twoFactorEnabled={twoFactorEnabled}
+              />
+            </>
           )}
-
-          <TwoFactorSetupModal
-            onClose={() => setShowSetupModal(false)}
-            clearSetupData={clearSetupData}
-            errors={errors}
-            fetchSetupData={fetchSetupData}
-            isOpen={showSetupModal}
-            manualSetupKey={manualSetupKey}
-            qrCodeSvg={qrCodeSvg}
-            requiresConfirmation={requiresConfirmation}
-            twoFactorEnabled={twoFactorEnabled}
-          />
-        </div>
+        </>
       )}
     </>
   );
 }
-
-TwoFactorAuthentication.layout = {
-  title: "Two Factor Authentication",
-  description: "Agrega una capa adicional de seguridad a tu cuenta.",
-};

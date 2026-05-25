@@ -8,9 +8,9 @@
   "htmlWhitespaceSensitivity": "css",
   "printWidth": 100,
   "plugins": [
-    "prettier-plugin-tailwindcss",
     "@trivago/prettier-plugin-sort-imports",
-    "@xeonlink/prettier-plugin-organize-attributes"
+    "@xeonlink/prettier-plugin-organize-attributes",
+    "prettier-plugin-tailwindcss"
   ],
   "importOrder": [
     "^react$",

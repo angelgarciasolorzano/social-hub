@@ -41,7 +41,7 @@ export default function SettingLayout({ children }: PropsWithChildren) {
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col p-4 pt-0">{children}</div>
+        <div className="m-4 flex flex-1 flex-col p-4 pt-0">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
