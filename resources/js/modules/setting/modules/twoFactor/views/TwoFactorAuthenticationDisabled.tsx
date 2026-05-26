@@ -4,9 +4,9 @@ import { Form } from "@inertiajs/react";
 
 import {
   CircleCheck,
-  Clock,
   Info,
   LockKeyhole,
+  ShieldAlert,
   ShieldCheck,
   SquareArrowOutUpRight,
 } from "lucide-react";
@@ -14,6 +14,7 @@ import {
 import { enable } from "@/shared/wayfinder/routes/two-factor";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
+import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
@@ -59,7 +60,7 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
     <div className="flex flex-col gap-6">
       <div className="flex gap-6">
         <div className="flex flex-col gap-8">
-          <TwoFactorTitle />
+          <TwoFactorTitle setShowSetupModal={setShowSetupModal} hasSetupData={hasSetupData} />
           <TwoFactorInfoBanner />
           <TwoFactorBenefit />
           <TwoFactorImportantDetails />
@@ -72,7 +73,7 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
         </div>
       </div>
 
-      <TwoFactorActivationForm hasSetupData={hasSetupData} setShowSetupModal={setShowSetupModal} />
+      <TwoFactorActivationForm />
 
       <TwoFactorSetupModal
         onClose={onClose}
@@ -89,20 +90,53 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
   );
 }
 
-function TwoFactorTitle() {
+type TwoFactorTitleProps = Pick<
+  TwoFactorAuthenticationDisabledProps,
+  "setShowSetupModal" | "hasSetupData"
+>;
+
+function TwoFactorTitle({ setShowSetupModal, hasSetupData }: TwoFactorTitleProps) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="rounded-3xl bg-green-100/50 p-2 dark:bg-green-900/20">
-        <ShieldCheck className="h-12 w-12 text-green-700 dark:text-green-500" />
+    <div className="flex items-center gap-24 rounded-md border border-violet-200 bg-violet-300/5 p-8 shadow-sm dark:border-violet-500/20 dark:bg-violet-900/5">
+      <div className="flex items-start gap-4">
+        <div className="rounded-3xl bg-violet-100/50 p-2 dark:bg-violet-900/20">
+          <ShieldCheck className="h-12 w-12 text-violet-700 dark:text-violet-500" />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-semibold">Autenticación de dos factores (2FA)</h2>
+
+          <p className="text-sm text-muted-foreground">
+            Añade una capa adicional de seguridad a tu cuenta. Con 2FA, además de tu contraseña, se
+            te solicitará un código único para verificar tu identidad.
+          </p>
+
+          <Badge variant="destructive" className="inline-flex">
+            <ShieldAlert />
+            Desactivado
+          </Badge>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-xl font-semibold">Autenticación de dos factores (2FA)</h2>
-
-        <p className="text-sm text-muted-foreground">
-          Añade una capa adicional de seguridad a tu cuenta. Con 2FA, además de tu contraseña, se te
-          solicitará un código único para verificar tu identidad.
-        </p>
+      <div>
+        {hasSetupData ? (
+          <Button onClick={() => setShowSetupModal(true)} className="cursor-pointer">
+            <ShieldCheck />
+            Continuar configuración
+          </Button>
+        ) : (
+          <Form
+            {...enable.form()}
+            onSuccess={() => setShowSetupModal(true)}
+            className="cursor-pointer"
+          >
+            {({ processing }) => (
+              <Button type="submit" className="cursor-pointer" disabled={processing}>
+                Activar 2FA
+              </Button>
+            )}
+          </Form>
+        )}
       </div>
     </div>
   );
@@ -179,41 +213,14 @@ function TwoFactorImportantDetails() {
   );
 }
 
-type TwoFactorActivationFormProps = Pick<
-  TwoFactorAuthenticationDisabledProps,
-  "hasSetupData" | "setShowSetupModal"
->;
-
-function TwoFactorActivationForm({
-  hasSetupData,
-  setShowSetupModal,
-}: TwoFactorActivationFormProps) {
+function TwoFactorActivationForm() {
   return (
     <div className="flex items-center justify-between rounded-md border p-6 shadow-sm">
-      <div className="flex items-center gap-6">
-        {hasSetupData ? (
-          <Button onClick={() => setShowSetupModal(true)} className="cursor-pointer">
-            <ShieldCheck />
-            Continuar configuración
-          </Button>
-        ) : (
-          <Form
-            {...enable.form()}
-            onSuccess={() => setShowSetupModal(true)}
-            className="cursor-pointer"
-          >
-            {({ processing }) => (
-              <Button type="submit" className="cursor-pointer" disabled={processing}>
-                Activar 2FA
-              </Button>
-            )}
-          </Form>
-        )}
+      <div className="flex items-center gap-2 text-sm">
+        <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+        <span className="text-muted-foreground">¿Tienes dudas?</span>
 
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Te tomara menos de 2 minutos</span>
-        </div>
+        <span className="font-medium text-blue-700 dark:text-blue-500">Consulta nuestros FAQ</span>
       </div>
 
       <div className="flex items-center gap-2">
