@@ -18,6 +18,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
+import { OptionCard } from "../components/OptionCard";
 import Timeline from "../components/Timeline";
 import TwoFactorSetupModal from "../components/TwoFactorSetupModal";
 import {
@@ -62,7 +63,7 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
         <div className="flex flex-col gap-8">
           <TwoFactorTitle setShowSetupModal={setShowSetupModal} hasSetupData={hasSetupData} />
           <TwoFactorInfoBanner />
-          <TwoFactorBenefit />
+          <OptionCard options={twoFactorBenefits} />
           <TwoFactorImportantDetails />
         </div>
 
@@ -151,34 +152,6 @@ function TwoFactorInfoBanner() {
         Puedes obtenerlo desde una aplicación compatible con TOTP en tu teléfono.
       </AlertDescription>
     </Alert>
-  );
-}
-
-function TwoFactorBenefit() {
-  return (
-    <div className="flex flex-col gap-5">
-      <h3 className="text-lg font-semibold">Beneficios de activar 2FA</h3>
-
-      <div className="flex items-stretch gap-4">
-        {twoFactorBenefits.map((benefit) => {
-          const Icon = benefit.icon;
-
-          return (
-            <div key={benefit.key} className="flex flex-1 gap-4 rounded-md border p-4 shadow-sm">
-              <div className={`flex h-12 w-12 shrink-0 rounded-md p-2 ${benefit.iconBgColor}`}>
-                <Icon className={`h-8 w-8 ${benefit.iconColor}`} />
-              </div>
-
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-medium">{benefit.title}</h4>
-
-                <p className="text-sm text-muted-foreground">{benefit.description}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 
