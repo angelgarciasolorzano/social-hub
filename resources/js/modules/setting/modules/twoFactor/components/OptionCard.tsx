@@ -5,8 +5,8 @@ import { cn } from "@/shared/lib/utils";
 
 import colorHoverMap from "../utils/colorHoverMap";
 
-export interface Option {
-  key: string;
+export interface Option<TKey extends string = string> {
+  key: TKey;
   title: string;
   description: string;
   icon: LucideIcon;
@@ -14,17 +14,17 @@ export interface Option {
   iconColor: string;
 }
 
-interface OptionCardProps {
-  options: Option[];
+interface OptionCardProps<TKey extends string = string> {
+  options: Option<TKey>[];
   title?: string;
-  onOptionClick?: (optionKey: string) => void;
+  onOptionClick?: (optionKey: TKey) => void;
 }
 
-export function OptionCard({
+export function OptionCard<TKey extends string = string>({
   options,
   title = "Beneficios de activar 2FA",
   onOptionClick,
-}: OptionCardProps) {
+}: OptionCardProps<TKey>) {
   const hasAction = !!onOptionClick;
 
   return (

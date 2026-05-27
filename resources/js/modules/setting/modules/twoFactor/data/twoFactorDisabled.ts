@@ -7,21 +7,12 @@ import {
   OnePasswordDark,
   OnePasswordLight,
 } from "@ridemountainpig/svgl-react";
-import type { LucideIcon } from "lucide-react";
 import { KeyRound, LockKeyhole, MonitorSmartphone, ShieldCheck, Star } from "lucide-react";
 
+import type { Option } from "../components/OptionCard";
 import type { Step } from "../components/Timeline";
 
-interface TwoFactorBenefit {
-  key: string;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  iconBgColor: string;
-  iconColor: string;
-}
-
-export const twoFactorBenefits: TwoFactorBenefit[] = [
+export const twoFactorBenefits: Option[] = [
   {
     key: "security",
     title: "Mas seguridad",
@@ -48,7 +39,7 @@ export const twoFactorBenefits: TwoFactorBenefit[] = [
   },
 ];
 
-type TwoFactorImportantDetail = TwoFactorBenefit;
+type TwoFactorImportantDetail = Option;
 
 export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
   {
@@ -110,7 +101,7 @@ export const twoFactorOperationSteps: TwoFactorOperationStep[] = [
   },
 ];
 
-type TwoFactorRequirement = Pick<TwoFactorBenefit, "description" | "key">;
+type TwoFactorRequirement = Pick<Option, "description" | "key">;
 
 export const twoFactorRequirements: TwoFactorRequirement[] = [
   {
