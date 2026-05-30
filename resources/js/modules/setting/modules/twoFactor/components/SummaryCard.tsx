@@ -6,6 +6,8 @@ import type { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Separator } from "@/shared/components/ui/separator";
 
+import { cn } from "@/shared/lib";
+
 type BadgeVariant =
   | "default"
   | "destructive"
@@ -52,7 +54,9 @@ function SummaryCard({ title, showLastSeparator, data, renderAction }: SummaryCa
 
           return (
             <Fragment key={summary.key}>
-              <div className="flex items-center gap-4">
+              <div
+                className={cn("flex items-center gap-4", !summary.action && !renderAction && "p-2")}
+              >
                 <div className={`flex h-12 w-12 rounded-md p-2 ${summary.iconBgColor}`}>
                   <Icon className={`h-8 w-8 ${summary.iconColor}`} />
                 </div>

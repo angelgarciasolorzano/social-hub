@@ -19,6 +19,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
 import { OptionCard } from "../components/OptionCard";
+import SummaryCard from "../components/SummaryCard";
 import Timeline from "../components/Timeline";
 import TwoFactorSetupModal from "../components/TwoFactorSetupModal";
 import {
@@ -64,7 +65,7 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
           <TwoFactorTitle setShowSetupModal={setShowSetupModal} hasSetupData={hasSetupData} />
           <TwoFactorInfoBanner />
           <OptionCard options={twoFactorBenefits} />
-          <TwoFactorImportantDetails />
+          <SummaryCard title="Detalles importantes" data={twoFactorImportantDetails} />
         </div>
 
         <div className="flex flex-col gap-6">
@@ -145,44 +146,13 @@ function TwoFactorTitle({ setShowSetupModal, hasSetupData }: TwoFactorTitleProps
 
 function TwoFactorInfoBanner() {
   return (
-    <Alert className="border-blue-100 bg-blue-300/10 dark:border-blue-500/30 dark:bg-blue-500/10">
+    <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
       <Info />
       <AlertTitle>Este PIN se solicitará cada vez que inicies sesión.</AlertTitle>
       <AlertDescription>
         Puedes obtenerlo desde una aplicación compatible con TOTP en tu teléfono.
       </AlertDescription>
     </Alert>
-  );
-}
-
-function TwoFactorImportantDetails() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Detalles importantes</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-4">
-          {twoFactorImportantDetails.map((detail) => {
-            const Icon = detail.icon;
-
-            return (
-              <div key={detail.key} className="flex gap-4 p-2">
-                <div className={`flex h-12 w-12 rounded-md p-2 ${detail.iconBgColor}`}>
-                  <Icon className={`h-8 w-8 ${detail.iconColor}`} />
-                </div>
-
-                <div className="space-y-1">
-                  <h4 className="text-sm font-medium">{detail.title}</h4>
-
-                  <p className="text-sm text-muted-foreground">{detail.description}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
