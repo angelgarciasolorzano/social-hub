@@ -43,7 +43,7 @@ export function OptionCard<TKey extends string = string>({
               key={option.key}
               onClick={() => hasAction && onOptionClick(option.key)}
               className={cn(
-                "group relative flex flex-1 gap-4 rounded-md border p-4 shadow-sm transition-all",
+                "group flex flex-1 gap-4 rounded-md border p-4 shadow-sm transition-all",
                 hasAction && "cursor-pointer hover:shadow-lg",
                 hasAction && colorHoverMap[colorName],
               )}
@@ -58,12 +58,10 @@ export function OptionCard<TKey extends string = string>({
                 <Icon className={cn("h-8 w-8", option.iconColor)} />
               </div>
 
-              <div className="flex flex-1 flex-col justify-between space-y-0.5">
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-medium">{option.title}</h4>
+              <div className="flex flex-1 flex-col gap-0.5">
+                <h4 className="text-sm font-medium">{option.title}</h4>
 
-                  <p className="text-sm text-muted-foreground">{option.description}</p>
-                </div>
+                <p className="text-sm text-muted-foreground">{option.description}</p>
               </div>
 
               {hasAction && (
