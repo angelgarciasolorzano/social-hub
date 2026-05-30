@@ -9,10 +9,10 @@ import {
 } from "@ridemountainpig/svgl-react";
 import { KeyRound, LockKeyhole, MonitorSmartphone, ShieldCheck, Star } from "lucide-react";
 
-import type { Option } from "../components/OptionCard";
+import type { OptionCardItem } from "../components/OptionCard";
 import type { Step } from "../components/Timeline";
 
-export const twoFactorBenefits: Option[] = [
+export const twoFactorBenefits: OptionCardItem[] = [
   {
     key: "security",
     title: "Mas seguridad",
@@ -39,7 +39,7 @@ export const twoFactorBenefits: Option[] = [
   },
 ];
 
-type TwoFactorImportantDetail = Option;
+type TwoFactorImportantDetail = OptionCardItem;
 
 export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
   {
@@ -101,7 +101,7 @@ export const twoFactorOperationSteps: TwoFactorOperationStep[] = [
   },
 ];
 
-type TwoFactorRequirement = Pick<Option, "description" | "key">;
+type TwoFactorRequirement = Pick<OptionCardItem, "description" | "key">;
 
 export const twoFactorRequirements: TwoFactorRequirement[] = [
   {

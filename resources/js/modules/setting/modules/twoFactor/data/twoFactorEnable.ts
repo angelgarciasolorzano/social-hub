@@ -7,7 +7,7 @@ import {
   TableOfContents,
 } from "lucide-react";
 
-import type { Option } from "../components/OptionCard";
+import type { OptionCardItem } from "../components/OptionCard";
 
 export const twoFactorSecurityOptionsKey = {
   backupCodes: "backup-codes",
@@ -18,7 +18,7 @@ export const twoFactorSecurityOptionsKey = {
 export type TwoFactorSecurityOptionKey =
   (typeof twoFactorSecurityOptionsKey)[keyof typeof twoFactorSecurityOptionsKey];
 
-export const twoFactorSecurityOptions: Option<TwoFactorSecurityOptionKey>[] = [
+export const twoFactorSecurityOptions: OptionCardItem<TwoFactorSecurityOptionKey>[] = [
   {
     key: twoFactorSecurityOptionsKey.backupCodes,
     title: "Códigos de respaldo",
@@ -45,7 +45,7 @@ export const twoFactorSecurityOptions: Option<TwoFactorSecurityOptionKey>[] = [
   },
 ];
 
-type TwoFactorSafetyTip = Pick<Option, "key" | "title" | "description" | "icon">;
+type TwoFactorSafetyTip = Pick<OptionCardItem, "key" | "title" | "description" | "icon">;
 
 export const twoFactorSafetyTips: TwoFactorSafetyTip[] = [
   {

@@ -5,7 +5,7 @@ import { cn } from "@/shared/lib/utils";
 
 import colorHoverMap from "../utils/colorHoverMap";
 
-export interface Option<TKey extends string = string> {
+export interface OptionCardItem<TKey extends string = string> {
   key: TKey;
   title: string;
   description: string;
@@ -15,7 +15,7 @@ export interface Option<TKey extends string = string> {
 }
 
 interface OptionCardProps<TKey extends string = string> {
-  options: Option<TKey>[];
+  options: OptionCardItem<TKey>[];
   title?: string;
   onOptionClick?: (optionKey: TKey) => void;
 }
