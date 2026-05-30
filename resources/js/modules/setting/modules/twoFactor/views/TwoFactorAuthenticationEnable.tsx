@@ -1,0 +1,319 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Bolt,
+  ChevronDown,
+  ChevronRight,
+  ClipboardCheck,
+  Clock4,
+  Info,
+  Key,
+  MonitorSmartphone,
+  ShieldCheck,
+} from "lucide-react";
+import { Fragment } from "react/jsx-runtime";
+
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Progress } from "@/shared/components/ui/progress";
+import { Separator } from "@/shared/components/ui/separator";
+
+import { cn } from "@/shared/lib";
+
+import { OptionCard } from "../components/OptionCard";
+import TwoFactorBackupCodes from "../components/TwoFactorBackupCodes";
+import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
+import {
+  twoFactorSafetyTips,
+  twoFactorSecurityOptions,
+  twoFactorSecurityOptionsKey,
+} from "../data/twoFactorEnable";
+
+function TwoFactorAuthenticationEnable() {
+  // Handler que recibe la key del card clickeado
+  const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
+    switch (optionKey) {
+      case twoFactorSecurityOptionsKey.backupCodes:
+        console.log("Mostrando códigos de respaldo...");
+        // Aquí podrías abrir un modal, hacer una petición, etc.
+        // Por ejemplo: setShowBackupCodesModal(true);
+        break;
+
+      case twoFactorSecurityOptionsKey.regenerateCodes:
+        console.log("Regenerando códigos...");
+        // Aquí podrías mostrar un diálogo de confirmación
+        // Por ejemplo: if (confirm("¿Seguro?")) { regenerateCodes(); }
+        break;
+
+      case twoFactorSecurityOptionsKey.disable2FA:
+        console.log("Desactivando 2FA...");
+        // Aquí podrías mostrar un modal de confirmación
+        // Por ejemplo: setShowDisable2FAModal(true);
+        break;
+
+      default:
+        console.log("Acción no reconocida:", optionKey);
+    }
+  };
+
+  return (
+    <div className="flex gap-4">
+      <div className="flex flex-col gap-8">
+        <TwoFactorTitle />
+
+        <OptionCard
+          title="Opciones de seguridad"
+          options={twoFactorSecurityOptions}
+          onOptionClick={handleSecurityOptionClick}
+        />
+
+        <TwoFactorSecuritySummary />
+
+        <TwoFactorSafatyTips />
+      </div>
+
+      <div>
+        <TwoFactorBackupCodes />
+      </div>
+    </div>
+  );
+}
+
+function TwoFactorTitle() {
+  return (
+    <div className="flex items-start gap-6 rounded-md border border-green-200 bg-green-300/5 p-8 shadow-sm dark:border-green-500/20 dark:bg-green-900/5">
+      <div className="rounded-3xl bg-green-200/50 p-2 dark:bg-green-900/20">
+        <ShieldCheck className="h-12 w-12 text-green-700 dark:text-green-500" />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl font-semibold">2FA está activo</h2>
+
+          <p className="text-sm text-muted-foreground">
+            Tu cuenta está protegida con autenticación de dos factores.
+          </p>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+
+            <span className="text-sm text-muted-foreground">
+              <strong>Método: </strong>
+              TOTP (Aplicación)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Clock4 className="h-4 w-4 text-muted-foreground" />
+
+            <span className="text-sm text-muted-foreground">
+              <strong>Última verificación: </strong>
+              hace 2 horas
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <Button variant="outline">
+        <Bolt />
+        Administrar
+        <ChevronDown />
+      </Button>
+    </div>
+  );
+}
+
+type BadgeVariant =
+  | "default"
+  | "destructive"
+  | "link"
+  | "secondary"
+  | "outline"
+  | "ghost"
+  | null
+  | undefined;
+
+type SumarySecurityAction =
+  | { type: "badge"; variant: BadgeVariant; label: string }
+  | { type: "button"; label: string; onClick: () => void }
+  | { type: "progress"; current: number; total: number }
+  | { type: "chevron"; onClick: () => void }
+  | { type: "none" };
+
+interface SumarySecurityItem {
+  key: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  iconBgColor: string;
+  iconColor: string;
+  action: SumarySecurityAction;
+}
+
+function TwoFactorSecuritySummary() {
+  const summarySecurity: SumarySecurityItem[] = [
+    {
+      key: "status-2fa",
+      title: "Estado de 2FA",
+      description: "La autenticación de dos factores está activa en tu cuenta.",
+      icon: ShieldCheck,
+      iconBgColor: "bg-green-100/50 dark:bg-green-900/20",
+      iconColor: "text-green-700 dark:text-green-500",
+      action: { type: "badge", variant: "default", label: "Activado" },
+    },
+    {
+      key: "trusted-devices",
+      title: "Dispositivos de confianza",
+      description: "Has configurado 2 dispositivos de confianza.",
+      icon: MonitorSmartphone,
+      iconBgColor: "bg-violet-100/50 dark:bg-violet-900/20",
+      iconColor: "text-violet-700 dark:text-violet-500",
+      action: {
+        type: "button",
+        label: "Ver dispositivos",
+        onClick: () => console.log("Ver dispositivos de confianza"),
+      },
+    },
+    {
+      key: "backup-codes",
+      title: "Códigos de respaldo",
+      description: "Tienes 5 de 10 códigos disponibles.",
+      icon: Key,
+      iconBgColor: "bg-orange-100/50 dark:bg-orange-900/20",
+      iconColor: "text-orange-700 dark:text-orange-500",
+      action: {
+        type: "progress",
+        current: 5,
+        total: 10,
+      },
+    },
+    {
+      key: "activation-date",
+      title: "Fecha de activación",
+      description: "Activaste 2FA el 15 de marzo 2024, 11:45 AM",
+      icon: Clock4,
+      iconBgColor: "bg-blue-100/50 dark:bg-blue-900/20",
+      iconColor: "text-blue-700 dark:text-blue-500",
+      action: { type: "chevron", onClick: () => console.log("Ver detalles de activación") },
+    },
+  ];
+
+  const renderAction = (action: SumarySecurityAction) => {
+    switch (action.type) {
+      case "badge": {
+        const badgeClassName =
+          action.variant === "default"
+            ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+            : "";
+
+        return (
+          <Badge variant={action.variant} className={cn(badgeClassName)}>
+            {action.label}
+          </Badge>
+        );
+      }
+      case "button":
+        return (
+          <Button className="cursor-pointer gap-2" onClick={action.onClick}>
+            {action.label}
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        );
+      case "progress": {
+        const percentage = (action.current / action.total) * 100;
+
+        return (
+          <div className="flex min-w-50 items-center gap-4">
+            <span className="text-sm whitespace-nowrap text-muted-foreground">
+              {action.current}/{action.total}
+            </span>
+
+            <Progress value={percentage} className="w-full" />
+          </div>
+        );
+      }
+      case "chevron":
+        return (
+          <button
+            onClick={action.onClick}
+            className="cursor-pointer rounded-full p-1 transition-colors hover:bg-accent"
+          >
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+        );
+      case "none":
+        return null;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Resumen de seguridad</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {summarySecurity.map((summary, index) => {
+          const Icon = summary.icon;
+
+          return (
+            <Fragment key={summary.key}>
+              <div className="flex items-center gap-4">
+                <div className={`flex h-12 w-12 rounded-md p-2 ${summary.iconBgColor}`}>
+                  <Icon className={`h-8 w-8 ${summary.iconColor}`} />
+                </div>
+
+                <div className="flex w-full items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium">{summary.title}</h4>
+
+                    <p className="text-sm text-muted-foreground">{summary.description}</p>
+                  </div>
+
+                  <div className="flex items-center">{renderAction(summary.action)}</div>
+                </div>
+              </div>
+
+              {index < summarySecurity.length - 1 && <Separator />}
+            </Fragment>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TwoFactorSafatyTips() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center">
+          <Info className="mr-2 h-6 w-6 text-purple-700 dark:text-purple-500" />
+          Consejos de seguridad
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-1 gap-6">
+        {twoFactorSafetyTips.map((tip) => {
+          const Icon = tip.icon;
+
+          return (
+            <div key={tip.key} className="flex gap-4">
+              <div className="flex h-12 w-12 shrink-0 rounded-md bg-purple-100/50 p-2 dark:bg-purple-900/20">
+                <Icon className="h-8 w-8 text-purple-700 dark:text-purple-500" />
+              </div>
+
+              <div className="flex flex-1 flex-col gap-0.5">
+                <h4 className="text-sm font-medium">{tip.title}</h4>
+
+                <p className="text-sm text-muted-foreground">{tip.description}</p>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default TwoFactorAuthenticationEnable;

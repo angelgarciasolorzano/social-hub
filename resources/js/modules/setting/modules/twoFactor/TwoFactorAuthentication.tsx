@@ -10,6 +10,7 @@ import { useTwoFactorAuth } from "@/shared/hooks";
 
 import TwoFactorRecoveryCodes from "./components/TwoFactorRecoveryCodes";
 import TwoFactorAuthenticationDisabled from "./views/TwoFactorAuthenticationDisabled";
+import TwoFactorAuthenticationEnable from "./views/TwoFactorAuthenticationEnable";
 
 type Props = {
   canManageTwoFactor?: boolean;
@@ -53,7 +54,9 @@ export default function TwoFactorAuthentication({
         <>
           {twoFactorEnabled ? (
             <div className="flex flex-col items-start justify-start space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <TwoFactorAuthenticationEnable />
+
+              {/* <p className="text-sm text-muted-foreground">
                 Se te pedirá que ingreses un PIN seguro y aleatorio durante el inicio de sesión, el
                 cual podrás recuperar desde la aplicación compatible con TOTP en tu teléfono.
               </p>
@@ -77,7 +80,7 @@ export default function TwoFactorAuthentication({
                 errors={errors}
                 fetchRecoveryCodes={fetchRecoveryCodes}
                 recoveryCodesList={recoveryCodesList}
-              />
+              /> */}
             </div>
           ) : (
             <>
