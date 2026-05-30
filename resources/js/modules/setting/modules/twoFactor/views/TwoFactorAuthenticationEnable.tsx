@@ -1,4 +1,3 @@
-import type { LucideIcon } from "lucide-react";
 import {
   Bolt,
   ChevronDown,
@@ -10,17 +9,17 @@ import {
   MonitorSmartphone,
   ShieldCheck,
 } from "lucide-react";
-import { Fragment } from "react/jsx-runtime";
 
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
-import { Separator } from "@/shared/components/ui/separator";
 
 import { cn } from "@/shared/lib";
 
 import { OptionCard } from "../components/OptionCard";
+import type { SumaryCardAction, SumaryCardItem } from "../components/SummaryCard";
+import SummaryCard from "../components/SummaryCard";
 import TwoFactorBackupCodes from "../components/TwoFactorBackupCodes";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
@@ -125,35 +124,8 @@ function TwoFactorTitle() {
   );
 }
 
-type BadgeVariant =
-  | "default"
-  | "destructive"
-  | "link"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | null
-  | undefined;
-
-type SumarySecurityAction =
-  | { type: "badge"; variant: BadgeVariant; label: string }
-  | { type: "button"; label: string; onClick: () => void }
-  | { type: "progress"; current: number; total: number }
-  | { type: "chevron"; onClick: () => void }
-  | { type: "none" };
-
-interface SumarySecurityItem {
-  key: string;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  iconBgColor: string;
-  iconColor: string;
-  action: SumarySecurityAction;
-}
-
 function TwoFactorSecuritySummary() {
-  const summarySecurity: SumarySecurityItem[] = [
+  const summarySecurity: SumaryCardItem[] = [
     {
       key: "status-2fa",
       title: "Estado de 2FA",
@@ -200,7 +172,7 @@ function TwoFactorSecuritySummary() {
     },
   ];
 
-  const renderAction = (action: SumarySecurityAction) => {
+  const renderAction = (action: SumaryCardAction) => {
     switch (action.type) {
       case "badge": {
         const badgeClassName =
@@ -249,38 +221,12 @@ function TwoFactorSecuritySummary() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Resumen de seguridad</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {summarySecurity.map((summary, index) => {
-          const Icon = summary.icon;
-
-          return (
-            <Fragment key={summary.key}>
-              <div className="flex items-center gap-4">
-                <div className={`flex h-12 w-12 rounded-md p-2 ${summary.iconBgColor}`}>
-                  <Icon className={`h-8 w-8 ${summary.iconColor}`} />
-                </div>
-
-                <div className="flex w-full items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-medium">{summary.title}</h4>
-
-                    <p className="text-sm text-muted-foreground">{summary.description}</p>
-                  </div>
-
-                  <div className="flex items-center">{renderAction(summary.action)}</div>
-                </div>
-              </div>
-
-              {index < summarySecurity.length - 1 && <Separator />}
-            </Fragment>
-          );
-        })}
-      </CardContent>
-    </Card>
+    <SummaryCard
+      title="Resumen de seguridad"
+      data={summarySecurity}
+      showLastSeparator
+      renderAction={renderAction}
+    />
   );
 }
 
