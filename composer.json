@@ -17,6 +17,7 @@
         "laravel/tinker": "^3.0.0",
         "laravel/wayfinder": "^0.1.15",
         "nunomaduro/essentials": "^1.2.0",
+        "sandermuller/laravel-fluent-validation": "^1.27",
         "spatie/laravel-medialibrary": "^11.21.0"
     },
     "require-dev": {
