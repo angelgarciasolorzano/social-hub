@@ -15,20 +15,26 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
 
+import { useTwoFactorAuth } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 
 import { OptionCard } from "../components/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/SummaryCard";
 import SummaryCard from "../components/SummaryCard";
 import TwoFactorBackupCodes from "../components/TwoFactorBackupCodes";
+import RegenerateCodesDialog from "../components/twoFactorEnable/RegenerateCodesDialog";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
   twoFactorSafetyTips,
   twoFactorSecurityOptions,
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
+import { useTwoFactorEnable } from "../hooks/useTwoFactorEnable";
 
 function TwoFactorAuthenticationEnable() {
+  const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
+  const { showRegenerateCodesDialog, setShowRegenerateCodesDialog } = useTwoFactorEnable();
   // Handler que recibe la key del card clickeado
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
@@ -39,9 +45,7 @@ function TwoFactorAuthenticationEnable() {
         break;
 
       case twoFactorSecurityOptionsKey.regenerateCodes:
-        console.log("Regenerando códigos...");
-        // Aquí podrías mostrar un diálogo de confirmación
-        // Por ejemplo: if (confirm("¿Seguro?")) { regenerateCodes(); }
+        setShowRegenerateCodesDialog(true);
         break;
 
       case twoFactorSecurityOptionsKey.disable2FA:
@@ -72,8 +76,18 @@ function TwoFactorAuthenticationEnable() {
       </div>
 
       <div>
-        <TwoFactorBackupCodes />
+        <TwoFactorBackupCodes
+          errors={errors}
+          fetchRecoveryCodes={fetchRecoveryCodes}
+          recoveryCodesList={recoveryCodesList}
+        />
       </div>
+
+      <RegenerateCodesDialog
+        isOpen={showRegenerateCodesDialog}
+        setOpen={setShowRegenerateCodesDialog}
+        fetchRecoveryCodes={fetchRecoveryCodes}
+      />
     </div>
   );
 }
