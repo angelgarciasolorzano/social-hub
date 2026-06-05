@@ -70,7 +70,7 @@ function TwoFactorAuthenticationEnable() {
           onOptionClick={handleSecurityOptionClick}
         />
 
-        <TwoFactorSecuritySummary />
+        <TwoFactorSecuritySummary recoveryCodesList={recoveryCodesList} />
 
         <TwoFactorSafatyTips />
       </div>
@@ -138,7 +138,11 @@ function TwoFactorTitle() {
   );
 }
 
-function TwoFactorSecuritySummary() {
+interface TwoFactorSecuritySummaryProps {
+  recoveryCodesList: string[];
+}
+
+function TwoFactorSecuritySummary({ recoveryCodesList }: TwoFactorSecuritySummaryProps) {
   const summarySecurity: SumaryCardItem[] = [
     {
       key: "status-2fa",
@@ -165,14 +169,14 @@ function TwoFactorSecuritySummary() {
     {
       key: "backup-codes",
       title: "Códigos de respaldo",
-      description: "Tienes 5 de 10 códigos disponibles.",
+      description: `Tienes ${recoveryCodesList.length} de 8 códigos disponibles.`,
       icon: Key,
       iconBgColor: "bg-orange-100/50 dark:bg-orange-900/20",
       iconColor: "text-orange-700 dark:text-orange-500",
       action: {
         type: "progress",
-        current: 5,
-        total: 10,
+        current: recoveryCodesList.length,
+        total: 8,
       },
     },
     {

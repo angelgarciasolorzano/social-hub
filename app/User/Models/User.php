@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\Events\RecoveryCodeReplaced;
+use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -95,6 +97,24 @@ class User extends Authenticatable implements HasMedia
             ->useFallbackUrl(self::DEFAULT_COVER_IMAGE_PATH)
             ->useFallbackPath(public_path(self::DEFAULT_COVER_IMAGE_PATH))
             ->singleFile();
+    }
+
+    /**
+     * Replace the given recovery code WITHOUT generating a new one
+     */
+    public function replaceRecoveryCode(string $code): void
+    {
+        $recoveryCodes = $this->recoveryCodes();
+
+        $updatedCodes = array_values(array_filter($recoveryCodes, fn ($recoveryCode) => $recoveryCode !== $code));
+
+        $this->forceFill([
+            'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(
+                json_encode($updatedCodes)
+            ),
+        ])->save();
+
+        event(new RecoveryCodeReplaced($this, $code));
     }
 
     /**
