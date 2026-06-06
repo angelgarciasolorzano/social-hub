@@ -19,12 +19,12 @@ import { useTwoFactorAuth } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 
-import { OptionCard } from "../components/OptionCard";
-import type { SumaryCardAction, SumaryCardItem } from "../components/SummaryCard";
-import SummaryCard from "../components/SummaryCard";
 import DisabledTwoFactorDialog from "../components/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/twoFactorEnable/RegenerateCodesDialog";
 import TwoFactorRecoveryCodes from "../components/twoFactorEnable/TwoFactorRecoveryCodes";
+import { OptionCard } from "../components/ui/OptionCard";
+import type { SumaryCardAction, SumaryCardItem } from "../components/ui/SummaryCard";
+import SummaryCard from "../components/ui/SummaryCard";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
   twoFactorSafetyTips,

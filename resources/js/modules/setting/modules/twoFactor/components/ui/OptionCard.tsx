@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 
 import { cn } from "@/shared/lib/utils";
 
-import colorHoverMap from "../utils/colorHoverMap";
+import colorHoverMap from "../../utils/colorHoverMap";
 
 export interface OptionCardItem<TKey extends string = string> {
   key: TKey;

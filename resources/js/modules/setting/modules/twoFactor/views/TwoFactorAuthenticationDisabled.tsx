@@ -18,10 +18,10 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
-import { OptionCard } from "../components/OptionCard";
-import SummaryCard from "../components/SummaryCard";
-import Timeline from "../components/Timeline";
 import TwoFactorSetupModal from "../components/TwoFactorSetupModal";
+import { OptionCard } from "../components/ui/OptionCard";
+import SummaryCard from "../components/ui/SummaryCard";
+import Timeline from "../components/ui/Timeline";
 import {
   twoFactorBenefits,
   twoFactorImportantDetails,

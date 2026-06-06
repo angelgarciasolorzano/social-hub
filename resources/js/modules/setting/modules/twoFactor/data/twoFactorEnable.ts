@@ -7,7 +7,7 @@ import {
   TableOfContents,
 } from "lucide-react";
 
-import type { OptionCardItem } from "../components/OptionCard";
+import type { OptionCardItem } from "../components/ui/OptionCard";
 
 export const twoFactorSecurityOptionsKey = {
   backupCodes: "backup-codes",

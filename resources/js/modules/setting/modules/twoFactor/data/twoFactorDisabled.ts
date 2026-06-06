@@ -9,8 +9,8 @@ import {
 } from "@ridemountainpig/svgl-react";
 import { KeyRound, LockKeyhole, MonitorSmartphone, ShieldCheck, Star } from "lucide-react";
 
-import type { OptionCardItem } from "../components/OptionCard";
-import type { Step } from "../components/Timeline";
+import type { OptionCardItem } from "../components/ui/OptionCard";
+import type { Step } from "../components/ui/Timeline";
 
 export const twoFactorBenefits: OptionCardItem[] = [
   {
