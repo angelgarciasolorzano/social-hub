@@ -15,8 +15,6 @@ import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Progress } from "@/shared/components/ui/progress";
 
-import { useTwoFactorAuth } from "@/shared/hooks";
-
 import { cn } from "@/shared/lib";
 
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
@@ -31,6 +29,7 @@ import {
   twoFactorSecurityOptions,
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
+import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
 import { useTwoFactorEnable } from "../hooks/useTwoFactorEnable";
 
 function TwoFactorAuthenticationEnable() {

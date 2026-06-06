@@ -27,7 +27,7 @@ import {
 } from "@/shared/components/ui/input-otp";
 import { Spinner } from "@/shared/components/ui/spinner";
 
-import { OTP_MAX_LENGTH } from "@/shared/hooks";
+import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 
 type DisableTwoFactorFormData = {
   password: string;

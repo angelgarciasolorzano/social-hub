@@ -20,7 +20,8 @@ import {
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/input-otp";
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
-import { OTP_MAX_LENGTH } from "@/shared/hooks/useTwoFactorAuth";
+
+import { OTP_MAX_LENGTH } from "../hooks/useTwoFactorAuth";
 
 function GridScanIcon() {
   return (

@@ -2,7 +2,11 @@ import { useCallback, useState } from "react";
 
 import { useHttp } from "@inertiajs/react";
 
-import { qrCode, recoveryCodes, secretKey } from "../wayfinder/routes/two-factor";
+import {
+  qrCode,
+  recoveryCodes,
+  secretKey,
+} from "../../../../../shared/wayfinder/routes/two-factor";
 
 export type UseTwoFactorAuthReturn = {
   qrCodeSvg: string | null;

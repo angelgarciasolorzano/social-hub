@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Head } from "@inertiajs/react";
 
-import { useTwoFactorAuth } from "@/shared/hooks";
-
+import { useTwoFactorAuth } from "./hooks/useTwoFactorAuth";
 import TwoFactorAuthenticationDisabled from "./views/TwoFactorAuthenticationDisabled";
 import TwoFactorAuthenticationEnable from "./views/TwoFactorAuthenticationEnable";
 
