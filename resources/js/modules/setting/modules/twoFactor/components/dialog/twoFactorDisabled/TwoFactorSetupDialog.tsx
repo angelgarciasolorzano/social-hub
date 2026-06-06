@@ -21,7 +21,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/in
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
 
-import { OTP_MAX_LENGTH } from "../hooks/useTwoFactorAuth";
+import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 
 function GridScanIcon() {
   return (
@@ -197,7 +197,7 @@ function TwoFactorVerificationStep({
   );
 }
 
-interface TwoFactorSetupModalProps {
+interface TwoFactorSetupDialogProps {
   clearSetupData: () => void;
   errors: string[];
   fetchSetupData: () => Promise<void>;
@@ -209,7 +209,7 @@ interface TwoFactorSetupModalProps {
   twoFactorEnabled: boolean;
 }
 
-export default function TwoFactorSetupModal({
+export default function TwoFactorSetupDialog({
   clearSetupData,
   errors,
   fetchSetupData,
@@ -219,7 +219,7 @@ export default function TwoFactorSetupModal({
   qrCodeSvg,
   requiresConfirmation,
   twoFactorEnabled,
-}: TwoFactorSetupModalProps) {
+}: TwoFactorSetupDialogProps) {
   const [showVerificationStep, setShowVerificationStep] = useState<boolean>(false);
 
   const modalConfig = useMemo<{

@@ -18,7 +18,7 @@ import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 
-import TwoFactorSetupModal from "../components/TwoFactorSetupModal";
+import TwoFactorSetupDialog from "../components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
 import { OptionCard } from "../components/ui/OptionCard";
 import SummaryCard from "../components/ui/SummaryCard";
 import Timeline from "../components/ui/Timeline";
@@ -64,7 +64,7 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
 
       <TwoFactorActivationForm />
 
-      <TwoFactorSetupModal
+      <TwoFactorSetupDialog
         onClose={() => setShowSetupModal(false)}
         clearSetupData={clearSetupData}
         errors={errors}
