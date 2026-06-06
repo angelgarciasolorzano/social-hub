@@ -8,7 +8,8 @@ import { edit as editPassword } from "@/shared/wayfinder/actions/App/Auth/Passwo
 import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/HomeController";
 import { appearance } from "@/shared/wayfinder/actions/App/User/Controllers/PreferenceController";
 import { edit as editProfile } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
-import { editTwoFactorAuthentication } from "@/shared/wayfinder/actions/App/User/Controllers/SecurityController";
+
+import { index as indexTwoFactorAuthentication } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
 import {
   Sidebar,
@@ -65,7 +66,7 @@ const data = {
         },
         {
           title: "Autenticación en dos pasos",
-          url: editTwoFactorAuthentication.url(),
+          url: indexTwoFactorAuthentication.url(),
         },
       ],
     },

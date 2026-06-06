@@ -9,7 +9,7 @@ Route::prefix('setting')->name('setting.security.')->group(function () {
         ->prefix('two-factor-authentication')
         ->name('two-factor-authentication.')
         ->group(function () {
-            Route::post('', 'index')->name('index');
+            Route::get('', 'index')->name('index');
 
             Route::delete('', 'destroy')->name('destroy');
 

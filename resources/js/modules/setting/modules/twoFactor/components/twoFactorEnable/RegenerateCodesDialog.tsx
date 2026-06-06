@@ -4,7 +4,7 @@ import { useForm } from "@inertiajs/react";
 
 import { AlertTriangleIcon, RefreshCcwDot } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/User/Controllers/TwoFactorRecoveryCodeController";
+import { regenerateRecoveryCodes } from "@/shared/wayfinder/routes/two-factor";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
@@ -42,7 +42,7 @@ function RegenerateCodesDialog({
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
-    submit(store(), {
+    submit(regenerateRecoveryCodes(), {
       onSuccess: () => {
         setOpen(false);
         reset();
@@ -77,7 +77,7 @@ function RegenerateCodesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="my-2 max-w-md border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+        <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
           <AlertTriangleIcon />
           <AlertTitle>Los códigos actuales dejarán de funcionar.</AlertTitle>
           <AlertDescription>
