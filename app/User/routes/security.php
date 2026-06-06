@@ -4,13 +4,15 @@ namespace App\User\Controllers;
 
 use Illuminate\Support\Facades\Route;
 
-Route::controller(SecurityController::class)->prefix('setting')->name('setting.')->group(function () {
-    Route::get('security', 'editTwoFactorAuthentication')->name('security.edit.two-factor-authentication');
-});
+Route::prefix('setting')->name('setting.security.')->group(function () {
+    Route::controller(TwoFactorAuthenticationController::class)
+        ->prefix('two-factor-authentication')
+        ->name('two-factor-authentication.')
+        ->group(function () {
+            Route::post('', 'index')->name('index');
 
-Route::controller(TwoFactorRecoveryCodeController::class)
-    ->prefix('user/two-factor-recovery-codes')
-    ->name('two-factor-recovery-codes.')
-    ->group(function () {
-        Route::post('regenerate', 'store')->name('regenerate');
-    });
+            Route::delete('', 'destroy')->name('destroy');
+
+            Route::post('regenerate-recovery-codes', 'storeRecoveryCodes')->name('store-recovery-codes');
+        });
+});

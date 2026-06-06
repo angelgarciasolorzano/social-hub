@@ -1,6 +1,6 @@
 <?php
 
-namespace App\User\Requests;
+namespace App\User\Requests\TwoFactorAuthentication;
 
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;

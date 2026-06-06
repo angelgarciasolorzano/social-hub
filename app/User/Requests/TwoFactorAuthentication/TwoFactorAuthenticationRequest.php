@@ -1,6 +1,6 @@
 <?php
 
-namespace App\User\Requests;
+namespace App\User\Requests\TwoFactorAuthentication;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
