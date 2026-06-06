@@ -22,7 +22,7 @@ interface TwoFactorRecoveryCodesProps {
   recoveryCodesList: string[];
 }
 
-function TwoFactorBackupCodes(props: TwoFactorRecoveryCodesProps) {
+function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps) {
   const { errors, fetchRecoveryCodes, recoveryCodesList } = props;
 
   useEffect(() => {
@@ -110,4 +110,4 @@ function TwoFactorBackupCodes(props: TwoFactorRecoveryCodesProps) {
   );
 }
 
-export default TwoFactorBackupCodes;
+export default TwoFactorRecoveryCodes;

@@ -22,9 +22,9 @@ import { cn } from "@/shared/lib";
 import { OptionCard } from "../components/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/SummaryCard";
 import SummaryCard from "../components/SummaryCard";
-import TwoFactorBackupCodes from "../components/TwoFactorBackupCodes";
 import DisabledTwoFactor from "../components/twoFactorEnable/DisabledTwoFactor";
 import RegenerateCodesDialog from "../components/twoFactorEnable/RegenerateCodesDialog";
+import TwoFactorRecoveryCodes from "../components/twoFactorEnable/TwoFactorRecoveryCodes";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
   twoFactorSafetyTips,
@@ -80,7 +80,7 @@ function TwoFactorAuthenticationEnable() {
       </div>
 
       <div>
-        <TwoFactorBackupCodes
+        <TwoFactorRecoveryCodes
           errors={errors}
           fetchRecoveryCodes={fetchRecoveryCodes}
           recoveryCodesList={recoveryCodesList}
