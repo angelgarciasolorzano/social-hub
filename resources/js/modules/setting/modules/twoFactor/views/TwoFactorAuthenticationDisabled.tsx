@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction } from "react";
 
 import { Form } from "@inertiajs/react";
 
@@ -29,35 +29,22 @@ import {
   twoFactorRecommendedApps,
   twoFactorRequirements,
 } from "../data/twoFactorDisabled";
+import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
+import { useTwoFactorDisabled } from "../hooks/useTwoFactorDisabled";
 
 interface TwoFactorAuthenticationDisabledProps {
-  hasSetupData: boolean;
-  setShowSetupModal: Dispatch<SetStateAction<boolean>>;
-  clearSetupData: () => void;
-  errors: string[];
-  fetchSetupData: () => Promise<void>;
-  isOpen: boolean;
-  manualSetupKey: string | null;
-  onClose: () => void;
-  qrCodeSvg: string | null;
   requiresConfirmation: boolean;
   twoFactorEnabled: boolean;
 }
 
 function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledProps) {
-  const {
-    hasSetupData,
-    setShowSetupModal,
-    clearSetupData,
-    errors,
-    fetchSetupData,
-    isOpen,
-    manualSetupKey,
-    onClose,
-    qrCodeSvg,
-    requiresConfirmation,
-    twoFactorEnabled,
-  } = props;
+  const { requiresConfirmation, twoFactorEnabled } = props;
+
+  const { qrCodeSvg, hasSetupData, manualSetupKey, clearSetupData, fetchSetupData, errors } =
+    useTwoFactorAuth();
+
+  const { showSetupModal, setShowSetupModal } = useTwoFactorDisabled();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex gap-6">
@@ -78,11 +65,11 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
       <TwoFactorActivationForm />
 
       <TwoFactorSetupModal
-        onClose={onClose}
+        onClose={() => setShowSetupModal(false)}
         clearSetupData={clearSetupData}
         errors={errors}
         fetchSetupData={fetchSetupData}
-        isOpen={isOpen}
+        isOpen={showSetupModal}
         manualSetupKey={manualSetupKey}
         qrCodeSvg={qrCodeSvg}
         requiresConfirmation={requiresConfirmation}
@@ -92,10 +79,10 @@ function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledP
   );
 }
 
-type TwoFactorTitleProps = Pick<
-  TwoFactorAuthenticationDisabledProps,
-  "setShowSetupModal" | "hasSetupData"
->;
+interface TwoFactorTitleProps {
+  hasSetupData: boolean;
+  setShowSetupModal: Dispatch<SetStateAction<boolean>>;
+}
 
 function TwoFactorTitle({ setShowSetupModal, hasSetupData }: TwoFactorTitleProps) {
   return (
