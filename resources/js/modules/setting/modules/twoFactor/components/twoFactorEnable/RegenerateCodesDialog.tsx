@@ -4,7 +4,7 @@ import { useForm } from "@inertiajs/react";
 
 import { AlertTriangleIcon, RefreshCcwDot } from "lucide-react";
 
-import { regenerateRecoveryCodes } from "@/shared/wayfinder/routes/two-factor";
+import { storeRecoveryCodes } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
@@ -42,7 +42,7 @@ function RegenerateCodesDialog({
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
-    submit(regenerateRecoveryCodes(), {
+    submit(storeRecoveryCodes(), {
       onSuccess: () => {
         setOpen(false);
         reset();
