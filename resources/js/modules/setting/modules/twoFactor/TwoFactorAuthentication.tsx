@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Form, Head } from "@inertiajs/react";
-
-import { disable } from "@/shared/wayfinder/routes/two-factor";
-
-import { Button } from "@/shared/components/ui/button";
+import { Head } from "@inertiajs/react";
 
 import { useTwoFactorAuth } from "@/shared/hooks";
 
-import TwoFactorRecoveryCodes from "./components/TwoFactorRecoveryCodes";
 import TwoFactorAuthenticationDisabled from "./views/TwoFactorAuthenticationDisabled";
 import TwoFactorAuthenticationEnable from "./views/TwoFactorAuthenticationEnable";
 
-type Props = {
+interface Props {
   canManageTwoFactor?: boolean;
   requiresConfirmation?: boolean;
   twoFactorEnabled?: boolean;
-};
+}
 
 export default function TwoFactorAuthentication({
   canManageTwoFactor = false,
@@ -30,8 +25,6 @@ export default function TwoFactorAuthentication({
     clearSetupData,
     clearTwoFactorAuthData,
     fetchSetupData,
-    recoveryCodesList,
-    fetchRecoveryCodes,
     errors,
   } = useTwoFactorAuth();
 
@@ -53,35 +46,7 @@ export default function TwoFactorAuthentication({
       {canManageTwoFactor && (
         <>
           {twoFactorEnabled ? (
-            <div className="flex flex-col items-start justify-start space-y-4">
-              <TwoFactorAuthenticationEnable />
-
-              {/* <p className="text-sm text-muted-foreground">
-                Se te pedirá que ingreses un PIN seguro y aleatorio durante el inicio de sesión, el
-                cual podrás recuperar desde la aplicación compatible con TOTP en tu teléfono.
-              </p>
-
-              <div className="relative inline">
-                <Form {...disable.form()}>
-                  {({ processing }) => (
-                    <Button
-                      type="submit"
-                      className="cursor-pointer"
-                      disabled={processing}
-                      variant="destructive"
-                    >
-                      Desactivar 2FA
-                    </Button>
-                  )}
-                </Form>
-              </div>
-
-              <TwoFactorRecoveryCodes
-                errors={errors}
-                fetchRecoveryCodes={fetchRecoveryCodes}
-                recoveryCodesList={recoveryCodesList}
-              /> */}
-            </div>
+            <TwoFactorAuthenticationEnable />
           ) : (
             <>
               <TwoFactorAuthenticationDisabled

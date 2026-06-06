@@ -23,6 +23,7 @@ import { OptionCard } from "../components/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/SummaryCard";
 import SummaryCard from "../components/SummaryCard";
 import TwoFactorBackupCodes from "../components/TwoFactorBackupCodes";
+import DisabledTwoFactor from "../components/twoFactorEnable/DisabledTwoFactor";
 import RegenerateCodesDialog from "../components/twoFactorEnable/RegenerateCodesDialog";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
@@ -34,7 +35,12 @@ import { useTwoFactorEnable } from "../hooks/useTwoFactorEnable";
 
 function TwoFactorAuthenticationEnable() {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
-  const { showRegenerateCodesDialog, setShowRegenerateCodesDialog } = useTwoFactorEnable();
+  const {
+    showRegenerateCodesDialog,
+    setShowRegenerateCodesDialog,
+    showDisabledTwoFactorDialog,
+    setShowDisabledTwoFactorDialog,
+  } = useTwoFactorEnable();
   // Handler que recibe la key del card clickeado
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
@@ -49,9 +55,7 @@ function TwoFactorAuthenticationEnable() {
         break;
 
       case twoFactorSecurityOptionsKey.disable2FA:
-        console.log("Desactivando 2FA...");
-        // Aquí podrías mostrar un modal de confirmación
-        // Por ejemplo: setShowDisable2FAModal(true);
+        setShowDisabledTwoFactorDialog(true);
         break;
 
       default:
@@ -87,6 +91,11 @@ function TwoFactorAuthenticationEnable() {
         isOpen={showRegenerateCodesDialog}
         setOpen={setShowRegenerateCodesDialog}
         fetchRecoveryCodes={fetchRecoveryCodes}
+      />
+
+      <DisabledTwoFactor
+        isOpen={showDisabledTwoFactorDialog}
+        setOpen={setShowDisabledTwoFactorDialog}
       />
     </div>
   );
