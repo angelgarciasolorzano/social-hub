@@ -22,7 +22,7 @@ import { cn } from "@/shared/lib";
 import { OptionCard } from "../components/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/SummaryCard";
 import SummaryCard from "../components/SummaryCard";
-import DisabledTwoFactor from "../components/twoFactorEnable/DisabledTwoFactor";
+import DisabledTwoFactorDialog from "../components/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/twoFactorEnable/RegenerateCodesDialog";
 import TwoFactorRecoveryCodes from "../components/twoFactorEnable/TwoFactorRecoveryCodes";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
@@ -93,7 +93,7 @@ function TwoFactorAuthenticationEnable() {
         fetchRecoveryCodes={fetchRecoveryCodes}
       />
 
-      <DisabledTwoFactor
+      <DisabledTwoFactorDialog
         isOpen={showDisabledTwoFactorDialog}
         setOpen={setShowDisabledTwoFactorDialog}
       />

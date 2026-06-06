@@ -34,12 +34,12 @@ type DisableTwoFactorFormData = {
   code: string;
 };
 
-interface DisableTwoFactorProps {
+interface DisableTwoFactorDialogProps {
   isOpen: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function DisabledTwoFactor({ isOpen, setOpen }: DisableTwoFactorProps) {
+function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps) {
   const { data, setData, processing, errors, reset, submit } = useForm<DisableTwoFactorFormData>({
     password: "",
     code: "",
@@ -173,4 +173,4 @@ function DisabledTwoFactor({ isOpen, setOpen }: DisableTwoFactorProps) {
   );
 }
 
-export default DisabledTwoFactor;
+export default DisabledTwoFactorDialog;
