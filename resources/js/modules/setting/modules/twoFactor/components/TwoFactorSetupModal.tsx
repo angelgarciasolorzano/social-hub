@@ -227,15 +227,6 @@ export default function TwoFactorSetupModal({
     description: string;
     buttonText: string;
   }>(() => {
-    if (twoFactorEnabled) {
-      return {
-        buttonText: "Cerrar",
-        description:
-          "La autenticación de dos factores ya está habilitada. Escanea el código QR o introduce la clave de configuración en tu app de autenticación.",
-        title: "Two-Factor Authentication Habilitada",
-      };
-    }
-
     if (showVerificationStep) {
       return {
         buttonText: "Continuar",
@@ -250,7 +241,7 @@ export default function TwoFactorSetupModal({
         "Para terminar de habilitar la autenticación de dos factores, escanee el código QR o ingrese la clave de configuración en su aplicación de autenticación.",
       title: "Habilitar Two-Factor Authentication",
     };
-  }, [twoFactorEnabled, showVerificationStep]);
+  }, [showVerificationStep]);
 
   const handleModalNextStep = useCallback(() => {
     if (requiresConfirmation) {
