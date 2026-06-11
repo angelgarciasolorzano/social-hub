@@ -9,21 +9,31 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "inertiajs/inertia-laravel": "^2.0",
-        "laravel/fortify": "^1.30",
-        "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1",
-        "laravel/wayfinder": "^0.1.9"
+        "php": "^8.5",
+        "inertiajs/inertia-laravel": "^3.0.6",
+        "laravel/fortify": "^1.36.2",
+        "laravel/framework": "^13.4.0",
+        "laravel/reverb": "^1.10.0",
+        "laravel/tinker": "^3.0.0",
+        "laravel/wayfinder": "^0.1.15",
+        "nunomaduro/essentials": "^1.2.0",
+        "sandermuller/laravel-fluent-validation": "^1.27",
+        "spatie/laravel-medialibrary": "^11.21.0"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.23",
-        "laravel/pail": "^1.2.2",
-        "laravel/pint": "^1.18",
-        "laravel/sail": "^1.41",
-        "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
-        "phpunit/phpunit": "^11.5.3"
+        "barryvdh/laravel-ide-helper": "^3.7",
+        "driftingly/rector-laravel": "^2.2",
+        "fakerphp/faker": "^1.24.1",
+        "fruitcake/laravel-debugbar": "^4.2.2",
+        "larastan/larastan": "^3.9.3",
+        "laravel/boost": "^2.4.1",
+        "laravel/pail": "^1.2.6",
+        "laravel/pao": "^1.0",
+        "laravel/pint": "^1.29.0",
+        "laravel/sail": "^1.56.0",
+        "mockery/mockery": "^1.6.12",
+        "nunomaduro/collision": "^8.9",
+        "phpunit/phpunit": "^13.0.6"
     },
     "autoload": {
         "psr-4": {
@@ -38,12 +48,21 @@
         }
     },
     "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install",
+            "npm run build"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan boost:update --ansi"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -57,15 +76,29 @@
             "Composer\\Config::disableProcessTimeout",
             "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
         ],
-        "dev:ssr": [
-            "npm run build:ssr",
-            "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan inertia:start-ssr\" --names=server,queue,logs,ssr --kill-others"
-        ],
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
-        ]
+        ],
+        "ide-helper": [
+            "@php artisan ide-helper:generate",
+            "@php artisan ide-helper:models -RM"
+        ],
+        "pint": "vendor/bin/pint",
+        "pint-dirty": "vendor/bin/pint --dirty",
+        "larastan": "vendor/bin/phpstan analyse --memory-limit=2G",
+        "rector": "vendor/bin/rector process",
+        "rector:dry": "vendor/bin/rector process --dry-run"
+    },
+    "script-descriptions": {
+        "dev": "Start the development environment with hot reloading and concurrent processes.",
+        "test": "Run the test suite.",
+        "pint": "Run Laravel Pint to check code style.",
+        "pint-dirty": "Run Laravel Pint only on changed files.",
+        "larastan": "Run Larastan for static analysis of the codebase.",
+        "rector": "Run Rector to automatically refactor code.",
+        "rector:dry": "Run Rector in dry-run mode to see potential changes without applying them.",
+        "ide-helper": "Generate IDE helper files for better autocompletion."
     },
     "extra": {
         "laravel": {

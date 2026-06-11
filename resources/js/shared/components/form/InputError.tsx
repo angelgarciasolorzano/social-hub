@@ -1,0 +1,17 @@
+import { type HTMLAttributes } from "react";
+
+import { cn } from "@/shared/lib";
+
+function InputError({
+  className = "",
+  message,
+  ...props
+}: HTMLAttributes<HTMLParagraphElement> & { message?: string | undefined }) {
+  return message ? (
+    <p {...props} className={cn("text-sm text-red-600 dark:text-red-400", className)}>
+      {message}
+    </p>
+  ) : null;
+}
+
+export default InputError;

@@ -1,0 +1,29 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/nesbot/carbon/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - app
+        - bootstrap
+        - database
+        - routes
+
+    tmpDir: storage/phpstan
+
+    checkAuthCallsWhenInRequestScope: true
+    checkBenevolentUnionTypes: true
+    checkConfigTypes: true
+    checkModelProperties: true
+    checkOctaneCompatibility: true
+    noEnvCallsOutsideOfConfig: true
+    noUnnecessaryEnumerableToArrayCalls: true
+
+    scanFiles:
+        - _ide_helper_models.php
+
+    excludePaths:
+        analyse:
+            - bootstrap/cache
+            - app/Http/Middleware/HandleInertiaRequests.php

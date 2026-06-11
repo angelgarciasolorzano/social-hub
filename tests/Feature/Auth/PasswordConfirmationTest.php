@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\User;
+use App\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -13,11 +13,12 @@ class PasswordConfirmationTest extends TestCase
 
     public function test_confirm_password_screen_can_be_rendered()
     {
-        $user = User::factory()->create();
+        /** @var User $user */
+        $user = User::factory()->createOne();
 
         $response = $this->actingAs($user)->get(route('password.confirm'));
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         $response->assertInertia(fn (Assert $page) => $page
             ->component('auth/confirm-password')
@@ -29,5 +30,20 @@ class PasswordConfirmationTest extends TestCase
         $response = $this->get(route('password.confirm'));
 
         $response->assertRedirect(route('login'));
+    }
+
+    public function test_confirm_password_screen_redirects_to_the_last_intended_page_when_password_is_still_confirmed()
+    {
+        /** @var User $user */
+        $user = User::factory()->createOne();
+
+        $response = $this->actingAs($user)
+            ->withSession([
+                'auth.password_confirmed_at' => time(),
+                'auth.password_confirmation_redirect' => route('two-factor.show', absolute: false),
+            ])
+            ->get(route('password.confirm'));
+
+        $response->assertRedirect(route('two-factor.show', absolute: false));
     }
 }

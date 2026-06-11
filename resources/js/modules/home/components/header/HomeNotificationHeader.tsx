@@ -1,0 +1,19 @@
+import { IoIosNotificationsOutline } from "react-icons/io";
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
+
+function HomeNotificationHeader() {
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <IoIosNotificationsOutline className="h-8 w-8 cursor-pointer text-gray-600" />
+        </TooltipTrigger>
+
+        <TooltipContent>Notificaciones</TooltipContent>
+      </Tooltip>
+    </>
+  );
+}
+
+export default HomeNotificationHeader;

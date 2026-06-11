@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Models\User;
+use App\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,7 +18,9 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->get(route('profile.edit'));
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertSee('resources/js/modules/profile/Profile.tsx', false);
     }
 
     public function test_profile_information_can_be_updated()

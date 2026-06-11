@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "skills": {
+    "chrome-extensions": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/chrome-extensions/SKILL.md",
+      "computedHash": "1aaf29f8efed83acd69e33bec79fb69a0cb7a8e4c0a5a43328c9182cd733b8f9"
+    },
+    "eloquent-best-practices": {
+      "source": "iserter/laravel-claude-agents",
+      "sourceType": "github",
+      "computedHash": "370e1502efc9d179f5df7470a45a10302de81de9cf378641403e4ade9eb7d67f"
+    },
+    "html-semantic-engineering": {
+      "source": "matthewharwood/fantasy-phonics",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/html/SKILL.md",
+      "computedHash": "0c6c28b953dbd794cdfe2c2e54a14eba02e92b9d6bd5bf8a06a15e55620c88cb"
+    },
+    "laravel-architecture": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "7fc262ad5fce956586f7a09313b6e981898b2f142c9e4db4dc4227952d42b782"
+    },
+    "laravel-best-practices": {
+      "source": "asyrafhussin/agent-skills",
+      "sourceType": "github",
+      "computedHash": "82fd2887e1b49b46230325fa16e0a1e4f4d20a9dca7a2cef510d5b26ea3695e7"
+    },
+    "laravel-enums": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "e5df60646a28a2b9eb009f5cda01012b36c557bb65102852998b70f2d84eec9a"
+    },
+    "laravel-inertia-react": {
+      "source": "asyrafhussin/agent-skills",
+      "sourceType": "github",
+      "computedHash": "065829d2ce2e9b97cc2a92721a5c0163532aa5ceae85c743a11ab95a08bac5a4"
+    },
+    "laravel-models": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "7c07107585d47d754463bea92a59c913ecdb77abcd6ad4f4cb82b7351de019ed"
+    },
+    "laravel-specialist": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/laravel-specialist/SKILL.md",
+      "computedHash": "d58e2ed3488398cb94a039f25b9d270e55dc434e16102abff9035608bec3db90"
+    },
+    "laravel-testing": {
+      "source": "leeovery/claude-laravel",
+      "sourceType": "github",
+      "computedHash": "3d7f5629789cc2743146d4430307da7b8207123a28865a69b3b854d158c0cca4"
+    },
+    "laravel:constants-and-configuration": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "9419a6b62795ae7c376ffa9491e8cfba6f03ae2d89ee54e0271d4fdcf1e31d7d"
+    },
+    "laravel:eloquent-relationships": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "881c7413c9f23567606cf9c1fe1d05d7a134fb768f522ba70edb200dcd6f7133"
+    },
+    "laravel:migrations-and-factories": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "54a2dcd29a96f0f2d02ff4f3770b3ab7e652606900793881593c4eb13b85aa13"
+    },
+    "laravel:policies-and-authorization": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "6394260dafa86eca55b80705cd6547856ba28aed9cb4885d973b1f788f10422c"
+    },
+    "laravel:routes-best-practices": {
+      "source": "jpcaparas/superpowers-laravel",
+      "sourceType": "github",
+      "computedHash": "3ba8961bd4d134fca3f3c469ca9d1a1610c921479d1e542edc68e174d46db06f"
+    },
+    "modern-web-guidance": {
+      "source": "GoogleChrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "9f19aa0e3b554d33b2709c66bb16ad342403e323761f62d6665fbb424c23148d"
+    },
+    "php-pro": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "skillPath": "skills/php-pro/SKILL.md",
+      "computedHash": "c163f6d5d26ddbf4a4d79e8dc95d3b41e447f1659486cf0aae8c070d950a9d86"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "computedHash": "873c67922d80775a9fdf596db7964b579f0408c30ec6e3d11989f6055bbec89f"
+    },
+    "spatie-javascript": {
+      "source": "spatie/guidelines-skills",
+      "sourceType": "github",
+      "skillPath": "resources/boost/skills/spatie-javascript/SKILL.md",
+      "computedHash": "faca4e037c93f23d9907523cfa53f4acd320131bae573adf17e41911e7aed27c"
+    },
+    "spatie-laravel-php": {
+      "source": "spatie/guidelines-skills",
+      "sourceType": "github",
+      "skillPath": "resources/boost/skills/spatie-laravel-php/SKILL.md",
+      "computedHash": "9c93332d7f84626db41dee9bf66534209250d99efd08295c8eac422e3a1af178"
+    },
+    "spatie-security": {
+      "source": "spatie/guidelines-skills",
+      "sourceType": "github",
+      "skillPath": "resources/boost/skills/spatie-security/SKILL.md",
+      "computedHash": "a16a04d6eed413355770fe1e81f6776058947ed4b9080c54a12d6b3a0bcc46d3"
+    },
+    "spatie-version-control": {
+      "source": "spatie/guidelines-skills",
+      "sourceType": "github",
+      "skillPath": "resources/boost/skills/spatie-version-control/SKILL.md",
+      "computedHash": "d6417af3a6f55c69e0807464c5ce1f5e18d9476a96a94175179cf2dfee35a063"
+    },
+    "tailwindcss": {
+      "source": "hairyf/skills",
+      "sourceType": "github",
+      "computedHash": "676d95536c3c4a64215535ff09128d6e8d5163eb3fc204ed2cfde61e87b5d892"
+    },
+    "tailwindcss-best-practices": {
+      "source": "biggora/claude-plugins-registry",
+      "sourceType": "github",
+      "computedHash": "f3232875fe708536d4c4f5f7811bc2f1f12d746f4f792114dd5bed72dd095b54"
+    },
+    "tanstack-virtual": {
+      "source": "tanstack-skills/tanstack-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/tanstack-virtual/skills/tanstack-virtual/SKILL.md",
+      "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"
+    },
+    "typescript-advanced": {
+      "source": "pedronauck/skills",
+      "sourceType": "github",
+      "skillPath": "skills/typescript-advanced/SKILL.md",
+      "computedHash": "5e39d1321dd676555c39ddf873ffa2ac605a6de7841f8093f86d53314d36ef3e"
+    },
+    "typescript-best-practices": {
+      "source": "jwynia/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/tech/development/tooling/typescript-best-practices/SKILL.md",
+      "computedHash": "db4675b9948beee1b029809ac861474048ac334c80f6dea60435a96afc122d38"
+    },
+    "typescript-conventions": {
+      "source": "exceptionless/exceptionless",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/typescript-conventions/SKILL.md",
+      "computedHash": "6943b91c2771d4a86e29959035301642f4862fe5a48f8dc68f1431dfb2d1135c"
+    },
+    "ui-ux-design-pro": {
+      "source": "saifyxpro/ui-ux-design-pro-skill",
+      "sourceType": "github",
+      "skillPath": "skills/ui-ux-design-pro/SKILL.md",
+      "computedHash": "78db7907b61510b5d708d4b595a261fc198170bb4b21416ec67e1dd779e64890"
+    }
+  }
+}

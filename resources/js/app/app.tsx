@@ -1,0 +1,53 @@
+import { createInertiaApp } from "@inertiajs/react";
+
+import { configureEcho } from "@laravel/echo-react";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
+import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
+
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
+
+import "../../css/app.css";
+import { initializeTheme } from "../shared/hooks/useAppearance";
+
+dayjs.extend(relativeTime);
+dayjs.locale("es");
+
+configureEcho({
+  broadcaster: "reverb",
+  enabledTransports: ["ws", "wss"],
+  forceTLS: (import.meta.env["VITE_REVERB_SCHEME"] ?? "https") === "https",
+  key: import.meta.env["VITE_REVERB_APP_KEY"],
+  wsHost: import.meta.env["VITE_REVERB_HOST"],
+  wsPort: import.meta.env["VITE_REVERB_PORT"],
+  wssPort: import.meta.env["VITE_REVERB_PORT"],
+});
+
+const appName = import.meta.env["VITE_APP_NAME"] || "Laravel";
+
+createInertiaApp({
+  pages: "../modules",
+  title: (title) => (title ? `${title} - ${appName}` : appName),
+  strictMode: true,
+  layout: (name) => {
+    switch (true) {
+      case name.startsWith("auth/"):
+        return AuthCardLayout;
+      case name.startsWith("setting/"):
+        return SettingLayout;
+      default:
+        return undefined;
+    }
+  },
+  withApp(app) {
+    return <TooltipProvider>{app}</TooltipProvider>;
+  },
+  progress: {
+    color: "#4B5563",
+  },
+});
+
+initializeTheme();
