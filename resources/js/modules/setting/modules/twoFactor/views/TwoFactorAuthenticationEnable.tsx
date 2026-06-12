@@ -10,10 +10,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import { Progress } from "@/shared/components/ui/progress";
+import { Badge } from "@/shared/components/shadcn/ui/badge";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { cn } from "@/shared/lib";
 

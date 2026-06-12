@@ -9,15 +9,15 @@ import { confirm } from "@/shared/wayfinder/routes/two-factor";
 
 import AlertError from "@/shared/components/AlertError";
 import InputError from "@/shared/components/form/InputError";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/input-otp";
+} from "@/shared/components/shadcn/ui/dialog";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/shadcn/ui/input-otp";
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
 
