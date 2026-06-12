@@ -1,4 +1,4 @@
-resources/js/components/ui/*
+resources/js/shared/components/shadcn/ui/*
 resources/views/mail/*
 composer.lock
 composer.json
