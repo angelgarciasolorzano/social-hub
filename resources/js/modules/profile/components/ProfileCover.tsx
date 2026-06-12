@@ -2,7 +2,7 @@ import { RiImageEditLine } from "react-icons/ri";
 
 import { UserImageType } from "../enums/userImageType";
 import { useUserImageUpload } from "../hooks/useUserImageUpload";
-import ProfileImageUploadModal from "./modals/ProfileImageUploadModal";
+import ProfileImageUploadDialog from "./modals/ProfileImageUploadDialog";
 
 interface ProfileCoverProps {
   coverImage: string;
@@ -21,7 +21,7 @@ function ProfileCover({ coverImage }: ProfileCoverProps) {
 
   return (
     <div
-      className="h-[350px] w-full dark:border-gray-600"
+      className="h-87.5 w-full dark:border-gray-600"
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
     >
@@ -51,7 +51,7 @@ function ProfileCover({ coverImage }: ProfileCoverProps) {
       />
 
       {isModalOpen && imageUrl && (
-        <ProfileImageUploadModal
+        <ProfileImageUploadDialog
           type="cover"
           onClose={onClose}
           onConfirm={handleImageUpload}
