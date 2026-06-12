@@ -11,7 +11,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/shared/components/ui/card";
+} from "@/shared/components/shadcn/ui/card";
 
 interface AuthCardLayoutProps {
   description: string;

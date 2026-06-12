@@ -5,9 +5,9 @@ import { LoaderCircle } from "lucide-react";
 import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/NewPasswordController";
 
 import InputError from "@/shared/components/form/InputError";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { Label } from "@/shared/components/shadcn/ui/label";
 
 interface ResetPasswordProps {
   email: string;

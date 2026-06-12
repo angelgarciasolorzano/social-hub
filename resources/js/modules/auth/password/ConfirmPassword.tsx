@@ -3,8 +3,8 @@ import { Form, Head } from "@inertiajs/react";
 import { store } from "@/shared/wayfinder/routes/password/confirm";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
-import { Button } from "@/shared/components/ui/button";
-import { Spinner } from "@/shared/components/ui/spinner";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 export default function ConfirmPassword() {
   return (
