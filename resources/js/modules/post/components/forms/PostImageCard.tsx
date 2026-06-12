@@ -11,7 +11,7 @@ import { IoCloudUploadOutline } from "react-icons/io5";
 
 import { Loader2Icon } from "lucide-react";
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 
 import type { Appearance } from "@/shared/hooks";
 
@@ -220,7 +220,7 @@ function ImageHoverOverlay(props: ImageHoverOverlayProps) {
 function ImageEmptyState() {
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="bg-accent p-2 rounded-full">
+      <div className="rounded-full bg-accent p-2">
         <IoCloudUploadOutline className="h-6 w-6 text-muted-foreground" />
       </div>
 

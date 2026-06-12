@@ -4,7 +4,7 @@ import { useForm } from "@inertiajs/react";
 
 import { MdOutlinePostAdd } from "react-icons/md";
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -13,9 +13,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog";
-import { Separator } from "@/shared/components/ui/separator";
-import { Spinner } from "@/shared/components/ui/spinner";
+} from "@/shared/components/shadcn/ui/dialog";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { PostFormData } from "../types/post";
 import PostForm from "./forms/PostForm";

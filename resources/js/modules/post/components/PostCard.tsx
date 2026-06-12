@@ -6,9 +6,9 @@ import dayjs from "dayjs";
 
 import { CommentDialog } from "@/modules/comments";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
-import { Button } from "@/shared/components/ui/button";
-import { Separator } from "@/shared/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { validImage } from "@/shared/lib";
 
