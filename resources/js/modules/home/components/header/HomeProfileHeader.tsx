@@ -1,6 +1,6 @@
 import { Link, usePage } from "@inertiajs/react";
 
-import { Avatar, AvatarImage } from "@/shared/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu";
+} from "@/shared/components/shadcn/ui/dropdown-menu";
 
 import { validImage } from "@/shared/lib/validImage";
 

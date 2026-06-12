@@ -1,6 +1,6 @@
 import { IoIosNotificationsOutline } from "react-icons/io";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/shadcn/ui/tooltip";
 
 function HomeNotificationHeader() {
   return (
