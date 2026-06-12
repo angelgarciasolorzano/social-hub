@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 
 import { cn } from "@/shared/lib";
 
-import { Label } from "../ui/label";
+import { Label } from "../shadcn/ui/label";
 
 interface LabelFormProps extends ComponentProps<typeof Label> {
   error?: string | undefined;
