@@ -1,6 +1,6 @@
 import { AlertCircleIcon } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "./shadcn/ui/alert";
 
 export default function AlertError({ errors, title }: { errors: string[]; title?: string }) {
   return (
