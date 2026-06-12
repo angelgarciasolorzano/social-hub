@@ -7,8 +7,8 @@ import { AlertTriangleIcon, RefreshCcwDot } from "lucide-react";
 import { storeRecoveryCodes } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
-import { Button } from "@/shared/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -17,8 +17,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog";
-import { Spinner } from "@/shared/components/ui/spinner";
+} from "@/shared/components/shadcn/ui/dialog";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 interface RegenerateCodesDialogProps {
   isOpen: boolean;

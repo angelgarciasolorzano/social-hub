@@ -6,8 +6,8 @@ import { store } from "@/shared/wayfinder/actions/App/Auth/Email/Controllers/Ema
 
 import { logout } from "@/shared/wayfinder/routes";
 
+import { Button } from "@/shared/components/shadcn/ui/button";
 import TextLink from "@/shared/components/TextLink";
-import { Button } from "@/shared/components/ui/button";
 
 export default function VerifyEmail({ status }: { status?: string }) {
   return (

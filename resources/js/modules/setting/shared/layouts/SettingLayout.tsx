@@ -7,9 +7,13 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/shared/components/ui/breadcrumb";
-import { Separator } from "@/shared/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/shared/components/ui/sidebar";
+} from "@/shared/components/shadcn/ui/breadcrumb";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/shared/components/shadcn/ui/sidebar";
 
 import { SettingSidebar } from "../components/SettingSidebar";
 

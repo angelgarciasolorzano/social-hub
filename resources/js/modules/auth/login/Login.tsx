@@ -8,11 +8,11 @@ import { register } from "@/shared/wayfinder/routes";
 import { request } from "@/shared/wayfinder/routes/password";
 
 import { InputError } from "@/shared/components/form";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Checkbox } from "@/shared/components/shadcn/ui/checkbox";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { Label } from "@/shared/components/shadcn/ui/label";
 import TextLink from "@/shared/components/TextLink";
-import { Button } from "@/shared/components/ui/button";
-import { Checkbox } from "@/shared/components/ui/checkbox";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 
 interface LoginProps {
   canResetPassword?: boolean;

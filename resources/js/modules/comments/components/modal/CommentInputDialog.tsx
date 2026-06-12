@@ -5,8 +5,8 @@ import { useForm } from "@inertiajs/react";
 import { IoMdTime } from "react-icons/io";
 import { LuMessagesSquare } from "react-icons/lu";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
-import { Button } from "@/shared/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -15,9 +15,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog";
-import { Separator } from "@/shared/components/ui/separator";
-import { Spinner } from "@/shared/components/ui/spinner";
+} from "@/shared/components/shadcn/ui/dialog";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { validImage } from "@/shared/lib";
 

@@ -6,7 +6,7 @@ import PostController from "@/shared/wayfinder/actions/App/Post/Controllers/Post
 
 import { LabelForm } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";
-import { Textarea } from "@/shared/components/ui/textarea";
+import { Textarea } from "@/shared/components/shadcn/ui/textarea";
 
 import { useAppearance } from "@/shared/hooks";
 

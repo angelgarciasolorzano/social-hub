@@ -2,7 +2,7 @@ import { RiImageEditLine } from "react-icons/ri";
 
 import { UserImageType } from "../enums/userImageType";
 import { useUserImageUpload } from "../hooks/useUserImageUpload";
-import ProfileImageUploadModal from "./modals/ProfileImageUploadModal";
+import ProfileImageUploadModal from "./modals/ProfileImageUploadDialog";
 
 interface ProfilePictureProps {
   profilePicture: string;

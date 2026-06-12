@@ -38,7 +38,7 @@ function Home({ posts, user }: HomeProps) {
 
             return (
               <div
-                className="absolute left-0 top-0 w-full"
+                className="absolute top-0 left-0 w-full"
                 data-index={virtualRow.index}
                 key={virtualRow.key}
                 ref={rowVirtualizer.measureElement}

@@ -4,7 +4,7 @@ import { IoMdTime } from "react-icons/io";
 
 import dayjs from "dayjs";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 
 import { useModal } from "@/shared/hooks/useModal";
 

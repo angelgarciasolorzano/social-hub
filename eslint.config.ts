@@ -87,7 +87,7 @@ export default defineConfig([
     "public/build/**",
     "storage/**",
     "resources/js/shared/wayfinder/**",
-    "resources/js/shared/components/ui/**",
+    "resources/js/shared/components/shadcn/ui/**",
     "resources/js/shared/components/reactBits/**",
     "eslint.config.ts",
     "vite.config.ts",

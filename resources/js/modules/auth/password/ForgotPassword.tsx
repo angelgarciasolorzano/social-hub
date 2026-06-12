@@ -7,10 +7,10 @@ import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/
 import { login } from "@/shared/wayfinder/routes";
 
 import InputError from "@/shared/components/form/InputError";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { Label } from "@/shared/components/shadcn/ui/label";
 import TextLink from "@/shared/components/TextLink";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 
 interface ForgotPasswordProps {
   status?: string;

@@ -7,8 +7,8 @@ import { update } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers
 import { PasswordInput } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";
 import LabelForm from "@/shared/components/form/LabelForm";
-import { Button } from "@/shared/components/ui/button";
-import { Spinner } from "@/shared/components/ui/spinner";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 export default function EditPassword() {
   const passwordInput = useRef<HTMLInputElement>(null);

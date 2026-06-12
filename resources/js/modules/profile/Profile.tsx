@@ -3,7 +3,7 @@ import { InfiniteScroll, usePage } from "@inertiajs/react";
 import { GoPlus } from "react-icons/go";
 import { MdOutlineEditNote } from "react-icons/md";
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 
 import { useModal } from "@/shared/hooks/useModal";
 

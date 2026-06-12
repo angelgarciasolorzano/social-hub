@@ -13,10 +13,10 @@ import {
 
 import { enable } from "@/shared/wayfinder/routes/two-factor";
 
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
-import { Badge } from "@/shared/components/ui/badge";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
+import { Badge } from "@/shared/components/shadcn/ui/badge";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 
 import TwoFactorSetupDialog from "../components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
 import { OptionCard } from "../components/ui/OptionCard";

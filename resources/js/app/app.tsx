@@ -8,7 +8,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
 import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
-import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import { TooltipProvider } from "@/shared/components/shadcn/ui/tooltip";
 
 import "../../css/app.css";
 import { initializeTheme } from "../shared/hooks/useAppearance";

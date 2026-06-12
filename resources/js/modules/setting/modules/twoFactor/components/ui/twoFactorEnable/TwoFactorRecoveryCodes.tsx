@@ -3,18 +3,18 @@ import { Fragment, useEffect } from "react";
 import { AlertTriangleIcon, ArrowDown, Clock4, Copy } from "lucide-react";
 
 import AlertError from "@/shared/components/AlertError";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/ui/alert";
-import { Button } from "@/shared/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
   ItemTitle,
-} from "@/shared/components/ui/item";
-import { Separator } from "@/shared/components/ui/separator";
-import { Skeleton } from "@/shared/components/ui/skeleton";
+} from "@/shared/components/shadcn/ui/item";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 interface TwoFactorRecoveryCodesProps {
   errors: string[];

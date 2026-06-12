@@ -10,7 +10,7 @@ import { motion } from "motion/react";
 
 import { AppLogoIcon } from "@/shared/components/logo";
 import { GradientText, LightRays, LogoLoop, ShinyText } from "@/shared/components/reactBits";
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 
 import type { ResolvedAppearance } from "@/shared/hooks";
 import { useAppearance } from "@/shared/hooks";

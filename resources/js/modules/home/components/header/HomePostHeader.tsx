@@ -4,7 +4,7 @@ import { HiOutlinePlus } from "react-icons/hi2";
 
 import PostDialog from "@/modules/post/components/PostDialog";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/shadcn/ui/tooltip";
 
 interface HomePostHeaderProps {
   isOpenModal: boolean;

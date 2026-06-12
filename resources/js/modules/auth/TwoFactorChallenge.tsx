@@ -7,11 +7,11 @@ import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { store } from "@/shared/wayfinder/routes/two-factor/login";
 
 import { InputError } from "@/shared/components/form";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/ui/input-otp";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/shadcn/ui/input-otp";
 
-import { OTP_MAX_LENGTH } from "@/shared/hooks";
+const OTP_MAX_LENGTH = 6;
 
 export default function TwoFactorChallenge() {
   const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);

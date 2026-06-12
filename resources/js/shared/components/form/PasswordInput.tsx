@@ -5,7 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { cn } from "@/shared/lib";
 
-import { Input } from "../ui/input";
+import { Input } from "../shadcn/ui/input";
 
 export default function PasswordInput({
   className,

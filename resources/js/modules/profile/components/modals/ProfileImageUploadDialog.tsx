@@ -1,4 +1,4 @@
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/shared/components/ui/dialog";
+} from "@/shared/components/shadcn/ui/dialog";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -17,7 +17,7 @@ interface ImageUploadModalProps {
   onConfirm: () => void;
 }
 
-function ImageUploadModal({ preview, type, onClose, onConfirm }: ImageUploadModalProps) {
+function ProfileImageUploadDialog({ preview, type, onClose, onConfirm }: ImageUploadModalProps) {
   return (
     <Dialog onOpenChange={onClose} open>
       <DialogContent>
@@ -34,9 +34,8 @@ function ImageUploadModal({ preview, type, onClose, onConfirm }: ImageUploadModa
           <img
             className={cn(
               "object-cover",
-              type === "profile" ? "h-72 w-72 rounded-full" : "max-h-[400px] rounded-md",
+              type === "profile" ? "h-72 w-72 rounded-full" : "max-h-100 rounded-md",
             )}
-            //className='rounded-md object-cover max-h-[400px]'
             alt="Preview"
             src={preview}
           />
@@ -53,4 +52,4 @@ function ImageUploadModal({ preview, type, onClose, onConfirm }: ImageUploadModa
   );
 }
 
-export default ImageUploadModal;
+export default ProfileImageUploadDialog;
