@@ -5,8 +5,8 @@ import type { InertiaFormProps } from "@inertiajs/react";
 import { store } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
 
 import { InputError } from "@/shared/components/form";
-import { Input } from "@/shared/components/ui/input";
-import { Textarea } from "@/shared/components/ui/textarea";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { Textarea } from "@/shared/components/shadcn/ui/textarea";
 
 import type { CommentableTypeValues } from "../../enums/commentableType";
 import type { CommentFormData } from "../../types/comment";

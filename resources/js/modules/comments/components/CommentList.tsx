@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { useIntersectionObserver } from "usehooks-ts";
 
-import { Input } from "@/shared/components/ui/input";
-import { Separator } from "@/shared/components/ui/separator";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useModal } from "@/shared/hooks/useModal";
 

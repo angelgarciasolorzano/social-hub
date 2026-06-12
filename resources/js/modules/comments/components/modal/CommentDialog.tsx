@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import type { Post } from "@/modules/post";
 import { PostDetail } from "@/modules/post";
 
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/shared/components/ui/dialog";
-import { Separator } from "@/shared/components/ui/separator";
+} from "@/shared/components/shadcn/ui/dialog";
+import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { User } from "@/shared/types";
 
