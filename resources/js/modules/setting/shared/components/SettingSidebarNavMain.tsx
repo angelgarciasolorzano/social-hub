@@ -4,7 +4,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/shared/components/ui/collapsible";
+} from "@/shared/components/shadcn/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -14,7 +14,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/shared/components/ui/sidebar";
+} from "@/shared/components/shadcn/ui/sidebar";
 
 interface SettingSidebarNavMainSubItems {
   title: string;

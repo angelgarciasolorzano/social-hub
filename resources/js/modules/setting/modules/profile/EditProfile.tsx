@@ -8,8 +8,8 @@ import { send } from "@/shared/wayfinder/routes/verification";
 
 import { LabelForm } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";
-import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Input } from "@/shared/components/shadcn/ui/input";
 
 import type { SharedData } from "@/shared/types";
 

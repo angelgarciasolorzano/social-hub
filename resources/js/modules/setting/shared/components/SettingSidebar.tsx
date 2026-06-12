@@ -20,7 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/shared/components/ui/sidebar";
+} from "@/shared/components/shadcn/ui/sidebar";
 
 import { SettingSidebarNavMain } from "./SettingSidebarNavMain";
 import { SettingSidebarNavUser } from "./SettingSidebarNavUser";
