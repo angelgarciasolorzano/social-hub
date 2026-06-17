@@ -1,5 +1,6 @@
 parameters:
     level: max
+
     paths:
         - app
         - bootstrap
@@ -7,6 +8,9 @@ parameters:
         - routes
 
     tmpDir: storage/phpstan
+
+    errorFormat: ticketswap
+    editorUrl: 'vscode://file/%%file%%:%%line%%'
 
     checkAuthCallsWhenInRequestScope: true
     checkBenevolentUnionTypes: true
@@ -22,6 +26,13 @@ parameters:
         property: 100
         constant: 100
         declare: 100
+
+    type_perfect:
+        no_mixed_property: true
+        no_mixed_caller: true
+        null_over_false: true
+        narrow_param: true
+        narrow_return: true
 
     scanFiles:
         - _ide_helper_models.php
