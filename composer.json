@@ -93,7 +93,7 @@
         ],
         "pint": "vendor/bin/pint",
         "pint-dirty": "vendor/bin/pint --dirty",
-        "larastan": "vendor/bin/phpstan analyse --memory-limit=2G",
+        "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
         "rector": "vendor/bin/rector process",
         "rector:dry": "vendor/bin/rector process --dry-run"
     },
@@ -102,7 +102,7 @@
         "test": "Run the test suite.",
         "pint": "Run Laravel Pint to check code style.",
         "pint-dirty": "Run Laravel Pint only on changed files.",
-        "larastan": "Run Larastan for static analysis of the codebase.",
+        "phpstan": "Run PHPStan for static analysis of the codebase.",
         "rector": "Run Rector to automatically refactor code.",
         "rector:dry": "Run Rector in dry-run mode to see potential changes without applying them.",
         "ide-helper": "Generate IDE helper files for better autocompletion."
