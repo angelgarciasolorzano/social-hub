@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Password\Controllers;
 
 use App\Auth\Password\Requests\NewPasswordRequest;
@@ -36,12 +38,12 @@ class NewPasswordController extends Controller
      *
      * @return RedirectResponse
      */
-    public function store(NewPasswordRequest $request)
+    public function store(NewPasswordRequest $newPasswordRequest)
     {
         /** @var string $status */
-        $status = Password::reset($request->only('email', 'password', 'password_confirmation', 'token'), function (User $user) use ($request): void {
+        $status = Password::reset($newPasswordRequest->only('email', 'password', 'password_confirmation', 'token'), function (User $user) use ($newPasswordRequest): void {
             $user->forceFill([
-                'password' => Hash::make($request->password),
+                'password' => Hash::make($newPasswordRequest->password),
                 'remember_token' => Str::random(60),
             ])->save();
 

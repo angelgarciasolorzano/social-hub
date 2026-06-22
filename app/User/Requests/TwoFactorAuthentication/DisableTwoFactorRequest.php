@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Requests\TwoFactorAuthentication;
 
 use Illuminate\Foundation\Http\FormRequest;
@@ -45,7 +47,7 @@ class DisableTwoFactorRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
-        $validator->after(function (Validator $validator) {
+        $validator->after(function (Validator $validator): void {
             if ($validator->errors()->isEmpty() && ! $this->hasValidCode()) {
                 $validator->errors()->add('code', 'El código de autenticación proporcionado no es válido.');
             }

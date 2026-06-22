@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -15,27 +17,27 @@ class ProfileController extends Controller
 {
     public function index(): Response
     {
-        $posts = Post::query()
+        $cursorPaginator = Post::query()
             ->where('user_id', Auth::id())
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
         return Inertia::render('profile/Profile', [
             'user' => new UserResource(Auth::user())->resolve(request()),
-            'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
+            'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
         ]);
     }
 
     public function show(User $user): Response
     {
-        $posts = Post::query()
+        $cursorPaginator = Post::query()
             ->where('user_id', $user->id)
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
         return Inertia::render('profile/Profile', [
             'user' => new UserResource($user)->resolve(request()),
-            'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
+            'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
         ]);
     }
 

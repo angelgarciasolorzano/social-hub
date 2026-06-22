@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Post\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -11,9 +13,9 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class PostController extends Controller
 {
-    public function __invoke(PostRequest $request): RedirectResponse
+    public function __invoke(PostRequest $postRequest): RedirectResponse
     {
-        $user = $request->user();
+        $user = $postRequest->user();
 
         if (! $user) {
             return back()->with('notification', [
@@ -23,13 +25,13 @@ class PostController extends Controller
         }
 
         $post = $user->posts()->create([
-            'content' => $request['content'],
+            'content' => $postRequest['content'],
         ]);
 
-        if ($request->hasFile('image_file')) {
+        if ($postRequest->hasFile('image_file')) {
             try {
                 $post->addMediaFromRequest('image_file')->toMediaCollection('posts_images');
-            } catch (FileDoesNotExist|FileIsTooBig $error) {
+            } catch (FileDoesNotExist|FileIsTooBig) {
                 return back()->with('notification', [
                     'type' => 'error',
                     'message' => 'No fue posible subir la imagen, por favor intente de nuevo',

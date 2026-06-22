@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Override;
 
 /**
  * @property int $id
@@ -47,6 +48,7 @@ class Comment extends Model
      */
     public const MORPH_COLUMN = 'commentable';
 
+    #[Override]
     protected function casts(): array
     {
         return [

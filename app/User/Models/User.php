@@ -19,6 +19,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Events\RecoveryCodeReplaced;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Override;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -42,7 +43,9 @@ class User extends Authenticatable implements HasMedia
      */
     use HasFactory;
 
-    use InteractsWithMedia, Notifiable, TwoFactorAuthenticatable;
+    use InteractsWithMedia;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
 
     public const MORPH_NAME = 'user';
 
@@ -75,6 +78,7 @@ class User extends Authenticatable implements HasMedia
      *
      * @return array<string, string>
      */
+    #[Override]
     protected function casts(): array
     {
         return [
@@ -106,7 +110,7 @@ class User extends Authenticatable implements HasMedia
     {
         $recoveryCodes = $this->recoveryCodes();
 
-        $updatedCodes = array_values(array_filter($recoveryCodes, fn ($recoveryCode) => $recoveryCode !== $code));
+        $updatedCodes = array_values(array_filter($recoveryCodes, fn ($recoveryCode): bool => $recoveryCode !== $code));
 
         $this->forceFill([
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(

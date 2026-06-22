@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Home\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -15,14 +17,14 @@ class HomeController extends Controller
     {
         // $friendsId = Auth::user()->friends()->pluck('id')->toArray();
 
-        $posts = Post::with(['user'])
+        $cursorPaginator = Post::with(['user'])
             // ->whereIn('user_id', $friendsId)
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
         return Inertia::render('home/Home', [
             'user' => Auth::user(),
-            'posts' => Inertia::scroll(fn () => PostResource::collection($posts)),
+            'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
         ]);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
@@ -8,7 +10,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
-class TwoFactorChallengeTest extends TestCase
+final class TwoFactorChallengeTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -18,9 +20,9 @@ class TwoFactorChallengeTest extends TestCase
             $this->markTestSkipped('Two-factor authentication is not enabled.');
         }
 
-        $response = $this->get(route('two-factor.login'));
+        $testResponse = $this->get(route('two-factor.login'));
 
-        $response->assertRedirect(route('login'));
+        $testResponse->assertRedirect(route('login'));
     }
 
     public function test_two_factor_challenge_can_be_rendered(): void
@@ -49,7 +51,7 @@ class TwoFactorChallengeTest extends TestCase
 
         $this->get(route('two-factor.login'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
+            ->assertInertia(fn (Assert $assert): Assert => $assert
                 ->component('auth/two-factor-challenge')
             );
     }

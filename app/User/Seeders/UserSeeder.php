@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Seeders;
 
 use App\User\Enums\UserImageType;
@@ -34,7 +36,7 @@ class UserSeeder extends Seeder
         $testImageProfilePath = glob(app_path(User::TEST_USER_IMAGE_GLOB_PATH), GLOB_BRACE);
         $testImageCoverPath = glob(app_path(User::TEST_COVER_IMAGE_GLOB_PATH), GLOB_BRACE);
 
-        if (! empty($testImageProfilePath) && ! empty($testImageCoverPath)) {
+        if ($testImageProfilePath !== [] && $testImageProfilePath !== false && ($testImageCoverPath !== [] && $testImageCoverPath !== false)) {
             $mediaAdder = $user->addMedia($testImageProfilePath[0]);
             $mediaCoverAdder = $user->addMedia($testImageCoverPath[0]);
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Password\Controllers;
 
 use App\Auth\Password\Requests\PasswordResetLinkRequest;
@@ -25,9 +27,9 @@ class PasswordResetLinkController extends Controller
     /**
      * Handle an incoming password reset link request.
      */
-    public function store(PasswordResetLinkRequest $request): RedirectResponse
+    public function store(PasswordResetLinkRequest $passwordResetLinkRequest): RedirectResponse
     {
-        Password::sendResetLink($request->only('email'));
+        Password::sendResetLink($passwordResetLinkRequest->only('email'));
 
         return back()->with('status', __('messages.A reset link will be sent if the account exists.'));
     }

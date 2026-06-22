@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('static/Landing');
-});
+Route::get('/', fn () => Inertia::render('static/Landing'));

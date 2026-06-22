@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Factories;
 
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Override;
 
 /**
  * @extends Factory<User>
@@ -18,6 +22,7 @@ class UserFactory extends Factory
      *
      * @var class-string<User>
      */
+    #[Override]
     protected $model = User::class;
 
     /**
@@ -27,6 +32,8 @@ class UserFactory extends Factory
 
     /**
      * Define the model's default state.
+     *
+     * @return array<string, CarbonInterface|string>
      *
      * @phpstan-return array<model-property<User>, mixed>
      */
@@ -46,15 +53,16 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
         ]);
     }
 
+    #[Override]
     public function configure()
     {
-        return $this->afterCreating(function (User $user) {
-            if (rand(0, 1)) {
+        return $this->afterCreating(function (User $user): void {
+            if (random_int(0, 1) !== 0) {
                 $imagesProfile = glob(app_path(User::TEST_PROFILE_IMAGES_GLOB_PATH), GLOB_BRACE);
                 $imagesCover = glob(app_path(User::TEST_COVER_IMAGES_GLOB_PATH), GLOB_BRACE);
 

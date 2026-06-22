@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Like\Models;
 
 use App\User\Models\User;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Friendship\Models;
 
 use App\Friendship\Enums\FriendshipStatus;
@@ -8,6 +10,7 @@ use Database\Factories\FriendshipFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Override;
 
 /**
  * @mixin IdeHelperFriendship
@@ -26,6 +29,7 @@ class Friendship extends Model
      *
      * @var list<string>
      */
+    #[Override]
     protected $fillable = [
         self::REQUESTER_ID,
         self::RECEIVER_ID,
@@ -37,6 +41,7 @@ class Friendship extends Model
      *
      * @return array<string, string>
      */
+    #[Override]
     protected function casts(): array
     {
         return [

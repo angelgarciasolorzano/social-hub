@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Register\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
