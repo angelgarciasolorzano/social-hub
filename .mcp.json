@@ -6,6 +6,14 @@
                 "artisan",
                 "boost:mcp"
             ]
-        }
+        },
+        "MiniMax-docs": {
+			"url": "https://platform.minimax.io/docs/mcp",
+			"type": "http"
+		},
+		"inertia-docs": {
+			"url": "https://inertiajs.com/docs/mcp",
+			"type": "http"
+		}
     }
 }
