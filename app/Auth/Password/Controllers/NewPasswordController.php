@@ -30,7 +30,6 @@ class NewPasswordController extends Controller
             'email' => $request->email,
             'token' => $request->route('token'),
         ]);
-
     }
 
     /**
