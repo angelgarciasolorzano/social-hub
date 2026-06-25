@@ -23,14 +23,14 @@ class NewPasswordController extends Controller
      * Show the password reset page.
      *
      * @param  Request&object{email: string}  $request
-     * @return Response
      */
-    public function create(Request $request)
+    public function create(Request $request): Response
     {
         return Inertia::render('auth/password/ResetPassword', [
             'email' => $request->email,
             'token' => $request->route('token'),
         ]);
+
     }
 
     /**
