@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\RateLimiter;
@@ -48,7 +49,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         $this->app->singleton(PasswordConfirmedResponse::class, fn (): PasswordConfirmedResponse => new class implements PasswordConfirmedResponse
         {
-            public function toResponse($request)
+            public function toResponse($request): RedirectResponse
             {
                 $request->session()->put(
                     'auth.password_confirmation_redirect',
