@@ -34,14 +34,16 @@ class CommentController extends Controller
 
     public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
     {
-        /** @var string $commentableType */
+        /** @var class-string<Post | Comment> $commentableType */
         $commentableType = $commentStoreRequest->input('commentable_type');
 
+        /** @var class-string<Post | Comment> | null $modelType */
         $modelType = Relation::getMorphedModel($commentableType);
 
-        $commentableId = $commentStoreRequest['commentable_id'];
+        /** @var int $commentableId */
+        $commentableId = $commentStoreRequest->input('commentable_id');
 
-        if (! $modelType) {
+        if ($modelType === null) {
             return back()->with([
                 'type' => 'error',
                 'message' => 'El tipo de comentario es invalido.',
@@ -52,7 +54,7 @@ class CommentController extends Controller
 
         $commentable->comments()->create([
             'user_id' => Auth::id(),
-            'content' => $commentStoreRequest['content'],
+            'content' => $commentStoreRequest->input('content'),
         ]);
 
         return Inertia::flash([
