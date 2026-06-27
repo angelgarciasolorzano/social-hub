@@ -34,10 +34,8 @@ class NewPasswordController extends Controller
 
     /**
      * Handle an incoming new password request.
-     *
-     * @return RedirectResponse
      */
-    public function store(NewPasswordRequest $newPasswordRequest)
+    public function store(NewPasswordRequest $newPasswordRequest): RedirectResponse
     {
         /** @var string $status */
         $status = Password::reset($newPasswordRequest->only('email', 'password', 'password_confirmation', 'token'), function (User $user) use ($newPasswordRequest): void {

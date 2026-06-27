@@ -22,10 +22,10 @@ class PasswordController extends Controller
     {
         $user = $passwordRequest->user();
 
-        /** @var string $password */
+        /** @var string|null $password */
         $password = $passwordRequest->input('password');
 
-        abort_if(! $user || ! $password, 401);
+        abort_if($user === null || $password === null, 401);
 
         $user->update([
             'password' => Hash::make($password),
