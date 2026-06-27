@@ -59,14 +59,14 @@ class UserFactory extends Factory
     }
 
     #[Override]
-    public function configure()
+    public function configure(): static
     {
         return $this->afterCreating(function (User $user): void {
             if (random_int(0, 1) !== 0) {
                 $imagesProfile = glob(app_path(User::TEST_PROFILE_IMAGES_GLOB_PATH), GLOB_BRACE);
                 $imagesCover = glob(app_path(User::TEST_COVER_IMAGES_GLOB_PATH), GLOB_BRACE);
 
-                if ($imagesProfile && $imagesCover) {
+                if (is_array($imagesProfile) && is_array($imagesCover) && $imagesProfile !== [] && $imagesCover !== []) {
                     $randomImageProfile = $imagesProfile[array_rand($imagesProfile)];
                     $randomImageCover = $imagesCover[array_rand($imagesCover)];
 

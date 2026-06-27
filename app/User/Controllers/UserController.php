@@ -9,6 +9,7 @@ use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use App\User\Requests\UserImageUpdateRequest;
 use App\User\Requests\UserUpdateRequest;
+use Illuminate\Http\RedirectResponse as HttpRedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -45,7 +46,7 @@ class UserController extends Controller
         ])->back();
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): HttpRedirectResponse
     {
         $request->validate([
             'password' => ['required', 'current_password'],

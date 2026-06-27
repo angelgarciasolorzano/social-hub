@@ -6,6 +6,7 @@ namespace App\User\Resources;
 
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Override;
 
@@ -18,7 +19,7 @@ class UserResource extends JsonResource
      * @return array<string, mixed>
      */
     #[Override]
-    public function toArray($request): array
+    public function toArray(Request $request): array
     {
         return [
             'id' => $this->id,

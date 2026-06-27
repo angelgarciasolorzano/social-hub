@@ -47,31 +47,31 @@ class User extends Authenticatable implements HasMedia
     use Notifiable;
     use TwoFactorAuthenticatable;
 
-    public const MORPH_NAME = 'user';
+    public const string MORPH_NAME = 'user';
 
-    public const DEFAULT_PROFILE_PICTURE_PATH = '/default-profile-picture.png';
+    public const string DEFAULT_PROFILE_PICTURE_PATH = '/default-profile-picture.png';
 
-    public const DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
+    public const string DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
 
     /**
      * Glob pattern for all test profile images.
      */
-    public const TEST_PROFILE_IMAGES_GLOB_PATH = 'User/Seeders/Images/profile/*.{jpg,jpeg,png}';
+    public const string TEST_PROFILE_IMAGES_GLOB_PATH = 'User/Seeders/Images/profile/*.{jpg,jpeg,png}';
 
     /**
      * Glob pattern for all test cover images.
      */
-    public const TEST_COVER_IMAGES_GLOB_PATH = 'User/Seeders/Images/cover/*.{jpg,jpeg,png}';
+    public const string TEST_COVER_IMAGES_GLOB_PATH = 'User/Seeders/Images/cover/*.{jpg,jpeg,png}';
 
     /**
      * Glob pattern for the test user's profile image.
      */
-    public const TEST_USER_IMAGE_GLOB_PATH = 'User/Seeders/Images/profile/user-test.{jpg,jpeg,png}';
+    public const string TEST_USER_IMAGE_GLOB_PATH = 'User/Seeders/Images/profile/user-test.{jpg,jpeg,png}';
 
     /**
      * Glob pattern for the test user's cover image.
      */
-    public const TEST_COVER_IMAGE_GLOB_PATH = 'User/Seeders/Images/cover/user-cover-test.{jpg,jpeg,png}';
+    public const string TEST_COVER_IMAGE_GLOB_PATH = 'User/Seeders/Images/cover/user-cover-test.{jpg,jpeg,png}';
 
     /**
      * The attributes that should be cast.
