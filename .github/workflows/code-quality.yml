@@ -1,4 +1,4 @@
-name: QA & Code Quality
+name: Code Quality Checks
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  qa-analysis:
+  code-quality:
     runs-on: ubuntu-latest
 
     steps:
