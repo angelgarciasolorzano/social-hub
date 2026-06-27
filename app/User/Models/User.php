@@ -9,6 +9,7 @@ use App\Like\Models\Like;
 use App\Post\Models\Post;
 use App\User\Enums\UserImageType;
 use App\User\Factories\UserFactory;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -24,6 +25,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
+ * @property CarbonImmutable|null $created_at
+ *
  * @mixin IdeHelperUser
  */
 #[UseFactory(UserFactory::class)]
@@ -47,10 +50,19 @@ class User extends Authenticatable implements HasMedia
     use Notifiable;
     use TwoFactorAuthenticatable;
 
+    /**
+     * The morph name used for polymorphic relations.
+     */
     public const string MORPH_NAME = 'user';
 
+    /**
+     * The default profile picture path used as fallback.
+     */
     public const string DEFAULT_PROFILE_PICTURE_PATH = '/default-profile-picture.png';
 
+    /**
+     * The default cover image path used as fallback.
+     */
     public const string DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
 
     /**

@@ -33,7 +33,11 @@ return RectorConfig::configure()
     ->withSkip([
         PostIncDecToPreIncDecRector::class,
     ])
-    ->withImportNames(removeUnusedImports: true)
+    ->withImportNames(
+        removeUnusedImports: true,
+        importShortClasses: true,
+        importDocBlockNames: true,
+    )
     ->withPhpVersion(PhpVersion::PHP_85)
     ->withFluentCallNewLine()
     ->withPhpSets()
