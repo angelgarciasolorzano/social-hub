@@ -42,13 +42,13 @@ class PostFactory extends Factory
      * Configure the model factory.
      */
     #[Override]
-    public function configure()
+    public function configure(): static
     {
         return $this->afterCreating(function (Post $post): void {
             if (random_int(1, 100) <= 60) {
                 $images = glob(app_path(Post::TEST_IMAGES_GLOB_PATH), GLOB_BRACE);
 
-                if ($images) {
+                if (is_array($images) && $images !== []) {
                     $randomImage = $images[array_rand($images)];
 
                     $mediaAdder = $post->addMedia($randomImage);

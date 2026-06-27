@@ -17,7 +17,7 @@ class PostController extends Controller
     {
         $user = $postRequest->user();
 
-        if (! $user) {
+        if ($user === null) {
             return back()->with('notification', [
                 'type' => 'error',
                 'message' => 'No se pudo crear la publicación, por favor intente de nuevo',
@@ -25,7 +25,7 @@ class PostController extends Controller
         }
 
         $post = $user->posts()->create([
-            'content' => $postRequest['content'],
+            'content' => $postRequest->input('content'),
         ]);
 
         if ($postRequest->hasFile('image_file')) {
