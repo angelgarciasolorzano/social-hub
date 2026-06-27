@@ -61,7 +61,7 @@ class DisableTwoFactorRequest extends FormRequest
     {
         $user = $this->user();
 
-        if (! $user || ! $user->two_factor_secret) {
+        if ($user === null || $user->two_factor_secret === null) {
             return false;
         }
 

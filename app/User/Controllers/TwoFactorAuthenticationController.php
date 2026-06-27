@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TwoFactorAuthenticationController extends Controller implements HasMiddleware
 {
-    public static function middleware()
+    public static function middleware(): array
     {
         return Features::canManageTwoFactorAuthentication()
             && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword')

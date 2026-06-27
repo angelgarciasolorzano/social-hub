@@ -108,9 +108,16 @@ class User extends Authenticatable implements HasMedia
      */
     public function replaceRecoveryCode(string $code): void
     {
+        /** @var array<int, string> $recoveryCodes */
         $recoveryCodes = $this->recoveryCodes();
 
-        $updatedCodes = array_values(array_filter($recoveryCodes, fn ($recoveryCode): bool => $recoveryCode !== $code));
+        /** @var array<int, string> $updatedCodes */
+        $updatedCodes = array_values(
+            array_filter(
+                $recoveryCodes,
+                fn (string $recoveryCode): bool => $recoveryCode !== $code
+            )
+        );
 
         $this->forceFill([
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(
