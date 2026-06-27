@@ -91,22 +91,24 @@
             "@php artisan ide-helper:generate",
             "@php artisan ide-helper:models -RM"
         ],
-        "pint": "vendor/bin/pint",
+        "pint-ci": "vendor/bin/pint --dirty --test --format=github",
+        "pint-fix": "vendor/bin/pint",
         "pint-dirty": "vendor/bin/pint --dirty",
         "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
         "phpstan-clear-cache": "vendor/bin/phpstan clear-result-cache",
         "rector": "vendor/bin/rector process",
-        "rector:dry": "vendor/bin/rector process --dry-run"
+        "rector-dry": "vendor/bin/rector process --dry-run"
     },
     "script-descriptions": {
         "dev": "Start the development environment with hot reloading and concurrent processes.",
         "test": "Run the test suite.",
-        "pint": "Run Laravel Pint to check code style.",
+        "pint-ci": "Run Laravel Pint in CI mode to check code style.",
+        "pint-fix": "Run Laravel Pint to fix code style issues.",
         "pint-dirty": "Run Laravel Pint only on changed files.",
         "phpstan": "Run PHPStan for static analysis of the codebase.",
         "phpstan-clear-cache": "Clear PHPStan's result cache.",
         "rector": "Run Rector to automatically refactor code.",
-        "rector:dry": "Run Rector in dry-run mode to see potential changes without applying them.",
+        "rector-dry": "Run Rector in dry-run mode to see potential changes without applying them.",
         "ide-helper": "Generate IDE helper files for better autocompletion."
     },
     "extra": {
