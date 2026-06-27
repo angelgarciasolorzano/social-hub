@@ -25,8 +25,8 @@ class CommentResource extends JsonResource
             'content' => $this->content,
             'createdAt' => $this->created_at?->toIso8601String(),
             'user' => [
-                'id' => $this->user?->id,
-                'name' => $this->user?->name,
+                'id' => $this->user->id,
+                'name' => $this->user->name,
             ],
             'repliesInfo' => [
                 'hasReplies' => $this->hasReplies(),
