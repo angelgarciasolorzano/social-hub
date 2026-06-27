@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Rector\CodingStyle\Rector\PostInc\PostIncDecToPreIncDecRector;
 use Rector\Config\RectorConfig;
+use Rector\ValueObject\PhpVersion;
 use RectorLaravel\Set\LaravelSetList;
 use RectorLaravel\Set\LaravelSetProvider;
 
@@ -14,6 +16,31 @@ return RectorConfig::configure()
         __DIR__.'/routes',
         __DIR__.'/tests',
     ])
+    ->withPreparedSets(
+        deadCode: true,
+        codeQuality: true,
+        codingStyle: true,
+        typeDeclarations: true,
+        typeDeclarationDocblocks: true,
+        privatization: true,
+        naming: true,
+        instanceOf: true,
+        carbon: true,
+        phpunitCodeQuality: true,
+        earlyReturn: true,
+        rectorPreset: true,
+    )
+    ->withSkip([
+        PostIncDecToPreIncDecRector::class,
+    ])
+    ->withImportNames(
+        removeUnusedImports: true,
+        importShortClasses: true,
+        importDocBlockNames: true,
+    )
+    ->withPhpVersion(PhpVersion::PHP_85)
+    ->withFluentCallNewLine()
+    ->withPhpSets()
     ->withSetProviders(LaravelSetProvider::class)
     ->withComposerBased(laravel: true)
     ->withSets([

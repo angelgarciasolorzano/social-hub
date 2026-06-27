@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Password\Controllers;
 
 use App\Auth\Password\Requests\NewPasswordRequest;
@@ -21,9 +23,8 @@ class NewPasswordController extends Controller
      * Show the password reset page.
      *
      * @param  Request&object{email: string}  $request
-     * @return Response
      */
-    public function create(Request $request)
+    public function create(Request $request): Response
     {
         return Inertia::render('auth/password/ResetPassword', [
             'email' => $request->email,
@@ -33,15 +34,13 @@ class NewPasswordController extends Controller
 
     /**
      * Handle an incoming new password request.
-     *
-     * @return RedirectResponse
      */
-    public function store(NewPasswordRequest $request)
+    public function store(NewPasswordRequest $newPasswordRequest): RedirectResponse
     {
         /** @var string $status */
-        $status = Password::reset($request->only('email', 'password', 'password_confirmation', 'token'), function (User $user) use ($request): void {
+        $status = Password::reset($newPasswordRequest->only('email', 'password', 'password_confirmation', 'token'), function (User $user) use ($newPasswordRequest): void {
             $user->forceFill([
-                'password' => Hash::make($request->password),
+                'password' => Hash::make($newPasswordRequest->password),
                 'remember_token' => Str::random(60),
             ])->save();
 

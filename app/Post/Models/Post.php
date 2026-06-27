@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Post\Models;
 
 use App\Comment\Models\Comment;
@@ -36,22 +38,22 @@ class Post extends Model implements HasMedia
     /**
      * The morph name used for polymorphic relations.
      */
-    public const MORPH_NAME = 'post';
+    public const string MORPH_NAME = 'post';
 
     /**
      * The base path for posts.
      */
-    public const PATH = 'posts';
+    public const string PATH = 'posts';
 
     /**
      * The media collection name for post images.
      */
-    public const POSTS_IMAGES_MEDIA_COLLECTION = 'posts_images';
+    public const string POSTS_IMAGES_MEDIA_COLLECTION = 'posts_images';
 
     /**
      * Glob pattern for test images used in seeding.
      */
-    public const TEST_IMAGES_GLOB_PATH = 'Post/Seeders/Images/*.{jpg,jpeg,png}';
+    public const string TEST_IMAGES_GLOB_PATH = 'Post/Seeders/Images/*.{jpg,jpeg,png}';
 
     /**
      * Register the media collections for the post images.

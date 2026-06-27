@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Auth\Providers\AuthServiceProvider;
 use App\Comment\Providers\CommentServiceProvider;
 use App\Friendship\Providers\FriendshipServiceProvider;

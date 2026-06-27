@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Email\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -12,9 +14,9 @@ class VerifyEmailController extends Controller
     /**
      * Mark the authenticated user's email address as verified.
      */
-    public function __invoke(EmailVerificationRequest $request): RedirectResponse
+    public function __invoke(EmailVerificationRequest $emailVerificationRequest): RedirectResponse
     {
-        $user = $request->user();
+        $user = $emailVerificationRequest->user();
 
         abort_unless($user instanceof User, 401);
 
@@ -22,7 +24,7 @@ class VerifyEmailController extends Controller
             return redirect()->intended(route('home', absolute: false).'?verified=1');
         }
 
-        $request->fulfill();
+        $emailVerificationRequest->fulfill();
 
         return redirect()->intended(route('home', absolute: false).'?verified=1');
     }

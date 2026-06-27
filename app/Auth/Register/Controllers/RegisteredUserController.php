@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Register\Controllers;
 
 use App\Auth\Register\Requests\RegisterRequest;
@@ -25,12 +27,12 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      */
-    public function store(RegisterRequest $request): RedirectResponse
+    public function store(RegisterRequest $registerRequest): RedirectResponse
     {
         $user = User::query()->create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $registerRequest->name,
+            'email' => $registerRequest->email,
+            'password' => Hash::make($registerRequest->password),
         ]);
 
         event(new Registered($user));

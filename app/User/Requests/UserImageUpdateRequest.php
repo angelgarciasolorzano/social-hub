@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Requests;
 
 use App\User\Enums\UserImageType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Override;
 
 class UserImageUpdateRequest extends FormRequest
 {
     protected UserImageType $field;
 
+    #[Override]
     protected function prepareForValidation(): void
     {
         /** @var UserImageType $type */
@@ -43,15 +47,17 @@ class UserImageUpdateRequest extends FormRequest
      *
      * @return array<string, string>
      */
+    #[Override]
     public function messages(): array
     {
         return [
-            "{$this->field->value()}.required" => 'La imagen es obligatoria',
-            "{$this->field->value()}.max" => 'La imagen no debe ser mayor a 2MB',
-            "{$this->field->value()}.mimes" => 'El archivo debe ser de tipo png, jpg, jpeg o webp',
+            $this->field->value().'.required' => 'La imagen es obligatoria',
+            $this->field->value().'.max' => 'La imagen no debe ser mayor a 2MB',
+            $this->field->value().'.mimes' => 'El archivo debe ser de tipo png, jpg, jpeg o webp',
         ];
     }
 
+    #[Override]
     public function attributes(): array
     {
         return [

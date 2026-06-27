@@ -9,6 +9,7 @@ use App\Like\Models\Like;
 use App\Post\Models\Post;
 use App\User\Enums\UserImageType;
 use App\User\Factories\UserFactory;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -19,10 +20,13 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Events\RecoveryCodeReplaced;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Override;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
+ * @property CarbonImmutable|null $created_at
+ *
  * @mixin IdeHelperUser
  */
 #[UseFactory(UserFactory::class)]
@@ -42,39 +46,51 @@ class User extends Authenticatable implements HasMedia
      */
     use HasFactory;
 
-    use InteractsWithMedia, Notifiable, TwoFactorAuthenticatable;
+    use InteractsWithMedia;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
 
-    public const MORPH_NAME = 'user';
+    /**
+     * The morph name used for polymorphic relations.
+     */
+    public const string MORPH_NAME = 'user';
 
-    public const DEFAULT_PROFILE_PICTURE_PATH = '/default-profile-picture.png';
+    /**
+     * The default profile picture path used as fallback.
+     */
+    public const string DEFAULT_PROFILE_PICTURE_PATH = '/default-profile-picture.png';
 
-    public const DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
+    /**
+     * The default cover image path used as fallback.
+     */
+    public const string DEFAULT_COVER_IMAGE_PATH = '/default-cover.svg';
 
     /**
      * Glob pattern for all test profile images.
      */
-    public const TEST_PROFILE_IMAGES_GLOB_PATH = 'User/Seeders/Images/profile/*.{jpg,jpeg,png}';
+    public const string TEST_PROFILE_IMAGES_GLOB_PATH = 'User/Seeders/Images/profile/*.{jpg,jpeg,png}';
 
     /**
      * Glob pattern for all test cover images.
      */
-    public const TEST_COVER_IMAGES_GLOB_PATH = 'User/Seeders/Images/cover/*.{jpg,jpeg,png}';
+    public const string TEST_COVER_IMAGES_GLOB_PATH = 'User/Seeders/Images/cover/*.{jpg,jpeg,png}';
 
     /**
      * Glob pattern for the test user's profile image.
      */
-    public const TEST_USER_IMAGE_GLOB_PATH = 'User/Seeders/Images/profile/user-test.{jpg,jpeg,png}';
+    public const string TEST_USER_IMAGE_GLOB_PATH = 'User/Seeders/Images/profile/user-test.{jpg,jpeg,png}';
 
     /**
      * Glob pattern for the test user's cover image.
      */
-    public const TEST_COVER_IMAGE_GLOB_PATH = 'User/Seeders/Images/cover/user-cover-test.{jpg,jpeg,png}';
+    public const string TEST_COVER_IMAGE_GLOB_PATH = 'User/Seeders/Images/cover/user-cover-test.{jpg,jpeg,png}';
 
     /**
      * The attributes that should be cast.
      *
      * @return array<string, string>
      */
+    #[Override]
     protected function casts(): array
     {
         return [
@@ -104,9 +120,16 @@ class User extends Authenticatable implements HasMedia
      */
     public function replaceRecoveryCode(string $code): void
     {
+        /** @var array<int, string> $recoveryCodes */
         $recoveryCodes = $this->recoveryCodes();
 
-        $updatedCodes = array_values(array_filter($recoveryCodes, fn ($recoveryCode) => $recoveryCode !== $code));
+        /** @var array<int, string> $updatedCodes */
+        $updatedCodes = array_values(
+            array_filter(
+                $recoveryCodes,
+                fn (string $recoveryCode): bool => $recoveryCode !== $code
+            )
+        );
 
         $this->forceFill([
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(

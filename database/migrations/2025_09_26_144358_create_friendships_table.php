@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,12 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('friendships', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('requester_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('receiver_id')->constrained('users')->cascadeOnDelete();
-            $table->string('status')->default('pending');
-            $table->timestamps();
+        Schema::create('friendships', function (Blueprint $blueprint): void {
+            $blueprint->id();
+            $blueprint->foreignId('requester_id')->constrained('users')->cascadeOnDelete();
+            $blueprint->foreignId('receiver_id')->constrained('users')->cascadeOnDelete();
+            $blueprint->string('status')->default('pending');
+            $blueprint->timestamps();
         });
     }
 

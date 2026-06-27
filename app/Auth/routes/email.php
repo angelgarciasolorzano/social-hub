@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Auth\Email\Controllers\EmailVerificationNotificationController;
 use App\Auth\Email\Controllers\EmailVerificationPromptController;
 use App\Auth\Email\Controllers\VerifyEmailController;

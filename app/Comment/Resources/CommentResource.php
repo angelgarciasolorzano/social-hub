@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Comment\Resources;
 
 use App\Comment\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Override;
 
 /** @mixin Comment */
 class CommentResource extends JsonResource
@@ -14,6 +17,7 @@ class CommentResource extends JsonResource
      *
      * @return array<string, mixed>
      */
+    #[Override]
     public function toArray(Request $request): array
     {
         return [
@@ -21,8 +25,8 @@ class CommentResource extends JsonResource
             'content' => $this->content,
             'createdAt' => $this->created_at?->toIso8601String(),
             'user' => [
-                'id' => $this->user?->id,
-                'name' => $this->user?->name,
+                'id' => $this->user->id,
+                'name' => $this->user->name,
             ],
             'repliesInfo' => [
                 'hasReplies' => $this->hasReplies(),

@@ -16,12 +16,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Override;
 
 /**
  * @property int $id
  * @property string $content
  * @property CarbonImmutable|null $created_at
- * @property-read User|null $user
+ * @property-read User $user
  *
  * @mixin IdeHelperComment
  */
@@ -40,13 +41,14 @@ class Comment extends Model
     /**
      * The morph name used for polymorphic relations.
      */
-    public const MORPH_NAME = 'comment';
+    public const string MORPH_NAME = 'comment';
 
     /**
      * The morph column name for child comments.
      */
-    public const MORPH_COLUMN = 'commentable';
+    public const string MORPH_COLUMN = 'commentable';
 
+    #[Override]
     protected function casts(): array
     {
         return [

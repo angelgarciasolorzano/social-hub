@@ -1,9 +1,6 @@
-includes:
-    - vendor/larastan/larastan/extension.neon
-    - vendor/nesbot/carbon/extension.neon
-
 parameters:
     level: max
+
     paths:
         - app
         - bootstrap
@@ -11,6 +8,9 @@ parameters:
         - routes
 
     tmpDir: storage/phpstan
+
+    errorFormat: ticketswap
+    editorUrl: 'vscode://file/%%file%%:%%line%%'
 
     checkAuthCallsWhenInRequestScope: true
     checkBenevolentUnionTypes: true
@@ -20,8 +20,29 @@ parameters:
     noEnvCallsOutsideOfConfig: true
     noUnnecessaryEnumerableToArrayCalls: true
 
+    type_coverage:
+        return: 100
+        param: 100
+        property: 100
+        constant: 100
+        declare: 100
+
+    type_perfect:
+        no_mixed_property: true
+        no_mixed_caller: true
+        null_over_false: true
+        narrow_param: true
+        narrow_return: true
+
     scanFiles:
         - _ide_helper_models.php
+    
+    ignoreErrors:
+        - '#Dynamic call to static method Illuminate\\.*#'
+        - '#Dynamic call to static method App\\.*#'
+        -
+            message: '#Provide more specific return type.*(BelongsTo|HasOne|HasMany|BelongsToMany|MorphTo|MorphOne|MorphMany|MorphToMany|HasOneThrough|HasManyThrough)#'
+            identifier: typePerfect.narrowReturnObjectType
 
     excludePaths:
         analyse:

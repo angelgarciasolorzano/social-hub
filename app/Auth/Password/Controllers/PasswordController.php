@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Password\Controllers;
 
 use App\Auth\Password\Requests\PasswordRequest;
@@ -16,14 +18,14 @@ class PasswordController extends Controller
         return Inertia::render('setting/modules/password/EditPassword');
     }
 
-    public function update(PasswordRequest $request): RedirectResponse
+    public function update(PasswordRequest $passwordRequest): RedirectResponse
     {
-        $user = $request->user();
+        $user = $passwordRequest->user();
 
-        /** @var string $password */
-        $password = $request->input('password');
+        /** @var string|null $password */
+        $password = $passwordRequest->input('password');
 
-        abort_if(! $user || ! $password, 401);
+        abort_if($user === null || $password === null, 401);
 
         $user->update([
             'password' => Hash::make($password),

@@ -1,24 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\PasswordConfirmedResponse;
 use Laravel\Fortify\Fortify;
+use Override;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    private const SESSION_KEY_PASSWORD_CONFIRMATION_REDIRECT = 'auth.password_confirmation_redirect';
+    private const string SESSION_KEY_PASSWORD_CONFIRMATION_REDIRECT = 'auth.password_confirmation_redirect';
 
-    private const SESSION_KEY_PASSWORD_CONFIRMED_AT = 'auth.password_confirmed_at';
+    private const string SESSION_KEY_PASSWORD_CONFIRMED_AT = 'auth.password_confirmed_at';
 
     /**
      * Register any application services.
      */
+    #[Override]
     public function register(): void
     {
         //
@@ -39,23 +45,19 @@ class FortifyServiceProvider extends ServiceProvider
             return Inertia::render('auth/password/ConfirmPassword');
         });
 
-        RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
-        });
+        RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id')));
 
-        $this->app->singleton(PasswordConfirmedResponse::class, function () {
-            return new class implements PasswordConfirmedResponse
+        $this->app->singleton(PasswordConfirmedResponse::class, fn (): PasswordConfirmedResponse => new class implements PasswordConfirmedResponse
+        {
+            public function toResponse($request): RedirectResponse
             {
-                public function toResponse($request)
-                {
-                    $request->session()->put(
-                        'auth.password_confirmation_redirect',
-                        $request->session()->get('url.intended', route('home', absolute: false))
-                    );
+                $request->session()->put(
+                    'auth.password_confirmation_redirect',
+                    $request->session()->get('url.intended', route('home', absolute: false))
+                );
 
-                    return redirect()->intended(route('home', absolute: false));
-                }
-            };
+                return redirect()->intended(route('home', absolute: false));
+            }
         });
     }
 
@@ -63,7 +65,8 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $confirmedAt = $request->session()->get(self::SESSION_KEY_PASSWORD_CONFIRMED_AT);
 
-        return \is_int($confirmedAt) && time() - $confirmedAt < config('auth.password_timeout', 10800);
+        return \is_int($confirmedAt) && Date::now()
+            ->getTimestamp() - $confirmedAt < config('auth.password_timeout', 10800);
     }
 
     private function passwordConfirmationRedirectTo(Request $request): string

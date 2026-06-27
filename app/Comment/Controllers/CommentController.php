@@ -10,7 +10,6 @@ use App\Comment\Requests\CommentStoreRequest;
 use App\Comment\Resources\CommentCollection;
 use App\Http\Controllers\Controller;
 use App\Post\Models\Post;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -23,39 +22,39 @@ class CommentController extends Controller
         /** @var class-string<Post | Comment> $modelType */
         $modelType = $commentableType->modelClass();
 
-        /** @var Model & (Post | Comment) $commentable */
         $commentable = $modelType::query()->findOrFail($commentableId);
 
-        $comments = $commentable->comments()
+        $cursorPaginator = $commentable->comments()
             ->with('user')
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
-        return Inertia::flash(['comments' => new CommentCollection($comments)])->back();
+        return Inertia::flash(['comments' => new CommentCollection($cursorPaginator)])->back();
     }
 
-    public function store(CommentStoreRequest $request): RedirectResponse
+    public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
     {
-        /** @var string $commentableType */
-        $commentableType = $request->input('commentable_type');
+        /** @var class-string<Post | Comment> $commentableType */
+        $commentableType = $commentStoreRequest->input('commentable_type');
 
+        /** @var class-string<Post | Comment> | null $modelType */
         $modelType = Relation::getMorphedModel($commentableType);
 
-        $commentableId = $request['commentable_id'];
+        /** @var int $commentableId */
+        $commentableId = $commentStoreRequest->input('commentable_id');
 
-        if (! $modelType) {
+        if ($modelType === null) {
             return back()->with([
                 'type' => 'error',
                 'message' => 'El tipo de comentario es invalido.',
             ]);
         }
 
-        /** @var Model & (Post | Comment) $commentable */
         $commentable = $modelType::query()->findOrFail($commentableId);
 
         $commentable->comments()->create([
             'user_id' => Auth::id(),
-            'content' => $request['content'],
+            'content' => $commentStoreRequest->input('content'),
         ]);
 
         return Inertia::flash([

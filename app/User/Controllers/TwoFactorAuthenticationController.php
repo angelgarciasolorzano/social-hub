@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -19,7 +21,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TwoFactorAuthenticationController extends Controller implements HasMiddleware
 {
-    public static function middleware()
+    public static function middleware(): array
     {
         return Features::canManageTwoFactorAuthentication()
             && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword')
@@ -36,7 +38,7 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
         return $user;
     }
 
-    public function index(TwoFactorAuthenticationRequest $request): Response
+    public function index(TwoFactorAuthenticationRequest $twoFactorAuthenticationRequest): Response
     {
         $user = $this->getAuthenticatedUser();
 
@@ -45,7 +47,7 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
-            $request->ensureStateIsValid();
+            $twoFactorAuthenticationRequest->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
@@ -55,25 +57,25 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
     }
 
     public function storeRecoveryCodes(
-        RegenerateRecoveryCodesRequest $request,
-        GenerateNewRecoveryCodes $generate
+        RegenerateRecoveryCodesRequest $regenerateRecoveryCodesRequest,
+        GenerateNewRecoveryCodes $generateNewRecoveryCodes
     ): RedirectResponse {
-        $user = $request->user();
+        $user = $regenerateRecoveryCodesRequest->user();
 
         abort_unless((bool) $user, 401);
 
-        $generate($user);
+        $generateNewRecoveryCodes($user);
 
         return Inertia::flash('success', 'Códigos de recuperación regenerados exitosamente.')->back();
     }
 
     public function destroy(
-        DisableTwoFactorRequest $request,
-        DisableTwoFactorAuthentication $action
+        DisableTwoFactorRequest $disableTwoFactorRequest,
+        DisableTwoFactorAuthentication $disableTwoFactorAuthentication
     ): RedirectResponse {
         $user = $this->getAuthenticatedUser();
 
-        $action($user);
+        $disableTwoFactorAuthentication($user);
 
         return Inertia::flash('success', 'La autenticación de dos factores ha sido desactivada correctamente.')
             ->back();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Post\Seeders;
 
 use App\Post\Models\Post;
@@ -14,12 +16,12 @@ class PostSeeder extends Seeder
      */
     public function run(): void
     {
-        User::all()->each(function (User $user) {
-            /** @var Factory<Post> $post */
-            $post = Post::factory();
+        User::all()->each(function (User $user): void {
+            /** @var Factory<Post> $postFactory */
+            $postFactory = Post::factory();
 
-            $post
-                ->count(rand(5, 20))
+            $postFactory
+                ->count(random_int(5, 20))
                 ->for($user)
                 ->create();
         });

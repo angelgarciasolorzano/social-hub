@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Comment\Enums;
 
 use App\Comment\Models\Comment;

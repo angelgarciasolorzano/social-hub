@@ -1,49 +1,53 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Auth;
 
 use App\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Date;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
-class PasswordConfirmationTest extends TestCase
+final class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_confirm_password_screen_can_be_rendered()
+    public function test_confirm_password_screen_can_be_rendered(): void
     {
         /** @var User $user */
         $user = User::factory()->createOne();
 
-        $response = $this->actingAs($user)->get(route('password.confirm'));
+        $testResponse = $this->actingAs($user)->get(route('password.confirm'));
 
-        $response->assertOk();
+        $testResponse->assertOk();
 
-        $response->assertInertia(fn (Assert $page) => $page
+        $testResponse->assertInertia(fn (Assert $assert): Assert => $assert
             ->component('auth/confirm-password')
         );
     }
 
-    public function test_password_confirmation_requires_authentication()
+    public function test_password_confirmation_requires_authentication(): void
     {
-        $response = $this->get(route('password.confirm'));
+        $testResponse = $this->get(route('password.confirm'));
 
-        $response->assertRedirect(route('login'));
+        $testResponse->assertRedirect(route('login'));
     }
 
-    public function test_confirm_password_screen_redirects_to_the_last_intended_page_when_password_is_still_confirmed()
+    public function test_confirm_password_screen_redirects_to_the_last_intended_page_when_password_is_still_confirmed(): void
     {
         /** @var User $user */
         $user = User::factory()->createOne();
 
-        $response = $this->actingAs($user)
+        $testResponse = $this->actingAs($user)
             ->withSession([
-                'auth.password_confirmed_at' => time(),
+                'auth.password_confirmed_at' => Date::now()
+                    ->getTimestamp(),
                 'auth.password_confirmation_redirect' => route('two-factor.show', absolute: false),
             ])
             ->get(route('password.confirm'));
 
-        $response->assertRedirect(route('two-factor.show', absolute: false));
+        $testResponse->assertRedirect(route('two-factor.show', absolute: false));
     }
 }

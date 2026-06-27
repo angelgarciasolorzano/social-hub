@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Auth\Login\Controllers\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
 

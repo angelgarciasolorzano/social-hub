@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\MediaLibrary\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Override;
+use Symfony\Component\Finder\SplFileInfo;
 
 class CleanMediaLibraryFolders extends Command
 {
@@ -12,6 +16,7 @@ class CleanMediaLibraryFolders extends Command
      *
      * @var string
      */
+    #[Override]
     protected $signature = 'app:clean-media-library-folders';
 
     /**
@@ -19,6 +24,7 @@ class CleanMediaLibraryFolders extends Command
      *
      * @var string
      */
+    #[Override]
     protected $description = 'Deletes all folders and files inside storage/app/public and public/storage. For local development use only!';
 
     /**
@@ -31,34 +37,43 @@ class CleanMediaLibraryFolders extends Command
             public_path('storage'),
         ];
 
-        $totalDeleted = 0;
+        $totalDeletedFolder = 0;
+        $totalDeletedFile = 0;
 
-        foreach ($paths as $mediaPath) {
-            if (! File::exists($mediaPath)) {
-                $this->warn("The path {$mediaPath} does not exist.");
+        foreach ($paths as $path) {
+            if (! File::exists($path)) {
+                $this->warn(sprintf('The path %s does not exist.', $path));
 
                 continue;
             }
 
-            $folders = File::directories($mediaPath);
+            /** @var string[] $folders */
+            $folders = File::directories($path);
 
             foreach ($folders as $folder) {
                 /** @var string $folder */
                 File::deleteDirectory($folder);
-                $this->info("Deleted folder: {$folder}");
-                $totalDeleted++;
+
+                $this->info('Deleted folder: '.$folder);
+
+                $totalDeletedFolder++;
             }
 
-            $files = File::files($mediaPath);
+            /** @var SplFileInfo[] $files */
+            $files = File::files($path);
 
             foreach ($files as $file) {
-                File::delete($file);
-                $this->info("Deleted file: {$file}");
-                $totalDeleted++;
+                File::delete($file->getPathname());
+
+                $this->info('Deleted file: '.$file->getPathname());
+
+                $totalDeletedFile++;
             }
         }
 
-        $this->info("Total deleted folders and files: {$totalDeleted}");
+        $this->info('Total deleted folders: '.$totalDeletedFolder);
+
+        $this->info('Total deleted files: '.$totalDeletedFile);
 
         return self::SUCCESS;
     }

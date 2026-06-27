@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Comment\Seeders;
 
 use App\Comment\Models\Comment;
@@ -22,7 +24,7 @@ class CommentSeeder extends Seeder
             $factory = Comment::factory();
 
             $rootComments = $factory
-                ->count(rand(5, 10))
+                ->count(random_int(5, 10))
                 ->create([
                     'user_id' => $usersIds[array_rand($usersIds)],
                     'commentable_id' => $post->id,
@@ -34,7 +36,7 @@ class CommentSeeder extends Seeder
                 $factory = Comment::factory();
 
                 $factory
-                    ->count(rand(5, 8))
+                    ->count(random_int(5, 8))
                     ->create([
                         'user_id' => $usersIds[array_rand($usersIds)],
                         'commentable_id' => $comment->id,

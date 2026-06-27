@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\User\Controllers;
 
 use App\Http\Controllers\Controller;
@@ -7,6 +9,7 @@ use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use App\User\Requests\UserImageUpdateRequest;
 use App\User\Requests\UserUpdateRequest;
+use Illuminate\Http\RedirectResponse as HttpRedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -25,11 +28,11 @@ class UserController extends Controller
         return $user;
     }
 
-    public function update(UserUpdateRequest $request): RedirectResponse
+    public function update(UserUpdateRequest $userUpdateRequest): RedirectResponse
     {
         $user = $this->getAuthenticatedUser();
 
-        $user->fill($request->validated());
+        $user->fill($userUpdateRequest->validated());
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -43,7 +46,7 @@ class UserController extends Controller
         ])->back();
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): HttpRedirectResponse
     {
         $request->validate([
             'password' => ['required', 'current_password'],
@@ -61,22 +64,22 @@ class UserController extends Controller
         return redirect('/');
     }
 
-    public function updateImage(UserImageUpdateRequest $request, UserImageType $type): RedirectResponse
+    public function updateImage(UserImageUpdateRequest $userImageUpdateRequest, UserImageType $userImageType): RedirectResponse
     {
         $user = $this->getAuthenticatedUser();
 
         try {
-            $user->addMediaFromRequest($type->value())->toMediaCollection($type->value());
-        } catch (FileDoesNotExist|FileIsTooBig $exception) {
+            $user->addMediaFromRequest($userImageType->value())->toMediaCollection($userImageType->value());
+        } catch (FileDoesNotExist|FileIsTooBig) {
             return Inertia::flash([
                 'type' => 'error',
-                'message' => $type->errorMessage(),
+                'message' => $userImageType->errorMessage(),
             ])->back();
         }
 
         return Inertia::flash([
             'type' => 'success',
-            'message' => $type->successMessage(),
+            'message' => $userImageType->successMessage(),
         ])->back();
     }
 }
