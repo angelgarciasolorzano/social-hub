@@ -36,6 +36,12 @@ parameters:
 
     scanFiles:
         - _ide_helper_models.php
+    
+    ignoreErrors:
+        - '#Dynamic call to static method Illuminate\\.*#'
+        -
+            message: '#Provide more specific return type.*(BelongsTo|HasOne|HasMany|BelongsToMany|MorphTo|MorphOne|MorphMany|MorphToMany|HasOneThrough|HasManyThrough)#'
+            identifier: typePerfect.narrowReturnObjectType
 
     excludePaths:
         analyse:
