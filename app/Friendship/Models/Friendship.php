@@ -20,9 +20,9 @@ class Friendship extends Model
     /** @use HasFactory<FriendshipFactory> */
     use HasFactory;
 
-    public const REQUESTER_ID = 'requester_id';
+    public const string REQUESTER_ID = 'requester_id';
 
-    public const RECEIVER_ID = 'receiver_id';
+    public const string RECEIVER_ID = 'receiver_id';
 
     /**
      * The attributes that are mass assignable.

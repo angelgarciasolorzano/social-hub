@@ -19,9 +19,9 @@ class Like extends Model
     /** @use HasFactory<LikeFactory> */
     use HasFactory;
 
-    public const MORPH_NAME = 'like';
+    public const string MORPH_NAME = 'like';
 
-    public const MORPH_COLUMN = 'likeable';
+    public const string MORPH_COLUMN = 'likeable';
 
     /**
      * Get the user that owns the like.
