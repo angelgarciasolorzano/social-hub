@@ -91,7 +91,7 @@
             "@php artisan ide-helper:generate",
             "@php artisan ide-helper:models -RM"
         ],
-        "pint-ci": "vendor/bin/pint --dirty --test --format=github",
+        "pint-ci": "vendor/bin/pint --dirty --test",
         "pint-fix": "vendor/bin/pint",
         "pint-dirty": "vendor/bin/pint --dirty",
         "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
