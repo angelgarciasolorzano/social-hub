@@ -47,6 +47,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-qa-caches-
 
+      - name: Execute Laravel Pint
+        run: composer pint-ci
+
+      - name: Execute Rector
+        run: composer rector-dry
+
       - name: Setup Laravel environment
         run: |
           cp .env.example .env
@@ -57,12 +63,6 @@ jobs:
 
       - name: Generate IDE Helper files
         run: composer ide-helper
-
-      - name: Execute Laravel Pint
-        run: composer pint-ci
-
-      - name: Execute Rector
-        run: composer rector-dry
 
       - name: Execute PHPStan
         run: composer phpstan
