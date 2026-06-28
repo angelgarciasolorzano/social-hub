@@ -32,12 +32,12 @@ import {
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
 import { useTwoFactorDisabled } from "../hooks/useTwoFactorDisabled";
 
-interface TwoFactorAuthenticationDisabledProps {
+interface TwoFactorDisabledProps {
   requiresConfirmation: boolean;
   twoFactorEnabled: boolean;
 }
 
-function TwoFactorAuthenticationDisabled(props: TwoFactorAuthenticationDisabledProps) {
+function TwoFactorDisabled(props: TwoFactorDisabledProps) {
   const { requiresConfirmation, twoFactorEnabled } = props;
 
   const { qrCodeSvg, hasSetupData, manualSetupKey, clearSetupData, fetchSetupData, errors } =
@@ -229,4 +229,4 @@ function TwoFactorRecommendedApps() {
   );
 }
 
-export default TwoFactorAuthenticationDisabled;
+export default TwoFactorDisabled;

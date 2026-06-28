@@ -2,7 +2,7 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Login/Controllers/AuthenticatedSessionController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Login/Controllers/LoginSessionController";
 
 import { register } from "@/shared/wayfinder/routes";
 import { request } from "@/shared/wayfinder/routes/password";

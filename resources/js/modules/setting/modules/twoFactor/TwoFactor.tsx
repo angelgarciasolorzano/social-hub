@@ -1,7 +1,7 @@
 import { Head } from "@inertiajs/react";
 
-import TwoFactorAuthenticationDisabled from "./views/TwoFactorAuthenticationDisabled";
-import TwoFactorAuthenticationEnable from "./views/TwoFactorAuthenticationEnable";
+import TwoFactorDisabled from "./views/TwoFactorDisabled";
+import TwoFactorEnable from "./views/TwoFactorEnable";
 
 interface Props {
   canManageTwoFactor?: boolean;
@@ -9,7 +9,7 @@ interface Props {
   twoFactorEnabled?: boolean;
 }
 
-export default function TwoFactorAuthentication({
+export default function TwoFactor({
   canManageTwoFactor = false,
   requiresConfirmation = false,
   twoFactorEnabled = false,
@@ -21,10 +21,10 @@ export default function TwoFactorAuthentication({
       {canManageTwoFactor && (
         <>
           {twoFactorEnabled ? (
-            <TwoFactorAuthenticationEnable />
+            <TwoFactorEnable />
           ) : (
             <>
-              <TwoFactorAuthenticationDisabled
+              <TwoFactorDisabled
                 requiresConfirmation={requiresConfirmation}
                 twoFactorEnabled={twoFactorEnabled}
               />

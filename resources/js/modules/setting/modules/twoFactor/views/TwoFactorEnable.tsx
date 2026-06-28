@@ -32,7 +32,7 @@ import {
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
 import { useTwoFactorEnable } from "../hooks/useTwoFactorEnable";
 
-function TwoFactorAuthenticationEnable() {
+function TwoFactorEnable() {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
   const {
     showRegenerateCodesDialog,
@@ -75,7 +75,7 @@ function TwoFactorAuthenticationEnable() {
 
         <TwoFactorSecuritySummary recoveryCodesList={recoveryCodesList} />
 
-        <TwoFactorSafatyTips />
+        <TwoFactorSafetyTips />
       </div>
 
       <div>
@@ -256,7 +256,7 @@ function TwoFactorSecuritySummary({ recoveryCodesList }: TwoFactorSecuritySummar
   );
 }
 
-function TwoFactorSafatyTips() {
+function TwoFactorSafetyTips() {
   return (
     <Card>
       <CardHeader>
@@ -288,4 +288,4 @@ function TwoFactorSafatyTips() {
   );
 }
 
-export default TwoFactorAuthenticationEnable;
+export default TwoFactorEnable;
