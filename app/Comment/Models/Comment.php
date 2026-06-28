@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Comment\Models;
 
-use App\Comment\Enums\CommentableType;
+use App\Comment\Enums\CommentType;
 use App\Comment\Factories\CommentFactory;
 use App\Like\Models\Like;
 use App\User\Models\User;
@@ -52,7 +52,7 @@ class Comment extends Model
     protected function casts(): array
     {
         return [
-            'commentable_type' => CommentableType::class,
+            'commentable_type' => CommentType::class,
         ];
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Comment\Controllers;
 
-use App\Comment\Enums\CommentableType;
+use App\Comment\Enums\CommentType;
 use App\Comment\Models\Comment;
 use App\Comment\Requests\CommentStoreRequest;
 use App\Comment\Resources\CommentCollection;
@@ -17,10 +17,10 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class CommentController extends Controller
 {
-    public function index(CommentableType $commentableType, int $commentableId): RedirectResponse
+    public function index(CommentType $commentType, int $commentableId): RedirectResponse
     {
         /** @var class-string<Post | Comment> $modelType */
-        $modelType = $commentableType->modelClass();
+        $modelType = $commentType->modelClass();
 
         $commentable = $modelType::query()->findOrFail($commentableId);
 
@@ -34,11 +34,11 @@ class CommentController extends Controller
 
     public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
     {
-        /** @var class-string<Post | Comment> $commentableType */
-        $commentableType = $commentStoreRequest->input('commentable_type');
+        /** @var class-string<Post | Comment> $commentType */
+        $commentType = $commentStoreRequest->input('commentable_type');
 
         /** @var class-string<Post | Comment> | null $modelType */
-        $modelType = Relation::getMorphedModel($commentableType);
+        $modelType = Relation::getMorphedModel($commentType);
 
         /** @var int $commentableId */
         $commentableId = $commentStoreRequest->input('commentable_id');
