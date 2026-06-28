@@ -47,11 +47,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-qa-caches-
 
+      - name: Setup Laravel environment
+        run: |
+          cp .env.example .env
+          mkdir -p database
+          touch database/database.sqlite
+          php artisan key:generate --ansi
+          php artisan migrate --force
+
       - name: Generate IDE Helper files
         run: composer ide-helper
-
-      - name: Regenerate Composer autoload
-        run: composer dump-autoload
 
       - name: Execute Laravel Pint
         run: composer pint-ci
