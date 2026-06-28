@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class RegisteredUserController extends Controller
+class RegisterUserController extends Controller
 {
     /**
      * Show the registration page.

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Auth\Login\Controllers\AuthenticatedSessionController;
+use App\Auth\Login\Controllers\LoginSessionController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('login', [AuthenticatedSessionController::class, 'create'])
+Route::get('login', [LoginSessionController::class, 'create'])
     ->name('login');
 
-Route::post('login', [AuthenticatedSessionController::class, 'store'])
+Route::post('login', [LoginSessionController::class, 'store'])
     ->name('login.store');

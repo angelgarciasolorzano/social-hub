@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\User\Requests\TwoFactorAuthentication;
+namespace App\User\TwoFactor\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
 use SanderMuller\FluentValidation\HasFluentRules;
 
-class RegenerateRecoveryCodesRequest extends FormRequest
+class TwoFactorRegenerateRecoveryCodesRequest extends FormRequest
 {
     use HasFluentRules;
 

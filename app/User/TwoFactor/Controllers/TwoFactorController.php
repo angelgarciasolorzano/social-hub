@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\User\Controllers;
+namespace App\User\TwoFactor\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
-use App\User\Requests\TwoFactorAuthentication\DisableTwoFactorRequest;
-use App\User\Requests\TwoFactorAuthentication\RegenerateRecoveryCodesRequest;
-use App\User\Requests\TwoFactorAuthentication\TwoFactorAuthenticationRequest;
+use App\User\TwoFactor\Requests\TwoFactorDisableRequest;
+use App\User\TwoFactor\Requests\TwoFactorRegenerateRecoveryCodesRequest;
+use App\User\TwoFactor\Requests\TwoFactorRequest;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,7 @@ use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use Laravel\Fortify\Features;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-class TwoFactorAuthenticationController extends Controller implements HasMiddleware
+class TwoFactorController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
@@ -38,7 +38,7 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
         return $user;
     }
 
-    public function index(TwoFactorAuthenticationRequest $twoFactorAuthenticationRequest): Response
+    public function index(TwoFactorRequest $twoFactorRequest): Response
     {
         $user = $this->getAuthenticatedUser();
 
@@ -47,7 +47,7 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
-            $twoFactorAuthenticationRequest->ensureStateIsValid();
+            $twoFactorRequest->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
@@ -57,10 +57,10 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
     }
 
     public function storeRecoveryCodes(
-        RegenerateRecoveryCodesRequest $regenerateRecoveryCodesRequest,
+        TwoFactorRegenerateRecoveryCodesRequest $twoFactorRegenerateRecoveryCodesRequest,
         GenerateNewRecoveryCodes $generateNewRecoveryCodes
     ): RedirectResponse {
-        $user = $regenerateRecoveryCodesRequest->user();
+        $user = $twoFactorRegenerateRecoveryCodesRequest->user();
 
         abort_unless((bool) $user, 401);
 
@@ -70,7 +70,7 @@ class TwoFactorAuthenticationController extends Controller implements HasMiddlew
     }
 
     public function destroy(
-        DisableTwoFactorRequest $disableTwoFactorRequest,
+        TwoFactorDisableRequest $twoFactorDisableRequest,
         DisableTwoFactorAuthentication $disableTwoFactorAuthentication
     ): RedirectResponse {
         $user = $this->getAuthenticatedUser();

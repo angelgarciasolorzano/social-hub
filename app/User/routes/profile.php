@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\User\Controllers\ProfileController;
+use App\User\Profile\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(ProfileController::class)->prefix('profile')->group(function (): void {

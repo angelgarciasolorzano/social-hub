@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\MediaLibrary\CustomPathGenerator;
+use App\MediaLibrary\MediaLibraryCustomPathGenerator;
 use Spatie\ImageOptimizer\Optimizers\Avifenc;
 use Spatie\ImageOptimizer\Optimizers\Cwebp;
 use Spatie\ImageOptimizer\Optimizers\Gifsicle;
@@ -109,7 +109,7 @@ return [
     /*
      * The class that contains the strategy for determining a media file's path.
      */
-    'path_generator' => CustomPathGenerator::class,
+    'path_generator' => MediaLibraryCustomPathGenerator::class,
 
     /*
      * The class that contains the strategy for determining how to remove files.

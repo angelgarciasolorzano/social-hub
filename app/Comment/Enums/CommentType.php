@@ -7,7 +7,7 @@ namespace App\Comment\Enums;
 use App\Comment\Models\Comment;
 use App\Post\Models\Post;
 
-enum CommentableType: string
+enum CommentType: string
 {
     case POST = Post::MORPH_NAME;
     case COMMENT = Comment::MORPH_NAME;

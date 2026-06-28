@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\MediaLibrary\Providers;
 
-use App\MediaLibrary\Console\Commands\CleanMediaLibraryFolders;
+use App\MediaLibrary\Console\Commands\MediaLibraryCleanFolders;
 use Illuminate\Support\ServiceProvider;
 
 class MediaLibraryServiceProvider extends ServiceProvider
@@ -15,7 +15,7 @@ class MediaLibraryServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->commands([
-            CleanMediaLibraryFolders::class,
+            MediaLibraryCleanFolders::class,
         ]);
     }
 }

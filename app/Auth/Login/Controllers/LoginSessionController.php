@@ -14,7 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
 
-class AuthenticatedSessionController extends Controller
+class LoginSessionController extends Controller
 {
     /**
      * Show the login page.
