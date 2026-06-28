@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Password\Controllers;
 
-use App\Auth\Password\Requests\NewPasswordRequest;
+use App\Auth\Password\Requests\PasswordNewRequest;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class NewPasswordController extends Controller
+class PasswordNewController extends Controller
 {
     /**
      * Show the password reset page.
@@ -35,17 +35,20 @@ class NewPasswordController extends Controller
     /**
      * Handle an incoming new password request.
      */
-    public function store(NewPasswordRequest $newPasswordRequest): RedirectResponse
+    public function store(PasswordNewRequest $passwordNewRequest): RedirectResponse
     {
         /** @var string $status */
-        $status = Password::reset($newPasswordRequest->only('email', 'password', 'password_confirmation', 'token'), function (User $user) use ($newPasswordRequest): void {
-            $user->forceFill([
-                'password' => Hash::make($newPasswordRequest->password),
-                'remember_token' => Str::random(60),
-            ])->save();
+        $status = Password::reset(
+            $passwordNewRequest->only(
+                'email', 'password', 'password_confirmation', 'token'
+            ), function (User $user) use ($passwordNewRequest): void {
+                $user->forceFill([
+                    'password' => Hash::make($passwordNewRequest->password),
+                    'remember_token' => Str::random(60),
+                ])->save();
 
-            event(new PasswordReset($user));
-        });
+                event(new PasswordReset($user));
+            });
 
         if ($status === Password::PASSWORD_RESET) {
             return to_route('login')->with('status', __($status));

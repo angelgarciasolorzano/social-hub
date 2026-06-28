@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Auth\Register\Controllers\RegisteredUserController;
+use App\Auth\Register\Controllers\RegisterUserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('register', [RegisteredUserController::class, 'create'])
+Route::get('register', [RegisterUserController::class, 'create'])
     ->name('register');
 
-Route::post('register', [RegisteredUserController::class, 'store'])
+Route::post('register', [RegisterUserController::class, 'store'])
     ->name('register.store');

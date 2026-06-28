@@ -9,13 +9,13 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
 /**
- * Summary of NewPasswordRequest
+ * Summary of PasswordNewRequest
  *
  * @property-read string $email
  * @property-read string $password
  * @property-read string $token
  */
-class NewPasswordRequest extends FormRequest
+class PasswordNewRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

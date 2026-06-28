@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Auth\Login\Controllers\AuthenticatedSessionController;
+use App\Auth\Login\Controllers\LoginSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
@@ -15,6 +15,6 @@ Route::middleware('auth')->group(function (): void {
     require __DIR__.'/email.php';
     require __DIR__.'/password.php';
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+    Route::post('logout', [LoginSessionController::class, 'destroy'])
         ->name('logout');
 });
