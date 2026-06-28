@@ -1,17 +1,21 @@
-# 🚀 Pull Request
+# Pull Request
 
-## 📋 Summary
+## Summary
 
 <!-- Briefly describe what this PR implements and why. -->
 
 ---
 
-## ✨ Changes
+## Changes
+
+<!-- List the most relevant changes introduced by this PR. -->
 
 -
 -
-- ***
+-
 
-## 📝 Notes (Optional)
+---
 
-<!-- Include any relevant context, implementation decisions, or known limitations. If additional explanation is needed for reviewers, use the project's PR Review Comment template. -->
+## Notes (Optional)
+
+<!-- Include implementation decisions, technical context or known limitations. -->

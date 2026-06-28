@@ -1,33 +1,22 @@
-## 📋 Review Summary
-
-<!-- Describe briefly what you reviewed and your overall impression. -->
+## Review Summary
 
 ---
 
-## ✅ What looks good
+## What looks good
 
--
--
 - ***
 
-## ⚠️ Requested changes
+## Requested changes
 
-- [ ]
-- [ ]
 - [ ]
 
 ---
 
-## 💡 Suggestions (Optional)
+## Suggestions (Optional)
 
-<!-- Improvements that are not blockers but could improve readability, maintainability, or performance. -->
-
--
 - ***
 
-## 🧪 Notes
-
-<!-- Mention anything you verified or could not verify. -->
+## Notes
 
 - Tested locally:
 - Edge cases reviewed:
