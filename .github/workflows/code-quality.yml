@@ -50,6 +50,9 @@ jobs:
       - name: Generate IDE Helper files
         run: composer ide-helper
 
+      - name: Regenerate Composer autoload
+        run: composer dump-autoload
+
       - name: Execute Laravel Pint
         run: composer pint-ci
 
