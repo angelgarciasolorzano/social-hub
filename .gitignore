@@ -8,6 +8,7 @@
 /storage/*.key
 /storage/pail
 /storage/phpstan
+/storage/rector
 /vendor
 .DS_Store
 .env

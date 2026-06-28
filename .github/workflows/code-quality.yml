@@ -1,0 +1,79 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: mbstring, xml, ctype, iconv, intl, bcmath, pdo_sqlite
+          coverage: none
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: |
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-code-quality-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-code-quality-composer-
+
+      - name: Install Composer dependencies
+        run: composer install -q --no-ansi --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare cache directories
+        run: |
+          mkdir -p storage/phpstan
+          mkdir -p storage/rector
+
+      - name: Cache PHPStan
+        uses: actions/cache@v6
+        with:
+          path: storage/phpstan
+          key: ${{ runner.os }}-code-quality-phpstan-${{ hashFiles('**/composer.lock', '**/phpstan.neon*') }}
+          restore-keys: |
+            ${{ runner.os }}-code-quality-phpstan-
+
+      - name: Cache Rector
+        uses: actions/cache@v6
+        with:
+          path: storage/rector
+          key: ${{ runner.os }}-code-quality-rector-${{ hashFiles('**/composer.lock', '**/rector.php') }}
+          restore-keys: |
+            ${{ runner.os }}-code-quality-rector-
+
+      - name: Execute Laravel Pint
+        run: composer pint-ci
+
+      - name: Execute Rector
+        run: composer rector-dry
+
+      - name: Setup Laravel environment
+        run: |
+          cp .env.ci .env
+          mkdir -p database
+          touch database/database.sqlite
+          php artisan key:generate --ansi
+          php artisan migrate --force
+
+      - name: Generate IDE Helper files
+        run: composer ide-helper
+
+      - name: Execute PHPStan
+        run: composer phpstan

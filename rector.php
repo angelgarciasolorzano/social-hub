@@ -16,6 +16,9 @@ return RectorConfig::configure()
         __DIR__.'/routes',
         __DIR__.'/tests',
     ])
+    ->withCache(
+        cacheDirectory: __DIR__.'/storage/rector',
+    )
     ->withPreparedSets(
         deadCode: true,
         codeQuality: true,
