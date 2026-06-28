@@ -47,6 +47,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-qa-caches-
 
+      - name: Generate IDE Helper files
+        run: composer ide-helper
+
       - name: Execute Laravel Pint
         run: composer pint-ci
 
