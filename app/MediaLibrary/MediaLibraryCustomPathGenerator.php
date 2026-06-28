@@ -8,7 +8,7 @@ use App\Post\Models\Post;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 
-class CustomPathGenerator implements PathGenerator
+class MediaLibraryCustomPathGenerator implements PathGenerator
 {
     /**
      * Returns the storage path for the given media item.

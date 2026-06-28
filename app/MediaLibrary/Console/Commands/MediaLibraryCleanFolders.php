@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 use Override;
 use Symfony\Component\Finder\SplFileInfo;
 
-class CleanMediaLibraryFolders extends Command
+class MediaLibraryCleanFolders extends Command
 {
     /**
      * The name and signature of the console command.
