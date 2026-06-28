@@ -41,8 +41,8 @@ jobs:
         uses: actions/cache@v6
         with:
           path: |
-            tmp/phpstan
-            tmp/rector
+            storage/phpstan
+            storage/rector
           key: ${{ runner.os }}-qa-caches-${{ hashFiles('**/composer.lock', '**/phpstan.neon*', '**/rector.php') }}
           restore-keys: |
             ${{ runner.os }}-qa-caches-
