@@ -1,4 +1,4 @@
-name: Code Quality Checks
+name: Backend Code Quality Checks
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  code-quality:
+  backend-code-quality:
     runs-on: ubuntu-latest
 
     steps:

@@ -2,7 +2,27 @@
 
 Referencia de los comandos npm más usados para mantener consistencia y calidad en el código del frontend.
 
-## 1. Comandos esenciales (antes de cada commit)
+## Instalación reproducible (CI)
+
+### `npm run install:ci`
+
+```bash
+npm run install:ci
+```
+
+Wrapper de `npm ci --no-audit --no-fund`. Instala dependencias desde `package-lock.json` de forma **reproducible y rápida**.
+
+- 🔒 Falla si `package-lock.json` está desincronizado con `package.json`
+- ⏩ Más rápido que `npm install` (no resuelve dependencias)
+- 🔇 Sin auditoría ni funding (limpio para logs de CI)
+
+**Cuándo:**
+- En CI (`.github/workflows/frontend-code-quality.yml`)
+- Localmente, antes de pushear, para validar que tu `package-lock.json` esté en sync
+
+**No usar para desarrollo normal** — usa `npm install` cuando agregues dependencias nuevas.
+
+## 1. Comandos esenciales (antes de cada commit)## 1. Comandos esenciales (antes de cada commit)
 
 Tres comandos — equivalentes a `pint-dirty`/`phpstan`/`rector-dry` del backend. **Ejecuta los tres en orden** antes de hacer commit.
 
@@ -166,6 +186,7 @@ Añade componentes de shadcn/ui al proyecto. El CLI los copia a `resources/js/sh
 
 | Comando                   | Para qué                 | Cuándo                            |
 | ------------------------- | ------------------------ | --------------------------------- |
+| `npm run install:ci`      | Instalación reproducible | En CI o antes de pushear          |
 | `npm run format:check`    | Verificar formato        | Antes de commit                   |
 | `npm run lint:check`      | Verificar linting        | Antes de commit                   |
 | `npm run types`           | Verificar tipos TS       | Antes de commit                   |
