@@ -92,5 +92,12 @@ export default defineConfig([
     "eslint.config.ts",
     "vite.config.ts",
     "tsconfig.json",
+    ".agents/**",
+    ".ai/**",
+    ".claude/**",
+    ".codex/**",
+    ".windsurf/**",
+    ".github/**",
+    ".vscode/**",
   ]),
 ]);
