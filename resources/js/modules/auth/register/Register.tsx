@@ -2,7 +2,7 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Register/Controllers/RegisteredUserController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Register/Controllers/RegisterUserController";
 
 import { login } from "@/shared/wayfinder/routes";
 
@@ -35,7 +35,7 @@ export default function Register() {
                   type="text"
                   autoComplete="name"
                   autoFocus
-                  placeholder="Full name"
+                  placeholder="Nombre completo"
                   required
                   tabIndex={1}
                 />
@@ -51,7 +51,7 @@ export default function Register() {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  placeholder="email@example.com"
+                  placeholder="correo@ejemplo.com"
                   required
                   tabIndex={2}
                 />
@@ -67,7 +67,7 @@ export default function Register() {
                   name="password"
                   type="password"
                   autoComplete="new-password"
-                  placeholder="Password"
+                  placeholder="Contraseña"
                   required
                   tabIndex={3}
                 />
@@ -83,7 +83,7 @@ export default function Register() {
                   name="password_confirmation"
                   type="password"
                   autoComplete="new-password"
-                  placeholder="Confirm password"
+                  placeholder="Confirmar contraseña"
                   required
                   tabIndex={4}
                 />

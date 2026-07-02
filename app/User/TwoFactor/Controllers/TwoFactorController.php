@@ -53,7 +53,7 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
 
-        return Inertia::render('setting/modules/twoFactor/TwoFactorAuthentication', $props);
+        return Inertia::render('setting/modules/twoFactor/TwoFactor', $props);
     }
 
     public function storeRecoveryCodes(

@@ -6,7 +6,7 @@ import { PiNutBold } from "react-icons/pi";
 
 import type { RouteDefinition } from "@/shared/wayfinder/wayfinder";
 
-import { edit } from "@/shared/wayfinder/actions/App/User/Controllers/ProfileController";
+import { edit } from "@/shared/wayfinder/actions/App/User/Profile/Controllers/ProfileController";
 
 import { home, logout } from "@/shared/wayfinder/routes";
 import { index } from "@/shared/wayfinder/routes/profile";

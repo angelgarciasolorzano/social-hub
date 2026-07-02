@@ -2,7 +2,7 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/NewPasswordController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordNewController";
 
 import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/shared/components/shadcn/ui/button";
