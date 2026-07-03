@@ -39,7 +39,7 @@ jobs:
         run: npm run install:ci
 
       - name: Generate Wayfinder types
-        run: php artisan wayfinder:generate --with-form
+        run: php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder
 
       - name: Check format
         run: npm run format:check
