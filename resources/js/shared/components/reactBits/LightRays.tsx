@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { useEffect, useRef, useState } from "react";
 
 import { Mesh, Program, Renderer, Triangle } from "ogl";

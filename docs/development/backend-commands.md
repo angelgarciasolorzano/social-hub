@@ -1,6 +1,6 @@
-# Comandos del Proyecto
+# Comandos del Backend
 
-Referencia de los comandos Composer más usados para mantener consistencia y calidad en el código.
+Referencia de los comandos Composer más usados para mantener consistencia y calidad en el código del backend.
 
 ## 1. Comandos esenciales (antes de cada commit)
 
