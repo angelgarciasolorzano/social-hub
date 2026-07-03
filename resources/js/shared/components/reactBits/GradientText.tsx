@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { motion, useMotionValue, useAnimationFrame, useTransform } from 'motion/react';
 

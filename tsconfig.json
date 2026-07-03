@@ -31,8 +31,4 @@
     "jsx": "react-jsx"
   },
   "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.tsx"],
-  "exclude": [
-    "resources/js/shared/components/shadcn/**",
-    "resources/js/shared/components/reactBits/**"
-  ]
 }
