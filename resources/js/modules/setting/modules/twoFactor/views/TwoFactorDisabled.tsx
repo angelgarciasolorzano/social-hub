@@ -40,8 +40,16 @@ interface TwoFactorDisabledProps {
 function TwoFactorDisabled(props: TwoFactorDisabledProps) {
   const { requiresConfirmation, twoFactorEnabled } = props;
 
-  const { qrCodeSvg, hasSetupData, manualSetupKey, clearSetupData, fetchSetupData, errors } =
-    useTwoFactorAuth();
+  const {
+    qrCodeSvg,
+    hasSetupData,
+    manualSetupKey,
+    clearSetupData,
+    fetchSetupData,
+    fetchRecoveryCodes,
+    recoveryCodesList,
+    errors,
+  } = useTwoFactorAuth();
 
   const { showSetupModal, setShowSetupModal } = useTwoFactorDisabled();
 
@@ -68,10 +76,12 @@ function TwoFactorDisabled(props: TwoFactorDisabledProps) {
         onClose={() => setShowSetupModal(false)}
         clearSetupData={clearSetupData}
         errors={errors}
+        fetchRecoveryCodes={fetchRecoveryCodes}
         fetchSetupData={fetchSetupData}
         isOpen={showSetupModal}
         manualSetupKey={manualSetupKey}
         qrCodeSvg={qrCodeSvg}
+        recoveryCodesList={recoveryCodesList}
         requiresConfirmation={requiresConfirmation}
         twoFactorEnabled={twoFactorEnabled}
       />

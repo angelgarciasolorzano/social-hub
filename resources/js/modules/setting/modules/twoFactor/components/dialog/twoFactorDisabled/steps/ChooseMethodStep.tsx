@@ -1,0 +1,69 @@
+import { Info, Loader2 } from "lucide-react";
+
+import AlertError from "@/shared/components/AlertError";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
+import { Button } from "@/shared/components/shadcn/ui/button";
+
+interface ChooseMethodStepProps {
+  errors: string[];
+  qrCodeSvg: string | null;
+  onContinue: () => void;
+  onOpenManualSetup: () => void;
+}
+
+function ChooseMethodStep({
+  errors,
+  qrCodeSvg,
+  onContinue,
+  onOpenManualSetup,
+}: ChooseMethodStepProps) {
+  return (
+    <>
+      {errors?.length ? (
+        <AlertError errors={errors} />
+      ) : (
+        <>
+          <div className="mx-auto flex max-w-md overflow-hidden">
+            <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
+              <div className="z-10 flex h-full w-full items-center justify-center p-5">
+                {qrCodeSvg ? (
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: qrCodeSvg,
+                    }}
+                  />
+                ) : (
+                  <Loader2 className="flex size-4 animate-spin" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="cursor-pointer text-sm font-medium text-violet-700 underline-offset-4 hover:underline dark:text-violet-400"
+            onClick={onOpenManualSetup}
+          >
+            ¿No puedes escanear el código?
+          </button>
+
+          <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+            <Info />
+            <AlertTitle>Consejo</AlertTitle>
+            <AlertDescription>
+              Abre tu aplicación y usa la opción para agregar una nueva cuenta.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex w-full space-x-5">
+            <Button className="w-full cursor-pointer" onClick={onContinue}>
+              Continuar
+            </Button>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+export default ChooseMethodStep;
