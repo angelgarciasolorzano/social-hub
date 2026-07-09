@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 
-import { ArrowDown, CircleCheck, Info } from "lucide-react";
+import { ArrowDown, Info } from "lucide-react";
 
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -37,24 +37,6 @@ function TwoFactorSuccessStep({
         <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
       ) : (
         <>
-          <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-            <div className="rounded-full border border-border bg-green-50 p-2.5 dark:bg-green-500/10">
-              <CircleCheck className="size-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-
-          <div className="flex w-full flex-col items-center space-y-1 text-center">
-            <h3 className="text-base font-semibold text-foreground">
-              ¡2FA activado correctamente!
-            </h3>
-
-            <p className="text-sm text-muted-foreground">
-              Guarda estos códigos de respaldo en un lugar seguro.
-              <br />
-              Te permitirán acceder a tu cuenta si pierdes tu dispositivo.
-            </p>
-          </div>
-
           <div className="grid w-full grid-cols-2 gap-2">
             {recoveryCodesList.length
               ? recoveryCodesList.map((code) => (
