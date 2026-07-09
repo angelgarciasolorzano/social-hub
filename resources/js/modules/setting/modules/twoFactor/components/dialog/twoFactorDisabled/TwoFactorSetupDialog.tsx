@@ -1,5 +1,3 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
 
@@ -12,14 +10,10 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 
-import { useClipboard } from "@/shared/hooks/useClipboard";
-
 import { cn } from "@/shared/lib";
 
-import {
-  DEFAULT_TWO_FACTOR_ACTIVATION_STEP,
-  type TwoFactorActivationStep,
-} from "../../../types/twoFactorActivationStep";
+import { useTwoFactorActivationFlow } from "../../../hooks/useTwoFactorActivationFlow";
+import type { TwoFactorActivationStep } from "../../../types/twoFactorActivationStep";
 import ChooseMethodStep from "./steps/ChooseMethodStep";
 import ManualSetupStep from "./steps/ManualSetupStep";
 import TwoFactorSuccessStep from "./steps/TwoFactorSuccessStep";
@@ -52,122 +46,26 @@ export default function TwoFactorSetupDialog({
   requiresConfirmation,
   twoFactorEnabled,
 }: TwoFactorSetupDialogProps) {
-  const [step, setStep] = useState<TwoFactorActivationStep>(DEFAULT_TWO_FACTOR_ACTIVATION_STEP);
-
-  const [previousStep, setPreviousStep] = useState<TwoFactorActivationStep | null>(null);
-
-  const [, copy] = useClipboard();
-
-  const modalConfig = useMemo<{ title: string; description: string }>(() => {
-    switch (step) {
-      case "chooseMethod":
-        return {
-          description: "Escanea el código QR con tu aplicación autenticadora.",
-          title: "Habilitar autenticación de dos factores",
-        };
-
-      case "manualSetup":
-        return {
-          description: "Ingresa esta clave manualmente en tu aplicación autenticadora.",
-          title: "No puedes escanear el código QR",
-        };
-
-      case "verifyingOTP":
-        return {
-          description:
-            "Ingresa el código de 6 dígitos que muestra tu aplicación para confirmar que funciona correctamente.",
-          title: "Verificar código de autenticación",
-        };
-
-      case "success":
-        return {
-          description: "Guarda estos códigos de respaldo en un lugar seguro.",
-          title: "¡2FA activado correctamente!",
-        };
-    }
-  }, [step]);
-
-  const resetModalState = useCallback((): void => {
-    setStep(DEFAULT_TWO_FACTOR_ACTIVATION_STEP);
-    setPreviousStep(null);
-    if (twoFactorEnabled) {
-      clearSetupData();
-    }
-  }, [twoFactorEnabled, clearSetupData]);
-
-  const goToStep = useCallback(
-    (next: TwoFactorActivationStep): void => {
-      setPreviousStep(step);
-      setStep(next);
-    },
-    [step],
-  );
-
-  const goToSuccess = useCallback((): void => {
-    void fetchRecoveryCodes();
-    setStep("success");
-  }, [fetchRecoveryCodes]);
-
-  const handleChooseMethodContinue = useCallback((): void => {
-    if (requiresConfirmation) {
-      goToStep("verifyingOTP");
-
-      return;
-    }
-
-    goToSuccess();
-  }, [requiresConfirmation, goToSuccess, goToStep]);
-
-  const handleOpenManualSetup = useCallback((): void => {
-    goToStep("manualSetup");
-  }, [goToStep]);
-
-  const handleManualSetupBack = useCallback((): void => {
-    setStep("chooseMethod");
-    setPreviousStep(null);
-  }, []);
-
-  const handleManualSetupContinue = useCallback((): void => {
-    if (manualSetupKey) {
-      void copy(manualSetupKey);
-    }
-    goToStep("verifyingOTP");
-  }, [manualSetupKey, copy, goToStep]);
-
-  const handleOtpBack = useCallback((): void => {
-    if (previousStep && previousStep !== "verifyingOTP") {
-      setStep(previousStep);
-      setPreviousStep(null);
-
-      return;
-    }
-
-    setStep("chooseMethod");
-    setPreviousStep(null);
-  }, [previousStep]);
-
-  const handleClose = useCallback((): void => {
-    resetModalState();
-    onClose();
-  }, [resetModalState, onClose]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      const timeoutId = setTimeout(() => {
-        resetModalState();
-      }, 0);
-
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }
-
-    if (!qrCodeSvg) {
-      void fetchSetupData();
-    }
-
-    return undefined;
-  }, [isOpen, qrCodeSvg, fetchSetupData, resetModalState]);
+  const {
+    handleChooseMethodContinue,
+    handleClose,
+    handleManualSetupBack,
+    handleManualSetupContinue,
+    handleOpenManualSetup,
+    handleOtpBack,
+    handleOtpSuccess,
+    modalConfig,
+    step,
+  } = useTwoFactorActivationFlow({
+    clearSetupData,
+    fetchRecoveryCodes,
+    fetchSetupData,
+    isOpen,
+    onClose,
+    qrCodeSvg,
+    requiresConfirmation,
+    twoFactorEnabled,
+  });
 
   const renderStep = (): React.ReactNode => {
     switch (step) {
@@ -191,7 +89,7 @@ export default function TwoFactorSetupDialog({
         );
 
       case "verifyingOTP":
-        return <VerifyOtpStep onBack={handleOtpBack} onSuccess={goToSuccess} />;
+        return <VerifyOtpStep onBack={handleOtpBack} onSuccess={handleOtpSuccess} />;
 
       case "success":
         return (
