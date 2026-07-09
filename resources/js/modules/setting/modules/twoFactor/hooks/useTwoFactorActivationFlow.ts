@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_TWO_FACTOR_ACTIVATION_STEP,
   type TwoFactorActivationStep,
+  twoFactorActivationStepKey,
 } from "../types/twoFactorActivationStep";
 
 interface UseTwoFactorActivationFlowParams {
@@ -48,26 +49,26 @@ export function useTwoFactorActivationFlow(
 
   const modalConfig = useMemo<{ description: string; title: string }>(() => {
     switch (step) {
-      case "chooseMethod":
+      case twoFactorActivationStepKey.chooseMethod:
         return {
           description: "Escanea el código QR con tu aplicación autenticadora.",
           title: "Habilitar autenticación de dos factores",
         };
 
-      case "manualSetup":
+      case twoFactorActivationStepKey.manualSetup:
         return {
           description: "Ingresa esta clave manualmente en tu aplicación autenticadora.",
           title: "No puedes escanear el código QR",
         };
 
-      case "verifyingOTP":
+      case twoFactorActivationStepKey.verifyingOTP:
         return {
           description:
             "Ingresa el código de 6 dígitos que muestra tu aplicación para confirmar que funciona correctamente.",
           title: "Verificar código de autenticación",
         };
 
-      case "success":
+      case twoFactorActivationStepKey.success:
         return {
           description: "Guarda estos códigos de respaldo en un lugar seguro.",
           title: "¡2FA activado correctamente!",
@@ -94,12 +95,12 @@ export function useTwoFactorActivationFlow(
 
   const goToSuccess = useCallback((): void => {
     void fetchRecoveryCodes();
-    setStep("success");
+    setStep(twoFactorActivationStepKey.success);
   }, [fetchRecoveryCodes]);
 
   const handleChooseMethodContinue = useCallback((): void => {
     if (requiresConfirmation) {
-      goToStep("verifyingOTP");
+      goToStep(twoFactorActivationStepKey.verifyingOTP);
 
       return;
     }
@@ -108,27 +109,27 @@ export function useTwoFactorActivationFlow(
   }, [requiresConfirmation, goToStep, goToSuccess]);
 
   const handleOpenManualSetup = useCallback((): void => {
-    goToStep("manualSetup");
+    goToStep(twoFactorActivationStepKey.manualSetup);
   }, [goToStep]);
 
   const handleManualSetupBack = useCallback((): void => {
-    setStep("chooseMethod");
+    setStep(twoFactorActivationStepKey.chooseMethod);
     setPreviousStep(null);
   }, []);
 
   const handleManualSetupContinue = useCallback((): void => {
-    goToStep("verifyingOTP");
+    goToStep(twoFactorActivationStepKey.verifyingOTP);
   }, [goToStep]);
 
   const handleOtpBack = useCallback((): void => {
-    if (previousStep && previousStep !== "verifyingOTP") {
+    if (previousStep && previousStep !== twoFactorActivationStepKey.verifyingOTP) {
       setStep(previousStep);
       setPreviousStep(null);
 
       return;
     }
 
-    setStep("chooseMethod");
+    setStep(twoFactorActivationStepKey.chooseMethod);
     setPreviousStep(null);
   }, [previousStep]);
 

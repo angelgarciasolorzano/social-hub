@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
 
@@ -13,7 +15,10 @@ import {
 import { cn } from "@/shared/lib";
 
 import { useTwoFactorActivationFlow } from "../../../hooks/useTwoFactorActivationFlow";
-import type { TwoFactorActivationStep } from "../../../types/twoFactorActivationStep";
+import {
+  type TwoFactorActivationStep,
+  twoFactorActivationStepKey,
+} from "../../../types/twoFactorActivationStep";
 import ChooseMethodStep from "./steps/ChooseMethodStep";
 import ManualSetupStep from "./steps/ManualSetupStep";
 import TwoFactorSuccessStep from "./steps/TwoFactorSuccessStep";
@@ -67,9 +72,9 @@ export default function TwoFactorSetupDialog({
     twoFactorEnabled,
   });
 
-  const renderStep = (): React.ReactNode => {
+  const renderStep = (): ReactNode => {
     switch (step) {
-      case "chooseMethod":
+      case twoFactorActivationStepKey.chooseMethod:
         return (
           <ChooseMethodStep
             errors={errors}
@@ -79,7 +84,7 @@ export default function TwoFactorSetupDialog({
           />
         );
 
-      case "manualSetup":
+      case twoFactorActivationStepKey.manualSetup:
         return (
           <ManualSetupStep
             errors={errors}
@@ -88,10 +93,10 @@ export default function TwoFactorSetupDialog({
           />
         );
 
-      case "verifyingOTP":
+      case twoFactorActivationStepKey.verifyingOTP:
         return <VerifyOtpStep onBack={handleOtpBack} onSuccess={handleOtpSuccess} />;
 
-      case "success":
+      case twoFactorActivationStepKey.success:
         return (
           <TwoFactorSuccessStep
             errors={errors}
@@ -106,7 +111,7 @@ export default function TwoFactorSetupDialog({
   return (
     <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
       <DialogContent className="sm:max-w-md">
-        {step === "manualSetup" ? (
+        {step === twoFactorActivationStepKey.manualSetup ? (
           <Button
             type="button"
             aria-label="Volver"
@@ -139,18 +144,18 @@ interface DialogHeaderIconProps {
 
 function DialogHeaderIcon({ step }: DialogHeaderIconProps) {
   switch (step) {
-    case "chooseMethod":
+    case twoFactorActivationStepKey.chooseMethod:
       return <DialogHeaderIconWrapper icon={ScanLine} iconClassName="text-foreground" />;
-    case "manualSetup":
+    case twoFactorActivationStepKey.manualSetup:
       return (
         <DialogHeaderIconWrapper
           icon={Smartphone}
           iconClassName="text-violet-700 dark:text-violet-400"
         />
       );
-    case "verifyingOTP":
+    case twoFactorActivationStepKey.verifyingOTP:
       return <DialogHeaderIconWrapper icon={Hash} iconClassName="text-foreground" />;
-    case "success":
+    case twoFactorActivationStepKey.success:
       return (
         <DialogHeaderIconWrapper
           icon={CircleCheck}
