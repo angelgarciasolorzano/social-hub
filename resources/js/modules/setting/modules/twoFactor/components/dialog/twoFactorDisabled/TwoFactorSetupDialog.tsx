@@ -140,7 +140,7 @@ interface DialogHeaderIconProps {
 function DialogHeaderIcon({ step }: DialogHeaderIconProps) {
   switch (step) {
     case "chooseMethod":
-      return <DialogHeaderIconChooseMethod />;
+      return <DialogHeaderIconWrapper icon={ScanLine} iconClassName="text-foreground" />;
     case "manualSetup":
       return (
         <DialogHeaderIconWrapper
@@ -176,28 +176,6 @@ function DialogHeaderIconWrapper({
     <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
       <div className={cn("rounded-full border border-border p-2.5", innerClassName ?? "bg-muted")}>
         <Icon className={cn("size-6", iconClassName)} />
-      </div>
-    </div>
-  );
-}
-
-function DialogHeaderIconChooseMethod() {
-  return (
-    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-      <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
-        <div className="absolute inset-0 grid grid-cols-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div className="border-r border-border last:border-r-0" key={`col-${i + 1}`} />
-          ))}
-        </div>
-
-        <div className="absolute inset-0 grid grid-rows-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div className="border-b border-border last:border-r-0" key={`row-${i + 1}`} />
-          ))}
-        </div>
-
-        <ScanLine className="relative z-20 size-6 text-foreground" />
       </div>
     </div>
   );
