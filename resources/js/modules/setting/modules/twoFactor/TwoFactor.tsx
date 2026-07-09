@@ -1,8 +1,9 @@
 import { Head } from "@inertiajs/react";
 
+import { useDialog } from "@/shared/hooks/useDialog";
+
 import TwoFactorSetupDialog from "./components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
 import { useTwoFactorAuth } from "./hooks/useTwoFactorAuth";
-import { useTwoFactorDisabled } from "./hooks/useTwoFactorDisabled";
 import TwoFactorDisabled from "./views/TwoFactorDisabled";
 import TwoFactorEnable from "./views/TwoFactorEnable";
 
@@ -28,7 +29,7 @@ export default function TwoFactor({
     errors,
   } = useTwoFactorAuth();
 
-  const { showSetupModal, setShowSetupModal } = useTwoFactorDisabled();
+  const { open: showSetupModal, setOpen: setShowSetupModal } = useDialog();
 
   return (
     <>
@@ -41,9 +42,7 @@ export default function TwoFactor({
           ) : (
             <TwoFactorDisabled
               hasSetupData={hasSetupData}
-              onActivate={() => {
-                setShowSetupModal(true);
-              }}
+              onActivate={() => setShowSetupModal(true)}
             />
           )}
 
@@ -54,9 +53,7 @@ export default function TwoFactor({
             fetchSetupData={fetchSetupData}
             isOpen={showSetupModal}
             manualSetupKey={manualSetupKey}
-            onClose={() => {
-              setShowSetupModal(false);
-            }}
+            onClose={() => setShowSetupModal(false)}
             qrCodeSvg={qrCodeSvg}
             recoveryCodesList={recoveryCodesList}
             requiresConfirmation={requiresConfirmation}

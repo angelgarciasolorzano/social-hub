@@ -11,7 +11,7 @@ Documento de referencia para crear y mantener módulos del frontend en este proy
 | Página / vista               | `PascalCase.tsx`                                 | `TwoFactorDisabled.tsx`, `Login.tsx`                        |
 | Componente de feature        | `PascalCase.tsx`                                 | `PostCard`, `CommentDialog`, `TwoFactorSetupDialog`         |
 | Sub-componente de paso       | `PascalCaseStep.tsx`                             | `ChooseMethodStep`, `VerifyOtpStep`, `TwoFactorSuccessStep` |
-| Hook                         | `useCamelCase.ts`                                | `useTwoFactorAuth`, `useClipboard`, `useModal`              |
+| Hook                         | `useCamelCase.ts`                                | `useTwoFactorAuth`, `useClipboard`, `useDialog`             |
 | Tipo / interface             | `PascalCase`                                     | `Comment`, `TwoFactorSetupDialogProps`                      |
 | Enum (const + tipo derivado) | `PascalCase` (const) / `PascalCaseValues` (tipo) | `CommentableType` → `CommentableTypeValues`                 |
 | Tipo unión con const-as-keys | `{concept}Key` (const) / `PascalCase` (tipo)     | `twoFactorActivationStepKey` → `TwoFactorActivationStep`    |
@@ -41,7 +41,7 @@ resources/js/
     │   ├── logo/                          ← logos y brand
     │   ├── reactBits/                     ← animaciones / efectos
     │   └── shadcn/ui/                     ← primitivas shadcn (no editar a mano)
-    ├── hooks/                             ← hooks genéricos (useModal, useClipboard, …)
+    ├── hooks/                             ← hooks genéricos (useDialog, useClipboard, …)
     ├── lib/                               ← utilidades (cn, validImage, …)
     ├── types/                             ← tipos compartidos (User, PaginatedResponse, …)
     └── wayfinder/                         ← autogenerado por Vite (no editar)
@@ -272,19 +272,25 @@ return (
 );
 ```
 
-### 6.2. Hooks de visibilidad de diálogos
+### 6.2. Hook de visibilidad de diálogos (`useDialog`)
 
-Para abrir/cerrar un modal, el patrón es un hook liviano con un solo `useState<boolean>`:
+Para abrir/cerrar un `<Dialog>` de shadcn/ui, **usá el hook genérico `useDialog`** de `@/shared/hooks`. No crees un hook específico por feature que duplique la misma lógica.
 
 ```ts
-// hooks/useTwoFactorDisabled.ts
-export function useTwoFactorDisabled() {
-  const [showSetupModal, setShowSetupModal] = useState<boolean>(false);
-  return { showSetupModal, setShowSetupModal };
+// resources/js/shared/hooks/useDialog.ts
+export function useDialog(initialState: boolean = false): UseDialogReturn {
+  const [open, setOpen] = useState(initialState);
+  return { open, setOpen };
 }
 ```
 
-No le agregues lógica de carga ni de fetch — eso va en `useTwoFactorAuth` (u otro hook de feature).
+Uso (renombrando localmente para mayor claridad):
+
+```ts
+const { open: showSetupModal, setOpen: setShowSetupModal } = useDialog();
+```
+
+**Cuándo crear un hook propio:** solo si el feature necesita **dos o más** dialogs (ej. `useTwoFactorEnable` maneja `showRegenerateCodesDialog` + `showDisabledTwoFactorDialog`). Para un solo dialog, **siempre usá `useDialog`**.
 
 ### 6.3. Hooks de feature con un solo return tipado
 
@@ -514,8 +520,7 @@ resources/js/modules/setting/modules/twoFactor/
 │   └── twoFactorEnable.ts
 ├── hooks/
 │   ├── useTwoFactorAuth.ts                   ← estado + fetch del feature
-│   ├── useTwoFactorDisabled.ts               ← visibilidad del modal
-│   ├── useTwoFactorEnable.ts                 ← visibilidad de otros modales
+│   ├── useTwoFactorEnable.ts                 ← visibilidad de otros modales (regenerate + disable)
 │   └── useTwoFactorActivationFlow.ts         ← state machine del wizard
 ├── types/
 │   └── twoFactorActivationStep.ts            ← const-as-keys + tipo derivado
@@ -529,7 +534,7 @@ resources/js/modules/setting/modules/twoFactor/
 
 **Patrón que implementa:**
 
-- `view` (TwoFactorDisabled) usa `useTwoFactorAuth` (feature) + `useTwoFactorDisabled` (visibilidad) y pasa props al `TwoFactorSetupDialog`.
+- `view` (TwoFactorDisabled) usa `useTwoFactorAuth` (feature) + `useDialog` (visibilidad del modal de setup) y pasa props al `TwoFactorSetupDialog`.
 - `TwoFactorSetupDialog` es solo el shell — la lógica vive en `useTwoFactorActivationFlow`.
 - Cada paso del wizard es un componente aparte en `steps/`, con props mínimas.
 - El tipo de paso es const-as-keys (`twoFactorActivationStepKey` + `TwoFactorActivationStep`).

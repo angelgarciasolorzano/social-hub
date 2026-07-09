@@ -1,13 +1,13 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 
-interface UseModalReturn {
+interface UseDialogReturn {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export function useModal(initialState: boolean = false): UseModalReturn {
-  const [open, setOpen] = useState(initialState);
+export function useDialog(initialState: boolean = false): UseDialogReturn {
+  const [open, setOpen] = useState<boolean>(initialState);
 
   return { open, setOpen };
 }
