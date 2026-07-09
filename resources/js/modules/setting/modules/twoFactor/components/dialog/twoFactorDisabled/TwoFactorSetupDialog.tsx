@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
 
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +13,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
+
+import { cn } from "@/shared/lib";
 
 import {
   DEFAULT_TWO_FACTOR_ACTIVATION_STEP,
@@ -205,14 +209,16 @@ export default function TwoFactorSetupDialog({
     <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
       <DialogContent className="sm:max-w-md">
         {step === "manualSetup" ? (
-          <button
+          <Button
             type="button"
             aria-label="Volver"
+            variant="outline"
+            size="icon-sm"
+            className="absolute top-3 left-3 z-10 inline-flex cursor-pointer items-center justify-center rounded-md"
             onClick={handleManualSetupBack}
-            className="absolute top-3 left-3 z-10 inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <ArrowLeft className="size-5" aria-hidden="true" />
-          </button>
+          </Button>
         ) : null}
 
         <DialogHeader className="flex items-center justify-center">
@@ -238,12 +244,43 @@ function DialogHeaderIcon({ step }: DialogHeaderIconProps) {
     case "chooseMethod":
       return <DialogHeaderIconChooseMethod />;
     case "manualSetup":
-      return <DialogHeaderIconManualSetup />;
+      return (
+        <DialogHeaderIconWrapper
+          icon={Smartphone}
+          iconClassName="text-violet-700 dark:text-violet-400"
+        />
+      );
     case "verifyingOTP":
-      return <DialogHeaderIconVerifyingOtp />;
+      return <DialogHeaderIconWrapper icon={Hash} iconClassName="text-foreground" />;
     case "success":
-      return <DialogHeaderIconSuccess />;
+      return (
+        <DialogHeaderIconWrapper
+          icon={CircleCheck}
+          iconClassName="text-green-600 dark:text-green-400"
+          innerClassName="bg-green-50 dark:bg-green-500/10"
+        />
+      );
   }
+}
+
+interface DialogHeaderIconWrapperProps {
+  icon: LucideIcon;
+  iconClassName: string;
+  innerClassName?: string;
+}
+
+function DialogHeaderIconWrapper({
+  icon: Icon,
+  iconClassName,
+  innerClassName,
+}: DialogHeaderIconWrapperProps) {
+  return (
+    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
+      <div className={cn("rounded-full border border-border p-2.5", innerClassName ?? "bg-muted")}>
+        <Icon className={cn("size-6", iconClassName)} />
+      </div>
+    </div>
+  );
 }
 
 function DialogHeaderIconChooseMethod() {
@@ -263,36 +300,6 @@ function DialogHeaderIconChooseMethod() {
         </div>
 
         <ScanLine className="relative z-20 size-6 text-foreground" />
-      </div>
-    </div>
-  );
-}
-
-function DialogHeaderIconManualSetup() {
-  return (
-    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-      <div className="rounded-full border border-border bg-muted p-2.5">
-        <Smartphone className="size-6 text-violet-700 dark:text-violet-400" />
-      </div>
-    </div>
-  );
-}
-
-function DialogHeaderIconVerifyingOtp() {
-  return (
-    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-      <div className="rounded-full border border-border bg-muted p-2.5">
-        <Hash className="size-6 text-foreground" />
-      </div>
-    </div>
-  );
-}
-
-function DialogHeaderIconSuccess() {
-  return (
-    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-      <div className="rounded-full border border-border bg-green-50 p-2.5 dark:bg-green-500/10">
-        <CircleCheck className="size-6 text-green-600 dark:text-green-400" />
       </div>
     </div>
   );
