@@ -2,25 +2,27 @@
 
 Documento de referencia para crear y mantener módulos del backend en este proyecto Laravel.
 
+> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines una convención (o cualquier otro cambio de arquitectura del backend), actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de las convenciones del proyecto y no debe quedar desincronizada con el código.
+
 ## 1. Convención de nomenclatura
 
 Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del módulo.
 
-| Tipo | Patrón | Ejemplo |
-|---|---|---|
-| Controller | `{Module}Controller` | `PostController` |
-| Model | `{Module}` | `Post` |
-| Factory | `{Module}Factory` | `PostFactory` |
-| Request | `{Module}{Action}Request` | `PostStoreRequest`, `PostUpdateRequest` |
-| Resource | `{Module}Resource` | `PostResource` |
-| Collection | `{Module}Collection` | `CommentCollection` |
-| Seeder | `{Module}Seeder` | `PostSeeder` |
-| Enum | `{Module}{Concept}` | `CommentableType`, `FriendshipStatus` |
-| Service Provider | `{Module}ServiceProvider` | `PostServiceProvider` |
-| Route Service Provider | `{Module}RouteServiceProvider` | `PostRouteServiceProvider` |
-| Policy | `{Module}Policy` | `PostPolicy` |
-| Service | `{Module}Service` | `PostService` |
-| Console Command | `{Module}{Purpose}Command` | `MediaLibraryCleanFoldersCommand` |
+| Tipo                   | Patrón                         | Ejemplo                                 |
+| ---------------------- | ------------------------------ | --------------------------------------- |
+| Controller             | `{Module}Controller`           | `PostController`                        |
+| Model                  | `{Module}`                     | `Post`                                  |
+| Factory                | `{Module}Factory`              | `PostFactory`                           |
+| Request                | `{Module}{Action}Request`      | `PostStoreRequest`, `PostUpdateRequest` |
+| Resource               | `{Module}Resource`             | `PostResource`                          |
+| Collection             | `{Module}Collection`           | `CommentCollection`                     |
+| Seeder                 | `{Module}Seeder`               | `PostSeeder`                            |
+| Enum                   | `{Module}{Concept}`            | `CommentableType`, `FriendshipStatus`   |
+| Service Provider       | `{Module}ServiceProvider`      | `PostServiceProvider`                   |
+| Route Service Provider | `{Module}RouteServiceProvider` | `PostRouteServiceProvider`              |
+| Policy                 | `{Module}Policy`               | `PostPolicy`                            |
+| Service                | `{Module}Service`              | `PostService`                           |
+| Console Command        | `{Module}{Purpose}Command`     | `MediaLibraryCleanFoldersCommand`       |
 
 **Excepción:** `routes/routes.php` no lleva prefijo (Laravel lo busca así).
 
@@ -64,11 +66,11 @@ Cuando un módulo tiene **varias áreas independientes** que ameritan su propio 
 
 ### Cuándo subdividir
 
-| ✅ Sí | ❌ No |
-|---|---|
-| Hay flujos independientes (login vs registro) | Es un módulo pequeño y cohesivo |
+| ✅ Sí                                                           | ❌ No                            |
+| --------------------------------------------------------------- | -------------------------------- |
+| Hay flujos independientes (login vs registro)                   | Es un módulo pequeño y cohesivo  |
 | Cada área tiene sus propias Requests con validaciones distintas | Los archivos están muy acoplados |
-| Las áreas evolucionarán por separado | Solo tienes 2-3 archivos |
+| Las áreas evolucionarán por separado                            | Solo tienes 2-3 archivos         |
 
 ### Estructura de un submódulo
 
@@ -93,19 +95,19 @@ app/Auth/routes/
 
 ## 4. Responsabilidad de cada archivo
 
-| Tipo | Qué hace |
-|---|---|
-| **Controller** | Orquesta HTTP: recibe Request → llama al modelo → retorna Response |
-| **Model** | Entidad del dominio + relaciones Eloquent |
-| **Request** | Valida input del usuario (FormRequest con FluentRule) |
-| **Resource** | Transforma un modelo al JSON que verá el cliente |
-| **Factory** | Genera instancias falsas para tests/seeders |
-| **Seeder** | Puebla la BD con datos iniciales |
-| **Policy** | Reglas de autorización (quién puede hacer qué) |
-| **Service** | Lógica de negocio compleja que no encaja en un controller |
-| **Console Command** | Operaciones Artisan: batch, mantenimiento, sincronización |
-| **Service Provider** | Registra bindings en el contenedor de Laravel |
-| **Route Service Provider** | Carga las rutas del módulo bajo middleware `web` |
+| Tipo                       | Qué hace                                                           |
+| -------------------------- | ------------------------------------------------------------------ |
+| **Controller**             | Orquesta HTTP: recibe Request → llama al modelo → retorna Response |
+| **Model**                  | Entidad del dominio + relaciones Eloquent                          |
+| **Request**                | Valida input del usuario (FormRequest con FluentRule)              |
+| **Resource**               | Transforma un modelo al JSON que verá el cliente                   |
+| **Factory**                | Genera instancias falsas para tests/seeders                        |
+| **Seeder**                 | Puebla la BD con datos iniciales                                   |
+| **Policy**                 | Reglas de autorización (quién puede hacer qué)                     |
+| **Service**                | Lógica de negocio compleja que no encaja en un controller          |
+| **Console Command**        | Operaciones Artisan: batch, mantenimiento, sincronización          |
+| **Service Provider**       | Registra bindings en el contenedor de Laravel                      |
+| **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                   |
 
 > 💡 Si una acción no cabe en un controller (muchos casos, reglas complejas, transacciones múltiples) → crea un **Service**. Si una autorización es reutilizable → crea una **Policy**.
 
@@ -114,6 +116,7 @@ app/Auth/routes/
 Sigue esta checklist en orden:
 
 1. **Crear la estructura de carpetas:**
+
    ```bash
    mkdir -p app/{Module}/{Models,Providers,routes,Controllers,Requests,Resources}
    ```

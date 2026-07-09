@@ -2,6 +2,8 @@
 
 Referencia de los comandos npm más usados para mantener consistencia y calidad en el código del frontend.
 
+> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines un comando, script de npm, alias o workflow del frontend, actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de los comandos y no debe quedar desincronizada con `package.json` o los scripts de CI.
+
 ## Instalación reproducible (CI)
 
 ### `npm run install:ci`
@@ -17,6 +19,7 @@ Wrapper de `npm ci --no-audit --no-fund`. Instala dependencias desde `package-lo
 - 🔇 Sin auditoría ni funding (limpio para logs de CI)
 
 **Cuándo:**
+
 - En CI (`.github/workflows/frontend-code-quality.yml`)
 - Localmente, antes de pushear, para validar que tu `package-lock.json` esté en sync
 
