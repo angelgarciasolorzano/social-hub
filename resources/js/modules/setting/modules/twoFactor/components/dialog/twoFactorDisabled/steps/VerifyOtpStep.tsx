@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Form } from "@inertiajs/react";
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { Hash, Info } from "lucide-react";
+import { Info } from "lucide-react";
 
 import { confirm } from "@/shared/wayfinder/routes/two-factor";
 
@@ -46,12 +46,6 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps) {
           className="relative flex w-full flex-col items-center space-y-5"
           ref={pinInputContainerRef}
         >
-          <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-            <div className="rounded-full border border-border bg-muted p-2.5">
-              <Hash className="size-6 text-violet-700 dark:text-violet-400" />
-            </div>
-          </div>
-
           <div className="flex w-full flex-col items-center space-y-3 py-2">
             <InputOTP
               id="otp"
@@ -63,7 +57,13 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps) {
             >
               <InputOTPGroup>
                 {Array.from({ length: OTP_MAX_LENGTH }, (_, index) => (
-                  <InputOTPSlot index={index} key={index} />
+                  <InputOTPSlot
+                    index={index}
+                    key={index}
+                    aria-invalid={
+                      (errors?.confirmTwoFactorAuthentication?.code?.length ?? 0) > index
+                    }
+                  />
                 ))}
               </InputOTPGroup>
             </InputOTP>

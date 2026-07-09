@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { ScanLine } from "lucide-react";
+import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
 
 import {
   Dialog,
@@ -20,28 +20,6 @@ import ChooseMethodStep from "./steps/ChooseMethodStep";
 import ManualSetupStep from "./steps/ManualSetupStep";
 import TwoFactorSuccessStep from "./steps/TwoFactorSuccessStep";
 import VerifyOtpStep from "./steps/VerifyOtpStep";
-
-function GridScanIcon() {
-  return (
-    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-      <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
-        <div className="absolute inset-0 grid grid-cols-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div className="border-r border-border last:border-r-0" key={`col-${i + 1}`} />
-          ))}
-        </div>
-
-        <div className="absolute inset-0 grid grid-rows-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div className="border-b border-border last:border-r-0" key={`row-${i + 1}`} />
-          ))}
-        </div>
-
-        <ScanLine className="relative z-20 size-6 text-foreground" />
-      </div>
-    </div>
-  );
-}
 
 interface TwoFactorSetupDialogProps {
   clearSetupData: () => void;
@@ -140,6 +118,11 @@ export default function TwoFactorSetupDialog({
     goToStep("manualSetup");
   }, [goToStep]);
 
+  const handleManualSetupBack = useCallback((): void => {
+    setStep("chooseMethod");
+    setPreviousStep(null);
+  }, []);
+
   const handleManualSetupContinue = useCallback((): void => {
     if (manualSetupKey) {
       void copy(manualSetupKey);
@@ -199,10 +182,6 @@ export default function TwoFactorSetupDialog({
           <ManualSetupStep
             errors={errors}
             manualSetupKey={manualSetupKey}
-            onBack={() => {
-              setStep("chooseMethod");
-              setPreviousStep(null);
-            }}
             onContinue={handleManualSetupContinue}
           />
         );
@@ -225,8 +204,19 @@ export default function TwoFactorSetupDialog({
   return (
     <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
       <DialogContent className="sm:max-w-md">
+        {step === "manualSetup" ? (
+          <button
+            type="button"
+            aria-label="Volver"
+            onClick={handleManualSetupBack}
+            className="absolute top-3 left-3 z-10 inline-flex size-9 cursor-pointer items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <ArrowLeft className="size-5" aria-hidden="true" />
+          </button>
+        ) : null}
+
         <DialogHeader className="flex items-center justify-center">
-          {step !== "success" ? <GridScanIcon /> : null}
+          <DialogHeaderIcon step={step} />
 
           <DialogTitle>{modalConfig.title}</DialogTitle>
 
@@ -236,5 +226,74 @@ export default function TwoFactorSetupDialog({
         <div className="flex flex-col items-center space-y-5">{renderStep()}</div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface DialogHeaderIconProps {
+  step: TwoFactorActivationStep;
+}
+
+function DialogHeaderIcon({ step }: DialogHeaderIconProps) {
+  switch (step) {
+    case "chooseMethod":
+      return <DialogHeaderIconChooseMethod />;
+    case "manualSetup":
+      return <DialogHeaderIconManualSetup />;
+    case "verifyingOTP":
+      return <DialogHeaderIconVerifyingOtp />;
+    case "success":
+      return <DialogHeaderIconSuccess />;
+  }
+}
+
+function DialogHeaderIconChooseMethod() {
+  return (
+    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
+      <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
+        <div className="absolute inset-0 grid grid-cols-5 opacity-50">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div className="border-r border-border last:border-r-0" key={`col-${i + 1}`} />
+          ))}
+        </div>
+
+        <div className="absolute inset-0 grid grid-rows-5 opacity-50">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div className="border-b border-border last:border-r-0" key={`row-${i + 1}`} />
+          ))}
+        </div>
+
+        <ScanLine className="relative z-20 size-6 text-foreground" />
+      </div>
+    </div>
+  );
+}
+
+function DialogHeaderIconManualSetup() {
+  return (
+    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
+      <div className="rounded-full border border-border bg-muted p-2.5">
+        <Smartphone className="size-6 text-violet-700 dark:text-violet-400" />
+      </div>
+    </div>
+  );
+}
+
+function DialogHeaderIconVerifyingOtp() {
+  return (
+    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
+      <div className="rounded-full border border-border bg-muted p-2.5">
+        <Hash className="size-6 text-foreground" />
+      </div>
+    </div>
+  );
+}
+
+function DialogHeaderIconSuccess() {
+  return (
+    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
+      <div className="rounded-full border border-border bg-green-50 p-2.5 dark:bg-green-500/10">
+        <CircleCheck className="size-6 text-green-600 dark:text-green-400" />
+      </div>
+    </div>
   );
 }

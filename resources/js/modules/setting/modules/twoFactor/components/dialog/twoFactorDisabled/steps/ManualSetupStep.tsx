@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Copy, Info, Loader2, Smartphone } from "lucide-react";
+import { Check, Copy, Info, Loader2 } from "lucide-react";
 
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -9,45 +9,20 @@ import { useClipboard } from "@/shared/hooks/useClipboard";
 interface ManualSetupStepProps {
   errors: string[];
   manualSetupKey: string | null;
-  onBack: () => void;
   onContinue: () => void;
 }
 
-function ManualSetupStep({ errors, manualSetupKey, onBack, onContinue }: ManualSetupStepProps) {
+function ManualSetupStep({ errors, manualSetupKey, onContinue }: ManualSetupStepProps) {
   const [copiedText, copy] = useClipboard();
+
   const IconComponent = copiedText === manualSetupKey ? Check : Copy;
 
   return (
-    <div className="relative flex w-full flex-col items-center space-y-5">
-      <button
-        type="button"
-        aria-label="Volver"
-        className="absolute top-0 left-0 cursor-pointer rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-        onClick={onBack}
-      >
-        <ArrowLeft className="size-4" />
-      </button>
-
+    <div className="flex w-full flex-col items-center space-y-5">
       {errors?.length ? (
         <AlertError errors={errors} />
       ) : (
         <>
-          <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-            <div className="rounded-full border border-border bg-muted p-2.5">
-              <Smartphone className="size-6 text-violet-700 dark:text-violet-400" />
-            </div>
-          </div>
-
-          <div className="flex w-full flex-col items-center space-y-1 text-center">
-            <h3 className="text-base font-semibold text-foreground">
-              No puedes escanear el código QR
-            </h3>
-
-            <p className="text-sm text-muted-foreground">
-              Ingresa esta clave manualmente en tu aplicación autenticadora.
-            </p>
-          </div>
-
           <div className="flex w-full flex-col space-y-2">
             <label htmlFor="manual-setup-key" className="text-sm font-medium text-muted-foreground">
               Código manual
@@ -71,7 +46,7 @@ function ManualSetupStep({ errors, manualSetupKey, onBack, onContinue }: ManualS
                   <button
                     type="button"
                     aria-label="Copiar código manual"
-                    className="border-l border-border px-3 hover:bg-muted"
+                    className="cursor-pointer border-l border-border px-3 hover:bg-muted"
                     onClick={() => {
                       if (manualSetupKey) {
                         void copy(manualSetupKey);
