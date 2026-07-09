@@ -29,7 +29,7 @@ export default function TwoFactor({
     errors,
   } = useTwoFactorAuth();
 
-  const { open: showSetupModal, setOpen: setShowSetupModal } = useDialog();
+  const { open: showSetupDialog, setOpen: setShowSetupDialog } = useDialog();
 
   return (
     <>
@@ -42,7 +42,7 @@ export default function TwoFactor({
           ) : (
             <TwoFactorDisabled
               hasSetupData={hasSetupData}
-              onActivate={() => setShowSetupModal(true)}
+              onActivate={() => setShowSetupDialog(true)}
             />
           )}
 
@@ -51,9 +51,9 @@ export default function TwoFactor({
             errors={errors}
             fetchRecoveryCodes={fetchRecoveryCodes}
             fetchSetupData={fetchSetupData}
-            isOpen={showSetupModal}
+            isOpen={showSetupDialog}
             manualSetupKey={manualSetupKey}
-            onClose={() => setShowSetupModal(false)}
+            onClose={() => setShowSetupDialog(false)}
             qrCodeSvg={qrCodeSvg}
             recoveryCodesList={recoveryCodesList}
             requiresConfirmation={requiresConfirmation}
