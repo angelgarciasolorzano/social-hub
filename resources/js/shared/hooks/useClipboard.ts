@@ -1,28 +1,54 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type CopiedValue = string | null;
 
 type CopyFn = (text: string) => Promise<boolean>;
 
-export function useClipboard(): [CopiedValue, CopyFn] {
+interface useClipboardOptions {
+  resetTimeout?: number;
+}
+
+export function useClipboard({ resetTimeout }: useClipboardOptions = {}): [CopiedValue, CopyFn] {
   const [copiedText, setCopiedText] = useState<CopiedValue>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const copy: CopyFn = useCallback(async (text) => {
-    if (!navigator?.clipboard) {
-      return false;
+  const clearTimer = (): void => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
+  };
 
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedText(text);
+  const copy: CopyFn = useCallback(
+    async (text) => {
+      if (!navigator?.clipboard) {
+        return false;
+      }
 
-      return true;
-    } catch {
-      setCopiedText(null);
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedText(text);
 
-      return false;
-    }
-  }, []);
+        clearTimer();
+
+        if (resetTimeout && resetTimeout > 0) {
+          timeoutRef.current = setTimeout(() => {
+            setCopiedText(null);
+            timeoutRef.current = null;
+          }, resetTimeout);
+        }
+
+        return true;
+      } catch {
+        setCopiedText(null);
+
+        return false;
+      }
+    },
+    [resetTimeout],
+  );
+
+  useEffect(() => clearTimer(), []);
 
   return [copiedText, copy];
 }
