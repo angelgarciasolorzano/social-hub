@@ -17,6 +17,8 @@ import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
 
+import { cn } from "@/shared/lib";
+
 interface ManualSetupStepProps {
   errors: string[];
   manualSetupKey: string | null;
@@ -154,7 +156,12 @@ function ManualSetupKeyInput({ Icon, manualSetupKey, onCopy }: ManualSetupKeyInp
       />
 
       <InputGroupAddon align="inline-end">
-        <InputGroupButton aria-label="Copiar código manual" onClick={onCopy} size="icon-sm">
+        <InputGroupButton
+          aria-label="Copiar código manual"
+          onClick={onCopy}
+          size="icon-sm"
+          className="cursor-pointer"
+        >
           <Icon className="size-4" />
         </InputGroupButton>
       </InputGroupAddon>
@@ -191,7 +198,12 @@ function CopyFeedbackAlert({ progressValue, secondsLeft }: CopyFeedbackAlertProp
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(progressValue)}
-            className="h-1 bg-green-200 **:data-[slot=progress-indicator]:bg-green-700 **:data-[slot=progress-indicator]:duration-1000! **:data-[slot=progress-indicator]:ease-linear!"
+            className={cn(
+              "h-1 bg-green-200 dark:bg-green-800",
+              "**:data-[slot=progress-indicator]:bg-green-700 dark:**:data-[slot=progress-indicator]:bg-green-400",
+              "**:data-[slot=progress-indicator]:duration-1000!",
+              "**:data-[slot=progress-indicator]:ease-linear!",
+            )}
           />
 
           <span

@@ -62,7 +62,7 @@ interface TwoFactorTitleProps {
 
 function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps) {
   return (
-    <div className="flex items-center gap-24 rounded-md border border-violet-200 bg-violet-300/5 p-8 shadow-sm dark:border-violet-200 dark:bg-violet-900/5">
+    <div className="flex items-center gap-24 rounded-md border border-violet-200 bg-violet-300/5 p-8 shadow-sm dark:border-violet-500/30 dark:bg-violet-900/5">
       <div className="flex items-start gap-4">
         <div className="rounded-3xl bg-violet-100/50 p-2 dark:bg-violet-900/20">
           <ShieldCheck className="h-12 w-12 text-violet-700 dark:text-violet-500" />

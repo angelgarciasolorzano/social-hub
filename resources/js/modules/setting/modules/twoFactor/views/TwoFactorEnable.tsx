@@ -102,7 +102,7 @@ function TwoFactorEnable() {
 
 function TwoFactorTitle() {
   return (
-    <div className="flex items-start gap-6 rounded-md border border-green-200 bg-green-300/5 p-8 shadow-sm dark:border-green-500/20 dark:bg-green-900/5">
+    <div className="flex items-start gap-6 rounded-md border border-green-200 bg-green-300/5 p-8 shadow-sm dark:border-green-500/30 dark:bg-green-900/10">
       <div className="rounded-3xl bg-green-200/50 p-2 dark:bg-green-900/20">
         <ShieldCheck className="h-12 w-12 text-green-700 dark:text-green-500" />
       </div>
