@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 
 import type { LucideIcon } from "lucide-react";
-import { Check, Copy, Info, Loader2 } from "lucide-react";
+import { AlertTriangleIcon, Check, Copy, Info, Loader2, RotateCcw } from "lucide-react";
 
-import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -22,13 +21,14 @@ interface ManualSetupStepProps {
   errors: string[];
   manualSetupKey: string | null;
   onContinue: () => void;
+  onRetry: () => void;
 }
 
 const COPY_FEEDBACK_DURATION_MS = 10_000;
 const COPY_FEEDBACK_TICK_MS = 1_000;
 const COPY_FEEDBACK_TOTAL_SECONDS = COPY_FEEDBACK_DURATION_MS / COPY_FEEDBACK_TICK_MS;
 
-function ManualSetupStep({ errors, manualSetupKey, onContinue }: ManualSetupStepProps) {
+function ManualSetupStep({ errors, manualSetupKey, onContinue, onRetry }: ManualSetupStepProps) {
   const [copiedText, copy] = useClipboard({ resetTimeout: COPY_FEEDBACK_DURATION_MS });
 
   const [copyStartedAt, setCopyStartedAt] = useState<number | null>(null);
@@ -36,6 +36,7 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue }: ManualSetupStep
 
   const IconComponent = copiedText === manualSetupKey ? Check : Copy;
   const progressValue = (secondsLeft / COPY_FEEDBACK_TOTAL_SECONDS) * 100;
+  const hasError = (errors ?? []).length > 0;
 
   useEffect(() => {
     if (copyStartedAt === null) {
@@ -68,42 +69,58 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue }: ManualSetupStep
 
   return (
     <div className="flex w-full flex-col items-center space-y-5">
-      {errors?.length ? (
-        <AlertError errors={errors} />
-      ) : (
-        <>
-          <div className="flex w-full flex-col space-y-2">
-            <label htmlFor="manual-setup-key" className="text-sm font-medium text-muted-foreground">
-              Código manual
-            </label>
-
-            <ManualSetupKeyInput
-              Icon={IconComponent}
-              manualSetupKey={manualSetupKey}
-              onCopy={handleCopy}
-            />
-
-            {copyStartedAt !== null && (
-              <CopyFeedbackAlert progressValue={progressValue} secondsLeft={secondsLeft} />
-            )}
-          </div>
-
-          <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
-            <Info />
-            <AlertTitle>Consejo</AlertTitle>
+      {hasError ? (
+        <div className="w-full space-y-2">
+          <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+            <AlertTriangleIcon />
+            <AlertTitle>Algo salió mal</AlertTitle>
             <AlertDescription>
-              En tu aplicación, selecciona &quot;Ingresar clave manualmente&quot; o &quot;Agregar
-              cuenta manualmente&quot; y pega esta clave.
+              No pudimos cargar la información. Inténtalo de nuevo.
             </AlertDescription>
           </Alert>
 
-          <div className="flex w-full space-x-5">
-            <Button className="w-full cursor-pointer" onClick={onContinue}>
-              Entendido
-            </Button>
-          </div>
-        </>
-      )}
+          <Button
+            className="w-full cursor-pointer"
+            onClick={onRetry}
+            type="button"
+            variant="outline"
+          >
+            <RotateCcw />
+            Reintentar
+          </Button>
+        </div>
+      ) : null}
+
+      <div className="flex w-full flex-col space-y-2">
+        <label htmlFor="manual-setup-key" className="text-sm font-medium text-muted-foreground">
+          Código manual
+        </label>
+
+        <ManualSetupKeyInput
+          Icon={IconComponent}
+          manualSetupKey={manualSetupKey}
+          onCopy={handleCopy}
+        />
+
+        {copyStartedAt !== null && (
+          <CopyFeedbackAlert progressValue={progressValue} secondsLeft={secondsLeft} />
+        )}
+      </div>
+
+      <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+        <Info />
+        <AlertTitle>Consejo</AlertTitle>
+        <AlertDescription>
+          En tu aplicación, selecciona &quot;Ingresar clave manualmente&quot; o &quot;Agregar cuenta
+          manualmente&quot; y pega esta clave.
+        </AlertDescription>
+      </Alert>
+
+      <div className="flex w-full space-x-5">
+        <Button className="w-full cursor-pointer" onClick={onContinue}>
+          Entendido
+        </Button>
+      </div>
     </div>
   );
 }

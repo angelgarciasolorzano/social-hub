@@ -72,6 +72,10 @@ export default function TwoFactorSetupDialog({
     twoFactorEnabled,
   });
 
+  const handleRetry = (): void => {
+    void fetchSetupData();
+  };
+
   const renderStep = (): ReactNode => {
     switch (step) {
       case twoFactorActivationStepKey.chooseMethod:
@@ -81,6 +85,7 @@ export default function TwoFactorSetupDialog({
             qrCodeSvg={qrCodeSvg}
             onContinue={handleChooseMethodContinue}
             onOpenManualSetup={handleOpenManualSetup}
+            onRetry={handleRetry}
           />
         );
 
@@ -90,6 +95,7 @@ export default function TwoFactorSetupDialog({
             errors={errors}
             manualSetupKey={manualSetupKey}
             onContinue={handleManualSetupContinue}
+            onRetry={handleRetry}
           />
         );
 
