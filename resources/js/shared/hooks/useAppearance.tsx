@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 export type ResolvedAppearance = "light" | "dark";
 export type Appearance = ResolvedAppearance | "system";
 
-export type UseAppearanceReturn = {
+type UseAppearanceReturn = {
   readonly appearance: Appearance;
   readonly resolvedAppearance: ResolvedAppearance;
   readonly updateAppearance: (mode: Appearance) => void;

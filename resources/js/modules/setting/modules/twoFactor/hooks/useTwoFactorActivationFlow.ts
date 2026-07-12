@@ -17,7 +17,7 @@ interface UseTwoFactorActivationFlowParams {
   twoFactorEnabled: boolean;
 }
 
-export interface UseTwoFactorActivationFlowReturn {
+interface UseTwoFactorActivationFlowReturn {
   step: TwoFactorActivationStep;
   modalConfig: { description: string; title: string };
   handleChooseMethodContinue: () => void;

@@ -297,7 +297,8 @@ const { open: showSetupModal, setOpen: setShowSetupModal } = useDialog();
 Cada hook de feature (ej. `useTwoFactorAuth`) declara un `type UseXxxReturn` y devuelve **un solo objeto** con todos los valores y callbacks:
 
 ```ts
-export type UseTwoFactorAuthReturn = {
+// El type NO se exporta — solo lo consume la firma del hook dentro del archivo.
+type UseTwoFactorAuthReturn = {
   qrCodeSvg: string | null;
   manualSetupKey: string | null;
   recoveryCodesList: string[];
@@ -310,6 +311,20 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
   return { qrCodeSvg, manualSetupKey, recoveryCodesList, fetchSetupData, ... };
 };
 ```
+
+**Regla de visibilidad de tipos:**
+
+- ✅ **Exportar** solo tipos que se consumen **fuera del archivo** (ej. enums, tipos de props compartidas, tipos de modelo de dominio).
+- ❌ **NO exportar** el `type UseXxxReturn` ni similares que solo existen para tipar la firma del propio hook. Mantenerlos como type/interface internos (sin `export`) reduce el surface area del módulo y deja claro que son detalles de implementación.
+
+Ejemplos válidos del proyecto:
+
+| Hook                         | Tipo interno                       | Exportado al exterior                                     |
+| ---------------------------- | ---------------------------------- | --------------------------------------------------------- |
+| `useTwoFactorAuth`           | `UseTwoFactorAuthReturn`           | ❌ (solo firma)                                           |
+| `useTwoFactorActivationFlow` | `UseTwoFactorActivationFlowReturn` | ❌ (solo firma)                                           |
+| `useAppearance`              | `UseAppearanceReturn`              | ❌ (solo firma)                                           |
+| `useAppearance`              | `Appearance`, `ResolvedAppearance` | ✅ (consumidos en `Appearance.tsx`, `appearanceItems.ts`) |
 
 ## 7. Convenciones de componentes
 

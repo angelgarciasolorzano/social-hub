@@ -4,7 +4,7 @@ import { useHttp } from "@inertiajs/react";
 
 import { enable, qrCode, recoveryCodes, secretKey } from "@/shared/wayfinder/routes/two-factor";
 
-export type UseTwoFactorAuthReturn = {
+type UseTwoFactorAuthReturn = {
   qrCodeSvg: string | null;
   manualSetupKey: string | null;
   recoveryCodesList: string[];
