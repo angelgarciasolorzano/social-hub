@@ -8,6 +8,12 @@ import { Check, Copy, Info, Loader2 } from "lucide-react";
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/shared/components/shadcn/ui/input-group";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { useClipboard } from "@/shared/hooks/useClipboard";
@@ -109,33 +115,32 @@ interface ManualSetupKeyInputProps {
 }
 
 function ManualSetupKeyInput({ Icon, manualSetupKey, onCopy }: ManualSetupKeyInputProps) {
-  return (
-    <div className="flex w-full items-stretch overflow-hidden rounded-xl border border-border">
-      {!manualSetupKey ? (
-        <div className="flex h-full w-full items-center justify-center bg-muted p-3">
-          <Loader2 className="size-4 animate-spin" />
-        </div>
-      ) : (
-        <>
-          <input
-            id="manual-setup-key"
-            type="text"
-            className="h-full w-full bg-background p-3 font-mono text-sm text-foreground outline-none"
-            readOnly
-            value={manualSetupKey}
-          />
+  if (!manualSetupKey) {
+    return (
+      <div
+        aria-busy
+        className="flex h-9 w-full items-center justify-center rounded-md border border-input bg-muted/30"
+      >
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
-          <button
-            type="button"
-            aria-label="Copiar código manual"
-            className="cursor-pointer border-l border-border px-3 hover:bg-muted"
-            onClick={onCopy}
-          >
-            <Icon className="w-4" />
-          </button>
-        </>
-      )}
-    </div>
+  return (
+    <InputGroup>
+      <InputGroupInput
+        className="font-mono"
+        id="manual-setup-key"
+        readOnly
+        value={manualSetupKey}
+      />
+
+      <InputGroupAddon align="inline-end">
+        <InputGroupButton aria-label="Copiar código manual" onClick={onCopy} size="icon-sm">
+          <Icon className="size-4" />
+        </InputGroupButton>
+      </InputGroupAddon>
+    </InputGroup>
   );
 }
 
