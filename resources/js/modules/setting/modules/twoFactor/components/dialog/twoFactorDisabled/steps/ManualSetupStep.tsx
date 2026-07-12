@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { FaCheckCircle } from "react-icons/fa";
 
+import type { LucideIcon } from "lucide-react";
 import { Check, Copy, Info, Loader2 } from "lucide-react";
 
 import AlertError from "@/shared/components/AlertError";
@@ -70,68 +71,14 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue }: ManualSetupStep
               Código manual
             </label>
 
-            <div className="flex w-full items-stretch overflow-hidden rounded-xl border border-border">
-              {!manualSetupKey ? (
-                <div className="flex h-full w-full items-center justify-center bg-muted p-3">
-                  <Loader2 className="size-4 animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <input
-                    id="manual-setup-key"
-                    type="text"
-                    className="h-full w-full bg-background p-3 font-mono text-sm text-foreground outline-none"
-                    readOnly
-                    value={manualSetupKey}
-                  />
-
-                  <button
-                    type="button"
-                    aria-label="Copiar código manual"
-                    className="cursor-pointer border-l border-border px-3 hover:bg-muted"
-                    onClick={handleCopy}
-                  >
-                    <IconComponent className="w-4" />
-                  </button>
-                </>
-              )}
-            </div>
+            <ManualSetupKeyInput
+              Icon={IconComponent}
+              manualSetupKey={manualSetupKey}
+              onCopy={handleCopy}
+            />
 
             {copyStartedAt !== null && (
-              <Alert
-                role="status"
-                aria-live="polite"
-                className="border-green-200 bg-green-50 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500"
-              >
-                <FaCheckCircle />
-
-                <AlertTitle>Clave copiada al portapapeles</AlertTitle>
-
-                <AlertDescription>
-                  <span>
-                    Este mensaje desaparecerá automáticamente en {secondsLeft}{" "}
-                    {secondsLeft === 1 ? "segundo" : "segundos"}.
-                  </span>
-
-                  <div className="mt-2 flex w-full items-center gap-3">
-                    <Progress
-                      value={progressValue}
-                      aria-label="Tiempo restante"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.round(progressValue)}
-                      className="h-1 bg-green-200 **:data-[slot=progress-indicator]:bg-green-700 **:data-[slot=progress-indicator]:duration-1000! **:data-[slot=progress-indicator]:ease-linear!"
-                    />
-
-                    <span
-                      aria-live="off"
-                      className="text-xs font-semibold text-green-900 dark:text-green-400"
-                    >
-                      {secondsLeft}s
-                    </span>
-                  </div>
-                </AlertDescription>
-              </Alert>
+              <CopyFeedbackAlert progressValue={progressValue} secondsLeft={secondsLeft} />
             )}
           </div>
 
@@ -152,6 +99,87 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue }: ManualSetupStep
         </>
       )}
     </div>
+  );
+}
+
+interface ManualSetupKeyInputProps {
+  Icon: LucideIcon;
+  manualSetupKey: string | null;
+  onCopy: () => void;
+}
+
+function ManualSetupKeyInput({ Icon, manualSetupKey, onCopy }: ManualSetupKeyInputProps) {
+  return (
+    <div className="flex w-full items-stretch overflow-hidden rounded-xl border border-border">
+      {!manualSetupKey ? (
+        <div className="flex h-full w-full items-center justify-center bg-muted p-3">
+          <Loader2 className="size-4 animate-spin" />
+        </div>
+      ) : (
+        <>
+          <input
+            id="manual-setup-key"
+            type="text"
+            className="h-full w-full bg-background p-3 font-mono text-sm text-foreground outline-none"
+            readOnly
+            value={manualSetupKey}
+          />
+
+          <button
+            type="button"
+            aria-label="Copiar código manual"
+            className="cursor-pointer border-l border-border px-3 hover:bg-muted"
+            onClick={onCopy}
+          >
+            <Icon className="w-4" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+interface CopyFeedbackAlertProps {
+  progressValue: number;
+  secondsLeft: number;
+}
+
+function CopyFeedbackAlert({ progressValue, secondsLeft }: CopyFeedbackAlertProps) {
+  return (
+    <Alert
+      role="status"
+      aria-live="polite"
+      className="border-green-200 bg-green-50 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500"
+    >
+      <FaCheckCircle />
+
+      <AlertTitle>Clave copiada al portapapeles</AlertTitle>
+
+      <AlertDescription>
+        <span>
+          Este mensaje desaparecerá automáticamente en {secondsLeft}{" "}
+          {secondsLeft === 1 ? "segundo" : "segundos"}.
+        </span>
+
+        <div className="mt-2 flex w-full items-center gap-3">
+          <Progress
+            value={progressValue}
+            aria-label="Tiempo restante"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progressValue)}
+            className="h-1 bg-green-200 **:data-[slot=progress-indicator]:bg-green-700 **:data-[slot=progress-indicator]:duration-1000! **:data-[slot=progress-indicator]:ease-linear!"
+          />
+
+          <span
+            aria-live="off"
+            className="text-xs font-semibold text-green-900 dark:text-green-400"
+          >
+            {secondsLeft}s
+          </span>
+        </div>
+      </AlertDescription>
+    </Alert>
   );
 }
 
