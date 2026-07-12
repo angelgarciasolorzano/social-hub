@@ -11,13 +11,9 @@ interface ChooseMethodStepProps {
   onRetry: () => void;
 }
 
-function ChooseMethodStep({
-  errors,
-  qrCodeSvg,
-  onContinue,
-  onOpenManualSetup,
-  onRetry,
-}: ChooseMethodStepProps) {
+function ChooseMethodStep(props: ChooseMethodStepProps) {
+  const { errors, qrCodeSvg, onContinue, onOpenManualSetup, onRetry } = props;
+
   const hasError = (errors ?? []).length > 0;
 
   if (hasError) {

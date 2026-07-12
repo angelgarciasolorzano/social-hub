@@ -16,12 +16,9 @@ interface TwoFactorSuccessStepProps {
   recoveryCodesList: string[];
 }
 
-function TwoFactorSuccessStep({
-  errors,
-  fetchRecoveryCodes,
-  onClose,
-  recoveryCodesList,
-}: TwoFactorSuccessStepProps) {
+function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps) {
+  const { errors, fetchRecoveryCodes, onClose, recoveryCodesList } = props;
+
   useEffect(() => {
     if (!recoveryCodesList.length) {
       void fetchRecoveryCodes();

@@ -38,19 +38,21 @@ interface TwoFactorSetupDialogProps {
   twoFactorEnabled: boolean;
 }
 
-export default function TwoFactorSetupDialog({
-  clearSetupData,
-  errors,
-  fetchRecoveryCodes,
-  fetchSetupData,
-  isOpen,
-  manualSetupKey,
-  onClose,
-  qrCodeSvg,
-  recoveryCodesList,
-  requiresConfirmation,
-  twoFactorEnabled,
-}: TwoFactorSetupDialogProps) {
+export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps) {
+  const {
+    clearSetupData,
+    errors,
+    fetchRecoveryCodes,
+    fetchSetupData,
+    isOpen,
+    manualSetupKey,
+    onClose,
+    qrCodeSvg,
+    recoveryCodesList,
+    requiresConfirmation,
+    twoFactorEnabled,
+  } = props;
+
   const {
     handleChooseMethodContinue,
     handleClose,
