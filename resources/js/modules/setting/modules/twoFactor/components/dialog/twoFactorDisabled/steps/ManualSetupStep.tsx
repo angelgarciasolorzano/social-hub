@@ -67,30 +67,12 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue, onRetry }: Manual
     setCopyStartedAt(Date.now());
   };
 
+  if (hasError) {
+    return <StepErrorAlert onRetry={onRetry} />;
+  }
+
   return (
     <div className="flex w-full flex-col items-center space-y-5">
-      {hasError ? (
-        <div className="w-full space-y-2">
-          <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
-            <AlertTriangleIcon />
-            <AlertTitle>Algo salió mal</AlertTitle>
-            <AlertDescription>
-              No pudimos cargar la información. Inténtalo de nuevo.
-            </AlertDescription>
-          </Alert>
-
-          <Button
-            className="w-full cursor-pointer"
-            onClick={onRetry}
-            type="button"
-            variant="outline"
-          >
-            <RotateCcw />
-            Reintentar
-          </Button>
-        </div>
-      ) : null}
-
       <div className="flex w-full flex-col space-y-2">
         <label htmlFor="manual-setup-key" className="text-sm font-medium text-muted-foreground">
           Código manual
@@ -125,11 +107,30 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue, onRetry }: Manual
   );
 }
 
-interface ManualSetupKeyInputProps {
+type StepErrorAlertProps = Pick<ManualSetupStepProps, "onRetry">;
+
+function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
+  return (
+    <div className="flex w-full flex-col items-center space-y-2">
+      <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+        <AlertTriangleIcon />
+        <AlertTitle>Algo salió mal</AlertTitle>
+        <AlertDescription>No pudimos cargar la información. Inténtalo de nuevo.</AlertDescription>
+      </Alert>
+
+      <Button className="w-full cursor-pointer" onClick={onRetry} type="button" variant="outline">
+        <RotateCcw />
+        Reintentar
+      </Button>
+    </div>
+  );
+}
+
+type ManualSetupKeyInputProps = Pick<ManualSetupStepProps, "manualSetupKey"> & {
   Icon: LucideIcon;
   manualSetupKey: string | null;
   onCopy: () => void;
-}
+};
 
 function ManualSetupKeyInput({ Icon, manualSetupKey, onCopy }: ManualSetupKeyInputProps) {
   if (!manualSetupKey) {

@@ -20,30 +20,12 @@ function ChooseMethodStep({
 }: ChooseMethodStepProps) {
   const hasError = (errors ?? []).length > 0;
 
+  if (hasError) {
+    return <StepErrorAlert onRetry={onRetry} />;
+  }
+
   return (
     <div className="flex w-full flex-col items-center space-y-5">
-      {hasError ? (
-        <div className="w-full space-y-2">
-          <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
-            <AlertTriangleIcon />
-            <AlertTitle>Algo salió mal</AlertTitle>
-            <AlertDescription>
-              No pudimos cargar la información. Inténtalo de nuevo.
-            </AlertDescription>
-          </Alert>
-
-          <Button
-            className="w-full cursor-pointer"
-            onClick={onRetry}
-            type="button"
-            variant="outline"
-          >
-            <RotateCcw />
-            Reintentar
-          </Button>
-        </div>
-      ) : null}
-
       <div className="mx-auto flex max-w-md overflow-hidden">
         <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
           <div className="z-10 flex h-full w-full items-center justify-center p-5">
@@ -81,6 +63,25 @@ function ChooseMethodStep({
           Continuar
         </Button>
       </div>
+    </div>
+  );
+}
+
+type StepErrorAlertProps = Pick<ChooseMethodStepProps, "onRetry">;
+
+function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
+  return (
+    <div className="flex w-full flex-col items-center space-y-2">
+      <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+        <AlertTriangleIcon />
+        <AlertTitle>Algo salió mal</AlertTitle>
+        <AlertDescription>No pudimos cargar la información. Inténtalo de nuevo.</AlertDescription>
+      </Alert>
+
+      <Button className="w-full cursor-pointer" onClick={onRetry} type="button" variant="outline">
+        <RotateCcw />
+        Reintentar
+      </Button>
     </div>
   );
 }
