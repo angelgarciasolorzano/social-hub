@@ -69,7 +69,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps) {
               })}
             </>
           ) : (
-            <div aria-label="Loading recovery codes" className="space-y-2">
+            <div aria-label="Cargando códigos de respaldo" className="space-y-2">
               {Array.from({ length: 8 }, (_, index) => (
                 <Skeleton key={index} className="h-5 w-full" />
               ))}

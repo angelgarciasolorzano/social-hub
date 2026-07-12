@@ -5,6 +5,7 @@ import { ArrowDown, Info } from "lucide-react";
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { downloadRecoveryCodes } from "../../../../utils/downloadRecoveryCodes";
 
@@ -48,9 +49,10 @@ function TwoFactorSuccessStep({
                   </div>
                 ))
               : Array.from({ length: 8 }, (_, index) => (
-                  <div
+                  <Skeleton
                     key={`skeleton-${index}`}
-                    className="h-9 animate-pulse rounded-md border border-border bg-muted/40"
+                    aria-label="Cargando códigos de respaldo"
+                    className="h-9 border border-border"
                   />
                 ))}
           </div>
