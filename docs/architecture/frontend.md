@@ -326,6 +326,81 @@ Ejemplos válidos del proyecto:
 | `useAppearance`              | `UseAppearanceReturn`              | ❌ (solo firma)                                           |
 | `useAppearance`              | `Appearance`, `ResolvedAppearance` | ✅ (consumidos en `Appearance.tsx`, `appearanceItems.ts`) |
 
+### 6.4. Hooks de UI encapsulando comportamiento + estado
+
+Cuando un componente combina **estado local + efectos + UI** (ej. copiar al portapapeles con countdown y barra de progreso), extraé esa lógica a un hook de feature. El componente queda con **solo render** y el hook es **testeable de forma aislada**.
+
+**Cuándo aplica:**
+
+- Hay un `useState` + `useEffect` + `useCallback` coordinados en el componente.
+- La lógica es reutilizable potencialmente (puede que otro feature necesite "copy con feedback temporal").
+- Sacarla del componente mejora la legibilidad (componente >150 líneas con lógica intercalada).
+
+**Ejemplo del proyecto — `useCopyWithCountdown`:**
+
+```ts
+// resources/js/modules/setting/modules/twoFactor/hooks/useCopyWithCountdown.ts
+
+interface UseCopyWithCountdownParams {
+  durationMs: number;
+  tickMs: number;
+}
+
+interface UseCopyWithCountdownReturn {
+  copiedText: string | null;
+  copy: (text: string) => void;
+  isActive: boolean;
+  progressPercent: number;
+  secondsLeft: number;
+}
+
+export function useCopyWithCountdown({
+  durationMs,
+  tickMs,
+}: UseCopyWithCountdownParams): UseCopyWithCountdownReturn {
+  // Encapsula: useClipboard + countdown + intervalo + cleanup
+  // ...
+}
+```
+
+El componente consume el hook y queda enfocado en el render:
+
+```tsx
+function ManualSetupStep({ manualSetupKey }: Props) {
+  const { copiedText, copy, isActive, progressPercent, secondsLeft } = useCopyWithCountdown({
+    durationMs: 10_000,
+    tickMs: 1_000,
+  });
+
+  const isCopied = copiedText !== null && copiedText === manualSetupKey;
+
+  return (
+    <>
+      <Button onClick={() => manualSetupKey && copy(manualSetupKey)}>
+        {isCopied ? <Check /> : <Copy />}
+      </Button>
+
+      {isActive && (
+        <CopyFeedbackAlert progressPercent={progressPercent} secondsLeft={secondsLeft} />
+      )}
+    </>
+  );
+}
+```
+
+**Convención de ubicación:**
+
+| Tipo de hook                              | Ubicación                                                     |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| Hook genérico (sin dominio de negocio)    | `resources/js/shared/hooks/useXxx.ts`                         |
+| Hook de feature (específico de un módulo) | `resources/js/modules/<domain>/hooks/useXxx.ts`               |
+| Hook de submódulo                         | `resources/js/modules/<parent>/modules/<sub>/hooks/useXxx.ts` |
+
+**Diferencia con §6.1 (`useTwoFactorActivationFlow`):**
+
+- §6.1 — **State machine**: hook que coordina transiciones entre pasos (`step: "chooseMethod" | "verifyingOTP" | …`).
+- §6.4 — **Comportamiento + UI**: hook que encapsula un efecto concreto reutilizable (copy, drag, debounce, etc.) con su estado derivado.
+
 ## 7. Convenciones de componentes
 
 ### 7.1. Componentes de paso (steps) para flujos modales

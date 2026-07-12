@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 import { FaCheckCircle } from "react-icons/fa";
 
 import type { LucideIcon } from "lucide-react";
@@ -15,9 +13,9 @@ import {
 } from "@/shared/components/shadcn/ui/input-group";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
-import { useClipboard } from "@/shared/hooks/useClipboard";
-
 import { cn } from "@/shared/lib";
+
+import { useCopyWithCountdown } from "../../../../hooks/useCopyWithCountdown";
 
 interface ManualSetupStepProps {
   errors: string[];
@@ -28,45 +26,22 @@ interface ManualSetupStepProps {
 
 const COPY_FEEDBACK_DURATION_MS = 10_000;
 const COPY_FEEDBACK_TICK_MS = 1_000;
-const COPY_FEEDBACK_TOTAL_SECONDS = COPY_FEEDBACK_DURATION_MS / COPY_FEEDBACK_TICK_MS;
 
 function ManualSetupStep({ errors, manualSetupKey, onContinue, onRetry }: ManualSetupStepProps) {
-  const [copiedText, copy] = useClipboard({ resetTimeout: COPY_FEEDBACK_DURATION_MS });
+  const { copiedText, copy, isActive, progressPercent, secondsLeft } = useCopyWithCountdown({
+    durationMs: COPY_FEEDBACK_DURATION_MS,
+    tickMs: COPY_FEEDBACK_TICK_MS,
+  });
 
-  const [copyStartedAt, setCopyStartedAt] = useState<number | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number>(0);
-
-  const IconComponent = copiedText === manualSetupKey ? Check : Copy;
-  const progressValue = (secondsLeft / COPY_FEEDBACK_TOTAL_SECONDS) * 100;
   const hasError = (errors ?? []).length > 0;
-
-  useEffect(() => {
-    if (copyStartedAt === null) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => Math.max(0, prev - 1));
-    }, COPY_FEEDBACK_TICK_MS);
-
-    const timeout = setTimeout(() => {
-      setCopyStartedAt(null);
-    }, COPY_FEEDBACK_DURATION_MS);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [copyStartedAt]);
+  const isCopied = copiedText !== null && copiedText === manualSetupKey;
 
   const handleCopy = (): void => {
     if (!manualSetupKey) {
       return;
     }
 
-    void copy(manualSetupKey);
-    setSecondsLeft(COPY_FEEDBACK_TOTAL_SECONDS);
-    setCopyStartedAt(Date.now());
+    copy(manualSetupKey);
   };
 
   if (hasError) {
@@ -81,13 +56,13 @@ function ManualSetupStep({ errors, manualSetupKey, onContinue, onRetry }: Manual
         </label>
 
         <ManualSetupKeyInput
-          Icon={IconComponent}
+          Icon={isCopied ? Check : Copy}
           manualSetupKey={manualSetupKey}
           onCopy={handleCopy}
         />
 
-        {copyStartedAt !== null && (
-          <CopyFeedbackAlert progressValue={progressValue} secondsLeft={secondsLeft} />
+        {isActive && (
+          <CopyFeedbackAlert progressPercent={progressPercent} secondsLeft={secondsLeft} />
         )}
       </div>
 
@@ -130,7 +105,6 @@ function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
 
 type ManualSetupKeyInputProps = Pick<ManualSetupStepProps, "manualSetupKey"> & {
   Icon: LucideIcon;
-  manualSetupKey: string | null;
   onCopy: () => void;
 };
 
@@ -170,11 +144,11 @@ function ManualSetupKeyInput({ Icon, manualSetupKey, onCopy }: ManualSetupKeyInp
 }
 
 interface CopyFeedbackAlertProps {
-  progressValue: number;
+  progressPercent: number;
   secondsLeft: number;
 }
 
-function CopyFeedbackAlert({ progressValue, secondsLeft }: CopyFeedbackAlertProps) {
+function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertProps) {
   return (
     <Alert
       role="status"
@@ -193,11 +167,11 @@ function CopyFeedbackAlert({ progressValue, secondsLeft }: CopyFeedbackAlertProp
 
         <div className="mt-2 flex w-full items-center gap-3">
           <Progress
-            value={progressValue}
+            value={progressPercent}
             aria-label="Tiempo restante"
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-valuenow={Math.round(progressValue)}
+            aria-valuenow={Math.round(progressPercent)}
             className={cn(
               "h-1 bg-green-200 dark:bg-green-800",
               "**:data-[slot=progress-indicator]:bg-green-700 dark:**:data-[slot=progress-indicator]:bg-green-400",
