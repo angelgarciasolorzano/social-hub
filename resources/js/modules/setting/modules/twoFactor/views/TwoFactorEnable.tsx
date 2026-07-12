@@ -15,6 +15,8 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
+import { useDialog } from "@/shared/hooks/useDialog";
+
 import { cn } from "@/shared/lib";
 
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
@@ -30,16 +32,13 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
-import { useTwoFactorEnable } from "../hooks/useTwoFactorEnable";
 
 function TwoFactorEnable() {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
-  const {
-    showRegenerateCodesDialog,
-    setShowRegenerateCodesDialog,
-    showDisabledTwoFactorDialog,
-    setShowDisabledTwoFactorDialog,
-  } = useTwoFactorEnable();
+  const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
+  const { open: showDisabledTwoFactorDialog, setOpen: setShowDisabledTwoFactorDialog } =
+    useDialog();
+
   // Handler que recibe la key del card clickeado
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {

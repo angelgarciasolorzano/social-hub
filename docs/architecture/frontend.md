@@ -290,7 +290,7 @@ Uso (renombrando localmente para mayor claridad):
 const { open: showSetupModal, setOpen: setShowSetupModal } = useDialog();
 ```
 
-**Cuándo crear un hook propio:** solo si el feature necesita **dos o más** dialogs (ej. `useTwoFactorEnable` maneja `showRegenerateCodesDialog` + `showDisabledTwoFactorDialog`). Para un solo dialog, **siempre usá `useDialog`**.
+**Cuándo crear un hook propio:** **nunca** para visibilidad de dialogs. `useDialog` ya encapsula el `useState<boolean>` y se puede llamar múltiples veces en el mismo componente para manejar varios dialogs independientes. No crees `useFooDialog` ni similares..
 
 ### 6.3. Hooks de feature con un solo return tipado
 
@@ -520,7 +520,7 @@ resources/js/modules/setting/modules/twoFactor/
 │   └── twoFactorEnable.ts
 ├── hooks/
 │   ├── useTwoFactorAuth.ts                   ← estado + fetch del feature
-│   ├── useTwoFactorEnable.ts                 ← visibilidad de otros modales (regenerate + disable)
+│   ├── useTwoFactorActivationFlow.ts         ← state machine del wizard
 │   └── useTwoFactorActivationFlow.ts         ← state machine del wizard
 ├── types/
 │   └── twoFactorActivationStep.ts            ← const-as-keys + tipo derivado
