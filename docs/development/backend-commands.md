@@ -2,6 +2,8 @@
 
 Referencia de los comandos Composer más usados para mantener consistencia y calidad en el código del backend.
 
+> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines un comando, script, alias de Composer o workflow del backend, actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de los comandos y no debe quedar desincronizada con `composer.json` o los scripts de CI.
+
 ## 1. Comandos esenciales (antes de cada commit)
 
 Estos tres son los que mantienen la consistencia del proyecto. **Ejecuta los tres en orden** antes de hacer commit.
@@ -111,6 +113,7 @@ Regenera los archivos de ayuda para IDE:
 - `_ide_helper_models.php` — PHPDoc de modelos Eloquent (incluye `@property`, `@method`)
 
 **Cuándo:** después de:
+
 - Agregar un modelo nuevo
 - Cambiar relaciones o propiedades fillable de un modelo
 - Actualizar dependencias que afecten tipos
@@ -161,15 +164,15 @@ Limpia la caché de resultados de PHPStan.
 
 ## 4. Resumen rápido
 
-| Comando | Para qué | Cuándo |
-|---|---|---|
-| `composer pint-dirty` | Formatear archivos modificados | Antes de commit |
-| `composer phpstan` | Análisis estático | Antes de commit |
-| `composer rector-dry` | Preview refactor | Antes de refactor grande |
-| `composer rector` | Aplicar refactor | Después de confirmar el plan |
-| `composer test` | Suite completa PHPUnit | Antes de PR |
-| `php artisan test --compact` | Tests rápidos con filtro | Después de cada test modificado |
-| `composer ide-helper` | Regenerar helpers IDE | Después de cambiar modelos |
-| `composer setup` | Setup inicial | Primera vez |
-| `composer dev` | Entorno dev completo | Sesión de desarrollo |
-| `composer phpstan-clear-cache` | Limpiar caché PHPStan | Si hay errores fantasma |
+| Comando                        | Para qué                       | Cuándo                          |
+| ------------------------------ | ------------------------------ | ------------------------------- |
+| `composer pint-dirty`          | Formatear archivos modificados | Antes de commit                 |
+| `composer phpstan`             | Análisis estático              | Antes de commit                 |
+| `composer rector-dry`          | Preview refactor               | Antes de refactor grande        |
+| `composer rector`              | Aplicar refactor               | Después de confirmar el plan    |
+| `composer test`                | Suite completa PHPUnit         | Antes de PR                     |
+| `php artisan test --compact`   | Tests rápidos con filtro       | Después de cada test modificado |
+| `composer ide-helper`          | Regenerar helpers IDE          | Después de cambiar modelos      |
+| `composer setup`               | Setup inicial                  | Primera vez                     |
+| `composer dev`                 | Entorno dev completo           | Sesión de desarrollo            |
+| `composer phpstan-clear-cache` | Limpiar caché PHPStan          | Si hay errores fantasma         |

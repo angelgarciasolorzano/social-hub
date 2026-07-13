@@ -6,7 +6,7 @@ import { useIntersectionObserver } from "usehooks-ts";
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { useModal } from "@/shared/hooks/useModal";
+import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib/utils";
 
@@ -27,7 +27,7 @@ function CommentList({ postId, previewContext }: CommentListProps) {
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
 
-  const { open: openModalComment, setOpen: setOpenModalComment } = useModal();
+  const { open: openModalComment, setOpen: setOpenModalComment } = useDialog();
 
   const {
     commentsPage,

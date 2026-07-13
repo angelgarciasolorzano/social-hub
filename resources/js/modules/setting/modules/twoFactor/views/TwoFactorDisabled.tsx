@@ -1,5 +1,3 @@
-import { type Dispatch, type SetStateAction } from "react";
-
 import { Form } from "@inertiajs/react";
 
 import {
@@ -18,7 +16,6 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 
-import TwoFactorSetupDialog from "../components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
 import { OptionCard } from "../components/ui/OptionCard";
 import SummaryCard from "../components/ui/SummaryCard";
 import Timeline from "../components/ui/Timeline";
@@ -29,27 +26,18 @@ import {
   twoFactorRecommendedApps,
   twoFactorRequirements,
 } from "../data/twoFactorDisabled";
-import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
-import { useTwoFactorDisabled } from "../hooks/useTwoFactorDisabled";
 
 interface TwoFactorDisabledProps {
-  requiresConfirmation: boolean;
-  twoFactorEnabled: boolean;
+  hasSetupData: boolean;
+  onActivate: () => void;
 }
 
-function TwoFactorDisabled(props: TwoFactorDisabledProps) {
-  const { requiresConfirmation, twoFactorEnabled } = props;
-
-  const { qrCodeSvg, hasSetupData, manualSetupKey, clearSetupData, fetchSetupData, errors } =
-    useTwoFactorAuth();
-
-  const { showSetupModal, setShowSetupModal } = useTwoFactorDisabled();
-
+function TwoFactorDisabled({ hasSetupData, onActivate }: TwoFactorDisabledProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex gap-6">
         <div className="flex flex-col gap-8">
-          <TwoFactorTitle setShowSetupModal={setShowSetupModal} hasSetupData={hasSetupData} />
+          <TwoFactorTitle hasSetupData={hasSetupData} onActivate={onActivate} />
           <TwoFactorInfoBanner />
           <OptionCard options={twoFactorBenefits} />
           <SummaryCard title="Detalles importantes" data={twoFactorImportantDetails} />
@@ -63,30 +51,18 @@ function TwoFactorDisabled(props: TwoFactorDisabledProps) {
       </div>
 
       <TwoFactorActivationForm />
-
-      <TwoFactorSetupDialog
-        onClose={() => setShowSetupModal(false)}
-        clearSetupData={clearSetupData}
-        errors={errors}
-        fetchSetupData={fetchSetupData}
-        isOpen={showSetupModal}
-        manualSetupKey={manualSetupKey}
-        qrCodeSvg={qrCodeSvg}
-        requiresConfirmation={requiresConfirmation}
-        twoFactorEnabled={twoFactorEnabled}
-      />
     </div>
   );
 }
 
 interface TwoFactorTitleProps {
   hasSetupData: boolean;
-  setShowSetupModal: Dispatch<SetStateAction<boolean>>;
+  onActivate: () => void;
 }
 
-function TwoFactorTitle({ setShowSetupModal, hasSetupData }: TwoFactorTitleProps) {
+function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps) {
   return (
-    <div className="flex items-center gap-24 rounded-md border border-violet-200 bg-violet-300/5 p-8 shadow-sm dark:border-violet-500/20 dark:bg-violet-900/5">
+    <div className="flex items-center gap-24 rounded-md border border-violet-200 bg-violet-300/5 p-8 shadow-sm dark:border-violet-500/30 dark:bg-violet-900/5">
       <div className="flex items-start gap-4">
         <div className="rounded-3xl bg-violet-100/50 p-2 dark:bg-violet-900/20">
           <ShieldCheck className="h-12 w-12 text-violet-700 dark:text-violet-500" />
@@ -109,16 +85,12 @@ function TwoFactorTitle({ setShowSetupModal, hasSetupData }: TwoFactorTitleProps
 
       <div>
         {hasSetupData ? (
-          <Button onClick={() => setShowSetupModal(true)} className="cursor-pointer">
+          <Button onClick={onActivate} className="cursor-pointer">
             <ShieldCheck />
             Continuar configuración
           </Button>
         ) : (
-          <Form
-            {...enable.form()}
-            onSuccess={() => setShowSetupModal(true)}
-            className="cursor-pointer"
-          >
+          <Form {...enable.form()} onSuccess={onActivate} className="cursor-pointer">
             {({ processing }) => (
               <Button type="submit" className="cursor-pointer" disabled={processing}>
                 Activar 2FA
@@ -219,6 +191,7 @@ function TwoFactorRecommendedApps() {
                   )}
                   <span>{app.name}</span>
                 </div>
+
                 <SquareArrowOutUpRight className="h-4 w-4 text-muted-foreground" />
               </div>
             );

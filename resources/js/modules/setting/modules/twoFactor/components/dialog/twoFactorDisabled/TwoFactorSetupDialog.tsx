@@ -1,14 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
-import { Form } from "@inertiajs/react";
+import type { LucideIcon } from "lucide-react";
+import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
 
-import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { Check, Copy, Loader2, ScanLine } from "lucide-react";
-
-import { confirm } from "@/shared/wayfinder/routes/two-factor";
-
-import AlertError from "@/shared/components/AlertError";
-import InputError from "@/shared/components/form/InputError";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
@@ -17,292 +11,185 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/shadcn/ui/input-otp";
 
-import { useClipboard } from "@/shared/hooks/useClipboard";
+import { cn } from "@/shared/lib";
 
-import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
-
-function GridScanIcon() {
-  return (
-    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
-      <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
-        <div className="absolute inset-0 grid grid-cols-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div className="border-r border-border last:border-r-0" key={`col-${i + 1}`} />
-          ))}
-        </div>
-
-        <div className="absolute inset-0 grid grid-rows-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div className="border-b border-border last:border-b-0" key={`row-${i + 1}`} />
-          ))}
-        </div>
-
-        <ScanLine className="relative z-20 size-6 text-foreground" />
-      </div>
-    </div>
-  );
-}
-
-function TwoFactorSetupStep({
-  buttonText,
-  errors,
-  manualSetupKey,
-  onNextStep,
-  qrCodeSvg,
-}: {
-  qrCodeSvg: string | null;
-  manualSetupKey: string | null;
-  buttonText: string;
-  onNextStep: () => void;
-  errors: string[];
-}) {
-  const [copiedText, copy] = useClipboard();
-  const IconComponent = copiedText === manualSetupKey ? Check : Copy;
-
-  return (
-    <>
-      {errors?.length ? (
-        <AlertError errors={errors} />
-      ) : (
-        <>
-          <div className="mx-auto flex max-w-md overflow-hidden">
-            <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
-              <div className="z-10 flex h-full w-full items-center justify-center p-5">
-                {qrCodeSvg ? (
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: qrCodeSvg,
-                    }}
-                  />
-                ) : (
-                  <Loader2 className="flex size-4 animate-spin" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex w-full space-x-5">
-            <Button className="w-full cursor-pointer" onClick={onNextStep}>
-              {buttonText}
-            </Button>
-          </div>
-
-          <div className="relative flex w-full items-center justify-center">
-            <div className="absolute inset-0 top-1/2 h-px w-full bg-border" />
-
-            <span className="relative bg-card px-2 py-1">o ingrese el código manualmente</span>
-          </div>
-
-          <div className="flex w-full space-x-2">
-            <div className="flex w-full items-stretch overflow-hidden rounded-xl border border-border">
-              {!manualSetupKey ? (
-                <div className="flex h-full w-full items-center justify-center bg-muted p-3">
-                  <Loader2 className="size-4 animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <input
-                    type="text"
-                    className="h-full w-full bg-background p-3 text-foreground outline-none"
-                    readOnly
-                    value={manualSetupKey}
-                  />
-
-                  <button
-                    className="border-l border-border px-3 hover:bg-muted"
-                    onClick={() => copy(manualSetupKey)}
-                  >
-                    <IconComponent className="w-4" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-}
-
-function TwoFactorVerificationStep({
-  onBack,
-  onClose,
-}: {
-  onClose: () => void;
-  onBack: () => void;
-}) {
-  const [code, setCode] = useState<string>("");
-  const pinInputContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setTimeout(() => {
-      pinInputContainerRef.current?.querySelector("input")?.focus();
-    }, 0);
-  }, []);
-
-  return (
-    <Form {...confirm.form()} onSuccess={() => onClose()} resetOnError resetOnSuccess>
-      {({
-        errors,
-        processing,
-      }: {
-        processing: boolean;
-        errors?: { confirmTwoFactorAuthentication?: { code?: string } };
-      }) => (
-        <>
-          <div className="relative w-full space-y-3" ref={pinInputContainerRef}>
-            <div className="flex w-full flex-col items-center space-y-3 py-2">
-              <InputOTP
-                id="otp"
-                name="code"
-                onChange={setCode}
-                disabled={processing}
-                maxLength={OTP_MAX_LENGTH}
-                pattern={REGEXP_ONLY_DIGITS}
-              >
-                <InputOTPGroup>
-                  {Array.from({ length: OTP_MAX_LENGTH }, (_, index) => (
-                    <InputOTPSlot index={index} key={index} />
-                  ))}
-                </InputOTPGroup>
-              </InputOTP>
-              <InputError message={errors?.confirmTwoFactorAuthentication?.code} />
-            </div>
-
-            <div className="flex w-full space-x-5">
-              <Button
-                type="button"
-                className="flex-1 cursor-pointer"
-                onClick={onBack}
-                disabled={processing}
-                variant="outline"
-              >
-                Back
-              </Button>
-
-              <Button
-                type="submit"
-                className="flex-1 cursor-pointer"
-                disabled={processing || code.length < OTP_MAX_LENGTH}
-              >
-                Confirm
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
-    </Form>
-  );
-}
+import { useTwoFactorActivationFlow } from "../../../hooks/useTwoFactorActivationFlow";
+import {
+  type TwoFactorActivationStep,
+  twoFactorActivationStepKey,
+} from "../../../types/twoFactorActivationStep";
+import ChooseMethodStep from "./steps/ChooseMethodStep";
+import ManualSetupStep from "./steps/ManualSetupStep";
+import TwoFactorSuccessStep from "./steps/TwoFactorSuccessStep";
+import VerifyOtpStep from "./steps/VerifyOtpStep";
 
 interface TwoFactorSetupDialogProps {
   clearSetupData: () => void;
   errors: string[];
+  fetchRecoveryCodes: () => Promise<void>;
   fetchSetupData: () => Promise<void>;
   isOpen: boolean;
   manualSetupKey: string | null;
   onClose: () => void;
   qrCodeSvg: string | null;
+  recoveryCodesList: string[];
   requiresConfirmation: boolean;
   twoFactorEnabled: boolean;
 }
 
-export default function TwoFactorSetupDialog({
-  clearSetupData,
-  errors,
-  fetchSetupData,
-  isOpen,
-  manualSetupKey,
-  onClose,
-  qrCodeSvg,
-  requiresConfirmation,
-  twoFactorEnabled,
-}: TwoFactorSetupDialogProps) {
-  const [showVerificationStep, setShowVerificationStep] = useState<boolean>(false);
+export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps) {
+  const {
+    clearSetupData,
+    errors,
+    fetchRecoveryCodes,
+    fetchSetupData,
+    isOpen,
+    manualSetupKey,
+    onClose,
+    qrCodeSvg,
+    recoveryCodesList,
+    requiresConfirmation,
+    twoFactorEnabled,
+  } = props;
 
-  const modalConfig = useMemo<{
-    title: string;
-    description: string;
-    buttonText: string;
-  }>(() => {
-    if (showVerificationStep) {
-      return {
-        buttonText: "Continuar",
-        description: "Ingresa el código de 6 dígitos de tu aplicación de autenticación",
-        title: "Verificar código de autenticación",
-      };
+  const {
+    handleChooseMethodContinue,
+    handleClose,
+    handleManualSetupBack,
+    handleManualSetupContinue,
+    handleOpenManualSetup,
+    handleOtpBack,
+    handleOtpSuccess,
+    modalConfig,
+    step,
+  } = useTwoFactorActivationFlow({
+    clearSetupData,
+    fetchRecoveryCodes,
+    fetchSetupData,
+    isOpen,
+    onClose,
+    qrCodeSvg,
+    requiresConfirmation,
+    twoFactorEnabled,
+  });
+
+  const handleRetry = (): void => {
+    void fetchSetupData();
+  };
+
+  const renderStep = (): ReactNode => {
+    switch (step) {
+      case twoFactorActivationStepKey.chooseMethod:
+        return (
+          <ChooseMethodStep
+            errors={errors}
+            qrCodeSvg={qrCodeSvg}
+            onContinue={handleChooseMethodContinue}
+            onOpenManualSetup={handleOpenManualSetup}
+            onRetry={handleRetry}
+          />
+        );
+
+      case twoFactorActivationStepKey.manualSetup:
+        return (
+          <ManualSetupStep
+            errors={errors}
+            manualSetupKey={manualSetupKey}
+            onContinue={handleManualSetupContinue}
+            onRetry={handleRetry}
+          />
+        );
+
+      case twoFactorActivationStepKey.verifyingOTP:
+        return <VerifyOtpStep onBack={handleOtpBack} onSuccess={handleOtpSuccess} />;
+
+      case twoFactorActivationStepKey.success:
+        return (
+          <TwoFactorSuccessStep
+            errors={errors}
+            fetchRecoveryCodes={fetchRecoveryCodes}
+            onClose={handleClose}
+            recoveryCodesList={recoveryCodesList}
+          />
+        );
     }
-
-    return {
-      buttonText: "Continuar",
-      description:
-        "Para terminar de habilitar la autenticación de dos factores, escanee el código QR o ingrese la clave de configuración en su aplicación de autenticación.",
-      title: "Habilitar Two-Factor Authentication",
-    };
-  }, [showVerificationStep]);
-
-  const handleModalNextStep = useCallback(() => {
-    if (requiresConfirmation) {
-      setShowVerificationStep(true);
-
-      return;
-    }
-
-    clearSetupData();
-    onClose();
-  }, [requiresConfirmation, clearSetupData, onClose]);
-
-  const resetModalState = useCallback(() => {
-    setShowVerificationStep(false);
-    if (twoFactorEnabled) {
-      clearSetupData();
-    }
-  }, [twoFactorEnabled, clearSetupData]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setTimeout(() => {
-        resetModalState();
-      }, 0);
-
-      return;
-    }
-
-    if (!qrCodeSvg) {
-      fetchSetupData();
-    }
-  }, [isOpen, qrCodeSvg, fetchSetupData, resetModalState]);
+  };
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
+    <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
       <DialogContent className="sm:max-w-md">
+        {step === twoFactorActivationStepKey.manualSetup ? (
+          <Button
+            type="button"
+            aria-label="Volver"
+            variant="outline"
+            size="icon-sm"
+            className="absolute top-3 left-3 z-10 inline-flex cursor-pointer items-center justify-center rounded-md"
+            onClick={handleManualSetupBack}
+          >
+            <ArrowLeft className="size-5" aria-hidden="true" />
+          </Button>
+        ) : null}
+
         <DialogHeader className="flex items-center justify-center">
-          <GridScanIcon />
+          <DialogHeaderIcon step={step} />
 
           <DialogTitle>{modalConfig.title}</DialogTitle>
 
           <DialogDescription className="text-center">{modalConfig.description}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col items-center space-y-5">
-          {showVerificationStep ? (
-            <TwoFactorVerificationStep
-              onBack={() => setShowVerificationStep(false)}
-              onClose={onClose}
-            />
-          ) : (
-            <TwoFactorSetupStep
-              onNextStep={handleModalNextStep}
-              buttonText={modalConfig.buttonText}
-              errors={errors}
-              manualSetupKey={manualSetupKey}
-              qrCodeSvg={qrCodeSvg}
-            />
-          )}
-        </div>
+        <div className="flex flex-col items-center space-y-5">{renderStep()}</div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface DialogHeaderIconProps {
+  step: TwoFactorActivationStep;
+}
+
+function DialogHeaderIcon({ step }: DialogHeaderIconProps) {
+  switch (step) {
+    case twoFactorActivationStepKey.chooseMethod:
+      return <DialogHeaderIconWrapper icon={ScanLine} iconClassName="text-foreground" />;
+    case twoFactorActivationStepKey.manualSetup:
+      return (
+        <DialogHeaderIconWrapper
+          icon={Smartphone}
+          iconClassName="text-violet-700 dark:text-violet-400"
+        />
+      );
+    case twoFactorActivationStepKey.verifyingOTP:
+      return <DialogHeaderIconWrapper icon={Hash} iconClassName="text-foreground" />;
+    case twoFactorActivationStepKey.success:
+      return (
+        <DialogHeaderIconWrapper
+          icon={CircleCheck}
+          iconClassName="text-green-600 dark:text-green-400"
+          innerClassName="bg-green-50 dark:bg-green-500/10"
+        />
+      );
+  }
+}
+
+interface DialogHeaderIconWrapperProps {
+  icon: LucideIcon;
+  iconClassName: string;
+  innerClassName?: string;
+}
+
+function DialogHeaderIconWrapper({
+  icon: Icon,
+  iconClassName,
+  innerClassName,
+}: DialogHeaderIconWrapperProps) {
+  return (
+    <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
+      <div className={cn("rounded-full border border-border p-2.5", innerClassName ?? "bg-muted")}>
+        <Icon className={cn("size-6", iconClassName)} />
+      </div>
+    </div>
   );
 }

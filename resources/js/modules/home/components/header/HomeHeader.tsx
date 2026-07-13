@@ -1,4 +1,4 @@
-import { useModal } from "@/shared/hooks/useModal";
+import { useDialog } from "@/shared/hooks/useDialog";
 
 import HomeNotificationHeader from "./HomeNotificationHeader";
 import HomePostHeader from "./HomePostHeader";
@@ -16,7 +16,7 @@ function HomeHeader() {
 }
 
 function HeaderAction() {
-  const { open: isOpenModal, setOpen: setIsOpenModal } = useModal();
+  const { open: isOpenModal, setOpen: setIsOpenModal } = useDialog();
 
   return (
     <div className="flex items-center gap-4">

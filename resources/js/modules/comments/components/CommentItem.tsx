@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 
-import { useModal } from "@/shared/hooks/useModal";
+import { useDialog } from "@/shared/hooks/useDialog";
 
 import { validImage } from "@/shared/lib";
 import { cn } from "@/shared/lib/utils";
@@ -37,7 +37,7 @@ function CommentItem(props: CommentItemProps) {
     uploadedComments,
   } = props;
 
-  const { open: openModalComment, setOpen: setOpenModalComment } = useModal();
+  const { open: openModalComment, setOpen: setOpenModalComment } = useDialog();
 
   const [repliesRefreshCounter, setRepliesRefreshCounter] = useState<number>(0);
 

@@ -5,7 +5,7 @@ import { MdOutlineEditNote } from "react-icons/md";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 
-import { useModal } from "@/shared/hooks/useModal";
+import { useDialog } from "@/shared/hooks/useDialog";
 
 import { validImage } from "@/shared/lib";
 
@@ -24,7 +24,7 @@ interface ProfileProps {
 }
 
 function Profile({ posts, user }: ProfileProps) {
-  const { open, setOpen } = useModal();
+  const { open, setOpen } = useDialog();
   const { auth } = usePage<SharedData>().props;
 
   return (
