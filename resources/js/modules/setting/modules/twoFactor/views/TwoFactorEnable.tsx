@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   Bolt,
   ChevronDown,
@@ -19,12 +21,12 @@ import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib";
 
-import TrustedDevicesDialog from "../components/dialog/TrustedDevicesDialog";
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/dialog/twoFactorEnable/RegenerateCodesDialog";
 import { OptionCard } from "../components/ui/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/ui/SummaryCard";
 import SummaryCard from "../components/ui/SummaryCard";
+import TwoFactorDevices from "../components/ui/twoFactorEnable/TwoFactorDevices";
 import TwoFactorRecoveryCodes from "../components/ui/twoFactorEnable/TwoFactorRecoveryCodes";
 import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
@@ -39,19 +41,22 @@ interface TwoFactorEnableProps {
   trustedDevices: TrustedDevice[];
 }
 
+type SlotContent = "codes" | "devices";
+
 function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
   const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
   const { open: showDisabledTwoFactorDialog, setOpen: setShowDisabledTwoFactorDialog } =
     useDialog();
-  const { open: showTrustedDevicesDialog, setOpen: setShowTrustedDevicesDialog } = useDialog();
+
+  const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
   // Handler que recibe la key del card clickeado
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
       case twoFactorSecurityOptionsKey.backupCodes:
-        console.log("Mostrando códigos de respaldo...");
+        setSelectedContent("codes");
 
         break;
 
@@ -84,19 +89,31 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
         <TwoFactorSecuritySummary
           recoveryCodesList={recoveryCodesList}
           trustedDevices={trustedDevices}
-          onViewTrustedDevices={() => setShowTrustedDevicesDialog(true)}
+          onViewTrustedDevices={() => setSelectedContent("devices")}
         />
 
         <TwoFactorSafetyTips />
       </div>
 
-      <div>
-        <TwoFactorRecoveryCodes
-          errors={errors}
-          fetchRecoveryCodes={fetchRecoveryCodes}
-          recoveryCodesList={recoveryCodesList}
-        />
-      </div>
+      <Card className="min-w-105">
+        <CardHeader>
+          <CardTitle>
+            {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-6">
+          {selectedContent === "codes" ? (
+            <TwoFactorRecoveryCodes
+              errors={errors}
+              fetchRecoveryCodes={fetchRecoveryCodes}
+              recoveryCodesList={recoveryCodesList}
+            />
+          ) : (
+            <TwoFactorDevices devices={trustedDevices} />
+          )}
+        </CardContent>
+      </Card>
 
       <RegenerateCodesDialog
         isOpen={showRegenerateCodesDialog}
@@ -107,12 +124,6 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
       <DisabledTwoFactorDialog
         isOpen={showDisabledTwoFactorDialog}
         setOpen={setShowDisabledTwoFactorDialog}
-      />
-
-      <TrustedDevicesDialog
-        devices={trustedDevices}
-        open={showTrustedDevicesDialog}
-        onOpenChange={setShowTrustedDevicesDialog}
       />
     </div>
   );
