@@ -16,6 +16,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+
         $this->app->register(AuthRouteServiceProvider::class);
 
         $this->registerEventListeners();
