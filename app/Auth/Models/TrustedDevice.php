@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\TrustedDevice\Models;
+namespace App\Auth\Models;
 
-use App\Auth\TrustedDevice\Factories\TrustedDeviceFactory;
+use App\Auth\Database\Factories\TrustedDeviceFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

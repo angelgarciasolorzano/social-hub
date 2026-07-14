@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\TrustedDevice\Controllers;
+namespace App\Auth\Modules\TrustedDevice\Controllers;
 
-use App\Auth\TrustedDevice\Models\TrustedDevice;
+use App\Auth\Models\TrustedDevice;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

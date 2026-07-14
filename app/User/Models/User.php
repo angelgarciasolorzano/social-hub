@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Models;
 
-use App\Auth\TrustedDevice\Models\TrustedDevice;
+use App\Auth\Models\TrustedDevice;
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Auth\TrustedDevice\Controllers\TrustedDeviceController;
+use App\Auth\Modules\TrustedDevice\Controllers\TrustedDeviceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('user')->name('user.')->group(function (): void {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Login\Controllers;
 
 use App\Auth\Login\Requests\LoginRequest;
-use App\Auth\TrustedDevice\Models\TrustedDevice;
+use App\Auth\Models\TrustedDevice;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

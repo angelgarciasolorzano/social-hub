@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\TrustedDevice\Factories;
+namespace App\Auth\Database\Factories;
 
-use App\Auth\TrustedDevice\Models\TrustedDevice;
+use App\Auth\Models\TrustedDevice;
 use App\User\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;

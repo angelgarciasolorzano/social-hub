@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\TrustedDevice\Listeners;
+namespace App\Auth\Modules\TrustedDevice\Listeners;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Events\ValidTwoFactorAuthenticationCodeProvided;
 
-final readonly class RememberTrustedDevice
+final readonly class TrustedDeviceRemember
 {
     /**
      * Cookie name used to identify the trusted device.
