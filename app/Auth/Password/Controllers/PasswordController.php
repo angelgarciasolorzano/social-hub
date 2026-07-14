@@ -31,6 +31,8 @@ class PasswordController extends Controller
             'password' => Hash::make($password),
         ]);
 
+        $user->trustedDevices()->delete();
+
         return Inertia::flash('success', 'Contraseña actualizada correctamente')->back();
     }
 }
