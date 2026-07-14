@@ -14,6 +14,7 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     require __DIR__.'/email.php';
     require __DIR__.'/password.php';
+    require __DIR__.'/trustedDevice.php';
 
     Route::post('logout', [LoginSessionController::class, 'destroy'])
         ->name('logout');

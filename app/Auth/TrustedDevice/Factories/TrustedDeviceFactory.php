@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories\Auth\TrustedDevice\Models;
+namespace App\Auth\TrustedDevice\Factories;
 
 use App\Auth\TrustedDevice\Models\TrustedDevice;
 use App\User\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 
 /**
@@ -32,7 +32,7 @@ class TrustedDeviceFactory extends Factory
             'user_agent' => fake()->userAgent(),
             'ip' => fake()->ipv4(),
             'last_used_at' => fake()->optional(0.5)->dateTimeBetween('-30 days', 'now'),
-            'expires_at' => Carbon::now()->addDays(30),
+            'expires_at' => Date::now()->addDays(30),
         ];
     }
 }

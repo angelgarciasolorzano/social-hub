@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Auth\TrustedDevice\Models;
 
+use App\Auth\TrustedDevice\Factories\TrustedDeviceFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
-use Database\Factories\Auth\TrustedDevice\Models\TrustedDeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -87,11 +87,11 @@ class TrustedDevice extends Model
             return false;
         }
 
-        $query = $user->trustedDevices()
+        $builder = $user->trustedDevices()
             ->where('token_hash', hash('sha256', $token))
             ->where('expires_at', '>', CarbonImmutable::now());
 
-        $device = $query->first();
+        $device = $builder->first();
 
         if ($device === null) {
             return false;

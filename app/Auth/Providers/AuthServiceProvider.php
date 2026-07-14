@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Auth\Providers;
 
+use App\Auth\TrustedDevice\Listeners\RememberTrustedDevice;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Fortify\Events\ValidTwoFactorAuthenticationCodeProvided;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -14,5 +17,18 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->register(AuthRouteServiceProvider::class);
+
+        $this->registerEventListeners();
+    }
+
+    /**
+     * Register Fortify event listeners owned by this module.
+     */
+    private function registerEventListeners(): void
+    {
+        Event::listen(
+            ValidTwoFactorAuthenticationCodeProvided::class,
+            RememberTrustedDevice::class,
+        );
     }
 }
