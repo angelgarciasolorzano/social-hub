@@ -10,7 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Domains in this codebase:
 
-- **Auth** (`app/Auth/`) — login, register, email verification, password reset (via Fortify).
+- **Auth** (`app/Auth/`) — login, register, email verification, password reset (via Fortify), 2FA + trusted devices.
+  - `app/Auth/Login`, `app/Auth/Register`, `app/Auth/Email`, `app/Auth/Password` — each owns its controllers/requests/routes and is wired via the central `AuthRouteServiceProvider`.
+  - `app/Auth/Models/` — domain models (`TrustedDevice`).
+  - `app/Auth/Modules/TrustedDevice/` — Controllers and Listeners for the trusted devices feature (cookie-backed TOTP bypass).
+  - `app/Auth/Database/Migrations/` and `app/Auth/Database/Factories/` — registered automatically by `AuthServiceProvider::loadMigrationsFrom`.
+  - `AuthRouteServiceProvider` loads `routes/` (one file per concern, e.g. `trustedDevice.php`); `AuthEventServiceProvider` registers Fortify event listeners for the module.
 - **Home** (`app/Home/`) — landing/dashboard pages.
 - **User** (`app/User/`) — profile, settings; the authenticatable model lives here.
 - **Post** (`app/Post/`) — posts with images via `spatie/laravel-medialibrary`.

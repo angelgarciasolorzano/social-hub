@@ -19,6 +19,7 @@ import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib";
 
+import TrustedDevicesDialog from "../components/dialog/TrustedDevicesDialog";
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/dialog/twoFactorEnable/RegenerateCodesDialog";
 import { OptionCard } from "../components/ui/OptionCard";
@@ -32,28 +33,36 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
+import type { TrustedDevice } from "../types/trustedDevice";
 
-function TwoFactorEnable() {
+interface TwoFactorEnableProps {
+  trustedDevices: TrustedDevice[];
+}
+
+function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
+
   const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
   const { open: showDisabledTwoFactorDialog, setOpen: setShowDisabledTwoFactorDialog } =
     useDialog();
+  const { open: showTrustedDevicesDialog, setOpen: setShowTrustedDevicesDialog } = useDialog();
 
   // Handler que recibe la key del card clickeado
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
       case twoFactorSecurityOptionsKey.backupCodes:
         console.log("Mostrando códigos de respaldo...");
-        // Aquí podrías abrir un modal, hacer una petición, etc.
-        // Por ejemplo: setShowBackupCodesModal(true);
+
         break;
 
       case twoFactorSecurityOptionsKey.regenerateCodes:
         setShowRegenerateCodesDialog(true);
+
         break;
 
       case twoFactorSecurityOptionsKey.disable2FA:
         setShowDisabledTwoFactorDialog(true);
+
         break;
 
       default:
@@ -72,7 +81,11 @@ function TwoFactorEnable() {
           onOptionClick={handleSecurityOptionClick}
         />
 
-        <TwoFactorSecuritySummary recoveryCodesList={recoveryCodesList} />
+        <TwoFactorSecuritySummary
+          recoveryCodesList={recoveryCodesList}
+          trustedDevices={trustedDevices}
+          onViewTrustedDevices={() => setShowTrustedDevicesDialog(true)}
+        />
 
         <TwoFactorSafetyTips />
       </div>
@@ -94,6 +107,12 @@ function TwoFactorEnable() {
       <DisabledTwoFactorDialog
         isOpen={showDisabledTwoFactorDialog}
         setOpen={setShowDisabledTwoFactorDialog}
+      />
+
+      <TrustedDevicesDialog
+        devices={trustedDevices}
+        open={showTrustedDevicesDialog}
+        onOpenChange={setShowTrustedDevicesDialog}
       />
     </div>
   );
@@ -145,11 +164,23 @@ function TwoFactorTitle() {
   );
 }
 
-interface TwoFactorSecuritySummaryProps {
+type TwoFactorSecuritySummaryProps = Pick<TwoFactorEnableProps, "trustedDevices"> & {
   recoveryCodesList: string[];
-}
+  onViewTrustedDevices: () => void;
+};
 
-function TwoFactorSecuritySummary({ recoveryCodesList }: TwoFactorSecuritySummaryProps) {
+function TwoFactorSecuritySummary({
+  recoveryCodesList,
+  trustedDevices,
+  onViewTrustedDevices,
+}: TwoFactorSecuritySummaryProps) {
+  const trustedDevicesCount = trustedDevices.length;
+
+  const trustedDevicesLabel =
+    trustedDevicesCount === 1
+      ? "1 dispositivo de confianza configurado."
+      : `${trustedDevicesCount} dispositivos de confianza configurados.`;
+
   const summarySecurity: SumaryCardItem[] = [
     {
       key: "status-2fa",
@@ -163,14 +194,14 @@ function TwoFactorSecuritySummary({ recoveryCodesList }: TwoFactorSecuritySummar
     {
       key: "trusted-devices",
       title: "Dispositivos de confianza",
-      description: "Has configurado 2 dispositivos de confianza.",
+      description: trustedDevicesLabel,
       icon: MonitorSmartphone,
       iconBgColor: "bg-violet-100/50 dark:bg-violet-900/20",
       iconColor: "text-violet-700 dark:text-violet-500",
       action: {
         type: "button",
-        label: "Ver dispositivos",
-        onClick: () => console.log("Ver dispositivos de confianza"),
+        label: trustedDevicesCount === 0 ? "Configurar" : "Ver dispositivos",
+        onClick: onViewTrustedDevices,
       },
     },
     {
