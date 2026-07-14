@@ -11,6 +11,13 @@ import {
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/shadcn/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -46,7 +53,7 @@ function TrustedDevicesDialog({ devices, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Dispositivos de confianza</DialogTitle>
 
@@ -59,12 +66,24 @@ function TrustedDevicesDialog({ devices, open, onOpenChange }: Props) {
         {hasDevices ? (
           <ul className="divide-y">
             {devices.map((device) => (
-              <li key={device.id} className="flex items-start justify-between gap-4 py-3">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="truncate text-sm font-medium" title={deviceLabel(device)}>
-                    {deviceLabel(device)}
-                  </p>
+              <Card key={device.id}>
+                <CardHeader>
+                  <CardTitle>{deviceLabel(device)}</CardTitle>
+                  <CardAction>
+                    <Form
+                      {...destroyRoute.delete({ trustedDevice: device.id })}
+                      className="shrink-0"
+                    >
+                      {() => (
+                        <Button type="submit" size="sm">
+                          Revocar
+                        </Button>
+                      )}
+                    </Form>
+                  </CardAction>
+                </CardHeader>
 
+                <CardContent className="space-y-2">
                   {device.ip !== null && (
                     <p className="truncate text-xs text-muted-foreground">IP: {device.ip}</p>
                   )}
@@ -76,16 +95,8 @@ function TrustedDevicesDialog({ devices, open, onOpenChange }: Props) {
                   <p className="text-xs text-muted-foreground">
                     Expira: {longDate(device.expiresAt)}
                   </p>
-                </div>
-
-                <Form {...destroyRoute.delete({ trustedDevice: device.id })} className="shrink-0">
-                  {() => (
-                    <Button type="submit" variant="ghost" size="sm">
-                      Revocar
-                    </Button>
-                  )}
-                </Form>
-              </li>
+                </CardContent>
+              </Card>
             ))}
           </ul>
         ) : (
