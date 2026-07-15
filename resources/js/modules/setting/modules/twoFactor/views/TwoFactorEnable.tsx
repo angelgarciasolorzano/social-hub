@@ -77,7 +77,7 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
 
   return (
     <div className="flex gap-4">
-      <div className="flex flex-col gap-8">
+      <div className="flex min-w-0 flex-1 flex-col gap-8">
         <TwoFactorTitle />
 
         <OptionCard
@@ -95,7 +95,7 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
         <TwoFactorSafetyTips />
       </div>
 
-      <Card className="min-w-105">
+      <Card className="w-full max-w-sm shrink-0">
         <CardHeader>
           <CardTitle>
             {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
