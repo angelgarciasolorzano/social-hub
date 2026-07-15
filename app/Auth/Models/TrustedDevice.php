@@ -29,6 +29,7 @@ use Override;
     'token_hash',
     'name',
     'user_agent',
+    'browser',
     'ip',
     'last_used_at',
     'expires_at',

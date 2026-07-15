@@ -9,10 +9,10 @@ use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 
 final readonly class TrustedDeviceInvalidate
 {
-    public function handle(TwoFactorAuthenticationDisabled $event): void
+    public function handle(TwoFactorAuthenticationDisabled $twoFactorAuthenticationDisabled): void
     {
         /** @var User $user */
-        $user = $event->user;
+        $user = $twoFactorAuthenticationDisabled->user;
 
         $user->trustedDevices()->delete();
     }

@@ -54,16 +54,17 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
 
             $props['trustedDevices'] = $user->trustedDevices()
-                ->orderByDesc('last_used_at')
+                ->latest('last_used_at')
                 ->get()
-                ->map(fn (TrustedDevice $device): array => [
-                    'id' => $device->id,
-                    'name' => $device->name,
-                    'userAgent' => $device->user_agent,
-                    'ip' => $device->ip,
-                    'lastUsedAt' => $device->last_used_at?->toIso8601String(),
-                    'expiresAt' => $device->expires_at->toIso8601String(),
-                    'isActive' => $device->isActive(),
+                ->map(fn (TrustedDevice $trustedDevice): array => [
+                    'id' => $trustedDevice->id,
+                    'name' => $trustedDevice->name,
+                    'userAgent' => $trustedDevice->user_agent,
+                    'browser' => $trustedDevice->browser,
+                    'ip' => $trustedDevice->ip,
+                    'lastUsedAt' => $trustedDevice->last_used_at?->toIso8601String(),
+                    'expiresAt' => $trustedDevice->expires_at->toIso8601String(),
+                    'isActive' => $trustedDevice->isActive(),
                 ])
                 ->all();
         }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Listeners;
 
 use Carbon\CarbonImmutable;
+use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
@@ -29,9 +30,6 @@ final readonly class TrustedDeviceRemember
      */
     private const int COOKIE_LIFETIME_MINUTES = 60 * 24 * 30;
 
-    /**
-     * Persist the trusted device and queue the cookie.
-     */
     public function handle(ValidTwoFactorAuthenticationCodeProvided $validTwoFactorAuthenticationCodeProvided): void
     {
         $user = $validTwoFactorAuthenticationCodeProvided->user;
@@ -43,13 +41,17 @@ final readonly class TrustedDeviceRemember
             return;
         }
 
+        /** @var DeviceDetector $deviceDetector */
+        $deviceDetector = resolve(DeviceDetector::class);
+
         $token = Str::random(self::TOKEN_LENGTH);
         $tokenHash = hash('sha256', $token);
 
         $user->trustedDevices()->create([
-            'name' => null,
+            'name' => $this->inferDeviceName($deviceDetector),
             'token_hash' => $tokenHash,
             'user_agent' => $request->userAgent(),
+            'browser' => $this->inferBrowser($deviceDetector),
             'ip' => $request->ip(),
             'last_used_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addMinutes(self::COOKIE_LIFETIME_MINUTES),
@@ -66,5 +68,64 @@ final readonly class TrustedDeviceRemember
             raw: false,
             sameSite: 'lax',
         ));
+    }
+
+    /**
+     * Resolve a human-friendly device name from the parsed DeviceDetector.
+     */
+    private function inferDeviceName(DeviceDetector $deviceDetector): string
+    {
+        $model = $deviceDetector->getModel();
+
+        if ($model !== '') {
+            return $model;
+        }
+
+        $os = $deviceDetector->getOs();
+
+        if (\is_array($os)) {
+            $osName = $os['name'] ?? null;
+
+            if (\is_string($osName) && $osName !== '') {
+                return match (\strtolower($osName)) {
+                    'mac', 'macos', 'mac os x' => 'Mac OS',
+                    'windows' => 'Windows PC',
+                    'linux' => 'Linux',
+                    default => $osName,
+                };
+            }
+        }
+
+        return $deviceDetector->getBrandName();
+    }
+
+    /**
+     * Build a short browser label (e.g. "Chrome 125") from the parsed DeviceDetector.
+     */
+    private function inferBrowser(DeviceDetector $deviceDetector): string
+    {
+        $client = $deviceDetector->getClient();
+
+        if (! \is_array($client)) {
+            return '';
+        }
+
+        $name = $client['name'] ?? null;
+
+        if (! \is_string($name) || $name === '') {
+            return '';
+        }
+
+        $version = $client['version'] ?? null;
+
+        if (\is_string($version) && $version !== '') {
+            $major = explode('.', $version, 2)[0];
+
+            if ($major !== '') {
+                return \sprintf('%s %s', $name, $major);
+            }
+        }
+
+        return $name;
     }
 }
