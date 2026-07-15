@@ -22,6 +22,8 @@ use Override;
  * @property string $name
  * @property string $user_agent
  * @property string $browser
+ * @property string $os_name
+ * @property string $os_version
  * @property string $ip
  * @property CarbonImmutable|null $last_used_at
  * @property CarbonImmutable $expires_at
@@ -37,6 +39,8 @@ use Override;
     'name',
     'user_agent',
     'browser',
+    'os_name',
+    'os_version',
     'ip',
     'last_used_at',
     'expires_at',

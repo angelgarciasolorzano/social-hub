@@ -47,11 +47,15 @@ final readonly class TrustedDeviceRemember
         $token = Str::random(self::TOKEN_LENGTH);
         $tokenHash = hash('sha256', $token);
 
+        $osInfo = $this->inferOsInfo($deviceDetector);
+
         $user->trustedDevices()->create([
             'name' => $this->inferDeviceName($deviceDetector),
             'token_hash' => $tokenHash,
             'user_agent' => $request->userAgent(),
             'browser' => $this->inferBrowser($deviceDetector),
+            'os_name' => $osInfo['name'],
+            'os_version' => $osInfo['version'],
             'ip' => $request->ip(),
             'last_used_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addMinutes(self::COOKIE_LIFETIME_MINUTES),
@@ -127,5 +131,27 @@ final readonly class TrustedDeviceRemember
         }
 
         return $name;
+    }
+
+    /**
+     * Resolve OS name and version from the parsed DeviceDetector.
+     *
+     * @return array{name: string, version: string}
+     */
+    private function inferOsInfo(DeviceDetector $deviceDetector): array
+    {
+        $os = $deviceDetector->getOs();
+
+        if (! \is_array($os)) {
+            return ['name' => '', 'version' => ''];
+        }
+
+        $name = $os['name'] ?? null;
+        $version = $os['version'] ?? null;
+
+        return [
+            'name' => \is_string($name) ? $name : '',
+            'version' => \is_string($version) ? $version : '',
+        ];
     }
 }

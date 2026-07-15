@@ -25,6 +25,8 @@ class TrustedDeviceResource extends JsonResource
             'name' => $this->name,
             'userAgent' => $this->user_agent,
             'browser' => $this->browser,
+            'osName' => $this->os_name,
+            'osVersion' => $this->os_version,
             'ip' => $this->ip,
             'lastUsedAt' => $this->last_used_at?->toIso8601String(),
             'expiresAt' => $this->expires_at->toIso8601String(),
