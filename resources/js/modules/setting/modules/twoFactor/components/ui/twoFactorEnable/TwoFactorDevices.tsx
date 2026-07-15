@@ -74,6 +74,12 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
                       {deviceLabel(device)}
                     </span>
 
+                    {device.browser !== null && device.browser !== "" && (
+                      <span className="truncate text-xs text-muted-foreground">
+                        {device.browser}
+                      </span>
+                    )}
+
                     {device.ip !== null && (
                       <span className="truncate text-xs text-muted-foreground">
                         IP: {device.ip}
