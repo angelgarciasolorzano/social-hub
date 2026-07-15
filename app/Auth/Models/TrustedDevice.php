@@ -16,6 +16,13 @@ use Illuminate\Http\Request;
 use Override;
 
 /**
+ * @property int $id
+ * @property int $user_id
+ * @property string $token_hash
+ * @property string $name
+ * @property string $user_agent
+ * @property string $browser
+ * @property string $ip
  * @property CarbonImmutable|null $last_used_at
  * @property CarbonImmutable $expires_at
  * @property CarbonImmutable $created_at

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\TwoFactor\Controllers;
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use App\User\TwoFactor\Requests\TwoFactorDisableRequest;
@@ -56,16 +57,7 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['trustedDevices'] = $user->trustedDevices()
                 ->latest('last_used_at')
                 ->get()
-                ->map(fn (TrustedDevice $trustedDevice): array => [
-                    'id' => $trustedDevice->id,
-                    'name' => $trustedDevice->name,
-                    'userAgent' => $trustedDevice->user_agent,
-                    'browser' => $trustedDevice->browser,
-                    'ip' => $trustedDevice->ip,
-                    'lastUsedAt' => $trustedDevice->last_used_at?->toIso8601String(),
-                    'expiresAt' => $trustedDevice->expires_at->toIso8601String(),
-                    'isActive' => $trustedDevice->isActive(),
-                ])
+                ->map(fn (TrustedDevice $trustedDevice) => new TrustedDeviceResource(($trustedDevice))->resolve(request()))
                 ->all();
         }
 
