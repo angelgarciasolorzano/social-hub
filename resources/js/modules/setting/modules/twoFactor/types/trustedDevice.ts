@@ -5,6 +5,7 @@ export type TrustedDevice = {
   browser: string | null;
   osName: string | null;
   osVersion: string | null;
+  isMobile: boolean;
   ip: string | null;
   lastUsedAt: string | null;
   expiresAt: string;

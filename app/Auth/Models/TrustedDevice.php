@@ -24,6 +24,7 @@ use Override;
  * @property string $browser
  * @property string $os_name
  * @property string $os_version
+ * @property bool $is_mobile
  * @property string $ip
  * @property CarbonImmutable|null $last_used_at
  * @property CarbonImmutable $expires_at
@@ -41,6 +42,7 @@ use Override;
     'browser',
     'os_name',
     'os_version',
+    'is_mobile',
     'ip',
     'last_used_at',
     'expires_at',
@@ -61,6 +63,7 @@ class TrustedDevice extends Model
     protected function casts(): array
     {
         return [
+            'is_mobile' => 'boolean',
             'last_used_at' => 'immutable_datetime',
             'expires_at' => 'immutable_datetime',
         ];

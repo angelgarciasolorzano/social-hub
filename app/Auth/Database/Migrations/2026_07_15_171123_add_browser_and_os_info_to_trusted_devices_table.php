@@ -17,6 +17,7 @@ return new class extends Migration
             $blueprint->string('browser')->nullable()->after('user_agent');
             $blueprint->string('os_name')->nullable()->after('browser');
             $blueprint->string('os_version')->nullable()->after('os_name');
+            $blueprint->boolean('is_mobile')->default(false)->after('os_version');
         });
     }
 
@@ -26,7 +27,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('trusted_devices', function (Blueprint $blueprint): void {
-            $blueprint->dropColumn(['browser', 'os_name', 'os_version']);
+            $blueprint->dropColumn(['browser', 'os_name', 'os_version', 'is_mobile']);
         });
     }
 };

@@ -56,6 +56,7 @@ final readonly class TrustedDeviceRemember
             'browser' => $this->inferBrowser($deviceDetector),
             'os_name' => $osInfo['name'],
             'os_version' => $osInfo['version'],
+            'is_mobile' => $this->inferIsMobile($deviceDetector),
             'ip' => $request->ip(),
             'last_used_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addMinutes(self::COOKIE_LIFETIME_MINUTES),
@@ -153,5 +154,13 @@ final readonly class TrustedDeviceRemember
             'name' => \is_string($name) ? $name : '',
             'version' => \is_string($version) ? $version : '',
         ];
+    }
+
+    /**
+     * Resolve whether the device is a mobile or tablet (true) vs desktop/bot (false).
+     */
+    private function inferIsMobile(DeviceDetector $deviceDetector): bool
+    {
+        return $deviceDetector->isMobile() || $deviceDetector->isTablet();
     }
 }
