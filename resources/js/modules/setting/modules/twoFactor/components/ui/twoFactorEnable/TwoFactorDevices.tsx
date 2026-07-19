@@ -87,49 +87,12 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
 
       <div className="flex flex-col gap-3 rounded-md border p-5">
         {hasDevices ? (
-          <>
-            {devices.map((device, index) => (
-              <Fragment key={device.id}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex min-w-0 flex-1 items-start gap-2.5">
-                    <div className="flex h-8 w-8 rounded-md bg-muted p-1 dark:bg-primary-foreground">
-                      {getDeviceIcon(device, "h-6 w-6 text-gray-600 dark:text-gray-400")}
-                    </div>
-
-                    <div className="flex flex-col gap-0.5">
-                      <span className="truncate text-sm font-medium" title={deviceLabel(device)}>
-                        {deviceLabel(device)}
-                      </span>
-
-                      {device.browser !== null && device.browser !== "" && (
-                        <span className="truncate text-xs text-muted-foreground">
-                          {device.osName} - {device.browser}
-                        </span>
-                      )}
-
-                      <span className="text-xs text-muted-foreground">
-                        Último uso: {fromNow(device.lastUsedAt)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <FaCircle className="h-3 w-3 text-red-600 dark:text-red-500" />
-
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <EllipsisVertical />
-                        </Button>
-                      </PopoverTrigger>
-                    </Popover>
-                  </div>
-                </div>
-
-                {index < devices.length - 1 && <Separator />}
-              </Fragment>
-            ))}
-          </>
+          <TwoFactorDevicesItems
+            devices={devices}
+            deviceLabel={deviceLabel}
+            fromNow={fromNow}
+            getDeviceIcon={getDeviceIcon}
+          />
         ) : (
           <div className="text-sm text-muted-foreground">
             No tienes dispositivos de confianza configurados.
@@ -162,6 +125,65 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
           </ul>
         </AlertDescription>
       </Alert>
+    </>
+  );
+}
+
+type TwoFactorDevicesItemsProps = Pick<TwoFactorDevicesProps, "devices"> & {
+  deviceLabel: (device: TrustedDevice) => string;
+  fromNow: (iso: string | null) => string;
+  getDeviceIcon: (device: TrustedDevice, className: string) => JSX.Element;
+};
+
+function TwoFactorDevicesItems({
+  devices,
+  deviceLabel,
+  fromNow,
+  getDeviceIcon,
+}: TwoFactorDevicesItemsProps) {
+  return (
+    <>
+      {devices.map((device, index) => (
+        <Fragment key={device.id}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-1 items-start gap-2.5">
+              <div className="flex h-8 w-8 rounded-md bg-muted p-1 dark:bg-primary-foreground">
+                {getDeviceIcon(device, "h-6 w-6 text-gray-600 dark:text-gray-400")}
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <span className="truncate text-sm font-medium" title={deviceLabel(device)}>
+                  {deviceLabel(device)}
+                </span>
+
+                {device.browser !== null && device.browser !== "" && (
+                  <span className="truncate text-xs text-muted-foreground">
+                    {device.osName} - {device.browser}
+                  </span>
+                )}
+
+                <span className="text-xs text-muted-foreground">
+                  Último uso: {fromNow(device.lastUsedAt)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <FaCircle className="h-3 w-3 text-red-600 dark:text-red-500" />
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <EllipsisVertical />
+                  </Button>
+                </PopoverTrigger>
+              </Popover>
+            </div>
+          </div>
+
+          {index < devices.length - 1 && <Separator />}
+        </Fragment>
+      ))}
     </>
   );
 }
