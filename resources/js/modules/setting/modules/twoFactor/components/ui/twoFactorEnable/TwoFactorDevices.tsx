@@ -1,12 +1,20 @@
+import type { JSX } from "react";
 import { Fragment } from "react";
 
 import { Form } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
-import { MdOutlineLaptopMac } from "react-icons/md";
+import { ImWindows } from "react-icons/im";
+import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
 
 import dayjs from "dayjs";
-import { AlertTriangleIcon, EllipsisVertical, MonitorSmartphone, Plus } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  EllipsisVertical,
+  MonitorSmartphone,
+  Plus,
+  Smartphone,
+} from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
 
@@ -34,6 +42,23 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
     }
 
     return dayjs(iso).fromNow();
+  };
+
+  const getDeviceIcon = (device: TrustedDevice, className: string): JSX.Element => {
+    const os = device.osName?.toLowerCase() ?? "";
+    const isMobile = device.isMobile;
+
+    if (!isMobile) {
+      if (os.includes("apple") || os.includes("mac")) {
+        return <Smartphone className={className} />;
+      }
+
+      return <MdPhoneAndroid className={className} />;
+    }
+
+    if (os.includes("mac")) return <MdOutlineLaptopMac className={className} />;
+
+    return <ImWindows className={className} />;
   };
 
   return (
@@ -68,7 +93,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 flex-1 items-start gap-2.5">
                     <div className="flex h-8 w-8 rounded-md bg-muted p-1 dark:bg-primary-foreground">
-                      <MdOutlineLaptopMac className="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                      {getDeviceIcon(device, "h-6 w-6 text-gray-600 dark:text-gray-400")}
                     </div>
 
                     <div className="flex flex-col gap-0.5">
