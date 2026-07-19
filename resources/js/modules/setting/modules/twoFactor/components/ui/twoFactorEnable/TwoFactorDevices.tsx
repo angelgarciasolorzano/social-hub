@@ -22,8 +22,20 @@ import { destroyAll as destroyAllRoute } from "@/shared/wayfinder/actions/App/Au
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Popover, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/shared/components/shadcn/ui/popover";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+
+import { cn } from "@/shared/lib";
+
+import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
+import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
 
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
@@ -105,7 +117,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
           <Button
             type="submit"
             variant="destructive"
-            className="w-full py-6"
+            className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
             disabled={!hasDevices}
           >
             <MonitorSmartphone className="mr-2 h-4 w-4" />
@@ -141,6 +153,27 @@ function TwoFactorDevicesItems({
   fromNow,
   getDeviceIcon,
 }: TwoFactorDevicesItemsProps) {
+  const handleDeviceAction = (action: TwoFactorDeviceActionKey, device: TrustedDevice) => {
+    switch (action) {
+      case twoFactorDeviceActionKey.viewDevice:
+        console.log("Ver dispositivo:", device);
+
+        break;
+      case twoFactorDeviceActionKey.renameDevice:
+        console.log("Renombrar dispositivo:", device);
+
+        break;
+      case twoFactorDeviceActionKey.renewTrust:
+        console.log("Renovar Confianza:", device);
+
+        break;
+      case twoFactorDeviceActionKey.revokeDevice:
+        console.log("Revocar dispositivo:", device);
+
+        break;
+    }
+  };
+
   return (
     <>
       {devices.map((device, index) => (
@@ -171,13 +204,7 @@ function TwoFactorDevicesItems({
             <div className="flex items-center gap-4">
               <FaCircle className="h-3 w-3 text-red-600 dark:text-red-500" />
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <EllipsisVertical />
-                  </Button>
-                </PopoverTrigger>
-              </Popover>
+              <DeviceActionsPopover device={device} onActionClick={handleDeviceAction} />
             </div>
           </div>
 
@@ -185,6 +212,56 @@ function TwoFactorDevicesItems({
         </Fragment>
       ))}
     </>
+  );
+}
+
+interface DeviceActionsPopoverProps {
+  device: TrustedDevice;
+  onActionClick: (action: TwoFactorDeviceActionKey, device: TrustedDevice) => void;
+}
+
+function DeviceActionsPopover({ device, onActionClick }: DeviceActionsPopoverProps) {
+  const handleClick = (action: TwoFactorDeviceActionKey): void => {
+    onActionClick(action, device);
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="icon">
+          <EllipsisVertical />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-60" align="end">
+        <PopoverHeader>
+          <PopoverTitle>Acciones del dispositivo</PopoverTitle>
+          <PopoverDescription>Administra este dispositivo de confianza.</PopoverDescription>
+        </PopoverHeader>
+
+        <Separator className="my-2.5" />
+
+        <div className="flex flex-col gap-2">
+          {twoFactorDeviceActions.map((action, index) => {
+            const Icon = action.icon;
+
+            return (
+              <Fragment key={action.key}>
+                <Button
+                  variant={action.variant}
+                  onClick={() => handleClick(action.key)}
+                  className={cn(action.className)}
+                >
+                  <Icon />
+                  {action.label}
+                </Button>
+
+                {index === 2 && <Separator />}
+              </Fragment>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 

@@ -1,13 +1,27 @@
 import {
+  Eye,
   LockKeyhole,
   MonitorSmartphone,
+  Pencil,
   Repeat,
   RotateCcw,
+  RotateCw,
   ShieldOff,
   TableOfContents,
+  Trash2,
 } from "lucide-react";
 
 import type { OptionCardItem } from "../components/ui/OptionCard";
+
+type ButtonVariant =
+  | "default"
+  | "destructive"
+  | "link"
+  | "secondary"
+  | "outline"
+  | "ghost"
+  | null
+  | undefined;
 
 export const twoFactorSecurityOptionsKey = {
   backupCodes: "backup-codes",
@@ -66,5 +80,49 @@ export const twoFactorSafetyTips: TwoFactorSafetyTip[] = [
     title: "Manten tu aplicacion actualizada",
     description:
       "Asegúrate de tener la ultima version de tu aplicacion autenticadora para garantizar la  mejor seguridad.",
+  },
+];
+
+export const twoFactorDeviceActionKey = {
+  viewDevice: "view-device",
+  renameDevice: "rename-device",
+  renewTrust: "renew-trust",
+  revokeDevice: "revoke-device",
+} as const;
+
+export type TwoFactorDeviceActionKey =
+  (typeof twoFactorDeviceActionKey)[keyof typeof twoFactorDeviceActionKey];
+
+type TwoFactorDeviceAction = Pick<OptionCardItem<TwoFactorDeviceActionKey>, "key" | "icon"> & {
+  label: string;
+  variant: ButtonVariant;
+  className?: string;
+};
+
+export const twoFactorDeviceActions: TwoFactorDeviceAction[] = [
+  {
+    key: twoFactorDeviceActionKey.viewDevice,
+    icon: Eye,
+    label: "Ver dispositivo",
+    variant: "ghost",
+  },
+  {
+    key: twoFactorDeviceActionKey.renameDevice,
+    icon: Pencil,
+    label: "Renombrar dispositivo",
+    variant: "ghost",
+  },
+  {
+    key: twoFactorDeviceActionKey.renewTrust,
+    icon: RotateCw,
+    label: "Renovar Confianza",
+    variant: "ghost",
+  },
+  {
+    key: twoFactorDeviceActionKey.revokeDevice,
+    icon: Trash2,
+    label: "Revocar dispositivo",
+    variant: "destructive",
+    className: "dark:bg-red-700 dark:text-white dark:hover:bg-red-800",
   },
 ];
