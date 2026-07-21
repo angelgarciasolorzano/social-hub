@@ -89,7 +89,9 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
         <TwoFactorSecuritySummary
           recoveryCodesList={recoveryCodesList}
           trustedDevices={trustedDevices}
-          onViewTrustedDevices={() => setSelectedContent("devices")}
+          onViewTrustedDevices={() => {
+            setSelectedContent("devices");
+          }}
         />
 
         <TwoFactorSafetyTips />
@@ -235,7 +237,12 @@ function TwoFactorSecuritySummary({
       icon: Clock4,
       iconBgColor: "bg-blue-100/50 dark:bg-blue-900/20",
       iconColor: "text-blue-700 dark:text-blue-500",
-      action: { type: "chevron", onClick: () => console.log("Ver detalles de activación") },
+      action: {
+        type: "chevron",
+        onClick: () => {
+          console.log("Ver detalles de activación");
+        },
+      },
     },
   ];
 

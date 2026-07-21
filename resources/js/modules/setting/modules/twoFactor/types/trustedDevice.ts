@@ -1,4 +1,4 @@
-export type TrustedDevice = {
+export interface TrustedDevice {
   id: number;
   name: string | null;
   userAgent: string | null;
@@ -10,4 +10,4 @@ export type TrustedDevice = {
   lastUsedAt: string | null;
   expiresAt: string;
   isActive: boolean;
-};
+}
