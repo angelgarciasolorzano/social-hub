@@ -167,7 +167,9 @@ export function usePaginatedComments(
       uploadedComments();
     }, 0);
 
-    return () => window.clearTimeout(initialLoadTimer);
+    return () => {
+      window.clearTimeout(initialLoadTimer);
+    };
   }, [uploadedComments]);
 
   return {

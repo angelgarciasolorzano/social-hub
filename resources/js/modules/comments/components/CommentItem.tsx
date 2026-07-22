@@ -92,7 +92,9 @@ function CommentItem(props: CommentItemProps) {
         <button
           type="button"
           className="cursor-pointer transition-colors hover:text-black/80 dark:hover:text-white/80"
-          onClick={() => setOpenModalComment(true)}
+          onClick={() => {
+            setOpenModalComment(true);
+          }}
         >
           Responder
         </button>
@@ -101,7 +103,9 @@ function CommentItem(props: CommentItemProps) {
           <button
             type="button"
             className="cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-500"
-            onClick={() => setShowReplies(showReplies === comment.id ? null : comment.id)}
+            onClick={() => {
+              setShowReplies(showReplies === comment.id ? null : comment.id);
+            }}
           >
             {showReplies === comment.id
               ? "Ocultar respuestas"
