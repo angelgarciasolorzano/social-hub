@@ -26,6 +26,14 @@ return new class extends Migration
 
             $blueprint->string('user_agent', 255)->nullable();
 
+            $blueprint->string('browser')->nullable();
+
+            $blueprint->string('os_name')->nullable();
+
+            $blueprint->string('os_version')->nullable();
+
+            $blueprint->boolean('is_mobile')->default(false);
+
             $blueprint->string('ip', 45)->nullable();
 
             $blueprint->timestamp('last_used_at')->nullable();
