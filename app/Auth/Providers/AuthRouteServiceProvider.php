@@ -18,7 +18,7 @@ class AuthRouteServiceProvider extends RouteServiceProvider
     {
         $this->routes(function (): void {
             Route::middleware('web')
-                ->group(__DIR__.'/../Routes/routes.php');
+                ->group(__DIR__.'/../routes/routes.php');
         });
     }
 }

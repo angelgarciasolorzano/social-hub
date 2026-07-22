@@ -211,6 +211,8 @@ function TwoFactorDevicesItems({
       default:
         return null;
     }
+
+    return null;
   };
 
   return (
