@@ -161,6 +161,10 @@ final readonly class TrustedDeviceRemember
      */
     private function inferIsMobile(DeviceDetector $deviceDetector): bool
     {
-        return $deviceDetector->isMobile() || $deviceDetector->isTablet();
+        if ($deviceDetector->isMobile()) {
+            return true;
+        }
+
+        return $deviceDetector->isTablet();
     }
 }
