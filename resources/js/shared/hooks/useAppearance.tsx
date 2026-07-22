@@ -3,11 +3,11 @@ import { useSyncExternalStore } from "react";
 export type ResolvedAppearance = "light" | "dark";
 export type Appearance = ResolvedAppearance | "system";
 
-type UseAppearanceReturn = {
+interface UseAppearanceReturn {
   readonly appearance: Appearance;
   readonly resolvedAppearance: ResolvedAppearance;
   readonly updateAppearance: (mode: Appearance) => void;
-};
+}
 
 const listeners = new Set<() => void>();
 let currentAppearance: Appearance = "system";
@@ -58,7 +58,11 @@ const subscribe = (callback: () => void) => {
   return () => listeners.delete(callback);
 };
 
-const notify = (): void => listeners.forEach((listener) => listener());
+const notify = (): void => {
+  listeners.forEach((listener) => {
+    listener();
+  });
+};
 
 const mediaQuery = (): MediaQueryList | null => {
   if (typeof window === "undefined") {
@@ -68,7 +72,9 @@ const mediaQuery = (): MediaQueryList | null => {
   return window.matchMedia("(prefers-color-scheme: dark)");
 };
 
-const handleSystemThemeChange = (): void => applyTheme(currentAppearance);
+const handleSystemThemeChange = (): void => {
+  applyTheme(currentAppearance);
+};
 
 export function initializeTheme(): void {
   if (typeof window === "undefined") {

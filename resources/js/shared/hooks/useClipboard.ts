@@ -48,7 +48,9 @@ export function useClipboard({ resetTimeout }: useClipboardOptions = {}): [Copie
     [resetTimeout],
   );
 
-  useEffect(() => clearTimer(), []);
+  useEffect(() => {
+    clearTimer();
+  }, []);
 
   return [copiedText, copy];
 }
