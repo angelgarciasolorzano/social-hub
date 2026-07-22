@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import { AlertTriangleIcon, Info, Loader2, RotateCcw } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -11,10 +13,10 @@ interface ChooseMethodStepProps {
   onRetry: () => void;
 }
 
-function ChooseMethodStep(props: ChooseMethodStepProps) {
+function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
   const { errors, qrCodeSvg, onContinue, onOpenManualSetup, onRetry } = props;
 
-  const hasError = (errors ?? []).length > 0;
+  const hasError = errors.length > 0;
 
   if (hasError) {
     return <StepErrorAlert onRetry={onRetry} />;

@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { Fragment, useEffect } from "react";
 
 import { AlertTriangleIcon, ArrowDown, Clock4, Copy } from "lucide-react";
@@ -21,18 +22,18 @@ interface TwoFactorRecoveryCodesProps {
   recoveryCodesList: string[];
 }
 
-function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps) {
+function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element {
   const { errors, fetchRecoveryCodes, recoveryCodesList } = props;
 
   useEffect(() => {
     if (!recoveryCodesList.length) {
-      fetchRecoveryCodes();
+      void fetchRecoveryCodes();
     }
   }, [recoveryCodesList.length, fetchRecoveryCodes]);
 
   return (
     <>
-      {errors?.length > 0 ? (
+      {errors.length > 0 ? (
         <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
       ) : (
         <Alert className="max-w-md border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">

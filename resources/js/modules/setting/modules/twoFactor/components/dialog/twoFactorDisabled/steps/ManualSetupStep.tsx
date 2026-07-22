@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import { FaCheckCircle } from "react-icons/fa";
 
 import type { LucideIcon } from "lucide-react";
@@ -27,13 +29,18 @@ interface ManualSetupStepProps {
 const COPY_FEEDBACK_DURATION_MS = 10_000;
 const COPY_FEEDBACK_TICK_MS = 1_000;
 
-function ManualSetupStep({ errors, manualSetupKey, onContinue, onRetry }: ManualSetupStepProps) {
+function ManualSetupStep({
+  errors,
+  manualSetupKey,
+  onContinue,
+  onRetry,
+}: ManualSetupStepProps): JSX.Element {
   const { copiedText, copy, isActive, progressPercent, secondsLeft } = useCopyWithCountdown({
     durationMs: COPY_FEEDBACK_DURATION_MS,
     tickMs: COPY_FEEDBACK_TICK_MS,
   });
 
-  const hasError = (errors ?? []).length > 0;
+  const hasError = errors.length > 0;
   const isCopied = copiedText !== null && copiedText === manualSetupKey;
 
   const handleCopy = (): void => {

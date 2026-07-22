@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { useCallback, useEffect } from "react";
 
 import { ArrowDown, Info } from "lucide-react";
@@ -16,7 +17,7 @@ interface TwoFactorSuccessStepProps {
   recoveryCodesList: string[];
 }
 
-function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps) {
+function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
   const { errors, fetchRecoveryCodes, onClose, recoveryCodesList } = props;
 
   useEffect(() => {
@@ -31,7 +32,7 @@ function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps) {
 
   return (
     <>
-      {errors?.length ? (
+      {errors.length ? (
         <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
       ) : (
         <>

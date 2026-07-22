@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 
@@ -24,7 +26,7 @@ export function OptionCard<TKey extends string = string>({
   options,
   title = "Beneficios de activar 2FA",
   onOptionClick,
-}: OptionCardProps<TKey>) {
+}: OptionCardProps<TKey>): JSX.Element {
   const hasAction = !!onOptionClick;
 
   return (
@@ -36,12 +38,14 @@ export function OptionCard<TKey extends string = string>({
           const Icon = option.icon;
 
           const colorMatch = /text-(\w+)-\d+/.exec(option.iconColor);
-          const colorName = colorMatch?.[1] || "gray";
+          const colorName = colorMatch?.[1] ?? "gray";
 
           return (
             <div
               key={option.key}
-              onClick={() => hasAction && onOptionClick(option.key)}
+              onClick={() => {
+                if (hasAction) onOptionClick(option.key);
+              }}
               className={cn(
                 "group flex flex-1 gap-4 rounded-md border p-4 shadow-sm transition-all",
                 hasAction && "cursor-pointer hover:shadow-lg",

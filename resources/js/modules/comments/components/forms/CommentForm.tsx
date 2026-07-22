@@ -1,4 +1,4 @@
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
@@ -20,7 +20,7 @@ interface CommentFormProps {
   setOpenModalComment: Dispatch<SetStateAction<boolean>>;
 }
 
-function CommentForm(props: CommentFormProps) {
+function CommentForm(props: CommentFormProps): JSX.Element {
   const {
     formComment,
     commentableId,
@@ -32,7 +32,7 @@ function CommentForm(props: CommentFormProps) {
 
   const { setData, errors, submit } = formComment;
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
     submit(store(), {

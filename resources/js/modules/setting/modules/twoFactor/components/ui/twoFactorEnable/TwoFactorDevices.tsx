@@ -183,7 +183,7 @@ function TwoFactorDevicesItems({
     }
   };
 
-  const renderDialogDevice = (): JSX.Element | null => {
+  const renderDialogDevice = (): JSX.Element | null | undefined => {
     if (!dialogDevice.state) return null;
 
     switch (dialogDevice.state.kind) {
@@ -197,13 +197,16 @@ function TwoFactorDevicesItems({
         );
 
       case twoFactorDeviceActionKey.renameDevice:
-        return <RenameDeviceDialog device={dialogDevice.state?.device} />;
+        //return <RenameDeviceDialog device={dialogDevice.state?.device} />;
+        break;
 
       case twoFactorDeviceActionKey.renewTrust:
-        return <RenewTrustDeviceDialog device={dialogDevice.state?.device} />;
+        //return <RenewTrustDeviceDialog device={dialogDevice.state?.device} />;
+        break;
 
       case twoFactorDeviceActionKey.revokeDevice:
-        return <RevokeDeviceDialog device={dialogDevice.state?.device} />;
+        //return <RevokeDeviceDialog device={dialogDevice.state?.device} />;
+        break;
 
       default:
         return null;

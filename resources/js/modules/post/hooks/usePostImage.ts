@@ -78,7 +78,7 @@ export function usePostImage({ setData }: UsePostImageProps): UsePostImageReturn
     event.preventDefault();
     event.stopPropagation();
 
-    const file = event.dataTransfer.files?.[0];
+    const file = event.dataTransfer.files[0];
 
     updateImage(file);
     setIsHoverImage(false);

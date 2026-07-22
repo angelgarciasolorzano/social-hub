@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction, SubmitEvent } from "react";
+import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -34,7 +34,7 @@ function RegenerateCodesDialog({
   isOpen,
   setOpen,
   fetchRecoveryCodes,
-}: RegenerateCodesDialogProps) {
+}: RegenerateCodesDialogProps): JSX.Element {
   const { setData, errors, submit, processing, reset, data } = useForm<RegenerateCodesFormData>({
     password: "",
   });
@@ -46,7 +46,7 @@ function RegenerateCodesDialog({
       onSuccess: () => {
         setOpen(false);
         reset();
-        fetchRecoveryCodes();
+        void fetchRecoveryCodes();
       },
       preserveState: true,
     });

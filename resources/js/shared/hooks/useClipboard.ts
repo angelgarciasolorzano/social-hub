@@ -21,7 +21,7 @@ export function useClipboard({ resetTimeout }: useClipboardOptions = {}): [Copie
 
   const copy: CopyFn = useCallback(
     async (text) => {
-      if (!navigator?.clipboard) {
+      if (!("clipboard" in navigator)) {
         return false;
       }
 
