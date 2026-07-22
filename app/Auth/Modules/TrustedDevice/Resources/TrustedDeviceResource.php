@@ -31,6 +31,7 @@ class TrustedDeviceResource extends JsonResource
             'ip' => $this->ip,
             'lastUsedAt' => $this->last_used_at?->toIso8601String(),
             'expiresAt' => $this->expires_at->toIso8601String(),
+            'createdAt' => $this->created_at?->toIso8601String(),
             'isActive' => $this->isActive(),
         ];
     }

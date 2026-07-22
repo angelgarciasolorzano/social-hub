@@ -23,25 +23,27 @@ import { destroyAll as destroyAllRoute } from "@/shared/wayfinder/actions/App/Au
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/shared/components/shadcn/ui/popover";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/shadcn/ui/dropdown-menu";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { cn } from "@/shared/lib";
+import { useDialog } from "@/shared/hooks";
 
 import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
 import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
+import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
 
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
 }
 
-function TwoFactorDevices({ devices }: TwoFactorDevicesProps) {
+function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
   const hasDevices = devices.length > 0;
 
   const deviceLabel = (device: TrustedDevice): string => {
@@ -147,30 +149,64 @@ type TwoFactorDevicesItemsProps = Pick<TwoFactorDevicesProps, "devices"> & {
   getDeviceIcon: (device: TrustedDevice, className: string) => JSX.Element;
 };
 
+interface DialogActionState {
+  kind: TwoFactorDeviceActionKey;
+  device: TrustedDevice;
+}
+
 function TwoFactorDevicesItems({
   devices,
   deviceLabel,
   fromNow,
   getDeviceIcon,
 }: TwoFactorDevicesItemsProps) {
+  const dialogDevice = useDialog<DialogActionState | null>(null);
+
   const handleDeviceAction = (action: TwoFactorDeviceActionKey, device: TrustedDevice) => {
     switch (action) {
       case twoFactorDeviceActionKey.viewDevice:
-        console.log("Ver dispositivo:", device);
+        dialogDevice.show({ kind: action, device });
 
         break;
       case twoFactorDeviceActionKey.renameDevice:
-        console.log("Renombrar dispositivo:", device);
+        dialogDevice.show({ kind: action, device });
 
         break;
       case twoFactorDeviceActionKey.renewTrust:
-        console.log("Renovar Confianza:", device);
+        dialogDevice.show({ kind: action, device });
 
         break;
       case twoFactorDeviceActionKey.revokeDevice:
-        console.log("Revocar dispositivo:", device);
+        dialogDevice.show({ kind: action, device });
 
         break;
+    }
+  };
+
+  const renderDialogDevice = (): JSX.Element | null => {
+    if (!dialogDevice.state) return null;
+
+    switch (dialogDevice.state.kind) {
+      case twoFactorDeviceActionKey.viewDevice:
+        return (
+          <DeviceDetailsDialog
+            device={dialogDevice.state.device}
+            open={true}
+            hide={dialogDevice.hide}
+          />
+        );
+
+      case twoFactorDeviceActionKey.renameDevice:
+        return <RenameDeviceDialog device={dialogDevice.state?.device} />;
+
+      case twoFactorDeviceActionKey.renewTrust:
+        return <RenewTrustDeviceDialog device={dialogDevice.state?.device} />;
+
+      case twoFactorDeviceActionKey.revokeDevice:
+        return <RevokeDeviceDialog device={dialogDevice.state?.device} />;
+
+      default:
+        return null;
     }
   };
 
@@ -204,64 +240,65 @@ function TwoFactorDevicesItems({
             <div className="flex items-center gap-4">
               <FaCircle className="h-3 w-3 text-red-600 dark:text-red-500" />
 
-              <DeviceActionsPopover device={device} onActionClick={handleDeviceAction} />
+              <DeviceActionsDropdown device={device} onActionClick={handleDeviceAction} />
             </div>
           </div>
 
           {index < devices.length - 1 && <Separator />}
         </Fragment>
       ))}
+
+      {renderDialogDevice()}
     </>
   );
 }
 
-interface DeviceActionsPopoverProps {
+interface DeviceActionsDropdownProps {
   device: TrustedDevice;
   onActionClick: (action: TwoFactorDeviceActionKey, device: TrustedDevice) => void;
 }
 
-function DeviceActionsPopover({ device, onActionClick }: DeviceActionsPopoverProps) {
+function DeviceActionsDropdown({ device, onActionClick }: DeviceActionsDropdownProps): JSX.Element {
   const handleClick = (action: TwoFactorDeviceActionKey): void => {
     onActionClick(action, device);
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">
           <EllipsisVertical />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-60" align="end">
-        <PopoverHeader>
-          <PopoverTitle>Acciones del dispositivo</PopoverTitle>
-          <PopoverDescription>Administra este dispositivo de confianza.</PopoverDescription>
-        </PopoverHeader>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-60" align="end">
+        {twoFactorDeviceActions.map((group, groupIndex) => (
+          <Fragment key={groupIndex}>
+            <DropdownMenuGroup>
+              {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
 
-        <Separator className="my-2.5" />
+              {group.actions.map((action) => {
+                const Icon = action.icon;
 
-        <div className="flex flex-col gap-2">
-          {twoFactorDeviceActions.map((action, index) => {
-            const Icon = action.icon;
+                return (
+                  <DropdownMenuItem
+                    key={action.key}
+                    onClick={() => {
+                      handleClick(action.key);
+                    }}
+                    className={action.className}
+                  >
+                    <Icon className={action.iconClassName} />
+                    {action.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuGroup>
 
-            return (
-              <Fragment key={action.key}>
-                <Button
-                  variant={action.variant}
-                  onClick={() => handleClick(action.key)}
-                  className={cn(action.className)}
-                >
-                  <Icon />
-                  {action.label}
-                </Button>
-
-                {index === 2 && <Separator />}
-              </Fragment>
-            );
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
+            {groupIndex < twoFactorDeviceActions.length - 1 && <DropdownMenuSeparator />}
+          </Fragment>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

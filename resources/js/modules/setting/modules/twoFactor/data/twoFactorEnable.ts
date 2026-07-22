@@ -13,16 +13,6 @@ import {
 
 import type { OptionCardItem } from "../components/ui/OptionCard";
 
-type ButtonVariant =
-  | "default"
-  | "destructive"
-  | "link"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | null
-  | undefined;
-
 export const twoFactorSecurityOptionsKey = {
   backupCodes: "backup-codes",
   regenerateCodes: "regenerate-codes",
@@ -93,36 +83,51 @@ export const twoFactorDeviceActionKey = {
 export type TwoFactorDeviceActionKey =
   (typeof twoFactorDeviceActionKey)[keyof typeof twoFactorDeviceActionKey];
 
-type TwoFactorDeviceAction = Pick<OptionCardItem<TwoFactorDeviceActionKey>, "key" | "icon"> & {
+export type TwoFactorDeviceAction = Pick<
+  OptionCardItem<TwoFactorDeviceActionKey>,
+  "key" | "icon"
+> & {
   label: string;
-  variant: ButtonVariant;
   className?: string;
+  iconClassName?: string;
 };
 
-export const twoFactorDeviceActions: TwoFactorDeviceAction[] = [
+export interface DeviceActionGroup {
+  label?: string;
+  actions: TwoFactorDeviceAction[];
+}
+
+export const twoFactorDeviceActions: DeviceActionGroup[] = [
   {
-    key: twoFactorDeviceActionKey.viewDevice,
-    icon: Eye,
-    label: "Ver dispositivo",
-    variant: "ghost",
+    label: "Acciones del dispositivo",
+    actions: [
+      {
+        key: twoFactorDeviceActionKey.viewDevice,
+        icon: Eye,
+        label: "Ver dispositivo",
+      },
+      {
+        key: twoFactorDeviceActionKey.renameDevice,
+        icon: Pencil,
+        label: "Renombrar dispositivo",
+      },
+      {
+        key: twoFactorDeviceActionKey.renewTrust,
+        icon: RotateCw,
+        label: "Renovar confianza",
+      },
+    ],
   },
   {
-    key: twoFactorDeviceActionKey.renameDevice,
-    icon: Pencil,
-    label: "Renombrar dispositivo",
-    variant: "ghost",
-  },
-  {
-    key: twoFactorDeviceActionKey.renewTrust,
-    icon: RotateCw,
-    label: "Renovar Confianza",
-    variant: "ghost",
-  },
-  {
-    key: twoFactorDeviceActionKey.revokeDevice,
-    icon: Trash2,
-    label: "Revocar dispositivo",
-    variant: "destructive",
-    className: "dark:bg-red-700 dark:text-white dark:hover:bg-red-800",
+    actions: [
+      {
+        key: twoFactorDeviceActionKey.revokeDevice,
+        icon: Trash2,
+        label: "Revocar dispositivo",
+        className:
+          "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
+        iconClassName: "text-red-600 dark:text-red-500",
+      },
+    ],
   },
 ];

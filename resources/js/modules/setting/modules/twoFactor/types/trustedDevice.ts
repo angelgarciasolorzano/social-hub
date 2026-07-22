@@ -9,5 +9,6 @@ export interface TrustedDevice {
   ip: string | null;
   lastUsedAt: string | null;
   expiresAt: string;
+  createdAt: string;
   isActive: boolean;
 }
