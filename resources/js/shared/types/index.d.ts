@@ -10,7 +10,7 @@ export interface SharedData {
   auth: Auth;
   name: string;
   quote: { message: string; author: string };
-  search_results: User[];
+  search_results: User[] | null;
   sidebarOpen: boolean;
 }
 

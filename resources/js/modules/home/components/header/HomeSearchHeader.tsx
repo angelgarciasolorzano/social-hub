@@ -83,7 +83,8 @@ function HomeSearchHeader(): JSX.Element {
           </DialogHeader>
 
           <div className="flex h-[90%] flex-1 flex-col gap-4 overflow-y-auto pr-2">
-            {search_results.length > 0 &&
+            {search_results &&
+              search_results.length > 0 &&
               search_results.map((user) => (
                 <div className="flex items-center justify-between px-2 py-2" key={user.id}>
                   <div className="flex items-center gap-2">
