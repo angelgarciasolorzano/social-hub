@@ -24,8 +24,12 @@ function ProfilePicture({ profilePicture }: ProfilePictureProps) {
   return (
     <div
       className="absolute -bottom-10 left-5 z-50 h-24 w-24 rounded-full"
-      onMouseEnter={() => setIsHover(true)}
-      onMouseLeave={() => setIsHover(false)}
+      onMouseEnter={() => {
+        setIsHover(true);
+      }}
+      onMouseLeave={() => {
+        setIsHover(false);
+      }}
     >
       <img
         className="h-full w-full rounded-full border border-white object-cover shadow-md dark:border-gray-600"

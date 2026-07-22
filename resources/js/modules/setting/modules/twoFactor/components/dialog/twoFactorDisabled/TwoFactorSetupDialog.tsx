@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { JSX, ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
@@ -38,7 +38,7 @@ interface TwoFactorSetupDialogProps {
   twoFactorEnabled: boolean;
 }
 
-export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps) {
+export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): JSX.Element {
   const {
     clearSetupData,
     errors,
@@ -117,7 +117,12 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps) {
   };
 
   return (
-    <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+      open={isOpen}
+    >
       <DialogContent className="sm:max-w-md">
         {step === twoFactorActivationStepKey.manualSetup ? (
           <Button

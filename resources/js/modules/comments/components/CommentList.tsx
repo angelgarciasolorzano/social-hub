@@ -74,7 +74,7 @@ function CommentList({ postId, previewContext }: CommentListProps) {
     );
   }
 
-  if (!commentsPage || !commentsPage.data.length) {
+  if (!commentsPage?.data.length) {
     return (
       <RenderEmptyState
         openModalComment={openModalComment}
@@ -193,7 +193,9 @@ function RenderCommentInput(props: RenderCommentInputProps) {
 
       <Input
         className="cursor-pointer"
-        onClick={() => setOpenModalComment(true)}
+        onClick={() => {
+          setOpenModalComment(true);
+        }}
         autoFocus={false}
         placeholder="Escribe tu comentario"
         readOnly

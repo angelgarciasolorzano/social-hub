@@ -4,7 +4,7 @@ import { useHttp } from "@inertiajs/react";
 
 import { enable, qrCode, recoveryCodes, secretKey } from "@/shared/wayfinder/routes/two-factor";
 
-type UseTwoFactorAuthReturn = {
+interface UseTwoFactorAuthReturn {
   qrCodeSvg: string | null;
   manualSetupKey: string | null;
   recoveryCodesList: string[];
@@ -18,7 +18,7 @@ type UseTwoFactorAuthReturn = {
   fetchSetupKey: () => Promise<void>;
   fetchSetupData: () => Promise<void>;
   fetchRecoveryCodes: () => Promise<void>;
-};
+}
 
 export const OTP_MAX_LENGTH = 6;
 

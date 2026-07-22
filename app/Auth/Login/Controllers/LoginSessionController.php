@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Login\Controllers;
 
 use App\Auth\Login\Requests\LoginRequest;
+use App\Auth\Models\TrustedDevice;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,6 +36,14 @@ class LoginSessionController extends Controller
         $user = $loginRequest->validateCredentials();
 
         if (Features::enabled(Features::twoFactorAuthentication()) && $user->hasEnabledTwoFactorAuthentication()) {
+            if (TrustedDevice::validateAndTouch($user, $loginRequest)) {
+                Auth::login($user, $loginRequest->boolean('remember'));
+
+                $loginRequest->session()->regenerate();
+
+                return redirect()->intended(route('home', absolute: false));
+            }
+
             $loginRequest->session()->put([
                 'login.id' => $user->getKey(),
                 'login.remember' => $loginRequest->boolean('remember'),

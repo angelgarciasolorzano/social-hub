@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction, SubmitEvent } from "react";
+import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -26,15 +26,15 @@ interface RegenerateCodesDialogProps {
   fetchRecoveryCodes: () => Promise<void>;
 }
 
-type RegenerateCodesFormData = {
+interface RegenerateCodesFormData {
   password: string;
-};
+}
 
 function RegenerateCodesDialog({
   isOpen,
   setOpen,
   fetchRecoveryCodes,
-}: RegenerateCodesDialogProps) {
+}: RegenerateCodesDialogProps): JSX.Element {
   const { setData, errors, submit, processing, reset, data } = useForm<RegenerateCodesFormData>({
     password: "",
   });
@@ -46,7 +46,7 @@ function RegenerateCodesDialog({
       onSuccess: () => {
         setOpen(false);
         reset();
-        fetchRecoveryCodes();
+        void fetchRecoveryCodes();
       },
       preserveState: true,
     });
@@ -94,7 +94,9 @@ function RegenerateCodesDialog({
             id="regenerate-codes-password"
             name="password"
             autoComplete="current-password"
-            onChange={(e) => setData("password", e.target.value)}
+            onChange={(e) => {
+              setData("password", e.target.value);
+            }}
             aria-invalid={!!errors.password}
             required
             autoFocus

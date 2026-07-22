@@ -78,7 +78,7 @@ export function usePostImage({ setData }: UsePostImageProps): UsePostImageReturn
     event.preventDefault();
     event.stopPropagation();
 
-    const file = event.dataTransfer.files?.[0];
+    const file = event.dataTransfer.files[0];
 
     updateImage(file);
     setIsHoverImage(false);
@@ -86,9 +86,13 @@ export function usePostImage({ setData }: UsePostImageProps): UsePostImageReturn
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleImageLoad = (): void => setIsLoadingImage(false);
+  const handleImageLoad = (): void => {
+    setIsLoadingImage(false);
+  };
 
-  const handleImageError = (): void => setIsLoadingImage(false);
+  const handleImageError = (): void => {
+    setIsLoadingImage(false);
+  };
 
   return {
     imageUrl,

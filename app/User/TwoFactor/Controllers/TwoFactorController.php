@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\User\TwoFactor\Controllers;
 
+use App\Auth\Models\TrustedDevice;
+use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use App\User\TwoFactor\Requests\TwoFactorDisableRequest;
@@ -51,6 +53,12 @@ class TwoFactorController extends Controller implements HasMiddleware
 
             $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
+
+            $props['trustedDevices'] = $user->trustedDevices()
+                ->latest('last_used_at')
+                ->get()
+                ->map(fn (TrustedDevice $trustedDevice) => new TrustedDeviceResource(($trustedDevice))->resolve(request()))
+                ->all();
         }
 
         return Inertia::render('setting/modules/twoFactor/TwoFactor', $props);

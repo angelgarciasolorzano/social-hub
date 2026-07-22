@@ -4,6 +4,7 @@ import { useDialog } from "@/shared/hooks/useDialog";
 
 import TwoFactorSetupDialog from "./components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
 import { useTwoFactorAuth } from "./hooks/useTwoFactorAuth";
+import type { TrustedDevice } from "./types/trustedDevice";
 import TwoFactorDisabled from "./views/TwoFactorDisabled";
 import TwoFactorEnable from "./views/TwoFactorEnable";
 
@@ -11,12 +12,14 @@ interface Props {
   canManageTwoFactor?: boolean;
   requiresConfirmation?: boolean;
   twoFactorEnabled?: boolean;
+  trustedDevices?: TrustedDevice[];
 }
 
 export default function TwoFactor({
   canManageTwoFactor = false,
   requiresConfirmation = false,
   twoFactorEnabled = false,
+  trustedDevices = [],
 }: Props) {
   const {
     qrCodeSvg,
@@ -38,11 +41,13 @@ export default function TwoFactor({
       {canManageTwoFactor && (
         <>
           {twoFactorEnabled ? (
-            <TwoFactorEnable />
+            <TwoFactorEnable trustedDevices={trustedDevices} />
           ) : (
             <TwoFactorDisabled
               hasSetupData={hasSetupData}
-              onActivate={() => setShowSetupDialog(true)}
+              onActivate={() => {
+                setShowSetupDialog(true);
+              }}
             />
           )}
 
@@ -53,7 +58,9 @@ export default function TwoFactor({
             fetchSetupData={fetchSetupData}
             isOpen={showSetupDialog}
             manualSetupKey={manualSetupKey}
-            onClose={() => setShowSetupDialog(false)}
+            onClose={() => {
+              setShowSetupDialog(false);
+            }}
             qrCodeSvg={qrCodeSvg}
             recoveryCodesList={recoveryCodesList}
             requiresConfirmation={requiresConfirmation}

@@ -36,6 +36,7 @@ parameters:
 
     scanFiles:
         - _ide_helper_models.php
+        - phpstan-stubs/TwoFactorAuthenticationEvent.php
     
     ignoreErrors:
         - '#Dynamic call to static method Illuminate\\.*#'

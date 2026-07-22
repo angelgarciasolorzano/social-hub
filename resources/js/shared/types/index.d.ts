@@ -10,9 +10,9 @@ export interface SharedData {
   auth: Auth;
   name: string;
   quote: { message: string; author: string };
-  search_results: User[];
+  search_results: User[] | null;
   sidebarOpen: boolean;
 }
 
-export * from "./pagination";
-export * from "./user";
+export type * from "./pagination";
+export type * from "./user";

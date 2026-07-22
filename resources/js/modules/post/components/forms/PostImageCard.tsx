@@ -78,8 +78,12 @@ function PostImageCard(props: PostImageCardProps) {
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleImageDrop}
-      onMouseEnter={() => setIsHoverImage(true)}
-      onMouseLeave={() => setIsHoverImage(false)}
+      onMouseEnter={() => {
+        setIsHoverImage(true);
+      }}
+      onMouseLeave={() => {
+        setIsHoverImage(false);
+      }}
       role="button"
     >
       <div className="items-center">

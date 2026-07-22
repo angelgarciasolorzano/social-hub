@@ -8,7 +8,10 @@ use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;
 use App\User\Models\User;
+use DeviceDetector\DeviceDetector;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Override;
 
@@ -20,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
     #[Override]
     public function register(): void
     {
-        //
+        $this->app->bind(DeviceDetector::class, fn (Application $application): DeviceDetector => $this->buildDeviceDetector($application));
     }
 
     /**
@@ -34,5 +37,18 @@ class AppServiceProvider extends ServiceProvider
             Like::MORPH_NAME => Like::class,
             Comment::MORPH_NAME => Comment::class,
         ]);
+    }
+
+    /**
+     * Build and configure an instance of DeviceDetector.
+     */
+    private function buildDeviceDetector(Application $application): DeviceDetector
+    {
+        $request = $application->make(Request::class);
+
+        $deviceDetector = new DeviceDetector($request->userAgent() ?? '');
+        $deviceDetector->parse();
+
+        return $deviceDetector;
     }
 }

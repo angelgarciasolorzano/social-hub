@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { updateImage } from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
 
-import { UserImageType } from "../enums/userImageType";
+import type { UserImageType } from "../enums/userImageType";
 
 interface UpdateImageParams {
   typeImage: UserImageType;
@@ -24,9 +24,7 @@ interface UseImageUploadReturn {
   setIsHover: (hover: boolean) => void;
 }
 
-export function useUserImageUpload({
-  typeImage = UserImageType.PROFILE_PICTURE,
-}: UpdateImageParams): UseImageUploadReturn {
+export function useUserImageUpload({ typeImage }: UpdateImageParams): UseImageUploadReturn {
   const [isHover, setIsHover] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);

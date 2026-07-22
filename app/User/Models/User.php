@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Models;
 
+use App\Auth\Models\TrustedDevice;
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;
@@ -168,5 +169,15 @@ class User extends Authenticatable implements HasMedia
     public function likes(): HasMany
     {
         return $this->hasMany(Like::class);
+    }
+
+    /**
+     * Get all trusted devices for this user.
+     *
+     * @return HasMany<TrustedDevice, $this>
+     */
+    public function trustedDevices(): HasMany
+    {
+        return $this->hasMany(TrustedDevice::class);
     }
 }

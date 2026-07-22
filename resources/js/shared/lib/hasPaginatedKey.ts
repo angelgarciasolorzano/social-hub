@@ -18,13 +18,13 @@ export function hasPaginatedKey<T = unknown, K extends string = string>(
 
   if (typeof paginatedData !== "object" || paginatedData === null) return false;
 
-  const paginatedObject = paginatedData as PaginatedResponse<T>;
+  const inner = paginatedData as Record<string, unknown>;
 
   return (
-    Array.isArray(paginatedObject.data) &&
-    typeof paginatedObject.links === "object" &&
-    paginatedObject.links !== null &&
-    typeof paginatedObject.meta === "object" &&
-    paginatedObject.meta !== null
+    Array.isArray(inner["data"]) &&
+    inner["links"] !== null &&
+    typeof inner["links"] === "object" &&
+    inner["meta"] !== null &&
+    typeof inner["meta"] === "object"
   );
 }
