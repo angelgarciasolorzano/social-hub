@@ -48,7 +48,9 @@ function Profile({ posts, user }: ProfileProps) {
             <>
               <Button
                 className="cursor-pointer bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:text-white dark:hover:bg-blue-700"
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                  setOpen(true);
+                }}
               >
                 <GoPlus className="h-4 w-4" />
                 Agregar publicación

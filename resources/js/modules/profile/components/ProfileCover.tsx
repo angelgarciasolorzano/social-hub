@@ -22,8 +22,12 @@ function ProfileCover({ coverImage }: ProfileCoverProps) {
   return (
     <div
       className="h-87.5 w-full dark:border-gray-600"
-      onMouseEnter={() => setIsHover(true)}
-      onMouseLeave={() => setIsHover(false)}
+      onMouseEnter={() => {
+        setIsHover(true);
+      }}
+      onMouseLeave={() => {
+        setIsHover(false);
+      }}
     >
       <img
         className="h-full w-full rounded-md object-cover"
