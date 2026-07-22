@@ -54,7 +54,9 @@ function HomeSearchHeader() {
             <Form
               {...search.form()}
               className="mt-1.5 flex items-center gap-2"
-              onSuccess={(page) => console.log(page.props)}
+              onSuccess={(page) => {
+                console.log(page.props);
+              }}
               options={{
                 preserveState: true,
               }}
@@ -98,7 +100,9 @@ function HomeSearchHeader() {
                   <div className="flex gap-2">
                     <Badge
                       className="cursor-pointer text-sm dark:text-white/80"
-                      onClick={() => router.post(sendRequest.url({ user: user.id }))}
+                      onClick={() => {
+                        router.post(sendRequest.url({ user: user.id }));
+                      }}
                       variant="secondary"
                     >
                       <LuUserRoundPlus className="h-4 w-4" />

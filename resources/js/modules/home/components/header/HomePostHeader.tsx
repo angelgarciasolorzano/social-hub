@@ -19,7 +19,9 @@ function HomePostHeader({ isOpenModal, setIsOpenModal }: HomePostHeaderProps) {
           <div className="rounded-md border border-gray-200 dark:border-gray-700">
             <HiOutlinePlus
               className="h-8 w-8 cursor-pointer text-gray-600 dark:text-gray-200"
-              onClick={() => setIsOpenModal(true)}
+              onClick={() => {
+                setIsOpenModal(true);
+              }}
             />
           </div>
         </TooltipTrigger>
