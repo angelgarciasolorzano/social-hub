@@ -86,9 +86,13 @@ export function usePostImage({ setData }: UsePostImageProps): UsePostImageReturn
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleImageLoad = (): void => setIsLoadingImage(false);
+  const handleImageLoad = (): void => {
+    setIsLoadingImage(false);
+  };
 
-  const handleImageError = (): void => setIsLoadingImage(false);
+  const handleImageError = (): void => {
+    setIsLoadingImage(false);
+  };
 
   return {
     imageUrl,

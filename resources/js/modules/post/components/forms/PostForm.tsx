@@ -63,7 +63,9 @@ function PostForm({ form, setOpen }: PostFormtProps) {
             id="post-content"
             name="content"
             className="min-h-32 resize-none"
-            onChange={(e) => setData("content", e.target.value)}
+            onChange={(e) => {
+              setData("content", e.target.value);
+            }}
             minLength={10}
             placeholder="Escribe lo que quieres compartir"
             required
