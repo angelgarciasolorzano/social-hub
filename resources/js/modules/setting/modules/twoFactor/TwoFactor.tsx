@@ -45,7 +45,9 @@ export default function TwoFactor({
           ) : (
             <TwoFactorDisabled
               hasSetupData={hasSetupData}
-              onActivate={() => setShowSetupDialog(true)}
+              onActivate={() => {
+                setShowSetupDialog(true);
+              }}
             />
           )}
 
@@ -56,7 +58,9 @@ export default function TwoFactor({
             fetchSetupData={fetchSetupData}
             isOpen={showSetupDialog}
             manualSetupKey={manualSetupKey}
-            onClose={() => setShowSetupDialog(false)}
+            onClose={() => {
+              setShowSetupDialog(false);
+            }}
             qrCodeSvg={qrCodeSvg}
             recoveryCodesList={recoveryCodesList}
             requiresConfirmation={requiresConfirmation}

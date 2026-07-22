@@ -35,7 +35,7 @@ export function OptionCard<TKey extends string = string>({
         {options.map((option) => {
           const Icon = option.icon;
 
-          const colorMatch = option.iconColor.match(/text-(\w+)-\d+/);
+          const colorMatch = /text-(\w+)-\d+/.exec(option.iconColor);
           const colorName = colorMatch?.[1] || "gray";
 
           return (
