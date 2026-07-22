@@ -26,9 +26,9 @@ interface RegenerateCodesDialogProps {
   fetchRecoveryCodes: () => Promise<void>;
 }
 
-type RegenerateCodesFormData = {
+interface RegenerateCodesFormData {
   password: string;
-};
+}
 
 function RegenerateCodesDialog({
   isOpen,
@@ -94,7 +94,9 @@ function RegenerateCodesDialog({
             id="regenerate-codes-password"
             name="password"
             autoComplete="current-password"
-            onChange={(e) => setData("password", e.target.value)}
+            onChange={(e) => {
+              setData("password", e.target.value);
+            }}
             aria-invalid={!!errors.password}
             required
             autoFocus

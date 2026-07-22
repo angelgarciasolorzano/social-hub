@@ -29,10 +29,10 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 
-type DisableTwoFactorFormData = {
+interface DisableTwoFactorFormData {
   password: string;
   code: string;
-};
+}
 
 interface DisableTwoFactorDialogProps {
   isOpen: boolean;
@@ -105,7 +105,9 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
               id="regenerate-codes-password"
               name="password"
               autoComplete="current-password"
-              onChange={(e) => setData("password", e.target.value)}
+              onChange={(e) => {
+                setData("password", e.target.value);
+              }}
               aria-invalid={!!errors.password}
               required
               autoFocus
@@ -125,7 +127,9 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
               <InputOTP
                 name="code-otp"
                 required
-                onChange={(e) => setData("code", e)}
+                onChange={(e) => {
+                  setData("code", e);
+                }}
                 disabled={processing}
                 maxLength={OTP_MAX_LENGTH}
                 pattern={REGEXP_ONLY_DIGITS}
