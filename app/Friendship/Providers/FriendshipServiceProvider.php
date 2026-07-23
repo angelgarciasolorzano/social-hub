@@ -9,9 +9,9 @@ use Illuminate\Support\ServiceProvider;
 class FriendshipServiceProvider extends ServiceProvider
 {
     /**
-     * Bootstrap any application services.
+     * Register any application services.
      */
-    public function boot(): void
+    public function register(): void
     {
         $this->app->register(FriendshipRouteServiceProvider::class);
     }

@@ -9,9 +9,9 @@ use Illuminate\Support\ServiceProvider;
 class UserServiceProvider extends ServiceProvider
 {
     /**
-     * Bootstrap any application services.
+     * Register any application services.
      */
-    public function boot(): void
+    public function register(): void
     {
         $this->app->register(UserRouteServiceProvider::class);
     }
