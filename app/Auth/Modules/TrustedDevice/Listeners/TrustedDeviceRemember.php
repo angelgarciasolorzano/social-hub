@@ -25,11 +25,6 @@ final readonly class TrustedDeviceRemember
      */
     private const int TOKEN_LENGTH = 64;
 
-    /**
-     * Cookie lifetime in minutes (30 days).
-     */
-    private const int COOKIE_LIFETIME_MINUTES = 60 * 24 * 30;
-
     public function handle(ValidTwoFactorAuthenticationCodeProvided $validTwoFactorAuthenticationCodeProvided): void
     {
         $user = $validTwoFactorAuthenticationCodeProvided->user;
@@ -47,9 +42,12 @@ final readonly class TrustedDeviceRemember
         $token = Str::random(self::TOKEN_LENGTH);
         $tokenHash = hash('sha256', $token);
 
+        /** @var int $cookieLifetimeMinutes */
+        $cookieLifetimeMinutes = config('auth.trusted_devices.cookie_lifetime_minutes');
+
         $osInfo = $this->inferOsInfo($deviceDetector);
 
-        $user->trustedDevices()->create([
+        $newDevice = $user->trustedDevices()->create([
             'name' => $this->inferDeviceName($deviceDetector),
             'token_hash' => $tokenHash,
             'user_agent' => $request->userAgent(),
@@ -59,13 +57,22 @@ final readonly class TrustedDeviceRemember
             'is_mobile' => $this->inferIsMobile($deviceDetector),
             'ip' => $request->ip(),
             'last_used_at' => CarbonImmutable::now(),
-            'expires_at' => CarbonImmutable::now()->addMinutes(self::COOKIE_LIFETIME_MINUTES),
+            'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
         ]);
+
+        $userAgent = $request->userAgent();
+
+        if ($userAgent !== null) {
+            $user->trustedDevices()
+                ->where('user_agent', $userAgent)
+                ->where('id', '!=', $newDevice->id)
+                ->delete();
+        }
 
         Cookie::queue(Cookie::make(
             name: self::COOKIE_NAME,
             value: $token,
-            minutes: self::COOKIE_LIFETIME_MINUTES,
+            minutes: $cookieLifetimeMinutes,
             path: '/',
             domain: null,
             secure: true,

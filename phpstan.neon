@@ -20,6 +20,10 @@ parameters:
     noEnvCallsOutsideOfConfig: true
     noUnnecessaryEnumerableToArrayCalls: true
 
+    configDirectories:
+        - config
+        - app/Auth/config
+
     type_coverage:
         return: 100
         param: 100

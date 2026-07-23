@@ -14,6 +14,7 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+        $this->mergeConfigFrom(__DIR__.'/../config/trusted_devices.php', 'auth.trusted_devices');
 
         $this->app->register(AuthRouteServiceProvider::class);
         $this->app->register(AuthEventServiceProvider::class);
