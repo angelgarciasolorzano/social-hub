@@ -62,7 +62,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
     const os = device.osName?.toLowerCase() ?? "";
     const isMobile = device.isMobile;
 
-    if (!isMobile) {
+    if (isMobile) {
       if (os.includes("apple") || os.includes("mac")) {
         return <Smartphone className={className} />;
       }
@@ -152,7 +152,10 @@ type TwoFactorDevicesItemsProps = Pick<TwoFactorDevicesProps, "devices"> & {
 interface DialogActionState {
   kind: TwoFactorDeviceActionKey;
   device: TrustedDevice;
+  closing: boolean;
 }
+
+const DIALOG_EXIT_ANIMATION_MS = 200;
 
 function TwoFactorDevicesItems({
   devices,
@@ -163,49 +166,48 @@ function TwoFactorDevicesItems({
   const dialogDevice = useDialog<DialogActionState | null>(null);
 
   const handleDeviceAction = (action: TwoFactorDeviceActionKey, device: TrustedDevice) => {
-    switch (action) {
-      case twoFactorDeviceActionKey.viewDevice:
-        dialogDevice.show({ kind: action, device });
+    dialogDevice.show({ kind: action, device, closing: false });
+  };
 
-        break;
-      case twoFactorDeviceActionKey.renameDevice:
-        dialogDevice.show({ kind: action, device });
+  const handleDialogClose = (): void => {
+    const current = dialogDevice.state;
 
-        break;
-      case twoFactorDeviceActionKey.renewTrust:
-        dialogDevice.show({ kind: action, device });
-
-        break;
-      case twoFactorDeviceActionKey.revokeDevice:
-        dialogDevice.show({ kind: action, device });
-
-        break;
+    if (current === null || current.closing) {
+      return;
     }
+
+    dialogDevice.setState({ ...current, closing: true });
+
+    setTimeout(() => {
+      dialogDevice.hide();
+    }, DIALOG_EXIT_ANIMATION_MS);
   };
 
   const renderDialogDevice = (): JSX.Element | null | undefined => {
-    if (!dialogDevice.state) return null;
+    if (dialogDevice.state === null) {
+      return null;
+    }
 
     switch (dialogDevice.state.kind) {
       case twoFactorDeviceActionKey.viewDevice:
         return (
           <DeviceDetailsDialog
             device={dialogDevice.state.device}
-            open={true}
-            hide={dialogDevice.hide}
+            open={!dialogDevice.state.closing}
+            onClose={handleDialogClose}
           />
         );
 
       case twoFactorDeviceActionKey.renameDevice:
-        //return <RenameDeviceDialog device={dialogDevice.state?.device} />;
+        //return <RenameDeviceDialog device={dialogDevice.state.device} ... />;
         break;
 
       case twoFactorDeviceActionKey.renewTrust:
-        //return <RenewTrustDeviceDialog device={dialogDevice.state?.device} />;
+        //return <RenewTrustDeviceDialog device={dialogDevice.state.device} ... />;
         break;
 
       case twoFactorDeviceActionKey.revokeDevice:
-        //return <RevokeDeviceDialog device={dialogDevice.state?.device} />;
+        //return <RevokeDeviceDialog device={dialogDevice.state.device} ... />;
         break;
 
       default:

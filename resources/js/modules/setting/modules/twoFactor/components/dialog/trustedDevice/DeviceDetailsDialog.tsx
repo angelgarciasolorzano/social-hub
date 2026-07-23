@@ -59,15 +59,15 @@ function formatTimeUntil(iso: string | null): string {
 interface DeviceDetailsDialogProps {
   device: TrustedDevice;
   open: boolean;
-  hide: () => void;
+  onClose: () => void;
 }
 
-function DeviceDetailsDialog({ device, open, hide }: DeviceDetailsDialogProps): JSX.Element {
+function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps): JSX.Element {
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) hide();
+        if (!nextOpen) onClose();
       }}
     >
       <DialogContent className="max-w-4xl min-w-3xl">
