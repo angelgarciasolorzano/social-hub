@@ -65,6 +65,8 @@ final readonly class TrustedDeviceRemember
         if ($userAgent !== null) {
             $user->trustedDevices()
                 ->where('user_agent', $userAgent)
+                ->where('os_name', $osInfo['name'])
+                ->where('ip', $request->ip())
                 ->where('id', '!=', $newDevice->id)
                 ->delete();
         }

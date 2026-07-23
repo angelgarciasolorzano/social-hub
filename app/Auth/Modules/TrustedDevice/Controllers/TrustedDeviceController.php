@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
-use App\Auth\Modules\TrustedDevice\Requests\UpdateTrustedDeviceRequest;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TrustedDeviceController extends Controller
 {
-    public function update(UpdateTrustedDeviceRequest $updateTrustedDeviceRequest, TrustedDevice $trustedDevice): RedirectResponse
+    public function update(TrustedDeviceUpdateRequest $updateTrustedDeviceRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $updateTrustedDeviceRequest->user()?->getKey(), 403);
 

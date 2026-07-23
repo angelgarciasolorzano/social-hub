@@ -9,7 +9,7 @@ use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
 use SanderMuller\FluentValidation\HasFluentRules;
 
-class UpdateTrustedDeviceRequest extends FormRequest
+class TrustedDeviceUpdateRequest extends FormRequest
 {
     use HasFluentRules;
 
