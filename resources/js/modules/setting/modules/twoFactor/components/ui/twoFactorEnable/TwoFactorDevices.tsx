@@ -77,7 +77,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
 
   return (
     <>
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
         <AlertTriangleIcon />
 
         <AlertTitle className="line-clamp-4">
@@ -128,7 +128,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
         )}
       </Form>
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
         <AlertTitle>Consejos</AlertTitle>
 
         <AlertDescription>
