@@ -38,6 +38,7 @@ import { useDialog } from "@/shared/hooks";
 import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
 import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
+import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
 
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
@@ -77,7 +78,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
 
   return (
     <>
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
+      <Alert className="oborder-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
         <AlertTriangleIcon />
 
         <AlertTitle className="line-clamp-4">
@@ -128,7 +129,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
         )}
       </Form>
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
+      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
         <AlertTitle>Consejos</AlertTitle>
 
         <AlertDescription>
@@ -199,8 +200,13 @@ function TwoFactorDevicesItems({
         );
 
       case twoFactorDeviceActionKey.renameDevice:
-        //return <RenameDeviceDialog device={dialogDevice.state.device} ... />;
-        break;
+        return (
+          <RenameDeviceDialog
+            device={dialogDevice.state.device}
+            open={!dialogDevice.state.closing}
+            onClose={handleDialogClose}
+          />
+        );
 
       case twoFactorDeviceActionKey.renewTrust:
         //return <RenewTrustDeviceDialog device={dialogDevice.state.device} ... />;
