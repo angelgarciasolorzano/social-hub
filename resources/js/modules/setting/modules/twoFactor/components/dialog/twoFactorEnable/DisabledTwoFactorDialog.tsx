@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction, SubmitEvent } from "react";
+import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -39,7 +39,7 @@ interface DisableTwoFactorDialogProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps) {
+function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps): JSX.Element {
   const { data, setData, processing, errors, reset, submit } = useForm<DisableTwoFactorFormData>({
     password: "",
     code: "",

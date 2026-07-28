@@ -153,7 +153,10 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
               <span className="text-2xl font-semibold">{device.name}</span>
 
               <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
-                <Circle className="size-1.5! fill-green-700" data-icon="inline-start" />
+                <Circle
+                  className="size-1.5! fill-green-800 text-green-800 dark:fill-green-500 dark:text-green-500"
+                  data-icon="inline-start"
+                />
                 Activo
               </Badge>
             </div>
@@ -200,7 +203,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
             </ItemContent>
           </Item>
 
-          <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300">
+          <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
             <CircleAlert />
 
             <AlertTitle className="line-clamp-4">
@@ -309,7 +312,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="font-semibold">{item.title}</span>
+                <span className="text-sm font-medium">{item.title}</span>
 
                 {item.description !== null && (
                   <span className="text-sm text-muted-foreground">{item.description}</span>
@@ -326,7 +329,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
 function DeviceStatusCallouts(): JSX.Element {
   return (
     <div className="flex flex-col gap-3">
-      <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-400">
+      <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500">
         <CircleCheck />
 
         <AlertTitle>Este dispositivo está activado</AlertTitle>
@@ -342,14 +345,14 @@ function DeviceStatusCallouts(): JSX.Element {
         </AlertDescription>
       </Alert>
 
-      <Alert className="border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-400">
+      <Alert className="border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-500">
         <Lightbulb />
 
         <AlertTitle>¿Que es un dispositivo de confianza?</AlertTitle>
         <AlertDescription>
           Los dispositivos de confianza reducen la frecuencia con la que se te solicita el codigo de
           verificacion al iniciar sesion, manteniendo tu cuenta segura.
-          <span className="my-1 flex items-center justify-center gap-1 font-medium text-purple-900 hover:cursor-pointer hover:underline dark:text-purple-400">
+          <span className="my-1 flex items-center justify-center gap-1 font-medium text-purple-800 hover:cursor-pointer hover:underline dark:text-purple-500">
             Mas información
             <ChevronRight className="h-5 w-5" />
           </span>

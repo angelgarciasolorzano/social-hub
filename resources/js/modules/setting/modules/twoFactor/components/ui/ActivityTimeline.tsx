@@ -71,7 +71,7 @@ function ActivityTimeline({ steps, variant = "violet" }: ActivityTimelineProps):
             </div>
 
             <div className="flex flex-col gap-1 pb-6">
-              <h3 className="font-semibold">{step.title}</h3>
+              <h3 className="text-sm font-medium">{step.title}</h3>
 
               {step.meta !== undefined && (
                 <div className="text-sm text-muted-foreground">{step.meta}</div>
