@@ -1,10 +1,12 @@
 import type { JSX, SubmitEvent } from "react";
 
+import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 import { MdOutlineLaptopMac } from "react-icons/md";
 
+import type { FormDataErrors } from "@inertiajs/core";
 import dayjs from "dayjs";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
@@ -103,59 +105,14 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
         <div className="flex flex-col gap-2">
           <DeviceInfoCard device={device} />
 
-          <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
-            <AlertTriangleIcon />
-            <AlertTitle>¿Que pasara?</AlertTitle>
-            <AlertDescription>
-              <ul className="mt-1 list-inside list-disc space-y-2">
-                <li>Este dispositivo ya no estara registrado como de confianza.</li>
-                <li>
-                  Se te pedira el codigo de verificacion la proxima vez que inicies sesion desde
-                  este dispositivo.
-                </li>
-              </ul>
-            </AlertDescription>
-          </Alert>
+          <RevokeConsequencesAlert />
 
-          <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="revoke-trusted-device">
-                Para continuar, confirma y escribe tu contraseña
-              </Label>
-
-              <PasswordInput
-                id="revoke-trusted-device"
-                name="password"
-                required
-                autoFocus
-                placeholder="Ingresa tu contraseña"
-                onChange={(e) => {
-                  setData("password", e.target.value);
-                }}
-                aria-invalid={errors.password ? "true" : "false"}
-              />
-
-              {errors.password && <InputError message={errors.password} />}
-            </div>
-
-            <div className="flex gap-2">
-              <Checkbox
-                id="revoke-trusted-device-terms"
-                name="terms"
-                checked={data.terms}
-                onCheckedChange={(checked) => {
-                  setData("terms", checked === true);
-                }}
-                aria-invalid={errors.terms ? "true" : "false"}
-              />
-
-              <LabelForm htmlFor="revoke-trusted-device-terms">
-                Entiendo las consecuencias de revocar este dispositivo.
-              </LabelForm>
-            </div>
-
-            {errors.terms && <InputError message={errors.terms} />}
-          </form>
+          <RevokeDeviceForm
+            handleSubmit={handleSubmit}
+            errors={errors}
+            setData={setData}
+            data={data}
+          />
         </div>
 
         <DialogFooter className="mt-1.5">
@@ -214,6 +171,77 @@ function DeviceInfoCard({ device }: DeviceInfoCardProps): JSX.Element {
         </span>
       </div>
     </div>
+  );
+}
+
+function RevokeConsequencesAlert(): JSX.Element {
+  return (
+    <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+      <AlertTriangleIcon />
+      <AlertTitle>¿Que pasara?</AlertTitle>
+      <AlertDescription>
+        <ul className="mt-1 list-inside list-disc space-y-2">
+          <li>Este dispositivo ya no estara registrado como de confianza.</li>
+          <li>
+            Se te pedira el codigo de verificacion la proxima vez que inicies sesion desde este
+            dispositivo.
+          </li>
+        </ul>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+interface RevokeDeviceFormProps {
+  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  errors: FormDataErrors<RevokeDeviceFormData>;
+  setData: SetDataAction<RevokeDeviceFormData>;
+  data: RevokeDeviceFormData;
+}
+
+function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
+  const { handleSubmit, errors, setData, data } = props;
+
+  return (
+    <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="revoke-trusted-device">
+          Para continuar, confirma y escribe tu contraseña
+        </Label>
+
+        <PasswordInput
+          id="revoke-trusted-device"
+          name="password"
+          required
+          autoFocus
+          placeholder="Ingresa tu contraseña"
+          onChange={(e) => {
+            setData("password", e.target.value);
+          }}
+          aria-invalid={errors.password ? "true" : "false"}
+        />
+
+        {errors.password && <InputError message={errors.password} />}
+      </div>
+
+      <div className="flex gap-2">
+        <Checkbox
+          id="revoke-trusted-device-terms"
+          name="terms"
+          checked={data.terms}
+          onCheckedChange={(checked) => {
+            setData("terms", checked === true);
+          }}
+          aria-invalid={errors.terms ? "true" : "false"}
+        />
+
+        <LabelForm htmlFor="revoke-trusted-device-terms">
+          Entiendo las consecuencias de revocar este dispositivo.
+        </LabelForm>
+      </div>
+
+      {errors.terms && <InputError message={errors.terms} />}
+    </form>
   );
 }
 
