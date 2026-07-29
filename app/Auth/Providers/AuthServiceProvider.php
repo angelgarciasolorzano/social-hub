@@ -8,12 +8,14 @@ use App\Auth\Models\TrustedDevice;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
+use Override;
 
 class AuthServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
      */
+    #[Override]
     public function register(): void
     {
         $this->mergeConfigFrom(
