@@ -39,6 +39,7 @@ import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
 import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
 import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
+import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
@@ -213,7 +214,13 @@ function TwoFactorDevicesItems({
         break;
 
       case twoFactorDeviceActionKey.revokeDevice:
-        //return <RevokeDeviceDialog device={dialogDevice.state.device} ... />;
+        return (
+          <RevokeDeviceDialog
+            device={dialogDevice.state.device}
+            open={!dialogDevice.state.closing}
+            onClose={handleDialogClose}
+          />
+        );
         break;
 
       default:

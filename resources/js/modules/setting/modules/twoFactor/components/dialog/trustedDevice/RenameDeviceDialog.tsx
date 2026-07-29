@@ -93,7 +93,7 @@ function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps):
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <DeviceInfoCard device={device} />
 
           <RenameDeviceForm handleSubmit={handleSubmit} errors={errors} setData={setData} />
