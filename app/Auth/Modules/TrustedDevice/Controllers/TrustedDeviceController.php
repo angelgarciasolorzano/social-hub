@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TrustedDeviceController extends Controller
 {
-    public function update(TrustedDeviceUpdateRequest $updateTrustedDeviceRequest, TrustedDevice $trustedDevice): RedirectResponse
+    public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
-        abort_unless($trustedDevice->user_id === $updateTrustedDeviceRequest->user()?->getKey(), 403);
+        abort_unless($trustedDevice->user_id === $trustedDeviceUpdateRequest->user()?->getKey(), 403);
 
         $trustedDevice->forceFill([
-            'name' => $updateTrustedDeviceRequest->string('name')->toString(),
+            'name' => $trustedDeviceUpdateRequest->string('name')->toString(),
         ])->save();
 
         return Inertia::flash([
@@ -47,9 +47,9 @@ class TrustedDeviceController extends Controller
         ])->back();
     }
 
-    public function destroy(TrustedDevice $trustedDevice): RedirectResponse
+    public function destroy(TrustedDeviceDestroyRequest $trustedDeviceDestroyRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
-        abort_unless($trustedDevice->user_id === Auth::id(), 403);
+        abort_unless($trustedDevice->user_id === $trustedDeviceDestroyRequest->user()?->getKey(), 403);
 
         $trustedDevice->delete();
 
