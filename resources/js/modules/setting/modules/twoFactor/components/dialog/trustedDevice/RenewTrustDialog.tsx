@@ -65,8 +65,6 @@ function formatLongDate(iso: string | null): string {
 function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX.Element {
   const { submit, processing, reset } = useForm();
 
-  const newExpiresAt = dayjs().add(TRUST_RENEWAL_DAYS, "day");
-
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
       return;
@@ -102,62 +100,13 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          id="renew-trusted-device-form"
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-4"
-        >
+        <div className="flex flex-col gap-2">
           <DeviceInfoCard device={device} />
 
-          <div className="flex flex-col gap-2">
-            <Item variant="outline">
-              <ItemMedia>
-                <CalendarClock />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Expiracion actual</ItemTitle>
-                <ItemDescription>{formatLongDate(device.expiresAt)}</ItemDescription>
-              </ItemContent>
-            </Item>
+          <RenewDeviceForm device={device} handleSubmit={handleSubmit} />
 
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="self-center"
-              disabled
-              aria-hidden
-            >
-              <ArrowBigDown />
-            </Button>
-
-            <Item variant="outline">
-              <ItemMedia>
-                <CalendarRange />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Nueva expiración</ItemTitle>
-                <ItemDescription>
-                  {newExpiresAt.format("D [de] MMMM [del] YYYY, h:mm A")}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
-                  + {TRUST_RENEWAL_LABEL}
-                </Badge>
-              </ItemActions>
-            </Item>
-          </div>
-
-          <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500">
-            <CircleAlert />
-
-            <AlertTitle className="line-clamp-3">
-              No se te pedira el codigo de verificacion en este dispositivo hasta la nueva fecha de
-              expiracion.
-            </AlertTitle>
-          </Alert>
-        </form>
+          <RenewInfoAlert />
+        </div>
 
         <DialogFooter>
           <DialogClose asChild>
@@ -211,6 +160,63 @@ function DeviceInfoCard({ device }: DeviceInfoCardProps): JSX.Element {
         </div>
       </div>
     </div>
+  );
+}
+
+type RenewDeviceFormProps = Pick<RenewTrustDialogProps, "device"> & {
+  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+};
+
+function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.Element {
+  const newExpiresAt = dayjs().add(TRUST_RENEWAL_DAYS, "day");
+
+  return (
+    <form id="renew-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <Item variant="outline">
+        <ItemMedia>
+          <CalendarClock />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>Expiracion actual</ItemTitle>
+          <ItemDescription>{formatLongDate(device.expiresAt)}</ItemDescription>
+        </ItemContent>
+      </Item>
+
+      <div
+        aria-hidden
+        className="flex size-9 items-center justify-center self-center rounded-md border bg-background dark:bg-input/30 [&_svg]:size-4"
+      >
+        <ArrowBigDown />
+      </div>
+
+      <Item variant="outline">
+        <ItemMedia>
+          <CalendarRange />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>Nueva expiración</ItemTitle>
+          <ItemDescription>{newExpiresAt.format("D [de] MMMM [del] YYYY, h:mm A")}</ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
+            + {TRUST_RENEWAL_LABEL}
+          </Badge>
+        </ItemActions>
+      </Item>
+    </form>
+  );
+}
+
+function RenewInfoAlert(): JSX.Element {
+  return (
+    <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500">
+      <CircleAlert />
+
+      <AlertTitle className="line-clamp-3">
+        No se te pedira el codigo de verificacion en este dispositivo hasta la nueva fecha de
+        expiracion.
+      </AlertTitle>
+    </Alert>
   );
 }
 
