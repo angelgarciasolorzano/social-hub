@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import { Head } from "@inertiajs/react";
 
 import { useDialog } from "@/shared/hooks/useDialog";
@@ -13,6 +15,7 @@ interface Props {
   requiresConfirmation?: boolean;
   twoFactorEnabled?: boolean;
   trustedDevices?: TrustedDevice[];
+  trustedDevicesCount?: number;
 }
 
 export default function TwoFactor({
@@ -20,7 +23,8 @@ export default function TwoFactor({
   requiresConfirmation = false,
   twoFactorEnabled = false,
   trustedDevices = [],
-}: Props) {
+  trustedDevicesCount = 0,
+}: Props): JSX.Element {
   const {
     qrCodeSvg,
     hasSetupData,
@@ -41,7 +45,10 @@ export default function TwoFactor({
       {canManageTwoFactor && (
         <>
           {twoFactorEnabled ? (
-            <TwoFactorEnable trustedDevices={trustedDevices} />
+            <TwoFactorEnable
+              trustedDevices={trustedDevices}
+              trustedDevicesCount={trustedDevicesCount}
+            />
           ) : (
             <TwoFactorDisabled
               hasSetupData={hasSetupData}

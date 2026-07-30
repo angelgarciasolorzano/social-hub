@@ -54,11 +54,15 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
 
-            $props['trustedDevices'] = $user->trustedDevices()
-                ->latest('last_used_at')
-                ->get()
-                ->map(fn (TrustedDevice $trustedDevice) => new TrustedDeviceResource(($trustedDevice))->resolve(request()))
-                ->all();
+            $props['trustedDevicesCount'] = $user->trustedDevices()->count();
+
+            $props['trustedDevices'] = Inertia::optional(
+                fn (): array => $user->trustedDevices()
+                    ->latest('last_used_at')
+                    ->get()
+                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
+                    ->all()
+            );
         }
 
         return Inertia::render('setting/modules/twoFactor/TwoFactor', $props);

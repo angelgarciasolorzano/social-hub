@@ -1,4 +1,7 @@
+import type { JSX } from "react";
 import { useState } from "react";
+
+import { router } from "@inertiajs/react";
 
 import {
   Bolt,
@@ -39,11 +42,15 @@ import type { TrustedDevice } from "../types/trustedDevice";
 
 interface TwoFactorEnableProps {
   trustedDevices: TrustedDevice[];
+  trustedDevicesCount: number;
 }
 
 type SlotContent = "codes" | "devices";
 
-function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
+function TwoFactorEnable({
+  trustedDevices,
+  trustedDevicesCount,
+}: TwoFactorEnableProps): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
   const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
@@ -52,7 +59,15 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
 
   const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
-  // Handler que recibe la key del card clickeado
+  const handleViewTrustedDevices = (): void => {
+    router.reload({
+      only: ["trustedDevices"],
+      onSuccess: () => {
+        setSelectedContent("devices");
+      },
+    });
+  };
+
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
       case twoFactorSecurityOptionsKey.backupCodes:
@@ -71,7 +86,7 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
         break;
 
       default:
-        console.log("Acción no reconocida:", optionKey);
+        break;
     }
   };
 
@@ -88,10 +103,8 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
 
         <TwoFactorSecuritySummary
           recoveryCodesList={recoveryCodesList}
-          trustedDevices={trustedDevices}
-          onViewTrustedDevices={() => {
-            setSelectedContent("devices");
-          }}
+          trustedDevicesCount={trustedDevicesCount}
+          onViewTrustedDevices={handleViewTrustedDevices}
         />
 
         <TwoFactorSafetyTips />
@@ -177,18 +190,17 @@ function TwoFactorTitle() {
   );
 }
 
-type TwoFactorSecuritySummaryProps = Pick<TwoFactorEnableProps, "trustedDevices"> & {
+interface TwoFactorSecuritySummaryProps {
+  trustedDevicesCount: number;
   recoveryCodesList: string[];
   onViewTrustedDevices: () => void;
-};
+}
 
 function TwoFactorSecuritySummary({
   recoveryCodesList,
-  trustedDevices,
+  trustedDevicesCount,
   onViewTrustedDevices,
 }: TwoFactorSecuritySummaryProps) {
-  const trustedDevicesCount = trustedDevices.length;
-
   const trustedDevicesLabel =
     trustedDevicesCount === 1
       ? "1 dispositivo de confianza configurado."
@@ -240,7 +252,7 @@ function TwoFactorSecuritySummary({
       action: {
         type: "chevron",
         onClick: () => {
-          console.log("Ver detalles de activación");
+          // TODO: open activation details dialog
         },
       },
     },
@@ -285,6 +297,8 @@ function TwoFactorSecuritySummary({
           <button
             onClick={action.onClick}
             className="cursor-pointer rounded-full p-1 transition-colors hover:bg-accent"
+            type="button"
+            aria-label="Ver detalles"
           >
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
