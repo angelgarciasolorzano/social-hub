@@ -39,6 +39,7 @@ import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
 import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
 import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
+import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
 import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 
 interface TwoFactorDevicesProps {
@@ -185,7 +186,7 @@ function TwoFactorDevicesItems({
     }, DIALOG_EXIT_ANIMATION_MS);
   };
 
-  const renderDialogDevice = (): JSX.Element | null | undefined => {
+  const renderDialogDevice = (): JSX.Element | null => {
     if (dialogDevice.state === null) {
       return null;
     }
@@ -210,8 +211,13 @@ function TwoFactorDevicesItems({
         );
 
       case twoFactorDeviceActionKey.renewTrust:
-        //return <RenewTrustDeviceDialog device={dialogDevice.state.device} ... />;
-        break;
+        return (
+          <RenewTrustDialog
+            device={dialogDevice.state.device}
+            open={!dialogDevice.state.closing}
+            onClose={handleDialogClose}
+          />
+        );
 
       case twoFactorDeviceActionKey.revokeDevice:
         return (
@@ -221,13 +227,10 @@ function TwoFactorDevicesItems({
             onClose={handleDialogClose}
           />
         );
-        break;
 
       default:
         return null;
     }
-
-    return null;
   };
 
   return (
