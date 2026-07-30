@@ -16,6 +16,7 @@ interface Props {
   twoFactorEnabled?: boolean;
   trustedDevices?: TrustedDevice[];
   trustedDevicesCount?: number;
+  trustedDevicesForRevoke?: TrustedDevice[];
 }
 
 export default function TwoFactor({
@@ -24,6 +25,7 @@ export default function TwoFactor({
   twoFactorEnabled = false,
   trustedDevices = [],
   trustedDevicesCount = 0,
+  trustedDevicesForRevoke = [],
 }: Props): JSX.Element {
   const {
     qrCodeSvg,
@@ -48,6 +50,7 @@ export default function TwoFactor({
             <TwoFactorEnable
               trustedDevices={trustedDevices}
               trustedDevicesCount={trustedDevicesCount}
+              trustedDevicesForRevoke={trustedDevicesForRevoke}
             />
           ) : (
             <TwoFactorDisabled

@@ -1,8 +1,6 @@
 import type { JSX } from "react";
 import { Fragment } from "react";
 
-import { Form } from "@inertiajs/react";
-
 import { FaCircle } from "react-icons/fa";
 import { ImWindows } from "react-icons/im";
 import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
@@ -17,8 +15,6 @@ import {
 } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
-
-import { destroyAll as destroyAllRoute } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -40,14 +36,20 @@ import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
 import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
 import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
+import RevokeAllDevicesDialog from "../../dialog/trustedDevice/RevokeAllDevicesDialog";
 import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
+  trustedDevicesForRevoke: TrustedDevice[];
 }
 
-function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
+function TwoFactorDevices({
+  devices,
+  trustedDevicesForRevoke,
+}: TwoFactorDevicesProps): JSX.Element {
   const hasDevices = devices.length > 0;
+  const revokeAllDialog = useDialog();
 
   const deviceLabel = (device: TrustedDevice): string => {
     return device.name ?? device.userAgent ?? "Dispositivo desconocido";
@@ -117,19 +119,26 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
         )}
       </div>
 
-      <Form {...destroyAllRoute.delete()}>
-        {() => (
-          <Button
-            type="submit"
-            variant="destructive"
-            className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-            disabled={!hasDevices}
-          >
-            <MonitorSmartphone className="mr-2 h-4 w-4" />
-            Revocar todos
-          </Button>
-        )}
-      </Form>
+      <Button
+        type="button"
+        variant="destructive"
+        className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+        disabled={!hasDevices}
+        onClick={() => {
+          revokeAllDialog.setOpen(true);
+        }}
+      >
+        <MonitorSmartphone className="mr-2 h-4 w-4" />
+        Revocar todos
+      </Button>
+
+      <RevokeAllDevicesDialog
+        devices={trustedDevicesForRevoke}
+        open={revokeAllDialog.open}
+        onClose={() => {
+          revokeAllDialog.setOpen(false);
+        }}
+      />
 
       <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
         <AlertTitle>Consejos</AlertTitle>

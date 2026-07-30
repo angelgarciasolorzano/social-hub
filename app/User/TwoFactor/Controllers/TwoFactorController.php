@@ -59,6 +59,15 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['trustedDevices'] = Inertia::optional(
                 fn (): array => $user->trustedDevices()
                     ->latest('last_used_at')
+                    ->limit(3)
+                    ->get()
+                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
+                    ->all()
+            );
+
+            $props['trustedDevicesForRevoke'] = Inertia::optional(
+                fn (): array => $user->trustedDevices()
+                    ->latest('last_used_at')
                     ->get()
                     ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
                     ->all()

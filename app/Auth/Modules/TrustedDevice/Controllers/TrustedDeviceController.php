@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
 use App\Http\Controllers\Controller;
@@ -59,9 +60,9 @@ class TrustedDeviceController extends Controller
         ])->back();
     }
 
-    public function destroyAll(Request $request): RedirectResponse
+    public function destroyAll(TrustedDeviceDestroyAllRequest $trustedDeviceDestroyAllRequest): RedirectResponse
     {
-        $user = $request->user();
+        $user = $trustedDeviceDestroyAllRequest->user();
 
         abort_unless($user instanceof User, 401);
 

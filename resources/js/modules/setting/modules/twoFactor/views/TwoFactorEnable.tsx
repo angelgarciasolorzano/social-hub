@@ -43,6 +43,7 @@ import type { TrustedDevice } from "../types/trustedDevice";
 interface TwoFactorEnableProps {
   trustedDevices: TrustedDevice[];
   trustedDevicesCount: number;
+  trustedDevicesForRevoke: TrustedDevice[];
 }
 
 type SlotContent = "codes" | "devices";
@@ -50,6 +51,7 @@ type SlotContent = "codes" | "devices";
 function TwoFactorEnable({
   trustedDevices,
   trustedDevicesCount,
+  trustedDevicesForRevoke,
 }: TwoFactorEnableProps): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
@@ -125,7 +127,10 @@ function TwoFactorEnable({
               recoveryCodesList={recoveryCodesList}
             />
           ) : (
-            <TwoFactorDevices devices={trustedDevices} />
+            <TwoFactorDevices
+              devices={trustedDevices}
+              trustedDevicesForRevoke={trustedDevicesForRevoke}
+            />
           )}
         </CardContent>
       </Card>
