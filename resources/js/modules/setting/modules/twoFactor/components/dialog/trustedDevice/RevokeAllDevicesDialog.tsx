@@ -12,6 +12,8 @@ import { AlertTriangleIcon, CircleAlert, Trash2 } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
 
+import { destroyAll as destroyAllTrustedDevices } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -70,7 +72,13 @@ function RevokeAllDevicesDialog({
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    console.log("submit revoke all devices form", data);
+    submit(destroyAllTrustedDevices(), {
+      only: ["trustedDevices", "trustedDevicesCount"],
+      onSuccess: () => {
+        onClose();
+        reset();
+      },
+    });
   };
 
   return (

@@ -78,6 +78,7 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
     event.preventDefault();
 
     submit(renewTrustedDevice({ trustedDevice: device.id }), {
+      only: ["trustedDevices"],
       onSuccess: () => {
         onClose();
       },
