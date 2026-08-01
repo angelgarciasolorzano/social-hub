@@ -1,6 +1,8 @@
 import type { JSX } from "react";
 import { Fragment } from "react";
 
+import { router } from "@inertiajs/react";
+
 import { FaCircle } from "react-icons/fa";
 import { ImWindows } from "react-icons/im";
 import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
@@ -80,6 +82,15 @@ function TwoFactorDevices({
     return <ImWindows className={className} />;
   };
 
+  const handleDialogRevokeAllDevices = (): void => {
+    router.reload({
+      only: ["trustedDevicesForRevoke"],
+      onSuccess: () => {
+        revokeAllDialog.setOpen(true);
+      },
+    });
+  };
+
   return (
     <>
       <Alert className="oborder-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
@@ -124,9 +135,7 @@ function TwoFactorDevices({
         variant="destructive"
         className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
         disabled={!hasDevices}
-        onClick={() => {
-          revokeAllDialog.setOpen(true);
-        }}
+        onClick={handleDialogRevokeAllDevices}
       >
         <MonitorSmartphone className="mr-2 h-4 w-4" />
         Revocar todos
