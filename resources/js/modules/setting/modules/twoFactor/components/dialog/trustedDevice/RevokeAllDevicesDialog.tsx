@@ -92,46 +92,7 @@ function RevokeAllDevicesDialog({
 
         <RevokeConsequencesAlert />
 
-        <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 rounded-full border border-violet-100 bg-violet-100/50 p-2 dark:border-violet-200/10 dark:bg-violet-900/20">
-              <MdOutlineLaptopMac className="h-10 w-10 text-violet-700 dark:text-violet-500" />
-            </div>
-
-            <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-              <span className="font-semibold">3 dispositivos seran revocados</span>
-              <p className="text-sm text-muted-foreground">
-                Incluye todos los dispositivos de confianza registrados actualmente.
-              </p>
-            </div>
-          </div>
-
-          <ScrollArea className="h-40 rounded-xl border py-3">
-            <div>
-              {devices.map((device, index) => (
-                <Fragment key={device.id}>
-                  <div className="mx-4 flex items-center gap-2 text-sm">
-                    <MdOutlineLaptopMac className="shrink-0" />
-
-                    <span className="max-w-20 truncate font-medium">{device.name}</span>
-
-                    <FaCircle className="h-1 w-1 text-muted-foreground" />
-
-                    <span className="text-muted-foreground">{device.browser}</span>
-
-                    <FaCircle className="h-1 w-1 text-muted-foreground" />
-
-                    <span className="truncate text-muted-foreground">
-                      Expira el {formatLongDate(device.expiresAt)}
-                    </span>
-                  </div>
-
-                  {index < devices.length - 1 && <Separator className="my-2" />}
-                </Fragment>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+        <AffectedDevicesList devices={devices} />
 
         <RevokeDeviceForm
           handleSubmit={handleSubmit}
@@ -187,6 +148,51 @@ function RevokeConsequencesAlert(): JSX.Element {
         </ul>
       </AlertDescription>
     </Alert>
+  );
+}
+
+type AffectedDevicesListProps = Pick<RevokeAllDevicesDialogProps, "devices">;
+
+function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element {
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="flex h-14 w-14 shrink-0 rounded-full border border-violet-100 bg-violet-100/50 p-2 dark:border-violet-200/10 dark:bg-violet-900/20">
+          <MdOutlineLaptopMac className="h-10 w-10 text-violet-700 dark:text-violet-500" />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
+          <span className="font-semibold">3 dispositivos seran revocados</span>
+          <p className="text-sm text-muted-foreground">
+            Incluye todos los dispositivos de confianza registrados actualmente.
+          </p>
+        </div>
+      </div>
+
+      <ScrollArea className="h-40 rounded-xl border py-3">
+        {devices.map((device, index) => (
+          <Fragment key={device.id}>
+            <div className="mx-4 flex items-center gap-2 text-sm">
+              <MdOutlineLaptopMac className="shrink-0" />
+
+              <span className="max-w-20 truncate font-medium">{device.name}</span>
+
+              <FaCircle className="h-1 w-1 text-muted-foreground" />
+
+              <span className="text-muted-foreground">{device.browser}</span>
+
+              <FaCircle className="h-1 w-1 text-muted-foreground" />
+
+              <span className="truncate text-muted-foreground">
+                Expira el {formatLongDate(device.expiresAt)}
+              </span>
+            </div>
+
+            {index < devices.length - 1 && <Separator className="my-2" />}
+          </Fragment>
+        ))}
+      </ScrollArea>
+    </div>
   );
 }
 
