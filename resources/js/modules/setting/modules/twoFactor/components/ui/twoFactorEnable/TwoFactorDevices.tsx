@@ -16,6 +16,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
+import type { DevicePreview } from "@/modules/setting/modules/twoFactor/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -52,25 +53,32 @@ import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
   trustedDevicesForRevoke: TrustedDevice[];
+  currentDevicePreview: DevicePreview | null;
 }
 
 function TwoFactorDevices({
   devices,
   trustedDevicesForRevoke,
+  currentDevicePreview,
 }: TwoFactorDevicesProps): JSX.Element {
   const hasDevices = devices.length > 0;
 
   const sectionDialog = useDialog<TwoFactorDeviceSectionActionKey | null>(null);
-
-  const handleAddDevice = (): void => {
-    sectionDialog.show(twoFactorDeviceSectionActionKey.addDevice);
-  };
 
   const handleRevokeAllDevices = (): void => {
     router.reload({
       only: ["trustedDevicesForRevoke"],
       onSuccess: () => {
         sectionDialog.show(twoFactorDeviceSectionActionKey.revokeAllDevices);
+      },
+    });
+  };
+
+  const handleAddDevice = (): void => {
+    router.reload({
+      only: ["currentDevicePreview"],
+      onSuccess: () => {
+        sectionDialog.show(twoFactorDeviceSectionActionKey.addDevice);
       },
     });
   };
@@ -86,7 +94,9 @@ function TwoFactorDevices({
 
     switch (sectionDialog.state) {
       case twoFactorDeviceSectionActionKey.addDevice:
-        return <AddDeviceDialog open onClose={handleSectionDialogClose} />;
+        return (
+          <AddDeviceDialog preview={currentDevicePreview} open onClose={handleSectionDialogClose} />
+        );
 
       case twoFactorDeviceSectionActionKey.revokeAllDevices:
         return (

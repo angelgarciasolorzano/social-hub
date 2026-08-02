@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 
+import dayjs from "dayjs";
 import {
   CalendarRange,
   CircleAlert,
@@ -32,12 +33,22 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import type { DevicePreview } from "../../../types/devicePreview";
+
 interface AddDeviceDialogProps {
+  preview: DevicePreview | null;
   open: boolean;
   onClose: () => void;
 }
 
-function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps): JSX.Element {
+function formatLongDate(iso: string | null): string {
+  if (iso === null) {
+    return "Nunca";
+  }
+  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
+}
+
+function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.Element {
   const handleOpenChange = (nextOpen: boolean): void => {
     if (nextOpen) {
       return;
@@ -45,6 +56,16 @@ function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps): JSX.Element {
 
     onClose();
   };
+
+  const browser =
+    preview?.browser !== "" && preview?.browser !== undefined ? preview.browser : "Desconocido";
+
+  const osName =
+    preview?.osName !== "" && preview?.osName !== undefined ? preview.osName : "Desconocido";
+
+  const ip = preview?.ip ?? "No disponible";
+  const lastUsedAt = preview?.lastUsedAt ?? new Date().toISOString();
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-5xl min-w-4xl">
@@ -137,7 +158,7 @@ function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps): JSX.Element {
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium">Navegador</span>
 
-                  <span className="text-sm text-muted-foreground">Chrome 149</span>
+                  <span className="text-sm text-muted-foreground">{browser}</span>
                 </div>
               </div>
 
@@ -149,7 +170,7 @@ function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps): JSX.Element {
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium">Sistema operativo</span>
 
-                  <span className="text-sm text-muted-foreground">Mac</span>
+                  <span className="text-sm text-muted-foreground">{osName}</span>
                 </div>
               </div>
 
@@ -161,7 +182,7 @@ function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps): JSX.Element {
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium">Direccion IP</span>
 
-                  <span className="text-sm text-muted-foreground">192.168.1.1</span>
+                  <span className="text-sm text-muted-foreground">{ip}</span>
                 </div>
               </div>
 
@@ -176,7 +197,7 @@ function AddDeviceDialog({ open, onClose }: AddDeviceDialogProps): JSX.Element {
                   <span className="text-sm text-muted-foreground">Ahora</span>
 
                   <span className="text-sm text-muted-foreground">
-                    2 de agosto del 2026, 9:37 AM
+                    {formatLongDate(lastUsedAt)}
                   </span>
                 </div>
               </div>
