@@ -56,6 +56,13 @@ interface TwoFactorDevicesProps {
   currentDevicePreview: DevicePreview | null;
 }
 
+interface SectionDialogState {
+  kind: TwoFactorDeviceSectionActionKey;
+  closing: boolean;
+}
+
+const DIALOG_EXIT_ANIMATION_MS = 200;
+
 function TwoFactorDevices({
   devices,
   trustedDevicesForRevoke,
@@ -63,13 +70,16 @@ function TwoFactorDevices({
 }: TwoFactorDevicesProps): JSX.Element {
   const hasDevices = devices.length > 0;
 
-  const sectionDialog = useDialog<TwoFactorDeviceSectionActionKey | null>(null);
+  const sectionDialog = useDialog<SectionDialogState | null>(null);
 
   const handleRevokeAllDevices = (): void => {
     router.reload({
       only: ["trustedDevicesForRevoke"],
       onSuccess: () => {
-        sectionDialog.show(twoFactorDeviceSectionActionKey.revokeAllDevices);
+        sectionDialog.show({
+          kind: twoFactorDeviceSectionActionKey.revokeAllDevices,
+          closing: false,
+        });
       },
     });
   };
@@ -78,13 +88,26 @@ function TwoFactorDevices({
     router.reload({
       only: ["currentDevicePreview"],
       onSuccess: () => {
-        sectionDialog.show(twoFactorDeviceSectionActionKey.addDevice);
+        sectionDialog.show({
+          kind: twoFactorDeviceSectionActionKey.addDevice,
+          closing: false,
+        });
       },
     });
   };
 
   const handleSectionDialogClose = (): void => {
-    sectionDialog.hide();
+    const current = sectionDialog.state;
+
+    if (current === null || current.closing) {
+      return;
+    }
+
+    sectionDialog.setState({ ...current, closing: true });
+
+    setTimeout(() => {
+      sectionDialog.hide();
+    }, DIALOG_EXIT_ANIMATION_MS);
   };
 
   const renderSectionDialog = (): JSX.Element | null => {
@@ -92,17 +115,23 @@ function TwoFactorDevices({
       return null;
     }
 
-    switch (sectionDialog.state) {
+    const isClosing = sectionDialog.state.closing;
+
+    switch (sectionDialog.state.kind) {
       case twoFactorDeviceSectionActionKey.addDevice:
         return (
-          <AddDeviceDialog preview={currentDevicePreview} open onClose={handleSectionDialogClose} />
+          <AddDeviceDialog
+            preview={currentDevicePreview}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
         );
 
       case twoFactorDeviceSectionActionKey.revokeAllDevices:
         return (
           <RevokeAllDevicesDialog
             devices={trustedDevicesForRevoke}
-            open
+            open={!isClosing}
             onClose={handleSectionDialogClose}
           />
         );
@@ -220,8 +249,6 @@ interface DialogActionState {
   closing: boolean;
 }
 
-const DIALOG_EXIT_ANIMATION_MS = 200;
-
 function TwoFactorDevicesItems({
   devices,
   deviceLabel,
@@ -253,12 +280,14 @@ function TwoFactorDevicesItems({
       return null;
     }
 
+    const isClosing = dialogDevice.state.closing;
+
     switch (dialogDevice.state.kind) {
       case twoFactorDeviceActionKey.viewDevice:
         return (
           <DeviceDetailsDialog
             device={dialogDevice.state.device}
-            open={!dialogDevice.state.closing}
+            open={!isClosing}
             onClose={handleDialogClose}
           />
         );
@@ -267,7 +296,7 @@ function TwoFactorDevicesItems({
         return (
           <RenameDeviceDialog
             device={dialogDevice.state.device}
-            open={!dialogDevice.state.closing}
+            open={!isClosing}
             onClose={handleDialogClose}
           />
         );
@@ -276,7 +305,7 @@ function TwoFactorDevicesItems({
         return (
           <RenewTrustDialog
             device={dialogDevice.state.device}
-            open={!dialogDevice.state.closing}
+            open={!isClosing}
             onClose={handleDialogClose}
           />
         );
@@ -285,7 +314,7 @@ function TwoFactorDevicesItems({
         return (
           <RevokeDeviceDialog
             device={dialogDevice.state.device}
-            open={!dialogDevice.state.closing}
+            open={!isClosing}
             onClose={handleDialogClose}
           />
         );
