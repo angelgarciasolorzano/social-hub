@@ -73,6 +73,14 @@ export const twoFactorSafetyTips: TwoFactorSafetyTip[] = [
   },
 ];
 
+export const twoFactorDeviceSectionActionKey = {
+  addDevice: "add-device",
+  revokeAllDevices: "revoke-all-devices",
+} as const;
+
+export type TwoFactorDeviceSectionActionKey =
+  (typeof twoFactorDeviceSectionActionKey)[keyof typeof twoFactorDeviceSectionActionKey];
+
 export const twoFactorDeviceActionKey = {
   viewDevice: "view-device",
   renameDevice: "rename-device",

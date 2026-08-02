@@ -33,8 +33,16 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useDialog } from "@/shared/hooks";
 
-import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
-import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
+import type {
+  TwoFactorDeviceActionKey,
+  TwoFactorDeviceSectionActionKey,
+} from "../../../data/twoFactorEnable";
+import {
+  twoFactorDeviceActionKey,
+  twoFactorDeviceActions,
+  twoFactorDeviceSectionActionKey,
+} from "../../../data/twoFactorEnable";
+import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
 import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
 import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
@@ -51,7 +59,48 @@ function TwoFactorDevices({
   trustedDevicesForRevoke,
 }: TwoFactorDevicesProps): JSX.Element {
   const hasDevices = devices.length > 0;
-  const revokeAllDialog = useDialog();
+
+  const sectionDialog = useDialog<TwoFactorDeviceSectionActionKey | null>(null);
+
+  const handleAddDevice = (): void => {
+    sectionDialog.show(twoFactorDeviceSectionActionKey.addDevice);
+  };
+
+  const handleRevokeAllDevices = (): void => {
+    router.reload({
+      only: ["trustedDevicesForRevoke"],
+      onSuccess: () => {
+        sectionDialog.show(twoFactorDeviceSectionActionKey.revokeAllDevices);
+      },
+    });
+  };
+
+  const handleSectionDialogClose = (): void => {
+    sectionDialog.hide();
+  };
+
+  const renderSectionDialog = (): JSX.Element | null => {
+    if (sectionDialog.state === null) {
+      return null;
+    }
+
+    switch (sectionDialog.state) {
+      case twoFactorDeviceSectionActionKey.addDevice:
+        return <AddDeviceDialog open onClose={handleSectionDialogClose} />;
+
+      case twoFactorDeviceSectionActionKey.revokeAllDevices:
+        return (
+          <RevokeAllDevicesDialog
+            devices={trustedDevicesForRevoke}
+            open
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
 
   const deviceLabel = (device: TrustedDevice): string => {
     return device.name ?? device.userAgent ?? "Dispositivo desconocido";
@@ -82,18 +131,9 @@ function TwoFactorDevices({
     return <ImWindows className={className} />;
   };
 
-  const handleDialogRevokeAllDevices = (): void => {
-    router.reload({
-      only: ["trustedDevicesForRevoke"],
-      onSuccess: () => {
-        revokeAllDialog.setOpen(true);
-      },
-    });
-  };
-
   return (
     <>
-      <Alert className="oborder-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
         <AlertTriangleIcon />
 
         <AlertTitle className="line-clamp-4">
@@ -109,7 +149,7 @@ function TwoFactorDevices({
       <div className="flex items-center justify-between gap-4 font-semibold">
         <span className="text-sm">Dispositivos registrados</span>
 
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleAddDevice} type="button">
           <Plus data-icon="inline-end" />
           Agregar dispositivo
         </Button>
@@ -135,19 +175,13 @@ function TwoFactorDevices({
         variant="destructive"
         className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
         disabled={!hasDevices}
-        onClick={handleDialogRevokeAllDevices}
+        onClick={handleRevokeAllDevices}
       >
         <MonitorSmartphone className="mr-2 h-4 w-4" />
         Revocar todos
       </Button>
 
-      <RevokeAllDevicesDialog
-        devices={trustedDevicesForRevoke}
-        open={revokeAllDialog.open}
-        onClose={() => {
-          revokeAllDialog.setOpen(false);
-        }}
-      />
+      {renderSectionDialog()}
 
       <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
         <AlertTitle>Consejos</AlertTitle>

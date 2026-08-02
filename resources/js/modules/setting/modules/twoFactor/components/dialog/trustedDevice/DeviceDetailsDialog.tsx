@@ -345,7 +345,7 @@ function DeviceStatusCallouts(): JSX.Element {
         </AlertDescription>
       </Alert>
 
-      <Alert className="border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-500">
+      <Alert className="border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-400">
         <Lightbulb />
 
         <AlertTitle>¿Que es un dispositivo de confianza?</AlertTitle>
