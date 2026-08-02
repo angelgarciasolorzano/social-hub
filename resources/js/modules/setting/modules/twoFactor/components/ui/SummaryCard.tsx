@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { JSX, ReactNode } from "react";
 import { Fragment } from "react";
 
 import type { LucideIcon } from "lucide-react";
@@ -42,7 +42,12 @@ interface SummaryCardProps {
   renderAction?: (action: SumaryCardAction) => ReactNode;
 }
 
-function SummaryCard({ title, showLastSeparator, data, renderAction }: SummaryCardProps) {
+function SummaryCard({
+  title,
+  showLastSeparator,
+  data,
+  renderAction,
+}: SummaryCardProps): JSX.Element {
   return (
     <Card>
       <CardHeader>

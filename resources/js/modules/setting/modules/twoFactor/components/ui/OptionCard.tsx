@@ -47,7 +47,7 @@ export function OptionCard<TKey extends string = string>({
                 if (hasAction) onOptionClick(option.key);
               }}
               className={cn(
-                "group flex flex-1 gap-4 rounded-md border p-4 shadow-sm transition-all",
+                "group flex flex-1 gap-4 rounded-xl border p-4 shadow-sm transition-all",
                 hasAction && "cursor-pointer hover:shadow-lg",
                 hasAction && colorHoverMap[colorName],
               )}

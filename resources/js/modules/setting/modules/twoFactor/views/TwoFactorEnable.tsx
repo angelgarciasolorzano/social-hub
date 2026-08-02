@@ -153,9 +153,9 @@ function TwoFactorEnable({
   );
 }
 
-function TwoFactorTitle() {
+function TwoFactorTitle(): JSX.Element {
   return (
-    <div className="flex items-start gap-6 rounded-md border border-green-200 bg-green-300/5 p-8 shadow-sm dark:border-green-500/30 dark:bg-green-900/10">
+    <div className="flex items-start gap-6 rounded-xl border bg-card p-6 shadow-sm">
       <div className="rounded-3xl bg-green-200/50 p-2 dark:bg-green-900/20">
         <ShieldCheck className="h-12 w-12 text-green-700 dark:text-green-500" />
       </div>
@@ -190,7 +190,7 @@ function TwoFactorTitle() {
         </div>
       </div>
 
-      <Button variant="outline">
+      <Button>
         <Bolt />
         Administrar
         <ChevronDown />
@@ -209,7 +209,7 @@ function TwoFactorSecuritySummary({
   recoveryCodesList,
   trustedDevicesCount,
   onViewTrustedDevices,
-}: TwoFactorSecuritySummaryProps) {
+}: TwoFactorSecuritySummaryProps): JSX.Element {
   const trustedDevicesLabel =
     trustedDevicesCount === 1
       ? "1 dispositivo de confianza configurado."
@@ -327,7 +327,7 @@ function TwoFactorSecuritySummary({
   );
 }
 
-function TwoFactorSafetyTips() {
+function TwoFactorSafetyTips(): JSX.Element {
   return (
     <Card>
       <CardHeader>

@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import { Form } from "@inertiajs/react";
 
 import {
@@ -32,7 +34,7 @@ interface TwoFactorDisabledProps {
   onActivate: () => void;
 }
 
-function TwoFactorDisabled({ hasSetupData, onActivate }: TwoFactorDisabledProps) {
+function TwoFactorDisabled({ hasSetupData, onActivate }: TwoFactorDisabledProps): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex gap-6">
@@ -60,9 +62,9 @@ interface TwoFactorTitleProps {
   onActivate: () => void;
 }
 
-function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps) {
+function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.Element {
   return (
-    <div className="flex items-center gap-24 rounded-md border border-violet-200 bg-violet-300/5 p-8 shadow-sm dark:border-violet-500/30 dark:bg-violet-900/5">
+    <div className="flex items-center gap-24 rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex items-start gap-4">
         <div className="rounded-3xl bg-violet-100/50 p-2 dark:bg-violet-900/20">
           <ShieldCheck className="h-12 w-12 text-violet-700 dark:text-violet-500" />
@@ -117,7 +119,7 @@ function TwoFactorInfoBanner() {
 
 function TwoFactorActivationForm() {
   return (
-    <div className="flex items-center justify-between rounded-md border p-6 shadow-sm">
+    <div className="flex items-center justify-between rounded-xl border p-6 shadow-sm">
       <div className="flex items-center gap-2 text-sm">
         <ShieldAlert className="h-4 w-4 text-muted-foreground" />
         <span className="text-muted-foreground">¿Tienes dudas?</span>
