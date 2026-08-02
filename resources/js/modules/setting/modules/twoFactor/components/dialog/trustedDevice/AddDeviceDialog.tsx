@@ -1,4 +1,6 @@
-import type { JSX } from "react";
+import type { JSX, SubmitEvent } from "react";
+
+import { useForm } from "@inertiajs/react";
 
 import dayjs from "dayjs";
 import {
@@ -12,6 +14,9 @@ import {
   ShieldPlus,
 } from "lucide-react";
 
+import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+
+import { InputError, LabelForm } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -32,6 +37,7 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { DevicePreview } from "../../../types/devicePreview";
 
@@ -39,6 +45,10 @@ interface AddDeviceDialogProps {
   preview: DevicePreview | null;
   open: boolean;
   onClose: () => void;
+}
+
+interface AddDeviceFormData {
+  name: string;
 }
 
 function formatLongDate(iso: string | null): string {
@@ -49,12 +59,29 @@ function formatLongDate(iso: string | null): string {
 }
 
 function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.Element {
+  const { data, setData, submit, processing, reset, errors } = useForm<AddDeviceFormData>({
+    name: "",
+  });
+
   const handleOpenChange = (nextOpen: boolean): void => {
-    if (nextOpen) {
+    if (processing && !nextOpen) {
       return;
     }
 
+    reset();
     onClose();
+  };
+
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+
+    submit(store(), {
+      only: ["trustedDevices"],
+      onSuccess: () => {
+        reset();
+        onClose();
+      },
+    });
   };
 
   const browser =
@@ -204,38 +231,64 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="grid grid-cols-[1.3fr_1fr] gap-6">
-              <div className="flex flex-col gap-2">
-                <span className="font-semibold">Dale un nombre a este dispositivo (opcional)</span>
-                <p className="text-sm text-muted-foreground">
-                  Asi podras identificarlo facilmente si tienes varios dispositivos registrados.
-                </p>
-                <Input />
-              </div>
+          <form
+            id="add-trusted-device-form"
+            onSubmit={handleSubmit}
+            className="grid grid-cols-[1.3fr_1fr] gap-6 rounded-xl border p-4 shadow-xs"
+          >
+            <div className="flex flex-col gap-2">
+              <LabelForm htmlFor="add-device-name" error={errors.name}>
+                Dale un nombre a este dispositivo (opcional)
+              </LabelForm>
 
-              <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
-                <CircleAlert />
+              <p className="text-sm text-muted-foreground">
+                Asi podras identificarlo facilmente si tienes varios dispositivos registrados.
+              </p>
 
-                <AlertTitle className="line-clamp-4">Consejo</AlertTitle>
+              <Input
+                id="add-device-name"
+                name="name"
+                placeholder="Mi dispositivo"
+                value={data.name}
+                onChange={(e) => {
+                  setData("name", e.target.value);
+                }}
+                aria-invalid={errors.name !== undefined ? "true" : "false"}
+              />
 
-                <AlertDescription>
-                  Te recomendamos usar un nombre que te ayude a reconocer este dispositivo
-                  facilmente. Este nombre solo lo veras tu.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+              <InputError message={errors.name} />
+            </div>
+
+            <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+              <CircleAlert />
+
+              <AlertTitle className="line-clamp-4">Consejo</AlertTitle>
+
+              <AlertDescription>
+                Te recomendamos usar un nombre que te ayude a reconocer este dispositivo facilmente.
+                Este nombre solo lo veras tu.
+              </AlertDescription>
+            </Alert>
+          </form>
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" disabled={processing}>
               Cancelar
             </Button>
           </DialogClose>
 
-          <Button type="submit">Agregar dispositivo</Button>
+          <Button type="submit" form="add-trusted-device-form" disabled={processing}>
+            {processing ? (
+              <>
+                <Spinner />
+                Agregando...
+              </>
+            ) : (
+              "Agregar dispositivo"
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
