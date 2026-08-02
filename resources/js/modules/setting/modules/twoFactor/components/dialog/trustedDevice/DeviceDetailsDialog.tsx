@@ -150,7 +150,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
 
           <div className="flex flex-col items-start gap-3">
             <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl font-semibold">{device.name}</span>
+              <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
 
               <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
                 <Circle

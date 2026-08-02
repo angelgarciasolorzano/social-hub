@@ -306,7 +306,7 @@ function TwoFactorDevicesItems({
               </div>
 
               <div className="flex flex-col gap-0.5">
-                <span className="truncate text-sm font-medium" title={deviceLabel(device)}>
+                <span className="max-w-40 truncate text-sm font-medium" title={deviceLabel(device)}>
                   {deviceLabel(device)}
                 </span>
 
