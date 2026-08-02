@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\TwoFactor\Controllers;
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Modules\TrustedDevice\Controllers\TrustedDeviceController;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
@@ -61,7 +62,7 @@ class TwoFactorController extends Controller implements HasMiddleware
                     ->latest('last_used_at')
                     ->limit(3)
                     ->get()
-                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
+                    ->map(fn (TrustedDevice $trustedDevice): array => (new TrustedDeviceResource($trustedDevice))->resolve(request()))
                     ->all()
             );
 
@@ -69,8 +70,15 @@ class TwoFactorController extends Controller implements HasMiddleware
                 fn (): array => $user->trustedDevices()
                     ->latest('last_used_at')
                     ->get()
-                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
+                    ->map(fn (TrustedDevice $trustedDevice): array => (new TrustedDeviceResource($trustedDevice))->resolve(request()))
                     ->all()
+            );
+
+            /** @var TrustedDeviceController $trustedDeviceController */
+            $trustedDeviceController = app(TrustedDeviceController::class);
+
+            $props['currentDevicePreview'] = Inertia::optional(
+                fn (): array => $trustedDeviceController->inferDevicePreview(request())
             );
         }
 
