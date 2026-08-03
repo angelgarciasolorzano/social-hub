@@ -169,6 +169,44 @@ class TrustedDeviceController extends Controller
     }
 
     /**
+     * Find the active trusted device that fingerprints as the current request
+     * (user_agent + OS name + IP, with a not-yet-expired `expires_at`). Returns
+     * null when the request is made from an unknown device.
+     */
+    public function findCurrentDeviceMatch(Request $request): ?TrustedDevice
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $userAgent = $request->userAgent();
+
+        if ($userAgent === null) {
+            return null;
+        }
+
+        /** @var DeviceDetector $deviceDetector */
+        $deviceDetector = resolve(DeviceDetector::class);
+
+        $osInfo = $this->inferOsInfo($deviceDetector);
+
+        $builder = $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osInfo['name'])
+            ->where('expires_at', '>', CarbonImmutable::now());
+
+        $ip = $request->ip();
+
+        if ($ip !== null) {
+            $builder->where('ip', $ip);
+        }
+
+        return $builder->first();
+    }
+
+    /**
      * Resolve a human-friendly device name from the parsed DeviceDetector.
      */
     private function inferDeviceName(DeviceDetector $deviceDetector): string

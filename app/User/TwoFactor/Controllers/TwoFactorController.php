@@ -80,6 +80,21 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['currentDevicePreview'] = Inertia::optional(
                 fn (): array => $trustedDeviceController->inferDevicePreview(request())
             );
+
+            $props['currentDeviceMatch'] = Inertia::optional(
+                function (): ?array {
+                    /** @var TrustedDeviceController $trustedDeviceController */
+                    $trustedDeviceController = resolve(TrustedDeviceController::class);
+
+                    $device = $trustedDeviceController->findCurrentDeviceMatch(request());
+
+                    if ($device === null) {
+                        return null;
+                    }
+
+                    return new TrustedDeviceResource($device)->resolve(request());
+                }
+            );
         }
 
         return Inertia::render('setting/modules/twoFactor/TwoFactor', $props);
