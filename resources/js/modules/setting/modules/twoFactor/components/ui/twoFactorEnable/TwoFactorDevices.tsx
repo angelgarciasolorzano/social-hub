@@ -44,6 +44,7 @@ import {
   twoFactorDeviceSectionActionKey,
 } from "../../../data/twoFactorEnable";
 import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
+import DeviceAlreadyRegisteredDialog from "../../dialog/trustedDevice/DeviceAlreadyRegisteredDialog";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
 import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
 import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
@@ -54,6 +55,7 @@ interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
   trustedDevicesForRevoke: TrustedDevice[];
   currentDevicePreview: DevicePreview | null;
+  currentDeviceMatch: TrustedDevice | null;
 }
 
 interface SectionDialogState {
@@ -67,6 +69,7 @@ function TwoFactorDevices({
   devices,
   trustedDevicesForRevoke,
   currentDevicePreview,
+  currentDeviceMatch,
 }: TwoFactorDevicesProps): JSX.Element {
   const hasDevices = devices.length > 0;
 
@@ -86,12 +89,14 @@ function TwoFactorDevices({
 
   const handleAddDevice = (): void => {
     router.reload({
-      only: ["currentDevicePreview"],
+      only: ["currentDevicePreview", "currentDeviceMatch"],
       onSuccess: () => {
-        sectionDialog.show({
-          kind: twoFactorDeviceSectionActionKey.addDevice,
-          closing: false,
-        });
+        const kind =
+          currentDeviceMatch !== null
+            ? twoFactorDeviceSectionActionKey.deviceAlreadyRegistered
+            : twoFactorDeviceSectionActionKey.addDevice;
+
+        sectionDialog.show({ kind, closing: false });
       },
     });
   };
@@ -122,6 +127,20 @@ function TwoFactorDevices({
         return (
           <AddDeviceDialog
             preview={currentDevicePreview}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case twoFactorDeviceSectionActionKey.deviceAlreadyRegistered:
+        if (currentDeviceMatch === null) {
+          return null;
+        }
+
+        return (
+          <DeviceAlreadyRegisteredDialog
+            preview={currentDevicePreview}
+            existingDevice={currentDeviceMatch}
             open={!isClosing}
             onClose={handleSectionDialogClose}
           />

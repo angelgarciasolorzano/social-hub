@@ -75,6 +75,7 @@ export const twoFactorSafetyTips: TwoFactorSafetyTip[] = [
 
 export const twoFactorDeviceSectionActionKey = {
   addDevice: "add-device",
+  deviceAlreadyRegistered: "device-already-registered",
   revokeAllDevices: "revoke-all-devices",
 } as const;
 

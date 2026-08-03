@@ -46,6 +46,7 @@ interface TwoFactorEnableProps {
   trustedDevicesCount: number;
   trustedDevicesForRevoke: TrustedDevice[];
   currentDevicePreview: DevicePreview | null;
+  currentDeviceMatch: TrustedDevice | null;
 }
 
 type SlotContent = "codes" | "devices";
@@ -55,6 +56,7 @@ function TwoFactorEnable({
   trustedDevicesCount,
   trustedDevicesForRevoke,
   currentDevicePreview,
+  currentDeviceMatch,
 }: TwoFactorEnableProps): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
@@ -134,6 +136,7 @@ function TwoFactorEnable({
               devices={trustedDevices}
               trustedDevicesForRevoke={trustedDevicesForRevoke}
               currentDevicePreview={currentDevicePreview}
+              currentDeviceMatch={currentDeviceMatch}
             />
           )}
         </CardContent>
