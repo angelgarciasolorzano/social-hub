@@ -88,11 +88,32 @@ class TrustedDevice extends Model
     }
 
     /**
-     * Validate whether the request's "trusted_device" cookie matches an active
-     * trusted device for the given user. If a match is found, refresh its
-     * `last_used_at` timestamp.
-     *
-     * Returns true when the user should bypass the two-factor challenge.
+     * Delete prior trusted devices for the same user that fingerprint as the
+     * same physical device (user_agent + OS name + IP). `excludeId` keeps the
+     * newly-created row alive.
+     */
+    public static function pruneOlder(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+        int $excludeId,
+    ): void {
+        $builder = $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('id', '!=', $excludeId);
+
+        if ($ip !== null) {
+            $builder->where('ip', $ip);
+        }
+
+        $builder->delete();
+    }
+
+    /**
+     * Match the request's trusted_device cookie against an active device for
+     * the user. Refreshes `last_used_at` on hit. Returns true to skip 2FA.
      */
     public static function validateAndTouch(User $user, Request $request): bool
     {

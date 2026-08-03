@@ -62,7 +62,7 @@ class TwoFactorController extends Controller implements HasMiddleware
                     ->latest('last_used_at')
                     ->limit(3)
                     ->get()
-                    ->map(fn (TrustedDevice $trustedDevice): array => (new TrustedDeviceResource($trustedDevice))->resolve(request()))
+                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
                     ->all()
             );
 
@@ -70,12 +70,12 @@ class TwoFactorController extends Controller implements HasMiddleware
                 fn (): array => $user->trustedDevices()
                     ->latest('last_used_at')
                     ->get()
-                    ->map(fn (TrustedDevice $trustedDevice): array => (new TrustedDeviceResource($trustedDevice))->resolve(request()))
+                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
                     ->all()
             );
 
             /** @var TrustedDeviceController $trustedDeviceController */
-            $trustedDeviceController = app(TrustedDeviceController::class);
+            $trustedDeviceController = resolve(TrustedDeviceController::class);
 
             $props['currentDevicePreview'] = Inertia::optional(
                 fn (): array => $trustedDeviceController->inferDevicePreview(request())

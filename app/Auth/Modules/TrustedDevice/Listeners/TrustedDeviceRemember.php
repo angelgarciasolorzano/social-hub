@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Listeners;
 
+use App\Auth\Models\TrustedDevice;
 use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
@@ -47,28 +48,24 @@ final readonly class TrustedDeviceRemember
 
         $osInfo = $this->inferOsInfo($deviceDetector);
 
+        $userAgent = $request->userAgent();
+        $ip = $request->ip();
+
         $newDevice = $user->trustedDevices()->create([
             'name' => $this->inferDeviceName($deviceDetector),
             'token_hash' => $tokenHash,
-            'user_agent' => $request->userAgent(),
+            'user_agent' => $userAgent,
             'browser' => $this->inferBrowser($deviceDetector),
             'os_name' => $osInfo['name'],
             'os_version' => $osInfo['version'],
             'is_mobile' => $this->inferIsMobile($deviceDetector),
-            'ip' => $request->ip(),
+            'ip' => $ip,
             'last_used_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
         ]);
 
-        $userAgent = $request->userAgent();
-
         if ($userAgent !== null) {
-            $user->trustedDevices()
-                ->where('user_agent', $userAgent)
-                ->where('os_name', $osInfo['name'])
-                ->where('ip', $request->ip())
-                ->where('id', '!=', $newDevice->id)
-                ->delete();
+            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $newDevice->id);
         }
 
         Cookie::queue(Cookie::make(

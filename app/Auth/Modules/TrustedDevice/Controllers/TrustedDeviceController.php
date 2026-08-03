@@ -68,9 +68,7 @@ class TrustedDeviceController extends Controller
     {
         $user = $trustedDeviceStoreRequest->user();
 
-        if (! $user instanceof User) {
-            abort(401);
-        }
+        abort_unless($user instanceof User, 401);
 
         /** @var DeviceDetector $deviceDetector */
         $deviceDetector = resolve(DeviceDetector::class);
@@ -83,20 +81,27 @@ class TrustedDeviceController extends Controller
         $token = Str::random(self::TOKEN_LENGTH);
         $tokenHash = hash('sha256', $token);
 
-        $user->trustedDevices()->create([
+        $userAgent = $trustedDeviceStoreRequest->userAgent();
+        $ip = $trustedDeviceStoreRequest->ip();
+
+        $trustedDevice = $user->trustedDevices()->create([
             'name' => $trustedDeviceStoreRequest->string('name')->toString() !== ''
                 ? $trustedDeviceStoreRequest->string('name')->toString()
                 : $this->inferDeviceName($deviceDetector),
             'token_hash' => $tokenHash,
-            'user_agent' => $trustedDeviceStoreRequest->userAgent(),
+            'user_agent' => $userAgent,
             'browser' => $this->inferBrowser($deviceDetector),
             'os_name' => $osInfo['name'],
             'os_version' => $osInfo['version'],
             'is_mobile' => $this->inferIsMobile($deviceDetector),
-            'ip' => $trustedDeviceStoreRequest->ip(),
+            'ip' => $ip,
             'last_used_at' => CarbonImmutable::now(),
             'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
         ]);
+
+        if ($userAgent !== null) {
+            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $trustedDevice->id);
+        }
 
         Cookie::queue(Cookie::make(
             name: self::COOKIE_NAME,
