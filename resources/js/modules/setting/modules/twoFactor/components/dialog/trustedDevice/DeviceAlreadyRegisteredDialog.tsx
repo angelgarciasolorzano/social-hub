@@ -1,6 +1,8 @@
 import type { JSX } from "react";
+import { Fragment } from "react";
 
 import dayjs from "dayjs";
+import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CircleAlert, Clock4, Globe, MapPin, Monitor, ShieldCheck } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -39,6 +41,16 @@ function formatTimeUntil(iso: string | null): string {
   return dayjs(iso).fromNow();
 }
 
+interface DeviceInfoItem {
+  icon: LucideIcon;
+  iconBgClass: string;
+  iconFgClass: string;
+  title: string;
+  primary: string;
+  badge?: string;
+  badgePosition?: "before" | "after";
+}
+
 function DeviceAlreadyRegisteredDialog({
   existingDevice,
   open,
@@ -69,27 +81,11 @@ function DeviceAlreadyRegisteredDialog({
 
         <Separator />
 
-        <div className="flex flex-col gap-1">
-          <span className="font-semibold">Detalles del dispositivo registrado</span>
-
-          <p className="text-sm text-muted-foreground">
-            Asi es como identificamos este dispositivo actualmente.
-          </p>
-        </div>
+        <DeviceDetailsHeader />
 
         <DeviceInfoCard existingDevice={existingDevice} />
 
-        <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
-          <CircleAlert />
-          <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
-          <AlertDescription>
-            Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
-            <Button size="xs" variant="outline">
-              Ir a dispositivos de confianza
-              <ArrowRight />
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <AlreadyRegisteredActionsAlert />
 
         <DialogFooter>
           <Button type="button" onClick={onClose}>
@@ -101,96 +97,158 @@ function DeviceAlreadyRegisteredDialog({
   );
 }
 
+function DeviceDetailsHeader(): JSX.Element {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="font-semibold">Detalles del dispositivo registrado</span>
+
+      <p className="text-sm text-muted-foreground">
+        Asi es como identificamos este dispositivo actualmente.
+      </p>
+    </div>
+  );
+}
+
 type DeviceInfoCardProps = Pick<DeviceAlreadyRegisteredDialogProps, "existingDevice">;
 
 function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
-  const browser = existingDevice.browser !== "" ? existingDevice.browser : "Desconocido";
-  const osName = existingDevice.osName !== "" ? existingDevice.osName : "Desconocido";
+  const browser =
+    existingDevice.browser !== null && existingDevice.browser !== ""
+      ? existingDevice.browser
+      : "Desconocido";
+
+  const osName =
+    existingDevice.osName !== null && existingDevice.osName !== ""
+      ? existingDevice.osName
+      : "Desconocido";
+
   const ip = existingDevice.ip ?? "No disponible";
+
+  const primaryRow: DeviceInfoItem[] = [
+    {
+      icon: Globe,
+      iconBgClass: "bg-blue-100/50 dark:bg-blue-900/20",
+      iconFgClass: "text-blue-700 dark:text-blue-500",
+      title: "Navegador",
+      primary: browser,
+    },
+    {
+      icon: Monitor,
+      iconBgClass: "bg-violet-100/50 dark:bg-violet-900/20",
+      iconFgClass: "text-violet-700 dark:text-violet-500",
+      title: "Sistema operativo",
+      primary: osName,
+    },
+    {
+      icon: MapPin,
+      iconBgClass: "bg-orange-100/50 dark:bg-orange-900/20",
+      iconFgClass: "text-orange-700 dark:text-orange-500",
+      title: "Direccion IP",
+      primary: ip,
+    },
+  ];
+
+  const secondaryRow: DeviceInfoItem[] = [
+    {
+      icon: Clock4,
+      iconBgClass: "bg-cyan-100/50 dark:bg-cyan-900/20",
+      iconFgClass: "text-cyan-700 dark:text-cyan-500",
+      title: "Ultimo acceso",
+      primary: formatLongDate(existingDevice.lastUsedAt),
+      badge:
+        existingDevice.lastUsedAt !== null ? dayjs(existingDevice.lastUsedAt).fromNow() : undefined,
+    },
+    {
+      icon: MapPin,
+      iconBgClass: "bg-green-100/50 dark:bg-green-900/20",
+      iconFgClass: "text-green-700 dark:text-green-500",
+      title: "Expira el",
+      primary: formatLongDate(existingDevice.expiresAt),
+      badge: formatTimeUntil(existingDevice.expiresAt),
+      badgePosition: "after",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-8 rounded-xl border bg-card p-6 shadow-sm dark:bg-input/10">
-      <div className="grid grid-cols-[2fr_auto_2fr_auto_2fr] items-stretch gap-8">
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 rounded-md bg-blue-100/50 p-2 dark:bg-blue-900/20">
-            <Globe className="h-6 w-6 text-blue-700 dark:text-blue-500" />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Navegador</span>
-            <span className="text-sm text-muted-foreground">{browser}</span>
-          </div>
-        </div>
-
-        <Separator orientation="vertical" />
-
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
-            <Monitor className="h-6 w-6 text-violet-700 dark:text-violet-500" />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Sistema operativo</span>
-            <span className="text-sm text-muted-foreground">{osName}</span>
-          </div>
-        </div>
-
-        <Separator orientation="vertical" />
-
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 rounded-md bg-orange-100/50 p-2 dark:bg-orange-900/20">
-            <MapPin className="h-6 w-6 text-orange-700 dark:text-orange-500" />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Direccion IP</span>
-            <span className="text-sm text-muted-foreground">{ip}</span>
-          </div>
-        </div>
-      </div>
+      <DeviceInfoRow items={primaryRow} />
 
       <Separator />
 
-      <div className="grid grid-cols-[2fr_auto_2fr] gap-8">
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 rounded-md bg-cyan-100/50 p-2 dark:bg-cyan-900/20">
-            <Clock4 className="h-6 w-6 text-cyan-700 dark:text-cyan-500" />
-          </div>
+      <DeviceInfoRow items={secondaryRow} columns={2} />
+    </div>
+  );
+}
 
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Ultimo acceso</span>
+interface DeviceInfoRowProps {
+  items: DeviceInfoItem[];
+  columns?: 2 | 3;
+}
 
-            <Badge className="mt-1.5 block bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">
-              {dayjs(existingDevice.lastUsedAt).fromNow()}
-            </Badge>
+function DeviceInfoRow({ items, columns = 3 }: DeviceInfoRowProps): JSX.Element {
+  const gridCols = columns === 2 ? "grid-cols-[2fr_auto_2fr]" : "grid-cols-[2fr_auto_2fr_auto_2fr]";
 
-            <span className="text-sm text-muted-foreground">
-              {formatLongDate(existingDevice.lastUsedAt)}
-            </span>
-          </div>
-        </div>
+  return (
+    <div className={`grid items-stretch gap-8 ${gridCols}`}>
+      {items.map((item, index) => (
+        <Fragment key={item.title}>
+          <DeviceInfoItem item={item} />
 
-        <Separator orientation="vertical" />
+          {index < items.length - 1 && <Separator orientation="vertical" />}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
 
-        <div className="flex gap-4">
-          <div className="flex h-10 w-10 rounded-md bg-green-100/50 p-2 dark:bg-green-900/20">
-            <MapPin className="h-6 w-6 text-green-700 dark:text-green-500" />
-          </div>
+interface DeviceInfoItemProps {
+  item: DeviceInfoItem;
+}
 
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium">Expira el</span>
+function DeviceInfoItem({ item }: DeviceInfoItemProps): JSX.Element {
+  const Icon = item.icon;
 
-            <span className="text-sm text-muted-foreground">
-              {formatLongDate(existingDevice.expiresAt)}
-            </span>
+  const badgePosition = item.badgePosition ?? "before";
+  const showBadge = item.badge !== undefined && item.badge !== "";
 
-            <Badge className="mt-1.5 block bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">
-              {formatTimeUntil(existingDevice.expiresAt)}
-            </Badge>
-          </div>
-        </div>
+  const badge = showBadge ? (
+    <Badge className="mt-1.5 block bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">
+      {item.badge}
+    </Badge>
+  ) : null;
+
+  return (
+    <div className="flex gap-4">
+      <div className={`flex h-10 w-10 rounded-md p-2 ${item.iconBgClass}`}>
+        <Icon className={`h-6 w-6 ${item.iconFgClass}`} />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium">{item.title}</span>
+
+        {badgePosition === "before" && badge}
+
+        <span className="text-sm text-muted-foreground">{item.primary}</span>
+
+        {badgePosition === "after" && badge}
       </div>
     </div>
+  );
+}
+
+function AlreadyRegisteredActionsAlert(): JSX.Element {
+  return (
+    <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <CircleAlert />
+      <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
+      <AlertDescription>
+        Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
+        <Button size="xs" variant="outline">
+          Ir a dispositivos de confianza
+          <ArrowRight />
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 }
 
