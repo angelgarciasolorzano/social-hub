@@ -43,7 +43,7 @@ class TrustedDeviceController extends Controller
         abort_unless($trustedDevice->user_id === $request->user()?->getKey(), 403);
 
         /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('auth.trusted_devices.cookie_lifetime_minutes');
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         $trustedDevice->forceFill([
             'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
@@ -72,7 +72,7 @@ class TrustedDeviceController extends Controller
         $ip = $trustedDeviceStoreRequest->ip();
 
         /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('auth.trusted_devices.cookie_lifetime_minutes');
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         $newDevice = $user->trustedDevices()->create([
             'name' => $trustedDeviceStoreRequest->string('name')->toString() !== ''

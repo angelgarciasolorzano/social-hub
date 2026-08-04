@@ -39,7 +39,7 @@ final readonly class TrustedDeviceRemember
         $ip = $request->ip();
 
         /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('auth.trusted_devices.cookie_lifetime_minutes');
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         $newDevice = $user->trustedDevices()->create([
             'name' => $this->inferDeviceName($deviceDetector),

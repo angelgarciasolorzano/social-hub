@@ -19,8 +19,8 @@ class AuthServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/trusted_devices.php',
-            'auth.trusted_devices',
+            __DIR__.'/../config/trusted-devices.php',
+            'module.auth.trusted_devices',
         );
 
         $this->app->register(AuthRouteServiceProvider::class);

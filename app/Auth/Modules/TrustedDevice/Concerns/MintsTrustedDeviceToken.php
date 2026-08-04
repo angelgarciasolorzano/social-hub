@@ -45,7 +45,7 @@ trait MintsTrustedDeviceToken
     private function queueTrustedDeviceCookie(string $token): void
     {
         /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('auth.trusted_devices.cookie_lifetime_minutes');
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         Cookie::queue(Cookie::make(
             name: self::COOKIE_NAME,
