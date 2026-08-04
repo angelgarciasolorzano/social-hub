@@ -17,6 +17,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
+import { valueOrFallback } from "../../../utils/valueOrFallback";
 import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface DeviceAlreadyRegisteredDialogProps {
@@ -86,17 +87,9 @@ function DeviceDetailsHeader(): JSX.Element {
 type DeviceInfoCardProps = Pick<DeviceAlreadyRegisteredDialogProps, "existingDevice">;
 
 function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
-  const browser =
-    existingDevice.browser !== null && existingDevice.browser !== ""
-      ? existingDevice.browser
-      : "Desconocido";
-
-  const osName =
-    existingDevice.osName !== null && existingDevice.osName !== ""
-      ? existingDevice.osName
-      : "Desconocido";
-
-  const ip = existingDevice.ip ?? "No disponible";
+  const browser = valueOrFallback(existingDevice.browser, "Desconocido");
+  const osName = valueOrFallback(existingDevice.osName, "Desconocido");
+  const ip = valueOrFallback(existingDevice.ip, "No disponible");
 
   const primaryRow: Omit<DeviceMetadataItemProps, "badge" | "badgePosition">[] = [
     {

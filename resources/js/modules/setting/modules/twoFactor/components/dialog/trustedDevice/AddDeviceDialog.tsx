@@ -42,6 +42,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { DevicePreview } from "../../../types/devicePreview";
 import { formatLongDate } from "../../../utils/dateTime";
+import { valueOrFallback } from "../../../utils/valueOrFallback";
 
 interface AddDeviceDialogProps {
   preview: DevicePreview | null;
@@ -192,13 +193,9 @@ function AddDeviceBenefits(): JSX.Element {
 type DevicePreviewInfoProps = Pick<AddDeviceDialogProps, "preview">;
 
 function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
-  const browser =
-    preview?.browser !== "" && preview?.browser !== undefined ? preview.browser : "Desconocido";
-
-  const osName =
-    preview?.osName !== "" && preview?.osName !== undefined ? preview.osName : "Desconocido";
-
-  const ip = preview?.ip ?? "No disponible";
+  const browser = valueOrFallback(preview?.browser, "Desconocido");
+  const osName = valueOrFallback(preview?.osName, "Desconocido");
+  const ip = valueOrFallback(preview?.ip, "No disponible");
   const lastUsedAt = preview?.lastUsedAt ?? new Date().toISOString();
 
   return (

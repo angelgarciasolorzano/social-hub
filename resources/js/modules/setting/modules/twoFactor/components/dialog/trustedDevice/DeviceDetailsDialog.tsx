@@ -45,6 +45,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
+import { valueOrFallback } from "../../../utils/valueOrFallback";
 import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
 import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
@@ -254,9 +255,9 @@ type DeviceMetadataItems = Pick<DeviceMetadataItemProps, "icon" | "title" | "des
 };
 
 function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
-  const browser = device.browser !== "" && device.browser !== null ? device.browser : "Desconocido";
-  const osName = device.osName !== "" && device.osName !== null ? device.osName : "Desconocido";
-  const ip = device.ip ?? "No disponible";
+  const browser = valueOrFallback(device.browser, "Desconocido");
+  const osName = valueOrFallback(device.osName, "Desconocido");
+  const ip = valueOrFallback(device.ip, "No disponible");
 
   const items: DeviceMetadataItems[] = [
     { key: "browser", icon: Globe, title: "Navegador", description: browser },
