@@ -141,7 +141,7 @@ type DeviceOverviewCardProps = Pick<DeviceDetailsDialogProps, "device">;
 
 function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="dark:bg-input/10">
       <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
         <div className="flex gap-4">
           <div className="flex h-20 w-20 rounded-md border border-violet-100 bg-violet-100/50 p-4 dark:border-violet-200/10 dark:bg-violet-900/20">
@@ -251,7 +251,7 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="dark:bg-input/10">
       <CardHeader>
         <CardTitle>Actividad del dispositivo</CardTitle>
       </CardHeader>
@@ -294,7 +294,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="dark:bg-input/10">
       <CardHeader>
         <CardTitle>Informacion del dispositivo</CardTitle>
       </CardHeader>
@@ -304,7 +304,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
 
           return (
             <div
-              className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/25"
+              className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20"
               key={item.key}
             >
               <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
