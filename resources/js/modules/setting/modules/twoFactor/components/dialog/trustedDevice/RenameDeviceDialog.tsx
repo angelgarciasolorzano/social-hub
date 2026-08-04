@@ -24,6 +24,8 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
@@ -153,7 +155,7 @@ interface DeviceNamePreviewProps {
 
 function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
   return (
-    <Alert className="border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-400">
+    <Alert className={alertVariants.preview}>
       <Eye />
 
       <AlertTitle>Vista previa</AlertTitle>

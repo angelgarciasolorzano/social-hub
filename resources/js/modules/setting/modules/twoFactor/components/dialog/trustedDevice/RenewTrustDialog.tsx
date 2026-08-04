@@ -29,6 +29,8 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
@@ -158,7 +160,7 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
 
 function RenewInfoAlert(): JSX.Element {
   return (
-    <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500">
+    <Alert className={alertVariants.success}>
       <CircleAlert />
 
       <AlertTitle className="line-clamp-3">

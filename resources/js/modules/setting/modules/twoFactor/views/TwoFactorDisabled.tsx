@@ -18,6 +18,8 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import { OptionCard } from "../components/ui/OptionCard";
 import SummaryCard from "../components/ui/SummaryCard";
 import Timeline from "../components/ui/Timeline";
@@ -107,7 +109,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
 
 function TwoFactorInfoBanner() {
   return (
-    <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+    <Alert className={alertVariants.info}>
       <Info />
       <AlertTitle>Este PIN se solicitará cada vez que inicies sesión.</AlertTitle>
       <AlertDescription>

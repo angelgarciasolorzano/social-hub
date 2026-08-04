@@ -34,6 +34,8 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useDialog } from "@/shared/hooks";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type {
   TwoFactorDeviceActionKey,
   TwoFactorDeviceSectionActionKey,
@@ -190,7 +192,7 @@ function TwoFactorDevices({
 
   return (
     <>
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className={alertVariants.info}>
         <AlertTriangleIcon />
 
         <AlertTitle className="line-clamp-4">
@@ -240,7 +242,7 @@ function TwoFactorDevices({
 
       {renderSectionDialog()}
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className={alertVariants.info}>
         <AlertTitle>Consejos</AlertTitle>
 
         <AlertDescription>

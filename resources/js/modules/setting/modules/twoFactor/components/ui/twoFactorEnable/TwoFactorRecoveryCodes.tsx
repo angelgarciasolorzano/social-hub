@@ -16,6 +16,9 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 interface TwoFactorRecoveryCodesProps {
   errors: string[];
   fetchRecoveryCodes: () => Promise<void>;
@@ -36,7 +39,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
       {errors.length > 0 ? (
         <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
       ) : (
-        <Alert className="max-w-md border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+        <Alert className={cn(alertVariants.info, "max-w-md")}>
           <AlertTriangleIcon />
 
           <AlertTitle>Guarda estos códigos en un lugar seguro.</AlertTitle>

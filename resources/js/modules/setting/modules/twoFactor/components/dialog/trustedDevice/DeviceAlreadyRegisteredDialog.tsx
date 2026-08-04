@@ -15,6 +15,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
@@ -169,7 +171,7 @@ function DeviceInfoRow({ items, columns = 3 }: DeviceInfoRowProps): JSX.Element 
 
 function AlreadyRegisteredActionsAlert(): JSX.Element {
   return (
-    <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+    <Alert className={alertVariants.info}>
       <CircleAlert />
       <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
       <AlertDescription>

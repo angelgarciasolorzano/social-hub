@@ -43,6 +43,9 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
@@ -189,7 +192,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
             </ItemContent>
           </Item>
 
-          <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+          <Alert className={alertVariants.info}>
             <CircleAlert />
 
             <AlertTitle className="line-clamp-4">
@@ -291,7 +294,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
 function DeviceStatusCallouts(): JSX.Element {
   return (
     <div className="flex flex-col gap-3">
-      <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500">
+      <Alert className={alertVariants.success}>
         <CircleCheck />
 
         <AlertTitle>Este dispositivo está activado</AlertTitle>
@@ -307,7 +310,7 @@ function DeviceStatusCallouts(): JSX.Element {
         </AlertDescription>
       </Alert>
 
-      <Alert className="border-purple-200 bg-purple-50 text-purple-900 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-400">
+      <Alert className={cn(alertVariants.preview, "dark:text-purple-400")}>
         <Lightbulb />
 
         <AlertTitle>¿Que es un dispositivo de confianza?</AlertTitle>

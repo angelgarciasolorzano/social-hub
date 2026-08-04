@@ -3,9 +3,8 @@ import type { JSX } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 
+import { type HoverBorderColor, hoverBorderColors } from "@/shared/lib/styling/hoverBorderColors";
 import { cn } from "@/shared/lib/utils";
-
-import colorHoverMap from "../../utils/colorHoverMap";
 
 export interface OptionCardItem<TKey extends string = string> {
   key: TKey;
@@ -49,7 +48,7 @@ export function OptionCard<TKey extends string = string>({
               className={cn(
                 "group flex flex-1 gap-4 rounded-xl border p-4 shadow-sm transition-all",
                 hasAction && "cursor-pointer hover:shadow-lg",
-                hasAction && colorHoverMap[colorName],
+                hasAction && hoverBorderColors[colorName as HoverBorderColor],
               )}
             >
               <div

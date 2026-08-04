@@ -27,6 +27,8 @@ import {
 } from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 
 interface DisableTwoFactorFormData {
@@ -82,7 +84,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+        <Alert className={alertVariants.info}>
           <ShieldQuestionMark />
 
           <AlertTitle className="line-clamp-4">

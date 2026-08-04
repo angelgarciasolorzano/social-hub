@@ -5,6 +5,9 @@ import { AlertTriangleIcon, Info, Loader2, RotateCcw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 interface ChooseMethodStepProps {
   errors: string[];
   qrCodeSvg: string | null;
@@ -48,7 +51,7 @@ function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
         ¿No puedes escanear el código?
       </button>
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className={alertVariants.info}>
         <Info />
         <AlertTitle>Consejo</AlertTitle>
         <AlertDescription>
@@ -70,7 +73,7 @@ type StepErrorAlertProps = Pick<ChooseMethodStepProps, "onRetry">;
 function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
   return (
     <div className="flex w-full flex-col items-center space-y-2">
-      <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+      <Alert className={cn(alertVariants.destructive, "my-2")}>
         <AlertTriangleIcon />
         <AlertTitle>Algo salió mal</AlertTitle>
         <AlertDescription>No pudimos cargar la información. Inténtalo de nuevo.</AlertDescription>

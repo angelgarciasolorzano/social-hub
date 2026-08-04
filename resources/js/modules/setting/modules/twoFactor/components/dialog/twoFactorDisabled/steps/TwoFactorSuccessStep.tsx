@@ -8,6 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import { downloadRecoveryCodes } from "../../../../utils/downloadRecoveryCodes";
 
 interface TwoFactorSuccessStepProps {
@@ -55,7 +58,7 @@ function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
                 ))}
           </div>
 
-          <Alert className="w-full border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+          <Alert className={cn(alertVariants.warning, "w-full")}>
             <Info />
             <AlertTitle>Importante</AlertTitle>
             <AlertDescription>

@@ -12,6 +12,9 @@ import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/shadcn/ui/input-otp";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import { OTP_MAX_LENGTH } from "../../../../hooks/useTwoFactorAuth";
 
 interface VerifyOtpStepProps {
@@ -70,7 +73,7 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps) {
             <InputError message={errors?.confirmTwoFactorAuthentication?.code} />
           </div>
 
-          <Alert className="w-full border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+          <Alert className={cn(alertVariants.info, "w-full")}>
             <Info />
             <AlertDescription>El código cambia cada 30 segundos en tu aplicación.</AlertDescription>
           </Alert>

@@ -24,6 +24,9 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
@@ -124,7 +127,7 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
 
 function RevokeConsequencesAlert(): JSX.Element {
   return (
-    <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+    <Alert className={cn(alertVariants.destructive, "my-2")}>
       <AlertTriangleIcon />
       <AlertTitle>¿Que pasara?</AlertTitle>
       <AlertDescription>

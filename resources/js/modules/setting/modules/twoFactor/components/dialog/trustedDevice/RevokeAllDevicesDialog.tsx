@@ -32,6 +32,8 @@ import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 interface RevokeAllDevicesDialogProps {
   devices: TrustedDevice[];
   open: boolean;
@@ -138,7 +140,7 @@ function RevokeAllDevicesDialog({
 
 function RevokeConsequencesAlert(): JSX.Element {
   return (
-    <Alert className="border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+    <Alert className={alertVariants.destructive}>
       <AlertTriangleIcon />
       <AlertTitle>¿Que pasara?</AlertTitle>
       <AlertDescription>

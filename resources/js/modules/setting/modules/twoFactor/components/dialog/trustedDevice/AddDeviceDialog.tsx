@@ -40,6 +40,8 @@ import { Input } from "@/shared/components/shadcn/ui/input";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { alertVariants } from "@/shared/lib/styling/alertVariants";
+
 import type { DevicePreview } from "../../../types/devicePreview";
 import { formatLongDate } from "../../../utils/dateTime";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
@@ -296,7 +298,7 @@ function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): J
         <InputError message={errors.name} />
       </div>
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className={alertVariants.info}>
         <CircleAlert />
 
         <AlertTitle className="line-clamp-4">Consejo</AlertTitle>
