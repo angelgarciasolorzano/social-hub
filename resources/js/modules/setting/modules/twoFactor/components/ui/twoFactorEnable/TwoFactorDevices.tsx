@@ -139,7 +139,6 @@ function TwoFactorDevices({
 
         return (
           <DeviceAlreadyRegisteredDialog
-            preview={currentDevicePreview}
             existingDevice={currentDeviceMatch}
             open={!isClosing}
             onClose={handleSectionDialogClose}

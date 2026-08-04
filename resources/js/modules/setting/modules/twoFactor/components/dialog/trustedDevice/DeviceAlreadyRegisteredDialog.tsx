@@ -21,11 +21,9 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 
-import type { DevicePreview } from "../../../types/devicePreview";
 import type { TrustedDevice } from "../../../types/trustedDevice";
 
 interface DeviceAlreadyRegisteredDialogProps {
-  preview: DevicePreview | null;
   existingDevice: TrustedDevice;
   open: boolean;
   onClose: () => void;
@@ -39,7 +37,6 @@ function formatLongDate(iso: string | null): string {
 }
 
 function DeviceAlreadyRegisteredDialog({
-  preview,
   existingDevice,
   open,
   onClose,
@@ -80,7 +77,7 @@ function DeviceAlreadyRegisteredDialog({
             </AlertDescription>
           </Alert>
 
-          <DevicePreviewInfo preview={preview} />
+          <DeviceInfoCard existingDevice={existingDevice} />
         </div>
 
         <DialogFooter>
@@ -93,16 +90,12 @@ function DeviceAlreadyRegisteredDialog({
   );
 }
 
-type DevicePreviewInfoProps = Pick<DeviceAlreadyRegisteredDialogProps, "preview">;
+type DeviceInfoCardProps = Pick<DeviceAlreadyRegisteredDialogProps, "existingDevice">;
 
-function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
-  const browser =
-    preview?.browser !== "" && preview?.browser !== undefined ? preview.browser : "Desconocido";
-
-  const osName =
-    preview?.osName !== "" && preview?.osName !== undefined ? preview.osName : "Desconocido";
-
-  const ip = preview?.ip ?? "No disponible";
+function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
+  const browser = existingDevice.browser !== "" ? existingDevice.browser : "Desconocido";
+  const osName = existingDevice.osName !== "" ? existingDevice.osName : "Desconocido";
+  const ip = existingDevice.ip ?? "No disponible";
 
   return (
     <Card>
