@@ -3,9 +3,6 @@ import type { JSX, SubmitEvent } from "react";
 import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 
-import { FaCircle } from "react-icons/fa";
-import { MdOutlineLaptopMac } from "react-icons/md";
-
 import type { FormDataErrors } from "@inertiajs/core";
 import dayjs from "dayjs";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
@@ -29,16 +26,13 @@ import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
 interface RevokeDeviceDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
 }
-
-const deviceLabel = (device: TrustedDevice): string => {
-  return device.name ?? device.userAgent ?? "Dispositivo desconocido";
-};
 
 const fromNow = (iso: string | null): string => {
   if (iso === null) {
@@ -104,7 +98,11 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <DeviceInfoCard device={device} />
+          <DeviceSummaryCard
+            device={device}
+            lastUsedAt={fromNow(device.lastUsedAt)}
+            expiration={formatLongDate(device.expiresAt)}
+          />
 
           <RevokeConsequencesAlert />
 
@@ -136,42 +134,6 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-type DeviceInfoCardProps = Pick<RevokeDeviceDialogProps, "device">;
-
-function DeviceInfoCard({ device }: DeviceInfoCardProps): JSX.Element {
-  return (
-    <div className="flex min-w-0 items-start gap-2.5 rounded-xl border p-4 shadow-xs dark:dark:bg-input/10">
-      <div className="flex h-14 w-14 shrink-0 rounded-md border border-violet-100 bg-violet-100/50 p-2 dark:border-violet-200/10 dark:bg-violet-900/20">
-        <MdOutlineLaptopMac className="h-10 w-10 text-violet-700 dark:text-violet-500" />
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-        <span className="block truncate font-medium" title={deviceLabel(device)}>
-          {deviceLabel(device)}
-        </span>
-
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {device.browser !== null && device.browser !== "" && (
-            <span className="truncate text-sm text-muted-foreground">
-              {device.osName} - {device.browser}
-            </span>
-          )}
-
-          <FaCircle className="h-1 w-1 shrink-0" />
-
-          <span className="truncate text-sm text-muted-foreground">
-            Último uso: {fromNow(device.lastUsedAt)}
-          </span>
-        </div>
-
-        <span className="text-sm text-muted-foreground">
-          Fecha de expiración: {formatLongDate(device.expiresAt)}
-        </span>
-      </div>
-    </div>
   );
 }
 
