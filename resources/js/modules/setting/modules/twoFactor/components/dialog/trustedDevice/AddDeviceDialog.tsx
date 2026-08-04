@@ -217,7 +217,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex items-stretch gap-4">
-        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/25">
+        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20">
           <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
             <Globe className="h-6 w-6 text-violet-700 dark:text-violet-500" />
           </div>
@@ -229,7 +229,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
           </div>
         </div>
 
-        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/25">
+        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20">
           <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
             <Monitor className="h-6 w-6 text-violet-700 dark:text-violet-500" />
           </div>
@@ -241,7 +241,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
           </div>
         </div>
 
-        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/25">
+        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20">
           <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
             <MapPin className="h-6 w-6 text-violet-700 dark:text-violet-500" />
           </div>
@@ -253,7 +253,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
           </div>
         </div>
 
-        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/25">
+        <div className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20">
           <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
             <MapPin className="h-6 w-6 text-violet-700 dark:text-violet-500" />
           </div>
