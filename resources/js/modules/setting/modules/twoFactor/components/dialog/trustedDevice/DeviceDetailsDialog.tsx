@@ -4,7 +4,6 @@ import { FaCircle } from "react-icons/fa";
 import { IoLogoApple } from "react-icons/io";
 import { MdOutlineLaptopMac } from "react-icons/md";
 
-import dayjs from "dayjs";
 import {
   CalendarClock,
   CalendarPlus,
@@ -45,24 +44,9 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
-import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
-import DeviceMetadataItem from "../../ui/DeviceMetadataItem";
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
-}
-
-function formatTimeUntil(iso: string | null): string {
-  if (iso === null || dayjs(iso).isBefore(dayjs())) {
-    return "vencido";
-  }
-
-  return dayjs(iso).fromNow();
-}
+import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface DeviceDetailsDialogProps {
   device: TrustedDevice;
@@ -227,7 +211,7 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
       title: "Último acceso",
       meta: (
         <>
-          <span className="block text-sm">{dayjs(device.lastUsedAt).fromNow()}</span>
+          <span className="block text-sm">{fromNow(device.lastUsedAt)}</span>
           <span className="block text-sm">{formatLongDate(device.lastUsedAt)}</span>
         </>
       ),

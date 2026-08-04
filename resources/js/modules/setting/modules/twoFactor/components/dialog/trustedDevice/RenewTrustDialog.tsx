@@ -30,6 +30,7 @@ import {
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
 interface RenewTrustDialogProps {
@@ -40,21 +41,6 @@ interface RenewTrustDialogProps {
 
 const TRUST_RENEWAL_DAYS = 30;
 const TRUST_RENEWAL_LABEL = "1 mes";
-
-const fromNow = (iso: string | null): string => {
-  if (iso === null) {
-    return "nunca";
-  }
-
-  return dayjs(iso).fromNow();
-};
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
-}
 
 function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX.Element {
   const { submit, processing, reset } = useForm();

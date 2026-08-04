@@ -7,10 +7,10 @@ import { FaCircle } from "react-icons/fa";
 import { MdOutlineLaptopMac } from "react-icons/md";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import dayjs from "dayjs";
 import { AlertTriangleIcon, CircleAlert, Trash2 } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
+import { formatLongDate } from "@/modules/setting/modules/twoFactor/utils/dateTime";
 
 import { destroyAll as destroyAllTrustedDevices } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -41,13 +41,6 @@ interface RevokeAllDevicesDialogProps {
 interface RevokeDeviceFormData {
   password: string;
   terms: boolean;
-}
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
 }
 
 function RevokeAllDevicesDialog({

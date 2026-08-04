@@ -4,7 +4,6 @@ import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import dayjs from "dayjs";
 import {
   CalendarRange,
   CircleAlert,
@@ -42,6 +41,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { DevicePreview } from "../../../types/devicePreview";
+import { formatLongDate } from "../../../utils/dateTime";
 
 interface AddDeviceDialogProps {
   preview: DevicePreview | null;
@@ -51,13 +51,6 @@ interface AddDeviceDialogProps {
 
 interface AddDeviceFormData {
   name: string;
-}
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
 }
 
 function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.Element {

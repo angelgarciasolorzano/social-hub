@@ -4,7 +4,6 @@ import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import dayjs from "dayjs";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
 import { destroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -26,27 +25,13 @@ import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
 interface RevokeDeviceDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
-}
-
-const fromNow = (iso: string | null): string => {
-  if (iso === null) {
-    return "nunca";
-  }
-
-  return dayjs(iso).fromNow();
-};
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
 }
 
 interface RevokeDeviceFormData {

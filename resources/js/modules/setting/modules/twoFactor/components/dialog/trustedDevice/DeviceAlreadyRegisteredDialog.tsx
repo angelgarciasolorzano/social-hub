@@ -1,7 +1,6 @@
 import type { JSX } from "react";
 import { Fragment } from "react";
 
-import dayjs from "dayjs";
 import { ArrowRight, CircleAlert, Clock4, Globe, MapPin, Monitor, ShieldCheck } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -17,27 +16,13 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface DeviceAlreadyRegisteredDialogProps {
   existingDevice: TrustedDevice;
   open: boolean;
   onClose: () => void;
-}
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
-}
-
-function formatTimeUntil(iso: string | null): string {
-  if (iso === null || dayjs(iso).isBefore(dayjs())) {
-    return "vencido";
-  }
-
-  return dayjs(iso).fromNow();
 }
 
 function DeviceAlreadyRegisteredDialog({
@@ -144,8 +129,7 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
       iconFgClass: "text-cyan-700 dark:text-cyan-500",
       title: "Ultimo acceso",
       description: formatLongDate(existingDevice.lastUsedAt),
-      badge:
-        existingDevice.lastUsedAt !== null ? dayjs(existingDevice.lastUsedAt).fromNow() : undefined,
+      badge: existingDevice.lastUsedAt !== null ? fromNow(existingDevice.lastUsedAt) : undefined,
     },
     {
       icon: MapPin,

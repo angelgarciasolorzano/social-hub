@@ -4,7 +4,6 @@ import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import dayjs from "dayjs";
 import { Eye, Pencil } from "lucide-react";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -26,6 +25,7 @@ import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import { fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
 interface RenameDeviceDialogProps {
@@ -37,14 +37,6 @@ interface RenameDeviceDialogProps {
 interface RenameDeviceFormData {
   name: string | null;
 }
-
-const fromNow = (iso: string | null): string => {
-  if (iso === null) {
-    return "nunca";
-  }
-
-  return dayjs(iso).fromNow();
-};
 
 function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps): JSX.Element {
   const { setData, submit, processing, reset, errors, data } = useForm<RenameDeviceFormData>({
