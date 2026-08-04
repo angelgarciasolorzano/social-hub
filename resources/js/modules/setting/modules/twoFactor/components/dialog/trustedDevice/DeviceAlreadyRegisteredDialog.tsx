@@ -2,11 +2,9 @@ import type { JSX } from "react";
 import { Fragment } from "react";
 
 import dayjs from "dayjs";
-import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CircleAlert, Clock4, Globe, MapPin, Monitor, ShieldCheck } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
-import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
@@ -19,6 +17,7 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
+import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface DeviceAlreadyRegisteredDialogProps {
   existingDevice: TrustedDevice;
@@ -39,16 +38,6 @@ function formatTimeUntil(iso: string | null): string {
   }
 
   return dayjs(iso).fromNow();
-}
-
-interface DeviceInfoItem {
-  icon: LucideIcon;
-  iconBgClass: string;
-  iconFgClass: string;
-  title: string;
-  primary: string;
-  badge?: string;
-  badgePosition?: "before" | "after";
 }
 
 function DeviceAlreadyRegisteredDialog({
@@ -124,37 +113,37 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
 
   const ip = existingDevice.ip ?? "No disponible";
 
-  const primaryRow: DeviceInfoItem[] = [
+  const primaryRow: Omit<DeviceMetadataItemProps, "badge" | "badgePosition">[] = [
     {
       icon: Globe,
       iconBgClass: "bg-blue-100/50 dark:bg-blue-900/20",
       iconFgClass: "text-blue-700 dark:text-blue-500",
       title: "Navegador",
-      primary: browser,
+      description: browser,
     },
     {
       icon: Monitor,
       iconBgClass: "bg-violet-100/50 dark:bg-violet-900/20",
       iconFgClass: "text-violet-700 dark:text-violet-500",
       title: "Sistema operativo",
-      primary: osName,
+      description: osName,
     },
     {
       icon: MapPin,
       iconBgClass: "bg-orange-100/50 dark:bg-orange-900/20",
       iconFgClass: "text-orange-700 dark:text-orange-500",
       title: "Direccion IP",
-      primary: ip,
+      description: ip,
     },
   ];
 
-  const secondaryRow: DeviceInfoItem[] = [
+  const secondaryRow: DeviceMetadataItemProps[] = [
     {
       icon: Clock4,
       iconBgClass: "bg-cyan-100/50 dark:bg-cyan-900/20",
       iconFgClass: "text-cyan-700 dark:text-cyan-500",
       title: "Ultimo acceso",
-      primary: formatLongDate(existingDevice.lastUsedAt),
+      description: formatLongDate(existingDevice.lastUsedAt),
       badge:
         existingDevice.lastUsedAt !== null ? dayjs(existingDevice.lastUsedAt).fromNow() : undefined,
     },
@@ -163,7 +152,7 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
       iconBgClass: "bg-green-100/50 dark:bg-green-900/20",
       iconFgClass: "text-green-700 dark:text-green-500",
       title: "Expira el",
-      primary: formatLongDate(existingDevice.expiresAt),
+      description: formatLongDate(existingDevice.expiresAt),
       badge: formatTimeUntil(existingDevice.expiresAt),
       badgePosition: "after",
     },
@@ -181,7 +170,7 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
 }
 
 interface DeviceInfoRowProps {
-  items: DeviceInfoItem[];
+  items: DeviceMetadataItemProps[];
   columns?: 2 | 3;
 }
 
@@ -192,46 +181,11 @@ function DeviceInfoRow({ items, columns = 3 }: DeviceInfoRowProps): JSX.Element 
     <div className={`grid items-stretch gap-8 ${gridCols}`}>
       {items.map((item, index) => (
         <Fragment key={item.title}>
-          <DeviceInfoItem item={item} />
+          <DeviceMetadataItem {...item} />
 
           {index < items.length - 1 && <Separator orientation="vertical" />}
         </Fragment>
       ))}
-    </div>
-  );
-}
-
-interface DeviceInfoItemProps {
-  item: DeviceInfoItem;
-}
-
-function DeviceInfoItem({ item }: DeviceInfoItemProps): JSX.Element {
-  const Icon = item.icon;
-
-  const badgePosition = item.badgePosition ?? "before";
-  const showBadge = item.badge !== undefined && item.badge !== "";
-
-  const badge = showBadge ? (
-    <Badge className="mt-1.5 block bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">
-      {item.badge}
-    </Badge>
-  ) : null;
-
-  return (
-    <div className="flex gap-4">
-      <div className={`flex h-10 w-10 rounded-md p-2 ${item.iconBgClass}`}>
-        <Icon className={`h-6 w-6 ${item.iconFgClass}`} />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{item.title}</span>
-
-        {badgePosition === "before" && badge}
-
-        <span className="text-sm text-muted-foreground">{item.primary}</span>
-
-        {badgePosition === "after" && badge}
-      </div>
     </div>
   );
 }

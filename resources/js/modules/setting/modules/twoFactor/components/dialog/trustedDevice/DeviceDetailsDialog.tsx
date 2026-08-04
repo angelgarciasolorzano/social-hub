@@ -5,7 +5,6 @@ import { IoLogoApple } from "react-icons/io";
 import { MdOutlineLaptopMac } from "react-icons/md";
 
 import dayjs from "dayjs";
-import type { LucideIcon } from "lucide-react";
 import {
   CalendarClock,
   CalendarPlus,
@@ -47,6 +46,8 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
+import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
+import DeviceMetadataItem from "../../ui/DeviceMetadataItem";
 
 function formatLongDate(iso: string | null): string {
   if (iso === null) {
@@ -264,33 +265,19 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
 
 type DeviceMetadataCardProps = Pick<DeviceDetailsDialogProps, "device">;
 
-interface DeviceMetadataCardItem {
+type DeviceMetadataItems = Pick<DeviceMetadataItemProps, "icon" | "title" | "description"> & {
   key: "browser" | "os" | "ip";
-  icon: LucideIcon;
-  title: string;
-  description: string | null;
-}
+};
 
 function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
-  const items: DeviceMetadataCardItem[] = [
-    {
-      key: "browser",
-      icon: Globe,
-      title: "Navegador",
-      description: device.browser,
-    },
-    {
-      key: "os",
-      icon: MonitorSmartphone,
-      title: "Sistema operativo",
-      description: device.osName,
-    },
-    {
-      key: "ip",
-      icon: MapPin,
-      title: "Direccion IP",
-      description: device.ip,
-    },
+  const browser = device.browser !== "" && device.browser !== null ? device.browser : "Desconocido";
+  const osName = device.osName !== "" && device.osName !== null ? device.osName : "Desconocido";
+  const ip = device.ip ?? "No disponible";
+
+  const items: DeviceMetadataItems[] = [
+    { key: "browser", icon: Globe, title: "Navegador", description: browser },
+    { key: "os", icon: MonitorSmartphone, title: "Sistema operativo", description: osName },
+    { key: "ip", icon: MapPin, title: "Direccion IP", description: ip },
   ];
 
   return (
@@ -299,28 +286,18 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
         <CardTitle>Informacion del dispositivo</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {items.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <div
-              className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20"
-              key={item.key}
-            >
-              <div className="flex h-10 w-10 rounded-md bg-violet-100/50 p-2 dark:bg-violet-900/20">
-                <Icon className="h-6 w-6 text-violet-700 dark:text-violet-500" />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{item.title}</span>
-
-                {item.description !== null && (
-                  <span className="text-sm text-muted-foreground">{item.description}</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {items.map((item) => (
+          <div
+            className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20"
+            key={item.key}
+          >
+            <DeviceMetadataItem
+              icon={item.icon}
+              title={item.title}
+              description={item.description}
+            />
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
