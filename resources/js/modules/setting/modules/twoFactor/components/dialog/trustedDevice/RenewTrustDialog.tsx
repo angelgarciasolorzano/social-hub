@@ -30,6 +30,7 @@ import {
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";
@@ -149,9 +150,7 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
           <ItemDescription>{newExpiresAt.format("D [de] MMMM [del] YYYY, h:mm A")}</ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
-            + {TRUST_RENEWAL_LABEL}
-          </Badge>
+          <Badge className={badgeVariants.success}>+ {TRUST_RENEWAL_LABEL}</Badge>
         </ItemActions>
       </Item>
     </form>

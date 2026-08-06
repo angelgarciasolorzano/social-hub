@@ -25,6 +25,8 @@ import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
+import { cn } from "@/shared/lib/utils";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { fromNow } from "../../../utils/dateTime";
@@ -162,7 +164,7 @@ function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
       <AlertDescription>
         Este dispositivo se mostrara como:
         {data.name?.trim() ? (
-          <Badge className="mt-1 block max-w-full truncate bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+          <Badge className={cn(badgeVariants.preview, "mt-1 block max-w-full truncate")}>
             {data.name.trim()}
           </Badge>
         ) : null}

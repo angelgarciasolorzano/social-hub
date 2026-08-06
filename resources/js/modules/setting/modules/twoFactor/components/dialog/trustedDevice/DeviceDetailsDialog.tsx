@@ -45,6 +45,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
@@ -72,9 +73,7 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
             <div className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
-              <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
-                Activo
-              </Badge>
+              <Badge className={badgeVariants.success}>Activo</Badge>
             </div>
           </DialogTitle>
           <DialogDescription>
@@ -141,7 +140,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
             <div className="flex items-center justify-center gap-2">
               <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
 
-              <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
+              <Badge className={badgeVariants.success}>
                 <Circle
                   className="size-1.5! fill-green-800 text-green-800 dark:fill-green-500 dark:text-green-500"
                   data-icon="inline-start"
@@ -185,7 +184,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
               <ItemDescription>
                 <span className="text-sm">{formatLongDate(device.expiresAt)}</span>
 
-                <Badge className="mt-1.5 block bg-yellow-50 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300">
+                <Badge className={cn(badgeVariants.warning, "mt-1.5 block")}>
                   {formatTimeUntil(device.expiresAt)}
                 </Badge>
               </ItemDescription>
@@ -231,7 +230,7 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
       meta: (
         <>
           <span className="block text-sm">{formatLongDate(device.expiresAt)}</span>
-          <Badge className="mt-1.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300">
+          <Badge className={cn(badgeVariants.warning, "mt-1.5")}>
             {formatTimeUntil(device.expiresAt)}
           </Badge>
         </>

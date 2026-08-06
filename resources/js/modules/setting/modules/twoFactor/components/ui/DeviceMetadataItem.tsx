@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 
+import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
 import { cn } from "@/shared/lib/utils";
 
@@ -38,17 +39,13 @@ function DeviceMetadataItem({
         <span className="text-sm font-medium">{title}</span>
 
         {showBadge && badgePosition === "before" && (
-          <Badge className="mt-1.5 block bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">
-            {badge}
-          </Badge>
+          <Badge className={cn(badgeVariants.success, "mt-1.5 block")}>{badge}</Badge>
         )}
 
         <span className="text-sm text-muted-foreground">{description}</span>
 
         {showBadge && badgePosition === "after" && (
-          <Badge className="mt-1.5 block bg-green-50 text-green-700 dark:bg-green-950/50 dark:text-green-300">
-            {badge}
-          </Badge>
+          <Badge className={cn(badgeVariants.success, "mt-1.5 block")}>{badge}</Badge>
         )}
       </div>
     </div>
