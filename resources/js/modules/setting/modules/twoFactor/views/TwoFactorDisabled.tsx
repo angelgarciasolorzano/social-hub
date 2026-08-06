@@ -18,7 +18,8 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 
-import { alertVariants } from "@/shared/lib/styling";
+import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
+import { cn } from "@/shared/lib/utils";
 
 import { OptionCard } from "../components/ui/OptionCard";
 import SummaryCard from "../components/ui/SummaryCard";
@@ -68,8 +69,8 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
   return (
     <div className="flex items-center gap-24 rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex items-start gap-4">
-        <div className="rounded-3xl bg-violet-100/50 p-2 dark:bg-violet-900/20">
-          <ShieldCheck className="h-12 w-12 text-violet-700 dark:text-violet-500" />
+        <div className={cn(iconColorVariants.violet.iconBgClass, "rounded-3xl p-2")}>
+          <ShieldCheck className={cn("h-12 w-12", iconColorVariants.violet.iconFgClass)} />
         </div>
 
         <div className="flex flex-col gap-2">

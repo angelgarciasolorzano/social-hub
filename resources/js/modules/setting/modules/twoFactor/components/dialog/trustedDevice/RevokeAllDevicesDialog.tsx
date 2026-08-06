@@ -32,7 +32,8 @@ import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling";
+import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
+import { cn } from "@/shared/lib/utils";
 
 interface RevokeAllDevicesDialogProps {
   devices: TrustedDevice[];
@@ -160,8 +161,13 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
       <div className="flex min-w-0 items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 rounded-full border border-violet-100 bg-violet-100/50 p-2 dark:border-violet-200/10 dark:bg-violet-900/20">
-          <MdOutlineLaptopMac className="h-10 w-10 text-violet-700 dark:text-violet-500" />
+        <div
+          className={cn(
+            iconColorVariants.violet.iconBgClass,
+            "flex h-14 w-14 shrink-0 rounded-full border border-violet-100 p-2 dark:border-violet-200/10",
+          )}
+        >
+          <MdOutlineLaptopMac className={cn("h-10 w-10", iconColorVariants.violet.iconFgClass)} />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">

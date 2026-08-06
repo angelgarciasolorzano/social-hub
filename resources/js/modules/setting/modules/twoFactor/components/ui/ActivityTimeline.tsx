@@ -2,6 +2,9 @@ import type { JSX, ReactNode } from "react";
 
 import type { LucideIcon } from "lucide-react";
 
+import { cn } from "@/shared/lib";
+import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
+
 export type TimelineVariant = "violet" | "blue" | "green" | "red" | "amber";
 
 export interface ActivityStep {
@@ -15,42 +18,25 @@ interface ActivityTimelineProps {
   variant?: TimelineVariant;
 }
 
-interface TimeLineVariantProperty {
-  bg: string;
-  text: string;
-  line: string;
-}
+const timelineLineColors: Record<TimelineVariant, string> = {
+  violet: "bg-violet-500 dark:bg-violet-500/70",
+  blue: "bg-blue-500 dark:bg-blue-800/50",
+  green: "bg-green-500 dark:bg-green-800/50",
+  red: "bg-red-500 dark:bg-red-800/50",
+  amber: "bg-amber-500 dark:bg-amber-800/50",
+};
 
-const variantStyles: Record<TimelineVariant, TimeLineVariantProperty> = {
-  violet: {
-    bg: "bg-violet-100/50 dark:bg-violet-900/20",
-    text: "text-violet-700 dark:text-violet-500",
-    line: "bg-violet-500 dark:bg-violet-500/70",
-  },
-  blue: {
-    bg: "bg-blue-100/50 dark:bg-blue-900/20",
-    text: "text-blue-700 dark:text-blue-500",
-    line: "bg-blue-500 dark:bg-blue-800/50",
-  },
-  green: {
-    bg: "bg-green-100/50 dark:bg-green-900/20",
-    text: "text-green-700 dark:text-green-500",
-    line: "bg-green-500 dark:bg-green-800/50",
-  },
-  red: {
-    bg: "bg-red-100/50 dark:bg-red-900/20",
-    text: "text-red-700 dark:text-red-500",
-    line: "bg-red-500 dark:bg-red-800/50",
-  },
-  amber: {
-    bg: "bg-amber-100/50 dark:bg-amber-900/20",
-    text: "text-amber-700 dark:text-amber-500",
-    line: "bg-amber-500 dark:bg-amber-800/50",
-  },
+const variantIconColor: Record<TimelineVariant, IconColorVariant> = {
+  violet: "violet",
+  blue: "blue",
+  green: "green",
+  red: "red",
+  amber: "amber",
 };
 
 function ActivityTimeline({ steps, variant = "violet" }: ActivityTimelineProps): JSX.Element {
-  const styles = variantStyles[variant];
+  const colors = iconColorVariants[variantIconColor[variant]];
+  const lineColor = timelineLineColors[variant];
 
   return (
     <div>
@@ -62,12 +48,15 @@ function ActivityTimeline({ steps, variant = "violet" }: ActivityTimelineProps):
           <div className="flex gap-4" key={index}>
             <div className="flex flex-col items-center">
               <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${styles.bg}`}
+                className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
+                  colors.iconBgClass,
+                )}
               >
-                <Icon className={`h-5 w-5 ${styles.text}`} />
+                <Icon className={cn("h-5 w-5", colors.iconFgClass)} />
               </div>
 
-              {!isLast && <div className={`w-[1.5px] flex-1 ${styles.line}`} />}
+              {!isLast && <div className={cn("w-[1.5px] flex-1", lineColor)} />}
             </div>
 
             <div className="flex flex-col gap-1 pb-6">

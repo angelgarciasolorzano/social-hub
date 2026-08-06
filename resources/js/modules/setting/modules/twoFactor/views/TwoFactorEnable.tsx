@@ -23,6 +23,7 @@ import { Progress } from "@/shared/components/shadcn/ui/progress";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib";
+import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/dialog/twoFactorEnable/RegenerateCodesDialog";
@@ -159,8 +160,8 @@ function TwoFactorEnable({
 function TwoFactorTitle(): JSX.Element {
   return (
     <div className="flex items-start gap-6 rounded-xl border bg-card p-6 shadow-sm">
-      <div className="rounded-3xl bg-green-200/50 p-2 dark:bg-green-900/20">
-        <ShieldCheck className="h-12 w-12 text-green-700 dark:text-green-500" />
+      <div className={cn(iconColorVariants.green.iconBgClass, "rounded-3xl p-2")}>
+        <ShieldCheck className={cn("h-12 w-12", iconColorVariants.green.iconFgClass)} />
       </div>
 
       <div className="flex flex-1 flex-col gap-3">
@@ -269,10 +270,7 @@ function TwoFactorSecuritySummary({
   const renderAction = (action: SumaryCardAction) => {
     switch (action.type) {
       case "badge": {
-        const badgeClassName =
-          action.variant === "default"
-            ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-            : "";
+        const badgeClassName = action.variant === "default" ? badgeVariants.success : "";
 
         return (
           <Badge variant={action.variant} className={cn(badgeClassName)}>
@@ -341,8 +339,13 @@ function TwoFactorSafetyTips(): JSX.Element {
 
           return (
             <div key={tip.key} className="flex gap-4">
-              <div className="flex h-12 w-12 shrink-0 rounded-md bg-purple-100/50 p-2 dark:bg-purple-900/20">
-                <Icon className="h-8 w-8 text-purple-700 dark:text-purple-500" />
+              <div
+                className={cn(
+                  iconColorVariants.purple.iconBgClass,
+                  "flex h-12 w-12 shrink-0 rounded-md p-2",
+                )}
+              >
+                <Icon className={cn("h-8 w-8", iconColorVariants.purple.iconFgClass)} />
               </div>
 
               <div className="flex flex-1 flex-col gap-0.5">

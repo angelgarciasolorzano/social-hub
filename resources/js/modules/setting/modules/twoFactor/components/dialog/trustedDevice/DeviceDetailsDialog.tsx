@@ -44,7 +44,7 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
-import { alertVariants, badgeVariants } from "@/shared/lib/styling";
+import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
@@ -131,8 +131,13 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
     <Card className="dark:bg-input/10">
       <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
         <div className="flex gap-4">
-          <div className="flex h-20 w-20 rounded-md border border-violet-100 bg-violet-100/50 p-4 dark:border-violet-200/10 dark:bg-violet-900/20">
-            <MdOutlineLaptopMac className="h-12 w-12 text-violet-700 dark:text-violet-500" />
+          <div
+            className={cn(
+              iconColorVariants.violet.iconBgClass,
+              "flex h-20 w-20 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
+            )}
+          >
+            <MdOutlineLaptopMac className={cn("h-12 w-12", iconColorVariants.violet.iconFgClass)} />
           </div>
 
           <div className="flex flex-col items-start gap-3">
