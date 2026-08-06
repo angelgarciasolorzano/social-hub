@@ -28,24 +28,21 @@ export const twoFactorSecurityOptions: OptionCardItem<TwoFactorSecurityOptionKey
     title: "Códigos de respaldo",
     description: "Usa estos códigos si no tienes acceso a tu autenticador.",
     icon: TableOfContents,
-    iconBgColor: "bg-violet-100/50 dark:bg-violet-900/20",
-    iconColor: "text-violet-700 dark:text-violet-500",
+    iconColor: "violet",
   },
   {
     key: twoFactorSecurityOptionsKey.regenerateCodes,
     title: "Regenerar códigos",
     description: "Genera nuevos códigos de respaldo. Los actuales dejarán de funcionar.",
     icon: Repeat,
-    iconBgColor: "bg-violet-100/50 dark:bg-violet-900/20",
-    iconColor: "text-violet-700 dark:text-violet-500",
+    iconColor: "violet",
   },
   {
     key: twoFactorSecurityOptionsKey.disable2FA,
     title: "Desactivar 2FA",
     description: "Desactiva la autenticación de dos factores en tu cuenta.",
     icon: ShieldOff,
-    iconBgColor: "bg-red-100/50 dark:bg-red-900/20",
-    iconColor: "text-red-700 dark:text-red-500",
+    iconColor: "red",
   },
 ];
 

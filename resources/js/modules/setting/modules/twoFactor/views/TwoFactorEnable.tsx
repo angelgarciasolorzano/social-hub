@@ -224,8 +224,7 @@ function TwoFactorSecuritySummary({
       title: "Estado de 2FA",
       description: "La autenticación de dos factores está activa en tu cuenta.",
       icon: ShieldCheck,
-      iconBgColor: "bg-green-100/50 dark:bg-green-900/20",
-      iconColor: "text-green-700 dark:text-green-500",
+      iconColor: "green",
       action: { type: "badge", variant: "default", label: "Activado" },
     },
     {
@@ -233,8 +232,7 @@ function TwoFactorSecuritySummary({
       title: "Dispositivos de confianza",
       description: trustedDevicesLabel,
       icon: MonitorSmartphone,
-      iconBgColor: "bg-violet-100/50 dark:bg-violet-900/20",
-      iconColor: "text-violet-700 dark:text-violet-500",
+      iconColor: "violet",
       action: {
         type: "button",
         label: trustedDevicesCount === 0 ? "Configurar" : "Ver dispositivos",
@@ -246,8 +244,7 @@ function TwoFactorSecuritySummary({
       title: "Códigos de respaldo",
       description: `Tienes ${recoveryCodesList.length} de 8 códigos disponibles.`,
       icon: Key,
-      iconBgColor: "bg-orange-100/50 dark:bg-orange-900/20",
-      iconColor: "text-orange-700 dark:text-orange-500",
+      iconColor: "orange",
       action: {
         type: "progress",
         current: recoveryCodesList.length,
@@ -259,8 +256,7 @@ function TwoFactorSecuritySummary({
       title: "Fecha de activación",
       description: "Activaste 2FA el 15 de marzo 2024, 11:45 AM",
       icon: Clock4,
-      iconBgColor: "bg-blue-100/50 dark:bg-blue-900/20",
-      iconColor: "text-blue-700 dark:text-blue-500",
+      iconColor: "blue",
       action: {
         type: "chevron",
         onClick: () => {

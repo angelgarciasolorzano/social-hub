@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 
 import { type HoverBorderColor, hoverBorderColors } from "@/shared/lib/styling/hoverBorderColors";
+import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
 import { cn } from "@/shared/lib/utils";
 
 export interface OptionCardItem<TKey extends string = string> {
@@ -11,8 +12,7 @@ export interface OptionCardItem<TKey extends string = string> {
   title: string;
   description: string;
   icon: LucideIcon;
-  iconBgColor: string;
-  iconColor: string;
+  iconColor: IconColorVariant;
 }
 
 interface OptionCardProps<TKey extends string = string> {
@@ -35,9 +35,7 @@ export function OptionCard<TKey extends string = string>({
       <div className="flex items-stretch gap-4">
         {options.map((option) => {
           const Icon = option.icon;
-
-          const colorMatch = /text-(\w+)-\d+/.exec(option.iconColor);
-          const colorName = colorMatch?.[1] ?? "gray";
+          const colors = iconColorVariants[option.iconColor];
 
           return (
             <div
@@ -48,17 +46,17 @@ export function OptionCard<TKey extends string = string>({
               className={cn(
                 "group flex flex-1 gap-4 rounded-xl border p-4 shadow-sm transition-all",
                 hasAction && "cursor-pointer hover:shadow-lg",
-                hasAction && hoverBorderColors[colorName as HoverBorderColor],
+                hasAction && hoverBorderColors[option.iconColor as HoverBorderColor],
               )}
             >
               <div
                 className={cn(
                   "flex h-12 w-12 shrink-0 rounded-md p-2 transition-transform",
-                  option.iconBgColor,
+                  colors.iconBgClass,
                   hasAction && "group-hover:scale-110",
                 )}
               >
-                <Icon className={cn("h-8 w-8", option.iconColor)} />
+                <Icon className={cn("h-8 w-8", colors.iconFgClass)} />
               </div>
 
               <div className="flex flex-1 flex-col gap-0.5">
@@ -72,7 +70,7 @@ export function OptionCard<TKey extends string = string>({
                   <ChevronRight
                     className={cn(
                       "h-5 w-5 transition-all group-hover:translate-x-1",
-                      option.iconColor,
+                      colors.iconFgClass,
                     )}
                   />
                 </div>

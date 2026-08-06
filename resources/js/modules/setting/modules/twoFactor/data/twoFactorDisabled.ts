@@ -18,24 +18,21 @@ export const twoFactorBenefits: OptionCardItem[] = [
     title: "Mas seguridad",
     description: "Protege tu cuenta contra accesos no autorizados.",
     icon: LockKeyhole,
-    iconBgColor: "bg-green-100/50 dark:bg-green-900/20",
-    iconColor: "text-green-700 dark:text-green-500",
+    iconColor: "green",
   },
   {
     key: "verification",
     title: "Verificación adicional",
     description: "Requiere un código único además de tu contraseña.",
     icon: ShieldCheck,
-    iconBgColor: "bg-blue-100/50 dark:bg-blue-900/20",
-    iconColor: "text-blue-700 dark:text-blue-500",
+    iconColor: "blue",
   },
   {
     key: "standard",
     title: "Estandar confiable",
     description: "Utilizamos TOTP, un estandar ampliamente reconocido y seguro.",
     icon: Star,
-    iconBgColor: "bg-purple-100/50 dark:bg-purple-900/20",
-    iconColor: "text-purple-700 dark:text-purple-500",
+    iconColor: "purple",
   },
 ];
 
@@ -48,8 +45,7 @@ export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
     description:
       "Guarda los codigos de respaldos que te proporcionaremos. Te permitiran acceder a tu cuenta si pierdes el telefono.",
     icon: KeyRound,
-    iconBgColor: "bg-green-100/50 dark:bg-green-900/20",
-    iconColor: "text-green-700 dark:text-green-500",
+    iconColor: "green",
   },
   {
     key: "backup-codes",
@@ -57,8 +53,7 @@ export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
     description:
       "Cada código de recuperación se puede usar una vez para acceder a tu cuenta y se eliminará después de su uso. Si necesitas más, genera nuevos códigos después de activar 2FA.",
     icon: MonitorSmartphone,
-    iconBgColor: "bg-yellow-100/50 dark:bg-yellow-900/20",
-    iconColor: "text-yellow-500 dark:text-yellow-400",
+    iconColor: "yellow",
   },
   {
     key: "devices-trusted",
@@ -66,8 +61,7 @@ export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
     description:
       "Marca tus dispositivos como confiables para no tener que ingresar un código de verificación cada vez que inicies sesión desde ellos.",
     icon: ShieldCheck,
-    iconBgColor: "bg-blue-100/50 dark:bg-blue-900/20",
-    iconColor: "text-blue-700 dark:text-blue-500",
+    iconColor: "blue",
   },
   {
     key: "support",
@@ -75,8 +69,7 @@ export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
     description:
       "Si no puedes acceder a tu cuenta, usa un codigo de respaldo o contacta al soporte para obtener ayuda.",
     icon: LockKeyhole,
-    iconBgColor: "bg-purple-100/50 dark:bg-purple-900/20",
-    iconColor: "text-purple-700 dark:text-purple-500",
+    iconColor: "purple",
   },
 ];
 
