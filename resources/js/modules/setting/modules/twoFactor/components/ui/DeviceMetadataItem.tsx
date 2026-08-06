@@ -4,12 +4,14 @@ import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 
+import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
+import { cn } from "@/shared/lib/utils";
+
 export interface DeviceMetadataItemProps {
   icon: LucideIcon;
   title: string;
   description: string;
-  iconBgClass?: string;
-  iconFgClass?: string;
+  iconColor?: IconColorVariant;
   badge?: string;
   badgePosition?: "before" | "after";
 }
@@ -18,17 +20,18 @@ function DeviceMetadataItem({
   icon: Icon,
   title,
   description,
-  iconBgClass = "bg-violet-100/50 dark:bg-violet-900/20",
-  iconFgClass = "text-violet-700 dark:text-violet-500",
+  iconColor = "violet",
   badge,
   badgePosition = "before",
 }: DeviceMetadataItemProps): JSX.Element {
   const showBadge = badge !== undefined && badge !== "";
 
+  const colors = iconColorVariants[iconColor];
+
   return (
     <div className="flex gap-4">
-      <div className={`flex h-10 w-10 rounded-md p-2 ${iconBgClass}`}>
-        <Icon className={`h-6 w-6 ${iconFgClass}`} />
+      <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>
+        <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
       </div>
 
       <div className="flex flex-col gap-1">

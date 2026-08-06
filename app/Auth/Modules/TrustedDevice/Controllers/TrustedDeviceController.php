@@ -130,7 +130,7 @@ class TrustedDeviceController extends Controller
     /**
      * Build a preview of the device that would be created from the current request.
      *
-     * @return array{browser: string, osName: string, ip: string|null, userAgent: string|null, lastUsedAt: string}
+     * @return array{browser: string, osName: string, userAgent: string|null, lastUsedAt: string, expiresAt: string}
      */
     public function inferDevicePreview(Request $request): array
     {
@@ -139,12 +139,15 @@ class TrustedDeviceController extends Controller
 
         $osInfo = $this->inferOsInfo($deviceDetector);
 
+        /** @var int $cookieLifetimeMinutes */
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
+
         return [
             'browser' => $this->inferBrowser($deviceDetector),
             'osName' => $osInfo['name'],
-            'ip' => $request->ip(),
             'userAgent' => $request->userAgent(),
             'lastUsedAt' => CarbonImmutable::now()->toIso8601String(),
+            'expiresAt' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes)->toIso8601String(),
         ];
     }
 

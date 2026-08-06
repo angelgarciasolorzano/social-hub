@@ -96,22 +96,19 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
   const primaryRow: Omit<DeviceMetadataItemProps, "badge" | "badgePosition">[] = [
     {
       icon: Globe,
-      iconBgClass: "bg-blue-100/50 dark:bg-blue-900/20",
-      iconFgClass: "text-blue-700 dark:text-blue-500",
+      iconColor: "blue",
       title: "Navegador",
       description: browser,
     },
     {
       icon: Monitor,
-      iconBgClass: "bg-violet-100/50 dark:bg-violet-900/20",
-      iconFgClass: "text-violet-700 dark:text-violet-500",
+      iconColor: "violet",
       title: "Sistema operativo",
       description: osName,
     },
     {
       icon: MapPin,
-      iconBgClass: "bg-orange-100/50 dark:bg-orange-900/20",
-      iconFgClass: "text-orange-700 dark:text-orange-500",
+      iconColor: "orange",
       title: "Direccion IP",
       description: ip,
     },
@@ -120,16 +117,14 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
   const secondaryRow: DeviceMetadataItemProps[] = [
     {
       icon: Clock4,
-      iconBgClass: "bg-cyan-100/50 dark:bg-cyan-900/20",
-      iconFgClass: "text-cyan-700 dark:text-cyan-500",
+      iconColor: "cyan",
       title: "Ultimo acceso",
       description: formatLongDate(existingDevice.lastUsedAt),
       badge: existingDevice.lastUsedAt !== null ? fromNow(existingDevice.lastUsedAt) : undefined,
     },
     {
       icon: MapPin,
-      iconBgClass: "bg-green-100/50 dark:bg-green-900/20",
-      iconFgClass: "text-green-700 dark:text-green-500",
+      iconColor: "green",
       title: "Expira el",
       description: formatLongDate(existingDevice.expiresAt),
       badge: formatTimeUntil(existingDevice.expiresAt),
