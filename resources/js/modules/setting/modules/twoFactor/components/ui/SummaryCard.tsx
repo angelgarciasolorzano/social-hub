@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/sh
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
-import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
+import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 type BadgeVariant =
   | "default"

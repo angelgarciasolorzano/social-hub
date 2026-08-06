@@ -16,7 +16,7 @@ import {
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import { useCopyWithCountdown } from "../../../../hooks/useCopyWithCountdown";
 

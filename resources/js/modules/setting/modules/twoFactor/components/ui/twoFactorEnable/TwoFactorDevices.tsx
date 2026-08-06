@@ -34,7 +34,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useDialog } from "@/shared/hooks";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import type {
   TwoFactorDeviceActionKey,

@@ -27,7 +27,7 @@ import {
 } from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 

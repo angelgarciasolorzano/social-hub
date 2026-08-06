@@ -9,7 +9,7 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import { downloadRecoveryCodes } from "../../../../utils/downloadRecoveryCodes";
 

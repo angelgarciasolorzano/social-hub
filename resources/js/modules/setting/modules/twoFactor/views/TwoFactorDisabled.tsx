@@ -18,7 +18,7 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import { OptionCard } from "../components/ui/OptionCard";
 import SummaryCard from "../components/ui/SummaryCard";

@@ -13,7 +13,7 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/shadcn/ui/input-otp";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import { OTP_MAX_LENGTH } from "../../../../hooks/useTwoFactorAuth";
 

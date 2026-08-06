@@ -4,8 +4,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 
-import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
-import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
+import { badgeVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 export interface DeviceMetadataItemProps {

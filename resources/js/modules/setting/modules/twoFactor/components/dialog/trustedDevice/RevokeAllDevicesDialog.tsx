@@ -32,7 +32,7 @@ import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 interface RevokeAllDevicesDialogProps {
   devices: TrustedDevice[];

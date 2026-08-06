@@ -25,7 +25,7 @@ import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";

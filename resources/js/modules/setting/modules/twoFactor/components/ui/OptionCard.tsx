@@ -3,8 +3,12 @@ import type { JSX } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 
-import { type HoverBorderColor, hoverBorderColors } from "@/shared/lib/styling/hoverBorderColors";
-import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
+import {
+  type HoverBorderColor,
+  hoverBorderColors,
+  type IconColorVariant,
+  iconColorVariants,
+} from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 export interface OptionCardItem<TKey extends string = string> {

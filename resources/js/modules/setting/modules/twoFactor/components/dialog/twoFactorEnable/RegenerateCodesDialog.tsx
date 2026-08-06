@@ -21,7 +21,7 @@ import {
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 interface RegenerateCodesDialogProps {
   isOpen: boolean;

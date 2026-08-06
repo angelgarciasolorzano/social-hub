@@ -24,8 +24,7 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
-import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
+import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";

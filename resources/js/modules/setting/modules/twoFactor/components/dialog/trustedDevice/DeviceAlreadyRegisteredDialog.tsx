@@ -15,7 +15,7 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";

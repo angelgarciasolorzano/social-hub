@@ -29,8 +29,7 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
-import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
+import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";

@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/
 import { Button } from "@/shared/components/shadcn/ui/button";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
+import { alertVariants } from "@/shared/lib/styling";
 
 interface ChooseMethodStepProps {
   errors: string[];

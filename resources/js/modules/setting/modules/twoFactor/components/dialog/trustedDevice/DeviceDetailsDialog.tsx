@@ -44,8 +44,7 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
-import { badgeVariants } from "@/shared/lib/styling/badgeVariants";
+import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";

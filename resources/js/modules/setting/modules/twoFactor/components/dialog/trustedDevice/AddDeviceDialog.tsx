@@ -25,8 +25,7 @@ import { Input } from "@/shared/components/shadcn/ui/input";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling/alertVariants";
-import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling/iconColorVariants";
+import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import type { DevicePreview } from "../../../types/devicePreview";
