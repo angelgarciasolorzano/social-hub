@@ -1,4 +1,4 @@
-import type { JSX, SubmitEvent } from "react";
+import { Fragment, type JSX, type SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
@@ -32,6 +32,7 @@ import { cn } from "@/shared/lib/utils";
 import type { DevicePreview } from "../../../types/devicePreview";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
+import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface AddDeviceDialogProps {
   preview: DevicePreview | null;
@@ -128,11 +129,42 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
 
 type DevicePreviewInfoProps = Pick<AddDeviceDialogProps, "preview">;
 
+type DevicePreviewItems = Pick<DeviceMetadataItemProps, "title" | "description" | "icon"> & {
+  iconColor: IconColorVariant;
+};
+
 function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
   const browser = valueOrFallback(preview?.browser, "Desconocido");
   const osName = valueOrFallback(preview?.osName, "Desconocido");
   const lastUsedAt = preview?.lastUsedAt ?? new Date().toISOString();
   const expiresAt = preview?.expiresAt ?? new Date().toISOString();
+
+  const items: DevicePreviewItems[] = [
+    {
+      title: "Navegador",
+      description: browser,
+      icon: Globe,
+      iconColor: "green",
+    },
+    {
+      title: "Sistema operativo",
+      description: osName,
+      icon: Monitor,
+      iconColor: "blue",
+    },
+    {
+      title: "Ultimo acceso",
+      description: fromNow(lastUsedAt),
+      icon: Clock,
+      iconColor: "yellow",
+    },
+    {
+      title: "Expira el",
+      description: formatLongDate(expiresAt),
+      icon: CalendarRange,
+      iconColor: "green",
+    },
+  ];
 
   return (
     <Card className="dark:bg-input/10">
@@ -140,54 +172,28 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
         <CardTitle>Dispositivo detectado</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-4">
-        <PreviewCard icon={Globe} iconColor="green" title="Navegador" value={browser} />
+        {items.map((item, index) => {
+          const colors = iconColorVariants[item.iconColor];
 
-        <Separator orientation="vertical" />
+          return (
+            <Fragment key={item.title}>
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>
+                  <item.icon className={cn("h-6 w-6", colors.iconFgClass)} />
+                </div>
 
-        <PreviewCard icon={Monitor} iconColor="blue" title="Sistema operativo" value={osName} />
-        <Separator orientation="vertical" />
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-sm font-medium">{item.title}</span>
+                  <span className="text-sm text-muted-foreground">{item.description}</span>
+                </div>
+              </div>
 
-        <PreviewCard
-          icon={Clock}
-          iconColor="yellow"
-          title="Ultimo acceso"
-          value={fromNow(lastUsedAt)}
-        />
-        <Separator orientation="vertical" />
-
-        <PreviewCard
-          icon={CalendarRange}
-          iconColor="green"
-          title="Expira el"
-          value={formatLongDate(expiresAt)}
-        />
+              {index < items.length - 1 && <Separator orientation="vertical" />}
+            </Fragment>
+          );
+        })}
       </CardContent>
     </Card>
-  );
-}
-
-interface PreviewCardProps {
-  icon: typeof Globe;
-  iconColor: IconColorVariant;
-  title: string;
-  value: string;
-}
-
-function PreviewCard({ icon: Icon, iconColor, title, value }: PreviewCardProps): JSX.Element {
-  const colors = iconColorVariants[iconColor];
-
-  return (
-    <div className="flex flex-col items-center gap-4 text-center">
-      <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>
-        <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
-      </div>
-
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-sm font-medium">{title}</span>
-
-        <span className="text-sm text-muted-foreground">{value}</span>
-      </div>
-    </div>
   );
 }
 
