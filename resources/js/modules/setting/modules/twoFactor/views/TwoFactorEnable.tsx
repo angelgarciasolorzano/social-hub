@@ -39,15 +39,12 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
-import type { DevicePreview } from "../types/devicePreview";
 import type { TrustedDevice } from "../types/trustedDevice";
 
 interface TwoFactorEnableProps {
   trustedDevices: TrustedDevice[];
   trustedDevicesCount: number;
   trustedDevicesForRevoke: TrustedDevice[];
-  currentDevicePreview: DevicePreview | null;
-  currentDeviceMatch: TrustedDevice | null;
 }
 
 type SlotContent = "codes" | "devices";
@@ -56,8 +53,6 @@ function TwoFactorEnable({
   trustedDevices,
   trustedDevicesCount,
   trustedDevicesForRevoke,
-  currentDevicePreview,
-  currentDeviceMatch,
 }: TwoFactorEnableProps): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
@@ -136,8 +131,6 @@ function TwoFactorEnable({
             <TwoFactorDevices
               devices={trustedDevices}
               trustedDevicesForRevoke={trustedDevicesForRevoke}
-              currentDevicePreview={currentDevicePreview}
-              currentDeviceMatch={currentDeviceMatch}
             />
           )}
         </CardContent>

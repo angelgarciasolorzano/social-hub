@@ -1,13 +1,12 @@
 import type { JSX } from "react";
 import { Fragment, useEffect } from "react";
 
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 import { ImWindows } from "react-icons/im";
 import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
 
-import dayjs from "dayjs";
 import {
   AlertTriangleIcon,
   EllipsisVertical,
@@ -36,6 +35,8 @@ import { useDialog } from "@/shared/hooks";
 
 import { alertVariants } from "@/shared/lib/styling";
 
+import type { SharedData } from "@/shared/types";
+
 import type {
   TwoFactorDeviceActionKey,
   TwoFactorDeviceSectionActionKey,
@@ -45,6 +46,7 @@ import {
   twoFactorDeviceActions,
   twoFactorDeviceSectionActionKey,
 } from "../../../data/twoFactorEnable";
+import { fromNow } from "../../../utils/dateTime";
 import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
 import DeviceAlreadyRegisteredDialog from "../../dialog/trustedDevice/DeviceAlreadyRegisteredDialog";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
@@ -56,9 +58,12 @@ import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 interface TwoFactorDevicesProps {
   devices: TrustedDevice[];
   trustedDevicesForRevoke: TrustedDevice[];
-  currentDevicePreview: DevicePreview | null;
-  currentDeviceMatch: TrustedDevice | null;
 }
+
+type TwoFactorDevicesPageProps = SharedData & {
+  currentDevicePreview?: DevicePreview | null;
+  currentDeviceMatch?: TrustedDevice | null;
+};
 
 interface SectionDialogState {
   kind: TwoFactorDeviceSectionActionKey;
@@ -70,9 +75,9 @@ const DIALOG_EXIT_ANIMATION_MS = 200;
 function TwoFactorDevices({
   devices,
   trustedDevicesForRevoke,
-  currentDevicePreview,
-  currentDeviceMatch,
 }: TwoFactorDevicesProps): JSX.Element {
+  const { currentDevicePreview, currentDeviceMatch } = usePage<TwoFactorDevicesPageProps>().props;
+
   const hasDevices = devices.length > 0;
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
@@ -129,14 +134,14 @@ function TwoFactorDevices({
       case twoFactorDeviceSectionActionKey.addDevice:
         return (
           <AddDeviceDialog
-            preview={currentDevicePreview}
+            preview={currentDevicePreview ?? null}
             open={!isClosing}
             onClose={handleSectionDialogClose}
           />
         );
 
       case twoFactorDeviceSectionActionKey.deviceAlreadyRegistered:
-        if (currentDeviceMatch === null) {
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
 
@@ -164,14 +169,6 @@ function TwoFactorDevices({
 
   const deviceLabel = (device: TrustedDevice): string => {
     return device.name ?? device.userAgent ?? "Dispositivo desconocido";
-  };
-
-  const fromNow = (iso: string | null): string => {
-    if (iso === null) {
-      return "nunca";
-    }
-
-    return dayjs(iso).fromNow();
   };
 
   const getDeviceIcon = (device: TrustedDevice, className: string): JSX.Element => {
@@ -220,7 +217,6 @@ function TwoFactorDevices({
           <TwoFactorDevicesItems
             devices={devices}
             deviceLabel={deviceLabel}
-            fromNow={fromNow}
             getDeviceIcon={getDeviceIcon}
           />
         ) : (
@@ -260,7 +256,6 @@ function TwoFactorDevices({
 
 type TwoFactorDevicesItemsProps = Pick<TwoFactorDevicesProps, "devices"> & {
   deviceLabel: (device: TrustedDevice) => string;
-  fromNow: (iso: string | null) => string;
   getDeviceIcon: (device: TrustedDevice, className: string) => JSX.Element;
 };
 
@@ -273,7 +268,6 @@ interface DialogActionState {
 function TwoFactorDevicesItems({
   devices,
   deviceLabel,
-  fromNow,
   getDeviceIcon,
 }: TwoFactorDevicesItemsProps) {
   const dialogDevice = useDialog<DialogActionState | null>(null);

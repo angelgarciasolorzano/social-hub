@@ -6,7 +6,6 @@ import { useDialog } from "@/shared/hooks/useDialog";
 
 import TwoFactorSetupDialog from "./components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
 import { useTwoFactorAuth } from "./hooks/useTwoFactorAuth";
-import type { DevicePreview } from "./types/devicePreview";
 import type { TrustedDevice } from "./types/trustedDevice";
 import TwoFactorDisabled from "./views/TwoFactorDisabled";
 import TwoFactorEnable from "./views/TwoFactorEnable";
@@ -18,8 +17,6 @@ interface Props {
   trustedDevices?: TrustedDevice[];
   trustedDevicesCount?: number;
   trustedDevicesForRevoke?: TrustedDevice[];
-  currentDevicePreview?: DevicePreview | null;
-  currentDeviceMatch?: TrustedDevice | null;
 }
 
 export default function TwoFactor({
@@ -29,8 +26,6 @@ export default function TwoFactor({
   trustedDevices = [],
   trustedDevicesCount = 0,
   trustedDevicesForRevoke = [],
-  currentDevicePreview = null,
-  currentDeviceMatch = null,
 }: Props): JSX.Element {
   const {
     qrCodeSvg,
@@ -56,8 +51,6 @@ export default function TwoFactor({
               trustedDevices={trustedDevices}
               trustedDevicesCount={trustedDevicesCount}
               trustedDevicesForRevoke={trustedDevicesForRevoke}
-              currentDevicePreview={currentDevicePreview}
-              currentDeviceMatch={currentDeviceMatch}
             />
           ) : (
             <TwoFactorDisabled
