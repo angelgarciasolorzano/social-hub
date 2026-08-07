@@ -24,7 +24,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.nova
-/.vscode
+/.vscode/*
+!/.vscode/settings.json
+!/.vscode/extensions.json
 /.zed
 /_ide_helper.php
 /_ide_helper_models.php
