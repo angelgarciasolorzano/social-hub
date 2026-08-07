@@ -55,14 +55,11 @@ import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
 import RevokeAllDevicesDialog from "../../dialog/trustedDevice/RevokeAllDevicesDialog";
 import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 
-interface TwoFactorDevicesProps {
-  devices: TrustedDevice[];
-  trustedDevicesForRevoke: TrustedDevice[];
-}
-
 type TwoFactorDevicesPageProps = SharedData & {
   currentDevicePreview?: DevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
+  trustedDevices?: TrustedDevice[];
+  trustedDevicesForRevoke?: TrustedDevice[];
 };
 
 interface SectionDialogState {
@@ -72,13 +69,15 @@ interface SectionDialogState {
 
 const DIALOG_EXIT_ANIMATION_MS = 200;
 
-function TwoFactorDevices({
-  devices,
-  trustedDevicesForRevoke,
-}: TwoFactorDevicesProps): JSX.Element {
-  const { currentDevicePreview, currentDeviceMatch } = usePage<TwoFactorDevicesPageProps>().props;
+function TwoFactorDevices(): JSX.Element {
+  const {
+    currentDevicePreview,
+    currentDeviceMatch,
+    trustedDevices = [],
+    trustedDevicesForRevoke = [],
+  } = usePage<TwoFactorDevicesPageProps>().props;
 
-  const hasDevices = devices.length > 0;
+  const hasDevices = trustedDevices.length > 0;
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
 
@@ -215,7 +214,7 @@ function TwoFactorDevices({
       <div className="flex flex-col gap-3 rounded-md border p-5">
         {hasDevices ? (
           <TwoFactorDevicesItems
-            devices={devices}
+            devices={trustedDevices}
             deviceLabel={deviceLabel}
             getDeviceIcon={getDeviceIcon}
           />
@@ -254,10 +253,11 @@ function TwoFactorDevices({
   );
 }
 
-type TwoFactorDevicesItemsProps = Pick<TwoFactorDevicesProps, "devices"> & {
+interface TwoFactorDevicesItemsProps {
+  devices: TrustedDevice[];
   deviceLabel: (device: TrustedDevice) => string;
   getDeviceIcon: (device: TrustedDevice, className: string) => JSX.Element;
-};
+}
 
 interface DialogActionState {
   kind: TwoFactorDeviceActionKey;

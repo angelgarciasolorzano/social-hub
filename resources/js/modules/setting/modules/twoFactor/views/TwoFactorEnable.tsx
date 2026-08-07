@@ -41,19 +41,10 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
-import type { TrustedDevice } from "../types/trustedDevice";
-
-interface TwoFactorEnableProps {
-  trustedDevices: TrustedDevice[];
-  trustedDevicesForRevoke: TrustedDevice[];
-}
 
 type SlotContent = "codes" | "devices";
 
-function TwoFactorEnable({
-  trustedDevices,
-  trustedDevicesForRevoke,
-}: TwoFactorEnableProps): JSX.Element {
+function TwoFactorEnable(): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
   const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
@@ -127,10 +118,7 @@ function TwoFactorEnable({
               recoveryCodesList={recoveryCodesList}
             />
           ) : (
-            <TwoFactorDevices
-              devices={trustedDevices}
-              trustedDevicesForRevoke={trustedDevicesForRevoke}
-            />
+            <TwoFactorDevices />
           )}
         </CardContent>
       </Card>
