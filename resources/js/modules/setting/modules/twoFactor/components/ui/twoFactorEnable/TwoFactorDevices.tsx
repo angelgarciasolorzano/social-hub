@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 
 import { router } from "@inertiajs/react";
 
@@ -77,6 +77,12 @@ function TwoFactorDevices({
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
 
+  useEffect(() => {
+    router.reload({
+      only: ["currentDevicePreview", "currentDeviceMatch"],
+    });
+  }, []);
+
   const handleRevokeAllDevices = (): void => {
     router.reload({
       only: ["trustedDevicesForRevoke"],
@@ -90,17 +96,12 @@ function TwoFactorDevices({
   };
 
   const handleAddDevice = (): void => {
-    router.reload({
-      only: ["currentDevicePreview", "currentDeviceMatch"],
-      onSuccess: () => {
-        const kind =
-          currentDeviceMatch !== null
-            ? twoFactorDeviceSectionActionKey.deviceAlreadyRegistered
-            : twoFactorDeviceSectionActionKey.addDevice;
+    const kind =
+      currentDeviceMatch !== null
+        ? twoFactorDeviceSectionActionKey.deviceAlreadyRegistered
+        : twoFactorDeviceSectionActionKey.addDevice;
 
-        sectionDialog.show({ kind, closing: false });
-      },
-    });
+    sectionDialog.show({ kind, closing: false });
   };
 
   const handleSectionDialogClose = (): void => {
