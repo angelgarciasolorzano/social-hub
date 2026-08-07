@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\User\TwoFactor\Controllers;
 
 use App\Auth\Models\TrustedDevice;
-use App\Auth\Modules\TrustedDevice\Controllers\TrustedDeviceController;
+use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use App\User\TwoFactor\Requests\TwoFactorDisableRequest;
 use App\User\TwoFactor\Requests\TwoFactorRegenerateRecoveryCodesRequest;
 use App\User\TwoFactor\Requests\TwoFactorRequest;
+use Carbon\CarbonImmutable;
+use DeviceDetector\DeviceDetector;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +27,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TwoFactorController extends Controller implements HasMiddleware
 {
+    use InfersDeviceMetadata;
+
     public static function middleware(): array
     {
         return Features::canManageTwoFactorAuthentication()
@@ -74,21 +79,15 @@ class TwoFactorController extends Controller implements HasMiddleware
                     ->all()
             );
 
-            /** @var TrustedDeviceController $trustedDeviceController */
-            $trustedDeviceController = resolve(TrustedDeviceController::class);
-
             $props['currentDevicePreview'] = Inertia::optional(
-                fn (): array => $trustedDeviceController->inferDevicePreview(request())
+                fn (): array => $this->previewDevice(request())
             );
 
             $props['currentDeviceMatch'] = Inertia::optional(
                 function (): ?array {
-                    /** @var TrustedDeviceController $trustedDeviceController */
-                    $trustedDeviceController = resolve(TrustedDeviceController::class);
+                    $device = $this->findCurrentDeviceMatch(request());
 
-                    $device = $trustedDeviceController->findCurrentDeviceMatch(request());
-
-                    if ($device === null) {
+                    if (! $device instanceof TrustedDevice) {
                         return null;
                     }
 
@@ -123,5 +122,67 @@ class TwoFactorController extends Controller implements HasMiddleware
 
         return Inertia::flash('success', 'La autenticación de dos factores ha sido desactivada correctamente.')
             ->back();
+    }
+
+    /**
+     * Build a preview of the device that would be created from the current request.
+     *
+     * @return array{browser: string, osName: string, userAgent: string|null, lastUsedAt: string, expiresAt: string}
+     */
+    private function previewDevice(Request $request): array
+    {
+        /** @var DeviceDetector $deviceDetector */
+        $deviceDetector = resolve(DeviceDetector::class);
+
+        $osInfo = $this->inferOsInfo($deviceDetector);
+
+        /** @var int $cookieLifetimeMinutes */
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
+
+        return [
+            'browser' => $this->inferBrowser($deviceDetector),
+            'osName' => $osInfo['name'],
+            'userAgent' => $request->userAgent(),
+            'lastUsedAt' => CarbonImmutable::now()->toIso8601String(),
+            'expiresAt' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes)->toIso8601String(),
+        ];
+    }
+
+    /**
+     * Find the active trusted device that fingerprints as the current request
+     * (user_agent + OS name + IP, with a not-yet-expired `expires_at`). Returns
+     * null when the request is made from an unknown device.
+     */
+    private function findCurrentDeviceMatch(Request $request): ?TrustedDevice
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $userAgent = $request->userAgent();
+
+        if ($userAgent === null) {
+            return null;
+        }
+
+        /** @var DeviceDetector $deviceDetector */
+        $deviceDetector = resolve(DeviceDetector::class);
+
+        $osInfo = $this->inferOsInfo($deviceDetector);
+
+        $builder = $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osInfo['name'])
+            ->where('expires_at', '>', CarbonImmutable::now());
+
+        $ip = $request->ip();
+
+        if ($ip !== null) {
+            $builder->where('ip', $ip);
+        }
+
+        return $builder->first();
     }
 }

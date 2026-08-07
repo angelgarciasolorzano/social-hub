@@ -1,0 +1,12 @@
+{
+  "enabledPlugins": {
+    "gitbutler@gitbutler-tools": true,
+    "liquid-skills@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "github@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "linear@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
+  }
+}
