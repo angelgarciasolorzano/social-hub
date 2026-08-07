@@ -7,6 +7,7 @@ import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import type { TrustedDevice } from "../../types/trustedDevice";
+import { deviceLabel } from "../../utils/trustedDevice";
 
 interface DeviceSummaryCardProps {
   device: TrustedDevice;
@@ -19,10 +20,6 @@ function DeviceSummaryCard({
   lastUsedAt,
   expiration,
 }: DeviceSummaryCardProps): JSX.Element {
-  const deviceLabel = (device: TrustedDevice): string => {
-    return device.name ?? device.userAgent ?? "Dispositivo desconocido";
-  };
-
   return (
     <div className="flex min-w-0 items-start gap-2.5 rounded-xl border p-4 shadow-xs dark:bg-input/10">
       <div

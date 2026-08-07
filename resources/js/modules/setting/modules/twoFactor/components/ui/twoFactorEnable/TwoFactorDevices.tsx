@@ -4,16 +4,8 @@ import { Fragment, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
-import { ImWindows } from "react-icons/im";
-import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
 
-import {
-  AlertTriangleIcon,
-  EllipsisVertical,
-  MonitorSmartphone,
-  Plus,
-  Smartphone,
-} from "lucide-react";
+import { AlertTriangleIcon, EllipsisVertical, MonitorSmartphone, Plus } from "lucide-react";
 
 import type { DevicePreview } from "@/modules/setting/modules/twoFactor/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
@@ -47,6 +39,7 @@ import {
   twoFactorDeviceSectionActionKey,
 } from "../../../data/twoFactorEnable";
 import { fromNow } from "../../../utils/dateTime";
+import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
 import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
 import DeviceAlreadyRegisteredDialog from "../../dialog/trustedDevice/DeviceAlreadyRegisteredDialog";
 import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
@@ -166,27 +159,6 @@ function TwoFactorDevices(): JSX.Element {
     }
   };
 
-  const deviceLabel = (device: TrustedDevice): string => {
-    return device.name ?? device.userAgent ?? "Dispositivo desconocido";
-  };
-
-  const getDeviceIcon = (device: TrustedDevice, className: string): JSX.Element => {
-    const os = device.osName?.toLowerCase() ?? "";
-    const isMobile = device.isMobile;
-
-    if (isMobile) {
-      if (os.includes("apple") || os.includes("mac")) {
-        return <Smartphone className={className} />;
-      }
-
-      return <MdPhoneAndroid className={className} />;
-    }
-
-    if (os.includes("mac")) return <MdOutlineLaptopMac className={className} />;
-
-    return <ImWindows className={className} />;
-  };
-
   return (
     <>
       <Alert className={alertVariants.info}>
@@ -213,11 +185,7 @@ function TwoFactorDevices(): JSX.Element {
 
       <div className="flex flex-col gap-3 rounded-md border p-5">
         {hasDevices ? (
-          <TwoFactorDevicesItems
-            devices={trustedDevices}
-            deviceLabel={deviceLabel}
-            getDeviceIcon={getDeviceIcon}
-          />
+          <TwoFactorDevicesItems devices={trustedDevices} />
         ) : (
           <div className="text-sm text-muted-foreground">
             No tienes dispositivos de confianza configurados.
@@ -255,8 +223,6 @@ function TwoFactorDevices(): JSX.Element {
 
 interface TwoFactorDevicesItemsProps {
   devices: TrustedDevice[];
-  deviceLabel: (device: TrustedDevice) => string;
-  getDeviceIcon: (device: TrustedDevice, className: string) => JSX.Element;
 }
 
 interface DialogActionState {
@@ -265,11 +231,7 @@ interface DialogActionState {
   closing: boolean;
 }
 
-function TwoFactorDevicesItems({
-  devices,
-  deviceLabel,
-  getDeviceIcon,
-}: TwoFactorDevicesItemsProps) {
+function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
   const dialogDevice = useDialog<DialogActionState | null>(null);
 
   const handleDeviceAction = (action: TwoFactorDeviceActionKey, device: TrustedDevice) => {
