@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { useState } from "react";
 
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 import {
   Bolt,
@@ -25,6 +25,8 @@ import { useDialog } from "@/shared/hooks/useDialog";
 import { cn } from "@/shared/lib";
 import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
+import type { SharedData } from "@/shared/types";
+
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/dialog/twoFactorEnable/RegenerateCodesDialog";
 import { OptionCard } from "../components/ui/OptionCard";
@@ -43,7 +45,6 @@ import type { TrustedDevice } from "../types/trustedDevice";
 
 interface TwoFactorEnableProps {
   trustedDevices: TrustedDevice[];
-  trustedDevicesCount: number;
   trustedDevicesForRevoke: TrustedDevice[];
 }
 
@@ -51,7 +52,6 @@ type SlotContent = "codes" | "devices";
 
 function TwoFactorEnable({
   trustedDevices,
-  trustedDevicesCount,
   trustedDevicesForRevoke,
 }: TwoFactorEnableProps): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
@@ -106,7 +106,6 @@ function TwoFactorEnable({
 
         <TwoFactorSecuritySummary
           recoveryCodesList={recoveryCodesList}
-          trustedDevicesCount={trustedDevicesCount}
           onViewTrustedDevices={handleViewTrustedDevices}
         />
 
@@ -197,16 +196,20 @@ function TwoFactorTitle(): JSX.Element {
 }
 
 interface TwoFactorSecuritySummaryProps {
-  trustedDevicesCount: number;
   recoveryCodesList: string[];
   onViewTrustedDevices: () => void;
 }
 
+type TwoFactorSecuritySummaryPageProps = SharedData & {
+  trustedDevicesCount?: number;
+};
+
 function TwoFactorSecuritySummary({
   recoveryCodesList,
-  trustedDevicesCount,
   onViewTrustedDevices,
 }: TwoFactorSecuritySummaryProps): JSX.Element {
+  const { trustedDevicesCount = 0 } = usePage<TwoFactorSecuritySummaryPageProps>().props;
+
   const trustedDevicesLabel =
     trustedDevicesCount === 1
       ? "1 dispositivo de confianza configurado."

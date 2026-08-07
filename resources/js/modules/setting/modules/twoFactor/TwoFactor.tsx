@@ -15,7 +15,6 @@ interface Props {
   requiresConfirmation?: boolean;
   twoFactorEnabled?: boolean;
   trustedDevices?: TrustedDevice[];
-  trustedDevicesCount?: number;
   trustedDevicesForRevoke?: TrustedDevice[];
 }
 
@@ -24,7 +23,6 @@ export default function TwoFactor({
   requiresConfirmation = false,
   twoFactorEnabled = false,
   trustedDevices = [],
-  trustedDevicesCount = 0,
   trustedDevicesForRevoke = [],
 }: Props): JSX.Element {
   const {
@@ -49,7 +47,6 @@ export default function TwoFactor({
           {twoFactorEnabled ? (
             <TwoFactorEnable
               trustedDevices={trustedDevices}
-              trustedDevicesCount={trustedDevicesCount}
               trustedDevicesForRevoke={trustedDevicesForRevoke}
             />
           ) : (
