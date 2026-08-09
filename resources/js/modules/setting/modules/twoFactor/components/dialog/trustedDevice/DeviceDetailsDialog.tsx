@@ -43,14 +43,24 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useDialog } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
+import {
+  twoFactorDeviceActionKey,
+  type TwoFactorDeviceActionKey,
+} from "../../../data/twoFactorEnable";
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
+import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
 import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
 import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
+import RenameDeviceDialog from "./RenameDeviceDialog";
+import RenewTrustDialog from "./RenewTrustDialog";
+import RevokeDeviceDialog from "./RevokeDeviceDialog";
 
 interface DeviceDetailsDialogProps {
   device: TrustedDevice;
@@ -58,7 +68,63 @@ interface DeviceDetailsDialogProps {
   onClose: () => void;
 }
 
+type DialogActionState = Pick<DeviceDetailsDialogProps, "device"> &
+  DialogClosingState & {
+    kind: Exclude<TwoFactorDeviceActionKey, typeof twoFactorDeviceActionKey.viewDevice>;
+  };
+
 function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps): JSX.Element {
+  const dialogDevice = useDialog<DialogActionState | null>(null);
+
+  const handleDeviceAction = (
+    action: Exclude<TwoFactorDeviceActionKey, typeof twoFactorDeviceActionKey.viewDevice>,
+    device: TrustedDevice,
+  ): void => {
+    dialogDevice.show({ kind: action, device, closing: false });
+  };
+
+  const handleDialogClose = createDialogCloseHandler(dialogDevice);
+
+  const renderDialogDevice = (): JSX.Element | null => {
+    if (dialogDevice.state === null) {
+      return null;
+    }
+
+    const isClosing = dialogDevice.state.closing;
+
+    switch (dialogDevice.state.kind) {
+      case twoFactorDeviceActionKey.renameDevice:
+        return (
+          <RenameDeviceDialog
+            device={dialogDevice.state.device}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case twoFactorDeviceActionKey.renewTrust:
+        return (
+          <RenewTrustDialog
+            device={dialogDevice.state.device}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case twoFactorDeviceActionKey.revokeDevice:
+        return (
+          <RevokeDeviceDialog
+            device={dialogDevice.state.device}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -94,12 +160,26 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
 
         <DialogFooter className="flex items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <Button type="button" className="cursor-pointer" variant="outline">
+            <Button
+              type="button"
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => {
+                handleDeviceAction(twoFactorDeviceActionKey.renameDevice, device);
+              }}
+            >
               <Pencil data-icon="inline-start" />
               Renombrar dispositivo
             </Button>
 
-            <Button type="button" className="cursor-pointer" variant="outline">
+            <Button
+              type="button"
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => {
+                handleDeviceAction(twoFactorDeviceActionKey.renewTrust, device);
+              }}
+            >
               <RefreshCcw data-icon="inline-start" />
               Renovar confianza
             </Button>
@@ -113,12 +193,17 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
             <Button
               variant="destructive"
               className="dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+              onClick={() => {
+                handleDeviceAction(twoFactorDeviceActionKey.revokeDevice, device);
+              }}
             >
               <Trash2 />
               Revokar dispositivo
             </Button>
           </div>
         </DialogFooter>
+
+        {renderDialogDevice()}
       </DialogContent>
     </Dialog>
   );

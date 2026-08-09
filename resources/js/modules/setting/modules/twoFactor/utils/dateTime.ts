@@ -40,23 +40,16 @@ export function fromNow(iso: string | null): string {
 
 /**
  * Returns the ISO string, or the current time as ISO if it is missing.
- * When a `fallback` date is provided, it takes precedence over the value.
  *
  * @example
- * valueOrNow("2025-01-15T10:00:00.000Z")                       // "2025-01-15T10:00:00.000Z"
- * valueOrNow("")                                               // "<current ISO>"
- * valueOrNow(null)                                             // "<current ISO>"
- * valueOrNow(undefined)                                        // "<current ISO>"
- * valueOrNow(null, new Date("2025-01-15"))                     // "2025-01-15T00:00:00.000Z"
- * valueOrNow("2025-01-15T10:00:00.000Z", new Date("2026-...")) // "2026-..." (fallback wins)
+ * valueOrNow("2025-01-15T10:00:00.000Z")  // "2025-01-15T10:00:00.000Z"
+ * valueOrNow("")                          // "<current ISO>"
+ * valueOrNow(null)                        // "<current ISO>"
+ * valueOrNow(undefined)                   // "<current ISO>"
  */
-export function valueOrNow(value: string | null | undefined, fallback?: Date): string {
+export function valueOrNow(value: string | null | undefined): string {
   if (value === null || value === undefined || value === "") {
     return new Date().toISOString();
-  }
-
-  if (fallback !== undefined) {
-    return fallback.toISOString();
   }
 
   return value;
