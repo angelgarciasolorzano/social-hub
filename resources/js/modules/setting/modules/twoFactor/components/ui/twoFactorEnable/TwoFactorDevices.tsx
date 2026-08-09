@@ -39,6 +39,7 @@ import {
   twoFactorDeviceSectionActionKey,
 } from "../../../data/twoFactorEnable";
 import { fromNow } from "../../../utils/dateTime";
+import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
 import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
 import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
 import DeviceAlreadyRegisteredDialog from "../../dialog/trustedDevice/DeviceAlreadyRegisteredDialog";
@@ -55,12 +56,9 @@ type TwoFactorDevicesPageProps = SharedData & {
   trustedDevicesForRevoke?: TrustedDevice[];
 };
 
-interface SectionDialogState {
+interface SectionDialogState extends DialogClosingState {
   kind: TwoFactorDeviceSectionActionKey;
-  closing: boolean;
 }
-
-const DIALOG_EXIT_ANIMATION_MS = 200;
 
 function TwoFactorDevices(): JSX.Element {
   const {
@@ -101,19 +99,7 @@ function TwoFactorDevices(): JSX.Element {
     sectionDialog.show({ kind, closing: false });
   };
 
-  const handleSectionDialogClose = (): void => {
-    const current = sectionDialog.state;
-
-    if (current === null || current.closing) {
-      return;
-    }
-
-    sectionDialog.setState({ ...current, closing: true });
-
-    setTimeout(() => {
-      sectionDialog.hide();
-    }, DIALOG_EXIT_ANIMATION_MS);
-  };
+  const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
 
   const renderSectionDialog = (): JSX.Element | null => {
     if (sectionDialog.state === null) {
@@ -225,10 +211,9 @@ interface TwoFactorDevicesItemsProps {
   devices: TrustedDevice[];
 }
 
-interface DialogActionState {
+interface DialogActionState extends DialogClosingState {
   kind: TwoFactorDeviceActionKey;
   device: TrustedDevice;
-  closing: boolean;
 }
 
 function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
@@ -238,19 +223,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
     dialogDevice.show({ kind: action, device, closing: false });
   };
 
-  const handleDialogClose = (): void => {
-    const current = dialogDevice.state;
-
-    if (current === null || current.closing) {
-      return;
-    }
-
-    dialogDevice.setState({ ...current, closing: true });
-
-    setTimeout(() => {
-      dialogDevice.hide();
-    }, DIALOG_EXIT_ANIMATION_MS);
-  };
+  const handleDialogClose = createDialogCloseHandler(dialogDevice);
 
   const renderDialogDevice = (): JSX.Element | null => {
     if (dialogDevice.state === null) {
