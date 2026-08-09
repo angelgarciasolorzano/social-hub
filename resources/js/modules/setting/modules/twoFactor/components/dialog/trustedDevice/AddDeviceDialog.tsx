@@ -29,7 +29,7 @@ import { alertVariants, type IconColorVariant, iconColorVariants } from "@/share
 import { cn } from "@/shared/lib/utils";
 
 import type { DevicePreview } from "../../../types/devicePreview";
-import { formatLongDate, fromNow } from "../../../utils/dateTime";
+import { formatLongDate, fromNow, valueOrNow } from "../../../utils/dateTime";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
 import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
@@ -135,8 +135,8 @@ type DevicePreviewItems = Pick<DeviceMetadataItemProps, "title" | "description" 
 function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
   const browser = valueOrFallback(preview?.browser, "Desconocido");
   const osName = valueOrFallback(preview?.osName, "Desconocido");
-  const lastUsedAt = preview?.lastUsedAt ?? new Date().toISOString();
-  const expiresAt = preview?.expiresAt ?? new Date().toISOString();
+  const lastUsedAt = valueOrNow(preview?.lastUsedAt);
+  const expiresAt = valueOrNow(preview?.expiresAt);
 
   const items: DevicePreviewItems[] = [
     {
