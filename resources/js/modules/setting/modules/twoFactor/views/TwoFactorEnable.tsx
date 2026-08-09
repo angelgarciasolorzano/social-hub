@@ -41,15 +41,20 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
+import { createDialogCloseHandler, type DialogClosingState } from "../utils/dialog";
 
 type SlotContent = "codes" | "devices";
+
+type SecurityDialogKind = "regenerateCodes" | "disableTwoFactor";
+
+interface SecurityDialogState extends DialogClosingState {
+  kind: SecurityDialogKind;
+}
 
 function TwoFactorEnable(): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
-  const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
-  const { open: showDisabledTwoFactorDialog, setOpen: setShowDisabledTwoFactorDialog } =
-    useDialog();
+  const securityDialog = useDialog<SecurityDialogState | null>(null);
 
   const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
@@ -62,6 +67,14 @@ function TwoFactorEnable(): JSX.Element {
     });
   };
 
+  const handleSecurityDialogClose = createDialogCloseHandler(securityDialog);
+
+  const handleSecurityDialogOpenChange = (open: boolean): void => {
+    if (!open) {
+      handleSecurityDialogClose();
+    }
+  };
+
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
       case twoFactorSecurityOptionsKey.backupCodes:
@@ -70,17 +83,44 @@ function TwoFactorEnable(): JSX.Element {
         break;
 
       case twoFactorSecurityOptionsKey.regenerateCodes:
-        setShowRegenerateCodesDialog(true);
+        securityDialog.show({ kind: "regenerateCodes", closing: false });
 
         break;
 
       case twoFactorSecurityOptionsKey.disable2FA:
-        setShowDisabledTwoFactorDialog(true);
+        securityDialog.show({ kind: "disableTwoFactor", closing: false });
 
         break;
 
       default:
         break;
+    }
+  };
+
+  const renderSecurityDialog = (): JSX.Element | null => {
+    if (securityDialog.state === null) {
+      return null;
+    }
+
+    const isClosing = securityDialog.state.closing;
+
+    switch (securityDialog.state.kind) {
+      case "regenerateCodes":
+        return (
+          <RegenerateCodesDialog
+            fetchRecoveryCodes={fetchRecoveryCodes}
+            isOpen={!isClosing}
+            setOpen={handleSecurityDialogOpenChange}
+          />
+        );
+
+      case "disableTwoFactor":
+        return (
+          <DisabledTwoFactorDialog isOpen={!isClosing} setOpen={handleSecurityDialogOpenChange} />
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -123,16 +163,7 @@ function TwoFactorEnable(): JSX.Element {
         </CardContent>
       </Card>
 
-      <RegenerateCodesDialog
-        isOpen={showRegenerateCodesDialog}
-        setOpen={setShowRegenerateCodesDialog}
-        fetchRecoveryCodes={fetchRecoveryCodes}
-      />
-
-      <DisabledTwoFactorDialog
-        isOpen={showDisabledTwoFactorDialog}
-        setOpen={setShowDisabledTwoFactorDialog}
-      />
+      {renderSecurityDialog()}
     </div>
   );
 }

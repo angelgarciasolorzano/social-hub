@@ -1,4 +1,4 @@
-import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
+import type { JSX, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -25,7 +25,7 @@ import { alertVariants } from "@/shared/lib/styling";
 
 interface RegenerateCodesDialogProps {
   isOpen: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
   fetchRecoveryCodes: () => Promise<void>;
 }
 
