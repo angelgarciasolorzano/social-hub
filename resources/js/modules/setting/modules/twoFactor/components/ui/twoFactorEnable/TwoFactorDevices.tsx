@@ -232,11 +232,18 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
 
     const isClosing = dialogDevice.state.closing;
 
+    const selectedDevice =
+      devices.find((device) => device.id === dialogDevice.state?.device.id) ?? null;
+
+    if (selectedDevice === null) {
+      return null;
+    }
+
     switch (dialogDevice.state.kind) {
       case twoFactorDeviceActionKey.viewDevice:
         return (
           <DeviceDetailsDialog
-            device={dialogDevice.state.device}
+            device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
           />
@@ -245,7 +252,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
       case twoFactorDeviceActionKey.renameDevice:
         return (
           <RenameDeviceDialog
-            device={dialogDevice.state.device}
+            device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
           />
@@ -253,17 +260,13 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
 
       case twoFactorDeviceActionKey.renewTrust:
         return (
-          <RenewTrustDialog
-            device={dialogDevice.state.device}
-            open={!isClosing}
-            onClose={handleDialogClose}
-          />
+          <RenewTrustDialog device={selectedDevice} open={!isClosing} onClose={handleDialogClose} />
         );
 
       case twoFactorDeviceActionKey.revokeDevice:
         return (
           <RevokeDeviceDialog
-            device={dialogDevice.state.device}
+            device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
           />

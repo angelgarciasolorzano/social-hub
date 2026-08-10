@@ -38,5 +38,9 @@
   },
   "[yaml]": {
     "editor.formatOnSave": true
+  },
+  "[php]": {
+    "editor.defaultFormatter": "laravel.vscode-laravel",
+    "editor.formatOnSave": true
   }
 }

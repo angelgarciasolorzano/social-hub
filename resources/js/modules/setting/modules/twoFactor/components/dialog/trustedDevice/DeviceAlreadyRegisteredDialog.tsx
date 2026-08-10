@@ -1,7 +1,16 @@
 import type { JSX } from "react";
 import { Fragment } from "react";
 
-import { ArrowRight, CircleAlert, Clock4, Globe, MapPin, Monitor, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarRange,
+  CircleAlert,
+  Clock4,
+  Globe,
+  MapPin,
+  Monitor,
+  ShieldCheck,
+} from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -123,7 +132,7 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
       badge: existingDevice.lastUsedAt !== null ? fromNow(existingDevice.lastUsedAt) : undefined,
     },
     {
-      icon: MapPin,
+      icon: CalendarRange,
       iconColor: "green",
       title: "Expira el",
       description: formatLongDate(existingDevice.expiresAt),
