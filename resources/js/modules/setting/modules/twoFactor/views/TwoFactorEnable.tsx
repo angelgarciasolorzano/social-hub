@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
@@ -18,6 +18,15 @@ import {
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/shadcn/ui/dropdown-menu";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { useDialog } from "@/shared/hooks/useDialog";
@@ -34,8 +43,10 @@ import type { SumaryCardAction, SumaryCardItem } from "../components/ui/SummaryC
 import SummaryCard from "../components/ui/SummaryCard";
 import TwoFactorDevices from "../components/ui/twoFactorEnable/TwoFactorDevices";
 import TwoFactorRecoveryCodes from "../components/ui/twoFactorEnable/TwoFactorRecoveryCodes";
-import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
+import type { TwoFactorManageActionKey, TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
+  twoFactorManageActionKey,
+  twoFactorManageActions,
   twoFactorSafetyTips,
   twoFactorSecurityOptions,
   twoFactorSecurityOptionsKey,
@@ -97,6 +108,33 @@ function TwoFactorEnable(): JSX.Element {
     }
   };
 
+  const handleManageAction = (action: TwoFactorManageActionKey): void => {
+    switch (action) {
+      case twoFactorManageActionKey.viewCodes:
+        setSelectedContent("codes");
+
+        break;
+
+      case twoFactorManageActionKey.regenerateCodes:
+        securityDialog.show({ kind: "regenerateCodes", closing: false });
+
+        break;
+
+      case twoFactorManageActionKey.viewDevices:
+        handleViewTrustedDevices();
+
+        break;
+
+      case twoFactorManageActionKey.disable2FA:
+        securityDialog.show({ kind: "disableTwoFactor", closing: false });
+
+        break;
+
+      default:
+        break;
+    }
+  };
+
   const renderSecurityDialog = (): JSX.Element | null => {
     if (securityDialog.state === null) {
       return null;
@@ -127,7 +165,7 @@ function TwoFactorEnable(): JSX.Element {
   return (
     <div className="flex gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-8">
-        <TwoFactorTitle />
+        <TwoFactorTitle onManageAction={handleManageAction} />
 
         <OptionCard
           title="Opciones de seguridad"
@@ -168,7 +206,11 @@ function TwoFactorEnable(): JSX.Element {
   );
 }
 
-function TwoFactorTitle(): JSX.Element {
+interface TwoFactorTitleProps {
+  onManageAction: (action: TwoFactorManageActionKey) => void;
+}
+
+function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
   return (
     <div className="flex items-start gap-6 rounded-xl border bg-card p-6 shadow-sm">
       <div className={cn(iconColorVariants.green.iconBgClass, "rounded-3xl p-2")}>
@@ -205,11 +247,43 @@ function TwoFactorTitle(): JSX.Element {
         </div>
       </div>
 
-      <Button>
-        <Bolt />
-        Administrar
-        <ChevronDown />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">
+            <Bolt />
+            Administrar
+            <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {twoFactorManageActions.map((group, groupIndex) => (
+            <Fragment key={groupIndex}>
+              <DropdownMenuGroup>
+                {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+
+                {group.actions.map((action) => {
+                  const Icon = action.icon;
+
+                  return (
+                    <DropdownMenuItem
+                      key={action.key}
+                      onClick={() => {
+                        onManageAction(action.key);
+                      }}
+                      className={action.className}
+                    >
+                      <Icon className={action.iconClassName} />
+                      {action.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+
+              {groupIndex < twoFactorManageActions.length - 1 && <DropdownMenuSeparator />}
+            </Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
