@@ -61,7 +61,7 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
     event.preventDefault();
 
     submit(store(), {
-      only: ["trustedDevices"],
+      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch"],
       onSuccess: () => {
         reset();
         onClose();

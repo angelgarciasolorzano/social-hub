@@ -61,7 +61,7 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
     event.preventDefault();
 
     submit(destroy({ trustedDevice: device.id }), {
-      only: ["trustedDevices", "trustedDevicesCount"],
+      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch"],
       onSuccess: () => {
         onClose();
         reset();
