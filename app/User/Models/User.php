@@ -27,6 +27,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $two_factor_confirmed_at
  *
  * @mixin IdeHelperUser
  */
@@ -96,6 +97,7 @@ class User extends Authenticatable implements HasMedia
     {
         return [
             'email_verified_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

@@ -60,6 +60,8 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
 
+            $props['twoFactorConfirmedAt'] = $user->two_factor_confirmed_at?->toIso8601String();
+
             $props['trustedDevicesCount'] = $user->trustedDevices()->count();
 
             $props['trustedDevices'] = Inertia::optional(
@@ -77,6 +79,18 @@ class TwoFactorController extends Controller implements HasMiddleware
                     ->get()
                     ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve(request()))
                     ->all()
+            );
+
+            $props['firstTrustedDevice'] = Inertia::optional(
+                function () use ($user): ?array {
+                    $device = $user->trustedDevices()->oldest('created_at')->first();
+
+                    if (! $device instanceof TrustedDevice) {
+                        return null;
+                    }
+
+                    return new TrustedDeviceResource($device)->resolve(request());
+                }
             );
 
             $props['currentDevicePreview'] = Inertia::optional(
