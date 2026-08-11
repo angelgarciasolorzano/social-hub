@@ -36,7 +36,7 @@ export const iconColorVariants = {
     iconFgClass: "text-cyan-700 dark:text-cyan-500",
   },
   gray: {
-    iconBgClass: "bg-gray-100/80 dark:bg-gray-900/20",
+    iconBgClass: "bg-gray-100/80 dark:bg-gray-900/30",
     iconFgClass: "text-gray-700 dark:text-gray-500",
   },
 } as const;

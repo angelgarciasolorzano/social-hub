@@ -10,6 +10,7 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -132,7 +133,7 @@ function TwoFactorActivationDetailsDialog({
           </AlertDescription>
         </Alert>
 
-        <Card>
+        <Card className="dark:bg-input/10">
           <CardContent className="space-y-4">
             {details.map((detail) => {
               const Icon = detail.icon;
@@ -171,15 +172,11 @@ function TwoFactorActivationDetailsDialog({
         </Alert>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setOpen(false);
-            }}
-          >
-            Cerrar
-          </Button>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Cerrar
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
