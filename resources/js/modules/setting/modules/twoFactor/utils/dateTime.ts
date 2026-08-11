@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 
 const LONG_DATE_FORMAT = "D [de] MMMM [del] YYYY, h:mm A";
+const ACTIVATION_DATE_FORMAT = "D [de] MMMM [de] YYYY";
+const ACTIVATION_TIME_FORMAT = "h:mm A";
 
 /**
  * Formats an ISO date string into a long, human-readable format in Spanish.
@@ -12,6 +14,34 @@ export function formatLongDate(iso: string | null): string {
   }
 
   return dayjs(iso).format(LONG_DATE_FORMAT);
+}
+
+/**
+ * Formats an ISO date string into the activation date format (no time, no "del").
+ * Example: "15 de marzo de 2024". Returns "No disponible" if the date is null.
+ */
+export function formatActivationDate(iso: string | null): string {
+  if (iso === null) {
+    return "No disponible";
+  }
+
+  return dayjs(iso).format(ACTIVATION_DATE_FORMAT);
+}
+
+/**
+ * Formats an ISO date string into a localized 12-hour time with a GMT offset suffix.
+ * Example: "11:45 AM (GMT-6)" / "11:45 AM (GMT+5:30)". Returns "No disponible" if null.
+ */
+export function formatActivationTime(iso: string | null): string {
+  if (iso === null) {
+    return "No disponible";
+  }
+
+  const date = dayjs(iso);
+  const offset = date.format("Z");
+  const formattedOffset = offset.replace(/^([+-])0/, "$1").replace(":00", "");
+
+  return `${date.format(ACTIVATION_TIME_FORMAT)} (GMT${formattedOffset})`;
 }
 
 /**

@@ -38,6 +38,7 @@ import type { SharedData } from "@/shared/types";
 
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/dialog/twoFactorEnable/RegenerateCodesDialog";
+import TwoFactorActivationDetailsDialog from "../components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog";
 import { OptionCard } from "../components/ui/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/ui/SummaryCard";
 import SummaryCard from "../components/ui/SummaryCard";
@@ -52,6 +53,7 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
+import { formatLongDate } from "../utils/dateTime";
 import { createDialogCloseHandler, type DialogClosingState } from "../utils/dialog";
 
 type SlotContent = "codes" | "devices";
@@ -62,10 +64,17 @@ interface SecurityDialogState extends DialogClosingState {
   kind: SecurityDialogKind;
 }
 
+type TwoFactorEnablePageProps = SharedData & {
+  twoFactorConfirmedAt?: string | null;
+};
+
 function TwoFactorEnable(): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
+  const { twoFactorConfirmedAt = null } = usePage<TwoFactorEnablePageProps>().props;
+
   const securityDialog = useDialog<SecurityDialogState | null>(null);
+  const activationDetailsDialog = useDialog();
 
   const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
@@ -76,6 +85,10 @@ function TwoFactorEnable(): JSX.Element {
         setSelectedContent("devices");
       },
     });
+  };
+
+  const handleViewActivationDetails = (): void => {
+    activationDetailsDialog.setOpen(true);
   };
 
   const handleSecurityDialogClose = createDialogCloseHandler(securityDialog);
@@ -176,6 +189,8 @@ function TwoFactorEnable(): JSX.Element {
         <TwoFactorSecuritySummary
           recoveryCodesList={recoveryCodesList}
           onViewTrustedDevices={handleViewTrustedDevices}
+          onActivationDetailsClick={handleViewActivationDetails}
+          twoFactorConfirmedAt={twoFactorConfirmedAt}
         />
 
         <TwoFactorSafetyTips />
@@ -202,6 +217,12 @@ function TwoFactorEnable(): JSX.Element {
       </Card>
 
       {renderSecurityDialog()}
+
+      <TwoFactorActivationDetailsDialog
+        confirmedAt={twoFactorConfirmedAt}
+        isOpen={activationDetailsDialog.open}
+        setOpen={activationDetailsDialog.setOpen}
+      />
     </div>
   );
 }
@@ -291,6 +312,8 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
 interface TwoFactorSecuritySummaryProps {
   recoveryCodesList: string[];
   onViewTrustedDevices: () => void;
+  onActivationDetailsClick: () => void;
+  twoFactorConfirmedAt: string | null;
 }
 
 type TwoFactorSecuritySummaryPageProps = SharedData & {
@@ -300,6 +323,8 @@ type TwoFactorSecuritySummaryPageProps = SharedData & {
 function TwoFactorSecuritySummary({
   recoveryCodesList,
   onViewTrustedDevices,
+  onActivationDetailsClick,
+  twoFactorConfirmedAt,
 }: TwoFactorSecuritySummaryProps): JSX.Element {
   const { trustedDevicesCount = 0 } = usePage<TwoFactorSecuritySummaryPageProps>().props;
 
@@ -307,6 +332,11 @@ function TwoFactorSecuritySummary({
     trustedDevicesCount === 1
       ? "1 dispositivo de confianza configurado."
       : `${trustedDevicesCount} dispositivos de confianza configurados.`;
+
+  const activationDescription =
+    twoFactorConfirmedAt === null
+      ? "Aún no has activado la autenticación de dos factores."
+      : `Activaste 2FA el ${formatLongDate(twoFactorConfirmedAt)}`;
 
   const summarySecurity: SumaryCardItem[] = [
     {
@@ -344,14 +374,12 @@ function TwoFactorSecuritySummary({
     {
       key: "activation-date",
       title: "Fecha de activación",
-      description: "Activaste 2FA el 15 de marzo 2024, 11:45 AM",
+      description: activationDescription,
       icon: Clock4,
       iconColor: "blue",
       action: {
         type: "chevron",
-        onClick: () => {
-          // TODO: open activation details dialog
-        },
+        onClick: onActivationDetailsClick,
       },
     },
   ];
