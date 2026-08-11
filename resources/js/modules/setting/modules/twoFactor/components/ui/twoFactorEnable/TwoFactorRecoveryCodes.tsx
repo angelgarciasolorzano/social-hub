@@ -1,7 +1,9 @@
 import type { JSX } from "react";
-import { Fragment, useEffect } from "react";
+import { Fragment, useCallback, useEffect } from "react";
 
-import { AlertTriangleIcon, ArrowDown, Clock4, Copy } from "lucide-react";
+import { usePage } from "@inertiajs/react";
+
+import { AlertTriangleIcon, ArrowDown, Check, Clock4, Copy } from "lucide-react";
 
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -16,8 +18,14 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { useClipboard } from "@/shared/hooks/useClipboard";
+
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
+
+import type { SharedData } from "@/shared/types";
+
+import { downloadRecoveryCodes } from "../../../utils/downloadRecoveryCodes";
 
 interface TwoFactorRecoveryCodesProps {
   errors: string[];
@@ -27,6 +35,21 @@ interface TwoFactorRecoveryCodesProps {
 
 function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element {
   const { errors, fetchRecoveryCodes, recoveryCodesList } = props;
+  const { email: accountEmail } = usePage<SharedData>().props.auth.user;
+
+  const [copiedText, copy] = useClipboard({ resetTimeout: 2000 });
+
+  const handleCopy = useCallback((): void => {
+    if (!recoveryCodesList.length) {
+      return;
+    }
+
+    void copy(recoveryCodesList.join("\n"));
+  }, [recoveryCodesList, copy]);
+
+  const handleDownload = useCallback((): void => {
+    downloadRecoveryCodes(recoveryCodesList, { accountEmail });
+  }, [recoveryCodesList, accountEmail]);
 
   useEffect(() => {
     if (!recoveryCodesList.length) {
@@ -83,12 +106,30 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
       </div>
 
       <div className="flex items-center justify-between gap-4">
-        <Button variant="outline" className="flex-1 py-6">
-          <Copy className="mr-2 h-4 w-4" />
-          Copiar Códigos
+        <Button
+          variant="outline"
+          className="flex-1 py-6"
+          disabled={!recoveryCodesList.length}
+          onClick={handleCopy}
+        >
+          {copiedText !== null ? (
+            <>
+              <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+              Copiado
+            </>
+          ) : (
+            <>
+              <Copy className="h-4 w-4" />
+              Copiar Códigos
+            </>
+          )}
         </Button>
 
-        <Button className="flex-1 py-6">
+        <Button
+          className="flex-1 py-6"
+          disabled={!recoveryCodesList.length}
+          onClick={handleDownload}
+        >
           <ArrowDown />
           Descargar .txt
         </Button>

@@ -196,7 +196,7 @@ function TwoFactorEnable(): JSX.Element {
         <TwoFactorSafetyTips />
       </div>
 
-      <Card className="w-full max-w-sm shrink-0">
+      <Card className="w-full max-w-sm shrink-0 self-start">
         <CardHeader>
           <CardTitle>
             {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
