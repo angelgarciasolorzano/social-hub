@@ -158,6 +158,7 @@ class TwoFactorController extends Controller implements HasMiddleware
             'browser' => $this->inferBrowser($deviceDetector),
             'osName' => $osInfo['name'],
             'userAgent' => $request->userAgent(),
+            'isMobile' => $this->inferIsMobile($deviceDetector),
             'lastUsedAt' => CarbonImmutable::now()->toIso8601String(),
             'expiresAt' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes)->toIso8601String(),
         ];
