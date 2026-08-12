@@ -25,6 +25,7 @@ import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
+import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import { downloadRecoveryCodes } from "../../../utils/downloadRecoveryCodes";
 
 interface TwoFactorRecoveryCodesProps {
@@ -33,19 +34,32 @@ interface TwoFactorRecoveryCodesProps {
   recoveryCodesList: string[];
 }
 
+type TwoFactorRecoveryCodesPageProps = SharedData & {
+  recoveryCodesRegeneratedAt?: string | null;
+};
+
 function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element {
   const { errors, fetchRecoveryCodes, recoveryCodesList } = props;
-  const { email: accountEmail } = usePage<SharedData>().props.auth.user;
 
-  const [copiedText, copy] = useClipboard({ resetTimeout: 2000 });
+  const { recoveryCodesRegeneratedAt = null, auth } =
+    usePage<TwoFactorRecoveryCodesPageProps>().props;
+  const { email: accountEmail } = auth.user;
+
+  const regeneratedAtLabel =
+    recoveryCodesRegeneratedAt === null
+      ? fromNow(null)
+      : formatLongDate(recoveryCodesRegeneratedAt);
+
+  const [bulkCopiedText, copyBulk] = useClipboard({ resetTimeout: 2000 });
+  const [rowCopiedText, copyRow] = useClipboard({ resetTimeout: 2000 });
 
   const handleCopy = useCallback((): void => {
     if (!recoveryCodesList.length) {
       return;
     }
 
-    void copy(recoveryCodesList.join("\n"));
-  }, [recoveryCodesList, copy]);
+    void copyBulk(recoveryCodesList.join("\n"));
+  }, [recoveryCodesList, copyBulk]);
 
   const handleDownload = useCallback((): void => {
     downloadRecoveryCodes(recoveryCodesList, { accountEmail });
@@ -77,13 +91,27 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
         {recoveryCodesList.length ? (
           <>
             {recoveryCodesList.map((code, index) => {
+              const isCopied = rowCopiedText === code;
+
               return (
                 <Fragment key={index}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{code}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      void copyRow(code);
+                    }}
+                    aria-label={isCopied ? `Código ${code} copiado` : `Copiar código ${code}`}
+                    className="-mx-2 -my-1.5 h-auto w-full justify-between rounded-md px-2 py-1.5 text-sm"
+                  >
+                    <span className="font-medium">{code}</span>
 
-                    <Copy size={16} className="text-xs text-muted-foreground" />
-                  </div>
+                    {isCopied ? (
+                      <Check size={16} className="text-xs text-green-600 dark:text-green-500" />
+                    ) : (
+                      <Copy size={16} className="text-xs text-muted-foreground" />
+                    )}
+                  </Button>
 
                   {index < recoveryCodesList.length - 1 && <Separator />}
                 </Fragment>
@@ -112,7 +140,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
           disabled={!recoveryCodesList.length}
           onClick={handleCopy}
         >
-          {copiedText !== null ? (
+          {bulkCopiedText !== null ? (
             <>
               <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
               Copiado
@@ -139,7 +167,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
         <ItemContent>
           <ItemTitle>Última regeneración</ItemTitle>
 
-          <ItemDescription>20 Mayo 2024, 14:30 PM</ItemDescription>
+          <ItemDescription>{regeneratedAtLabel}</ItemDescription>
         </ItemContent>
 
         <ItemActions>
