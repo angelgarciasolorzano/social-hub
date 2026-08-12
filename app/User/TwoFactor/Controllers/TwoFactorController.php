@@ -61,6 +61,7 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
 
             $props['twoFactorConfirmedAt'] = $user->two_factor_confirmed_at?->toIso8601String();
+            $props['recoveryCodesRegeneratedAt'] = $user->recovery_codes_regenerated_at?->toIso8601String();
 
             $props['trustedDevicesCount'] = $user->trustedDevices()->count();
 
