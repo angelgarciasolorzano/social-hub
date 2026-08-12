@@ -178,9 +178,9 @@ function AlreadyRegisteredActionsAlert(): JSX.Element {
     <Alert className={alertVariants.info}>
       <CircleAlert />
       <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
-      <AlertDescription>
+      <AlertDescription className="flex items-center gap-4">
         Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
-        <Button size="xs" variant="outline">
+        <Button size="sm" variant="outline">
           Ir a dispositivos de confianza
           <ArrowRight />
         </Button>

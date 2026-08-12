@@ -3,7 +3,7 @@ import { type JSX, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
-import { Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
+import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -165,9 +165,12 @@ function TwoFactorActivationDetailsDialog({
         <Alert className={alertVariants.success}>
           <ShieldCheck />
           <AlertTitle>Protege tu cuenta</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="flex items-start gap-2">
             Si no reconoces esta actividad, te recomendamos cambiar tu contraseña y revisar tus
             dispositivos de confianza.
+            <Button variant="outline" size="icon">
+              <ArrowRight />
+            </Button>
           </AlertDescription>
         </Alert>
 
