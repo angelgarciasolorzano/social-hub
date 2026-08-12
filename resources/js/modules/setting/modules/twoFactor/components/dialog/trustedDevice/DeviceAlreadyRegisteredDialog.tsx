@@ -8,7 +8,6 @@ import {
   Clock4,
   Globe,
   MapPin,
-  Monitor,
   ShieldCheck,
 } from "lucide-react";
 
@@ -24,10 +23,12 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { alertVariants } from "@/shared/lib/styling";
+import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
+import { cn } from "@/shared/lib/utils";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
+import { getDeviceIcon } from "../../../utils/trustedDevice";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
 import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
@@ -104,19 +105,19 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
 
   const primaryRow: Omit<DeviceMetadataItemProps, "badge" | "badgePosition">[] = [
     {
-      icon: Globe,
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />,
       iconColor: "blue",
       title: "Navegador",
       description: browser,
     },
     {
-      icon: Monitor,
+      icon: getDeviceIcon(existingDevice, cn("h-6 w-6", iconColorVariants.violet.iconFgClass)),
       iconColor: "violet",
       title: "Sistema operativo",
       description: osName,
     },
     {
-      icon: MapPin,
+      icon: <MapPin className={cn("h-6 w-6", iconColorVariants.orange.iconFgClass)} />,
       iconColor: "orange",
       title: "Direccion IP",
       description: ip,
@@ -125,14 +126,14 @@ function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
 
   const secondaryRow: DeviceMetadataItemProps[] = [
     {
-      icon: Clock4,
+      icon: <Clock4 className={cn("h-6 w-6", iconColorVariants.cyan.iconFgClass)} />,
       iconColor: "cyan",
       title: "Ultimo acceso",
       description: formatLongDate(existingDevice.lastUsedAt),
       badge: existingDevice.lastUsedAt !== null ? fromNow(existingDevice.lastUsedAt) : undefined,
     },
     {
-      icon: CalendarRange,
+      icon: <CalendarRange className={cn("h-6 w-6", iconColorVariants.green.iconFgClass)} />,
       iconColor: "green",
       title: "Expira el",
       description: formatLongDate(existingDevice.expiresAt),

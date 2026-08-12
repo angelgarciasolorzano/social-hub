@@ -1,6 +1,4 @@
-import type { JSX } from "react";
-
-import type { LucideIcon } from "lucide-react";
+import type { JSX, ReactNode } from "react";
 
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 
@@ -8,7 +6,7 @@ import { badgeVariants, type IconColorVariant, iconColorVariants } from "@/share
 import { cn } from "@/shared/lib/utils";
 
 export interface DeviceMetadataItemProps {
-  icon: LucideIcon;
+  icon: ReactNode;
   title: string;
   description: string;
   iconColor?: IconColorVariant;
@@ -17,7 +15,7 @@ export interface DeviceMetadataItemProps {
 }
 
 function DeviceMetadataItem({
-  icon: Icon,
+  icon,
   title,
   description,
   iconColor = "violet",
@@ -30,9 +28,7 @@ function DeviceMetadataItem({
 
   return (
     <div className="flex gap-4">
-      <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>
-        <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
-      </div>
+      <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>{icon}</div>
 
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium">{title}</span>

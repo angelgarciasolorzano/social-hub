@@ -1,13 +1,12 @@
 import type { JSX } from "react";
 
 import { FaCircle } from "react-icons/fa";
-import { MdOutlineLaptopMac } from "react-icons/md";
 
 import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import type { TrustedDevice } from "../../types/trustedDevice";
-import { deviceLabel } from "../../utils/trustedDevice";
+import { deviceLabel, getDeviceIcon } from "../../utils/trustedDevice";
 
 interface DeviceSummaryCardProps {
   device: TrustedDevice;
@@ -28,7 +27,7 @@ function DeviceSummaryCard({
           "flex h-14 w-14 shrink-0 rounded-md border border-violet-100 p-2 dark:border-violet-200/10",
         )}
       >
-        <MdOutlineLaptopMac className={cn("h-10 w-10", iconColorVariants.violet.iconFgClass)} />
+        {getDeviceIcon(device, cn("h-10 w-10", iconColorVariants.violet.iconFgClass))}
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">

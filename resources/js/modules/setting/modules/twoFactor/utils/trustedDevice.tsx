@@ -15,14 +15,19 @@ export function deviceLabel(device: TrustedDevice): string {
   return device.name ?? device.userAgent ?? "Dispositivo desconocido";
 }
 
+interface DeviceIconSource {
+  osName: string | null;
+  isMobile: boolean;
+}
+
 /**
  * Pick an icon component for a trusted device based on its OS name and
  * mobile flag. The caller supplies the className so the consumer controls
  * sizing and color tokens.
  */
-export function getDeviceIcon(device: TrustedDevice, className: string): JSX.Element {
-  const os = device.osName?.toLowerCase() ?? "";
-  const isMobile = device.isMobile;
+export function getDeviceIcon(source: DeviceIconSource, className: string): JSX.Element {
+  const os = source.osName?.toLowerCase() ?? "";
+  const isMobile = source.isMobile;
 
   if (isMobile) {
     if (os.includes("apple") || os.includes("mac")) {

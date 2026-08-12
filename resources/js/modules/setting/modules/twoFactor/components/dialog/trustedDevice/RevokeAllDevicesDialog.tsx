@@ -4,13 +4,13 @@ import { Fragment } from "react";
 import { type SetDataAction, useForm } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
-import { MdOutlineLaptopMac } from "react-icons/md";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import { AlertTriangleIcon, CircleAlert, Trash2 } from "lucide-react";
+import { AlertTriangleIcon, CircleAlert, MonitorSmartphone, Trash2 } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
 import { formatLongDate } from "@/modules/setting/modules/twoFactor/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
 
 import { destroyAll as destroyAllTrustedDevices } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -167,7 +167,7 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
             "flex h-14 w-14 shrink-0 rounded-full border border-violet-100 p-2 dark:border-violet-200/10",
           )}
         >
-          <MdOutlineLaptopMac className={cn("h-10 w-10", iconColorVariants.violet.iconFgClass)} />
+          <MonitorSmartphone className={cn("h-10 w-10", iconColorVariants.violet.iconFgClass)} />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
@@ -182,7 +182,7 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         {devices.map((device, index) => (
           <Fragment key={device.id}>
             <div className="mx-4 flex items-center gap-2 text-sm">
-              <MdOutlineLaptopMac className="shrink-0" />
+              {getDeviceIcon(device, "shrink-0")}
 
               <span className="max-w-20 truncate font-medium">{device.name}</span>
 

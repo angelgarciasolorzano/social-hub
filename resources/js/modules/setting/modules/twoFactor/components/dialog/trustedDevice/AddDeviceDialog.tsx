@@ -4,7 +4,7 @@ import type { SetDataAction } from "@inertiajs/react";
 import { useForm } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import { CalendarRange, CircleAlert, Clock, Globe, Monitor, ShieldPlus } from "lucide-react";
+import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-react";
 
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -30,6 +30,7 @@ import { cn } from "@/shared/lib/utils";
 
 import type { DevicePreview } from "../../../types/devicePreview";
 import { formatLongDate, fromNow, valueOrNow } from "../../../utils/dateTime";
+import { getDeviceIcon } from "../../../utils/trustedDevice";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
 import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
@@ -142,26 +143,29 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
     {
       title: "Navegador",
       description: browser,
-      icon: Globe,
       iconColor: "green",
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.green.iconFgClass)} />,
     },
     {
       title: "Sistema operativo",
       description: osName,
-      icon: Monitor,
       iconColor: "blue",
+      icon: getDeviceIcon(
+        preview ?? { osName: null, isMobile: false },
+        cn("h-6 w-6", iconColorVariants.blue.iconFgClass),
+      ),
     },
     {
       title: "Ultimo acceso",
       description: fromNow(lastUsedAt),
-      icon: Clock,
       iconColor: "yellow",
+      icon: <Clock className={cn("h-6 w-6", iconColorVariants.yellow.iconFgClass)} />,
     },
     {
       title: "Expira el",
       description: formatLongDate(expiresAt),
-      icon: CalendarRange,
       iconColor: "green",
+      icon: <CalendarRange className={cn("h-6 w-6", iconColorVariants.green.iconFgClass)} />,
     },
   ];
 
@@ -178,7 +182,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
             <Fragment key={item.title}>
               <div className="flex flex-col items-center gap-4 text-center">
                 <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>
-                  <item.icon className={cn("h-6 w-6", colors.iconFgClass)} />
+                  {item.icon}
                 </div>
 
                 <div className="flex flex-col items-center gap-1">

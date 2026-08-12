@@ -1,8 +1,6 @@
 import type { JSX } from "react";
 
 import { FaCircle } from "react-icons/fa";
-import { IoLogoApple } from "react-icons/io";
-import { MdOutlineLaptopMac } from "react-icons/md";
 
 import {
   CalendarClock,
@@ -16,7 +14,6 @@ import {
   Globe,
   Lightbulb,
   MapPin,
-  MonitorSmartphone,
   Pencil,
   RefreshCcw,
   Trash2,
@@ -55,6 +52,7 @@ import {
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
+import { getDeviceIcon } from "../../../utils/trustedDevice";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
 import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
 import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
@@ -222,7 +220,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
               "flex h-20 w-20 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
             )}
           >
-            <MdOutlineLaptopMac className={cn("h-12 w-12", iconColorVariants.violet.iconFgClass)} />
+            {getDeviceIcon(device, cn("h-12 w-12", iconColorVariants.violet.iconFgClass))}
           </div>
 
           <div className="flex flex-col items-start gap-3">
@@ -240,7 +238,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
 
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
-                <IoLogoApple className="h-4 w-4" />
+                {getDeviceIcon(device, "h-4 w-4")}
                 <span>{device.osName}</span>
               </div>
 
@@ -351,9 +349,24 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   const ip = valueOrFallback(device.ip, "No disponible");
 
   const items: DeviceMetadataItems[] = [
-    { key: "browser", icon: Globe, title: "Navegador", description: browser },
-    { key: "os", icon: MonitorSmartphone, title: "Sistema operativo", description: osName },
-    { key: "ip", icon: MapPin, title: "Direccion IP", description: ip },
+    {
+      key: "browser",
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      title: "Navegador",
+      description: browser,
+    },
+    {
+      key: "os",
+      icon: getDeviceIcon(device, cn("h-6 w-6", iconColorVariants.violet.iconFgClass)),
+      title: "Sistema operativo",
+      description: osName,
+    },
+    {
+      key: "ip",
+      icon: <MapPin className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      title: "Direccion IP",
+      description: ip,
+    },
   ];
 
   return (
