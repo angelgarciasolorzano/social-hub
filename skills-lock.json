@@ -5,12 +5,24 @@
       "source": "GoogleChrome/modern-web-guidance",
       "sourceType": "github",
       "skillPath": "skills/chrome-extensions/SKILL.md",
-      "computedHash": "1aaf29f8efed83acd69e33bec79fb69a0cb7a8e4c0a5a43328c9182cd733b8f9"
+      "computedHash": "1e8525bb49647008dcd3a6b7e5d3c3207345f086e7a64d7e6d5bcc67dbba7a71"
+    },
+    "diagram-design": {
+      "source": "cathrynlavery/diagram-design",
+      "sourceType": "github",
+      "skillPath": "skills/diagram-design/SKILL.md",
+      "computedHash": "75ce8a1a3407ea8002495ee68767810355f308bb268620cb6b68ed2a1e6ccd7b"
     },
     "eloquent-best-practices": {
       "source": "iserter/laravel-claude-agents",
       "sourceType": "github",
       "computedHash": "370e1502efc9d179f5df7470a45a10302de81de9cf378641403e4ade9eb7d67f"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
     },
     "html-semantic-engineering": {
       "source": "matthewharwood/fantasy-phonics",
@@ -83,7 +95,7 @@
       "source": "GoogleChrome/modern-web-guidance",
       "sourceType": "github",
       "skillPath": "skills/modern-web-guidance/SKILL.md",
-      "computedHash": "9f19aa0e3b554d33b2709c66bb16ad342403e323761f62d6665fbb424c23148d"
+      "computedHash": "6e8841de6cb76fedb94c71008924c3bdc46db0c54111049329e789e0e478d282"
     },
     "php-pro": {
       "source": "jeffallan/claude-skills",
@@ -136,23 +148,11 @@
       "skillPath": "plugins/tanstack-virtual/skills/tanstack-virtual/SKILL.md",
       "computedHash": "987d0fcffeac700cea1303a13a9cecd8a4583985dd675f97ebbca27bfa592b47"
     },
-    "typescript-advanced": {
-      "source": "pedronauck/skills",
-      "sourceType": "github",
-      "skillPath": "skills/typescript-advanced/SKILL.md",
-      "computedHash": "5e39d1321dd676555c39ddf873ffa2ac605a6de7841f8093f86d53314d36ef3e"
-    },
     "typescript-best-practices": {
       "source": "jwynia/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/tech/development/tooling/typescript-best-practices/SKILL.md",
       "computedHash": "db4675b9948beee1b029809ac861474048ac334c80f6dea60435a96afc122d38"
-    },
-    "typescript-conventions": {
-      "source": "exceptionless/exceptionless",
-      "sourceType": "github",
-      "skillPath": ".agents/skills/typescript-conventions/SKILL.md",
-      "computedHash": "6943b91c2771d4a86e29959035301642f4862fe5a48f8dc68f1431dfb2d1135c"
     },
     "ui-ux-design-pro": {
       "source": "saifyxpro/ui-ux-design-pro-skill",
