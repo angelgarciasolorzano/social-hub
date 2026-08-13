@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Override;
 
 /**
@@ -88,9 +89,32 @@ class TrustedDevice extends Model
     }
 
     /**
-     * Delete prior trusted devices for the same user that fingerprint as the
-     * same physical device (user_agent + OS name + IP). `excludeId` keeps the
-     * newly-created row alive.
+     * Find the active trusted device for the same user + UA + OS + IP. Null IP
+     * is a hard miss to avoid a stolen token on another network being treated
+     * as "already trusted".
+     */
+    public static function findActiveMatch(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+    ): ?self {
+        if ($ip === null) {
+            return null;
+        }
+
+        return $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->where('expires_at', '>', CarbonImmutable::now())
+            ->first();
+    }
+
+    /**
+     * Delete prior trusted devices for the same user + UA + OS + IP, excluding
+     * `excludeId`. No-ops (with a warning) when `$ip` is null to avoid wiping
+     * unrelated devices that share a UA string.
      */
     public static function pruneOlder(
         User $user,
@@ -99,16 +123,18 @@ class TrustedDevice extends Model
         ?string $ip,
         int $excludeId,
     ): void {
-        $builder = $user->trustedDevices()
-            ->where('user_agent', $userAgent)
-            ->where('os_name', $osName)
-            ->where('id', '!=', $excludeId);
+        if ($ip === null) {
+            Log::warning('TrustedDevice::pruneOlder called with null IP; skipping to avoid over-deletion.');
 
-        if ($ip !== null) {
-            $builder->where('ip', $ip);
+            return;
         }
 
-        $builder->delete();
+        $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->where('id', '!=', $excludeId)
+            ->delete();
     }
 
     /**

@@ -16,6 +16,7 @@ use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -66,32 +67,56 @@ class TrustedDeviceController extends Controller
 
         $osInfo = $this->inferOsInfo($deviceDetector);
 
-        $token = $this->mintToken();
-
         $userAgent = $trustedDeviceStoreRequest->userAgent();
         $ip = $trustedDeviceStoreRequest->ip();
+
+        if ($userAgent !== null && $ip !== null) {
+            $existingMatch = TrustedDevice::findActiveMatch($user, $userAgent, $osInfo['name'], $ip);
+
+            if ($existingMatch instanceof TrustedDevice) {
+                return Inertia::flash([
+                    'type' => 'error',
+                    'message' => 'Este dispositivo ya esta registrado como de confianza.',
+                ])->back();
+            }
+        }
 
         /** @var int $cookieLifetimeMinutes */
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
-        $newDevice = $user->trustedDevices()->create([
-            'name' => $trustedDeviceStoreRequest->string('name')->toString() !== ''
-                ? $trustedDeviceStoreRequest->string('name')->toString()
-                : $this->inferDeviceName($deviceDetector),
-            'token_hash' => $token['hash'],
-            'user_agent' => $userAgent,
-            'browser' => $this->inferBrowser($deviceDetector),
-            'os_name' => $osInfo['name'],
-            'os_version' => $osInfo['version'],
-            'is_mobile' => $this->inferIsMobile($deviceDetector),
-            'ip' => $ip,
-            'last_used_at' => CarbonImmutable::now(),
-            'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
-        ]);
+        $token = $this->mintToken();
 
-        if ($userAgent !== null) {
-            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $newDevice->id);
-        }
+        DB::transaction(function () use (
+            $user,
+            $deviceDetector,
+            $osInfo,
+            $token,
+            $userAgent,
+            $ip,
+            $cookieLifetimeMinutes,
+            $trustedDeviceStoreRequest,
+        ): TrustedDevice {
+            $created = $user->trustedDevices()->create([
+                'name' => $trustedDeviceStoreRequest->string('name')->toString() !== ''
+                    ? $trustedDeviceStoreRequest->string('name')->toString()
+                    : $this->inferDeviceName($deviceDetector),
+                'token_hash' => $token['hash'],
+                'user_agent' => $userAgent,
+                'browser' => $this->inferBrowser($deviceDetector),
+                'os_name' => $osInfo['name'],
+                'os_version' => $osInfo['version'],
+                'is_mobile' => $this->inferIsMobile($deviceDetector),
+                'ip' => $ip,
+                'last_used_at' => CarbonImmutable::now(),
+                'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
+            ]);
+
+            if ($userAgent !== null) {
+                TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $created->id);
+            }
+
+            return $created;
+        });
 
         $this->queueTrustedDeviceCookie($token['token']);
 

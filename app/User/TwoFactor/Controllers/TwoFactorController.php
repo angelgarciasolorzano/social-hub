@@ -165,9 +165,9 @@ class TwoFactorController extends Controller implements HasMiddleware
     }
 
     /**
-     * Find the active trusted device that fingerprints as the current request
-     * (user_agent + OS name + IP, with a not-yet-expired `expires_at`). Returns
-     * null when the request is made from an unknown device.
+     * Find the still-active trusted device matching the current request, or null
+     * when the device is unknown. Delegates to the model so the matching rules
+     * (including the IP-required-for-match invariant) live in one place.
      */
     private function findCurrentDeviceMatch(Request $request): ?TrustedDevice
     {
@@ -188,17 +188,6 @@ class TwoFactorController extends Controller implements HasMiddleware
 
         $osInfo = $this->inferOsInfo($deviceDetector);
 
-        $builder = $user->trustedDevices()
-            ->where('user_agent', $userAgent)
-            ->where('os_name', $osInfo['name'])
-            ->where('expires_at', '>', CarbonImmutable::now());
-
-        $ip = $request->ip();
-
-        if ($ip !== null) {
-            $builder->where('ip', $ip);
-        }
-
-        return $builder->first();
+        return TrustedDevice::findActiveMatch($user, $userAgent, $osInfo['name'], $request->ip());
     }
 }
