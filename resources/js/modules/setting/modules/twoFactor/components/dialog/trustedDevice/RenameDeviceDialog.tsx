@@ -59,7 +59,7 @@ function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps):
     event.preventDefault();
 
     submit(update({ trustedDevice: device.id }), {
-      only: ["trustedDevices"],
+      only: ["trustedDevices", "firstTrustedDevice"],
       onSuccess: () => {
         onClose();
         reset();

@@ -69,7 +69,7 @@ function RevokeAllDevicesDialog({
     event.preventDefault();
 
     submit(destroyAllTrustedDevices(), {
-      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch"],
+      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch", "firstTrustedDevice"],
       onSuccess: () => {
         onClose();
         reset();
