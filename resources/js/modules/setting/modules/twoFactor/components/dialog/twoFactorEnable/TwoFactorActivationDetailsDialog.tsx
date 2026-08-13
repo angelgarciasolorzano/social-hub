@@ -2,7 +2,6 @@ import { type JSX, useEffect } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
-import type { LucideIcon } from "lucide-react";
 import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -25,7 +24,7 @@ import type { SharedData } from "@/shared/types";
 
 import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatActivationDate, formatActivationTime } from "../../../utils/dateTime";
-import { deviceLabel } from "../../../utils/trustedDevice";
+import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
 
 interface TwoFactorActivationDetailsDialogProps {
   isOpen: boolean;
@@ -52,7 +51,7 @@ type TwoFactorActivationDetailKey =
 
 interface TwoFactorActivationDetail {
   key: TwoFactorActivationDetailKey;
-  icon: LucideIcon;
+  renderIcon: (className: string) => JSX.Element;
   iconVariant: IconColorVariant;
   label: string;
   value: string;
@@ -81,28 +80,33 @@ function TwoFactorActivationDetailsDialog({
   const details: TwoFactorActivationDetail[] = [
     {
       key: twoFactorActivationDetailKey.activationDate,
-      icon: Calendar,
+      renderIcon: (className) => <Calendar className={className} />,
       iconVariant: "blue",
       label: "Fecha de activación",
       value: activationDate,
     },
     {
       key: twoFactorActivationDetailKey.activationTime,
-      icon: Clock,
+      renderIcon: (className) => <Clock className={className} />,
       iconVariant: "gray",
       label: "Hora de activación",
       value: activationTime,
     },
     {
       key: twoFactorActivationDetailKey.verificationMethod,
-      icon: ShieldCheck,
+      renderIcon: (className) => <ShieldCheck className={className} />,
       iconVariant: "gray",
       label: "Método de verificación",
       value: TWO_FACTOR_METHOD_LABEL,
     },
     {
       key: twoFactorActivationDetailKey.firstTrustedDevice,
-      icon: Smartphone,
+      renderIcon: (className) =>
+        firstTrustedDevice !== null ? (
+          getDeviceIcon(firstTrustedDevice, className)
+        ) : (
+          <Smartphone className={className} />
+        ),
       iconVariant: "orange",
       label: "Primer dispositivo utilizado",
       value: firstDeviceLabel,
@@ -136,8 +140,6 @@ function TwoFactorActivationDetailsDialog({
         <Card className="dark:bg-input/10">
           <CardContent className="space-y-4">
             {details.map((detail) => {
-              const Icon = detail.icon;
-
               return (
                 <div key={detail.key} className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -147,9 +149,9 @@ function TwoFactorActivationDetailsDialog({
                         iconColorVariants[detail.iconVariant].iconBgClass,
                       )}
                     >
-                      <Icon
-                        className={cn("h-4 w-4", iconColorVariants[detail.iconVariant].iconFgClass)}
-                      />
+                      {detail.renderIcon(
+                        cn("h-4 w-4", iconColorVariants[detail.iconVariant].iconFgClass),
+                      )}
                     </div>
 
                     <span className="text-sm text-muted-foreground">{detail.label}</span>
