@@ -94,13 +94,16 @@ class TwoFactorController extends Controller implements HasMiddleware
                 }
             );
 
+            /** @var DeviceDetector $deviceDetector */
+            $deviceDetector = resolve(DeviceDetector::class);
+
             $props['currentDevicePreview'] = Inertia::optional(
-                fn (): array => $this->previewDevice(request())
+                fn (): array => $this->previewDevice(request(), $deviceDetector)
             );
 
             $props['currentDeviceMatch'] = Inertia::optional(
-                function (): ?array {
-                    $device = $this->findCurrentDeviceMatch(request());
+                function () use ($deviceDetector): ?array {
+                    $device = $this->findCurrentDeviceMatch(request(), $deviceDetector);
 
                     if (! $device instanceof TrustedDevice) {
                         return null;
@@ -144,11 +147,8 @@ class TwoFactorController extends Controller implements HasMiddleware
      *
      * @return array{browser: string, osName: string, userAgent: string|null, lastUsedAt: string, expiresAt: string}
      */
-    private function previewDevice(Request $request): array
+    private function previewDevice(Request $request, DeviceDetector $deviceDetector): array
     {
-        /** @var DeviceDetector $deviceDetector */
-        $deviceDetector = resolve(DeviceDetector::class);
-
         $osInfo = $this->inferOsInfo($deviceDetector);
 
         /** @var int $cookieLifetimeMinutes */
@@ -169,7 +169,7 @@ class TwoFactorController extends Controller implements HasMiddleware
      * when the device is unknown. Delegates to the model so the matching rules
      * (including the IP-required-for-match invariant) live in one place.
      */
-    private function findCurrentDeviceMatch(Request $request): ?TrustedDevice
+    private function findCurrentDeviceMatch(Request $request, DeviceDetector $deviceDetector): ?TrustedDevice
     {
         $user = $request->user();
 
@@ -182,9 +182,6 @@ class TwoFactorController extends Controller implements HasMiddleware
         if ($userAgent === null) {
             return null;
         }
-
-        /** @var DeviceDetector $deviceDetector */
-        $deviceDetector = resolve(DeviceDetector::class);
 
         $osInfo = $this->inferOsInfo($deviceDetector);
 
