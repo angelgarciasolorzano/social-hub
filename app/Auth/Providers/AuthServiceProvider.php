@@ -42,9 +42,12 @@ class AuthServiceProvider extends ServiceProvider
      */
     private function registerTrustedDeviceSchedule(): void
     {
-        Schedule::call(function (): void {
+        /** @var int $retentionGraceDays */
+        $retentionGraceDays = config('module.auth.trusted_devices.retention_grace_days');
+
+        Schedule::call(function () use ($retentionGraceDays): void {
             TrustedDevice::query()
-                ->where('expires_at', '<', CarbonImmutable::now()->subDays(30))
+                ->where('expires_at', '<', CarbonImmutable::now()->subDays($retentionGraceDays))
                 ->delete();
         })->daily();
     }

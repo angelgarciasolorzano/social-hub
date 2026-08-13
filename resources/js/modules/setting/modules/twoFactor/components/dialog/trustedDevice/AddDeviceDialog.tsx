@@ -81,7 +81,7 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
             </div>
           </DialogTitle>
           <DialogDescription>
-            Este navegador aun no esta registrado como dispositivo de confianza. Al agregarlo, no se
+            Este navegador aún no está registrado como dispositivo de confianza. Al agregarlo, no se
             te solicitara el codigo de verificacion desde este navegador hasta su fecha de
             expiracion.
           </DialogDescription>

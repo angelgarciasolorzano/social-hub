@@ -252,7 +252,7 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Este dispositivo ha sido verificado y agregado a tu listab de dispositivos de
+              Este dispositivo ha sido verificado y agregado a tu lista de dispositivos de
               confianza. No se te solicitara el codigo de verificacion cada vez que inicies sesion
               desde este dispositivo hasta su fecha de expiracion.
             </p>
