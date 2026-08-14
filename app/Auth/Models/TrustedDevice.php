@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Override;
 
 /**
@@ -88,11 +89,63 @@ class TrustedDevice extends Model
     }
 
     /**
-     * Validate whether the request's "trusted_device" cookie matches an active
-     * trusted device for the given user. If a match is found, refresh its
-     * `last_used_at` timestamp.
-     *
-     * Returns true when the user should bypass the two-factor challenge.
+     * Find the active trusted device for the same fingerprint, or null when
+     * `$ip` is null. When `$lockForUpdate` is true, the read is serialised so
+     * concurrent `store()` calls cannot both pass the check.
+     */
+    public static function findActiveMatch(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+        bool $lockForUpdate = false,
+    ): ?self {
+        if ($ip === null) {
+            return null;
+        }
+
+        $builder = $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->where('expires_at', '>', CarbonImmutable::now());
+
+        if ($lockForUpdate) {
+            $builder->lockForUpdate();
+        }
+
+        return $builder->first();
+    }
+
+    /**
+     * Delete prior trusted devices for the same user + UA + OS + IP, excluding
+     * `excludeId`. No-ops (with a warning) when `$ip` is null to avoid wiping
+     * unrelated devices that share a UA string.
+     */
+    public static function pruneOlder(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+        int $excludeId,
+    ): void {
+        if ($ip === null) {
+            Log::warning('TrustedDevice::pruneOlder called with null IP; skipping to avoid over-deletion.');
+
+            return;
+        }
+
+        $user->trustedDevices()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->where('id', '!=', $excludeId)
+            ->delete();
+    }
+
+    /**
+     * Match the request's trusted_device cookie against an active device for
+     * the user. Refreshes `last_used_at` on hit. Returns true to skip 2FA.
      */
     public static function validateAndTouch(User $user, Request $request): bool
     {

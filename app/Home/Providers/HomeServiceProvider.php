@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Home\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Override;
 
 class HomeServiceProvider extends ServiceProvider
 {
     /**
-     * Bootstrap any application services.
+     * Register any application services.
      */
-    public function boot(): void
+    #[Override]
+    public function register(): void
     {
         $this->app->register(HomeRouteServiceProvider::class);
     }

@@ -1,4 +1,7 @@
-import { useState } from "react";
+import type { JSX } from "react";
+import { Fragment, useState } from "react";
+
+import { router, usePage } from "@inertiajs/react";
 
 import {
   Bolt,
@@ -15,44 +18,87 @@ import {
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/shadcn/ui/dropdown-menu";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib";
+import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
+
+import type { SharedData } from "@/shared/types";
 
 import DisabledTwoFactorDialog from "../components/dialog/twoFactorEnable/DisabledTwoFactorDialog";
 import RegenerateCodesDialog from "../components/dialog/twoFactorEnable/RegenerateCodesDialog";
+import TwoFactorActivationDetailsDialog from "../components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog";
 import { OptionCard } from "../components/ui/OptionCard";
 import type { SumaryCardAction, SumaryCardItem } from "../components/ui/SummaryCard";
 import SummaryCard from "../components/ui/SummaryCard";
 import TwoFactorDevices from "../components/ui/twoFactorEnable/TwoFactorDevices";
 import TwoFactorRecoveryCodes from "../components/ui/twoFactorEnable/TwoFactorRecoveryCodes";
-import type { TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
+import type { TwoFactorManageActionKey, TwoFactorSecurityOptionKey } from "../data/twoFactorEnable";
 import {
+  twoFactorManageActionKey,
+  twoFactorManageActions,
   twoFactorSafetyTips,
   twoFactorSecurityOptions,
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
-import type { TrustedDevice } from "../types/trustedDevice";
-
-interface TwoFactorEnableProps {
-  trustedDevices: TrustedDevice[];
-}
+import { formatLongDate } from "../utils/dateTime";
+import { createDialogCloseHandler, type DialogClosingState } from "../utils/dialog";
 
 type SlotContent = "codes" | "devices";
 
-function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
+type SecurityDialogKind = "regenerateCodes" | "disableTwoFactor";
+
+interface SecurityDialogState extends DialogClosingState {
+  kind: SecurityDialogKind;
+}
+
+type TwoFactorEnablePageProps = SharedData & {
+  twoFactorConfirmedAt?: string | null;
+};
+
+function TwoFactorEnable(): JSX.Element {
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
 
-  const { open: showRegenerateCodesDialog, setOpen: setShowRegenerateCodesDialog } = useDialog();
-  const { open: showDisabledTwoFactorDialog, setOpen: setShowDisabledTwoFactorDialog } =
-    useDialog();
+  const { twoFactorConfirmedAt = null } = usePage<TwoFactorEnablePageProps>().props;
+
+  const securityDialog = useDialog<SecurityDialogState | null>(null);
+  const activationDetailsDialog = useDialog();
 
   const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
-  // Handler que recibe la key del card clickeado
+  const handleViewTrustedDevices = (): void => {
+    router.reload({
+      only: ["trustedDevices"],
+      onSuccess: () => {
+        setSelectedContent("devices");
+      },
+    });
+  };
+
+  const handleViewActivationDetails = (): void => {
+    activationDetailsDialog.setOpen(true);
+  };
+
+  const handleSecurityDialogClose = createDialogCloseHandler(securityDialog);
+
+  const handleSecurityDialogOpenChange = (open: boolean): void => {
+    if (!open) {
+      handleSecurityDialogClose();
+    }
+  };
+
   const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
     switch (optionKey) {
       case twoFactorSecurityOptionsKey.backupCodes:
@@ -61,24 +107,78 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
         break;
 
       case twoFactorSecurityOptionsKey.regenerateCodes:
-        setShowRegenerateCodesDialog(true);
+        securityDialog.show({ kind: "regenerateCodes", closing: false });
 
         break;
 
       case twoFactorSecurityOptionsKey.disable2FA:
-        setShowDisabledTwoFactorDialog(true);
+        securityDialog.show({ kind: "disableTwoFactor", closing: false });
 
         break;
 
       default:
-        console.log("Acción no reconocida:", optionKey);
+        break;
+    }
+  };
+
+  const handleManageAction = (action: TwoFactorManageActionKey): void => {
+    switch (action) {
+      case twoFactorManageActionKey.viewCodes:
+        setSelectedContent("codes");
+
+        break;
+
+      case twoFactorManageActionKey.regenerateCodes:
+        securityDialog.show({ kind: "regenerateCodes", closing: false });
+
+        break;
+
+      case twoFactorManageActionKey.viewDevices:
+        handleViewTrustedDevices();
+
+        break;
+
+      case twoFactorManageActionKey.disable2FA:
+        securityDialog.show({ kind: "disableTwoFactor", closing: false });
+
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  const renderSecurityDialog = (): JSX.Element | null => {
+    if (securityDialog.state === null) {
+      return null;
+    }
+
+    const isClosing = securityDialog.state.closing;
+
+    switch (securityDialog.state.kind) {
+      case "regenerateCodes":
+        return (
+          <RegenerateCodesDialog
+            fetchRecoveryCodes={fetchRecoveryCodes}
+            isOpen={!isClosing}
+            setOpen={handleSecurityDialogOpenChange}
+          />
+        );
+
+      case "disableTwoFactor":
+        return (
+          <DisabledTwoFactorDialog isOpen={!isClosing} setOpen={handleSecurityDialogOpenChange} />
+        );
+
+      default:
+        return null;
     }
   };
 
   return (
     <div className="flex gap-4">
       <div className="flex min-w-0 flex-1 flex-col gap-8">
-        <TwoFactorTitle />
+        <TwoFactorTitle onManageAction={handleManageAction} />
 
         <OptionCard
           title="Opciones de seguridad"
@@ -88,16 +188,15 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
 
         <TwoFactorSecuritySummary
           recoveryCodesList={recoveryCodesList}
-          trustedDevices={trustedDevices}
-          onViewTrustedDevices={() => {
-            setSelectedContent("devices");
-          }}
+          onViewTrustedDevices={handleViewTrustedDevices}
+          onActivationDetailsClick={handleViewActivationDetails}
+          twoFactorConfirmedAt={twoFactorConfirmedAt}
         />
 
         <TwoFactorSafetyTips />
       </div>
 
-      <Card className="w-full max-w-sm shrink-0">
+      <Card className="w-full max-w-sm shrink-0 self-start">
         <CardHeader>
           <CardTitle>
             {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
@@ -112,30 +211,31 @@ function TwoFactorEnable({ trustedDevices }: TwoFactorEnableProps) {
               recoveryCodesList={recoveryCodesList}
             />
           ) : (
-            <TwoFactorDevices devices={trustedDevices} />
+            <TwoFactorDevices />
           )}
         </CardContent>
       </Card>
 
-      <RegenerateCodesDialog
-        isOpen={showRegenerateCodesDialog}
-        setOpen={setShowRegenerateCodesDialog}
-        fetchRecoveryCodes={fetchRecoveryCodes}
-      />
+      {renderSecurityDialog()}
 
-      <DisabledTwoFactorDialog
-        isOpen={showDisabledTwoFactorDialog}
-        setOpen={setShowDisabledTwoFactorDialog}
+      <TwoFactorActivationDetailsDialog
+        confirmedAt={twoFactorConfirmedAt}
+        isOpen={activationDetailsDialog.open}
+        setOpen={activationDetailsDialog.setOpen}
       />
     </div>
   );
 }
 
-function TwoFactorTitle() {
+interface TwoFactorTitleProps {
+  onManageAction: (action: TwoFactorManageActionKey) => void;
+}
+
+function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
   return (
-    <div className="flex items-start gap-6 rounded-md border border-green-200 bg-green-300/5 p-8 shadow-sm dark:border-green-500/30 dark:bg-green-900/10">
-      <div className="rounded-3xl bg-green-200/50 p-2 dark:bg-green-900/20">
-        <ShieldCheck className="h-12 w-12 text-green-700 dark:text-green-500" />
+    <div className="flex items-start gap-6 rounded-xl border bg-card p-6 shadow-sm">
+      <div className={cn(iconColorVariants.green.iconBgClass, "rounded-3xl p-2")}>
+        <ShieldCheck className={cn("h-12 w-12", iconColorVariants.green.iconFgClass)} />
       </div>
 
       <div className="flex flex-1 flex-col gap-3">
@@ -168,31 +268,75 @@ function TwoFactorTitle() {
         </div>
       </div>
 
-      <Button variant="outline">
-        <Bolt />
-        Administrar
-        <ChevronDown />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">
+            <Bolt />
+            Administrar
+            <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {twoFactorManageActions.map((group, groupIndex) => (
+            <Fragment key={groupIndex}>
+              <DropdownMenuGroup>
+                {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+
+                {group.actions.map((action) => {
+                  const Icon = action.icon;
+
+                  return (
+                    <DropdownMenuItem
+                      key={action.key}
+                      onClick={() => {
+                        onManageAction(action.key);
+                      }}
+                      className={action.className}
+                    >
+                      <Icon className={action.iconClassName} />
+                      {action.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+
+              {groupIndex < twoFactorManageActions.length - 1 && <DropdownMenuSeparator />}
+            </Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
 
-type TwoFactorSecuritySummaryProps = Pick<TwoFactorEnableProps, "trustedDevices"> & {
+interface TwoFactorSecuritySummaryProps {
   recoveryCodesList: string[];
   onViewTrustedDevices: () => void;
+  onActivationDetailsClick: () => void;
+  twoFactorConfirmedAt: string | null;
+}
+
+type TwoFactorSecuritySummaryPageProps = SharedData & {
+  trustedDevicesCount?: number;
 };
 
 function TwoFactorSecuritySummary({
   recoveryCodesList,
-  trustedDevices,
   onViewTrustedDevices,
-}: TwoFactorSecuritySummaryProps) {
-  const trustedDevicesCount = trustedDevices.length;
+  onActivationDetailsClick,
+  twoFactorConfirmedAt,
+}: TwoFactorSecuritySummaryProps): JSX.Element {
+  const { trustedDevicesCount = 0 } = usePage<TwoFactorSecuritySummaryPageProps>().props;
 
   const trustedDevicesLabel =
     trustedDevicesCount === 1
       ? "1 dispositivo de confianza configurado."
       : `${trustedDevicesCount} dispositivos de confianza configurados.`;
+
+  const activationDescription =
+    twoFactorConfirmedAt === null
+      ? "Aún no has activado la autenticación de dos factores."
+      : `Activaste 2FA el ${formatLongDate(twoFactorConfirmedAt)}`;
 
   const summarySecurity: SumaryCardItem[] = [
     {
@@ -200,8 +344,7 @@ function TwoFactorSecuritySummary({
       title: "Estado de 2FA",
       description: "La autenticación de dos factores está activa en tu cuenta.",
       icon: ShieldCheck,
-      iconBgColor: "bg-green-100/50 dark:bg-green-900/20",
-      iconColor: "text-green-700 dark:text-green-500",
+      iconColor: "green",
       action: { type: "badge", variant: "default", label: "Activado" },
     },
     {
@@ -209,8 +352,7 @@ function TwoFactorSecuritySummary({
       title: "Dispositivos de confianza",
       description: trustedDevicesLabel,
       icon: MonitorSmartphone,
-      iconBgColor: "bg-violet-100/50 dark:bg-violet-900/20",
-      iconColor: "text-violet-700 dark:text-violet-500",
+      iconColor: "violet",
       action: {
         type: "button",
         label: trustedDevicesCount === 0 ? "Configurar" : "Ver dispositivos",
@@ -222,8 +364,7 @@ function TwoFactorSecuritySummary({
       title: "Códigos de respaldo",
       description: `Tienes ${recoveryCodesList.length} de 8 códigos disponibles.`,
       icon: Key,
-      iconBgColor: "bg-orange-100/50 dark:bg-orange-900/20",
-      iconColor: "text-orange-700 dark:text-orange-500",
+      iconColor: "orange",
       action: {
         type: "progress",
         current: recoveryCodesList.length,
@@ -233,15 +374,12 @@ function TwoFactorSecuritySummary({
     {
       key: "activation-date",
       title: "Fecha de activación",
-      description: "Activaste 2FA el 15 de marzo 2024, 11:45 AM",
+      description: activationDescription,
       icon: Clock4,
-      iconBgColor: "bg-blue-100/50 dark:bg-blue-900/20",
-      iconColor: "text-blue-700 dark:text-blue-500",
+      iconColor: "blue",
       action: {
         type: "chevron",
-        onClick: () => {
-          console.log("Ver detalles de activación");
-        },
+        onClick: onActivationDetailsClick,
       },
     },
   ];
@@ -249,10 +387,7 @@ function TwoFactorSecuritySummary({
   const renderAction = (action: SumaryCardAction) => {
     switch (action.type) {
       case "badge": {
-        const badgeClassName =
-          action.variant === "default"
-            ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
-            : "";
+        const badgeClassName = action.variant === "default" ? badgeVariants.success : "";
 
         return (
           <Badge variant={action.variant} className={cn(badgeClassName)}>
@@ -285,6 +420,8 @@ function TwoFactorSecuritySummary({
           <button
             onClick={action.onClick}
             className="cursor-pointer rounded-full p-1 transition-colors hover:bg-accent"
+            type="button"
+            aria-label="Ver detalles"
           >
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -304,7 +441,7 @@ function TwoFactorSecuritySummary({
   );
 }
 
-function TwoFactorSafetyTips() {
+function TwoFactorSafetyTips(): JSX.Element {
   return (
     <Card>
       <CardHeader>
@@ -319,8 +456,13 @@ function TwoFactorSafetyTips() {
 
           return (
             <div key={tip.key} className="flex gap-4">
-              <div className="flex h-12 w-12 shrink-0 rounded-md bg-purple-100/50 p-2 dark:bg-purple-900/20">
-                <Icon className="h-8 w-8 text-purple-700 dark:text-purple-500" />
+              <div
+                className={cn(
+                  iconColorVariants.purple.iconBgClass,
+                  "flex h-12 w-12 shrink-0 rounded-md p-2",
+                )}
+              >
+                <Icon className={cn("h-8 w-8", iconColorVariants.purple.iconFgClass)} />
               </div>
 
               <div className="flex flex-1 flex-col gap-0.5">

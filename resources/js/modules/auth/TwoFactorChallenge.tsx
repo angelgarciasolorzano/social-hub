@@ -105,7 +105,7 @@ export default function TwoFactorChallenge() {
 
               <input type="hidden" name="remember_device" value={rememberDevice ? "1" : "0"} />
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-center space-x-2">
                 <Checkbox
                   id="remember_device"
                   checked={rememberDevice}

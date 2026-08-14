@@ -1,4 +1,4 @@
-import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
+import type { JSX, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -20,9 +20,12 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling";
+
 interface RegenerateCodesDialogProps {
   isOpen: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
   fetchRecoveryCodes: () => Promise<void>;
 }
 
@@ -77,7 +80,7 @@ function RegenerateCodesDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+        <Alert className={cn(alertVariants.destructive, "my-2")}>
           <AlertTriangleIcon />
           <AlertTitle>Los códigos actuales dejarán de funcionar.</AlertTitle>
           <AlertDescription>

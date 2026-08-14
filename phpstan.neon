@@ -20,6 +20,10 @@ parameters:
     noEnvCallsOutsideOfConfig: true
     noUnnecessaryEnumerableToArrayCalls: true
 
+    configDirectories:
+        - config
+        - app/Auth/config
+
     type_coverage:
         return: 100
         param: 100
@@ -37,6 +41,7 @@ parameters:
     scanFiles:
         - _ide_helper_models.php
         - phpstan-stubs/TwoFactorAuthenticationEvent.php
+        - phpstan-stubs/RecoveryCodesGeneratedEvent.php
     
     ignoreErrors:
         - '#Dynamic call to static method Illuminate\\.*#'

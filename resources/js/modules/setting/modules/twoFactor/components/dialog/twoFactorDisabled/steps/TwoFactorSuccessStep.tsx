@@ -1,12 +1,19 @@
 import type { JSX } from "react";
 import { useCallback, useEffect } from "react";
 
+import { usePage } from "@inertiajs/react";
+
 import { ArrowDown, Info } from "lucide-react";
 
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
+
+import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling";
+
+import type { SharedData } from "@/shared/types";
 
 import { downloadRecoveryCodes } from "../../../../utils/downloadRecoveryCodes";
 
@@ -20,6 +27,8 @@ interface TwoFactorSuccessStepProps {
 function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
   const { errors, fetchRecoveryCodes, onClose, recoveryCodesList } = props;
 
+  const { email: accountEmail } = usePage<SharedData>().props.auth.user;
+
   useEffect(() => {
     if (!recoveryCodesList.length) {
       void fetchRecoveryCodes();
@@ -27,8 +36,8 @@ function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
   }, [recoveryCodesList.length, fetchRecoveryCodes]);
 
   const handleDownload = useCallback((): void => {
-    downloadRecoveryCodes(recoveryCodesList);
-  }, [recoveryCodesList]);
+    downloadRecoveryCodes(recoveryCodesList, { accountEmail });
+  }, [recoveryCodesList, accountEmail]);
 
   return (
     <>
@@ -55,7 +64,7 @@ function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
                 ))}
           </div>
 
-          <Alert className="w-full border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+          <Alert className={cn(alertVariants.warning, "w-full")}>
             <Info />
             <AlertTitle>Importante</AlertTitle>
             <AlertDescription>

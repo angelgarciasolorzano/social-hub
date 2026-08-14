@@ -16,6 +16,7 @@ import {
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { cn } from "@/shared/lib";
+import { alertVariants } from "@/shared/lib/styling";
 
 import { useCopyWithCountdown } from "../../../../hooks/useCopyWithCountdown";
 
@@ -73,7 +74,7 @@ function ManualSetupStep({
         )}
       </div>
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className={alertVariants.info}>
         <Info />
         <AlertTitle>Consejo</AlertTitle>
         <AlertDescription>
@@ -96,7 +97,7 @@ type StepErrorAlertProps = Pick<ManualSetupStepProps, "onRetry">;
 function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
   return (
     <div className="flex w-full flex-col items-center space-y-2">
-      <Alert className="my-2 border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-500">
+      <Alert className={cn(alertVariants.destructive, "my-2")}>
         <AlertTriangleIcon />
         <AlertTitle>Algo salió mal</AlertTitle>
         <AlertDescription>No pudimos cargar la información. Inténtalo de nuevo.</AlertDescription>
@@ -160,7 +161,7 @@ function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertPr
     <Alert
       role="status"
       aria-live="polite"
-      className="border-green-200 bg-green-50 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500"
+      className={cn(alertVariants.success, "text-green-900 dark:text-green-400")}
     >
       <FaCheckCircle />
 

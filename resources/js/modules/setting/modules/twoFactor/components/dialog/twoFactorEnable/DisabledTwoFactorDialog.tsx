@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction, SubmitEvent } from "react";
+import type { JSX, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -27,6 +27,8 @@ import {
 } from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { alertVariants } from "@/shared/lib/styling";
+
 import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 
 interface DisableTwoFactorFormData {
@@ -36,10 +38,10 @@ interface DisableTwoFactorFormData {
 
 interface DisableTwoFactorDialogProps {
   isOpen: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
+  setOpen: (open: boolean) => void;
 }
 
-function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps) {
+function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps): JSX.Element {
   const { data, setData, processing, errors, reset, submit } = useForm<DisableTwoFactorFormData>({
     password: "",
     code: "",
@@ -82,7 +84,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+        <Alert className={alertVariants.info}>
           <ShieldQuestionMark />
 
           <AlertTitle className="line-clamp-4">

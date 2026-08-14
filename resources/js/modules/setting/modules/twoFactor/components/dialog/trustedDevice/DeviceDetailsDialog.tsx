@@ -1,17 +1,21 @@
 import type { JSX } from "react";
 
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import relativeTime from "dayjs/plugin/relativeTime";
+import { FaCircle } from "react-icons/fa";
+
 import {
   CalendarClock,
-  CalendarRange,
+  CalendarPlus,
+  ChevronRight,
+  Circle,
+  CircleAlert,
   CircleCheck,
   Clock,
   Eye,
   Globe,
+  Lightbulb,
   MapPin,
-  MonitorSmartphone,
+  Pencil,
+  RefreshCcw,
   Trash2,
 } from "lucide-react";
 
@@ -36,49 +40,103 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useDialog } from "@/shared/hooks";
+
+import { cn } from "@/shared/lib";
+import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/styling";
+
+import {
+  twoFactorDeviceActionKey,
+  type TwoFactorDeviceActionKey,
+} from "../../../data/twoFactorEnable";
 import type { TrustedDevice } from "../../../types/trustedDevice";
-
-dayjs.extend(relativeTime);
-dayjs.locale("es");
-
-function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-  return dayjs(iso).format("D [de] MMMM [del] YYYY, h:mm A");
-}
-
-function formatTimeUntil(iso: string | null): string {
-  if (iso === null || dayjs(iso).isBefore(dayjs())) {
-    return "vencido";
-  }
-
-  return dayjs(iso).fromNow();
-}
+import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
+import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
+import { getDeviceIcon } from "../../../utils/trustedDevice";
+import { valueOrFallback } from "../../../utils/valueOrFallback";
+import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
+import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
+import RenameDeviceDialog from "./RenameDeviceDialog";
+import RenewTrustDialog from "./RenewTrustDialog";
+import RevokeDeviceDialog from "./RevokeDeviceDialog";
 
 interface DeviceDetailsDialogProps {
   device: TrustedDevice;
   open: boolean;
-  hide: () => void;
+  onClose: () => void;
 }
 
-function DeviceDetailsDialog({ device, open, hide }: DeviceDetailsDialogProps): JSX.Element {
+type DialogActionState = Pick<DeviceDetailsDialogProps, "device"> &
+  DialogClosingState & {
+    kind: Exclude<TwoFactorDeviceActionKey, typeof twoFactorDeviceActionKey.viewDevice>;
+  };
+
+function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps): JSX.Element {
+  const dialogDevice = useDialog<DialogActionState | null>(null);
+
+  const handleDeviceAction = (
+    action: Exclude<TwoFactorDeviceActionKey, typeof twoFactorDeviceActionKey.viewDevice>,
+    device: TrustedDevice,
+  ): void => {
+    dialogDevice.show({ kind: action, device, closing: false });
+  };
+
+  const handleDialogClose = createDialogCloseHandler(dialogDevice);
+
+  const renderDialogDevice = (): JSX.Element | null => {
+    if (dialogDevice.state === null) {
+      return null;
+    }
+
+    const isClosing = dialogDevice.state.closing;
+
+    switch (dialogDevice.state.kind) {
+      case twoFactorDeviceActionKey.renameDevice:
+        return (
+          <RenameDeviceDialog
+            device={dialogDevice.state.device}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case twoFactorDeviceActionKey.renewTrust:
+        return (
+          <RenewTrustDialog
+            device={dialogDevice.state.device}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case twoFactorDeviceActionKey.revokeDevice:
+        return (
+          <RevokeDeviceDialog
+            device={dialogDevice.state.device}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) hide();
+        if (!nextOpen) onClose();
       }}
     >
-      <DialogContent className="max-w-4xl min-w-3xl">
+      <DialogContent className="max-w-6xl min-w-5xl">
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
-              <Badge className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">
-                Activo
-              </Badge>
+              <Badge className={badgeVariants.success}>Activo</Badge>
             </div>
           </DialogTitle>
           <DialogDescription>
@@ -86,126 +144,287 @@ function DeviceDetailsDialog({ device, open, hide }: DeviceDetailsDialogProps): 
           </DialogDescription>
         </DialogHeader>
 
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Informacion del dispositivo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-6">
-                <div>
-                  <Item>
-                    <ItemMedia>
-                      <Globe />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Navegador</ItemTitle>
-                      <ItemDescription>{device.browser}</ItemDescription>
-                    </ItemContent>
-                  </Item>
+        <div className="flex flex-col gap-4">
+          <DeviceOverviewCard device={device} />
 
-                  <Item>
-                    <ItemMedia>
-                      <MonitorSmartphone />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Sistema operativo</ItemTitle>
-                      <ItemDescription>{device.osName}</ItemDescription>
-                    </ItemContent>
-                  </Item>
+          <div className="grid grid-cols-[1.8fr_1.7fr_2fr] gap-4">
+            <DeviceActivityCard device={device} />
 
-                  <Item>
-                    <ItemMedia>
-                      <MapPin />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Dirección IP</ItemTitle>
-                      <ItemDescription>{device.ip}</ItemDescription>
-                    </ItemContent>
-                  </Item>
+            <DeviceMetadataCard device={device} />
 
-                  <Item>
-                    <ItemMedia>
-                      <CalendarRange />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Fecha de registro</ItemTitle>
-                      <ItemDescription>{formatLongDate(device.createdAt)}</ItemDescription>
-                    </ItemContent>
-                  </Item>
-                </div>
-
-                <Separator orientation="vertical" />
-
-                <div>
-                  <Item>
-                    <ItemMedia>
-                      <Clock />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Último acceso</ItemTitle>
-                      <ItemDescription>
-                        <span className="mb-0.5 block text-sm text-muted-foreground">
-                          {dayjs(device.lastUsedAt).fromNow()}
-                        </span>
-
-                        <span className="text-sm">{formatLongDate(device.lastUsedAt)}</span>
-                      </ItemDescription>
-                    </ItemContent>
-                  </Item>
-
-                  <Item>
-                    <ItemMedia>
-                      <CalendarClock />
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>Fecha de expiración</ItemTitle>
-                      <ItemDescription>
-                        <span className="text-sm">{formatLongDate(device.expiresAt)}</span>
-
-                        <span className="mb-0.5 block text-sm text-muted-foreground">
-                          ({formatTimeUntil(device.expiresAt)})
-                        </span>
-                      </ItemDescription>
-                    </ItemContent>
-                  </Item>
-
-                  <Separator className="mb-3" />
-
-                  <div className="flex flex-col gap-3">
-                    <span className="font-semibold dark:text-white">Estado</span>
-
-                    <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-500/30 dark:bg-green-500/10 dark:text-green-500">
-                      <CircleCheck />
-
-                      <AlertTitle>Este dispositivo está activado</AlertTitle>
-                      <AlertDescription>
-                        No se te pedirá el código de verificación cada vez que inices sesión desde
-                        este dispositivo hasta su expiración.
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <DeviceStatusCallouts />
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button type="button" className="cursor-pointer">
-            Cerrar
-          </Button>
+        <DialogFooter className="flex items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => {
+                handleDeviceAction(twoFactorDeviceActionKey.renameDevice, device);
+              }}
+            >
+              <Pencil data-icon="inline-start" />
+              Renombrar dispositivo
+            </Button>
 
-          <Button
-            variant="destructive"
-            className="dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-          >
-            <Trash2 />
-            Revokar dispositivo
-          </Button>
+            <Button
+              type="button"
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => {
+                handleDeviceAction(twoFactorDeviceActionKey.renewTrust, device);
+              }}
+            >
+              <RefreshCcw data-icon="inline-start" />
+              Renovar confianza
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button type="button" className="cursor-pointer" variant="outline" onClick={onClose}>
+              Cerrar
+            </Button>
+
+            <Button
+              variant="destructive"
+              className="dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+              onClick={() => {
+                handleDeviceAction(twoFactorDeviceActionKey.revokeDevice, device);
+              }}
+            >
+              <Trash2 />
+              Revokar dispositivo
+            </Button>
+          </div>
         </DialogFooter>
+
+        {renderDialogDevice()}
       </DialogContent>
     </Dialog>
+  );
+}
+
+type DeviceOverviewCardProps = Pick<DeviceDetailsDialogProps, "device">;
+
+function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
+  return (
+    <Card className="dark:bg-input/10">
+      <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
+        <div className="flex gap-4">
+          <div
+            className={cn(
+              iconColorVariants.violet.iconBgClass,
+              "flex h-20 w-20 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
+            )}
+          >
+            {getDeviceIcon(device, cn("h-12 w-12", iconColorVariants.violet.iconFgClass))}
+          </div>
+
+          <div className="flex flex-col items-start gap-3">
+            <div className="flex items-center justify-center gap-2">
+              <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
+
+              <Badge className={badgeVariants.success}>
+                <Circle
+                  className="size-1.5! fill-green-800 text-green-800 dark:fill-green-500 dark:text-green-500"
+                  data-icon="inline-start"
+                />
+                Activo
+              </Badge>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                {getDeviceIcon(device, "h-4 w-4")}
+                <span>{device.osName}</span>
+              </div>
+
+              <FaCircle className="h-1 w-1" />
+
+              <span>{device.browser}</span>
+
+              <FaCircle className="h-1 w-1" />
+
+              <span>Dispositivo de confianza</span>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              Este dispositivo ha sido verificado y agregado a tu lista de dispositivos de
+              confianza. No se te solicitara el codigo de verificacion cada vez que inicies sesion
+              desde este dispositivo hasta su fecha de expiracion.
+            </p>
+          </div>
+        </div>
+
+        <Separator orientation="vertical" />
+
+        <div>
+          <Item>
+            <ItemMedia>
+              <CalendarClock />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>Fecha de expiración</ItemTitle>
+              <ItemDescription>
+                <span className="text-sm">{formatLongDate(device.expiresAt)}</span>
+
+                <Badge className={cn(badgeVariants.warning, "mt-1.5 block")}>
+                  {formatTimeUntil(device.expiresAt)}
+                </Badge>
+              </ItemDescription>
+            </ItemContent>
+          </Item>
+
+          <Alert className={alertVariants.info}>
+            <CircleAlert />
+
+            <AlertTitle className="line-clamp-4">
+              Cuando expire, se te volvera a solicitar el codigo de verificacion al iniciar sesion
+              desde este dispositivo.
+            </AlertTitle>
+          </Alert>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+type DeviceActivityCardProps = Pick<DeviceDetailsDialogProps, "device">;
+
+function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
+  const activitySteps: ActivityStep[] = [
+    {
+      icon: Clock,
+      title: "Último acceso",
+      meta: (
+        <>
+          <span className="block text-sm">{fromNow(device.lastUsedAt)}</span>
+          <span className="block text-sm">{formatLongDate(device.lastUsedAt)}</span>
+        </>
+      ),
+    },
+    {
+      icon: CalendarPlus,
+      title: "Fecha de registro",
+      meta: formatLongDate(device.createdAt),
+    },
+    {
+      icon: CalendarClock,
+      title: "Fecha de expiración",
+      meta: (
+        <>
+          <span className="block text-sm">{formatLongDate(device.expiresAt)}</span>
+          <Badge className={cn(badgeVariants.warning, "mt-1.5")}>
+            {formatTimeUntil(device.expiresAt)}
+          </Badge>
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <Card className="dark:bg-input/10">
+      <CardHeader>
+        <CardTitle>Actividad del dispositivo</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ActivityTimeline steps={activitySteps} variant="violet" />
+      </CardContent>
+    </Card>
+  );
+}
+
+type DeviceMetadataCardProps = Pick<DeviceDetailsDialogProps, "device">;
+
+type DeviceMetadataItems = Pick<DeviceMetadataItemProps, "icon" | "title" | "description"> & {
+  key: "browser" | "os" | "ip";
+};
+
+function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
+  const browser = valueOrFallback(device.browser, "Desconocido");
+  const osName = valueOrFallback(device.osName, "Desconocido");
+  const ip = valueOrFallback(device.ip, "No disponible");
+
+  const items: DeviceMetadataItems[] = [
+    {
+      key: "browser",
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      title: "Navegador",
+      description: browser,
+    },
+    {
+      key: "os",
+      icon: getDeviceIcon(device, cn("h-6 w-6", iconColorVariants.violet.iconFgClass)),
+      title: "Sistema operativo",
+      description: osName,
+    },
+    {
+      key: "ip",
+      icon: <MapPin className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      title: "Direccion IP",
+      description: ip,
+    },
+  ];
+
+  return (
+    <Card className="dark:bg-input/10">
+      <CardHeader>
+        <CardTitle>Informacion del dispositivo</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {items.map((item) => (
+          <div
+            className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20"
+            key={item.key}
+          >
+            <DeviceMetadataItem
+              icon={item.icon}
+              title={item.title}
+              description={item.description}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function DeviceStatusCallouts(): JSX.Element {
+  return (
+    <div className="flex flex-col gap-3">
+      <Alert className={alertVariants.success}>
+        <CircleCheck />
+
+        <AlertTitle>Este dispositivo está activado</AlertTitle>
+        <AlertDescription>
+          No se te pedirá el código de verificación cada vez que inices sesión desde este
+          dispositivo hasta su expiración.
+          <Separator className="my-1" />
+          <ul className="list-inside list-disc space-y-2">
+            <li>Dispositivo verificado y de confianza.</li>
+            <li>Acceso mas rapido y seguro.</li>
+            <li>Puedes revocarlo en cualquier momento.</li>
+          </ul>
+        </AlertDescription>
+      </Alert>
+
+      <Alert className={cn(alertVariants.preview, "dark:text-purple-400")}>
+        <Lightbulb />
+
+        <AlertTitle>¿Que es un dispositivo de confianza?</AlertTitle>
+        <AlertDescription>
+          Los dispositivos de confianza reducen la frecuencia con la que se te solicita el codigo de
+          verificacion al iniciar sesion, manteniendo tu cuenta segura.
+          <span className="my-1 flex items-center justify-center gap-1 font-medium text-purple-800 hover:cursor-pointer hover:underline dark:text-purple-500">
+            Mas información
+            <ChevronRight className="h-5 w-5" />
+          </span>
+        </AlertDescription>
+      </Alert>
+    </div>
   );
 }
 

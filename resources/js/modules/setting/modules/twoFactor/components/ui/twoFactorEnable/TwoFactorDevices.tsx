@@ -1,24 +1,14 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 
-import { Form } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
-import { ImWindows } from "react-icons/im";
-import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
 
-import dayjs from "dayjs";
-import {
-  AlertTriangleIcon,
-  EllipsisVertical,
-  MonitorSmartphone,
-  Plus,
-  Smartphone,
-} from "lucide-react";
+import { AlertTriangleIcon, EllipsisVertical, MonitorSmartphone, Plus } from "lucide-react";
 
+import type { DevicePreview } from "@/modules/setting/modules/twoFactor/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
-
-import { destroyAll as destroyAllRoute } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -35,49 +25,129 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useDialog } from "@/shared/hooks";
 
-import type { TwoFactorDeviceActionKey } from "../../../data/twoFactorEnable";
-import { twoFactorDeviceActionKey, twoFactorDeviceActions } from "../../../data/twoFactorEnable";
-import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
+import { alertVariants } from "@/shared/lib/styling";
 
-interface TwoFactorDevicesProps {
-  devices: TrustedDevice[];
+import type { SharedData } from "@/shared/types";
+
+import type {
+  TwoFactorDeviceActionKey,
+  TwoFactorDeviceSectionActionKey,
+} from "../../../data/twoFactorEnable";
+import {
+  twoFactorDeviceActionKey,
+  twoFactorDeviceActions,
+  twoFactorDeviceSectionActionKey,
+} from "../../../data/twoFactorEnable";
+import { fromNow } from "../../../utils/dateTime";
+import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
+import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
+import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
+import DeviceAlreadyRegisteredDialog from "../../dialog/trustedDevice/DeviceAlreadyRegisteredDialog";
+import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
+import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
+import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
+import RevokeAllDevicesDialog from "../../dialog/trustedDevice/RevokeAllDevicesDialog";
+import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
+
+type TwoFactorDevicesPageProps = SharedData & {
+  currentDevicePreview?: DevicePreview | null;
+  currentDeviceMatch?: TrustedDevice | null;
+  trustedDevices?: TrustedDevice[];
+  trustedDevicesForRevoke?: TrustedDevice[];
+};
+
+interface SectionDialogState extends DialogClosingState {
+  kind: TwoFactorDeviceSectionActionKey;
 }
 
-function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
-  const hasDevices = devices.length > 0;
+function TwoFactorDevices(): JSX.Element {
+  const {
+    currentDevicePreview,
+    currentDeviceMatch,
+    trustedDevices = [],
+    trustedDevicesForRevoke = [],
+  } = usePage<TwoFactorDevicesPageProps>().props;
 
-  const deviceLabel = (device: TrustedDevice): string => {
-    return device.name ?? device.userAgent ?? "Dispositivo desconocido";
+  const hasDevices = trustedDevices.length > 0;
+
+  const sectionDialog = useDialog<SectionDialogState | null>(null);
+
+  useEffect(() => {
+    router.reload({
+      only: ["currentDevicePreview", "currentDeviceMatch"],
+    });
+  }, []);
+
+  const handleRevokeAllDevices = (): void => {
+    router.reload({
+      only: ["trustedDevicesForRevoke"],
+      onSuccess: () => {
+        sectionDialog.show({
+          kind: twoFactorDeviceSectionActionKey.revokeAllDevices,
+          closing: false,
+        });
+      },
+    });
   };
 
-  const fromNow = (iso: string | null): string => {
-    if (iso === null) {
-      return "nunca";
-    }
+  const handleAddDevice = (): void => {
+    const kind =
+      currentDeviceMatch !== null
+        ? twoFactorDeviceSectionActionKey.deviceAlreadyRegistered
+        : twoFactorDeviceSectionActionKey.addDevice;
 
-    return dayjs(iso).fromNow();
+    sectionDialog.show({ kind, closing: false });
   };
 
-  const getDeviceIcon = (device: TrustedDevice, className: string): JSX.Element => {
-    const os = device.osName?.toLowerCase() ?? "";
-    const isMobile = device.isMobile;
+  const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
 
-    if (!isMobile) {
-      if (os.includes("apple") || os.includes("mac")) {
-        return <Smartphone className={className} />;
-      }
-
-      return <MdPhoneAndroid className={className} />;
+  const renderSectionDialog = (): JSX.Element | null => {
+    if (sectionDialog.state === null) {
+      return null;
     }
 
-    if (os.includes("mac")) return <MdOutlineLaptopMac className={className} />;
+    const isClosing = sectionDialog.state.closing;
 
-    return <ImWindows className={className} />;
+    switch (sectionDialog.state.kind) {
+      case twoFactorDeviceSectionActionKey.addDevice:
+        return (
+          <AddDeviceDialog
+            preview={currentDevicePreview ?? null}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case twoFactorDeviceSectionActionKey.deviceAlreadyRegistered:
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+          return null;
+        }
+
+        return (
+          <DeviceAlreadyRegisteredDialog
+            existingDevice={currentDeviceMatch}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case twoFactorDeviceSectionActionKey.revokeAllDevices:
+        return (
+          <RevokeAllDevicesDialog
+            devices={trustedDevicesForRevoke}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
     <>
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      <Alert className={alertVariants.info}>
         <AlertTriangleIcon />
 
         <AlertTitle className="line-clamp-4">
@@ -93,7 +163,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
       <div className="flex items-center justify-between gap-4 font-semibold">
         <span className="text-sm">Dispositivos registrados</span>
 
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleAddDevice} type="button">
           <Plus data-icon="inline-end" />
           Agregar dispositivo
         </Button>
@@ -101,12 +171,7 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
 
       <div className="flex flex-col gap-3 rounded-md border p-5">
         {hasDevices ? (
-          <TwoFactorDevicesItems
-            devices={devices}
-            deviceLabel={deviceLabel}
-            fromNow={fromNow}
-            getDeviceIcon={getDeviceIcon}
-          />
+          <TwoFactorDevicesItems devices={trustedDevices} />
         ) : (
           <div className="text-sm text-muted-foreground">
             No tienes dispositivos de confianza configurados.
@@ -114,21 +179,20 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
         )}
       </div>
 
-      <Form {...destroyAllRoute.delete()}>
-        {() => (
-          <Button
-            type="submit"
-            variant="destructive"
-            className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-            disabled={!hasDevices}
-          >
-            <MonitorSmartphone className="mr-2 h-4 w-4" />
-            Revocar todos
-          </Button>
-        )}
-      </Form>
+      <Button
+        type="button"
+        variant="destructive"
+        className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+        disabled={!hasDevices}
+        onClick={handleRevokeAllDevices}
+      >
+        <MonitorSmartphone className="mr-2 h-4 w-4" />
+        Revocar todos
+      </Button>
 
-      <Alert className="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-500">
+      {renderSectionDialog()}
+
+      <Alert className={alertVariants.info}>
         <AlertTitle>Consejos</AlertTitle>
 
         <AlertDescription>
@@ -143,76 +207,74 @@ function TwoFactorDevices({ devices }: TwoFactorDevicesProps): JSX.Element {
   );
 }
 
-type TwoFactorDevicesItemsProps = Pick<TwoFactorDevicesProps, "devices"> & {
-  deviceLabel: (device: TrustedDevice) => string;
-  fromNow: (iso: string | null) => string;
-  getDeviceIcon: (device: TrustedDevice, className: string) => JSX.Element;
-};
+interface TwoFactorDevicesItemsProps {
+  devices: TrustedDevice[];
+}
 
-interface DialogActionState {
+interface DialogActionState extends DialogClosingState {
   kind: TwoFactorDeviceActionKey;
   device: TrustedDevice;
 }
 
-function TwoFactorDevicesItems({
-  devices,
-  deviceLabel,
-  fromNow,
-  getDeviceIcon,
-}: TwoFactorDevicesItemsProps) {
+function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
   const dialogDevice = useDialog<DialogActionState | null>(null);
 
   const handleDeviceAction = (action: TwoFactorDeviceActionKey, device: TrustedDevice) => {
-    switch (action) {
-      case twoFactorDeviceActionKey.viewDevice:
-        dialogDevice.show({ kind: action, device });
-
-        break;
-      case twoFactorDeviceActionKey.renameDevice:
-        dialogDevice.show({ kind: action, device });
-
-        break;
-      case twoFactorDeviceActionKey.renewTrust:
-        dialogDevice.show({ kind: action, device });
-
-        break;
-      case twoFactorDeviceActionKey.revokeDevice:
-        dialogDevice.show({ kind: action, device });
-
-        break;
-    }
+    dialogDevice.show({ kind: action, device, closing: false });
   };
 
-  const renderDialogDevice = (): JSX.Element | null | undefined => {
-    if (!dialogDevice.state) return null;
+  const handleDialogClose = createDialogCloseHandler(dialogDevice);
+
+  const renderDialogDevice = (): JSX.Element | null => {
+    if (dialogDevice.state === null) {
+      return null;
+    }
+
+    const isClosing = dialogDevice.state.closing;
+
+    const selectedDevice =
+      devices.find((device) => device.id === dialogDevice.state?.device.id) ?? null;
+
+    if (selectedDevice === null) {
+      return null;
+    }
 
     switch (dialogDevice.state.kind) {
       case twoFactorDeviceActionKey.viewDevice:
         return (
           <DeviceDetailsDialog
-            device={dialogDevice.state.device}
-            open={true}
-            hide={dialogDevice.hide}
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
           />
         );
 
       case twoFactorDeviceActionKey.renameDevice:
-        //return <RenameDeviceDialog device={dialogDevice.state?.device} />;
-        break;
+        return (
+          <RenameDeviceDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
 
       case twoFactorDeviceActionKey.renewTrust:
-        //return <RenewTrustDeviceDialog device={dialogDevice.state?.device} />;
-        break;
+        return (
+          <RenewTrustDialog device={selectedDevice} open={!isClosing} onClose={handleDialogClose} />
+        );
 
       case twoFactorDeviceActionKey.revokeDevice:
-        //return <RevokeDeviceDialog device={dialogDevice.state?.device} />;
-        break;
+        return (
+          <RevokeDeviceDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
 
       default:
         return null;
     }
-
-    return null;
   };
 
   return (
@@ -226,7 +288,7 @@ function TwoFactorDevicesItems({
               </div>
 
               <div className="flex flex-col gap-0.5">
-                <span className="truncate text-sm font-medium" title={deviceLabel(device)}>
+                <span className="max-w-40 truncate text-sm font-medium" title={deviceLabel(device)}>
                   {deviceLabel(device)}
                 </span>
 

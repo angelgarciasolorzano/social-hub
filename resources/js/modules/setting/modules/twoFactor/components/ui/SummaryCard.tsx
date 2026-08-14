@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { JSX, ReactNode } from "react";
 import { Fragment } from "react";
 
 import type { LucideIcon } from "lucide-react";
@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/sh
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
+import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 type BadgeVariant =
   | "default"
@@ -30,8 +31,7 @@ export interface SumaryCardItem {
   title: string;
   description: string;
   icon: LucideIcon;
-  iconBgColor: string;
-  iconColor: string;
+  iconColor: IconColorVariant;
   action?: SumaryCardAction;
 }
 
@@ -42,7 +42,12 @@ interface SummaryCardProps {
   renderAction?: (action: SumaryCardAction) => ReactNode;
 }
 
-function SummaryCard({ title, showLastSeparator, data, renderAction }: SummaryCardProps) {
+function SummaryCard({
+  title,
+  showLastSeparator,
+  data,
+  renderAction,
+}: SummaryCardProps): JSX.Element {
   return (
     <Card>
       <CardHeader>
@@ -51,14 +56,15 @@ function SummaryCard({ title, showLastSeparator, data, renderAction }: SummaryCa
       <CardContent className="flex flex-col gap-4">
         {data.map((summary, index) => {
           const Icon = summary.icon;
+          const colors = iconColorVariants[summary.iconColor];
 
           return (
             <Fragment key={summary.key}>
               <div
                 className={cn("flex items-center gap-4", !summary.action && !renderAction && "p-2")}
               >
-                <div className={`flex h-12 w-12 rounded-md p-2 ${summary.iconBgColor}`}>
-                  <Icon className={`h-8 w-8 ${summary.iconColor}`} />
+                <div className={cn("flex h-12 w-12 rounded-md p-2", colors.iconBgClass)}>
+                  <Icon className={cn("h-8 w-8", colors.iconFgClass)} />
                 </div>
 
                 <div className="flex w-full items-center justify-between gap-4">

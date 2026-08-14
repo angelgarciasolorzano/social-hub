@@ -10,6 +10,15 @@ Route::prefix('user')->name('user.')->group(function (): void {
         ->prefix('trusted-devices')
         ->name('trusted-devices.')
         ->group(function (): void {
+            Route::post('', [TrustedDeviceController::class, 'store'])
+                ->name('store');
+
+            Route::patch('{trustedDevice}', [TrustedDeviceController::class, 'update'])
+                ->name('update');
+
+            Route::post('{trustedDevice}/renew', [TrustedDeviceController::class, 'renew'])
+                ->name('renew');
+
             Route::delete('{trustedDevice}', [TrustedDeviceController::class, 'destroy'])
                 ->name('destroy');
 
