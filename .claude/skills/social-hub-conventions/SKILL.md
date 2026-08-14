@@ -35,17 +35,17 @@ When you read this skill, the project conventions are already in effect. Treat t
 
 ### Frontend
 
-- `resources/js/modules/<domain>/{views,components,types,hooks}` mirrors the PHP domains. Example: `app/Post/` ↔ `resources/js/modules/post/`.
+- `resources/js/modules/<domain>/` mirrors the PHP domains. The shape varies per domain but the common pattern is: a barrel `index.ts` re-exporting the domain's page components, types, hooks, and assets; plus per-domain folders like `components/`, `types/`, `hooks/`, `assets/`, `enums/`. Some domains split by feature into subfolders (e.g. `modules/auth/{login,password,register,twoFactor}/`). Example: `app/Post/` ↔ `resources/js/modules/post/`.
 - Shared code under `resources/js/shared/`:
   - `components/shadcn/ui/` — shadcn primitives (style `new-york`, base `neutral`, see `components.json`)
-  - `components/`, `hooks/`, `lib/`, `types/`, `assets/`
-  - `wayfinder/` — **auto-generated** by the Vite plugin (`@laravel/vite-plugin-wayfinder`). Never edit by hand.
+  - `components/`, `hooks/`, `lib/`, `types/`, `assets/`, `enums/`, `utils/`, `pages/`
+  - `wayfinder/` — **auto-generated** by the Vite plugin (`@laravel/vite-plugin-wayfinder`, output path in `vite.config.ts`). Never edit by hand; only exists after the first `npm run dev` / `npm run build`.
 - Naming:
   - Components & pages `.tsx` → `PascalCase.tsx`
   - Types, hooks, utils `.ts` → `camelCase.ts`
   - shadcn primitives under `shared/components/shadcn/ui/` → `kebab-case.tsx`
 - Aliases: `@/` → `resources/js/` (configured in `tsconfig.json`).
-- Routes: import from `@/actions/` (controllers) and `@/routes/` (named routes). Never hardcode URLs.
+- Routes: import from `@/shared/wayfinder/actions/` (controllers) and `@/shared/wayfinder/routes/` (named routes) — these are the canonical output paths set by `@laravel/vite-plugin-wayfinder` in `vite.config.ts` and confirmed by the `importOrder` in `.prettierrc`. Never hardcode URLs.
 - Import order is enforced by `.prettierrc` via `@trivago/prettier-plugin-sort-imports` — `react`, `@inertiajs/react`, `react-icons` first, then `@/modules`, then `@/shared/...`, then relative. Don't reorder manually.
 
 ## 2. Backend QA gates (run in this order)
@@ -108,7 +108,7 @@ Before moving an issue to `Done`, every one of these must be true:
    - [`AGENTS.md`](../../AGENTS.md) when the change touches: package-specific rules (Inertia, Fortify, Wayfinder, MediaLibrary, FluentValidation, Pint, PHPUnit) or Laravel/React conventions.
    - [`docs/architecture/backend.md`](../../docs/architecture/backend.md) / [`docs/architecture/frontend.md`](../../docs/architecture/frontend.md) for architectural changes.
    - [`docs/development/backend-commands.md`](../../docs/development/backend-commands.md) / [`docs/development/frontend-commands.md`](../../docs/development/frontend-commands.md) when commands, scripts, or gates change.
-3. **PR template**: open the PR using [`.github/PULL_REQUEST_TEMPLATE/`](../../.github/PULL_REQUEST_TEMPLATE/). Do not skip the linked-issue line, the change summary, or the test plan.
+3. **PR template**: open the PR using [`../../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`](../../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) (Summary + Changes + Notes sections). Use `but pr new <branch> -F pr_body.md` to attach the filled template in one step — `but pr new -m "..."` only sets the title. Do not skip the linked-issue line, the change summary, or the test plan.
 4. **Linear summary**: post a closing comment on the issue mirroring the SOC-13 style — context, decisions (with a small table when applicable), implementation summary, criteria cumplidos (checkbox list), link to the PR. The comment is what reviewers read first; treat it as the deliverable's front page.
 
 If any item above is missing, the change is **not done**. Don't move the issue to `Done` — leave it in `In Progress` and finish the missing step.
