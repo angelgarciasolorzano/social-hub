@@ -63,6 +63,7 @@ Cuando un módulo tiene **varias áreas independientes** que ameritan su propio 
 
 - `app/Auth/` → `Email/`, `Login/`, `Password/`, `Register/`
 - `app/User/` → `Profile/`, `Preferences/`, `TwoFactorAuthentication/`
+- `app/Auth/Modules/TrustedDevice/` → cookie-backed TOTP bypass (introducido en SOC-14)
 
 ### Cuándo subdividir
 
@@ -92,6 +93,31 @@ app/Auth/routes/
 ├── password.php
 └── register.php
 ```
+
+### Convención `Modules/<Feature>/` (introducida en SOC-14)
+
+Cuando una feature **dentro de un módulo crece lo suficiente como para merecer su propio namespace**, se extrae bajo `app/<Module>/Modules/<Feature>/`. Ejemplo canónico: `app/Auth/Modules/TrustedDevice/`.
+
+**Lo que el submodule SÍ tiene** (espeja el lado de features del módulo padre):
+
+```
+app/<Module>/Modules/<Feature>/
+├── Concerns/        ← traits / helpers locales (ej. HasPasswordConfirmation.php)
+├── Controllers/     ← controladores específicos de la feature
+├── Listeners/       ← listeners de Fortify / eventos del dominio scoped a la feature
+├── Requests/        ← FormRequests de la feature
+└── Resources/       ← Eloquent API Resources de los modelos de la feature
+```
+
+**Lo que se queda en el módulo padre** (nunca se duplica dentro del submodule):
+
+- `Providers/` — el `<Module>ServiceProvider` y `<Module>RouteServiceProvider` ya cubren la feature.
+- `Models/` — el modelo Eloquent vive en el padre para que las relaciones (`User::trustedDevices()`) queden junto al resto del dominio.
+- `routes/` — se registran a través del `AuthRouteServiceProvider` central con un archivo por concern (ej. `routes/trustedDevice.php`).
+- `Database/Migrations/` y `Database/Factories/` — registrados vía `<Module>ServiceProvider::loadMigrationsFrom`.
+- `config/` — la configuración del módulo vive en el padre.
+
+**Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantener la feature dentro del concern correspondiente (`app/Auth/Login/`, `app/Auth/Password/`, etc.).
 
 ## 4. Responsabilidad de cada archivo
 
