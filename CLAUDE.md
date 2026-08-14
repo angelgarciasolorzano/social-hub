@@ -32,6 +32,8 @@ Project-wide coding rules, package-specific guidance (Inertia v3, Fortify, Wayfi
 
 Copilot rules in `.github/copilot-instructions.md` are also active; the one directive is: **prefix shell commands with `rtk`** (e.g. `rtk git status`) to save tokens.
 
+The project also ships its own skill at `.claude/skills/social-hub-conventions/SKILL.md` — it activates automatically on any non-trivial code change and on Linear task closure, and enforces the modular domain structure, naming, the backend/frontend QA gates, and the Definition of Done documented in this file. Treat the skill's triggers as active by default.
+
 ## Common commands
 
 All commands run from the repo root.
