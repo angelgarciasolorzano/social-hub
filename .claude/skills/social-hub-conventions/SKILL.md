@@ -31,11 +31,12 @@ When you read this skill, the project conventions are already in effect. Treat t
 - PSR-4 namespace must match the path. Every PHP file starts with `declare(strict_types=1);`.
 - Typed class constants: `private const string NAME = '...';` (see `FortifyServiceProvider`).
 - Create files with the appropriate `php artisan make:*` command (`--no-interaction`). Don't hand-author migrations, models, requests, controllers, or tests when a generator exists.
+- **Submodule convention** (`app/<Domain>/Modules/<Feature>/`) — established in SOC-14. Use when a feature grows beyond a per-concern folder and earns its own namespace (canonical example: `app/Auth/Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap. Extraction rule of thumb: the feature owns its own event listeners, or has 3+ controllers/requests of its own.
 - See [`CLAUDE.md`](../../CLAUDE.md) "Modular service-provider pattern" and "Models and relations" sections for the canonical references.
 
 ### Frontend
 
-- `resources/js/modules/<domain>/` mirrors the PHP domains. The shape varies per domain but the common pattern is: a barrel `index.ts` re-exporting the domain's page components, types, hooks, and assets; plus per-domain folders like `components/`, `types/`, `hooks/`, `assets/`, `enums/`. Some domains split by feature into subfolders (e.g. `modules/auth/{login,password,register,twoFactor}/`). Example: `app/Post/` ↔ `resources/js/modules/post/`.
+- `resources/js/modules/<domain>/` mirrors the PHP domains. The shape varies per domain but the common pattern is: a barrel `index.ts` re-exporting the domain's page components, types, hooks, and assets; plus per-domain folders like `components/`, `types/`, `hooks/`, `assets/`, `enums/`. Some domains split by feature into subfolders (e.g. `modules/auth/{login,password,register,layouts}/`, plus top-level page files like `TwoFactorChallenge.tsx` and `VerifyEmail.tsx`). Example: `app/Post/` ↔ `resources/js/modules/post/`.
 - Shared code under `resources/js/shared/`:
   - `components/shadcn/ui/` — shadcn primitives (style `new-york`, base `neutral`, see `components.json`)
   - `components/`, `hooks/`, `lib/`, `types/`, `assets/`, `enums/`, `utils/`, `pages/`

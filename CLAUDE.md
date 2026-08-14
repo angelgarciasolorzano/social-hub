@@ -11,11 +11,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Domains in this codebase:
 
 - **Auth** (`app/Auth/`) — login, register, email verification, password reset (via Fortify), 2FA + trusted devices.
-  - `app/Auth/Login`, `app/Auth/Register`, `app/Auth/Email`, `app/Auth/Password` — each owns its controllers/requests/routes and is wired via the central `AuthRouteServiceProvider`.
-  - `app/Auth/Models/` — domain models (`TrustedDevice`).
-  - `app/Auth/Modules/TrustedDevice/` — Controllers and Listeners for the trusted devices feature (cookie-backed TOTP bypass).
-  - `app/Auth/Database/Migrations/` and `app/Auth/Database/Factories/` — registered automatically by `AuthServiceProvider::loadMigrationsFrom`.
-  - `AuthRouteServiceProvider` loads `routes/` (one file per concern, e.g. `trustedDevice.php`); `AuthEventServiceProvider` registers Fortify event listeners for the module.
+  - **Per-concern layout**: `app/Auth/{Email,Login,Password,Register}/` each owns its controllers + requests and is wired via the central `AuthRouteServiceProvider`.
+  - **Shared infrastructure stays at the parent**: `app/Auth/Models/` (domain models), `app/Auth/Database/{Migrations,Factories}/` (registered automatically by `AuthServiceProvider::loadMigrationsFrom`), `app/Auth/Providers/`, `app/Auth/routes/` (one file per concern, e.g. `trustedDevice.php`), and `app/Auth/config/`.
+  - **Submodule convention (`app/Auth/Modules/<Feature>/`)** — established in SOC-14. Use when a feature grows beyond a single concern and earns its own namespace (e.g. `Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap.
+  - `AuthRouteServiceProvider` loads `routes/` (one file per concern); `AuthEventServiceProvider` registers Fortify event listeners for the module.
 - **Home** (`app/Home/`) — landing/dashboard pages.
 - **User** (`app/User/`) — profile, settings; the authenticatable model lives here.
 - **Post** (`app/Post/`) — posts with images via `spatie/laravel-medialibrary`.
