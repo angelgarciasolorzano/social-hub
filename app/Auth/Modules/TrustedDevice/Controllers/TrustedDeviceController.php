@@ -70,23 +70,13 @@ class TrustedDeviceController extends Controller
         $userAgent = $trustedDeviceStoreRequest->userAgent();
         $ip = $trustedDeviceStoreRequest->ip();
 
-        if ($userAgent !== null && $ip !== null) {
-            $existingMatch = TrustedDevice::findActiveMatch($user, $userAgent, $osInfo['name'], $ip);
-
-            if ($existingMatch instanceof TrustedDevice) {
-                return Inertia::flash([
-                    'type' => 'error',
-                    'message' => 'Este dispositivo ya esta registrado como de confianza.',
-                ])->back();
-            }
-        }
-
         /** @var int $cookieLifetimeMinutes */
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         $token = $this->mintToken();
 
-        DB::transaction(function () use (
+        /** @var TrustedDevice $newDevice */
+        $newDevice = DB::transaction(function () use (
             $user,
             $deviceDetector,
             $osInfo,
@@ -96,6 +86,20 @@ class TrustedDeviceController extends Controller
             $cookieLifetimeMinutes,
             $trustedDeviceStoreRequest,
         ): TrustedDevice {
+            if ($userAgent !== null && $ip !== null) {
+                $existingMatch = TrustedDevice::findActiveMatch(
+                    $user,
+                    $userAgent,
+                    $osInfo['name'],
+                    $ip,
+                    lockForUpdate: true,
+                );
+
+                if ($existingMatch instanceof TrustedDevice) {
+                    return $existingMatch;
+                }
+            }
+
             $created = $user->trustedDevices()->create([
                 'name' => $trustedDeviceStoreRequest->string('name')->toString() !== ''
                     ? $trustedDeviceStoreRequest->string('name')->toString()
@@ -117,6 +121,15 @@ class TrustedDeviceController extends Controller
 
             return $created;
         });
+
+        $isFresh = $newDevice->wasRecentlyCreated;
+
+        if (! $isFresh) {
+            return Inertia::flash([
+                'type' => 'error',
+                'message' => 'Este dispositivo ya esta registrado como de confianza.',
+            ])->back();
+        }
 
         $this->queueTrustedDeviceCookie($token['token']);
 

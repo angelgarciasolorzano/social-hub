@@ -89,26 +89,32 @@ class TrustedDevice extends Model
     }
 
     /**
-     * Find the active trusted device for the same user + UA + OS + IP. Null IP
-     * is a hard miss to avoid a stolen token on another network being treated
-     * as "already trusted".
+     * Find the active trusted device for the same fingerprint, or null when
+     * `$ip` is null. When `$lockForUpdate` is true, the read is serialised so
+     * concurrent `store()` calls cannot both pass the check.
      */
     public static function findActiveMatch(
         User $user,
         string $userAgent,
         string $osName,
         ?string $ip,
+        bool $lockForUpdate = false,
     ): ?self {
         if ($ip === null) {
             return null;
         }
 
-        return $user->trustedDevices()
+        $builder = $user->trustedDevices()
             ->where('user_agent', $userAgent)
             ->where('os_name', $osName)
             ->where('ip', $ip)
-            ->where('expires_at', '>', CarbonImmutable::now())
-            ->first();
+            ->where('expires_at', '>', CarbonImmutable::now());
+
+        if ($lockForUpdate) {
+            $builder->lockForUpdate();
+        }
+
+        return $builder->first();
     }
 
     /**
