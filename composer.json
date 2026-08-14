@@ -10,16 +10,16 @@
     "license": "MIT",
     "require": {
         "php": "^8.5",
-        "inertiajs/inertia-laravel": "^3.0.6",
-        "laravel/fortify": "^1.36.2",
-        "laravel/framework": "^13.4.0",
-        "laravel/reverb": "^1.10.0",
+        "inertiajs/inertia-laravel": "^3.3.1",
+        "laravel/fortify": "^1.38.0",
+        "laravel/framework": "^13.25.0",
+        "laravel/reverb": "^1.11.1",
         "laravel/tinker": "^3.0.0",
-        "laravel/wayfinder": "^0.1.15",
+        "laravel/wayfinder": "^0.1.21",
         "matomo/device-detector": "^6.5",
         "nunomaduro/essentials": "^1.2.0",
-        "sandermuller/laravel-fluent-validation": "^1.27",
-        "spatie/laravel-medialibrary": "^11.21.0"
+        "sandermuller/laravel-fluent-validation": "^1.33.0",
+        "spatie/laravel-medialibrary": "^11.23.5"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
