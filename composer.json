@@ -30,7 +30,7 @@
         "laravel/boost": "^2.5.3",
         "laravel/pail": "^1.2.7",
         "laravel/pao": "^1.1.4",
-        "laravel/pint": "^1.29.0",
+        "laravel/pint": "^1.30.5",
         "laravel/sail": "^1.66.0",
         "mockery/mockery": "^1.6.12",
         "nunomaduro/collision": "^8.9.5",
