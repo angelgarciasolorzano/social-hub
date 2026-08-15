@@ -52,7 +52,6 @@ trait MintsTrustedDeviceToken
             value: $token,
             minutes: $cookieLifetimeMinutes,
             path: '/',
-            domain: null,
             secure: true,
             httpOnly: true,
             raw: false,
