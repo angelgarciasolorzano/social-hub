@@ -4,29 +4,16 @@ declare(strict_types=1);
 
 namespace App\MediaLibrary\Console\Commands;
 
+use Illuminate\Console\Attributes\Description;
+use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Override;
 use Symfony\Component\Finder\SplFileInfo;
 
+#[Description('Deletes all folders and files inside storage/app/public and public/storage. For local development use only!')]
+#[Signature('app:clean-media-library-folders')]
 class MediaLibraryCleanFolders extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    #[Override]
-    protected $signature = 'app:clean-media-library-folders';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    #[Override]
-    protected $description = 'Deletes all folders and files inside storage/app/public and public/storage. For local development use only!';
-
     /**
      * Execute the console command.
      */

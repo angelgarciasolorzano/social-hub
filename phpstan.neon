@@ -37,6 +37,10 @@ parameters:
         null_over_false: true
         narrow_param: true
         narrow_return: true
+        # was on by default in rector/type-perfect; opt-in in tomasvotruba/type-coverage since 2.3.0
+        no_param_type_removal: true
+        no_isset_on_object: true
+        no_empty_on_object: true
 
     scanFiles:
         - _ide_helper_models.php
