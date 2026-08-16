@@ -139,20 +139,20 @@ This skill (and the commits in this repo) follows [Conventional Commits v1.0.0](
 - `style` — formatting only, no code change
 - `test` — tests only
 
-**Scope** (optional): section of the codebase, ej: `deps`, `skill`, `claude`, `auth`, `post`.
+**Scope** (optional): Linear ticket ID of the issue being worked on, ej: `SOC-18`, `SOC-13`, `SOC-7`. Section names like `deps` or `skill` are not the convention here — every commit in this repo's history uses the ticket ID.
 
 **Breaking changes**: mark with `!` before the colon or with a `BREAKING CHANGE: <desc>` footer.
 
 Examples of real commits in this repo:
 
-- `chore(SOC-18): create project conventions skill for agents`
-- `chore(deps): bump typescript to 5.9.3 (TS 7 blocked by typescript-eslint)`
-- `feat(skill): add social-hub-conventions skill for agents`
+- `chore(SOC-17): update frontend dependencies npm`
+- `feat(SOC-7): add CI deployment pipeline with GitHub Actions`
+- `refactor(SOC-10): standardize twofactor component names and update wayfinder references`
 
 When the user asks you to commit, **write the commit message yourself** following this format. Don't ask the user to write it — that's the agent's job.
 
 ## Out of scope for this skill
 
-- Editing `skills-lock.json` for this local skill (it's not an external skill).
+- Editing `skills-lock.json` — applies to external skills only; this skill is local.
 - Adding new hooks in `.github/hooks/` (a separate issue if needed).
 - Rewriting `CLAUDE.md` or `AGENTS.md` beyond the minimal registration line that links to this skill.
