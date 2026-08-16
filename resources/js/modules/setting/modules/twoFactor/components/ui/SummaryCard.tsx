@@ -10,14 +10,7 @@ import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 type BadgeVariant =
-  | "default"
-  | "destructive"
-  | "link"
-  | "secondary"
-  | "outline"
-  | "ghost"
-  | null
-  | undefined;
+  "default" | "destructive" | "link" | "secondary" | "outline" | "ghost" | null | undefined;
 
 export type SumaryCardAction =
   | { type: "badge"; variant: BadgeVariant; label: string }
