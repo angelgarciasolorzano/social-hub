@@ -100,6 +100,7 @@ export default defineConfig([
     "vendor/**",
     "node_modules/**",
     "bootstrap/cache/**",
+    "bootstrap/ssr/**",
     "public/build/**",
     "storage/**",
     "resources/js/shared/wayfinder/**",
