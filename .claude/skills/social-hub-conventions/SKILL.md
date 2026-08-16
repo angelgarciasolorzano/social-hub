@@ -131,9 +131,9 @@ This skill (and the commits in this repo) follows [Conventional Commits v1.0.0](
 
 **Types used in this repo:**
 
-- `feat` — new feature (ej: `feat(skill): add social-hub-conventions skill`)
+- `feat` — new feature (ej: `feat(SOC-7): add CI deployment pipeline with GitHub Actions`)
 - `fix` — bug fix
-- `chore` — maintenance without functional change (ej: `chore(deps): bump typescript`)
+- `chore` — maintenance without functional change (ej: `chore(SOC-17): update frontend dependencies npm`)
 - `refactor` — internal change without behavior change
 - `docs` — docs only
 - `style` — formatting only, no code change
@@ -147,7 +147,7 @@ Examples of real commits in this repo:
 
 - `chore(SOC-17): update frontend dependencies npm`
 - `feat(SOC-7): add CI deployment pipeline with GitHub Actions`
-- `refactor(SOC-10): standardize twofactor component names and update wayfinder references`
+- `refactor(SOC-10): standardize twofactor component names and update`
 
 When the user asks you to commit, **write the commit message yourself** following this format. Don't ask the user to write it — that's the agent's job.
 
