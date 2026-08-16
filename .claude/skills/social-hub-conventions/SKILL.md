@@ -63,7 +63,10 @@ composer phpstan
 # 3. Refactor preview (skip if empty)
 composer rector-dry
 
-# 4. Run affected tests
+# 4. If rector-dry shows changes the user wants, apply them
+composer rector
+
+# 5. Run affected tests
 php artisan test --compact --filter=testName
 # Full suite before closing the PR:
 php artisan test --compact
@@ -103,7 +106,7 @@ Hard rules:
 
 Before moving an issue to `Done`, every one of these must be true:
 
-1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-dry`, `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too.
+1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-dry` (preview), `composer rector` (apply if the user approves the dry-run changes), `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too. Rector is split into two steps on purpose: always preview first, then apply only when the user accepts the suggested changes.
 2. **Doc sync** — update the docs that the change actually touched:
    - [`CLAUDE.md`](../../CLAUDE.md) when the change touches: domain structure, the morph map, package versions, the Wayfinder layout, or the project's tooling/conventions.
    - [`AGENTS.md`](../../AGENTS.md) when the change touches: package-specific rules (Inertia, Fortify, Wayfinder, MediaLibrary, FluentValidation, Pint, PHPUnit) or Laravel/React conventions.
@@ -114,8 +117,42 @@ Before moving an issue to `Done`, every one of these must be true:
 
 If any item above is missing, the change is **not done**. Don't move the issue to `Done` — leave it in `In Progress` and finish the missing step.
 
+## 5. Conventional Commits
+
+This skill (and the commits in this repo) follows [Conventional Commits v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/). Structure:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Types used in this repo:**
+
+- `feat` — new feature (ej: `feat(skill): add social-hub-conventions skill`)
+- `fix` — bug fix
+- `chore` — maintenance without functional change (ej: `chore(deps): bump typescript`)
+- `refactor` — internal change without behavior change
+- `docs` — docs only
+- `style` — formatting only, no code change
+- `test` — tests only
+
+**Scope** (optional): section of the codebase, ej: `deps`, `skill`, `claude`, `auth`, `post`.
+
+**Breaking changes**: mark with `!` before the colon or with a `BREAKING CHANGE: <desc>` footer.
+
+Examples of real commits in this repo:
+
+- `chore(SOC-18): create project conventions skill for agents`
+- `chore(deps): bump typescript to 5.9.3 (TS 7 blocked by typescript-eslint)`
+- `feat(skill): add social-hub-conventions skill for agents`
+
+When the user asks you to commit, **write the commit message yourself** following this format. Don't ask the user to write it — that's the agent's job.
+
 ## Out of scope for this skill
 
-- Migrating `.agents/skills/` or editing `skills-lock.json`.
+- Editing `skills-lock.json` for this local skill (it's not an external skill).
 - Adding new hooks in `.github/hooks/` (a separate issue if needed).
 - Rewriting `CLAUDE.md` or `AGENTS.md` beyond the minimal registration line that links to this skill.
