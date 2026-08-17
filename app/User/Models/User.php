@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\Models;
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Models\TrustedDeviceEvent;
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;
@@ -183,5 +184,15 @@ class User extends Authenticatable implements HasMedia
     public function trustedDevices(): HasMany
     {
         return $this->hasMany(TrustedDevice::class);
+    }
+
+    /**
+     * Get all trusted device events recorded against this user.
+     *
+     * @return HasMany<TrustedDeviceEvent, $this>
+     */
+    public function trustedDeviceEvents(): HasMany
+    {
+        return $this->hasMany(TrustedDeviceEvent::class);
     }
 }
