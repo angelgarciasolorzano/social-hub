@@ -1,14 +1,22 @@
 import type { JSX } from "react";
 import { Fragment, useEffect } from "react";
 
-import { router, usePage } from "@inertiajs/react";
+import { Link, router, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
-import { AlertTriangleIcon, EllipsisVertical, MonitorSmartphone, Plus } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  ChevronRight,
+  EllipsisVertical,
+  MonitorSmartphone,
+  Plus,
+} from "lucide-react";
 
 import type { DevicePreview } from "@/modules/setting/modules/twoFactor/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
+
+import { index as devicesIndex } from "@/shared/wayfinder/routes/setting/security/trusted-devices";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -179,16 +187,25 @@ function TwoFactorDevices(): JSX.Element {
         )}
       </div>
 
-      <Button
-        type="button"
-        variant="destructive"
-        className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-        disabled={!hasDevices}
-        onClick={handleRevokeAllDevices}
-      >
-        <MonitorSmartphone className="mr-2 h-4 w-4" />
-        Revocar todos
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Button asChild className="w-full py-6" variant="outline">
+          <Link href={devicesIndex.url()}>
+            Mostrar todos los dispositivos
+            <ChevronRight />
+          </Link>
+        </Button>
+
+        <Button
+          type="button"
+          variant="destructive"
+          className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+          disabled={!hasDevices}
+          onClick={handleRevokeAllDevices}
+        >
+          <MonitorSmartphone className="mr-2 h-4 w-4" />
+          Revocar todos
+        </Button>
+      </div>
 
       {renderSectionDialog()}
 

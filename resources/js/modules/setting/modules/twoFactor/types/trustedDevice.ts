@@ -12,3 +12,22 @@ export interface TrustedDevice {
   createdAt: string;
   isActive: boolean;
 }
+
+export type TrustedDeviceAction = "created" | "renewed" | "renamed" | "revoked" | "revoked_all";
+
+export interface TrustedDeviceStats {
+  total: number;
+  active: number;
+  expiringSoon: number;
+  recentlyAdded: number;
+}
+
+export interface TrustedDeviceActivityItem {
+  id: number;
+  action: TrustedDeviceAction;
+  actionLabel: string;
+  deviceId: number | null;
+  deviceLabel: string | null;
+  ip: string | null;
+  createdAt: string | null;
+}
