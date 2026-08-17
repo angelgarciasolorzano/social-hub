@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
@@ -33,6 +35,13 @@ class TrustedDeviceController extends Controller
             'name' => $trustedDeviceUpdateRequest->string('name')->toString(),
         ])->save();
 
+        TrustedDeviceEvent::record(
+            trustedDevice: $trustedDevice,
+            user: $trustedDeviceUpdateRequest->user(),
+            trustedDeviceAction: TrustedDeviceAction::Renamed,
+            request: $trustedDeviceUpdateRequest,
+        );
+
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Dispositivo renombrado correctamente.',
@@ -49,6 +58,13 @@ class TrustedDeviceController extends Controller
         $trustedDevice->forceFill([
             'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
         ])->save();
+
+        TrustedDeviceEvent::record(
+            trustedDevice: $trustedDevice,
+            user: $request->user(),
+            trustedDeviceAction: TrustedDeviceAction::Renewed,
+            request: $request,
+        );
 
         return Inertia::flash([
             'type' => 'success',
@@ -133,6 +149,13 @@ class TrustedDeviceController extends Controller
 
         $this->queueTrustedDeviceCookie($token['token']);
 
+        TrustedDeviceEvent::record(
+            trustedDevice: $newDevice,
+            user: $user,
+            trustedDeviceAction: TrustedDeviceAction::Created,
+            request: $trustedDeviceStoreRequest,
+        );
+
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Dispositivo agregado correctamente.',
@@ -142,6 +165,13 @@ class TrustedDeviceController extends Controller
     public function destroy(TrustedDeviceDestroyRequest $trustedDeviceDestroyRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $trustedDeviceDestroyRequest->user()?->getKey(), 403);
+
+        TrustedDeviceEvent::record(
+            trustedDevice: $trustedDevice,
+            user: $trustedDeviceDestroyRequest->user(),
+            trustedDeviceAction: TrustedDeviceAction::Revoked,
+            request: $trustedDeviceDestroyRequest,
+        );
 
         $trustedDevice->delete();
 
@@ -156,6 +186,17 @@ class TrustedDeviceController extends Controller
         $user = $trustedDeviceDestroyAllRequest->user();
 
         abort_unless($user instanceof User, 401);
+
+        $devices = $user->trustedDevices()->latest('last_used_at')->get();
+
+        foreach ($devices as $device) {
+            TrustedDeviceEvent::record(
+                trustedDevice: $device,
+                user: $user,
+                trustedDeviceAction: TrustedDeviceAction::RevokedAll,
+                request: $trustedDeviceDestroyAllRequest,
+            );
+        }
 
         $user->trustedDevices()->delete();
 
