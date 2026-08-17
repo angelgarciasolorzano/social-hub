@@ -1,4 +1,4 @@
-import type * as React from "react";
+import type { ComponentProps, JSX } from "react";
 
 import { Link } from "@inertiajs/react";
 
@@ -9,6 +9,7 @@ import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/Home
 import { appearance } from "@/shared/wayfinder/actions/App/User/Preferences/Controllers/PreferenceController";
 import { edit as editProfile } from "@/shared/wayfinder/actions/App/User/Profile/Controllers/ProfileController";
 
+import { index as devicesIndex } from "@/shared/wayfinder/routes/setting/security/trusted-devices";
 import { index as indexTwoFactorAuthentication } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
 import {
@@ -68,12 +69,16 @@ const data = {
           title: "Autenticación en dos pasos",
           url: indexTwoFactorAuthentication.url(),
         },
+        {
+          title: "Dispositivos confiables",
+          url: devicesIndex.url(),
+        },
       ],
     },
   ],
 };
 
-export function SettingSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function SettingSidebar({ ...props }: ComponentProps<typeof Sidebar>): JSX.Element {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>

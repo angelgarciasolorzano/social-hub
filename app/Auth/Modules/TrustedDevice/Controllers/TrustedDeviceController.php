@@ -63,7 +63,7 @@ class TrustedDeviceController extends Controller
             ),
         ];
 
-        return Inertia::render('setting/modules/trustedDevices/views/DevicesIndex', $props);
+        return Inertia::render('setting/modules/trustedDevices/TrustedDevice', $props);
     }
 
     /**
