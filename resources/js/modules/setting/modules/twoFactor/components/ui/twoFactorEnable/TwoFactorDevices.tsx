@@ -13,8 +13,8 @@ import {
   Plus,
 } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import type { DevicePreview } from "@/modules/setting/modules/twoFactor/types/devicePreview";
-import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
 
 import { index as devicesIndex } from "@/shared/wayfinder/routes/setting/security/trusted-devices";
 

@@ -5,7 +5,7 @@ import { MdOutlineLaptopMac, MdPhoneAndroid } from "react-icons/md";
 
 import { Smartphone } from "lucide-react";
 
-import type { TrustedDevice } from "../types/trustedDevice";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 /**
  * Resolve the human-friendly label for a trusted device. Falls back to the

@@ -11,6 +11,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -26,7 +28,6 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import { getDeviceIcon } from "../../../utils/trustedDevice";
 import { valueOrFallback } from "../../../utils/valueOrFallback";

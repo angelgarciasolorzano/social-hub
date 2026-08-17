@@ -8,7 +8,7 @@ import { FaCircle } from "react-icons/fa";
 import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, CircleAlert, MonitorSmartphone, Trash2 } from "lucide-react";
 
-import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import { formatLongDate } from "@/modules/setting/modules/twoFactor/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
 

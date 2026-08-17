@@ -19,6 +19,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -49,7 +51,6 @@ import {
   twoFactorDeviceActionKey,
   type TwoFactorDeviceActionKey,
 } from "../../../data/twoFactorEnable";
-import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
 import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
 import { getDeviceIcon } from "../../../utils/trustedDevice";

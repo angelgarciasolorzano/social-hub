@@ -4,6 +4,8 @@ import { router, usePage } from "@inertiajs/react";
 
 import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
@@ -22,7 +24,6 @@ import { alertVariants, type IconColorVariant, iconColorVariants } from "@/share
 
 import type { SharedData } from "@/shared/types";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatActivationDate, formatActivationTime } from "../../../utils/dateTime";
 import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
 

@@ -6,6 +6,8 @@ import { useForm } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+
 import { destroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
@@ -27,7 +29,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 

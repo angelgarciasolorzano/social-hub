@@ -5,6 +5,8 @@ import { useForm } from "@inertiajs/react";
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { Alert, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -31,7 +33,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
 import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
