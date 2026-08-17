@@ -13,6 +13,7 @@ use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
+use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -20,12 +21,76 @@ use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Inertia\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TrustedDeviceController extends Controller
 {
     use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
+
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+
+        abort_unless($user instanceof User, 401);
+
+        $props = [
+            'trustedDevices' => Inertia::optional(
+                fn (): array => $user->trustedDevices()
+                    ->latest('last_used_at')
+                    ->get()
+                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request))
+                    ->all()
+            ),
+            'stats' => $this->buildStats($user),
+            'recentActivity' => Inertia::optional(
+                fn (): array => $user->trustedDeviceEvents()
+                    ->latest('created_at')
+                    ->limit(3)
+                    ->with(['device'])
+                    ->get()
+                    ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
+                        'id' => $trustedDeviceEvent->id,
+                        'action' => $trustedDeviceEvent->action->value,
+                        'actionLabel' => $trustedDeviceEvent->action->label(),
+                        'deviceId' => $trustedDeviceEvent->trusted_device_id,
+                        'deviceLabel' => $trustedDeviceEvent->device?->name,
+                        'ip' => $trustedDeviceEvent->ip,
+                        'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
+                    ])
+                    ->all()
+            ),
+        ];
+
+        return Inertia::render('setting/modules/trustedDevices/views/DevicesIndex', $props);
+    }
+
+    /**
+     * Aggregate counters shown in the page header stat cards.
+     *
+     * @return array{total: int, active: int, expiringSoon: int, recentlyAdded: int}
+     */
+    private function buildStats(User $user): array
+    {
+        $now = CarbonImmutable::now();
+        $inSevenDays = $now->addDays(7);
+        $sevenDaysAgo = $now->subDays(7);
+
+        return [
+            'total' => $user->trustedDevices()->count(),
+            'active' => $user->trustedDevices()
+                ->where('expires_at', '>', $now)
+                ->count(),
+            'expiringSoon' => $user->trustedDevices()
+                ->where('expires_at', '>', $now)
+                ->where('expires_at', '<', $inSevenDays)
+                ->count(),
+            'recentlyAdded' => $user->trustedDevices()
+                ->where('created_at', '>', $sevenDaysAgo)
+                ->count(),
+        ];
+    }
 
     public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
