@@ -6,6 +6,8 @@ import { useForm } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-react";
 
+import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
+
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { InputError, LabelForm } from "@/shared/components/form";
@@ -28,7 +30,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import type { DevicePreview } from "../../../types/devicePreview";
 import { formatLongDate, fromNow, valueOrNow } from "../../../utils/dateTime";
 import { getDeviceIcon } from "../../../utils/trustedDevice";
 import { valueOrFallback } from "../../../utils/valueOrFallback";
