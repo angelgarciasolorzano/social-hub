@@ -41,23 +41,21 @@ class TrustedDeviceController extends Controller
                 ->paginate(15)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
             'stats' => $this->buildStats($user),
-            'recentActivity' => Inertia::optional(
-                fn (): array => $user->trustedDeviceEvents()
-                    ->latest('created_at')
-                    ->limit(3)
-                    ->with(['device'])
-                    ->get()
-                    ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
-                        'id' => $trustedDeviceEvent->id,
-                        'action' => $trustedDeviceEvent->action->value,
-                        'actionLabel' => $trustedDeviceEvent->action->label(),
-                        'deviceId' => $trustedDeviceEvent->trusted_device_id,
-                        'deviceLabel' => $trustedDeviceEvent->device?->name,
-                        'ip' => $trustedDeviceEvent->ip,
-                        'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
-                    ])
-                    ->all()
-            ),
+            'recentActivity' => $user->trustedDeviceEvents()
+                ->latest('created_at')
+                ->limit(3)
+                ->with(['device'])
+                ->get()
+                ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
+                    'id' => $trustedDeviceEvent->id,
+                    'action' => $trustedDeviceEvent->action->value,
+                    'actionLabel' => $trustedDeviceEvent->action->label(),
+                    'deviceId' => $trustedDeviceEvent->trusted_device_id,
+                    'deviceLabel' => $trustedDeviceEvent->device?->name,
+                    'ip' => $trustedDeviceEvent->ip,
+                    'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
+                ])
+                ->all(),
         ];
 
         return Inertia::render('setting/modules/trustedDevices/TrustedDevice', $props);

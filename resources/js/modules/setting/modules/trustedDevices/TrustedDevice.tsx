@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { Fragment } from "react";
 
 import { Head, Link, usePage } from "@inertiajs/react";
 
@@ -20,11 +21,13 @@ import {
   ShieldQuestionMark,
   SquarePlus,
   Trash2,
+  UserPlus,
   X,
 } from "lucide-react";
 
 import type {
   TrustedDevice,
+  TrustedDeviceAction,
   TrustedDeviceActivityItem,
   TrustedDevicePagination,
   TrustedDeviceStats,
@@ -72,7 +75,7 @@ import type { SharedData } from "@/shared/types";
 type TrustedDevicePageProps = SharedData & {
   trustedDevices: TrustedDevicePagination;
   stats: TrustedDeviceStats;
-  recentActivity?: TrustedDeviceActivityItem[];
+  recentActivity: TrustedDeviceActivityItem[];
 };
 
 function TrustedDevice(): JSX.Element {
@@ -509,84 +512,72 @@ function TrustedDevicesRecommendations(): JSX.Element {
 }
 
 function TrustedDevicesRecentActivity(): JSX.Element {
+  const { recentActivity } = usePage<TrustedDevicePageProps>().props;
+
+  const iconForAction: Record<TrustedDeviceAction, LucideIcon> = {
+    created: UserPlus,
+    renewed: RefreshCw,
+    renamed: Pencil,
+    revoked: Trash2,
+    revoked_all: Trash2,
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Actividad reciente</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn("flex h-10 w-10 rounded-full p-2", iconColorVariants.blue.iconBgClass)}
-            >
-              <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
-            </div>
-
-            <div className="flex w-full items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold">MacBook Pro de Angel</h4>
-
-                <p className="text-sm text-muted-foreground">Inicio de sesion</p>
-              </div>
-            </div>
+        {recentActivity.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
+            <ShieldQuestionMark className="h-8 w-8" />
+            <span>Sin actividad reciente registrada.</span>
           </div>
+        ) : (
+          recentActivity.map((item, index) => {
+            const Icon = iconForAction[item.action];
 
-          <p className="text-sm text-muted-foreground">Hace 6 minutos</p>
-        </div>
+            return (
+              <Fragment key={item.id}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 rounded-full p-2",
+                        iconColorVariants.blue.iconBgClass,
+                      )}
+                    >
+                      <Icon className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
+                    </div>
 
-        <Separator />
+                    <div className="flex w-full items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">
+                          {item.deviceLabel ?? "Un dispositivo"}
+                        </h4>
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn("flex h-10 w-10 rounded-full p-2", iconColorVariants.blue.iconBgClass)}
-            >
-              <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
-            </div>
+                        <p className="text-sm text-muted-foreground">{item.actionLabel}</p>
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="flex w-full items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold">MacBook Pro de Angel</h4>
+                  <p className="text-sm text-muted-foreground">{fromNow(item.createdAt)}</p>
+                </div>
 
-                <p className="text-sm text-muted-foreground">Inicio de sesion</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-sm text-muted-foreground">Hace 6 minutos</p>
-        </div>
-
-        <Separator />
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn("flex h-10 w-10 rounded-full p-2", iconColorVariants.blue.iconBgClass)}
-            >
-              <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
-            </div>
-
-            <div className="flex w-full items-center justify-between gap-4">
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold">MacBook Pro de Angel</h4>
-
-                <p className="text-sm text-muted-foreground">Inicio de sesion</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-sm text-muted-foreground">Hace 6 minutos</p>
-        </div>
-
-        <Separator />
+                {index < recentActivity.length - 1 && <Separator />}
+              </Fragment>
+            );
+          })
+        )}
       </CardContent>
-      <CardFooter className="mx-auto">
-        <Button variant="link" className="text-blue-700 dark:text-blue-500">
-          Ver toda la actividad
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </CardFooter>
+      {recentActivity.length > 0 && (
+        <CardFooter className="mx-auto">
+          <Button variant="link" className="text-blue-700 dark:text-blue-500">
+            Ver toda la actividad
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
