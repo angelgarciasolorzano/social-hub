@@ -1,26 +1,35 @@
 import type { JSX } from "react";
 
-import { Head, usePage } from "@inertiajs/react";
+import { Head, Link, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
+  ChevronLeft,
   ChevronRight,
   Clock4,
   Funnel,
   Info,
   MonitorSmartphone,
   MoreHorizontalIcon,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
   ShieldCheck,
   ShieldQuestionMark,
   SquarePlus,
+  Trash2,
   X,
 } from "lucide-react";
 
-import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import type {
+  TrustedDevice,
+  TrustedDeviceActivityItem,
+  TrustedDevicePagination,
+  TrustedDeviceStats,
+} from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { fromNow } from "@/modules/setting/modules/twoFactor/utils/dateTime";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
@@ -61,7 +70,9 @@ import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import type { SharedData } from "@/shared/types";
 
 type TrustedDevicePageProps = SharedData & {
+  trustedDevices: TrustedDevicePagination;
   stats: TrustedDeviceStats;
+  recentActivity?: TrustedDeviceActivityItem[];
 };
 
 function TrustedDevice(): JSX.Element {
@@ -205,6 +216,9 @@ function TustedDevicesInfoBanner() {
 }
 
 function TrustedDevicesTable(): JSX.Element {
+  const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
+  console.log(trustedDevices);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -285,55 +299,104 @@ function TrustedDevicesTable(): JSX.Element {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell>Laptop</TableCell>
-                <TableCell>Hace 2 horas</TableCell>
-                <TableCell>Chrome / MacOS</TableCell>
-                <TableCell>Activo</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Button variant="ghost" size="icon" className="size-8">
-                        <MoreHorizontalIcon />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Laptop</TableCell>
-                <TableCell>Hace 2 horas</TableCell>
-                <TableCell>Chrome / MacOS</TableCell>
-                <TableCell>Activo</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Button variant="ghost" size="icon" className="size-8">
-                        <MoreHorizontalIcon />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Edit</DropdownMenuItem>
-                      <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+              {trustedDevices.data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                    No tienes dispositivos de confianza registrados.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                trustedDevices.data.map((device) => (
+                  <TrustedDeviceRow key={device.id} device={device} />
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      {trustedDevices.last_page > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            Mostrando {trustedDevices.from}–{trustedDevices.to} de {trustedDevices.total}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              disabled={trustedDevices.prev_page_url === null}
+            >
+              <Link href={trustedDevices.prev_page_url ?? ""} preserveScroll>
+                <ChevronLeft />
+                Anterior
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              disabled={trustedDevices.next_page_url === null}
+            >
+              <Link href={trustedDevices.next_page_url ?? ""} preserveScroll>
+                Siguiente
+                <ChevronRight />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+interface TrustedDeviceRowProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
+  const deviceLabel = device.name ?? `${device.browser ?? "Desconocido"} - ${device.osName ?? "?"}`;
+  const browserAndOs = [device.browser, device.osName]
+    .filter((value) => value !== null)
+    .join(" / ");
+
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{deviceLabel}</TableCell>
+      <TableCell className="text-muted-foreground">{fromNow(device.lastUsedAt)}</TableCell>
+      <TableCell className="text-muted-foreground">{browserAndOs || "Desconocido"}</TableCell>
+      <TableCell>
+        <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
+          {device.isActive ? "Activo" : "Expirado"}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-8">
+              <MoreHorizontalIcon />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>
+              <Pencil />
+              Renombrar
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <RefreshCw />
+              Renovar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive">
+              <Trash2 />
+              Revocar
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
   );
 }
 

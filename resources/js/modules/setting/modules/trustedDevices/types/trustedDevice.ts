@@ -31,3 +31,26 @@ export interface TrustedDeviceActivityItem {
   ip: string | null;
   createdAt: string | null;
 }
+
+export interface TrustedDevicePaginationLink {
+  url: string | null;
+  label: string;
+  page: number;
+  active: boolean;
+}
+
+export interface TrustedDevicePagination {
+  current_page: number;
+  data: TrustedDevice[];
+  first_page_url: string | null;
+  from: number | null;
+  last_page: number;
+  last_page_url: string | null;
+  links: TrustedDevicePaginationLink[];
+  next_page_url: string | null;
+  path: string | null;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number | null;
+  total: number;
+}

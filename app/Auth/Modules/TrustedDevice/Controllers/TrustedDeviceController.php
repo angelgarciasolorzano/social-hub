@@ -36,13 +36,10 @@ class TrustedDeviceController extends Controller
         abort_unless($user instanceof User, 401);
 
         $props = [
-            'trustedDevices' => Inertia::optional(
-                fn (): array => $user->trustedDevices()
-                    ->latest('last_used_at')
-                    ->get()
-                    ->map(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request))
-                    ->all()
-            ),
+            'trustedDevices' => $user->trustedDevices()
+                ->latest('last_used_at')
+                ->paginate(15)
+                ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
             'stats' => $this->buildStats($user),
             'recentActivity' => Inertia::optional(
                 fn (): array => $user->trustedDeviceEvents()
