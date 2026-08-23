@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -19,6 +19,8 @@ import {
   SquarePlus,
   X,
 } from "lucide-react";
+
+import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
@@ -55,6 +57,12 @@ import {
 
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
+
+import type { SharedData } from "@/shared/types";
+
+type TrustedDevicePageProps = SharedData & {
+  stats: TrustedDeviceStats;
+};
 
 function TrustedDevice(): JSX.Element {
   return (
@@ -114,38 +122,40 @@ interface TrustedDeviceStatCard {
   icon: LucideIcon;
   iconColor: IconColorVariant;
   title: string;
-  value: string;
+  value: number;
 }
 
 function TrustedDevicesStatCards(): JSX.Element {
+  const { stats } = usePage<TrustedDevicePageProps>().props;
+
   const trustedDevicesStatCards: TrustedDeviceStatCard[] = [
     {
       description: "Dispositivos registrados",
       icon: MonitorSmartphone,
       iconColor: "blue",
       title: "Total de dispositivos",
-      value: "5",
+      value: stats.total,
     },
     {
       description: "Actualmente pueden iniciar sesión",
       icon: ShieldCheck,
       iconColor: "green",
       title: "Dispositivos activos",
-      value: "5",
+      value: stats.active,
     },
     {
-      description: "En los proximos 30 días",
+      description: "En los proximos 7 días",
       icon: Clock4,
       iconColor: "purple",
       title: "Proximos a expirar",
-      value: "1",
+      value: stats.expiringSoon,
     },
     {
       description: "En los ultimos 7 días",
       icon: SquarePlus,
       iconColor: "orange",
       title: "Agregado recientemente",
-      value: "1",
+      value: stats.recentlyAdded,
     },
   ];
 
