@@ -87,9 +87,9 @@ function TrustedDevice(): JSX.Element {
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle />
           <TrustedDevicesStatCards />
-          <TustedDevicesInfoBanner />
+          <TrustedDevicesInfoBanner />
           <TrustedDevicesTable />
-          <TrustedDevicesFooter />
+          <TrustedDevicesSecurityCallout />
         </div>
 
         <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
@@ -204,7 +204,7 @@ function TrustedDevicesStatCards(): JSX.Element {
   );
 }
 
-function TustedDevicesInfoBanner() {
+function TrustedDevicesInfoBanner() {
   return (
     <Alert>
       <Info />
@@ -404,7 +404,7 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
   );
 }
 
-function TrustedDevicesFooter(): JSX.Element {
+function TrustedDevicesSecurityCallout(): JSX.Element {
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex items-start gap-4">
