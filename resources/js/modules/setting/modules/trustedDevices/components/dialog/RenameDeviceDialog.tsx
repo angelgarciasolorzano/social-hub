@@ -6,7 +6,9 @@ import { useForm } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { Eye, Pencil } from "lucide-react";
 
+import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { fromNow } from "@/modules/setting/modules/twoFactor/utils/dateTime";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -28,9 +30,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
-
-import { fromNow } from "../../../utils/dateTime";
-import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
 interface RenameDeviceDialogProps {
   device: TrustedDevice;

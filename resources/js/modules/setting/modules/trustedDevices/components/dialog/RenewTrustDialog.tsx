@@ -5,7 +5,9 @@ import { useForm } from "@inertiajs/react";
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
 
+import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { formatLongDate, fromNow } from "@/modules/setting/modules/twoFactor/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -32,9 +34,6 @@ import {
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
-
-import { formatLongDate, fromNow } from "../../../utils/dateTime";
-import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
 
 interface RenewTrustDialogProps {
   device: TrustedDevice;

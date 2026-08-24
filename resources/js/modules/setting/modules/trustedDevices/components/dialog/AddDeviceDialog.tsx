@@ -6,7 +6,15 @@ import { useForm } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-react";
 
+import type { DeviceMetadataItemProps } from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
+import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
+import {
+  formatLongDate,
+  fromNow,
+  valueOrNow,
+} from "@/modules/setting/modules/twoFactor/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
 
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -29,11 +37,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
-
-import { formatLongDate, fromNow, valueOrNow } from "../../../utils/dateTime";
-import { getDeviceIcon } from "../../../utils/trustedDevice";
-import { valueOrFallback } from "../../../utils/valueOrFallback";
-import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface AddDeviceDialogProps {
   preview: DevicePreview | null;
