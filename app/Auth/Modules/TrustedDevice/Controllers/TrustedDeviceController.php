@@ -62,9 +62,16 @@ class TrustedDeviceController extends Controller
     }
 
     /**
-     * Aggregate counters shown in the page header stat cards.
+     * Aggregate counters shown in the page header stat cards and chart segments.
      *
-     * @return array{total: int, active: int, expiringSoon: int, recentlyAdded: int}
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     expiringSoon: int,
+     *     recentlyAdded: int,
+     *     inactive: int,
+     *     revoked: int,
+     * }
      */
     private function buildStats(User $user): array
     {
@@ -84,6 +91,14 @@ class TrustedDeviceController extends Controller
             'recentlyAdded' => $user->trustedDevices()
                 ->where('created_at', '>', $sevenDaysAgo)
                 ->count(),
+            'inactive' => $user->trustedDevices()
+                ->where('expires_at', '<=', $now)
+                ->count(),
+            'revoked' => $user->trustedDeviceEvents()
+                ->whereIn('action', [TrustedDeviceAction::Revoked, TrustedDeviceAction::RevokedAll])
+                ->whereNotNull('trusted_device_id')
+                ->distinct()
+                ->count('trusted_device_id'),
         ];
     }
 

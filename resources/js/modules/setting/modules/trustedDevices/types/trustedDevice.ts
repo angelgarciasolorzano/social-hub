@@ -20,6 +20,8 @@ export interface TrustedDeviceStats {
   active: number;
   expiringSoon: number;
   recentlyAdded: number;
+  inactive: number;
+  revoked: number;
 }
 
 export interface TrustedDeviceActivityItem {

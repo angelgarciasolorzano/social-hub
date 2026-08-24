@@ -18,7 +18,6 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  ShieldOff,
   ShieldQuestionMark,
   SquarePlus,
   Trash2,
@@ -100,7 +99,7 @@ function TrustedDevice(): JSX.Element {
           <TrustedDevicesSecurityCallout />
         </div>
 
-        <div className="flex w-full max-w-xs shrink-0 flex-col gap-6 self-start">
+        <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
           <TrustedDevicesSummary />
           <TrustedDevicesRecommendations />
           <TrustedDevicesRecentActivity />
@@ -440,7 +439,7 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
 }
 
 interface TrustedDeviceSummaryDatum {
-  estado: "activos" | "porExpirar" | "expirados";
+  estado: "activos" | "porExpirar" | "inactivos" | "revocados";
   label: string;
   cantidad: number;
   fill: string;
@@ -453,20 +452,26 @@ function TrustedDevicesSummary(): JSX.Element {
     {
       estado: "activos",
       label: "Activos",
-      cantidad: stats.active,
+      cantidad: Math.max(0, stats.active - stats.expiringSoon),
       fill: "var(--color-activos)",
     },
     {
       estado: "porExpirar",
-      label: "Por expirar",
+      label: "Próximos a expirar",
       cantidad: stats.expiringSoon,
       fill: "var(--color-por-expirar)",
     },
     {
-      estado: "expirados",
-      label: "Expirados",
-      cantidad: Math.max(0, stats.total - stats.active),
-      fill: "var(--color-expirados)",
+      estado: "inactivos",
+      label: "Inactivos",
+      cantidad: stats.inactive,
+      fill: "var(--color-inactivos)",
+    },
+    {
+      estado: "revocados",
+      label: "Revocados",
+      cantidad: stats.revoked,
+      fill: "var(--color-revocados)",
     },
   ];
 
@@ -480,14 +485,21 @@ function TrustedDevicesSummary(): JSX.Element {
       },
     },
     porExpirar: {
-      label: "Por expirar",
+      label: "Próximos a expirar",
       theme: {
         light: "oklch(0.769 0.188 70.08)",
         dark: "oklch(0.828 0.189 84.429)",
       },
     },
-    expirados: {
-      label: "Expirados",
+    inactivos: {
+      label: "Inactivos",
+      theme: {
+        light: "oklch(0.551 0.027 264.364)",
+        dark: "oklch(0.707 0.022 261.325)",
+      },
+    },
+    revocados: {
+      label: "Revocados",
       theme: {
         light: "oklch(0.637 0.237 25.331)",
         dark: "oklch(0.704 0.191 22.216)",
@@ -498,13 +510,15 @@ function TrustedDevicesSummary(): JSX.Element {
   const iconForEstado: Record<TrustedDeviceSummaryDatum["estado"], LucideIcon> = {
     activos: ShieldCheck,
     porExpirar: Clock4,
-    expirados: ShieldOff,
+    inactivos: ShieldQuestionMark,
+    revocados: Trash2,
   };
 
   const colorVariantForEstado: Record<TrustedDeviceSummaryDatum["estado"], IconColorVariant> = {
     activos: "green",
     porExpirar: "amber",
-    expirados: "red",
+    inactivos: "gray",
+    revocados: "red",
   };
 
   return (
@@ -513,14 +527,14 @@ function TrustedDevicesSummary(): JSX.Element {
         <CardTitle>Resumen de dispositivos</CardTitle>
         <CardDescription>Asi esta la seguridad de tus dispositivos</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-62.5">
+      <CardContent className="flex flex-1 items-center gap-4 pb-0">
+        <ChartContainer config={chartConfig} className="aspect-square max-h-45 w-45 shrink-0">
           <RadialBarChart
             data={chartData}
             startAngle={-90}
             endAngle={380}
-            innerRadius={30}
-            outerRadius={110}
+            innerRadius={20}
+            outerRadius={75}
           >
             <ChartTooltip
               cursor={false}
@@ -537,15 +551,14 @@ function TrustedDevicesSummary(): JSX.Element {
             </RadialBar>
           </RadialBarChart>
         </ChartContainer>
-      </CardContent>
-      <CardFooter className="flex-col items-center gap-6 text-sm">
-        <div className="flex flex-wrap items-center justify-center gap-4">
+
+        <ul className="flex flex-1 flex-col justify-center gap-3">
           {chartData.map((item) => {
             const Icon = iconForEstado[item.estado];
             const colorVariant = colorVariantForEstado[item.estado];
 
             return (
-              <div className="flex items-center gap-2" key={item.estado}>
+              <li className="flex items-center gap-2" key={item.estado}>
                 <div
                   className={cn(
                     "flex h-6 w-6 shrink-0 rounded-md p-1",
@@ -555,15 +568,20 @@ function TrustedDevicesSummary(): JSX.Element {
                   <Icon className={cn("h-4 w-4", iconColorVariants[colorVariant].iconFgClass)} />
                 </div>
 
-                <span className="text-sm text-muted-foreground">{item.label}</span>
-              </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className="text-sm text-muted-foreground">{item.cantidad}</span>
+                </div>
+              </li>
             );
           })}
-        </div>
-
-        <div className="text-sm leading-none text-muted-foreground">
-          {stats.total} {stats.total > 1 ? "dispostivos" : "dispostivo"} en total.
-        </div>
+        </ul>
+      </CardContent>
+      <CardFooter className="mx-auto">
+        <Button variant="link" className="text-blue-700 dark:text-blue-500">
+          Ver detalles
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </CardFooter>
     </Card>
   );
