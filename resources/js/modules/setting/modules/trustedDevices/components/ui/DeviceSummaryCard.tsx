@@ -3,11 +3,13 @@ import type { JSX } from "react";
 import { FaCircle } from "react-icons/fa";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import {
+  deviceLabel,
+  getDeviceIcon,
+} from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
 
 import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
-
-import { deviceLabel, getDeviceIcon } from "../../utils/trustedDevice";
 
 interface DeviceSummaryCardProps {
   device: TrustedDevice;
