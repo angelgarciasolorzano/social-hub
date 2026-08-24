@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 
+import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
 import type {
   TrustedDevice,
   TrustedDeviceAction,
@@ -449,57 +450,35 @@ function TrustedDevicesRecommendations(): JSX.Element {
         <CardTitle>Recomendaciones</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn("flex h-10 w-10 rounded-full p-2", iconColorVariants.blue.iconBgClass)}
-            >
-              <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
+        {trustedDeviceRecommendations.map((recommendation) => {
+          const Icon = recommendation.icon;
+
+          return (
+            <div className="flex items-center justify-between gap-4" key={recommendation.title}>
+              <div className="flex items-start gap-4">
+                <div
+                  className={cn(
+                    "flex h-10 w-10 rounded-full p-2",
+                    iconColorVariants[recommendation.iconColor].iconBgClass,
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      "h-6 w-6",
+                      iconColorVariants[recommendation.iconColor].iconFgClass,
+                    )}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-semibold">{recommendation.title}</h4>
+
+                  <p className="text-sm text-muted-foreground">{recommendation.description}</p>
+                </div>
+              </div>
             </div>
-
-            <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold">Revisa tus dispositivos periodicamente</h4>
-
-              <p className="text-sm text-muted-foreground">Elimina los que ya no utilizas.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn("flex h-10 w-10 rounded-full p-2", iconColorVariants.blue.iconBgClass)}
-            >
-              <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
-            </div>
-
-            <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold">No confies en dispositivos compartidos</h4>
-
-              <p className="text-sm text-muted-foreground">
-                Marca solo equipos que esten bajo tu control.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn("flex h-10 w-10 rounded-full p-2", iconColorVariants.blue.iconBgClass)}
-            >
-              <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
-            </div>
-
-            <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold">Revoca accesos que no reconzcas</h4>
-
-              <p className="text-sm text-muted-foreground">
-                Si ves algo extraño, elimina ese dispositivo.
-              </p>
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </CardContent>
       <CardFooter className="mx-auto">
         <Button variant="link" className="text-blue-700 dark:text-blue-500">
