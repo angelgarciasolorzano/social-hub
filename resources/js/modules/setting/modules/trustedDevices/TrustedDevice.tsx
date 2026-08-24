@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  ShieldOff,
   ShieldQuestionMark,
   SquarePlus,
   Trash2,
@@ -99,7 +100,7 @@ function TrustedDevice(): JSX.Element {
           <TrustedDevicesSecurityCallout />
         </div>
 
-        <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
+        <div className="flex w-full max-w-xs shrink-0 flex-col gap-6 self-start">
           <TrustedDevicesSummary />
           <TrustedDevicesRecommendations />
           <TrustedDevicesRecentActivity />
@@ -494,6 +495,18 @@ function TrustedDevicesSummary(): JSX.Element {
     },
   } satisfies ChartConfig;
 
+  const iconForEstado: Record<TrustedDeviceSummaryDatum["estado"], LucideIcon> = {
+    activos: ShieldCheck,
+    porExpirar: Clock4,
+    expirados: ShieldOff,
+  };
+
+  const colorVariantForEstado: Record<TrustedDeviceSummaryDatum["estado"], IconColorVariant> = {
+    activos: "green",
+    porExpirar: "amber",
+    expirados: "red",
+  };
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
@@ -525,23 +538,31 @@ function TrustedDevicesSummary(): JSX.Element {
           </RadialBarChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col items-center gap-3 text-sm">
+      <CardFooter className="flex-col items-center gap-6 text-sm">
         <div className="flex flex-wrap items-center justify-center gap-4">
-          {chartData.map((item) => (
-            <div className="flex items-center gap-2" key={item.estado}>
-              <span
-                aria-hidden="true"
-                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                style={{ backgroundColor: item.fill }}
-              />
+          {chartData.map((item) => {
+            const Icon = iconForEstado[item.estado];
+            const colorVariant = colorVariantForEstado[item.estado];
 
-              <span className="text-xs text-muted-foreground">{item.label}</span>
-            </div>
-          ))}
+            return (
+              <div className="flex items-center gap-2" key={item.estado}>
+                <div
+                  className={cn(
+                    "flex h-6 w-6 shrink-0 rounded-md p-1",
+                    iconColorVariants[colorVariant].iconBgClass,
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4", iconColorVariants[colorVariant].iconFgClass)} />
+                </div>
+
+                <span className="text-sm text-muted-foreground">{item.label}</span>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="text-xs leading-none text-muted-foreground">
-          {stats.total} dispositivos en total
+        <div className="text-sm leading-none text-muted-foreground">
+          {stats.total} {stats.total > 1 ? "dispostivos" : "dispostivo"} en total.
         </div>
       </CardFooter>
     </Card>
