@@ -24,6 +24,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
+import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
 import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
 import type {
@@ -46,6 +47,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/shared/components/shadcn/ui/chart";
+import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -221,7 +228,6 @@ function TrustedDevicesInfoBanner() {
 
 function TrustedDevicesTable(): JSX.Element {
   const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
-  console.log(trustedDevices);
 
   return (
     <div className="flex flex-col gap-4">
@@ -432,13 +438,112 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
   );
 }
 
+interface TrustedDeviceSummaryDatum {
+  estado: "activos" | "porExpirar" | "expirados";
+  label: string;
+  cantidad: number;
+  fill: string;
+}
+
 function TrustedDevicesSummary(): JSX.Element {
+  const { stats } = usePage<TrustedDevicePageProps>().props;
+
+  const chartData: TrustedDeviceSummaryDatum[] = [
+    {
+      estado: "activos",
+      label: "Activos",
+      cantidad: stats.active,
+      fill: "var(--color-activos)",
+    },
+    {
+      estado: "porExpirar",
+      label: "Por expirar",
+      cantidad: stats.expiringSoon,
+      fill: "var(--color-por-expirar)",
+    },
+    {
+      estado: "expirados",
+      label: "Expirados",
+      cantidad: Math.max(0, stats.total - stats.active),
+      fill: "var(--color-expirados)",
+    },
+  ];
+
+  const chartConfig = {
+    cantidad: { label: "Dispositivos" },
+    activos: {
+      label: "Activos",
+      theme: {
+        light: "oklch(0.723 0.219 149.579)",
+        dark: "oklch(0.792 0.209 151.711)",
+      },
+    },
+    porExpirar: {
+      label: "Por expirar",
+      theme: {
+        light: "oklch(0.769 0.188 70.08)",
+        dark: "oklch(0.828 0.189 84.429)",
+      },
+    },
+    expirados: {
+      label: "Expirados",
+      theme: {
+        light: "oklch(0.637 0.237 25.331)",
+        dark: "oklch(0.704 0.191 22.216)",
+      },
+    },
+  } satisfies ChartConfig;
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex flex-col">
+      <CardHeader className="items-center pb-0">
         <CardTitle>Resumen de dispositivos</CardTitle>
         <CardDescription>Asi esta la seguridad de tus dispositivos</CardDescription>
       </CardHeader>
+      <CardContent className="flex-1 pb-0">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-62.5">
+          <RadialBarChart
+            data={chartData}
+            startAngle={-90}
+            endAngle={380}
+            innerRadius={30}
+            outerRadius={110}
+          >
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent hideLabel nameKey="estado" />}
+            />
+
+            <RadialBar dataKey="cantidad" background>
+              <LabelList
+                position="insideStart"
+                dataKey="label"
+                className="fill-white capitalize mix-blend-luminosity"
+                fontSize={11}
+              />
+            </RadialBar>
+          </RadialBarChart>
+        </ChartContainer>
+      </CardContent>
+      <CardFooter className="flex-col items-center gap-3 text-sm">
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {chartData.map((item) => (
+            <div className="flex items-center gap-2" key={item.estado}>
+              <span
+                aria-hidden="true"
+                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                style={{ backgroundColor: item.fill }}
+              />
+
+              <span className="text-xs text-muted-foreground">{item.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-xs leading-none text-muted-foreground">
+          {stats.total} dispositivos en total
+        </div>
+      </CardFooter>
     </Card>
   );
 }
