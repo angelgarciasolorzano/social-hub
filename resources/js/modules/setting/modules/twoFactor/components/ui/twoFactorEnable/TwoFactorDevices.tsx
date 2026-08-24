@@ -13,6 +13,15 @@ import {
   Plus,
 } from "lucide-react";
 
+import {
+  AddDeviceDialog,
+  DeviceAlreadyRegisteredDialog,
+  DeviceDetailsDialog,
+  RenameDeviceDialog,
+  RenewTrustDialog,
+  RevokeAllDevicesDialog,
+  RevokeDeviceDialog,
+} from "@/modules/setting/modules/trustedDevices/components/dialog";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
@@ -49,13 +58,6 @@ import {
 import { fromNow } from "../../../utils/dateTime";
 import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
 import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
-import AddDeviceDialog from "../../dialog/trustedDevice/AddDeviceDialog";
-import DeviceAlreadyRegisteredDialog from "../../dialog/trustedDevice/DeviceAlreadyRegisteredDialog";
-import DeviceDetailsDialog from "../../dialog/trustedDevice/DeviceDetailsDialog";
-import RenameDeviceDialog from "../../dialog/trustedDevice/RenameDeviceDialog";
-import RenewTrustDialog from "../../dialog/trustedDevice/RenewTrustDialog";
-import RevokeAllDevicesDialog from "../../dialog/trustedDevice/RevokeAllDevicesDialog";
-import RevokeDeviceDialog from "../../dialog/trustedDevice/RevokeDeviceDialog";
 
 type TwoFactorDevicesPageProps = SharedData & {
   currentDevicePreview?: DevicePreview | null;
