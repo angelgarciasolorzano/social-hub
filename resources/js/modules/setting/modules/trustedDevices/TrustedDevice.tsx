@@ -8,6 +8,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Circle,
   Clock4,
   Funnel,
   Info,
@@ -277,7 +278,7 @@ function TrustedDevicesTable(): JSX.Element {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="rounded-md py-2">
           Estado: <span className="font-semibold">Activo</span>
           <X data-icon="inline-end" />
@@ -297,7 +298,7 @@ function TrustedDevicesTable(): JSX.Element {
       </div>
 
       <div className="w-full">
-        <div className="[&>div]:max-h-100 [&>div]:min-h-90 [&>div]:rounded-md [&>div]:border">
+        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:rounded-md [&>div]:border">
           <Table>
             <TableHeader>
               <TableRow className="sticky top-0 bg-muted/70 dark:bg-muted/40">
@@ -507,13 +508,6 @@ function TrustedDevicesSummary(): JSX.Element {
     },
   } satisfies ChartConfig;
 
-  const iconForEstado: Record<TrustedDeviceSummaryDatum["estado"], LucideIcon> = {
-    activos: ShieldCheck,
-    porExpirar: Clock4,
-    inactivos: ShieldQuestionMark,
-    revocados: Trash2,
-  };
-
   const colorVariantForEstado: Record<TrustedDeviceSummaryDatum["estado"], IconColorVariant> = {
     activos: "green",
     porExpirar: "amber",
@@ -554,18 +548,22 @@ function TrustedDevicesSummary(): JSX.Element {
 
         <ul className="flex flex-1 flex-col justify-center gap-3">
           {chartData.map((item) => {
-            const Icon = iconForEstado[item.estado];
             const colorVariant = colorVariantForEstado[item.estado];
 
             return (
               <li className="flex items-center gap-2" key={item.estado}>
                 <div
                   className={cn(
-                    "flex h-6 w-6 shrink-0 rounded-md p-1",
+                    "flex h-5 w-5 shrink-0 rounded-md p-1",
                     iconColorVariants[colorVariant].iconBgClass,
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", iconColorVariants[colorVariant].iconFgClass)} />
+                  <Circle
+                    className={cn(
+                      "h-3 w-3 fill-current",
+                      iconColorVariants[colorVariant].iconFgClass,
+                    )}
+                  />
                 </div>
 
                 <div className="flex flex-col leading-tight">
@@ -657,7 +655,7 @@ function TrustedDevicesRecentActivity(): JSX.Element {
             <span>Sin actividad reciente registrada.</span>
           </div>
         ) : (
-          recentActivity.map((item, index) => {
+          recentActivity.map((item) => {
             const Icon = iconForAction[item.action];
 
             return (
@@ -675,7 +673,7 @@ function TrustedDevicesRecentActivity(): JSX.Element {
 
                     <div className="flex w-full items-center justify-between gap-4">
                       <div className="space-y-1">
-                        <h4 className="text-sm font-semibold">
+                        <h4 className="max-w-40 truncate text-sm font-semibold">
                           {item.deviceLabel ?? "Un dispositivo"}
                         </h4>
 
@@ -687,7 +685,7 @@ function TrustedDevicesRecentActivity(): JSX.Element {
                   <p className="text-sm text-muted-foreground">{fromNow(item.createdAt)}</p>
                 </div>
 
-                {index < recentActivity.length - 1 && <Separator />}
+                <Separator />
               </Fragment>
             );
           })
