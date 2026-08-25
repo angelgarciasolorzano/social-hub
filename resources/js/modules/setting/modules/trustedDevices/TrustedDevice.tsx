@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useMemo } from "react";
 
 import { Head, Link, usePage } from "@inertiajs/react";
 
@@ -23,7 +23,6 @@ import {
   SquarePlus,
   Trash2,
   UserPlus,
-  X,
 } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
@@ -90,7 +89,7 @@ type TrustedDevicePageProps = SharedData & {
 function TrustedDevice(): JSX.Element {
   return (
     <>
-      <Head title="Two Factor Authentication" />
+      <Head title="Dispositivos de confianza" />
       <div className="flex gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle />
@@ -242,32 +241,33 @@ function TrustedDevicesTable(): JSX.Element {
 
         <div className="flex items-center justify-center gap-2">
           <DropdownMenu>
-            <DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
               <Button variant="outline">
                 <Funnel />
                 Filtros
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem>Estado</DropdownMenuItem>
+              <DropdownMenuItem>Tipo de dispositivo</DropdownMenuItem>
+              <DropdownMenuItem>Navegador / SO</DropdownMenuItem>
+              <DropdownMenuItem>Ultimo acceso</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           <DropdownMenu>
-            <DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
               <Button variant="outline">
                 <Calendar />
                 Mas recientes
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Edit</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem>Mas recientes</DropdownMenuItem>
+              <DropdownMenuItem>Más antiguos</DropdownMenuItem>
+              <DropdownMenuItem>Nombre (A-Z)</DropdownMenuItem>
+              <DropdownMenuItem>Nombre (Z-A)</DropdownMenuItem>
+              <DropdownMenuItem>Proximos a expirar</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -279,21 +279,6 @@ function TrustedDevicesTable(): JSX.Element {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="rounded-md py-2">
-          Estado: <span className="font-semibold">Activo</span>
-          <X data-icon="inline-end" />
-        </Badge>
-
-        <Badge variant="outline" className="rounded-md py-2">
-          Tipo: <span className="font-semibold">Laptop</span>
-          <X data-icon="inline-end" />
-        </Badge>
-
-        <Badge variant="outline" className="rounded-md py-2">
-          Navegador: <span className="font-semibold">Chrome</span>
-          <X data-icon="inline-end" />
-        </Badge>
-
         <Button variant="ghost">Limpiar filtros</Button>
       </div>
 
@@ -391,6 +376,7 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {/** @todo: estas opciones estan para la proxima tarea */}
             <DropdownMenuItem>
               <Pencil />
               Renombrar
@@ -635,13 +621,18 @@ function TrustedDevicesRecommendations(): JSX.Element {
 function TrustedDevicesRecentActivity(): JSX.Element {
   const { recentActivity } = usePage<TrustedDevicePageProps>().props;
 
-  const iconForAction: Record<TrustedDeviceAction, LucideIcon> = {
-    created: UserPlus,
-    renewed: RefreshCw,
-    renamed: Pencil,
-    revoked: Trash2,
-    revoked_all: Trash2,
-  };
+  const actionVisuals = useMemo<
+    Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }>
+  >(
+    () => ({
+      created: { icon: UserPlus, color: "blue" },
+      renewed: { icon: RefreshCw, color: "green" },
+      renamed: { icon: Pencil, color: "purple" },
+      revoked: { icon: Trash2, color: "red" },
+      revoked_all: { icon: Trash2, color: "red" },
+    }),
+    [],
+  );
 
   return (
     <Card>
@@ -656,19 +647,16 @@ function TrustedDevicesRecentActivity(): JSX.Element {
           </div>
         ) : (
           recentActivity.map((item) => {
-            const Icon = iconForAction[item.action];
+            const visual = actionVisuals[item.action];
+            const Icon = visual.icon;
+            const colors = iconColorVariants[visual.color];
 
             return (
               <Fragment key={item.id}>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-start gap-4">
-                    <div
-                      className={cn(
-                        "flex h-10 w-10 rounded-full p-2",
-                        iconColorVariants.blue.iconBgClass,
-                      )}
-                    >
-                      <Icon className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
+                    <div className={cn("flex h-10 w-10 rounded-full p-2", colors.iconBgClass)}>
+                      <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
                     </div>
 
                     <div className="flex w-full items-center justify-between gap-4">
