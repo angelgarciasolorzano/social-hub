@@ -7,7 +7,7 @@ import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } f
 
 import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import { formatLongDate, fromNow } from "@/modules/setting/modules/twoFactor/utils/dateTime";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 

@@ -8,7 +8,7 @@ import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
 import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import { formatLongDate, fromNow } from "@/modules/setting/modules/twoFactor/utils/dateTime";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { destroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 

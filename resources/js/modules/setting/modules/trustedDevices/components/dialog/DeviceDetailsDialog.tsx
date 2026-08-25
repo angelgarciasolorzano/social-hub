@@ -32,15 +32,11 @@ import {
   type TwoFactorDeviceActionKey,
 } from "@/modules/setting/modules/twoFactor/data/twoFactorEnable";
 import {
-  formatLongDate,
-  formatTimeUntil,
-  fromNow,
-} from "@/modules/setting/modules/twoFactor/utils/dateTime";
-import {
   createDialogCloseHandler,
   type DialogClosingState,
 } from "@/modules/setting/modules/twoFactor/utils/dialog";
-import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";

@@ -9,12 +9,8 @@ import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-rea
 import type { DeviceMetadataItemProps } from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
-import {
-  formatLongDate,
-  fromNow,
-  valueOrNow,
-} from "@/modules/setting/modules/twoFactor/utils/dateTime";
-import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
+import { formatLongDate, fromNow, valueOrNow } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 

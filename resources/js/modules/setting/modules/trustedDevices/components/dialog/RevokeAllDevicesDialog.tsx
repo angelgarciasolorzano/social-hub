@@ -9,8 +9,8 @@ import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, CircleAlert, MonitorSmartphone, Trash2 } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import { formatLongDate } from "@/modules/setting/modules/twoFactor/utils/dateTime";
-import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
+import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { destroyAll as destroyAllTrustedDevices } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 

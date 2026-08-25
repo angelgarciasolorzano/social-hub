@@ -16,12 +16,8 @@ import DeviceMetadataItem, {
 } from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
-import {
-  formatLongDate,
-  formatTimeUntil,
-  fromNow,
-} from "@/modules/setting/modules/twoFactor/utils/dateTime";
-import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
