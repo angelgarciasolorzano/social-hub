@@ -5,6 +5,8 @@ import { usePage } from "@inertiajs/react";
 
 import { AlertTriangleIcon, ArrowDown, Check, Clock4, Copy } from "lucide-react";
 
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
+
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -25,7 +27,6 @@ import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
-import { formatLongDate, fromNow } from "../../../utils/dateTime";
 import { downloadRecoveryCodes } from "../../../utils/downloadRecoveryCodes";
 
 interface TwoFactorRecoveryCodesProps {

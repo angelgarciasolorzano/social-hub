@@ -15,6 +15,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
+
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
@@ -53,7 +55,6 @@ import {
   twoFactorSecurityOptionsKey,
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
-import { formatLongDate } from "../utils/dateTime";
 import { createDialogCloseHandler, type DialogClosingState } from "../utils/dialog";
 
 type SlotContent = "codes" | "devices";

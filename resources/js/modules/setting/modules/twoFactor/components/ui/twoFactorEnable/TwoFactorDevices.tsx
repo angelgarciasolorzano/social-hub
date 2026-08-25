@@ -24,6 +24,8 @@ import {
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { deviceLabel, getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { index as devicesIndex } from "@/shared/wayfinder/routes/setting/security/trusted-devices";
 
@@ -55,9 +57,7 @@ import {
   twoFactorDeviceActions,
   twoFactorDeviceSectionActionKey,
 } from "../../../data/twoFactorEnable";
-import { fromNow } from "../../../utils/dateTime";
 import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
-import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
 
 type TwoFactorDevicesPageProps = SharedData & {
   currentDevicePreview?: DevicePreview | null;

@@ -34,7 +34,7 @@ import type {
   TrustedDevicePagination,
   TrustedDeviceStats,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import { fromNow } from "@/modules/setting/modules/twoFactor/utils/dateTime";
+import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
