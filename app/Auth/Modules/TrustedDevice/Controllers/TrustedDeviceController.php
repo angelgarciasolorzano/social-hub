@@ -9,6 +9,7 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Props\CurrentTrustedDeviceProps;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
@@ -35,6 +36,12 @@ class TrustedDeviceController extends Controller
 
         abort_unless($user instanceof User, 401);
 
+        $currentTrustedDeviceProps = new CurrentTrustedDeviceProps(
+            request: $request,
+            deviceDetector: resolve(DeviceDetector::class),
+            isOptional: false,
+        );
+
         $props = [
             'trustedDevices' => $user->trustedDevices()
                 ->latest('last_used_at')
@@ -58,7 +65,10 @@ class TrustedDeviceController extends Controller
                 ->all(),
         ];
 
-        return Inertia::render('setting/modules/trustedDevices/TrustedDevice', $props);
+        return Inertia::render('setting/modules/trustedDevices/TrustedDevice', [
+            ...$props,
+            $currentTrustedDeviceProps,
+        ]);
     }
 
     /**
