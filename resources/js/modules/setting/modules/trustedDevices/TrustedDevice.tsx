@@ -34,6 +34,7 @@ import type {
   TrustedDevicePagination,
   TrustedDeviceStats,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -297,8 +298,11 @@ function TrustedDevicesTable(): JSX.Element {
             <TableBody>
               {trustedDevices.data.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                    No tienes dispositivos de confianza registrados.
+                  <TableCell colSpan={5} className="p-0">
+                    <EmptyState
+                      icon={MonitorSmartphone}
+                      title="No tienes dispositivos de confianza registrados."
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -641,10 +645,11 @@ function TrustedDevicesRecentActivity(): JSX.Element {
       </CardHeader>
       <CardContent className="space-y-4">
         {recentActivity.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
-            <ShieldQuestionMark className="h-8 w-8" />
-            <span>Sin actividad reciente registrada.</span>
-          </div>
+          <EmptyState
+            icon={ShieldQuestionMark}
+            title="Sin actividad reciente registrada."
+            description="Las acciones que realizes sobre tus dispositivos apareceran aqui."
+          />
         ) : (
           recentActivity.map((item) => {
             const visual = actionVisuals[item.action];
