@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { Fragment, useMemo } from "react";
 
-import { Head, Link, usePage } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -26,7 +26,21 @@ import {
 } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
-import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
+import {
+  AddDeviceDialog,
+  DeviceAlreadyRegisteredDialog,
+  DeviceDetailsDialog,
+  RenameDeviceDialog,
+  RenewTrustDialog,
+  RevokeAllDevicesDialog,
+  RevokeDeviceDialog,
+} from "@/modules/setting/modules/trustedDevices/components/dialog";
+import {
+  trustedDeviceRecommendations,
+  trustedDeviceRowActionKey,
+  trustedDeviceRowActions,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
+import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type {
   TrustedDevice,
   TrustedDeviceAction,
@@ -36,6 +50,10 @@ import type {
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import {
+  createDialogCloseHandler,
+  type DialogClosingState,
+} from "@/modules/setting/shared/utils/dialog";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
@@ -57,7 +75,9 @@ import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
@@ -76,24 +96,105 @@ import {
   TableRow,
 } from "@/shared/components/shadcn/ui/table";
 
+import { useDialog } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
 type TrustedDevicePageProps = SharedData & {
+  currentDevicePreview?: DevicePreview | null;
+  currentDeviceMatch?: TrustedDevice | null;
   trustedDevices: TrustedDevicePagination;
+  trustedDevicesForRevoke?: TrustedDevice[];
   stats: TrustedDeviceStats;
   recentActivity: TrustedDeviceActivityItem[];
 };
 
+interface SectionDialogState extends DialogClosingState {
+  kind: "add-device" | "device-already-registered" | "revoke-all-devices";
+}
+
 function TrustedDevice(): JSX.Element {
+  const {
+    currentDevicePreview,
+    currentDeviceMatch,
+    trustedDevicesForRevoke = [],
+  } = usePage<TrustedDevicePageProps>().props;
+
+  const sectionDialog = useDialog<SectionDialogState | null>(null);
+
+  const handleAddDevice = (): void => {
+    const kind: SectionDialogState["kind"] =
+      currentDeviceMatch !== null && currentDeviceMatch !== undefined
+        ? "device-already-registered"
+        : "add-device";
+
+    sectionDialog.show({ kind, closing: false });
+  };
+
+  const handleRevokeAllDevices = (): void => {
+    router.reload({
+      only: ["trustedDevicesForRevoke"],
+      onSuccess: () => {
+        sectionDialog.show({ kind: "revoke-all-devices", closing: false });
+      },
+    });
+  };
+
+  const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
+
+  const renderSectionDialog = (): JSX.Element | null => {
+    if (sectionDialog.state === null) {
+      return null;
+    }
+
+    const isClosing = sectionDialog.state.closing;
+
+    switch (sectionDialog.state.kind) {
+      case "add-device":
+        return (
+          <AddDeviceDialog
+            preview={currentDevicePreview ?? null}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case "device-already-registered":
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+          return null;
+        }
+
+        return (
+          <DeviceAlreadyRegisteredDialog
+            existingDevice={currentDeviceMatch}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case "revoke-all-devices":
+        return (
+          <RevokeAllDevicesDialog
+            devices={trustedDevicesForRevoke}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <Head title="Dispositivos de confianza" />
       <div className="flex gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <TrustedDeviceTitle />
+          <TrustedDeviceTitle onAddDevice={handleAddDevice} onRevokeAll={handleRevokeAllDevices} />
           <TrustedDevicesStatCards />
           <TrustedDevicesInfoBanner />
           <TrustedDevicesTable />
@@ -106,13 +207,20 @@ function TrustedDevice(): JSX.Element {
           <TrustedDevicesRecentActivity />
         </div>
       </div>
+
+      {renderSectionDialog()}
     </>
   );
 }
 
 export default TrustedDevice;
 
-function TrustedDeviceTitle(): JSX.Element {
+interface TrustedDeviceTitleProps {
+  onAddDevice: () => void;
+  onRevokeAll: () => void;
+}
+
+function TrustedDeviceTitle({ onAddDevice, onRevokeAll }: TrustedDeviceTitleProps): JSX.Element {
   return (
     <div className="flex items-center justify-between gap-12 rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex items-start gap-6">
@@ -132,10 +240,22 @@ function TrustedDeviceTitle(): JSX.Element {
         </div>
       </div>
 
-      <Button>
-        Agregar dispositivo
-        <Plus className="h-4 w-4" />
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={onRevokeAll}
+          type="button"
+          variant="outline"
+          className="text-red-700 dark:text-red-500"
+        >
+          <Trash2 className="h-4 w-4" />
+          Revocar todos
+        </Button>
+
+        <Button onClick={onAddDevice} type="button">
+          Agregar dispositivo
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -351,6 +471,11 @@ function TrustedDevicesTable(): JSX.Element {
   );
 }
 
+interface RowDialogActionState extends DialogClosingState {
+  kind: (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
+  device: TrustedDevice;
+}
+
 interface TrustedDeviceRowProps {
   device: TrustedDevice;
 }
@@ -360,6 +485,63 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
   const browserAndOs = [device.browser, device.osName]
     .filter((value) => value !== null)
     .join(" / ");
+
+  const dialogDevice = useDialog<RowDialogActionState | null>(null);
+
+  const handleDeviceAction = (
+    action: RowDialogActionState["kind"],
+    targetDevice: TrustedDevice,
+  ): void => {
+    dialogDevice.show({ kind: action, device: targetDevice, closing: false });
+  };
+
+  const handleDialogClose = createDialogCloseHandler(dialogDevice);
+
+  const renderDialogDevice = (): JSX.Element | null => {
+    if (dialogDevice.state === null) {
+      return null;
+    }
+
+    const isClosing = dialogDevice.state.closing;
+    const selectedDevice = dialogDevice.state.device;
+
+    switch (dialogDevice.state.kind) {
+      case trustedDeviceRowActionKey.viewDevice:
+        return (
+          <DeviceDetailsDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case trustedDeviceRowActionKey.renameDevice:
+        return (
+          <RenameDeviceDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case trustedDeviceRowActionKey.renewTrust:
+        return (
+          <RenewTrustDialog device={selectedDevice} open={!isClosing} onClose={handleDialogClose} />
+        );
+
+      case trustedDeviceRowActionKey.revokeDevice:
+        return (
+          <RevokeDeviceDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <TableRow>
@@ -379,24 +561,40 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
               <span className="sr-only">Open menu</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {/** @todo: estas opciones estan para la proxima tarea */}
-            <DropdownMenuItem>
-              <Pencil />
-              Renombrar
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <RefreshCw />
-              Renovar
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">
-              <Trash2 />
-              Revocar
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-60">
+            {trustedDeviceRowActions.map((group, groupIndex) => (
+              <Fragment key={groupIndex}>
+                <DropdownMenuGroup>
+                  {group.label !== undefined && (
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                  )}
+
+                  {group.actions.map((action) => {
+                    const Icon = action.icon;
+
+                    return (
+                      <DropdownMenuItem
+                        key={action.key}
+                        onClick={() => {
+                          handleDeviceAction(action.key, device);
+                        }}
+                        className={action.className}
+                      >
+                        <Icon className={action.iconClassName} />
+                        {action.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+
+                {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
+              </Fragment>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
+
+      {renderDialogDevice()}
     </TableRow>
   );
 }

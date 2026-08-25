@@ -1,6 +1,13 @@
 import { Calendar, Trash2, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import {
+  type DeviceActionGroup,
+  twoFactorDeviceActionKey,
+  type TwoFactorDeviceActionKey,
+  twoFactorDeviceActions,
+} from "@/modules/setting/modules/twoFactor/data/twoFactorEnable";
+
 import type { IconColorVariant } from "@/shared/lib/styling";
 
 export interface TrustedDeviceRecommendation {
@@ -30,3 +37,9 @@ export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
     title: "Revoca accesos que no reconzcas",
   },
 ];
+
+export const trustedDeviceRowActions: DeviceActionGroup[] = twoFactorDeviceActions;
+
+export type TrustedDeviceRowActionKey = TwoFactorDeviceActionKey;
+
+export { twoFactorDeviceActionKey as trustedDeviceRowActionKey };
