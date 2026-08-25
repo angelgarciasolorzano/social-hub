@@ -120,6 +120,7 @@ type RenewDeviceFormProps = Pick<RenewTrustDialogProps, "device"> & {
 
 function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.Element {
   const newExpiresAt = dayjs().add(TRUST_RENEWAL_DAYS, "day");
+  const newExpiresAtFormatted = formatLongDate(newExpiresAt.toISOString());
 
   return (
     <form id="renew-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-2">
@@ -146,7 +147,7 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
         </ItemMedia>
         <ItemContent>
           <ItemTitle>Nueva expiración</ItemTitle>
-          <ItemDescription>{newExpiresAt.format("D [de] MMMM [del] YYYY, h:mm A")}</ItemDescription>
+          <ItemDescription>{newExpiresAtFormatted}</ItemDescription>
         </ItemContent>
         <ItemActions>
           <Badge className={badgeVariants.success}>+ {TRUST_RENEWAL_LABEL}</Badge>

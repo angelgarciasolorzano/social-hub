@@ -31,11 +31,11 @@ import {
   twoFactorDeviceActionKey,
   type TwoFactorDeviceActionKey,
 } from "@/modules/setting/modules/twoFactor/data/twoFactorEnable";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
-} from "@/modules/setting/modules/twoFactor/utils/dialog";
-import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
+} from "@/modules/setting/shared/utils/dialog";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
