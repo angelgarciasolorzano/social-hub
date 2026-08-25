@@ -1,12 +1,13 @@
 import type { JSX, SubmitEvent } from "react";
 
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
 
 import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -46,6 +47,7 @@ const TRUST_RENEWAL_LABEL = "1 mes";
 
 function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX.Element {
   const { submit, processing, reset } = useForm();
+  const pageProps = usePage().props as Record<string, unknown>;
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
@@ -60,7 +62,7 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
     event.preventDefault();
 
     submit(renewTrustedDevice({ trustedDevice: device.id }), {
-      only: ["trustedDevices"],
+      only: pickReloadKeys(pageProps, ["trustedDevices"]),
       onSuccess: () => {
         onClose();
       },
