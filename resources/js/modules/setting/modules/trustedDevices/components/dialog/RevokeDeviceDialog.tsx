@@ -76,6 +76,7 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
         onClose();
         reset();
       },
+      preserveScroll: true,
     });
   };
 

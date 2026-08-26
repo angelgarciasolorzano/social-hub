@@ -62,10 +62,11 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
     event.preventDefault();
 
     submit(renewTrustedDevice({ trustedDevice: device.id }), {
-      only: pickReloadKeys(pageProps, ["trustedDevices"]),
+      only: pickReloadKeys(pageProps, ["trustedDevices", "recentActivity"]),
       onSuccess: () => {
         onClose();
       },
+      preserveScroll: true,
     });
   };
 

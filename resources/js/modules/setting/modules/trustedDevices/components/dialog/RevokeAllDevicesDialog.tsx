@@ -84,6 +84,7 @@ function RevokeAllDevicesDialog({
         onClose();
         reset();
       },
+      preserveScroll: true,
     });
   };
 

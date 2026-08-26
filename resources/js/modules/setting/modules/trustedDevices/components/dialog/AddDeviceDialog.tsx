@@ -77,6 +77,7 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
         reset();
         onClose();
       },
+      preserveScroll: true,
     });
   };
 

@@ -62,12 +62,13 @@ function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps):
     event.preventDefault();
 
     submit(update({ trustedDevice: device.id }), {
-      only: pickReloadKeys(pageProps, ["trustedDevices", "firstTrustedDevice"]),
+      only: pickReloadKeys(pageProps, ["trustedDevices", "firstTrustedDevice", "recentActivity"]),
       onSuccess: () => {
         onClose();
         reset();
       },
       preserveState: true,
+      preserveScroll: true,
     });
   };
 
