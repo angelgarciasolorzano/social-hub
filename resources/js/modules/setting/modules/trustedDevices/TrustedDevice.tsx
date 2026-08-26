@@ -58,7 +58,11 @@ import {
   createDialogCloseHandler,
   type DialogClosingState,
 } from "@/modules/setting/shared/utils/dialog";
-import { deviceBrowserAndOs, deviceLabel } from "@/modules/setting/shared/utils/trustedDevice";
+import {
+  deviceBrowserAndOs,
+  deviceLabel,
+  getDeviceIcon,
+} from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
@@ -593,7 +597,12 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{deviceLabel(device)}</TableCell>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
+          <span className="truncate">{deviceLabel(device)}</span>
+        </div>
+      </TableCell>
       <TableCell className="text-muted-foreground">{fromNow(device.lastUsedAt)}</TableCell>
       <TableCell className="text-muted-foreground">{browserAndOs}</TableCell>
       <TableCell>
