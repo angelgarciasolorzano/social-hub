@@ -15,6 +15,24 @@ export function deviceLabel(device: TrustedDevice): string {
   return device.name ?? device.userAgent ?? "Dispositivo desconocido";
 }
 
+/**
+ * Build the "Browser / OS" secondary line for a device row, skipping any
+ * missing piece so the result never shows a dangling separator.
+ *
+ * @example
+ * deviceBrowserAndOs(device)                  // "Chrome / macOS"
+ * deviceBrowserAndOs({ browser: null, ... })  // "macOS"
+ * deviceBrowserAndOs({ browser: "", ... })    // "macOS"
+ * deviceBrowserAndOs({ ... no browser/os })    // "Desconocido"
+ */
+export function deviceBrowserAndOs(device: TrustedDevice): string {
+  const parts = [device.browser, device.osName]
+    .filter((value): value is string => value !== null && value !== "")
+    .join(" / ");
+
+  return parts === "" ? "Desconocido" : parts;
+}
+
 interface DeviceIconSource {
   osName: string | null;
   isMobile: boolean;

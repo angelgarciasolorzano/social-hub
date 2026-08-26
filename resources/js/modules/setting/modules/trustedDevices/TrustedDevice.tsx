@@ -54,6 +54,7 @@ import {
   createDialogCloseHandler,
   type DialogClosingState,
 } from "@/modules/setting/shared/utils/dialog";
+import { deviceBrowserAndOs, deviceLabel } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
@@ -481,10 +482,9 @@ interface TrustedDeviceRowProps {
 }
 
 function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
-  const deviceLabel = device.name ?? `${device.browser ?? "Desconocido"} - ${device.osName ?? "?"}`;
-  const browserAndOs = [device.browser, device.osName]
-    .filter((value) => value !== null)
-    .join(" / ");
+  const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
+
+  const browserAndOs = deviceBrowserAndOs(device);
 
   const dialogDevice = useDialog<RowDialogActionState | null>(null);
 
@@ -503,7 +503,13 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
     }
 
     const isClosing = dialogDevice.state.closing;
-    const selectedDevice = dialogDevice.state.device;
+
+    const selectedDevice =
+      trustedDevices.data.find((device) => device.id === dialogDevice.state?.device.id) ?? null;
+
+    if (selectedDevice === null) {
+      return null;
+    }
 
     switch (dialogDevice.state.kind) {
       case trustedDeviceRowActionKey.viewDevice:
@@ -545,9 +551,9 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{deviceLabel}</TableCell>
+      <TableCell className="font-medium">{deviceLabel(device)}</TableCell>
       <TableCell className="text-muted-foreground">{fromNow(device.lastUsedAt)}</TableCell>
-      <TableCell className="text-muted-foreground">{browserAndOs || "Desconocido"}</TableCell>
+      <TableCell className="text-muted-foreground">{browserAndOs}</TableCell>
       <TableCell>
         <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
           {device.isActive ? "Activo" : "Expirado"}
