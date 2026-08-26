@@ -5,7 +5,9 @@ import { Head, Link, router, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
+  Bolt,
   Calendar,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -15,7 +17,6 @@ import {
   MonitorSmartphone,
   MoreHorizontalIcon,
   Pencil,
-  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -39,6 +40,9 @@ import {
   trustedDeviceRecommendations,
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,
+  trustedDeviceSectionActionKey,
+  type TrustedDeviceSectionActionKey,
+  trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type {
@@ -114,7 +118,7 @@ type TrustedDevicePageProps = SharedData & {
 };
 
 interface SectionDialogState extends DialogClosingState {
-  kind: "add-device" | "device-already-registered" | "revoke-all-devices";
+  kind: TrustedDeviceSectionActionKey;
 }
 
 function TrustedDevice(): JSX.Element {
@@ -139,9 +143,27 @@ function TrustedDevice(): JSX.Element {
     router.reload({
       only: ["trustedDevicesForRevoke"],
       onSuccess: () => {
-        sectionDialog.show({ kind: "revoke-all-devices", closing: false });
+        sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
       },
     });
+  };
+
+  const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
+    switch (action) {
+      case trustedDeviceSectionActionKey.addDevice:
+      case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
+        handleAddDevice();
+
+        break;
+
+      case trustedDeviceSectionActionKey.revokeAll:
+        handleRevokeAllDevices();
+
+        break;
+
+      default:
+        break;
+    }
   };
 
   const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
@@ -154,7 +176,7 @@ function TrustedDevice(): JSX.Element {
     const isClosing = sectionDialog.state.closing;
 
     switch (sectionDialog.state.kind) {
-      case "add-device":
+      case trustedDeviceSectionActionKey.addDevice:
         return (
           <AddDeviceDialog
             preview={currentDevicePreview ?? null}
@@ -163,7 +185,7 @@ function TrustedDevice(): JSX.Element {
           />
         );
 
-      case "device-already-registered":
+      case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -176,7 +198,7 @@ function TrustedDevice(): JSX.Element {
           />
         );
 
-      case "revoke-all-devices":
+      case trustedDeviceSectionActionKey.revokeAll:
         return (
           <RevokeAllDevicesDialog
             devices={trustedDevicesForRevoke}
@@ -195,7 +217,7 @@ function TrustedDevice(): JSX.Element {
       <Head title="Dispositivos de confianza" />
       <div className="flex gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <TrustedDeviceTitle onAddDevice={handleAddDevice} onRevokeAll={handleRevokeAllDevices} />
+          <TrustedDeviceTitle onTitleAction={handleTitleAction} />
           <TrustedDevicesStatCards />
           <TrustedDevicesInfoBanner />
           <TrustedDevicesTable />
@@ -217,11 +239,10 @@ function TrustedDevice(): JSX.Element {
 export default TrustedDevice;
 
 interface TrustedDeviceTitleProps {
-  onAddDevice: () => void;
-  onRevokeAll: () => void;
+  onTitleAction: (action: TrustedDeviceSectionActionKey) => void;
 }
 
-function TrustedDeviceTitle({ onAddDevice, onRevokeAll }: TrustedDeviceTitleProps): JSX.Element {
+function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Element {
   return (
     <div className="flex items-center justify-between gap-12 rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex items-start gap-6">
@@ -241,22 +262,43 @@ function TrustedDeviceTitle({ onAddDevice, onRevokeAll }: TrustedDeviceTitleProp
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          onClick={onRevokeAll}
-          type="button"
-          variant="outline"
-          className="text-red-700 dark:text-red-500"
-        >
-          <Trash2 className="h-4 w-4" />
-          Revocar todos
-        </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline">
+            <Bolt />
+            Administrar
+            <ChevronDown />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {trustedDeviceTitleActions.map((group, groupIndex) => (
+            <Fragment key={groupIndex}>
+              <DropdownMenuGroup>
+                {group.label !== undefined && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
 
-        <Button onClick={onAddDevice} type="button">
-          Agregar dispositivo
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+                {group.actions.map((action) => {
+                  const Icon = action.icon;
+
+                  return (
+                    <DropdownMenuItem
+                      key={action.key}
+                      onClick={() => {
+                        onTitleAction(action.key);
+                      }}
+                      className={action.className}
+                    >
+                      <Icon className={action.iconClassName} />
+                      {action.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+
+              {groupIndex < trustedDeviceTitleActions.length - 1 && <DropdownMenuSeparator />}
+            </Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
