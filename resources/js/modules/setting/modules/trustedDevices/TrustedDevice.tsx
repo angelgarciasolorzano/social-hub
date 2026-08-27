@@ -1,25 +1,19 @@
 import type { JSX } from "react";
 import { Fragment, useMemo, useState } from "react";
 
-import { Head, Link, router, usePage } from "@inertiajs/react";
+import { Head, router, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowDownNarrowWide,
   Bolt,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Circle,
   Clock4,
-  Funnel,
   Info,
   MonitorSmartphone,
-  MoreHorizontalIcon,
   Pencil,
   RefreshCw,
-  RotateCcw,
-  Search,
   ShieldCheck,
   ShieldQuestionMark,
   SquarePlus,
@@ -31,27 +25,16 @@ import { LabelList, RadialBar, RadialBarChart } from "recharts";
 import {
   AddDeviceDialog,
   DeviceAlreadyRegisteredDialog,
-  DeviceDetailsDialog,
-  RenameDeviceDialog,
-  RenewTrustDialog,
   RevokeAllDevicesDialog,
-  RevokeDeviceDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
-import {
-  browserOptions,
-  deviceTypeOptions,
-  lastAccessOptions,
-  statusOptions,
-} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
+import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
+import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
 import {
   defaultTrustedDeviceSort,
   type TrustedDeviceSortKey,
-  trustedDeviceSortOptions,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceSort";
 import {
   trustedDeviceRecommendations,
-  trustedDeviceRowActionKey,
-  trustedDeviceRowActions,
   trustedDeviceSectionActionKey,
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
@@ -70,14 +53,8 @@ import {
   createDialogCloseHandler,
   type DialogClosingState,
 } from "@/modules/setting/shared/utils/dialog";
-import {
-  deviceBrowserAndOs,
-  deviceLabel,
-  getDeviceIcon,
-} from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
-import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Card,
@@ -94,13 +71,6 @@ import {
 } from "@/shared/components/shadcn/ui/chart";
 import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/shared/components/shadcn/ui/combobox";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -109,22 +79,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/shared/components/shadcn/ui/input-group";
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@/shared/components/shadcn/ui/radio-group";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/shared/components/shadcn/ui/table";
 
 import { useDialog } from "@/shared/hooks";
 
@@ -245,7 +200,7 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceTitle onTitleAction={handleTitleAction} />
           <TrustedDevicesStatCards />
           <TrustedDevicesInfoBanner />
-          <TrustedDevicesTable />
+          <TrustedDevicesTableSection />
           <TrustedDevicesSecurityCallout />
         </div>
 
@@ -415,403 +370,44 @@ function TrustedDevicesInfoBanner() {
   );
 }
 
-function TrustedDevicesTable(): JSX.Element {
+function TrustedDevicesTableSection(): JSX.Element {
   const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
+  const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [deviceTypeFilter, setDeviceTypeFilter] = useState<string | null>(null);
   const [browserFilter, setBrowserFilter] = useState<string | null>(null);
   const [lastAccessFilter, setLastAccessFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<TrustedDeviceSortKey>(defaultTrustedDeviceSort);
 
-  const selectedSortLabel =
-    trustedDeviceSortOptions.find((option) => option.value === sortOrder)?.label ?? "Ordenar por";
+  const resetFilters = (): void => {
+    setSearch("");
+    setStatusFilter(null);
+    setDeviceTypeFilter(null);
+    setBrowserFilter(null);
+    setLastAccessFilter(null);
+  };
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <InputGroup className="max-w-xs">
-          <InputGroupAddon>
-            <Search className="size-4" />
-          </InputGroupAddon>
-          <InputGroupInput placeholder="Buscar dispositivo..." />
-        </InputGroup>
+      <TrustedDevicesTableToolbar
+        browserFilter={browserFilter}
+        deviceTypeFilter={deviceTypeFilter}
+        lastAccessFilter={lastAccessFilter}
+        search={search}
+        sortOrder={sortOrder}
+        statusFilter={statusFilter}
+        onBrowserFilterChange={setBrowserFilter}
+        onDeviceTypeFilterChange={setDeviceTypeFilter}
+        onLastAccessFilterChange={setLastAccessFilter}
+        onResetFilters={resetFilters}
+        onSearchChange={setSearch}
+        onSortOrderChange={setSortOrder}
+        onStatusFilterChange={setStatusFilter}
+      />
 
-        <div className="flex items-center justify-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <Funnel />
-                Filtros
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-3">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold">Filtros</h4>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
-                  >
-                    Restablecer
-                  </Button>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Estado</label>
-                  <Combobox value={statusFilter} onValueChange={setStatusFilter}>
-                    <ComboboxInput showClear placeholder="Estado" />
-                    <ComboboxContent>
-                      <ComboboxList>
-                        {statusOptions.map((opt) => (
-                          <ComboboxItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Tipo de dispositivo
-                  </label>
-                  <Combobox value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
-                    <ComboboxInput showClear placeholder="Tipo de dispositivo" />
-                    <ComboboxContent>
-                      <ComboboxList>
-                        {deviceTypeOptions.map((opt) => (
-                          <ComboboxItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Navegador / SO
-                  </label>
-                  <Combobox value={browserFilter} onValueChange={setBrowserFilter}>
-                    <ComboboxInput showClear placeholder="Navegador / SO" />
-                    <ComboboxContent>
-                      <ComboboxList>
-                        {browserOptions.map((opt) => (
-                          <ComboboxItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Último acceso</label>
-                  <Combobox value={lastAccessFilter} onValueChange={setLastAccessFilter}>
-                    <ComboboxInput showClear placeholder="Último acceso" />
-                    <ComboboxContent>
-                      <ComboboxList>
-                        {lastAccessOptions.map((opt) => (
-                          <ComboboxItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                </div>
-
-                <div className="flex justify-between gap-2">
-                  <Button variant="outline">Limpiar filtros</Button>
-
-                  <Button>Aplicar filtros</Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">
-                <ArrowDownNarrowWide />
-                {selectedSortLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-3">
-              <div className="flex flex-col gap-3">
-                <h4 className="text-sm font-semibold">Ordenar por</h4>
-
-                <RadioGroup
-                  value={sortOrder}
-                  onValueChange={(value) => {
-                    setSortOrder(value as TrustedDeviceSortKey);
-                  }}
-                  className="gap-1"
-                >
-                  {trustedDeviceSortOptions.map((option) => (
-                    <label
-                      key={option.value}
-                      htmlFor={`sort-${option.value}`}
-                      className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-accent/50 has-data-[state=checked]:bg-blue-100/50 has-data-[state=checked]:dark:bg-blue-950/20"
-                    >
-                      <RadioGroupItem
-                        id={`sort-${option.value}`}
-                        value={option.value}
-                        className="mt-0.5"
-                      />
-                      <div className="flex flex-1 flex-col gap-0.5 leading-tight">
-                        <span className="text-sm font-medium">{option.label}</span>
-                        <span className="text-xs text-muted-foreground">{option.description}</span>
-                      </div>
-                    </label>
-                  ))}
-                </RadioGroup>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-sm font-medium">Predeterminado</span>
-                    <span className="text-xs text-muted-foreground">{selectedSortLabel}</span>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSortOrder(defaultTrustedDeviceSort);
-                    }}
-                  >
-                    <RotateCcw />
-                    Restablecer
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Button variant="outline">
-            <RefreshCw />
-            <span className="sr-only">Reload data</span>
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost">Limpiar filtros</Button>
-      </div>
-
-      <div className="w-full">
-        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:rounded-md [&>div]:border">
-          <Table>
-            <TableHeader>
-              <TableRow className="sticky top-0 bg-muted/70 dark:bg-muted/40">
-                <TableHead>Dispositivo</TableHead>
-                <TableHead>Ultimo Acceso</TableHead>
-                <TableHead>Navegador / SO</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {trustedDevices.data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="p-0">
-                    <EmptyState
-                      icon={MonitorSmartphone}
-                      title="No tienes dispositivos de confianza registrados."
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                trustedDevices.data.map((device) => (
-                  <TrustedDeviceRow key={device.id} device={device} />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {trustedDevices.last_page > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            Mostrando {trustedDevices.from}–{trustedDevices.to} de {trustedDevices.total}
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              disabled={trustedDevices.prev_page_url === null}
-            >
-              <Link href={trustedDevices.prev_page_url ?? ""} preserveScroll>
-                <ChevronLeft />
-                Anterior
-              </Link>
-            </Button>
-
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              disabled={trustedDevices.next_page_url === null}
-            >
-              <Link href={trustedDevices.next_page_url ?? ""} preserveScroll>
-                Siguiente
-                <ChevronRight />
-              </Link>
-            </Button>
-          </div>
-        </div>
-      )}
+      <TrustedDevicesTable devices={trustedDevices.data} pagination={trustedDevices} />
     </div>
-  );
-}
-
-interface RowDialogActionState extends DialogClosingState {
-  kind: (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
-  device: TrustedDevice;
-}
-
-interface TrustedDeviceRowProps {
-  device: TrustedDevice;
-}
-
-function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
-  const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
-
-  const browserAndOs = deviceBrowserAndOs(device);
-
-  const dialogDevice = useDialog<RowDialogActionState | null>(null);
-
-  const handleDeviceAction = (
-    action: RowDialogActionState["kind"],
-    targetDevice: TrustedDevice,
-  ): void => {
-    dialogDevice.show({ kind: action, device: targetDevice, closing: false });
-  };
-
-  const handleDialogClose = createDialogCloseHandler(dialogDevice);
-
-  const renderDialogDevice = (): JSX.Element | null => {
-    if (dialogDevice.state === null) {
-      return null;
-    }
-
-    const isClosing = dialogDevice.state.closing;
-
-    const selectedDevice =
-      trustedDevices.data.find((device) => device.id === dialogDevice.state?.device.id) ?? null;
-
-    if (selectedDevice === null) {
-      return null;
-    }
-
-    switch (dialogDevice.state.kind) {
-      case trustedDeviceRowActionKey.viewDevice:
-        return (
-          <DeviceDetailsDialog
-            device={selectedDevice}
-            open={!isClosing}
-            onClose={handleDialogClose}
-          />
-        );
-
-      case trustedDeviceRowActionKey.renameDevice:
-        return (
-          <RenameDeviceDialog
-            device={selectedDevice}
-            open={!isClosing}
-            onClose={handleDialogClose}
-          />
-        );
-
-      case trustedDeviceRowActionKey.renewTrust:
-        return (
-          <RenewTrustDialog device={selectedDevice} open={!isClosing} onClose={handleDialogClose} />
-        );
-
-      case trustedDeviceRowActionKey.revokeDevice:
-        return (
-          <RevokeDeviceDialog
-            device={selectedDevice}
-            open={!isClosing}
-            onClose={handleDialogClose}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <TableRow>
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-2">
-          {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
-          <span className="truncate">{deviceLabel(device)}</span>
-        </div>
-      </TableCell>
-      <TableCell className="text-muted-foreground">{fromNow(device.lastUsedAt)}</TableCell>
-      <TableCell className="text-muted-foreground">{browserAndOs}</TableCell>
-      <TableCell>
-        <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
-          {device.isActive ? "Activo" : "Expirado"}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8">
-              <MoreHorizontalIcon />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            {trustedDeviceRowActions.map((group, groupIndex) => (
-              <Fragment key={groupIndex}>
-                <DropdownMenuGroup>
-                  {group.label !== undefined && (
-                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                  )}
-
-                  {group.actions.map((action) => {
-                    const Icon = action.icon;
-
-                    return (
-                      <DropdownMenuItem
-                        key={action.key}
-                        onClick={() => {
-                          handleDeviceAction(action.key, device);
-                        }}
-                        className={action.className}
-                      >
-                        <Icon className={action.iconClassName} />
-                        {action.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuGroup>
-
-                {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
-              </Fragment>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-
-      {renderDialogDevice()}
-    </TableRow>
   );
 }
 
