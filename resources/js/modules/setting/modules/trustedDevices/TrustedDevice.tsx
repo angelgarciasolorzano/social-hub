@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { Head, Link, router, usePage } from "@inertiajs/react";
 
@@ -36,6 +36,12 @@ import {
   RevokeAllDevicesDialog,
   RevokeDeviceDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
+import {
+  browserOptions,
+  deviceTypeOptions,
+  lastAccessOptions,
+  statusOptions,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import {
   trustedDeviceRecommendations,
   trustedDeviceRowActionKey,
@@ -82,6 +88,13 @@ import {
 } from "@/shared/components/shadcn/ui/chart";
 import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/shared/components/shadcn/ui/combobox";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -95,6 +108,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import {
   Table,
@@ -397,6 +411,11 @@ function TrustedDevicesInfoBanner() {
 function TrustedDevicesTable(): JSX.Element {
   const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState<string | null>(null);
+  const [browserFilter, setBrowserFilter] = useState<string | null>(null);
+  const [lastAccessFilter, setLastAccessFilter] = useState<string | null>(null);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -408,20 +427,95 @@ function TrustedDevicesTable(): JSX.Element {
         </InputGroup>
 
         <div className="flex items-center justify-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button variant="outline">
                 <Funnel />
                 Filtros
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Estado</DropdownMenuItem>
-              <DropdownMenuItem>Tipo de dispositivo</DropdownMenuItem>
-              <DropdownMenuItem>Navegador / SO</DropdownMenuItem>
-              <DropdownMenuItem>Ultimo acceso</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-3">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">Filtros</h4>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Estado</label>
+                  <Combobox value={statusFilter} onValueChange={setStatusFilter}>
+                    <ComboboxInput showClear placeholder="Estado" />
+                    <ComboboxContent>
+                      <ComboboxList>
+                        {statusOptions.map((opt) => (
+                          <ComboboxItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Tipo de dispositivo
+                  </label>
+                  <Combobox value={deviceTypeFilter} onValueChange={setDeviceTypeFilter}>
+                    <ComboboxInput showClear placeholder="Tipo de dispositivo" />
+                    <ComboboxContent>
+                      <ComboboxList>
+                        {deviceTypeOptions.map((opt) => (
+                          <ComboboxItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Navegador / SO
+                  </label>
+                  <Combobox value={browserFilter} onValueChange={setBrowserFilter}>
+                    <ComboboxInput showClear placeholder="Navegador / SO" />
+                    <ComboboxContent>
+                      <ComboboxList>
+                        {browserOptions.map((opt) => (
+                          <ComboboxItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Último acceso</label>
+                  <Combobox value={lastAccessFilter} onValueChange={setLastAccessFilter}>
+                    <ComboboxInput showClear placeholder="Último acceso" />
+                    <ComboboxContent>
+                      <ComboboxList>
+                        {lastAccessOptions.map((opt) => (
+                          <ComboboxItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                </div>
+
+                <div className="flex justify-between gap-2">
+                  <Button variant="outline">Limpiar filtros</Button>
+
+                  <Button>Aplicar filtros</Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
