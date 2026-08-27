@@ -228,8 +228,6 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
   );
 }
 
-export default TrustedDevicesTableToolbar;
-
 type TrustedDevicesSortPopoverProps = Pick<
   TrustedDevicesTableToolbarProps,
   "sortOrder" | "onSortOrderChange"
@@ -305,3 +303,5 @@ function TrustedDevicesSortPopover({
     </Popover>
   );
 }
+
+export default TrustedDevicesTableToolbar;
