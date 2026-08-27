@@ -68,9 +68,6 @@ function TrustedDevicesTableToolbar({
   onSortOrderChange,
   onResetFilters,
 }: TrustedDevicesTableToolbarProps): JSX.Element {
-  const selectedSortLabel =
-    trustedDeviceSortOptions.find((option) => option.value === sortOrder)?.label ?? "Ordenar por";
-
   return (
     <div className="flex items-center justify-between">
       <InputGroup className="max-w-xs">
@@ -132,66 +129,7 @@ function TrustedDevicesTableToolbar({
           </PopoverContent>
         </Popover>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              <ArrowDownNarrowWide />
-              {selectedSortLabel}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-3">
-            <div className="flex flex-col gap-3">
-              <h4 className="text-sm font-semibold">Ordenar por</h4>
-
-              <RadioGroup
-                value={sortOrder}
-                onValueChange={(value) => {
-                  onSortOrderChange(value as TrustedDeviceSortKey);
-                }}
-                className="gap-1"
-              >
-                {trustedDeviceSortOptions.map((option) => (
-                  <label
-                    key={option.value}
-                    htmlFor={`sort-${option.value}`}
-                    className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-accent/50 has-data-[state=checked]:bg-blue-100/50 has-data-[state=checked]:dark:bg-blue-950/20"
-                  >
-                    <RadioGroupItem
-                      id={`sort-${option.value}`}
-                      value={option.value}
-                      className="mt-0.5"
-                    />
-                    <div className="flex flex-1 flex-col gap-0.5 leading-tight">
-                      <span className="text-sm font-medium">{option.label}</span>
-                      <span className="text-xs text-muted-foreground">{option.description}</span>
-                    </div>
-                  </label>
-                ))}
-              </RadioGroup>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col leading-tight">
-                  <span className="text-sm font-medium">Predeterminado</span>
-                  <span className="text-xs text-muted-foreground">{selectedSortLabel}</span>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    onSortOrderChange(defaultTrustedDeviceSort);
-                  }}
-                >
-                  <RotateCcw />
-                  Restablecer
-                </Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <TrustedDevicesSortPopover onSortOrderChange={onSortOrderChange} sortOrder={sortOrder} />
 
         <Button variant="outline">
           <RefreshCw />
@@ -286,3 +224,79 @@ function TrustedDevicesFilterList({
 }
 
 export default TrustedDevicesTableToolbar;
+
+type TrustedDevicesSortPopoverProps = Pick<
+  TrustedDevicesTableToolbarProps,
+  "sortOrder" | "onSortOrderChange"
+>;
+
+function TrustedDevicesSortPopover({
+  sortOrder,
+  onSortOrderChange,
+}: TrustedDevicesSortPopoverProps): JSX.Element {
+  const selectedSortLabel =
+    trustedDeviceSortOptions.find((option) => option.value === sortOrder)?.label ?? "Ordenar por";
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline">
+          <ArrowDownNarrowWide />
+          {selectedSortLabel}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-3">
+        <div className="flex flex-col gap-3">
+          <h4 className="text-sm font-semibold">Ordenar por</h4>
+
+          <RadioGroup
+            value={sortOrder}
+            onValueChange={(value) => {
+              onSortOrderChange(value as TrustedDeviceSortKey);
+            }}
+            className="gap-1"
+          >
+            {trustedDeviceSortOptions.map((option) => (
+              <label
+                key={option.value}
+                htmlFor={`sort-${option.value}`}
+                className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-accent/50 has-data-[state=checked]:bg-blue-100/50 has-data-[state=checked]:dark:bg-blue-950/20"
+              >
+                <RadioGroupItem
+                  className="mt-0.5"
+                  id={`sort-${option.value}`}
+                  value={option.value}
+                />
+                <div className="flex flex-1 flex-col gap-0.5 leading-tight">
+                  <span className="text-sm font-medium">{option.label}</span>
+                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                </div>
+              </label>
+            ))}
+          </RadioGroup>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-medium">Predeterminado</span>
+              <span className="text-xs text-muted-foreground">{selectedSortLabel}</span>
+            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                onSortOrderChange(defaultTrustedDeviceSort);
+              }}
+            >
+              <RotateCcw />
+              Restablecer
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
