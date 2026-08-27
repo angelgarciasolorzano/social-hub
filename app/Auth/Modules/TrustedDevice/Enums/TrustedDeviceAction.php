@@ -16,9 +16,6 @@ enum TrustedDeviceAction: string
 
     case RevokedAll = 'revoked_all';
 
-    /**
-     * Human-readable label for the activity card.
-     */
     public function label(): string
     {
         return match ($this) {
