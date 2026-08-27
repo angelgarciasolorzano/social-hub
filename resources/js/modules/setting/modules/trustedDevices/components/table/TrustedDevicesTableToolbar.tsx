@@ -53,21 +53,23 @@ interface TrustedDevicesTableToolbarProps {
   onResetFilters: () => void;
 }
 
-function TrustedDevicesTableToolbar({
-  search,
-  onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
-  deviceTypeFilter,
-  onDeviceTypeFilterChange,
-  browserFilter,
-  onBrowserFilterChange,
-  lastAccessFilter,
-  onLastAccessFilterChange,
-  sortOrder,
-  onSortOrderChange,
-  onResetFilters,
-}: TrustedDevicesTableToolbarProps): JSX.Element {
+function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX.Element {
+  const {
+    search,
+    onSearchChange,
+    statusFilter,
+    onStatusFilterChange,
+    deviceTypeFilter,
+    onDeviceTypeFilterChange,
+    browserFilter,
+    onBrowserFilterChange,
+    lastAccessFilter,
+    onLastAccessFilterChange,
+    sortOrder,
+    onSortOrderChange,
+    onResetFilters,
+  } = props;
+
   return (
     <div className="flex items-center justify-between">
       <InputGroup className="max-w-xs">
@@ -84,50 +86,17 @@ function TrustedDevicesTableToolbar({
       </InputGroup>
 
       <div className="flex items-center justify-center gap-2">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline">
-              <Funnel />
-              Filtros
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-72 p-3">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold">Filtros</h4>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
-                  onClick={onResetFilters}
-                >
-                  Restablecer
-                </Button>
-              </div>
-
-              <TrustedDevicesFilterList
-                browserFilter={browserFilter}
-                deviceTypeFilter={deviceTypeFilter}
-                lastAccessFilter={lastAccessFilter}
-                statusFilter={statusFilter}
-                onBrowserFilterChange={onBrowserFilterChange}
-                onDeviceTypeFilterChange={onDeviceTypeFilterChange}
-                onLastAccessFilterChange={onLastAccessFilterChange}
-                onStatusFilterChange={onStatusFilterChange}
-              />
-
-              <div className="flex justify-between gap-2">
-                <Button type="button" variant="outline" onClick={onResetFilters}>
-                  Limpiar filtros
-                </Button>
-
-                <Button type="button">Aplicar filtros</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <TrustedDevicesFiltersPopover
+          browserFilter={browserFilter}
+          deviceTypeFilter={deviceTypeFilter}
+          lastAccessFilter={lastAccessFilter}
+          onBrowserFilterChange={onBrowserFilterChange}
+          onDeviceTypeFilterChange={onDeviceTypeFilterChange}
+          onLastAccessFilterChange={onLastAccessFilterChange}
+          onResetFilters={onResetFilters}
+          onStatusFilterChange={onStatusFilterChange}
+          statusFilter={statusFilter}
+        />
 
         <TrustedDevicesSortPopover onSortOrderChange={onSortOrderChange} sortOrder={sortOrder} />
 
@@ -140,9 +109,9 @@ function TrustedDevicesTableToolbar({
   );
 }
 
-type TrustedDevicesFilterListProps = Omit<
+type TrustedDevicesFiltersPopoverProps = Omit<
   TrustedDevicesTableToolbarProps,
-  "search" | "onSearchChange" | "sortOrder" | "onSortOrderChange" | "onResetFilters"
+  "search" | "onSearchChange" | "sortOrder" | "onSortOrderChange"
 >;
 
 interface TrustedDeviceFilterConfig {
@@ -153,16 +122,19 @@ interface TrustedDeviceFilterConfig {
   value: string | null;
 }
 
-function TrustedDevicesFilterList({
-  statusFilter,
-  onStatusFilterChange,
-  deviceTypeFilter,
-  onDeviceTypeFilterChange,
-  browserFilter,
-  onBrowserFilterChange,
-  lastAccessFilter,
-  onLastAccessFilterChange,
-}: TrustedDevicesFilterListProps): JSX.Element {
+function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps): JSX.Element {
+  const {
+    statusFilter,
+    onStatusFilterChange,
+    deviceTypeFilter,
+    onDeviceTypeFilterChange,
+    browserFilter,
+    onBrowserFilterChange,
+    lastAccessFilter,
+    onLastAccessFilterChange,
+    onResetFilters,
+  } = props;
+
   const filterConfigs: TrustedDeviceFilterConfig[] = [
     {
       label: "Estado",
@@ -195,31 +167,64 @@ function TrustedDevicesFilterList({
   ];
 
   return (
-    <>
-      {filterConfigs.map((config) => (
-        <div className="flex flex-col gap-1.5" key={config.label}>
-          <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
-          <Combobox
-            value={config.value}
-            onValueChange={(next) => {
-              config.onChange(next);
-            }}
-          >
-            <ComboboxInput showClear placeholder={config.placeholder} />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline">
+          <Funnel />
+          Filtros
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72 p-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Filtros</h4>
 
-            <ComboboxContent>
-              <ComboboxList>
-                {config.options.map((opt) => (
-                  <ComboboxItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </ComboboxItem>
-                ))}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
+              onClick={onResetFilters}
+            >
+              Restablecer
+            </Button>
+          </div>
+
+          {filterConfigs.map((config) => (
+            <div className="flex flex-col gap-1.5" key={config.label}>
+              <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
+
+              <Combobox
+                value={config.value}
+                onValueChange={(next) => {
+                  config.onChange(next);
+                }}
+              >
+                <ComboboxInput showClear placeholder={config.placeholder} />
+
+                <ComboboxContent>
+                  <ComboboxList>
+                    {config.options.map((opt) => (
+                      <ComboboxItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          ))}
+
+          <div className="flex justify-between gap-2">
+            <Button type="button" variant="outline" onClick={onResetFilters}>
+              Limpiar filtros
+            </Button>
+
+            <Button type="button">Aplicar filtros</Button>
+          </div>
         </div>
-      ))}
-    </>
+      </PopoverContent>
+    </Popover>
   );
 }
 
