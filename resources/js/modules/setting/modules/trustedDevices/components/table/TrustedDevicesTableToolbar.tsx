@@ -110,36 +110,15 @@ function TrustedDevicesTableToolbar({
                 </Button>
               </div>
 
-              <FilterCombobox
-                label="Estado"
-                placeholder="Estado"
-                value={statusFilter}
-                onChange={onStatusFilterChange}
-                options={statusOptions}
-              />
-
-              <FilterCombobox
-                label="Tipo de dispositivo"
-                placeholder="Tipo de dispositivo"
-                value={deviceTypeFilter}
-                onChange={onDeviceTypeFilterChange}
-                options={deviceTypeOptions}
-              />
-
-              <FilterCombobox
-                label="Navegador / SO"
-                placeholder="Navegador / SO"
-                value={browserFilter}
-                onChange={onBrowserFilterChange}
-                options={browserOptions}
-              />
-
-              <FilterCombobox
-                label="Último acceso"
-                placeholder="Último acceso"
-                value={lastAccessFilter}
-                onChange={onLastAccessFilterChange}
-                options={lastAccessOptions}
+              <TrustedDevicesFilterList
+                browserFilter={browserFilter}
+                deviceTypeFilter={deviceTypeFilter}
+                lastAccessFilter={lastAccessFilter}
+                statusFilter={statusFilter}
+                onBrowserFilterChange={onBrowserFilterChange}
+                onDeviceTypeFilterChange={onDeviceTypeFilterChange}
+                onLastAccessFilterChange={onLastAccessFilterChange}
+                onStatusFilterChange={onStatusFilterChange}
               />
 
               <div className="flex justify-between gap-2">
@@ -223,42 +202,86 @@ function TrustedDevicesTableToolbar({
   );
 }
 
-interface FilterComboboxProps<T extends string> {
+type TrustedDevicesFilterListProps = Omit<
+  TrustedDevicesTableToolbarProps,
+  "search" | "onSearchChange" | "sortOrder" | "onSortOrderChange" | "onResetFilters"
+>;
+
+interface TrustedDeviceFilterConfig {
   label: string;
-  options: readonly { readonly value: T; readonly label: string }[];
+  onChange: (value: string | null) => void;
+  options: readonly { readonly label: string; readonly value: string }[];
   placeholder: string;
-  value: T | null;
-  onChange: (value: T | null) => void;
+  value: string | null;
 }
 
-function FilterCombobox<T extends string>({
-  label,
-  options,
-  placeholder,
-  value,
-  onChange,
-}: FilterComboboxProps<T>): JSX.Element {
+function TrustedDevicesFilterList({
+  statusFilter,
+  onStatusFilterChange,
+  deviceTypeFilter,
+  onDeviceTypeFilterChange,
+  browserFilter,
+  onBrowserFilterChange,
+  lastAccessFilter,
+  onLastAccessFilterChange,
+}: TrustedDevicesFilterListProps): JSX.Element {
+  const filterConfigs: TrustedDeviceFilterConfig[] = [
+    {
+      label: "Estado",
+      placeholder: "Estado",
+      value: statusFilter,
+      onChange: onStatusFilterChange,
+      options: statusOptions,
+    },
+    {
+      label: "Tipo de dispositivo",
+      placeholder: "Tipo de dispositivo",
+      value: deviceTypeFilter,
+      onChange: onDeviceTypeFilterChange,
+      options: deviceTypeOptions,
+    },
+    {
+      label: "Navegador / SO",
+      placeholder: "Navegador / SO",
+      value: browserFilter,
+      onChange: onBrowserFilterChange,
+      options: browserOptions,
+    },
+    {
+      label: "Último acceso",
+      placeholder: "Último acceso",
+      value: lastAccessFilter,
+      onChange: onLastAccessFilterChange,
+      options: lastAccessOptions,
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Combobox
-        value={value}
-        onValueChange={(next) => {
-          onChange(next);
-        }}
-      >
-        <ComboboxInput showClear placeholder={placeholder} />
-        <ComboboxContent>
-          <ComboboxList>
-            {options.map((opt) => (
-              <ComboboxItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </ComboboxItem>
-            ))}
-          </ComboboxList>
-        </ComboboxContent>
-      </Combobox>
-    </div>
+    <>
+      {filterConfigs.map((config) => (
+        <div className="flex flex-col gap-1.5" key={config.label}>
+          <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
+          <Combobox
+            value={config.value}
+            onValueChange={(next) => {
+              config.onChange(next);
+            }}
+          >
+            <ComboboxInput showClear placeholder={config.placeholder} />
+
+            <ComboboxContent>
+              <ComboboxList>
+                {config.options.map((opt) => (
+                  <ComboboxItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </ComboboxItem>
+                ))}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </div>
+      ))}
+    </>
   );
 }
 
