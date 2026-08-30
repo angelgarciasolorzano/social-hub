@@ -3,10 +3,7 @@ export const statusOptions = [
   { value: "inactive", label: "Expirado" },
 ] as const;
 
-export const deviceTypeOptions = [
-  { value: "desktop / laptop", label: "Escritorio / Portátil" },
-  { value: "mobile / tablet", label: "Móvil / Tablet" },
-] as const;
+export type TrustedDeviceStatusFilter = (typeof statusOptions)[number]["value"];
 
 export const browserOptions = [
   { value: "chrome", label: "Chrome" },
@@ -14,6 +11,17 @@ export const browserOptions = [
   { value: "safari", label: "Safari" },
   { value: "edge", label: "Edge" },
   { value: "otro", label: "Otro" },
+] as const;
+
+export type TrustedDeviceBrowserFilter = (typeof browserOptions)[number]["value"];
+
+export const trustedDevicePerPageOptions = [5, 10, 15, 25, 50] as const;
+
+export type TrustedDevicePerPage = (typeof trustedDevicePerPageOptions)[number];
+
+export const deviceTypeOptions = [
+  { value: "desktop / laptop", label: "Escritorio / Portátil" },
+  { value: "mobile / tablet", label: "Móvil / Tablet" },
 ] as const;
 
 export const lastAccessOptions = [

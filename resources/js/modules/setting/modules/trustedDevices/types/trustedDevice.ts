@@ -1,3 +1,10 @@
+import type {
+  TrustedDeviceBrowserFilter,
+  TrustedDevicePerPage,
+  TrustedDeviceStatusFilter,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
+import type { TrustedDeviceSortKey } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceSort";
+
 export interface TrustedDevice {
   id: number;
   name: string | null;
@@ -55,4 +62,12 @@ export interface TrustedDevicePagination {
   prev_page_url: string | null;
   to: number | null;
   total: number;
+}
+
+export interface TrustedDeviceFilters {
+  search: string;
+  status: TrustedDeviceStatusFilter | null;
+  browser: TrustedDeviceBrowserFilter | null;
+  sort: TrustedDeviceSortKey;
+  perPage: TrustedDevicePerPage;
 }
