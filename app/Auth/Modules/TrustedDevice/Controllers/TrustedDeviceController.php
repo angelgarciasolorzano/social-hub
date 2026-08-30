@@ -61,6 +61,23 @@ class TrustedDeviceController extends Controller
             });
         }
 
+        if ($request->filled('status')) {
+            /** @var string $status */
+            $status = $request->string('status')->toString();
+            $query->where('expires_at', $status === 'active' ? '>' : '<=', CarbonImmutable::now());
+        }
+
+        if ($request->filled('browser')) {
+            /** @var string $browser */
+            $browser = $request->string('browser')->toString();
+
+            if ($browser === 'otro') {
+                $query->whereNotIn('browser', ['Chrome', 'Firefox', 'Safari', 'Edge']);
+            } else {
+                $query->where('browser', 'like', ucfirst($browser).'%');
+            }
+        }
+
         $allowedPerPage = [5, 10, 15, 25, 50];
         $perPageRequest = $request->integer('per_page');
         $perPage = \in_array($perPageRequest, $allowedPerPage, true) ? $perPageRequest : 15;
