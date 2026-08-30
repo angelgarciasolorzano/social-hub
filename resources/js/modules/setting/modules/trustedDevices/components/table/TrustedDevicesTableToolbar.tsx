@@ -4,15 +4,16 @@ import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search } from "lucid
 
 import {
   browserOptions,
-  deviceTypeOptions,
-  lastAccessOptions,
   statusOptions,
+  type TrustedDeviceBrowserFilter,
+  type TrustedDeviceStatusFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import {
   defaultTrustedDeviceSort,
   type TrustedDeviceSortKey,
   trustedDeviceSortOptions,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceSort";
+import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -32,40 +33,20 @@ import { RadioGroup, RadioGroupItem } from "@/shared/components/shadcn/ui/radio-
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 interface TrustedDevicesTableToolbarProps {
-  search: string;
+  filters: TrustedDeviceFilters;
   onSearchChange: (value: string) => void;
-
-  statusFilter: string | null;
-  onStatusFilterChange: (value: string | null) => void;
-
-  deviceTypeFilter: string | null;
-  onDeviceTypeFilterChange: (value: string | null) => void;
-
-  browserFilter: string | null;
-  onBrowserFilterChange: (value: string | null) => void;
-
-  lastAccessFilter: string | null;
-  onLastAccessFilterChange: (value: string | null) => void;
-
-  sortOrder: TrustedDeviceSortKey;
+  onStatusFilterChange: (value: TrustedDeviceStatusFilter | null) => void;
+  onBrowserFilterChange: (value: TrustedDeviceBrowserFilter | null) => void;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
-
   onResetFilters: () => void;
 }
 
 function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX.Element {
   const {
-    search,
+    filters,
     onSearchChange,
-    statusFilter,
     onStatusFilterChange,
-    deviceTypeFilter,
-    onDeviceTypeFilterChange,
-    browserFilter,
     onBrowserFilterChange,
-    lastAccessFilter,
-    onLastAccessFilterChange,
-    sortOrder,
     onSortOrderChange,
     onResetFilters,
   } = props;
@@ -78,7 +59,7 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
         </InputGroupAddon>
         <InputGroupInput
           placeholder="Buscar dispositivo..."
-          value={search}
+          value={filters.search}
           onChange={(event) => {
             onSearchChange(event.target.value);
           }}
@@ -87,18 +68,14 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
 
       <div className="flex items-center justify-center gap-2">
         <TrustedDevicesFiltersPopover
-          browserFilter={browserFilter}
-          deviceTypeFilter={deviceTypeFilter}
-          lastAccessFilter={lastAccessFilter}
+          browserFilter={filters.browser}
           onBrowserFilterChange={onBrowserFilterChange}
-          onDeviceTypeFilterChange={onDeviceTypeFilterChange}
-          onLastAccessFilterChange={onLastAccessFilterChange}
           onResetFilters={onResetFilters}
           onStatusFilterChange={onStatusFilterChange}
-          statusFilter={statusFilter}
+          statusFilter={filters.status}
         />
 
-        <TrustedDevicesSortPopover onSortOrderChange={onSortOrderChange} sortOrder={sortOrder} />
+        <TrustedDevicesSortPopover onSortOrderChange={onSortOrderChange} sortOrder={filters.sort} />
 
         <Button variant="outline">
           <RefreshCw />
@@ -109,33 +86,35 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
   );
 }
 
-type TrustedDevicesFiltersPopoverProps = Omit<
+type TrustedDevicesFiltersPopoverProps = Pick<
   TrustedDevicesTableToolbarProps,
-  "search" | "onSearchChange" | "sortOrder" | "onSortOrderChange"
->;
+  "onStatusFilterChange" | "onBrowserFilterChange" | "onResetFilters"
+> & {
+  statusFilter: TrustedDeviceStatusFilter | null;
+  browserFilter: TrustedDeviceBrowserFilter | null;
+};
 
-interface TrustedDeviceFilterConfig {
+interface TrustedDeviceFilterConfig<T extends string> {
   label: string;
-  onChange: (value: string | null) => void;
-  options: readonly { readonly label: string; readonly value: string }[];
+  onChange: (value: T | null) => void;
+  options: readonly { readonly label: string; readonly value: T }[];
   placeholder: string;
-  value: string | null;
+  value: T | null;
 }
 
 function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps): JSX.Element {
   const {
     statusFilter,
     onStatusFilterChange,
-    deviceTypeFilter,
-    onDeviceTypeFilterChange,
     browserFilter,
     onBrowserFilterChange,
-    lastAccessFilter,
-    onLastAccessFilterChange,
     onResetFilters,
   } = props;
 
-  const filterConfigs: TrustedDeviceFilterConfig[] = [
+  const filterConfigs: readonly (
+    | TrustedDeviceFilterConfig<TrustedDeviceStatusFilter>
+    | TrustedDeviceFilterConfig<TrustedDeviceBrowserFilter>
+  )[] = [
     {
       label: "Estado",
       placeholder: "Estado",
@@ -144,25 +123,11 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
       options: statusOptions,
     },
     {
-      label: "Tipo de dispositivo",
-      placeholder: "Tipo de dispositivo",
-      value: deviceTypeFilter,
-      onChange: onDeviceTypeFilterChange,
-      options: deviceTypeOptions,
-    },
-    {
       label: "Navegador / SO",
       placeholder: "Navegador / SO",
       value: browserFilter,
       onChange: onBrowserFilterChange,
       options: browserOptions,
-    },
-    {
-      label: "Último acceso",
-      placeholder: "Último acceso",
-      value: lastAccessFilter,
-      onChange: onLastAccessFilterChange,
-      options: lastAccessOptions,
     },
   ];
 
@@ -197,7 +162,13 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
               <Combobox
                 value={config.value}
                 onValueChange={(next) => {
-                  config.onChange(next);
+                  if (next === null) {
+                    config.onChange(null);
+
+                    return;
+                  }
+
+                  config.onChange(next as TrustedDeviceStatusFilter & TrustedDeviceBrowserFilter);
                 }}
               >
                 <ComboboxInput showClear placeholder={config.placeholder} />
@@ -224,10 +195,10 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
   );
 }
 
-type TrustedDevicesSortPopoverProps = Pick<
-  TrustedDevicesTableToolbarProps,
-  "sortOrder" | "onSortOrderChange"
->;
+interface TrustedDevicesSortPopoverProps {
+  sortOrder: TrustedDeviceSortKey;
+  onSortOrderChange: (value: TrustedDeviceSortKey) => void;
+}
 
 function TrustedDevicesSortPopover({
   sortOrder,

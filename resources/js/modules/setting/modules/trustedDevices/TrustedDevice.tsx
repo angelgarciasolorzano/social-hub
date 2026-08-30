@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo } from "react";
 
 import { Head, router, usePage } from "@inertiajs/react";
 
@@ -30,21 +30,18 @@ import {
 import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
 import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
 import {
-  defaultTrustedDeviceSort,
-  type TrustedDeviceSortKey,
-} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceSort";
-import {
   trustedDeviceRecommendations,
   trustedDeviceSectionActionKey,
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
-import { useDebouncedReload } from "@/modules/setting/modules/trustedDevices/hooks/useDebouncedReload";
+import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevices/hooks/useTrustedDeviceFilters";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type {
   TrustedDevice,
   TrustedDeviceAction,
   TrustedDeviceActivityItem,
+  TrustedDeviceFilters,
   TrustedDevicePagination,
   TrustedDeviceStats,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
@@ -92,6 +89,7 @@ import type { SharedData } from "@/shared/types";
 type TrustedDevicePageProps = SharedData & {
   currentDevicePreview?: DevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
+  filters: TrustedDeviceFilters;
   trustedDevices: TrustedDevicePagination;
   trustedDevicesForRevoke?: TrustedDevice[];
   stats: TrustedDeviceStats;
@@ -372,53 +370,27 @@ function TrustedDevicesInfoBanner() {
 }
 
 function TrustedDevicesTableSection(): JSX.Element {
-  const { trustedDevices } = usePage<TrustedDevicePageProps>().props;
+  const { filters: initialFilters, trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
-  const [search, setSearch] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState<string | null>(null);
-  const [browserFilter, setBrowserFilter] = useState<string | null>(null);
-  const [lastAccessFilter, setLastAccessFilter] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<TrustedDeviceSortKey>(defaultTrustedDeviceSort);
-
-  const resetFilters = (): void => {
-    setSearch("");
-    setStatusFilter(null);
-    setDeviceTypeFilter(null);
-    setBrowserFilter(null);
-    setLastAccessFilter(null);
-  };
-
-  const filters = useMemo(
-    () => ({
-      search,
-      status: statusFilter,
-      deviceType: deviceTypeFilter,
-      browser: browserFilter,
-      lastAccess: lastAccessFilter,
-      sort: sortOrder,
-    }),
-    [search, statusFilter, deviceTypeFilter, browserFilter, lastAccessFilter, sortOrder],
-  );
-
-  useDebouncedReload(filters);
+  const { filters, resetFilters, updateFilter } = useTrustedDeviceFilters(initialFilters);
 
   return (
     <div className="flex flex-col gap-4">
       <TrustedDevicesTableToolbar
-        browserFilter={browserFilter}
-        deviceTypeFilter={deviceTypeFilter}
-        lastAccessFilter={lastAccessFilter}
-        search={search}
-        sortOrder={sortOrder}
-        statusFilter={statusFilter}
-        onBrowserFilterChange={setBrowserFilter}
-        onDeviceTypeFilterChange={setDeviceTypeFilter}
-        onLastAccessFilterChange={setLastAccessFilter}
+        filters={filters}
+        onBrowserFilterChange={(value) => {
+          updateFilter("browser", value);
+        }}
         onResetFilters={resetFilters}
-        onSearchChange={setSearch}
-        onSortOrderChange={setSortOrder}
-        onStatusFilterChange={setStatusFilter}
+        onSearchChange={(value) => {
+          updateFilter("search", value);
+        }}
+        onSortOrderChange={(value) => {
+          updateFilter("sort", value);
+        }}
+        onStatusFilterChange={(value) => {
+          updateFilter("status", value);
+        }}
       />
 
       <TrustedDevicesTable devices={trustedDevices.data} pagination={trustedDevices} />
