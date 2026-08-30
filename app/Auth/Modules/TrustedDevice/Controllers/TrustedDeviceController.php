@@ -43,7 +43,12 @@ class TrustedDeviceController extends Controller
             isOptional: false,
         );
 
-        $query = $user->trustedDevices()->latest('last_used_at');
+        $sortDirection = match ($request->query('sort')) {
+            'oldest' => 'asc',
+            default => 'desc',
+        };
+
+        $query = $user->trustedDevices()->orderBy('last_used_at', $sortDirection);
 
         if ($request->filled('search')) {
             /** @var string $search */

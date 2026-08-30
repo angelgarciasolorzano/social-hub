@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { Head, router, usePage } from "@inertiajs/react";
 
@@ -21,7 +21,6 @@ import {
   UserPlus,
 } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
-import { useDebounceCallback } from "usehooks-ts";
 
 import {
   AddDeviceDialog,
@@ -40,6 +39,7 @@ import {
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
+import { useDebouncedReload } from "@/modules/setting/modules/trustedDevices/hooks/useDebouncedReload";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type {
   TrustedDevice,
@@ -389,16 +389,19 @@ function TrustedDevicesTableSection(): JSX.Element {
     setLastAccessFilter(null);
   };
 
-  const debouncedSearchReload = useDebounceCallback((value: string) => {
-    router.reload({
-      only: ["trustedDevices"],
-      data: { search: value },
-    });
-  }, 500);
+  const filters = useMemo(
+    () => ({
+      search,
+      status: statusFilter,
+      deviceType: deviceTypeFilter,
+      browser: browserFilter,
+      lastAccess: lastAccessFilter,
+      sort: sortOrder,
+    }),
+    [search, statusFilter, deviceTypeFilter, browserFilter, lastAccessFilter, sortOrder],
+  );
 
-  useEffect(() => {
-    debouncedSearchReload(search);
-  }, [search, debouncedSearchReload]);
+  useDebouncedReload(filters);
 
   return (
     <div className="flex flex-col gap-4">
