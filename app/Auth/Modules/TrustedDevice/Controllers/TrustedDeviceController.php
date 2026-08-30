@@ -19,6 +19,7 @@ use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -42,9 +43,21 @@ class TrustedDeviceController extends Controller
             isOptional: false,
         );
 
+        $query = $user->trustedDevices()->latest('last_used_at');
+
+        if ($request->filled('search')) {
+            /** @var string $search */
+            $search = $request->string('search')->toString();
+
+            $query->where(function (Builder $builder) use ($search): void {
+                $builder->where('name', 'like', "%{$search}%")
+                    ->orWhere('browser', 'like', "%{$search}%")
+                    ->orWhere('os_name', 'like', "%{$search}%");
+            });
+        }
+
         $props = [
-            'trustedDevices' => $user->trustedDevices()
-                ->latest('last_used_at')
+            'trustedDevices' => $query
                 ->paginate(15)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
             'stats' => $this->buildStats($user),

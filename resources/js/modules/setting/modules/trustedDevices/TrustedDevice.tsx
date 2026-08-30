@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { Head, router, usePage } from "@inertiajs/react";
 
@@ -387,6 +387,13 @@ function TrustedDevicesTableSection(): JSX.Element {
     setBrowserFilter(null);
     setLastAccessFilter(null);
   };
+
+  useEffect(() => {
+    router.reload({
+      only: ["trustedDevices"],
+      data: { search },
+    });
+  }, [search]);
 
   return (
     <div className="flex flex-col gap-4">
