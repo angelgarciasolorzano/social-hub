@@ -4,6 +4,8 @@ import { router } from "@inertiajs/react";
 
 import { useDebounceCallback } from "usehooks-ts";
 
+import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+
 export interface TrustedDeviceFilters {
   browser: string | null;
   deviceType: string | null;
@@ -15,10 +17,11 @@ export interface TrustedDeviceFilters {
 }
 
 /**
- * Trigger a partial `router.reload` whenever any field in `filters` changes,
- * debounced by `delay` ms. Only non-empty fields are sent to the backend as
- * query string params to keep the URL clean. Only the `trustedDevices` prop
- * is re-fetched.
+ * Trigger a partial visit whenever any field in `filters` changes, debounced
+ * by `delay` ms. Only non-empty fields are sent to the backend as query
+ * string params. The browser URL is synced automatically because `router.get`
+ * is told the full URL ( pathname + data ) explicitly — unlike `router.reload`
+ * which only updates the URL when new params are added.
  *
  * @param filters  All filter / search / sort state in one object.
  * @param delay    Debounce delay in ms (default 500).
@@ -33,9 +36,10 @@ export function useDebouncedReload(filters: TrustedDeviceFilters, delay = 500): 
       }
     }
 
-    router.reload({
+    router.get(index().url, data, {
       only: ["trustedDevices"],
-      data,
+      preserveState: true,
+      preserveScroll: true,
     });
   }, delay);
 
