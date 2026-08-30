@@ -5,6 +5,10 @@ import { Link } from "@inertiajs/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { TrustedDevicePagination } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import {
+  buildPageUrl,
+  computePaginationRange,
+} from "@/modules/setting/modules/trustedDevices/utils/pagination";
 
 import { buttonVariants } from "@/shared/components/shadcn/ui/button";
 import { Label } from "@/shared/components/shadcn/ui/label";
@@ -92,34 +96,6 @@ function TrustedDevicesPagination({ pagination }: TrustedDevicesPaginationProps)
   );
 }
 
-function computePaginationRange(currentPage: number, lastPage: number): (number | "ellipsis")[] {
-  const visiblePages = 5;
-  const half = Math.floor(visiblePages / 2);
-
-  if (lastPage <= visiblePages) {
-    return Array.from({ length: lastPage }, (_, index) => index + 1);
-  }
-
-  const start = Math.max(2, currentPage - half);
-  const end = Math.min(lastPage - 1, currentPage + half);
-
-  const pages: (number | "ellipsis")[] = [];
-
-  if (start > 2) {
-    pages.push("ellipsis");
-  }
-
-  for (let page = start; page <= end; page += 1) {
-    pages.push(page);
-  }
-
-  if (end < lastPage - 1) {
-    pages.push("ellipsis");
-  }
-
-  return pages;
-}
-
 interface PaginationNumberLinkProps {
   page: number;
   pagination: TrustedDevicePagination;
@@ -152,11 +128,9 @@ function PaginationNumberLink({ page, pagination }: PaginationNumberLinkProps): 
   );
 }
 
-interface PaginationPrevNextLinkProps {
-  pagination: TrustedDevicePagination;
-}
+type PaginationPreviousLinkProps = Pick<PaginationNumberLinkProps, "pagination">;
 
-function PaginationPreviousLink({ pagination }: PaginationPrevNextLinkProps): JSX.Element {
+function PaginationPreviousLink({ pagination }: PaginationPreviousLinkProps): JSX.Element {
   const url = pagination.prev_page_url;
 
   if (url === null) {
@@ -186,7 +160,9 @@ function PaginationPreviousLink({ pagination }: PaginationPrevNextLinkProps): JS
   );
 }
 
-function PaginationNextLink({ pagination }: PaginationPrevNextLinkProps): JSX.Element {
+type PaginationNextLinkProps = PaginationPreviousLinkProps;
+
+function PaginationNextLink({ pagination }: PaginationNextLinkProps): JSX.Element {
   const url = pagination.next_page_url;
 
   if (url === null) {
@@ -214,12 +190,6 @@ function PaginationNextLink({ pagination }: PaginationPrevNextLinkProps): JSX.El
       <ChevronRight className="size-4" />
     </Link>
   );
-}
-
-function buildPageUrl(pagination: TrustedDevicePagination, page: number): string | null {
-  const link = pagination.links.find((candidate) => candidate.page === page);
-
-  return link?.url ?? null;
 }
 
 export default TrustedDevicesPagination;
