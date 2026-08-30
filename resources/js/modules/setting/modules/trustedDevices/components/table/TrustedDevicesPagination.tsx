@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import { Link } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -77,7 +77,15 @@ function TrustedDevicesPagination({ pagination }: TrustedDevicesPaginationProps)
       <div className="flex items-center gap-3">
         <Label className="hidden whitespace-nowrap sm:block">Filas por pagina</Label>
 
-        <Select defaultValue={String(pagination.per_page)}>
+        <Select
+          value={String(pagination.per_page)}
+          onValueChange={(value) => {
+            router.reload({
+              only: ["trustedDevices"],
+              data: { per_page: value },
+            });
+          }}
+        >
           <SelectTrigger className="w-full max-w-32">
             <SelectValue />
           </SelectTrigger>

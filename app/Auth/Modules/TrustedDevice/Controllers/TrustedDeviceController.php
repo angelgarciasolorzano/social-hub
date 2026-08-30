@@ -56,9 +56,13 @@ class TrustedDeviceController extends Controller
             });
         }
 
+        $allowedPerPage = [5, 10, 15, 25, 50];
+        $perPageRequest = $request->integer('per_page');
+        $perPage = \in_array($perPageRequest, $allowedPerPage, true) ? $perPageRequest : 15;
+
         $props = [
             'trustedDevices' => $query
-                ->paginate(15)
+                ->paginate($perPage)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
             'stats' => $this->buildStats($user),
             'recentActivity' => $user->trustedDeviceEvents()
