@@ -43,16 +43,17 @@ class TrustedDeviceController extends Controller
             isOptional: false,
         );
 
-        $sortDirection = match ($request->query('sort')) {
+        $filters = $this->extractFilters($request);
+
+        $sortDirection = match ($filters['sort']) {
             'oldest' => 'asc',
             default => 'desc',
         };
 
         $query = $user->trustedDevices()->orderBy('last_used_at', $sortDirection);
 
-        if ($request->filled('search')) {
-            /** @var string $search */
-            $search = $request->string('search')->toString();
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
 
             $query->where(function (Builder $builder) use ($search): void {
                 $builder->where('name', 'like', "%{$search}%")
@@ -61,15 +62,12 @@ class TrustedDeviceController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            /** @var string $status */
-            $status = $request->string('status')->toString();
-            $query->where('expires_at', $status === 'active' ? '>' : '<=', CarbonImmutable::now());
+        if ($filters['status'] !== null) {
+            $query->where('expires_at', $filters['status'] === 'active' ? '>' : '<=', CarbonImmutable::now());
         }
 
-        if ($request->filled('browser')) {
-            /** @var string $browser */
-            $browser = $request->string('browser')->toString();
+        if ($filters['browser'] !== null) {
+            $browser = $filters['browser'];
 
             if ($browser === 'otro') {
                 $query->whereNotIn('browser', ['Chrome', 'Firefox', 'Safari', 'Edge']);
@@ -78,11 +76,10 @@ class TrustedDeviceController extends Controller
             }
         }
 
-        $allowedPerPage = [5, 10, 15, 25, 50];
-        $perPageRequest = $request->integer('per_page');
-        $perPage = \in_array($perPageRequest, $allowedPerPage, true) ? $perPageRequest : 15;
+        $perPage = $filters['perPage'];
 
         $props = [
+            'filters' => $filters,
             'trustedDevices' => $query
                 ->paginate($perPage)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
@@ -108,6 +105,43 @@ class TrustedDeviceController extends Controller
             ...$props,
             $currentTrustedDeviceProps,
         ]);
+    }
+
+    /**
+     * Read and sanitize the filter query string. Anything not in the whitelist
+     * is silently discarded and falls back to the default, so the filters prop
+     * the frontend receives is always a valid combination.
+     *
+     * @return array{
+     *     search: string,
+     *     status: 'active'|'inactive'|null,
+     *     browser: 'chrome'|'firefox'|'safari'|'edge'|'otro'|null,
+     *     sort: 'most-recent'|'oldest'|'name-asc'|'name-desc'|'expiring-soon',
+     *     perPage: int,
+     * }
+     */
+    private function extractFilters(Request $request): array
+    {
+        $allowedStatus = ['active', 'inactive'];
+        $allowedBrowsers = ['chrome', 'firefox', 'safari', 'edge', 'otro'];
+        $allowedSorts = ['most-recent', 'oldest', 'name-asc', 'name-desc', 'expiring-soon'];
+        $allowedPerPage = [5, 10, 15, 25, 50];
+
+        $status = $request->string('status')->toString();
+
+        $browser = $request->string('browser')->toString();
+
+        $sort = $request->query('sort');
+
+        $perPage = $request->integer('per_page');
+
+        return [
+            'search' => trim($request->string('search')->toString()),
+            'status' => \in_array($status, $allowedStatus, true) ? $status : null,
+            'browser' => \in_array($browser, $allowedBrowsers, true) ? $browser : null,
+            'sort' => \in_array($sort, $allowedSorts, true) ? $sort : 'most-recent',
+            'perPage' => \in_array($perPage, $allowedPerPage, true) ? $perPage : 15,
+        ];
     }
 
     /**
