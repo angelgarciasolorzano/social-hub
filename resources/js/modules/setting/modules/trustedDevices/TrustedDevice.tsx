@@ -21,6 +21,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
+import { useDebounceCallback } from "usehooks-ts";
 
 import {
   AddDeviceDialog,
@@ -388,12 +389,16 @@ function TrustedDevicesTableSection(): JSX.Element {
     setLastAccessFilter(null);
   };
 
-  useEffect(() => {
+  const debouncedSearchReload = useDebounceCallback((value: string) => {
     router.reload({
       only: ["trustedDevices"],
-      data: { search },
+      data: { search: value },
     });
-  }, [search]);
+  }, 500);
+
+  useEffect(() => {
+    debouncedSearchReload(search);
+  }, [search, debouncedSearchReload]);
 
   return (
     <div className="flex flex-col gap-4">
