@@ -215,13 +215,9 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
             </div>
           ))}
 
-          <div className="flex justify-between gap-2">
-            <Button type="button" variant="outline" onClick={onResetFilters}>
-              Limpiar filtros
-            </Button>
-
-            <Button type="button">Aplicar filtros</Button>
-          </div>
+          <Button type="button" variant="outline" onClick={onResetFilters}>
+            Limpiar filtros
+          </Button>
         </div>
       </PopoverContent>
     </Popover>
