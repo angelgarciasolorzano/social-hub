@@ -4,6 +4,10 @@ import { Link, router } from "@inertiajs/react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import {
+  type TrustedDevicePerPage,
+  trustedDevicePerPageOptions,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import type { TrustedDevicePagination } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import {
   buildPageUrl,
@@ -28,14 +32,6 @@ import {
 } from "@/shared/components/shadcn/ui/select";
 
 import { cn } from "@/shared/lib";
-
-const PAGE_SIZE_ITEMS = [
-  { label: "5", value: "5" },
-  { label: "10", value: "10" },
-  { label: "15", value: "15" },
-  { label: "25", value: "25" },
-  { label: "50", value: "50" },
-] as const;
 
 interface TrustedDevicesPaginationProps {
   pagination: TrustedDevicePagination;
@@ -80,9 +76,11 @@ function TrustedDevicesPagination({ pagination }: TrustedDevicesPaginationProps)
         <Select
           value={String(pagination.per_page)}
           onValueChange={(value) => {
+            const numeric = Number.parseInt(value, 10) as TrustedDevicePerPage;
+
             router.reload({
               only: ["trustedDevices"],
-              data: { per_page: value },
+              data: { per_page: numeric },
             });
           }}
         >
@@ -91,9 +89,9 @@ function TrustedDevicesPagination({ pagination }: TrustedDevicesPaginationProps)
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {PAGE_SIZE_ITEMS.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
+              {trustedDevicePerPageOptions.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  {String(option)}
                 </SelectItem>
               ))}
             </SelectGroup>
