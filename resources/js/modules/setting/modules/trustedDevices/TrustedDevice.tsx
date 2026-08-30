@@ -86,6 +86,8 @@ import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
+import type { TrustedDevicePerPage } from "./data/trustedDeviceFilters";
+
 type TrustedDevicePageProps = SharedData & {
   currentDevicePreview?: DevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
@@ -393,7 +395,13 @@ function TrustedDevicesTableSection(): JSX.Element {
         }}
       />
 
-      <TrustedDevicesTable devices={trustedDevices.data} pagination={trustedDevices} />
+      <TrustedDevicesTable
+        devices={trustedDevices.data}
+        pagination={trustedDevices}
+        onPerPageChange={(value) => {
+          updateFilter("perPage", value as TrustedDevicePerPage);
+        }}
+      />
     </div>
   );
 }

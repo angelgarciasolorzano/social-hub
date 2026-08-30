@@ -64,6 +64,7 @@ interface RowDialogActionState extends DialogClosingState {
 
 interface TrustedDevicesTableProps {
   devices: TrustedDevice[];
+  onPerPageChange: (value: number) => void;
   pagination: TrustedDevicePagination;
 }
 
@@ -71,7 +72,11 @@ interface TrustedDeviceTableColumn {
   label: "Dispositivo" | "Ultimo Acceso" | "Navegador / SO" | "Estado" | "Acciones";
 }
 
-function TrustedDevicesTable({ devices, pagination }: TrustedDevicesTableProps): JSX.Element {
+function TrustedDevicesTable({
+  devices,
+  onPerPageChange,
+  pagination,
+}: TrustedDevicesTableProps): JSX.Element {
   const trustedDeviceTableColumns: readonly TrustedDeviceTableColumn[] = [
     { label: "Dispositivo" },
     { label: "Ultimo Acceso" },
@@ -111,7 +116,7 @@ function TrustedDevicesTable({ devices, pagination }: TrustedDevicesTableProps):
         </div>
       </div>
 
-      <TrustedDevicesPagination pagination={pagination} />
+      <TrustedDevicesPagination onPerPageChange={onPerPageChange} pagination={pagination} />
     </div>
   );
 }

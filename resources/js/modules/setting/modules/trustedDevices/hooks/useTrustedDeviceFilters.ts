@@ -8,14 +8,18 @@ import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevi
 
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
-/** Strip null/empty fields so the URL stays clean (e.g. `?browser=chrome`). */
+/** Strip null/empty fields and camelCase → snake_case (e.g. `perPage` → `per_page`) so the URL matches the backend's wire format. */
 function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
   const bag: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(filters)) {
-    if (value !== null && value !== "") {
-      bag[key] = String(value);
+    if (value === null || value === "") {
+      continue;
     }
+
+    const wireKey = key === "perPage" ? "per_page" : key;
+
+    bag[wireKey] = String(value);
   }
 
   return bag;

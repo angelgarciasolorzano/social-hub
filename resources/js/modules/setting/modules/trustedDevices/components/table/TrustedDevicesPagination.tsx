@@ -1,13 +1,10 @@
 import type { JSX } from "react";
 
-import { Link, router } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import {
-  type TrustedDevicePerPage,
-  trustedDevicePerPageOptions,
-} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
+import { trustedDevicePerPageOptions } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import type { TrustedDevicePagination } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import {
   buildPageUrl,
@@ -34,10 +31,14 @@ import {
 import { cn } from "@/shared/lib";
 
 interface TrustedDevicesPaginationProps {
+  onPerPageChange: (value: number) => void;
   pagination: TrustedDevicePagination;
 }
 
-function TrustedDevicesPagination({ pagination }: TrustedDevicesPaginationProps): JSX.Element {
+function TrustedDevicesPagination({
+  onPerPageChange,
+  pagination,
+}: TrustedDevicesPaginationProps): JSX.Element {
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
@@ -76,12 +77,7 @@ function TrustedDevicesPagination({ pagination }: TrustedDevicesPaginationProps)
         <Select
           value={String(pagination.per_page)}
           onValueChange={(value) => {
-            const numeric = Number.parseInt(value, 10) as TrustedDevicePerPage;
-
-            router.reload({
-              only: ["trustedDevices"],
-              data: { per_page: numeric },
-            });
+            onPerPageChange(Number.parseInt(value, 10));
           }}
         >
           <SelectTrigger className="w-full max-w-32">
