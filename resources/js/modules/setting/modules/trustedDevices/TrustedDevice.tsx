@@ -29,6 +29,7 @@ import {
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
 import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
+import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import {
   trustedDeviceRecommendations,
   trustedDeviceSectionActionKey,
@@ -85,8 +86,6 @@ import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
-
-import type { TrustedDevicePerPage } from "./data/trustedDeviceFilters";
 
 type TrustedDevicePageProps = SharedData & {
   currentDevicePreview?: DevicePreview | null;
