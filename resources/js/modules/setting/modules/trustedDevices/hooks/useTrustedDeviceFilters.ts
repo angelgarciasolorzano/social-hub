@@ -42,28 +42,18 @@ export function useTrustedDeviceFilters(
   initialFilters: TrustedDeviceFilters,
   delay = 500,
 ): UseTrustedDeviceFiltersApi {
-  const [search, setSearch] = useState<string>(initialFilters.search);
-  const [status, setStatus] = useState<TrustedDeviceStatusFilter | null>(initialFilters.status);
-  const [browser, setBrowser] = useState<TrustedDeviceBrowserFilter | null>(initialFilters.browser);
-  const [sort, setSort] = useState<TrustedDeviceSortKey>(initialFilters.sort);
-  const [perPage, setPerPage] = useState<TrustedDevicePerPage>(initialFilters.perPage);
+  const [filters, setFilters] = useState<TrustedDeviceFilterState>(initialFilters);
 
   const isFirstSearchRenderRef = useRef<boolean>(true);
 
-  const filtersRef = useRef<TrustedDeviceFilters>({
-    search,
-    status,
-    browser,
-    sort,
-    perPage,
-  });
+  const filtersRef = useRef<TrustedDeviceFilterState>(filters);
 
   useEffect(() => {
-    filtersRef.current = { search, status, browser, sort, perPage };
-  }, [search, status, browser, sort, perPage]);
+    filtersRef.current = filters;
+  }, [filters]);
 
-  const triggerReload = (filters: TrustedDeviceFilters): void => {
-    router.get(index().url, toQueryBag(filters), {
+  const triggerReload = (next: TrustedDeviceFilterState): void => {
+    router.get(index().url, toQueryBag(next), {
       only: ["trustedDevices"],
       preserveState: true,
       preserveScroll: true,
@@ -87,63 +77,35 @@ export function useTrustedDeviceFilters(
       isFirstSearchRenderRef.current = false;
       return;
     }
-    debouncedSearchReloadRef.current(search);
-  }, [search]);
+    debouncedSearchReloadRef.current(filters.search);
+  }, [filters.search]);
 
   const updateFilter = useCallback(
     <K extends keyof TrustedDeviceFilterState>(
       key: K,
       value: TrustedDeviceFilterState[K],
     ): void => {
-      switch (key) {
-        case "search":
-          setSearch(value as string);
-          break;
-        case "status": {
-          const nextStatus = value as TrustedDeviceStatusFilter | null;
+      setFilters((prev) => ({ ...prev, [key]: value }));
 
-          setStatus(nextStatus);
-          triggerReload({ search, status: nextStatus, browser, sort, perPage });
-
-          break;
-        }
-        case "browser": {
-          const nextBrowser = value as TrustedDeviceBrowserFilter | null;
-
-          setBrowser(nextBrowser);
-          triggerReload({ search, status, browser: nextBrowser, sort, perPage });
-
-          break;
-        }
-        case "sort": {
-          const nextSort = value as TrustedDeviceSortKey;
-
-          setSort(nextSort);
-          triggerReload({ search, status, browser, sort: nextSort, perPage });
-
-          break;
-        }
-        case "perPage": {
-          const nextPerPage = value as TrustedDevicePerPage;
-
-          setPerPage(nextPerPage);
-          triggerReload({ search, status, browser, sort, perPage: nextPerPage });
-
-          break;
-        }
+      if (key !== "search") {
+        triggerReload({ ...filtersRef.current, [key]: value });
       }
     },
-    [search, status, browser, sort, perPage],
+    [],
   );
 
   const resetFilters = useCallback(() => {
-    setSearch("");
-    setStatus(null);
-    setBrowser(null);
-    triggerReload({ search: "", status: null, browser: null, sort, perPage });
-  }, [sort, perPage]);
+    setFilters((prev) => ({ ...prev, search: "", status: null, browser: null }));
 
-  return { filters: { search, status, browser, sort, perPage }, resetFilters, updateFilter };
+    triggerReload({
+      ...filtersRef.current,
+      search: "",
+      status: null,
+      browser: null,
+    });
+  }, []);
+
+  return { filters, resetFilters, updateFilter };
 }
 
 function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
