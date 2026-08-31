@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
@@ -48,7 +48,19 @@ export function useTrustedDeviceFilters(
   const [sort, setSort] = useState<TrustedDeviceSortKey>(initialFilters.sort);
   const [perPage, setPerPage] = useState<TrustedDevicePerPage>(initialFilters.perPage);
 
-  const isFirstRenderRef = useRef<boolean>(true);
+  const isFirstSearchRenderRef = useRef<boolean>(true);
+
+  const filtersRef = useRef<TrustedDeviceFilters>({
+    search,
+    status,
+    browser,
+    sort,
+    perPage,
+  });
+
+  useEffect(() => {
+    filtersRef.current = { search, status, browser, sort, perPage };
+  }, [search, status, browser, sort, perPage]);
 
   const triggerReload = (filters: TrustedDeviceFilters): void => {
     router.get(index().url, toQueryBag(filters), {
@@ -58,24 +70,25 @@ export function useTrustedDeviceFilters(
     });
   };
 
-  const filters: TrustedDeviceFilterState = useMemo(
-    () => ({ search, status, browser, sort, perPage }),
-    [search, status, browser, sort, perPage],
-  );
+  const reloadSearchDebounced = useCallback((nextSearch: string) => {
+    triggerReload({ ...filtersRef.current, search: nextSearch });
+  }, []);
 
-  const debouncedSearchReload = useDebounceCallback((next: TrustedDeviceFilterState) => {
-    triggerReload(next);
-  }, delay);
+  const debouncedSearchReload = useDebounceCallback(reloadSearchDebounced, delay);
+
+  const debouncedSearchReloadRef = useRef(debouncedSearchReload);
 
   useEffect(() => {
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false;
+    debouncedSearchReloadRef.current = debouncedSearchReload;
+  }, [debouncedSearchReload]);
 
+  useEffect(() => {
+    if (isFirstSearchRenderRef.current) {
+      isFirstSearchRenderRef.current = false;
       return;
     }
-
-    debouncedSearchReload(filters);
-  }, [search, debouncedSearchReload, filters]);
+    debouncedSearchReloadRef.current(search);
+  }, [search]);
 
   const updateFilter = useCallback(
     <K extends keyof TrustedDeviceFilterState>(
@@ -83,12 +96,9 @@ export function useTrustedDeviceFilters(
       value: TrustedDeviceFilterState[K],
     ): void => {
       switch (key) {
-        case "search": {
+        case "search":
           setSearch(value as string);
-
           break;
-        }
-
         case "status": {
           const nextStatus = value as TrustedDeviceStatusFilter | null;
 
@@ -97,7 +107,6 @@ export function useTrustedDeviceFilters(
 
           break;
         }
-
         case "browser": {
           const nextBrowser = value as TrustedDeviceBrowserFilter | null;
 
@@ -106,7 +115,6 @@ export function useTrustedDeviceFilters(
 
           break;
         }
-
         case "sort": {
           const nextSort = value as TrustedDeviceSortKey;
 
@@ -115,7 +123,6 @@ export function useTrustedDeviceFilters(
 
           break;
         }
-
         case "perPage": {
           const nextPerPage = value as TrustedDevicePerPage;
 
@@ -136,17 +143,14 @@ export function useTrustedDeviceFilters(
     triggerReload({ search: "", status: null, browser: null, sort, perPage });
   }, [sort, perPage]);
 
-  return { filters, resetFilters, updateFilter };
+  return { filters: { search, status, browser, sort, perPage }, resetFilters, updateFilter };
 }
 
-/** Strip null/empty fields and camelCase → snake_case (e.g. `perPage` → `per_page`) so the URL matches the backend's wire format. */
 function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
   const bag: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(filters)) {
-    if (value === null || value === "") {
-      continue;
-    }
+    if (value === null || value === "") continue;
 
     const wireKey = key === "perPage" ? "per_page" : key;
 
