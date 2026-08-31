@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { useDebounceCallback } from "usehooks-ts";
-
 import {
   type TrustedDeviceBrowserFilter,
   type TrustedDevicePerPage,
@@ -32,8 +30,10 @@ interface UseTrustedDeviceFiltersApi {
 }
 
 /**
- * Filter state + per-field reload behaviour for the trusted-devices page.
- * Initial state comes from the backend's sanitized `filters` prop.
+ * Filter state + reload behaviour for the trusted-devices page.
+ *
+ * `updateFilter` mutates state; the two effects below trigger the reload —
+ * `search` is debounced, the other fields fire immediately.
  *
  * @param initialFilters  Sanitized filters emitted by the backend.
  * @param delay           Debounce delay in ms for the `search` field (default 500).
@@ -45,40 +45,46 @@ export function useTrustedDeviceFilters(
   const [filters, setFilters] = useState<TrustedDeviceFilterState>(initialFilters);
 
   const isFirstSearchRenderRef = useRef<boolean>(true);
-
+  const isFirstNonSearchRenderRef = useRef<boolean>(true);
   const filtersRef = useRef<TrustedDeviceFilterState>(filters);
 
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
 
-  const triggerReload = (next: TrustedDeviceFilterState): void => {
+  const triggerReload = useCallback((next: TrustedDeviceFilterState): void => {
     router.get(index().url, toQueryBag(next), {
       only: ["trustedDevices"],
       preserveState: true,
       preserveScroll: true,
     });
-  };
-
-  const reloadSearchDebounced = useCallback((nextSearch: string) => {
-    triggerReload({ ...filtersRef.current, search: nextSearch });
   }, []);
-
-  const debouncedSearchReload = useDebounceCallback(reloadSearchDebounced, delay);
-
-  const debouncedSearchReloadRef = useRef(debouncedSearchReload);
-
-  useEffect(() => {
-    debouncedSearchReloadRef.current = debouncedSearchReload;
-  }, [debouncedSearchReload]);
 
   useEffect(() => {
     if (isFirstSearchRenderRef.current) {
       isFirstSearchRenderRef.current = false;
+
       return;
     }
-    debouncedSearchReloadRef.current(filters.search);
-  }, [filters.search]);
+
+    const timer = setTimeout(() => {
+      triggerReload(filtersRef.current);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [filters.search, delay, triggerReload]);
+
+  useEffect(() => {
+    if (isFirstNonSearchRenderRef.current) {
+      isFirstNonSearchRenderRef.current = false;
+
+      return;
+    }
+
+    triggerReload(filtersRef.current);
+  }, [filters.status, filters.browser, filters.sort, filters.perPage, triggerReload]);
 
   const updateFilter = useCallback(
     <K extends keyof TrustedDeviceFilterState>(
@@ -86,28 +92,18 @@ export function useTrustedDeviceFilters(
       value: TrustedDeviceFilterState[K],
     ): void => {
       setFilters((prev) => ({ ...prev, [key]: value }));
-
-      if (key !== "search") {
-        triggerReload({ ...filtersRef.current, [key]: value });
-      }
     },
     [],
   );
 
   const resetFilters = useCallback(() => {
     setFilters((prev) => ({ ...prev, search: "", status: null, browser: null }));
-
-    triggerReload({
-      ...filtersRef.current,
-      search: "",
-      status: null,
-      browser: null,
-    });
   }, []);
 
   return { filters, resetFilters, updateFilter };
 }
 
+/** Serializes filters to query params, skipping empty values and mapping `perPage` to `per_page`. */
 function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
   const bag: Record<string, string> = {};
 
