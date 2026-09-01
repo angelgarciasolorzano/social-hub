@@ -108,6 +108,13 @@ type TrustedDevicesFiltersPopoverProps = Omit<
   lastAccessFilter: TrustedDeviceLastAccessFilter | null;
 };
 
+interface FilterSelectConfig {
+  label: string;
+  onChange: (value: string | null) => void;
+  options: readonly { readonly label: string; readonly value: string }[];
+  value: string | null;
+}
+
 function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps): JSX.Element {
   const {
     statusFilter,
@@ -120,6 +127,43 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
     onLastAccessFilterChange,
     onResetFilters,
   } = props;
+
+  const NO_FILTER = "__none__" as const;
+
+  const filterConfigs: readonly FilterSelectConfig[] = [
+    {
+      label: "Estado",
+      onChange: (value) => {
+        onStatusFilterChange(value as TrustedDeviceStatusFilter | null);
+      },
+      options: statusOptions,
+      value: statusFilter,
+    },
+    {
+      label: "Navegador / SO",
+      onChange: (value) => {
+        onBrowserFilterChange(value as TrustedDeviceBrowserFilter | null);
+      },
+      options: browserOptions,
+      value: browserFilter,
+    },
+    {
+      label: "Tipo de dispositivo",
+      onChange: (value) => {
+        onDeviceTypeFilterChange(value as TrustedDeviceDeviceTypeFilter | null);
+      },
+      options: deviceTypeOptions,
+      value: deviceTypeFilter,
+    },
+    {
+      label: "Último acceso",
+      onChange: (value) => {
+        onLastAccessFilterChange(value as TrustedDeviceLastAccessFilter | null);
+      },
+      options: lastAccessOptions,
+      value: lastAccessFilter,
+    },
+  ];
 
   return (
     <Popover>
@@ -145,37 +189,32 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
             </Button>
           </div>
 
-          <FilterSelect
-            label="Estado"
-            onChange={onStatusFilterChange}
-            options={statusOptions}
-            placeholder="Estado"
-            value={statusFilter}
-          />
+          {filterConfigs.map((config) => (
+            <div className="flex flex-col gap-1.5" key={config.label}>
+              <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
 
-          <FilterSelect
-            label="Navegador / SO"
-            onChange={onBrowserFilterChange}
-            options={browserOptions}
-            placeholder="Navegador / SO"
-            value={browserFilter}
-          />
+              <Select
+                value={config.value ?? ""}
+                onValueChange={(next) => {
+                  config.onChange(next === NO_FILTER || next === "" ? null : next);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={config.label} />
+                </SelectTrigger>
 
-          <FilterSelect
-            label="Tipo de dispositivo"
-            onChange={onDeviceTypeFilterChange}
-            options={deviceTypeOptions}
-            placeholder="Tipo de dispositivo"
-            value={deviceTypeFilter}
-          />
+                <SelectContent>
+                  <SelectItem value={NO_FILTER}>Sin filtro</SelectItem>
 
-          <FilterSelect
-            label="Último acceso"
-            onChange={onLastAccessFilterChange}
-            options={lastAccessOptions}
-            placeholder="Último acceso"
-            value={lastAccessFilter}
-          />
+                  {config.options.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
 
           <Button type="button" variant="outline" onClick={onResetFilters}>
             Limpiar filtros
@@ -183,51 +222,6 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
         </div>
       </PopoverContent>
     </Popover>
-  );
-}
-
-interface FilterSelectProps<T extends string> {
-  label: string;
-  onChange: (value: T | null) => void;
-  options: readonly { readonly label: string; readonly value: T }[];
-  placeholder: string;
-  value: T | null;
-}
-
-const NO_FILTER = "__none__" as const;
-
-function FilterSelect<T extends string>({
-  label,
-  onChange,
-  options,
-  placeholder,
-  value,
-}: FilterSelectProps<T>): JSX.Element {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-
-      <Select
-        value={value ?? ""}
-        onValueChange={(next) => {
-          onChange(next === NO_FILTER || next === "" ? null : (next as T));
-        }}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-
-        <SelectContent>
-          <SelectItem value={NO_FILTER}>Sin filtro</SelectItem>
-
-          {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
   );
 }
 
