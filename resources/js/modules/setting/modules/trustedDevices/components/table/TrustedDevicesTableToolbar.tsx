@@ -21,19 +21,19 @@ import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevi
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/shared/components/shadcn/ui/combobox";
-import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/shadcn/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/shadcn/ui/select";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 interface TrustedDevicesTableToolbarProps {
@@ -145,95 +145,37 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
             </Button>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Estado</label>
+          <FilterSelect
+            label="Estado"
+            onChange={onStatusFilterChange}
+            options={statusOptions}
+            placeholder="Estado"
+            value={statusFilter}
+          />
 
-            <Combobox
-              value={statusFilter}
-              onValueChange={(value) => {
-                onStatusFilterChange(value);
-              }}
-            >
-              <ComboboxInput showClear placeholder="Estado" />
+          <FilterSelect
+            label="Navegador / SO"
+            onChange={onBrowserFilterChange}
+            options={browserOptions}
+            placeholder="Navegador / SO"
+            value={browserFilter}
+          />
 
-              <ComboboxContent>
-                <ComboboxList>
-                  {statusOptions.map((opt) => (
-                    <ComboboxItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
+          <FilterSelect
+            label="Tipo de dispositivo"
+            onChange={onDeviceTypeFilterChange}
+            options={deviceTypeOptions}
+            placeholder="Tipo de dispositivo"
+            value={deviceTypeFilter}
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Navegador / SO</label>
-            <Combobox
-              value={browserFilter}
-              onValueChange={(value) => {
-                onBrowserFilterChange(value);
-              }}
-            >
-              <ComboboxInput showClear placeholder="Navegador / SO" />
-
-              <ComboboxContent>
-                <ComboboxList>
-                  {browserOptions.map((opt) => (
-                    <ComboboxItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Tipo de dispositivo</label>
-            <Combobox
-              value={deviceTypeFilter}
-              onValueChange={(value) => {
-                onDeviceTypeFilterChange(value);
-              }}
-            >
-              <ComboboxInput showClear placeholder="Tipo de dispositivo" />
-
-              <ComboboxContent>
-                <ComboboxList>
-                  {deviceTypeOptions.map((opt) => (
-                    <ComboboxItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Último acceso</label>
-
-            <Combobox
-              value={lastAccessFilter}
-              onValueChange={(value) => {
-                onLastAccessFilterChange(value);
-              }}
-            >
-              <ComboboxInput showClear placeholder="Último acceso" />
-
-              <ComboboxContent>
-                <ComboboxList>
-                  {lastAccessOptions.map((opt) => (
-                    <ComboboxItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
+          <FilterSelect
+            label="Último acceso"
+            onChange={onLastAccessFilterChange}
+            options={lastAccessOptions}
+            placeholder="Último acceso"
+            value={lastAccessFilter}
+          />
 
           <Button type="button" variant="outline" onClick={onResetFilters}>
             Limpiar filtros
@@ -241,6 +183,51 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+interface FilterSelectProps<T extends string> {
+  label: string;
+  onChange: (value: T | null) => void;
+  options: readonly { readonly label: string; readonly value: T }[];
+  placeholder: string;
+  value: T | null;
+}
+
+const NO_FILTER = "__none__" as const;
+
+function FilterSelect<T extends string>({
+  label,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: FilterSelectProps<T>): JSX.Element {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+      <Select
+        value={value ?? ""}
+        onValueChange={(next) => {
+          onChange(next === NO_FILTER || next === "" ? null : (next as T));
+        }}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+
+        <SelectContent>
+          <SelectItem value={NO_FILTER}>Sin filtro</SelectItem>
+
+          {options.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
