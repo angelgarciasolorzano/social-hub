@@ -15,9 +15,9 @@ import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevi
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 export interface TrustedDeviceFilterState {
-  browser: TrustedDeviceBrowserFilter | null;
+  browser: TrustedDeviceBrowserFilter[] | null;
   deviceType: TrustedDeviceDeviceTypeFilter | null;
-  lastAccess: TrustedDeviceLastAccessFilter | null;
+  lastAccess: TrustedDeviceLastAccessFilter[] | null;
   perPage: TrustedDevicePerPage;
   search: string;
   sort: TrustedDeviceSortKey;
@@ -122,7 +122,7 @@ export function useTrustedDeviceFilters(
   return { filters, resetFilters, updateFilter };
 }
 
-/** Serializes filters to query params, skipping empty values and converting camelCase keys to snake_case wire format. */
+/** Serializes filters to query params, skipping empty values and converting camelCase keys to snake_case wire format. Multi-select values are joined as CSV. */
 function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
   const bag: Record<string, string> = {};
 
@@ -131,7 +131,7 @@ function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
 
     const wireKey = key.replaceAll(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 
-    bag[wireKey] = String(value);
+    bag[wireKey] = Array.isArray(value) ? value.join(",") : String(value);
   }
 
   return bag;

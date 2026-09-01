@@ -69,9 +69,9 @@ export interface TrustedDevicePagination {
 export interface TrustedDeviceFilters {
   search: string;
   status: TrustedDeviceStatusFilter | null;
-  browser: TrustedDeviceBrowserFilter | null;
+  browser: TrustedDeviceBrowserFilter[] | null;
   deviceType: TrustedDeviceDeviceTypeFilter | null;
-  lastAccess: TrustedDeviceLastAccessFilter | null;
+  lastAccess: TrustedDeviceLastAccessFilter[] | null;
   sort: TrustedDeviceSortKey;
   perPage: TrustedDevicePerPage;
 }
