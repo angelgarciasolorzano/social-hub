@@ -180,6 +180,7 @@ function TrustedDevice(): JSX.Element {
   return (
     <>
       <Head title="Dispositivos de confianza" />
+
       <div className="flex gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle onTitleAction={handleTitleAction} />

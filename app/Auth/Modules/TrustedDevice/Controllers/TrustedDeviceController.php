@@ -45,12 +45,15 @@ class TrustedDeviceController extends Controller
 
         $filters = $this->extractFilters($request);
 
-        $sortDirection = match ($filters['sort']) {
-            'oldest' => 'asc',
-            default => 'desc',
+        [$sortColumn, $sortDirection] = match ($filters['sort']) {
+            'most-recent' => ['last_used_at', 'desc'],
+            'oldest' => ['last_used_at', 'asc'],
+            'name-asc' => ['name', 'asc'],
+            'name-desc' => ['name', 'desc'],
+            'expiring-soon' => ['expires_at', 'asc'],
         };
 
-        $query = $user->trustedDevices()->orderBy('last_used_at', $sortDirection);
+        $query = $user->trustedDevices()->orderBy($sortColumn, $sortDirection);
 
         if ($filters['search'] !== '') {
             $search = $filters['search'];
@@ -108,9 +111,7 @@ class TrustedDeviceController extends Controller
     }
 
     /**
-     * Read and sanitize the filter query string. Anything not in the whitelist
-     * is silently discarded and falls back to the default, so the filters prop
-     * the frontend receives is always a valid combination.
+     * Sanitize the filter query string against each whitelist, falling back to safe defaults.
      *
      * @return array{
      *     search: string,
