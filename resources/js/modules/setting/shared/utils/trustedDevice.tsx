@@ -27,7 +27,7 @@ export function deviceLabel(device: TrustedDevice): string {
  */
 export function deviceBrowserAndOs(device: TrustedDevice): string {
   const parts = [device.browser, device.osName]
-    .filter((value): value is string => value !== null && value !== "")
+    .filter((value) => value !== null && value !== "")
     .join(" / ");
 
   return parts === "" ? "Desconocido" : parts;

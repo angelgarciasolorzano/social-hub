@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useMemo } from "react";
+import { Fragment } from "react";
 
 import { Head, router, usePage } from "@inertiajs/react";
 
@@ -8,19 +8,13 @@ import {
   Bolt,
   ChevronDown,
   ChevronRight,
-  Circle,
   Clock4,
   Info,
   MonitorSmartphone,
-  Pencil,
-  RefreshCw,
   ShieldCheck,
   ShieldQuestionMark,
   SquarePlus,
-  Trash2,
-  UserPlus,
 } from "lucide-react";
-import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
 import {
   AddDeviceDialog,
@@ -29,6 +23,8 @@ import {
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
 import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
+import TrustedDevicesRecentActivity from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDevicesRecentActivity";
+import TrustedDevicesSummary from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDevicesSummary";
 import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import {
   trustedDeviceRecommendations,
@@ -40,14 +36,11 @@ import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type {
   TrustedDevice,
-  TrustedDeviceAction,
   TrustedDeviceActivityItem,
   TrustedDeviceFilters,
   TrustedDevicePagination,
   TrustedDeviceStats,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -58,17 +51,10 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/shared/components/shadcn/ui/chart";
-import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +64,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
-import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useDialog } from "@/shared/hooks";
 
@@ -433,152 +418,6 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
   );
 }
 
-interface TrustedDeviceSummaryDatum {
-  estado: "activos" | "porExpirar" | "inactivos" | "revocados";
-  label: string;
-  cantidad: number;
-  fill: string;
-}
-
-function TrustedDevicesSummary(): JSX.Element {
-  const { stats } = usePage<TrustedDevicePageProps>().props;
-
-  const chartData: TrustedDeviceSummaryDatum[] = [
-    {
-      estado: "activos",
-      label: "Activos",
-      cantidad: Math.max(0, stats.active - stats.expiringSoon),
-      fill: "var(--color-activos)",
-    },
-    {
-      estado: "porExpirar",
-      label: "Próximos a expirar",
-      cantidad: stats.expiringSoon,
-      fill: "var(--color-por-expirar)",
-    },
-    {
-      estado: "inactivos",
-      label: "Inactivos",
-      cantidad: stats.inactive,
-      fill: "var(--color-inactivos)",
-    },
-    {
-      estado: "revocados",
-      label: "Revocados",
-      cantidad: stats.revoked,
-      fill: "var(--color-revocados)",
-    },
-  ];
-
-  const chartConfig = {
-    cantidad: { label: "Dispositivos" },
-    activos: {
-      label: "Activos",
-      theme: {
-        light: "oklch(0.723 0.219 149.579)",
-        dark: "oklch(0.792 0.209 151.711)",
-      },
-    },
-    porExpirar: {
-      label: "Próximos a expirar",
-      theme: {
-        light: "oklch(0.769 0.188 70.08)",
-        dark: "oklch(0.828 0.189 84.429)",
-      },
-    },
-    inactivos: {
-      label: "Inactivos",
-      theme: {
-        light: "oklch(0.551 0.027 264.364)",
-        dark: "oklch(0.707 0.022 261.325)",
-      },
-    },
-    revocados: {
-      label: "Revocados",
-      theme: {
-        light: "oklch(0.637 0.237 25.331)",
-        dark: "oklch(0.704 0.191 22.216)",
-      },
-    },
-  } satisfies ChartConfig;
-
-  const colorVariantForEstado: Record<TrustedDeviceSummaryDatum["estado"], IconColorVariant> = {
-    activos: "green",
-    porExpirar: "amber",
-    inactivos: "gray",
-    revocados: "red",
-  };
-
-  return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
-        <CardTitle>Resumen de dispositivos</CardTitle>
-        <CardDescription>Asi esta la seguridad de tus dispositivos</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-1 items-center gap-4 pb-0">
-        <ChartContainer config={chartConfig} className="aspect-square max-h-45 w-45 shrink-0">
-          <RadialBarChart
-            data={chartData}
-            startAngle={-90}
-            endAngle={380}
-            innerRadius={20}
-            outerRadius={75}
-          >
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel nameKey="estado" />}
-            />
-
-            <RadialBar dataKey="cantidad" background>
-              <LabelList
-                position="insideStart"
-                dataKey="label"
-                className="fill-white capitalize mix-blend-luminosity"
-                fontSize={11}
-              />
-            </RadialBar>
-          </RadialBarChart>
-        </ChartContainer>
-
-        <ul className="flex flex-1 flex-col justify-center gap-3">
-          {chartData.map((item) => {
-            const colorVariant = colorVariantForEstado[item.estado];
-
-            return (
-              <li className="flex items-center gap-2" key={item.estado}>
-                <div
-                  className={cn(
-                    "flex h-5 w-5 shrink-0 rounded-md p-1",
-                    iconColorVariants[colorVariant].iconBgClass,
-                  )}
-                >
-                  <Circle
-                    className={cn(
-                      "h-3 w-3 fill-current",
-                      iconColorVariants[colorVariant].iconFgClass,
-                    )}
-                  />
-                </div>
-
-                <div className="flex flex-col leading-tight">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className="text-sm text-muted-foreground">{item.cantidad}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </CardContent>
-      <CardFooter className="mx-auto">
-        <Button variant="link" className="text-blue-700 dark:text-blue-500">
-          Ver detalles
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
-
 function TrustedDevicesRecommendations(): JSX.Element {
   return (
     <Card>
@@ -622,80 +461,6 @@ function TrustedDevicesRecommendations(): JSX.Element {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </CardFooter>
-    </Card>
-  );
-}
-
-function TrustedDevicesRecentActivity(): JSX.Element {
-  const { recentActivity } = usePage<TrustedDevicePageProps>().props;
-
-  const actionVisuals = useMemo<
-    Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }>
-  >(
-    () => ({
-      created: { icon: UserPlus, color: "blue" },
-      renewed: { icon: RefreshCw, color: "green" },
-      renamed: { icon: Pencil, color: "purple" },
-      revoked: { icon: Trash2, color: "red" },
-      revoked_all: { icon: Trash2, color: "red" },
-    }),
-    [],
-  );
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Actividad reciente</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {recentActivity.length === 0 ? (
-          <EmptyState
-            icon={ShieldQuestionMark}
-            title="Sin actividad reciente registrada."
-            description="Las acciones que realizes sobre tus dispositivos apareceran aqui."
-          />
-        ) : (
-          recentActivity.map((item) => {
-            const visual = actionVisuals[item.action];
-            const Icon = visual.icon;
-            const colors = iconColorVariants[visual.color];
-
-            return (
-              <Fragment key={item.id}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className={cn("flex h-10 w-10 rounded-full p-2", colors.iconBgClass)}>
-                      <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
-                    </div>
-
-                    <div className="flex w-full items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <h4 className="max-w-40 truncate text-sm font-semibold">
-                          {item.deviceLabel ?? "Un dispositivo"}
-                        </h4>
-
-                        <p className="text-sm text-muted-foreground">{item.actionLabel}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">{fromNow(item.createdAt)}</p>
-                </div>
-
-                <Separator />
-              </Fragment>
-            );
-          })
-        )}
-      </CardContent>
-      {recentActivity.length > 0 && (
-        <CardFooter className="mx-auto">
-          <Button variant="link" className="text-blue-700 dark:text-blue-500">
-            Ver toda la actividad
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </CardFooter>
-      )}
     </Card>
   );
 }
