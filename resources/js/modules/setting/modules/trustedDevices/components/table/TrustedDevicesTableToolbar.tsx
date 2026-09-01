@@ -4,8 +4,12 @@ import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search } from "lucid
 
 import {
   browserOptions,
+  deviceTypeOptions,
+  lastAccessOptions,
   statusOptions,
   type TrustedDeviceBrowserFilter,
+  type TrustedDeviceDeviceTypeFilter,
+  type TrustedDeviceLastAccessFilter,
   type TrustedDeviceStatusFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import {
@@ -37,6 +41,8 @@ interface TrustedDevicesTableToolbarProps {
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: TrustedDeviceStatusFilter | null) => void;
   onBrowserFilterChange: (value: TrustedDeviceBrowserFilter | null) => void;
+  onDeviceTypeFilterChange: (value: TrustedDeviceDeviceTypeFilter | null) => void;
+  onLastAccessFilterChange: (value: TrustedDeviceLastAccessFilter | null) => void;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
   onResetFilters: () => void;
 }
@@ -47,6 +53,8 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
     onSearchChange,
     onStatusFilterChange,
     onBrowserFilterChange,
+    onDeviceTypeFilterChange,
+    onLastAccessFilterChange,
     onSortOrderChange,
     onResetFilters,
   } = props;
@@ -69,7 +77,11 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
       <div className="flex items-center justify-center gap-2">
         <TrustedDevicesFiltersPopover
           browserFilter={filters.browser}
+          deviceTypeFilter={filters.deviceType}
+          lastAccessFilter={filters.lastAccess}
           onBrowserFilterChange={onBrowserFilterChange}
+          onDeviceTypeFilterChange={onDeviceTypeFilterChange}
+          onLastAccessFilterChange={onLastAccessFilterChange}
           onResetFilters={onResetFilters}
           onStatusFilterChange={onStatusFilterChange}
           statusFilter={filters.status}
@@ -86,21 +98,15 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
   );
 }
 
-type TrustedDevicesFiltersPopoverProps = Pick<
+type TrustedDevicesFiltersPopoverProps = Omit<
   TrustedDevicesTableToolbarProps,
-  "onStatusFilterChange" | "onBrowserFilterChange" | "onResetFilters"
+  "onSearchChange" | "onSortOrderChange" | "filters"
 > & {
   statusFilter: TrustedDeviceStatusFilter | null;
   browserFilter: TrustedDeviceBrowserFilter | null;
+  deviceTypeFilter: TrustedDeviceDeviceTypeFilter | null;
+  lastAccessFilter: TrustedDeviceLastAccessFilter | null;
 };
-
-interface TrustedDeviceFilterConfig<T extends string> {
-  label: string;
-  onChange: (value: T | null) => void;
-  options: readonly { readonly label: string; readonly value: T }[];
-  placeholder: string;
-  value: T | null;
-}
 
 function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps): JSX.Element {
   const {
@@ -108,28 +114,12 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
     onStatusFilterChange,
     browserFilter,
     onBrowserFilterChange,
+    deviceTypeFilter,
+    onDeviceTypeFilterChange,
+    lastAccessFilter,
+    onLastAccessFilterChange,
     onResetFilters,
   } = props;
-
-  const filterConfigs: readonly (
-    | TrustedDeviceFilterConfig<TrustedDeviceStatusFilter>
-    | TrustedDeviceFilterConfig<TrustedDeviceBrowserFilter>
-  )[] = [
-    {
-      label: "Estado",
-      placeholder: "Estado",
-      value: statusFilter,
-      onChange: onStatusFilterChange,
-      options: statusOptions,
-    },
-    {
-      label: "Navegador / SO",
-      placeholder: "Navegador / SO",
-      value: browserFilter,
-      onChange: onBrowserFilterChange,
-      options: browserOptions,
-    },
-  ];
 
   return (
     <Popover>
@@ -155,36 +145,95 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
             </Button>
           </div>
 
-          {filterConfigs.map((config) => (
-            <div className="flex flex-col gap-1.5" key={config.label}>
-              <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Estado</label>
 
-              <Combobox
-                value={config.value}
-                onValueChange={(next) => {
-                  if (next === null) {
-                    config.onChange(null);
+            <Combobox
+              value={statusFilter}
+              onValueChange={(value) => {
+                onStatusFilterChange(value);
+              }}
+            >
+              <ComboboxInput showClear placeholder="Estado" />
 
-                    return;
-                  }
+              <ComboboxContent>
+                <ComboboxList>
+                  {statusOptions.map((opt) => (
+                    <ComboboxItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
 
-                  config.onChange(next as TrustedDeviceStatusFilter & TrustedDeviceBrowserFilter);
-                }}
-              >
-                <ComboboxInput showClear placeholder={config.placeholder} />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Navegador / SO</label>
+            <Combobox
+              value={browserFilter}
+              onValueChange={(value) => {
+                onBrowserFilterChange(value);
+              }}
+            >
+              <ComboboxInput showClear placeholder="Navegador / SO" />
 
-                <ComboboxContent>
-                  <ComboboxList>
-                    {config.options.map((opt) => (
-                      <ComboboxItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </ComboboxItem>
-                    ))}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-            </div>
-          ))}
+              <ComboboxContent>
+                <ComboboxList>
+                  {browserOptions.map((opt) => (
+                    <ComboboxItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Tipo de dispositivo</label>
+            <Combobox
+              value={deviceTypeFilter}
+              onValueChange={(value) => {
+                onDeviceTypeFilterChange(value);
+              }}
+            >
+              <ComboboxInput showClear placeholder="Tipo de dispositivo" />
+
+              <ComboboxContent>
+                <ComboboxList>
+                  {deviceTypeOptions.map((opt) => (
+                    <ComboboxItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Último acceso</label>
+
+            <Combobox
+              value={lastAccessFilter}
+              onValueChange={(value) => {
+                onLastAccessFilterChange(value);
+              }}
+            >
+              <ComboboxInput showClear placeholder="Último acceso" />
+
+              <ComboboxContent>
+                <ComboboxList>
+                  {lastAccessOptions.map((opt) => (
+                    <ComboboxItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
 
           <Button type="button" variant="outline" onClick={onResetFilters}>
             Limpiar filtros

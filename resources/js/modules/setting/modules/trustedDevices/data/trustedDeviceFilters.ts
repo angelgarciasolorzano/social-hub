@@ -24,9 +24,12 @@ export const deviceTypeOptions = [
   { value: "mobile / tablet", label: "Móvil / Tablet" },
 ] as const;
 
+export type TrustedDeviceDeviceTypeFilter = (typeof deviceTypeOptions)[number]["value"];
+
 export const lastAccessOptions = [
-  { value: "any", label: "Cualquier momento" },
   { value: "24h", label: "Últimas 24 horas" },
   { value: "7d", label: "Últimos 7 días" },
   { value: "30d", label: "Últimos 30 días" },
 ] as const;
+
+export type TrustedDeviceLastAccessFilter = (typeof lastAccessOptions)[number]["value"];

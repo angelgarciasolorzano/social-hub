@@ -1,5 +1,7 @@
 import type {
   TrustedDeviceBrowserFilter,
+  TrustedDeviceDeviceTypeFilter,
+  TrustedDeviceLastAccessFilter,
   TrustedDevicePerPage,
   TrustedDeviceStatusFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
@@ -68,6 +70,8 @@ export interface TrustedDeviceFilters {
   search: string;
   status: TrustedDeviceStatusFilter | null;
   browser: TrustedDeviceBrowserFilter | null;
+  deviceType: TrustedDeviceDeviceTypeFilter | null;
+  lastAccess: TrustedDeviceLastAccessFilter | null;
   sort: TrustedDeviceSortKey;
   perPage: TrustedDevicePerPage;
 }

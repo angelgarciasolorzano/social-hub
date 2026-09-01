@@ -4,6 +4,8 @@ import { router } from "@inertiajs/react";
 
 import {
   type TrustedDeviceBrowserFilter,
+  type TrustedDeviceDeviceTypeFilter,
+  type TrustedDeviceLastAccessFilter,
   type TrustedDevicePerPage,
   type TrustedDeviceStatusFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
@@ -14,6 +16,8 @@ import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice
 
 export interface TrustedDeviceFilterState {
   browser: TrustedDeviceBrowserFilter | null;
+  deviceType: TrustedDeviceDeviceTypeFilter | null;
+  lastAccess: TrustedDeviceLastAccessFilter | null;
   perPage: TrustedDevicePerPage;
   search: string;
   sort: TrustedDeviceSortKey;
@@ -84,7 +88,15 @@ export function useTrustedDeviceFilters(
     }
 
     triggerReload(filtersRef.current);
-  }, [filters.status, filters.browser, filters.sort, filters.perPage, triggerReload]);
+  }, [
+    filters.status,
+    filters.browser,
+    filters.deviceType,
+    filters.lastAccess,
+    filters.sort,
+    filters.perPage,
+    triggerReload,
+  ]);
 
   const updateFilter = useCallback(
     <K extends keyof TrustedDeviceFilterState>(
@@ -97,7 +109,14 @@ export function useTrustedDeviceFilters(
   );
 
   const resetFilters = useCallback(() => {
-    setFilters((prev) => ({ ...prev, search: "", status: null, browser: null }));
+    setFilters((prev) => ({
+      ...prev,
+      search: "",
+      status: null,
+      browser: null,
+      deviceType: null,
+      lastAccess: null,
+    }));
   }, []);
 
   return { filters, resetFilters, updateFilter };

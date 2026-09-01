@@ -368,6 +368,12 @@ function TrustedDevicesTableSection(): JSX.Element {
         onBrowserFilterChange={(value) => {
           updateFilter("browser", value);
         }}
+        onDeviceTypeFilterChange={(value) => {
+          updateFilter("deviceType", value);
+        }}
+        onLastAccessFilterChange={(value) => {
+          updateFilter("lastAccess", value);
+        }}
         onResetFilters={resetFilters}
         onSearchChange={(value) => {
           updateFilter("search", value);
