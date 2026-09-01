@@ -21,6 +21,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
+- **No single-letter variable names.** Even in short closures, parameters and locals must be a full word that describes their role (`$candidate`, `$device`, `$browser`). Names like `$v`, `$i`, `$e`, `$x` are forbidden — they force the reader to decode intent from context. The only exceptions are well-established loop counters in idiomatic numeric loops (e.g. `for ($i = 0; $i < count($arr); $i++)`).
 - Check for existing components to reuse before writing a new one.
 
 ## Verification Scripts

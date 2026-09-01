@@ -114,6 +114,12 @@ When adding a new domain: create both providers, register the outer one in `boot
 - PHPStan (`phpstan.neon`) runs at `level: max` with `type_coverage: 100` across all dimensions and `type_perfect` rules — type hints/return types are mandatory, `mixed` is disallowed.
 - Rector is configured for PHP 8.5; new typed class constants use `private const string NAME = '...';` syntax (see `FortifyServiceProvider` for the pattern).
 
+### Naming — no single-letter variables
+
+- Variables, parameters, and closure-captured values must be a **full descriptive word** (e.g. `$candidate`, `$device`, `$browserFilter`). Single-letter names like `$v`, `$i`, `$e`, `$x` are forbidden because they force the reader to decode intent from context.
+- The only acceptable exception is a numeric `for` loop counter (`for ($i = 0; $i < count($arr); $i++)` is idiomatic PHP). Even there, prefer `foreach` over indexed `for` whenever possible.
+- TypeScript follows the same rule (see `AGENTS.md`).
+
 ### Media uploads
 
 Files are handled via `spatie/laravel-medialibrary` with a custom path generator (`app/MediaLibrary/CustomPathGenerator.php`). Controllers catch `FileDoesNotExist|FileIsTooBig` and surface a flash notification via `back()->with('notification', [...])` or `Inertia::flash([...])->back()`. The notification shape is `{type: 'success'|'error', message: string, action?: {label, url}}`.

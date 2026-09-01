@@ -70,29 +70,41 @@ class TrustedDeviceController extends Controller
         }
 
         if ($filters['browser'] !== null) {
-            $browser = $filters['browser'];
+            $browsers = $filters['browser'];
 
-            if ($browser === 'otro') {
-                $query->whereNotIn('browser', ['Chrome', 'Firefox', 'Safari', 'Edge']);
-            } else {
-                $query->where('browser', 'like', ucfirst($browser).'%');
-            }
+            $query->where(function (Builder $builder) use ($browsers): void {
+                if (\in_array('otro', $browsers, true)) {
+                    $builder->orWhereNotIn('browser', ['Chrome', 'Firefox', 'Safari', 'Edge']);
+                }
+
+                foreach ($browsers as $browser) {
+                    if ($browser === 'otro') {
+                        continue;
+                    }
+
+                    $builder->orWhere('browser', 'like', ucfirst($browser).'%');
+                }
+            });
         }
-
-        logger()->info('Filters: ', $filters);
 
         if ($filters['deviceType'] !== null) {
             $query->where('is_mobile', $filters['deviceType'] === 'mobile / tablet');
         }
 
         if ($filters['lastAccess'] !== null) {
-            [$since] = match ($filters['lastAccess']) {
-                '24h' => [CarbonImmutable::now()->subDay()],
-                '7d' => [CarbonImmutable::now()->subDays(7)],
-                '30d' => [CarbonImmutable::now()->subDays(30)],
-            };
+            $now = CarbonImmutable::now();
 
-            $query->where('last_used_at', '>=', $since);
+            $query->where(function (Builder $builder) use ($filters, $now): void {
+                foreach ($filters['lastAccess'] as $value) {
+                    [$since] = match ($value) {
+                        '24h' => [$now->subDay()],
+                        '7d' => [$now->subDays(7)],
+                        '30d' => [$now->subDays(30)],
+                    };
+
+                    $builder->orWhere('last_used_at', '>=', $since);
+                }
+            });
         }
 
         $perPage = $filters['perPage'];
@@ -132,9 +144,9 @@ class TrustedDeviceController extends Controller
      * @return array{
      *     search: string,
      *     status: 'active'|'inactive'|null,
-     *     browser: 'chrome'|'firefox'|'safari'|'edge'|'otro'|null,
+     *     browser: list<'chrome'|'firefox'|'safari'|'edge'|'otro'>|null,
      *     deviceType: 'desktop / laptop'|'mobile / tablet'|null,
-     *     lastAccess: '24h'|'7d'|'30d'|null,
+     *     lastAccess: list<'24h'|'7d'|'30d'>|null,
      *     sort: 'most-recent'|'oldest'|'name-asc'|'name-desc'|'expiring-soon',
      *     perPage: int,
      * }
@@ -163,12 +175,36 @@ class TrustedDeviceController extends Controller
         return [
             'search' => trim($request->string('search')->toString()),
             'status' => \in_array($status, $allowedStatus, true) ? $status : null,
-            'browser' => \in_array($browser, $allowedBrowsers, true) ? $browser : null,
+            'browser' => $this->parseMultiFilter($browser, $allowedBrowsers),
             'deviceType' => \in_array($deviceType, $allowedDeviceTypes, true) ? $deviceType : null,
-            'lastAccess' => \in_array($lastAccess, $allowedLastAccess, true) ? $lastAccess : null,
+            'lastAccess' => $this->parseMultiFilter($lastAccess, $allowedLastAccess),
             'sort' => \in_array($sort, $allowedSorts, true) ? $sort : 'most-recent',
             'perPage' => \in_array($perPage, $allowedPerPage, true) ? $perPage : 15,
         ];
+    }
+
+    /**
+     * Parse a comma-separated query string value against the whitelist.
+     * Returns null when no values match (no filter applied).
+     *
+     * @template T of string
+     *
+     * @param  list<T>  $whitelist
+     * @return list<T>|null
+     */
+    private function parseMultiFilter(string $raw, array $whitelist): ?array
+    {
+        $candidates = array_filter(
+            array_map(trim(...), explode(',', $raw)),
+            static fn (string $candidate): bool => $candidate !== '',
+        );
+
+        $valid = array_values(array_filter(
+            $candidates,
+            static fn (string $candidate): bool => \in_array($candidate, $whitelist, true),
+        ));
+
+        return $valid === [] ? null : $valid;
     }
 
     /**
