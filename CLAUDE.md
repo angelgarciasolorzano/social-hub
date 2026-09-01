@@ -34,6 +34,8 @@ Copilot rules in `.github/copilot-instructions.md` are also active; the one dire
 
 The project also ships its own skill at `.claude/skills/social-hub-conventions/SKILL.md` — it activates automatically on any non-trivial code change and on Linear task closure, and enforces the modular domain structure, naming, the backend/frontend QA gates, and the Definition of Done documented in this file. Treat the skill's triggers as active by default.
 
+**Skill placement rule (symlink-only):** `.claude/skills/<skill-name>/SKILL.md` is the **canonical source of truth** for every project-local skill. Other IDE-specific skill folders (`.windsurf/skills/`, `.agents/skills/`, `.codex/skills/`, `.ai/skills/`, etc.) MUST reference the canonical file via symlink — never a physical copy. Concretely, a new project-local skill lives in `.claude/skills/` first; any other IDE folder that wants to surface it creates a symlink like `ln -s ../../.claude/skills/<skill-name> <ide>/skills/<skill-name>`. This keeps updates single-source: edit once, every IDE that imports the skill picks it up automatically. Physical duplicates in non-canonical folders count as a violation and must be replaced with a symlink on sight. Some IDEs render the symlink's target file in their editor as if it were a copy — this is a display artifact, not evidence of duplication. Verify with `ls -la <ide>/skills/<skill-name>`: a real symlink shows `lrwxrwxr-x ... -> ../../.claude/skills/<skill-name>`.
+
 ## Common commands
 
 All commands run from the repo root.
