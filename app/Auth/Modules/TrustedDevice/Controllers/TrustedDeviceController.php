@@ -79,6 +79,22 @@ class TrustedDeviceController extends Controller
             }
         }
 
+        logger()->info('Filters: ', $filters);
+
+        if ($filters['deviceType'] !== null) {
+            $query->where('is_mobile', $filters['deviceType'] === 'mobile / tablet');
+        }
+
+        if ($filters['lastAccess'] !== null) {
+            [$since] = match ($filters['lastAccess']) {
+                '24h' => [CarbonImmutable::now()->subDay()],
+                '7d' => [CarbonImmutable::now()->subDays(7)],
+                '30d' => [CarbonImmutable::now()->subDays(30)],
+            };
+
+            $query->where('last_used_at', '>=', $since);
+        }
+
         $perPage = $filters['perPage'];
 
         $props = [
@@ -117,6 +133,8 @@ class TrustedDeviceController extends Controller
      *     search: string,
      *     status: 'active'|'inactive'|null,
      *     browser: 'chrome'|'firefox'|'safari'|'edge'|'otro'|null,
+     *     deviceType: 'desktop / laptop'|'mobile / tablet'|null,
+     *     lastAccess: '24h'|'7d'|'30d'|null,
      *     sort: 'most-recent'|'oldest'|'name-asc'|'name-desc'|'expiring-soon',
      *     perPage: int,
      * }
@@ -125,12 +143,18 @@ class TrustedDeviceController extends Controller
     {
         $allowedStatus = ['active', 'inactive'];
         $allowedBrowsers = ['chrome', 'firefox', 'safari', 'edge', 'otro'];
+        $allowedDeviceTypes = ['desktop / laptop', 'mobile / tablet'];
+        $allowedLastAccess = ['24h', '7d', '30d'];
         $allowedSorts = ['most-recent', 'oldest', 'name-asc', 'name-desc', 'expiring-soon'];
         $allowedPerPage = [5, 10, 15, 25, 50];
 
         $status = $request->string('status')->toString();
 
         $browser = $request->string('browser')->toString();
+
+        $deviceType = $request->string('device_type')->toString();
+
+        $lastAccess = $request->string('last_access')->toString();
 
         $sort = $request->query('sort');
 
@@ -140,6 +164,8 @@ class TrustedDeviceController extends Controller
             'search' => trim($request->string('search')->toString()),
             'status' => \in_array($status, $allowedStatus, true) ? $status : null,
             'browser' => \in_array($browser, $allowedBrowsers, true) ? $browser : null,
+            'deviceType' => \in_array($deviceType, $allowedDeviceTypes, true) ? $deviceType : null,
+            'lastAccess' => \in_array($lastAccess, $allowedLastAccess, true) ? $lastAccess : null,
             'sort' => \in_array($sort, $allowedSorts, true) ? $sort : 'most-recent',
             'perPage' => \in_array($perPage, $allowedPerPage, true) ? $perPage : 15,
         ];

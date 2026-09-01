@@ -122,14 +122,14 @@ export function useTrustedDeviceFilters(
   return { filters, resetFilters, updateFilter };
 }
 
-/** Serializes filters to query params, skipping empty values and mapping `perPage` to `per_page`. */
+/** Serializes filters to query params, skipping empty values and converting camelCase keys to snake_case wire format. */
 function toQueryBag(filters: TrustedDeviceFilters): Record<string, string> {
   const bag: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(filters)) {
     if (value === null || value === "") continue;
 
-    const wireKey = key === "perPage" ? "per_page" : key;
+    const wireKey = key.replaceAll(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 
     bag[wireKey] = String(value);
   }
