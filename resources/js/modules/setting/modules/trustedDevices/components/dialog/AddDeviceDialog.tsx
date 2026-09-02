@@ -1,10 +1,17 @@
 import { Fragment, type JSX, type SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
 import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-react";
+
+import type { DeviceMetadataItemProps } from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
+import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
+import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
+import { formatLongDate, fromNow, valueOrNow } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -28,12 +35,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import type { DevicePreview } from "../../../types/devicePreview";
-import { formatLongDate, fromNow, valueOrNow } from "../../../utils/dateTime";
-import { getDeviceIcon } from "../../../utils/trustedDevice";
-import { valueOrFallback } from "../../../utils/valueOrFallback";
-import type { DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
-
 interface AddDeviceDialogProps {
   preview: DevicePreview | null;
   open: boolean;
@@ -49,6 +50,8 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
     name: "",
   });
 
+  const pageProps = usePage().props as Record<string, unknown>;
+
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
       return;
@@ -62,11 +65,19 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
     event.preventDefault();
 
     submit(store(), {
-      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch", "firstTrustedDevice"],
+      only: pickReloadKeys(pageProps, [
+        "trustedDevices",
+        "stats",
+        "currentDeviceMatch",
+        "currentDevicePreview",
+        "trustedDevicesForRevoke",
+        "recentActivity",
+      ]),
       onSuccess: () => {
         reset();
         onClose();
       },
+      preserveScroll: true,
     });
   };
 

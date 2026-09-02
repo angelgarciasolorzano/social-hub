@@ -1,10 +1,15 @@
 import type { JSX, SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
 import { Eye, Pencil } from "lucide-react";
+
+import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -27,10 +32,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
-import { fromNow } from "../../../utils/dateTime";
-import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
-
 interface RenameDeviceDialogProps {
   device: TrustedDevice;
   open: boolean;
@@ -46,6 +47,8 @@ function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps):
     name: device.name,
   });
 
+  const pageProps = usePage().props as Record<string, unknown>;
+
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
       return;
@@ -59,12 +62,13 @@ function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps):
     event.preventDefault();
 
     submit(update({ trustedDevice: device.id }), {
-      only: ["trustedDevices", "firstTrustedDevice"],
+      only: pickReloadKeys(pageProps, ["trustedDevices", "firstTrustedDevice", "recentActivity"]),
       onSuccess: () => {
         onClose();
         reset();
       },
       preserveState: true,
+      preserveScroll: true,
     });
   };
 

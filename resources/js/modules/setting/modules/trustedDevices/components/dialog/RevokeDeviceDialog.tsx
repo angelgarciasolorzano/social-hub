@@ -1,10 +1,15 @@
 import type { JSX, SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
+
+import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { destroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -27,10 +32,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
-import { formatLongDate, fromNow } from "../../../utils/dateTime";
-import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
-
 interface RevokeDeviceDialogProps {
   device: TrustedDevice;
   open: boolean;
@@ -48,6 +49,8 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
     terms: false,
   });
 
+  const pageProps = usePage().props as Record<string, unknown>;
+
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
       return;
@@ -61,11 +64,19 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
     event.preventDefault();
 
     submit(destroy({ trustedDevice: device.id }), {
-      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch", "firstTrustedDevice"],
+      only: pickReloadKeys(pageProps, [
+        "trustedDevices",
+        "stats",
+        "currentDeviceMatch",
+        "currentDevicePreview",
+        "trustedDevicesForRevoke",
+        "recentActivity",
+      ]),
       onSuccess: () => {
         onClose();
         reset();
       },
+      preserveScroll: true,
     });
   };
 

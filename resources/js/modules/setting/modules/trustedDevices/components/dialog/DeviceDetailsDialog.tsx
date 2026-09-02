@@ -19,6 +19,25 @@ import {
   Trash2,
 } from "lucide-react";
 
+import ActivityTimeline, {
+  type ActivityStep,
+} from "@/modules/setting/modules/trustedDevices/components/ui/ActivityTimeline";
+import DeviceMetadataItem, {
+  type DeviceMetadataItemProps,
+} from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
+import {
+  twoFactorDeviceActionKey,
+  type TwoFactorDeviceActionKey,
+} from "@/modules/setting/modules/twoFactor/data/twoFactorEnable";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
+import {
+  createDialogCloseHandler,
+  type DialogClosingState,
+} from "@/modules/setting/shared/utils/dialog";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
+
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -45,17 +64,6 @@ import { useDialog } from "@/shared/hooks";
 import { cn } from "@/shared/lib";
 import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
-import {
-  twoFactorDeviceActionKey,
-  type TwoFactorDeviceActionKey,
-} from "../../../data/twoFactorEnable";
-import type { TrustedDevice } from "../../../types/trustedDevice";
-import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
-import { createDialogCloseHandler, type DialogClosingState } from "../../../utils/dialog";
-import { getDeviceIcon } from "../../../utils/trustedDevice";
-import { valueOrFallback } from "../../../utils/valueOrFallback";
-import ActivityTimeline, { type ActivityStep } from "../../ui/ActivityTimeline";
-import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 import RenameDeviceDialog from "./RenameDeviceDialog";
 import RenewTrustDialog from "./RenewTrustDialog";
 import RevokeDeviceDialog from "./RevokeDeviceDialog";

@@ -1,16 +1,17 @@
 import type { JSX, SubmitEvent } from "react";
 import { Fragment } from "react";
 
-import { type SetDataAction, useForm } from "@inertiajs/react";
+import { type SetDataAction, useForm, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
 import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, CircleAlert, MonitorSmartphone, Trash2 } from "lucide-react";
 
-import type { TrustedDevice } from "@/modules/setting/modules/twoFactor/types/trustedDevice";
-import { formatLongDate } from "@/modules/setting/modules/twoFactor/utils/dateTime";
-import { getDeviceIcon } from "@/modules/setting/modules/twoFactor/utils/trustedDevice";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { destroyAll as destroyAllTrustedDevices } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -56,6 +57,8 @@ function RevokeAllDevicesDialog({
     terms: false,
   });
 
+  const pageProps = usePage().props as Record<string, unknown>;
+
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
       return;
@@ -69,11 +72,19 @@ function RevokeAllDevicesDialog({
     event.preventDefault();
 
     submit(destroyAllTrustedDevices(), {
-      only: ["trustedDevices", "trustedDevicesCount", "currentDeviceMatch", "firstTrustedDevice"],
+      only: pickReloadKeys(pageProps, [
+        "trustedDevices",
+        "stats",
+        "currentDeviceMatch",
+        "currentDevicePreview",
+        "trustedDevicesForRevoke",
+        "recentActivity",
+      ]),
       onSuccess: () => {
         onClose();
         reset();
       },
+      preserveScroll: true,
     });
   };
 

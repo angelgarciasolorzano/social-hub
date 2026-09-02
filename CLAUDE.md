@@ -13,8 +13,9 @@ Domains in this codebase:
 - **Auth** (`app/Auth/`) — login, register, email verification, password reset (via Fortify), 2FA + trusted devices.
   - **Per-concern layout**: `app/Auth/{Email,Login,Password,Register}/` each owns its controllers + requests and is wired via the central `AuthRouteServiceProvider`.
   - **Shared infrastructure stays at the parent**: `app/Auth/Models/` (domain models), `app/Auth/Database/{Migrations,Factories}/` (registered automatically by `AuthServiceProvider::loadMigrationsFrom`), `app/Auth/Providers/`, `app/Auth/routes/` (one file per concern, e.g. `trustedDevice.php`), and `app/Auth/config/`.
-  - **Submodule convention (`app/Auth/Modules/<Feature>/`)** — established in SOC-14. Use when a feature grows beyond a single concern and earns its own namespace (e.g. `Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap.
+  - **Submodule convention (`app/Auth/Modules/<Feature>/`)** — established in SOC-14. Use when a feature grows beyond a single concern and earns its own namespace (e.g. `Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`, `Enums/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap.
   - `AuthRouteServiceProvider` loads `routes/` (one file per concern); `AuthEventServiceProvider` registers Fortify event listeners for the module.
+  - **Trusted device audit log (SOC-20)** — `app/Auth/Database/Migrations/*_create_trusted_device_events_table.php` is the canonical example of the **domain audit log** pattern: append-only `trusted_device_events` table records discrete actions (`Created`, `Renewed`, `Renamed`, `Revoked`, `RevokedAll`) with FKs `nullOnDelete` to preserve forensic trail. Records are inserted via `TrustedDeviceEvent::record()` (static helper, the ONLY entry point) called from 5 hook sites (controller `store/update/renew/destroy/destroyAll` + the `TwoFactorAuthenticationDisabled` listener).
 - **Home** (`app/Home/`) — landing/dashboard pages.
 - **User** (`app/User/`) — profile, settings; the authenticatable model lives here.
 - **Post** (`app/Post/`) — posts with images via `spatie/laravel-medialibrary`.
@@ -32,6 +33,8 @@ Project-wide coding rules, package-specific guidance (Inertia v3, Fortify, Wayfi
 Copilot rules in `.github/copilot-instructions.md` are also active; the one directive is: **prefix shell commands with `rtk`** (e.g. `rtk git status`) to save tokens.
 
 The project also ships its own skill at `.claude/skills/social-hub-conventions/SKILL.md` — it activates automatically on any non-trivial code change and on Linear task closure, and enforces the modular domain structure, naming, the backend/frontend QA gates, and the Definition of Done documented in this file. Treat the skill's triggers as active by default.
+
+**Skill placement rule (symlink-only):** `.claude/skills/<skill-name>/SKILL.md` is the **canonical source of truth** for every project-local skill. Other IDE-specific skill folders (`.windsurf/skills/`, `.agents/skills/`, `.codex/skills/`, `.ai/skills/`, etc.) MUST reference the canonical file via symlink — never a physical copy. Concretely, a new project-local skill lives in `.claude/skills/` first; any other IDE folder that wants to surface it creates a symlink like `ln -s ../../.claude/skills/<skill-name> <ide>/skills/<skill-name>`. This keeps updates single-source: edit once, every IDE that imports the skill picks it up automatically. Physical duplicates in non-canonical folders count as a violation and must be replaced with a symlink on sight. Some IDEs render the symlink's target file in their editor as if it were a copy — this is a display artifact, not evidence of duplication. Verify with `ls -la <ide>/skills/<skill-name>`: a real symlink shows `lrwxrwxr-x ... -> ../../.claude/skills/<skill-name>`.
 
 ## Common commands
 
@@ -84,8 +87,10 @@ When adding a new domain: create both providers, register the outer one in `boot
 
 - `app/app.tsx` — Inertia + React entrypoint.
 - `modules/<domain>/...` — feature pages/components mirrored to PHP domains (`auth`, `home`, `post`, `comments`, `profile`, `setting`, `account`, `static`).
+  - `modules/setting/` has sub-modules mirroring PHP: `modules/trustedDevices/`, `modules/twoFactor/`, plus `shared/` (cross-module code). The `setting` module also has its own `shared/` layer (`resources/js/modules/setting/shared/{components,layouts,utils}/`) for code reused by ≥2 sub-modules — when a util is used by only one sub-module it stays private; when both consume it, promote to `setting/shared/utils/`.
+  - **TrustedDevice as parallel module** (SOC-20): the dedicated `/setting/trusted-devices` view lives in `modules/setting/modules/trustedDevices/` (not under `modules/twoFactor/`). It mirrors the layout: `components/dialog/` (7 dialogs + `index.ts` barrel), `components/ui/` (DeviceSummaryCard, DeviceMetadataItem, ActivityTimeline), `data/`, `types/`, `utils/`. The 7 dialogs were relocated from `modules/twoFactor/components/dialog/trustedDevice/` to enforce single ownership of domain-specific UI.
 - `shared/` — reusable code:
-  - `components/shadcn/ui/` — shadcn/ui primitives (style: `new-york`, base: `neutral`, see `components.json`).
+  - `components/shadcn/ui/` — shadcn/ui primitives (style: `new-york`, base: `neutral`, see `components.json`). Includes `chart` (Recharts wrapper) for any chart blocks — use `ChartContainer` + `ChartConfig` with `theme: { light, dark }` for theme-aware segments.
   - `components/`, `hooks/`, `lib/`, `types/`, `assets/`.
   - `wayfinder/` — auto-generated typed Laravel routes/controllers (do not edit; regenerated by Vite plugin in `vite.config.ts`).
 - `@/` alias resolves to `resources/js/` (configured in `tsconfig.json`).
@@ -93,9 +98,12 @@ When adding a new domain: create both providers, register the outer one in `boot
 
 ### Models and relations (Eloquent)
 
-- `App\User\Models\User` — extends `Authenticatable`, implements `HasMedia`, uses `TwoFactorAuthenticatable`, has `posts()`, `comments()`, `likes()`.
+- `App\User\Models\User` — extends `Authenticatable`, implements `HasMedia`, uses `TwoFactorAuthenticatable`, has `posts()`, `comments()`, `likes()`, `trustedDeviceEvents()` (HasMany to `TrustedDeviceEvent`).
+- `App\Auth\Models\TrustedDevice` — has `events()` (HasMany to `TrustedDeviceEvent`); column `expires_at` drives `isActive` cast; device is hard-deleted on revoke (the event log preserves history).
+- `App\Auth\Models\TrustedDeviceEvent` — append-only audit log row. Casts `action` to `TrustedDeviceAction` enum. Relations: `device()` (nullable BelongsTo, nullOnDelete), `user()` (nullable BelongsTo, nullOnDelete). Always created via `TrustedDeviceEvent::record(...)` helper.
+- `App\Auth\Enums\TrustedDeviceAction` — cases `Created`, `Renewed`, `Renamed`, `Revoked`, `RevokedAll` (no `Expired` in v1 — see SOC-20 follow-ups).
 - `App\Post\Models\Post` — implements `HasMedia` (collection `posts_images`, `singleFile()`), morph `post`. Has `user()`, `comments()` (MorphMany), `likes()` (MorphMany).
-- `App\Comment\Models\Comment` — self-referential polymorphic via `commentable` column; casts `commentable_type` to `CommentableType` enum. Has `user()`, `comments()` (replies, eager-loads `user`), `likes()`, `hasReplies()`, `repliesCount()`.
+- `App\Comment\Models\Comment` — self-referential polymorphic via `commentable` column; casts `commentable_type` to `CommentType` enum. Has `user()`, `comments()` (replies, eager-loads `user`), `likes()`, `hasReplies()`, `repliesCount()`.
 - `App\Like\Models\Like` — polymorphic via `likeable`; `user()`, `likeable()`.
 
 ### Validation
@@ -107,6 +115,12 @@ When adding a new domain: create both providers, register the outer one in `boot
 - Every PHP file starts with `declare(strict_types=1);`.
 - PHPStan (`phpstan.neon`) runs at `level: max` with `type_coverage: 100` across all dimensions and `type_perfect` rules — type hints/return types are mandatory, `mixed` is disallowed.
 - Rector is configured for PHP 8.5; new typed class constants use `private const string NAME = '...';` syntax (see `FortifyServiceProvider` for the pattern).
+
+### Naming — no single-letter variables
+
+- Variables, parameters, and closure-captured values must be a **full descriptive word** (e.g. `$candidate`, `$device`, `$browserFilter`). Single-letter names like `$v`, `$i`, `$e`, `$x` are forbidden because they force the reader to decode intent from context.
+- The only acceptable exception is a numeric `for` loop counter (`for ($i = 0; $i < count($arr); $i++)` is idiomatic PHP). Even there, prefer `foreach` over indexed `for` whenever possible.
+- TypeScript follows the same rule (see `AGENTS.md`).
 
 ### Media uploads
 

@@ -11,6 +11,14 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import DeviceMetadataItem, {
+  type DeviceMetadataItemProps,
+} from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
+
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -25,12 +33,6 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
-
-import type { TrustedDevice } from "../../../types/trustedDevice";
-import { formatLongDate, formatTimeUntil, fromNow } from "../../../utils/dateTime";
-import { getDeviceIcon } from "../../../utils/trustedDevice";
-import { valueOrFallback } from "../../../utils/valueOrFallback";
-import DeviceMetadataItem, { type DeviceMetadataItemProps } from "../../ui/DeviceMetadataItem";
 
 interface DeviceAlreadyRegisteredDialogProps {
   existingDevice: TrustedDevice;

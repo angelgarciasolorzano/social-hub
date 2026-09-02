@@ -4,6 +4,13 @@ import { router, usePage } from "@inertiajs/react";
 
 import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import {
+  formatActivationDate,
+  formatActivationTime,
+} from "@/modules/setting/shared/utils/dateTime";
+import { deviceLabel, getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
+
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
@@ -21,10 +28,6 @@ import { cn } from "@/shared/lib";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
-
-import type { TrustedDevice } from "../../../types/trustedDevice";
-import { formatActivationDate, formatActivationTime } from "../../../utils/dateTime";
-import { deviceLabel, getDeviceIcon } from "../../../utils/trustedDevice";
 
 interface TwoFactorActivationDetailsDialogProps {
   isOpen: boolean;

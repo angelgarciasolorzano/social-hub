@@ -1,9 +1,14 @@
 import type { JSX, SubmitEvent } from "react";
 
-import { useForm } from "@inertiajs/react";
+import { useForm, usePage } from "@inertiajs/react";
 
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
+
+import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -31,10 +36,6 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
-import type { TrustedDevice } from "../../../types/trustedDevice";
-import { formatLongDate, fromNow } from "../../../utils/dateTime";
-import DeviceSummaryCard from "../../ui/DeviceSummaryCard";
-
 interface RenewTrustDialogProps {
   device: TrustedDevice;
   open: boolean;
@@ -46,6 +47,7 @@ const TRUST_RENEWAL_LABEL = "1 mes";
 
 function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX.Element {
   const { submit, processing, reset } = useForm();
+  const pageProps = usePage().props as Record<string, unknown>;
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
@@ -60,10 +62,11 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
     event.preventDefault();
 
     submit(renewTrustedDevice({ trustedDevice: device.id }), {
-      only: ["trustedDevices"],
+      only: pickReloadKeys(pageProps, ["trustedDevices", "recentActivity"]),
       onSuccess: () => {
         onClose();
       },
+      preserveScroll: true,
     });
   };
 
@@ -120,6 +123,7 @@ type RenewDeviceFormProps = Pick<RenewTrustDialogProps, "device"> & {
 
 function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.Element {
   const newExpiresAt = dayjs().add(TRUST_RENEWAL_DAYS, "day");
+  const newExpiresAtFormatted = formatLongDate(newExpiresAt.toISOString());
 
   return (
     <form id="renew-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-2">
@@ -146,7 +150,7 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
         </ItemMedia>
         <ItemContent>
           <ItemTitle>Nueva expiración</ItemTitle>
-          <ItemDescription>{newExpiresAt.format("D [de] MMMM [del] YYYY, h:mm A")}</ItemDescription>
+          <ItemDescription>{newExpiresAtFormatted}</ItemDescription>
         </ItemContent>
         <ItemActions>
           <Badge className={badgeVariants.success}>+ {TRUST_RENEWAL_LABEL}</Badge>
