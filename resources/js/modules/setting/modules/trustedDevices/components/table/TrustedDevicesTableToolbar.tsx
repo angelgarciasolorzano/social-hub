@@ -1,5 +1,7 @@
 import type { JSX } from "react";
 
+import { router } from "@inertiajs/react";
+
 import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search } from "lucide-react";
 
 import {
@@ -97,7 +99,15 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
 
         <TrustedDevicesSortPopover onSortOrderChange={onSortOrderChange} sortOrder={filters.sort} />
 
-        <Button variant="outline">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            router.reload({
+              only: ["trustedDevices", "stats", "recentActivity"],
+            });
+          }}
+        >
           <RefreshCw />
           <span className="sr-only">Reload data</span>
         </Button>

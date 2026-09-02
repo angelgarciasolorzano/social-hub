@@ -9,7 +9,10 @@ import {
   type TrustedDevicePerPage,
   type TrustedDeviceStatusFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
-import { type TrustedDeviceSortKey } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceSort";
+import {
+  defaultTrustedDeviceSort,
+  type TrustedDeviceSortKey,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceSort";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -116,6 +119,8 @@ export function useTrustedDeviceFilters(
       browser: null,
       deviceType: null,
       lastAccess: null,
+      sort: defaultTrustedDeviceSort,
+      perPage: 15,
     }));
   }, []);
 
