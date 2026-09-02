@@ -27,9 +27,9 @@ import {
   ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
-  ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxTrigger,
   ComboboxValue,
   useComboboxAnchor,
 } from "@/shared/components/shadcn/ui/combobox";
@@ -41,6 +41,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/shadcn/ui/radio-group";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+
+import { cn } from "@/shared/lib";
 
 interface TrustedDevicesTableToolbarProps {
   filters: TrustedDeviceFilters;
@@ -296,6 +298,7 @@ function FilterCombobox({
   }
 
   const single = typeof value === "string" ? value : null;
+  const singleLabel = single === null ? null : findLabel(single, options);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -307,7 +310,16 @@ function FilterCombobox({
           onChange(next ?? null);
         }}
       >
-        <ComboboxInput placeholder={label} showClear={single !== null} />
+        <ComboboxTrigger
+          className={cn(
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
+            "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
+          )}
+        >
+          <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
+            {singleLabel ?? label}
+          </span>
+        </ComboboxTrigger>
 
         <ComboboxContent>
           <ComboboxList>
