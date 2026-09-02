@@ -11,7 +11,9 @@ use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Props\CurrentTrustedDeviceProps;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyForceRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceReactivateRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
@@ -432,6 +434,81 @@ class TrustedDeviceController extends Controller
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Todos los dispositivos de confianza fueron revocados.',
+        ])->back();
+    }
+
+    /**
+     * Restore a soft-deleted trusted device. Two paths:
+     * - Cookie still matches: silent restore, same token_hash.
+     * - Cookie is gone: FormRequest enforces OTP, then we mint a fresh token.
+     */
+    public function reactivate(TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest, TrustedDevice $trustedDevice): RedirectResponse
+    {
+        abort_unless($trustedDevice->user_id === $trustedDeviceReactivateRequest->user()?->getKey(), 403);
+
+        $cookieMatches = $trustedDeviceReactivateRequest->cookieMatchesDevice();
+
+        /** @var int $cookieLifetimeMinutes */
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
+
+        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $cookieMatches, $cookieLifetimeMinutes): void {
+            $newToken = null;
+
+            if (! $cookieMatches) {
+                $newToken = $this->mintToken();
+                $trustedDevice->forceFill(['token_hash' => $newToken['hash']]);
+            }
+
+            $trustedDevice->forceFill([
+                'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
+                'last_used_at' => CarbonImmutable::now(),
+            ])->save();
+
+            $trustedDevice->restore();
+
+            TrustedDeviceEvent::record(
+                trustedDevice: $trustedDevice,
+                user: $trustedDeviceReactivateRequest->user(),
+                trustedDeviceAction: TrustedDeviceAction::Reactivated,
+                request: $trustedDeviceReactivateRequest,
+            );
+
+            if ($newToken !== null) {
+                $this->queueTrustedDeviceCookie($newToken['token']);
+            }
+        });
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => $cookieMatches
+                ? 'Dispositivo re-confiado correctamente.'
+                : 'Dispositivo re-confiado. Se regeneró el token de confianza por seguridad.',
+        ])->back();
+    }
+
+    /**
+     * Permanently delete a soft-deleted trusted device (GDPR). The `Revoked`
+     * event is recorded BEFORE `forceDelete()` so the snapshot `device_label`
+     * survives the `nullOnDelete` on `trusted_device_events.trusted_device_id`.
+     */
+    public function forceDestroy(TrustedDeviceDestroyForceRequest $trustedDeviceDestroyForceRequest, TrustedDevice $trustedDevice): RedirectResponse
+    {
+        abort_unless($trustedDevice->user_id === $trustedDeviceDestroyForceRequest->user()?->getKey(), 403);
+
+        DB::transaction(function () use ($trustedDeviceDestroyForceRequest, $trustedDevice): void {
+            TrustedDeviceEvent::record(
+                trustedDevice: $trustedDevice,
+                user: $trustedDeviceDestroyForceRequest->user(),
+                trustedDeviceAction: TrustedDeviceAction::Revoked,
+                request: $trustedDeviceDestroyForceRequest,
+            );
+
+            $trustedDevice->forceDelete();
+        });
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => 'Dispositivo eliminado permanentemente.',
         ])->back();
     }
 }
