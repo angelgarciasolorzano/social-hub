@@ -21,28 +21,34 @@ import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevi
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@/shared/components/shadcn/ui/combobox";
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/shadcn/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/shadcn/ui/select";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 interface TrustedDevicesTableToolbarProps {
   filters: TrustedDeviceFilters;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: TrustedDeviceStatusFilter | null) => void;
-  onBrowserFilterChange: (value: TrustedDeviceBrowserFilter | null) => void;
+  onBrowserFilterChange: (value: TrustedDeviceBrowserFilter[] | null) => void;
   onDeviceTypeFilterChange: (value: TrustedDeviceDeviceTypeFilter | null) => void;
-  onLastAccessFilterChange: (value: TrustedDeviceLastAccessFilter | null) => void;
+  onLastAccessFilterChange: (value: TrustedDeviceLastAccessFilter[] | null) => void;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
   onResetFilters: () => void;
 }
@@ -103,16 +109,17 @@ type TrustedDevicesFiltersPopoverProps = Omit<
   "onSearchChange" | "onSortOrderChange" | "filters"
 > & {
   statusFilter: TrustedDeviceStatusFilter | null;
-  browserFilter: TrustedDeviceBrowserFilter | null;
+  browserFilter: TrustedDeviceBrowserFilter[] | null;
   deviceTypeFilter: TrustedDeviceDeviceTypeFilter | null;
-  lastAccessFilter: TrustedDeviceLastAccessFilter | null;
+  lastAccessFilter: TrustedDeviceLastAccessFilter[] | null;
 };
 
-interface FilterSelectConfig {
+interface FilterComboboxConfig {
   label: string;
-  onChange: (value: string | null) => void;
+  multiple: boolean;
   options: readonly { readonly label: string; readonly value: string }[];
-  value: string | null;
+  value: string | readonly string[] | null;
+  onChange: (value: string | readonly string[] | null) => void;
 }
 
 function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps): JSX.Element {
@@ -128,40 +135,54 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
     onResetFilters,
   } = props;
 
-  const NO_FILTER = "__none__" as const;
-
-  const filterConfigs: readonly FilterSelectConfig[] = [
+  const filterConfigs: readonly FilterComboboxConfig[] = [
     {
       label: "Estado",
+      multiple: false,
+      options: statusOptions,
+      value: statusFilter,
       onChange: (value) => {
         onStatusFilterChange(value as TrustedDeviceStatusFilter | null);
       },
-      options: statusOptions,
-      value: statusFilter,
     },
     {
       label: "Navegador / SO",
-      onChange: (value) => {
-        onBrowserFilterChange(value as TrustedDeviceBrowserFilter | null);
-      },
+      multiple: true,
       options: browserOptions,
       value: browserFilter,
+      onChange: (value) => {
+        if (value === null) {
+          onBrowserFilterChange(null);
+        } else if (typeof value === "string") {
+          onBrowserFilterChange([value as TrustedDeviceBrowserFilter]);
+        } else {
+          onBrowserFilterChange([...value] as TrustedDeviceBrowserFilter[]);
+        }
+      },
     },
     {
       label: "Tipo de dispositivo",
+      multiple: false,
+      options: deviceTypeOptions,
+      value: deviceTypeFilter,
       onChange: (value) => {
         onDeviceTypeFilterChange(value as TrustedDeviceDeviceTypeFilter | null);
       },
-      options: deviceTypeOptions,
-      value: deviceTypeFilter,
     },
     {
       label: "Último acceso",
-      onChange: (value) => {
-        onLastAccessFilterChange(value as TrustedDeviceLastAccessFilter | null);
-      },
+      multiple: true,
       options: lastAccessOptions,
       value: lastAccessFilter,
+      onChange: (value) => {
+        if (value === null) {
+          onLastAccessFilterChange(null);
+        } else if (typeof value === "string") {
+          onLastAccessFilterChange([value as TrustedDeviceLastAccessFilter]);
+        } else {
+          onLastAccessFilterChange([...value] as TrustedDeviceLastAccessFilter[]);
+        }
+      },
     },
   ];
 
@@ -190,30 +211,14 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
           </div>
 
           {filterConfigs.map((config) => (
-            <div className="flex flex-col gap-1.5" key={config.label}>
-              <label className="text-xs font-medium text-muted-foreground">{config.label}</label>
-
-              <Select
-                value={config.value ?? ""}
-                onValueChange={(next) => {
-                  config.onChange(next === NO_FILTER || next === "" ? null : next);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={config.label} />
-                </SelectTrigger>
-
-                <SelectContent>
-                  <SelectItem value={NO_FILTER}>Sin filtro</SelectItem>
-
-                  {config.options.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FilterCombobox
+              key={config.label}
+              label={config.label}
+              multiple={config.multiple}
+              onChange={config.onChange}
+              options={config.options}
+              value={config.value}
+            />
           ))}
 
           <Button type="button" variant="outline" onClick={onResetFilters}>
@@ -222,6 +227,97 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function FilterCombobox({
+  label,
+  multiple,
+  options,
+  value,
+  onChange,
+}: FilterComboboxConfig): JSX.Element {
+  const anchor = useComboboxAnchor();
+
+  const findLabel = (
+    value: string,
+    options: readonly { readonly label: string; readonly value: string }[],
+  ): string => {
+    return options.find((opt) => opt.value === value)?.label ?? value;
+  };
+
+  const isStringArray = (value: string | readonly string[] | null): value is readonly string[] => {
+    return Array.isArray(value);
+  };
+
+  if (multiple) {
+    const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
+
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+        <Combobox
+          items={options}
+          multiple
+          onValueChange={(next: string[]) => {
+            onChange(next);
+          }}
+          value={arr}
+        >
+          <ComboboxChips className="min-h-9 w-full" ref={anchor}>
+            <ComboboxValue>
+              {(values: string[]) => (
+                <>
+                  {values.map((selected) => (
+                    <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
+                  ))}
+                  <ComboboxChipsInput placeholder={label} />
+                </>
+              )}
+            </ComboboxValue>
+          </ComboboxChips>
+
+          <ComboboxContent anchor={anchor}>
+            <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+            <ComboboxList>
+              {(item: { label: string; value: string }) => (
+                <ComboboxItem key={item.value} value={item.value}>
+                  {item.label}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+    );
+  }
+
+  const single = typeof value === "string" ? value : null;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+      <Combobox
+        value={single ?? undefined}
+        onValueChange={(next) => {
+          onChange(next ?? null);
+        }}
+      >
+        <ComboboxInput placeholder={label} showClear={single !== null} />
+
+        <ComboboxContent>
+          <ComboboxList>
+            {options.map((opt) => (
+              <ComboboxItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </ComboboxItem>
+            ))}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
   );
 }
 
