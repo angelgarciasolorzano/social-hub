@@ -114,10 +114,15 @@ type TrustedDevicesFiltersPopoverProps = Omit<
   lastAccessFilter: TrustedDeviceLastAccessFilter[] | null;
 };
 
+interface FilterOption {
+  readonly label: string;
+  readonly value: string;
+}
+
 interface FilterComboboxConfig {
   label: string;
   multiple: boolean;
-  options: readonly { readonly label: string; readonly value: string }[];
+  options: readonly FilterOption[];
   value: string | readonly string[] | null;
   onChange: (value: string | readonly string[] | null) => void;
 }
@@ -239,10 +244,7 @@ function FilterCombobox({
 }: FilterComboboxConfig): JSX.Element {
   const anchor = useComboboxAnchor();
 
-  const findLabel = (
-    value: string,
-    options: readonly { readonly label: string; readonly value: string }[],
-  ): string => {
+  const findLabel = (value: string, options: readonly FilterOption[]): string => {
     return options.find((opt) => opt.value === value)?.label ?? value;
   };
 
