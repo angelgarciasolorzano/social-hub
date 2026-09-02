@@ -272,7 +272,7 @@ function FilterCombobox({
                   {values.map((selected) => (
                     <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
                   ))}
-                  <ComboboxChipsInput placeholder={label} />
+                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
                 </>
               )}
             </ComboboxValue>
@@ -300,7 +300,7 @@ function FilterCombobox({
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
       <Combobox
-        value={single ?? undefined}
+        value={single}
         onValueChange={(next) => {
           onChange(next ?? null);
         }}
