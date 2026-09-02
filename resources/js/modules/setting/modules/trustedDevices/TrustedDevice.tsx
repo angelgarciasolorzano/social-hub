@@ -5,12 +5,12 @@ import { Head, router, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Bolt,
   ChevronDown,
   ChevronRight,
   Clock4,
   Info,
   MonitorSmartphone,
+  MoreHorizontal,
   ShieldCheck,
   ShieldQuestionMark,
   SquarePlus,
@@ -231,7 +231,7 @@ function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Ele
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline">
-            <Bolt />
+            <MoreHorizontal />
             Administrar
             <ChevronDown />
           </Button>
