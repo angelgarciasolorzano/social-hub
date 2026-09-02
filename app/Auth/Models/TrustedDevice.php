@@ -8,11 +8,14 @@ use App\Auth\Database\Factories\TrustedDeviceFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Override;
@@ -32,6 +35,7 @@ use Override;
  * @property CarbonImmutable $expires_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
+ * @property CarbonImmutable|null $deleted_at
  *
  * @mixin IdeHelperTrustedDevice
  */
@@ -55,6 +59,8 @@ class TrustedDevice extends Model
      * @use HasFactory<TrustedDeviceFactory>
      */
     use HasFactory;
+
+    use SoftDeletes;
 
     /**
      * The attributes that should be cast.
@@ -100,6 +106,30 @@ class TrustedDevice extends Model
     }
 
     /**
+     * Scope: devices within their trust window. Soft-deleted rows are excluded
+     * automatically by the SoftDeletes trait.
+     *
+     * @param  Builder<TrustedDevice>  $builder
+     */
+    #[Scope]
+    protected function active(Builder $builder): void
+    {
+        $builder->where('expires_at', '>', CarbonImmutable::now());
+    }
+
+    /**
+     * Scope: devices past their trust window (expired but still in the table
+     * for audit purposes). Soft-deleted rows are excluded automatically.
+     *
+     * @param  Builder<TrustedDevice>  $builder
+     */
+    #[Scope]
+    protected function inactive(Builder $builder): void
+    {
+        $builder->where('expires_at', '<=', CarbonImmutable::now());
+    }
+
+    /**
      * Find the active trusted device for the same fingerprint, or null when
      * `$ip` is null. When `$lockForUpdate` is true, the read is serialised so
      * concurrent `store()` calls cannot both pass the check.
@@ -119,6 +149,7 @@ class TrustedDevice extends Model
             ->where('user_agent', $userAgent)
             ->where('os_name', $osName)
             ->where('ip', $ip)
+            ->whereNull('deleted_at')
             ->where('expires_at', '>', CarbonImmutable::now());
 
         if ($lockForUpdate) {
@@ -150,6 +181,7 @@ class TrustedDevice extends Model
             ->where('user_agent', $userAgent)
             ->where('os_name', $osName)
             ->where('ip', $ip)
+            ->whereNull('deleted_at')
             ->where('id', '!=', $excludeId)
             ->delete();
     }
@@ -168,6 +200,7 @@ class TrustedDevice extends Model
 
         $builder = $user->trustedDevices()
             ->where('token_hash', hash('sha256', $token))
+            ->whereNull('deleted_at')
             ->where('expires_at', '>', CarbonImmutable::now());
 
         $device = $builder->first();

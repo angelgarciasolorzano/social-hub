@@ -40,6 +40,8 @@ return new class extends Migration
 
             $blueprint->timestamp('expires_at')->index();
 
+            $blueprint->softDeletes();
+
             $blueprint->timestamps();
         });
     }
