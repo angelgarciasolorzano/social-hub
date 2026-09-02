@@ -125,7 +125,7 @@ class TrustedDeviceController extends Controller
                     'action' => $trustedDeviceEvent->action->value,
                     'actionLabel' => $trustedDeviceEvent->action->label(),
                     'deviceId' => $trustedDeviceEvent->trusted_device_id,
-                    'deviceLabel' => $trustedDeviceEvent->device?->name,
+                    'deviceLabel' => $trustedDeviceEvent->device_label ?? $trustedDeviceEvent->device?->name,
                     'ip' => $trustedDeviceEvent->ip,
                     'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
                 ])
@@ -242,9 +242,7 @@ class TrustedDeviceController extends Controller
                 ->count(),
             'revoked' => $user->trustedDeviceEvents()
                 ->whereIn('action', [TrustedDeviceAction::Revoked, TrustedDeviceAction::RevokedAll])
-                ->whereNotNull('trusted_device_id')
-                ->distinct()
-                ->count('trusted_device_id'),
+                ->count(),
         ];
     }
 

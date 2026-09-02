@@ -21,6 +21,7 @@ use Override;
  * @property int|null $trusted_device_id
  * @property int|null $user_id
  * @property TrustedDeviceAction $action
+ * @property string|null $device_label
  * @property string|null $ip
  * @property string|null $user_agent
  * @property CarbonImmutable|null $created_at
@@ -32,6 +33,7 @@ use Override;
     'trusted_device_id',
     'user_id',
     'action',
+    'device_label',
     'ip',
     'user_agent',
 ])]
@@ -74,6 +76,7 @@ class TrustedDeviceEvent extends Model
                 'trusted_device_id' => $trustedDevice?->getKey(),
                 'user_id' => $user->getKey(),
                 'action' => $trustedDeviceAction,
+                'device_label' => $trustedDevice?->name,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);

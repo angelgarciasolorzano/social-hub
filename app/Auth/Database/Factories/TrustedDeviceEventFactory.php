@@ -28,6 +28,7 @@ class TrustedDeviceEventFactory extends Factory
             'trusted_device_id' => TrustedDevice::factory(),
             'user_id' => User::factory(),
             'action' => fake()->randomElement(TrustedDeviceAction::cases()),
+            'device_label' => fake()->words(2, true),
             'ip' => fake()->ipv4(),
             'user_agent' => fake()->userAgent(),
         ];

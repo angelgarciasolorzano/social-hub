@@ -28,6 +28,8 @@ return new class extends Migration
 
             $blueprint->string('action');
 
+            $blueprint->string('device_label')->nullable();
+
             $blueprint->string('ip', 45)->nullable();
 
             $blueprint->string('user_agent', 255)->nullable();
