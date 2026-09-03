@@ -72,7 +72,7 @@ function TrustedDeviceReactivationDialog({
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
               <RotateCw className="h-5 w-5 text-muted-foreground" />
-              Re-confiar dispositivo
+              Reactivar dispositivo
             </div>
           </DialogTitle>
           <DialogDescription>
@@ -118,10 +118,10 @@ function TrustedDeviceReactivationDialog({
             {processing ? (
               <>
                 <Spinner />
-                Re-confiando...
+                Reactivando...
               </>
             ) : (
-              "Re-confiar"
+              "Reactivar"
             )}
           </Button>
         </DialogFooter>
@@ -140,7 +140,7 @@ function ReactivationInstructions({ deviceName }: ReactivationInstructionsProps)
       <KeyRound />
       <AlertTitle>¿Por qué pedimos código?</AlertTitle>
       <AlertDescription>
-        Por seguridad, re-confiar <strong>{deviceName}</strong> requiere autenticarte de nuevo. Solo
+        Por seguridad, reactivar <strong>{deviceName}</strong> requiere autenticarte de nuevo. Solo
         necesitamos el código de 6 dígitos de tu app autenticadora (o un código de respaldo).
       </AlertDescription>
     </Alert>

@@ -139,7 +139,7 @@ function ForceDestroyConsequencesAlert(): JSX.Element {
       <AlertDescription>
         <ul className="mt-1 list-inside list-disc space-y-2">
           <li>Este dispositivo se eliminará permanentemente de la base de datos.</li>
-          <li>Ya no podrás re-confiarlo desde la sección &quot;Revocados&quot;.</li>
+          <li>Ya no podrás reactivarlo desde la sección &quot;Revocados&quot;.</li>
           <li>
             Los eventos del audit log conservarán el snapshot del nombre del dispositivo (para
             trazabilidad forense), pero perderán la referencia directa al registro.

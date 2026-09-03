@@ -54,27 +54,37 @@ interface RevokedRowDialogState extends DialogClosingState {
   kind: "reactivate" | "force-destroy";
 }
 
+interface RevokedTableColumn {
+  label: "Dispositivo" | "Revocado" | "Navegador / SO" | "Acciones";
+}
+
 function TrustedDevicesRevokedTable({
   devices,
   pagination,
 }: TrustedDevicesRevokedTableProps): JSX.Element {
+  const revokedTableColumns: readonly RevokedTableColumn[] = [
+    { label: "Dispositivo" },
+    { label: "Revocado" },
+    { label: "Navegador / SO" },
+    { label: "Acciones" },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
       <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:rounded-md [&>div]:border">
         <Table>
           <TableHeader>
             <TableRow className="sticky top-0 bg-muted/70 dark:bg-muted/40">
-              <TableHead>Dispositivo</TableHead>
-              <TableHead>Revocado</TableHead>
-              <TableHead>Navegador / SO</TableHead>
-              <TableHead>Acciones</TableHead>
+              {revokedTableColumns.map((column) => (
+                <TableHead key={column.label}>{column.label}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {devices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="p-0">
+                <TableCell colSpan={revokedTableColumns.length} className="p-0">
                   <EmptyState icon={MonitorSmartphone} title="No tienes dispositivos revocados." />
                 </TableCell>
               </TableRow>
@@ -169,7 +179,7 @@ function TrustedDeviceRevokedRow({ device }: TrustedDeviceRevokedRowProps): JSX.
                 }}
               >
                 <RotateCw className="text-muted-foreground" />
-                Re-confiar
+                Reactivar
               </DropdownMenuItem>
 
               <DropdownMenuItem
