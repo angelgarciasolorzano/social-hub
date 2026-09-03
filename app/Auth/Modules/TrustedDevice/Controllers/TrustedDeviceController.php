@@ -252,6 +252,28 @@ class TrustedDeviceController extends Controller
         ];
     }
 
+    /**
+     * Drop an active sibling for the same fingerprint/IP before reactivating a
+     * soft-deleted row, so re-registering while revoked doesn't leave duplicates.
+     */
+    private function dropDuplicateActiveDevice(?User $user, TrustedDevice $trustedDevice): void
+    {
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $duplicate = TrustedDevice::findActiveMatch(
+            $user,
+            $trustedDevice->user_agent,
+            $trustedDevice->os_name,
+            $trustedDevice->ip,
+        );
+
+        if ($duplicate instanceof TrustedDevice && $duplicate->id !== $trustedDevice->id) {
+            $duplicate->forceDelete();
+        }
+    }
+
     public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $trustedDeviceUpdateRequest->user()?->getKey(), 403);
@@ -449,6 +471,8 @@ class TrustedDeviceController extends Controller
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $cookieLifetimeMinutes): void {
+            $this->dropDuplicateActiveDevice($trustedDeviceReactivateRequest->user(), $trustedDevice);
+
             $newToken = $this->mintToken();
 
             $trustedDevice->forceFill([
