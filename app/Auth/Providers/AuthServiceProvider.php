@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Providers;
 
-use App\Auth\Models\TrustedDevice;
-use Carbon\CarbonImmutable;
+use App\Auth\Console\Commands\TrustedDevicePurge;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -34,21 +33,20 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
+        if ($this->app->runningInConsole()) {
+            $this->commands([TrustedDevicePurge::class]);
+        }
+
         $this->registerTrustedDeviceSchedule();
     }
 
     /**
-     * Register scheduled tasks owned by the TrustedDevice module.
+     * Schedule the daily purge of soft-deleted trusted devices past the
+     * configured retention window. Runs at 03:00 server local time.
      */
     private function registerTrustedDeviceSchedule(): void
     {
-        /** @var int $retentionGraceDays */
-        $retentionGraceDays = config('module.auth.trusted_devices.retention_grace_days');
-
-        Schedule::call(function () use ($retentionGraceDays): void {
-            TrustedDevice::query()
-                ->where('expires_at', '<', CarbonImmutable::now()->subDays($retentionGraceDays))
-                ->delete();
-        })->daily();
+        Schedule::command('trusted-devices:purge')
+            ->dailyAt('03:00');
     }
 }
