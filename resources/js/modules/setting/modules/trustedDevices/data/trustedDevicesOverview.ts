@@ -122,6 +122,8 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
 export const trustedDeviceSectionActionKey = {
   addDevice: "add-device",
   deviceAlreadyRegistered: "device-already-registered",
+  deviceExpired: "device-expired",
+  deviceRevoked: "device-revoked",
   revokeAll: "revoke-all",
 } as const;
 

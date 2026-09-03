@@ -20,6 +20,8 @@ import {
   AddDeviceDialog,
   DeviceAlreadyRegisteredDialog,
   RevokeAllDevicesDialog,
+  TrustedDeviceExpiredDialog,
+  TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
 import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
@@ -95,11 +97,26 @@ function TrustedDevice(): JSX.Element {
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
 
+  const resolveAddDeviceKind = (
+    currentDeviceMatch: TrustedDevice | null | undefined,
+  ): SectionDialogState["kind"] => {
+    if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+      return trustedDeviceSectionActionKey.addDevice;
+    }
+
+    if (currentDeviceMatch.deletedAt !== null) {
+      return trustedDeviceSectionActionKey.deviceRevoked;
+    }
+
+    if (!currentDeviceMatch.isActive) {
+      return trustedDeviceSectionActionKey.deviceExpired;
+    }
+
+    return trustedDeviceSectionActionKey.deviceAlreadyRegistered;
+  };
+
   const handleAddDevice = (): void => {
-    const kind: SectionDialogState["kind"] =
-      currentDeviceMatch !== null && currentDeviceMatch !== undefined
-        ? "device-already-registered"
-        : "add-device";
+    const kind: SectionDialogState["kind"] = resolveAddDeviceKind(currentDeviceMatch);
 
     sectionDialog.show({ kind, closing: false });
   };
@@ -117,6 +134,8 @@ function TrustedDevice(): JSX.Element {
     switch (action) {
       case trustedDeviceSectionActionKey.addDevice:
       case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
+      case trustedDeviceSectionActionKey.deviceRevoked:
+      case trustedDeviceSectionActionKey.deviceExpired:
         handleAddDevice();
 
         break;
@@ -157,6 +176,33 @@ function TrustedDevice(): JSX.Element {
 
         return (
           <DeviceAlreadyRegisteredDialog
+            existingDevice={currentDeviceMatch}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+            showListLink={false}
+          />
+        );
+
+      case trustedDeviceSectionActionKey.deviceRevoked:
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+          return null;
+        }
+
+        return (
+          <TrustedDeviceRevokedDialog
+            existingDevice={currentDeviceMatch}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case trustedDeviceSectionActionKey.deviceExpired:
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+          return null;
+        }
+
+        return (
+          <TrustedDeviceExpiredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
             onClose={handleSectionDialogClose}

@@ -10,7 +10,7 @@ import {
   Clock4,
   Globe,
   MapPin,
-  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 
 import DeviceMetadataItem, {
@@ -38,23 +38,20 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-interface DeviceAlreadyRegisteredDialogProps {
+interface TrustedDeviceRevokedDialogProps {
   existingDevice: TrustedDevice;
   open: boolean;
   onClose: () => void;
-  /** Hide the "go to trusted devices list" alert when the dialog is shown from the trusted-devices page itself. Defaults to true. */
-  showListLink?: boolean;
 }
 
-function DeviceAlreadyRegisteredDialog({
+function TrustedDeviceRevokedDialog({
   existingDevice,
   open,
   onClose,
-  showListLink = true,
-}: DeviceAlreadyRegisteredDialogProps): JSX.Element {
-  const handleGoToList = (): void => {
+}: TrustedDeviceRevokedDialogProps): JSX.Element {
+  const handleGoToRevokedList = (): void => {
     onClose();
-    router.visit(index().url);
+    router.visit(index({ query: { status: "revoked" } }).url);
   };
 
   return (
@@ -70,27 +67,34 @@ function DeviceAlreadyRegisteredDialog({
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-              Dispositivo ya registrado
+              <ShieldOff className="h-5 w-5 text-muted-foreground" />
+              Dispositivo revocado
             </div>
           </DialogTitle>
           <DialogDescription>
-            Este dispositivo ya esta registrado como de confianza en tu cuenta. No es necesario
-            agregarlo nuevamente.
+            Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en el,
+            reactivarlo desde la lista de dispositivos revocados.
           </DialogDescription>
         </DialogHeader>
 
         <Separator />
 
-        <DeviceDetailsHeader />
+        <DeviceDetailsHeader
+          title="Detalles del dispositivo revocado"
+          description="Asi es como identificamos este dispositivo antes de ser revocado."
+        />
 
         <DeviceInfoCard existingDevice={existingDevice} />
 
-        {showListLink && <AlreadyRegisteredActionsAlert onGoToList={handleGoToList} />}
+        <RevokedActionsAlert onGoToRevokedList={handleGoToRevokedList} />
 
         <DialogFooter>
-          <Button type="button" onClick={onClose}>
+          <Button onClick={onClose} type="button" variant="outline">
             Cerrar
+          </Button>
+          <Button onClick={handleGoToRevokedList} type="button">
+            Ir a dispositivos revocados
+            <ArrowRight />
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -98,19 +102,22 @@ function DeviceAlreadyRegisteredDialog({
   );
 }
 
-function DeviceDetailsHeader(): JSX.Element {
+interface DeviceDetailsHeaderProps {
+  description: string;
+  title: string;
+}
+
+function DeviceDetailsHeader({ title, description }: DeviceDetailsHeaderProps): JSX.Element {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-semibold">Detalles del dispositivo registrado</span>
+      <span className="font-semibold">{title}</span>
 
-      <p className="text-sm text-muted-foreground">
-        Asi es como identificamos este dispositivo actualmente.
-      </p>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
 
-type DeviceInfoCardProps = Pick<DeviceAlreadyRegisteredDialogProps, "existingDevice">;
+type DeviceInfoCardProps = Pick<TrustedDeviceRevokedDialogProps, "existingDevice">;
 
 function DeviceInfoCard({ existingDevice }: DeviceInfoCardProps): JSX.Element {
   const browser = valueOrFallback(existingDevice.browser, "Desconocido");
@@ -188,15 +195,19 @@ function DeviceInfoRow({ items, columns = 3 }: DeviceInfoRowProps): JSX.Element 
   );
 }
 
-function AlreadyRegisteredActionsAlert({ onGoToList }: { onGoToList: () => void }): JSX.Element {
+interface RevokedActionsAlertProps {
+  onGoToRevokedList: () => void;
+}
+
+function RevokedActionsAlert({ onGoToRevokedList }: RevokedActionsAlertProps): JSX.Element {
   return (
-    <Alert className={alertVariants.info}>
+    <Alert className={alertVariants.warning}>
       <CircleAlert />
-      <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
+      <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
       <AlertDescription className="flex items-center gap-4">
-        Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
-        <Button onClick={onGoToList} size="sm" variant="outline">
-          Ir a dispositivos de confianza
+        Reactivarlo desde la lista de revocados restaura la fila con un token nuevo por seguridad.
+        <Button onClick={onGoToRevokedList} size="sm" variant="outline">
+          Ir a la lista de revocados
           <ArrowRight />
         </Button>
       </AlertDescription>
@@ -204,4 +215,4 @@ function AlreadyRegisteredActionsAlert({ onGoToList }: { onGoToList: () => void 
   );
 }
 
-export default DeviceAlreadyRegisteredDialog;
+export default TrustedDeviceRevokedDialog;
