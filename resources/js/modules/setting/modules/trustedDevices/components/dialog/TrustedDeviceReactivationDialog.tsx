@@ -2,9 +2,11 @@ import type { JSX, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { KeyRound, RotateCw } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import { OTP_MAX_LENGTH } from "@/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth";
 
 import { reactivate } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -20,7 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { Input } from "@/shared/components/shadcn/ui/input";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants } from "@/shared/lib/styling";
@@ -62,6 +69,7 @@ function TrustedDeviceReactivationDialog({
         reset();
       },
       preserveScroll: true,
+      preserveState: true,
     });
   };
 
@@ -84,24 +92,40 @@ function TrustedDeviceReactivationDialog({
         <ReactivationInstructions deviceName={device.name ?? "este dispositivo"} />
 
         <form id="reactivation-form" onSubmit={handleSubmit} className="grid gap-4">
-          <div className="flex flex-col gap-2">
-            <LabelForm htmlFor="reactivate-otp">Código de verificación</LabelForm>
+          <div className="flex flex-col items-center justify-center gap-2 text-center">
+            <LabelForm error={errors.otp_code} htmlFor="reactivate-otp">
+              Código de verificación
+            </LabelForm>
 
-            <Input
-              id="reactivate-otp"
-              name="otp_code"
-              required
-              autoFocus
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              maxLength={10}
-              placeholder="123456"
-              value={data.otp_code}
-              onChange={(event) => {
-                setData("otp_code", event.target.value);
-              }}
-              aria-invalid={errors.otp_code ? "true" : "false"}
-            />
+            <div className="flex w-full items-center justify-center">
+              <InputOTP
+                id="reactivate-otp"
+                name="otp_code"
+                required
+                autoFocus
+                onChange={(value) => {
+                  setData("otp_code", value);
+                }}
+                disabled={processing}
+                maxLength={OTP_MAX_LENGTH}
+                pattern={REGEXP_ONLY_DIGITS}
+                value={data.otp_code}
+              >
+                <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
+                  {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
+                    <InputOTPSlot index={index} key={index} />
+                  ))}
+                </InputOTPGroup>
+
+                <InputOTPSeparator className="mx-2" />
+
+                <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
+                  {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
+                    <InputOTPSlot index={index + OTP_MAX_LENGTH / 2} key={index} />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
 
             {errors.otp_code && <InputError message={errors.otp_code} />}
           </div>
@@ -140,8 +164,8 @@ function ReactivationInstructions({ deviceName }: ReactivationInstructionsProps)
       <KeyRound />
       <AlertTitle>¿Por qué pedimos código?</AlertTitle>
       <AlertDescription>
-        Por seguridad, reactivar <strong>{deviceName}</strong> requiere autenticarte de nuevo. Solo
-        necesitamos el código de 6 dígitos de tu app autenticadora (o un código de respaldo).
+        Por seguridad, reactivar <strong>{deviceName}</strong> requiere autenticarte de nuevo.
+        Ingresa el código de 6 dígitos de tu aplicación autenticadora.
       </AlertDescription>
     </Alert>
   );
