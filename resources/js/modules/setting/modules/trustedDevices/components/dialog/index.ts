@@ -5,3 +5,5 @@ export { default as RenameDeviceDialog } from "./RenameDeviceDialog";
 export { default as RenewTrustDialog } from "./RenewTrustDialog";
 export { default as RevokeAllDevicesDialog } from "./RevokeAllDevicesDialog";
 export { default as RevokeDeviceDialog } from "./RevokeDeviceDialog";
+export { default as TrustedDeviceForceDestroyDialog } from "./TrustedDeviceForceDestroyDialog";
+export { default as TrustedDeviceReactivationDialog } from "./TrustedDeviceReactivationDialog";

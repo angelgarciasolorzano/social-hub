@@ -19,10 +19,12 @@ export interface TrustedDevice {
   lastUsedAt: string | null;
   expiresAt: string;
   createdAt: string;
+  deletedAt: string | null;
   isActive: boolean;
 }
 
-export type TrustedDeviceAction = "created" | "renewed" | "renamed" | "revoked" | "revoked_all";
+export type TrustedDeviceAction =
+  "created" | "renewed" | "renamed" | "revoked" | "revoked_all" | "reactivated";
 
 export interface TrustedDeviceStats {
   total: number;
