@@ -1,4 +1,4 @@
-import { Calendar, Plus, Trash2, Users } from "lucide-react";
+import { Calendar, Plus, RotateCw, Trash2, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import {
@@ -43,6 +43,51 @@ export const trustedDeviceRowActions: DeviceActionGroup[] = twoFactorDeviceActio
 export type TrustedDeviceRowActionKey = TwoFactorDeviceActionKey;
 
 export { twoFactorDeviceActionKey as trustedDeviceRowActionKey };
+
+export const trustedDeviceRevokedRowActionKey = {
+  reactivate: "reactivate",
+  forceDestroy: "force-destroy",
+} as const;
+
+export type TrustedDeviceRevokedRowActionKey =
+  (typeof trustedDeviceRevokedRowActionKey)[keyof typeof trustedDeviceRevokedRowActionKey];
+
+interface TrustedDeviceRevokedRowAction {
+  key: TrustedDeviceRevokedRowActionKey;
+  icon: LucideIcon;
+  label: string;
+  className?: string;
+  iconClassName?: string;
+}
+
+interface TrustedDeviceRevokedRowActionGroup {
+  label?: string;
+  actions: TrustedDeviceRevokedRowAction[];
+}
+
+export const trustedDeviceRevokedRowActions: TrustedDeviceRevokedRowActionGroup[] = [
+  {
+    actions: [
+      {
+        key: trustedDeviceRevokedRowActionKey.reactivate,
+        icon: RotateCw,
+        label: "Reactivar",
+      },
+    ],
+  },
+  {
+    actions: [
+      {
+        key: trustedDeviceRevokedRowActionKey.forceDestroy,
+        icon: Trash2,
+        label: "Eliminar definitivamente",
+        className:
+          "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
+        iconClassName: "text-red-600 dark:text-red-500",
+      },
+    ],
+  },
+];
 
 export const trustedDeviceSectionActionKey = {
   addDevice: "add-device",

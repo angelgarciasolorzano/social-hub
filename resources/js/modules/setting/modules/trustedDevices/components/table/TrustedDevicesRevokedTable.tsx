@@ -1,14 +1,20 @@
 import type { JSX } from "react";
+import { Fragment } from "react";
 
 import { usePage } from "@inertiajs/react";
 
-import { MonitorSmartphone, MoreHorizontalIcon, RotateCw, Trash2 } from "lucide-react";
+import { MonitorSmartphone, MoreHorizontalIcon } from "lucide-react";
 
 import {
   TrustedDeviceForceDestroyDialog,
   TrustedDeviceReactivationDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import TrustedDevicesPagination from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesPagination";
+import {
+  trustedDeviceRevokedRowActionKey,
+  type TrustedDeviceRevokedRowActionKey,
+  trustedDeviceRevokedRowActions,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
 import type {
   TrustedDevice,
   TrustedDevicePagination,
@@ -29,6 +35,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
 import {
@@ -51,7 +58,7 @@ interface TrustedDevicesRevokedTableProps {
 
 interface RevokedRowDialogState extends DialogClosingState {
   device: TrustedDevice;
-  kind: "reactivate" | "force-destroy";
+  kind: TrustedDeviceRevokedRowActionKey;
 }
 
 interface RevokedTableColumn {
@@ -112,7 +119,7 @@ function TrustedDeviceRevokedRow({ device }: TrustedDeviceRevokedRowProps): JSX.
 
   const rowDialog = useDialog<RevokedRowDialogState | null>(null);
 
-  const handleAction = (kind: RevokedRowDialogState["kind"]): void => {
+  const handleAction = (kind: TrustedDeviceRevokedRowActionKey): void => {
     rowDialog.show({ kind, device, closing: false });
   };
 
@@ -126,7 +133,7 @@ function TrustedDeviceRevokedRow({ device }: TrustedDeviceRevokedRowProps): JSX.
       return null;
     }
 
-    if (rowDialog.state.kind === "reactivate") {
+    if (rowDialog.state.kind === trustedDeviceRevokedRowActionKey.reactivate) {
       return (
         <TrustedDeviceReactivationDialog
           device={selectedDevice}
@@ -172,26 +179,32 @@ function TrustedDeviceRevokedRow({ device }: TrustedDeviceRevokedRowProps): JSX.
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={() => {
-                  handleAction("reactivate");
-                }}
-              >
-                <RotateCw className="text-muted-foreground" />
-                Reactivar
-              </DropdownMenuItem>
+            {trustedDeviceRevokedRowActions.map((group, groupIndex) => (
+              <Fragment key={groupIndex}>
+                <DropdownMenuGroup>
+                  {group.actions.map((action) => {
+                    const Icon = action.icon;
 
-              <DropdownMenuItem
-                className="text-red-700 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-900/20 dark:focus:text-red-500"
-                onClick={() => {
-                  handleAction("force-destroy");
-                }}
-              >
-                <Trash2 className="text-red-600 dark:text-red-500" />
-                Eliminar definitivamente
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+                    return (
+                      <DropdownMenuItem
+                        className={action.className}
+                        key={action.key}
+                        onClick={() => {
+                          handleAction(action.key);
+                        }}
+                      >
+                        <Icon className={action.iconClassName ?? "text-muted-foreground"} />
+                        {action.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+
+                {groupIndex < trustedDeviceRevokedRowActions.length - 1 && (
+                  <DropdownMenuSeparator />
+                )}
+              </Fragment>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
