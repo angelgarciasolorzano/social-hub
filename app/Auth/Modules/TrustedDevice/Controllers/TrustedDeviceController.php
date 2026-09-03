@@ -67,8 +67,12 @@ class TrustedDeviceController extends Controller
             });
         }
 
-        if ($filters['status'] !== null) {
-            $query->where('expires_at', $filters['status'] === 'active' ? '>' : '<=', CarbonImmutable::now());
+        if ($filters['status'] === 'revoked') {
+            $query->onlyTrashed();
+        } elseif ($filters['status'] === 'active') {
+            $query->where('expires_at', '>', CarbonImmutable::now());
+        } elseif ($filters['status'] === 'inactive') {
+            $query->where('expires_at', '<=', CarbonImmutable::now());
         }
 
         if ($filters['browser'] !== null) {
@@ -116,11 +120,6 @@ class TrustedDeviceController extends Controller
             'trustedDevices' => $query
                 ->paginate($perPage)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
-            'revokedDevices' => $user->trustedDevices()
-                ->onlyTrashed()
-                ->latest('deleted_at')
-                ->paginate($perPage, pageName: 'revokedPage')
-                ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
             'stats' => $this->buildStats($user),
             'recentActivity' => $user->trustedDeviceEvents()
                 ->latest('created_at')
@@ -150,7 +149,7 @@ class TrustedDeviceController extends Controller
      *
      * @return array{
      *     search: string,
-     *     status: 'active'|'inactive'|null,
+     *     status: 'active'|'inactive'|'revoked'|null,
      *     browser: list<'chrome'|'firefox'|'safari'|'edge'|'otro'>|null,
      *     deviceType: 'desktop / laptop'|'mobile / tablet'|null,
      *     lastAccess: list<'24h'|'7d'|'30d'>|null,
@@ -160,7 +159,7 @@ class TrustedDeviceController extends Controller
      */
     private function extractFilters(Request $request): array
     {
-        $allowedStatus = ['active', 'inactive'];
+        $allowedStatus = ['active', 'inactive', 'revoked'];
         $allowedBrowsers = ['chrome', 'firefox', 'safari', 'edge', 'otro'];
         $allowedDeviceTypes = ['desktop / laptop', 'mobile / tablet'];
         $allowedLastAccess = ['24h', '7d', '30d'];
