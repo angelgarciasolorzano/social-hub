@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   ShieldQuestionMark,
   SquarePlus,
-  Trash2,
 } from "lucide-react";
 
 import {
@@ -22,7 +21,6 @@ import {
   DeviceAlreadyRegisteredDialog,
   RevokeAllDevicesDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
-import TrustedDevicesRevokedTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesRevokedTable";
 import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
 import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
 import TrustedDevicesRecentActivity from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDevicesRecentActivity";
@@ -58,11 +56,6 @@ import {
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/shared/components/shadcn/ui/collapsible";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -84,7 +77,6 @@ type TrustedDevicePageProps = SharedData & {
   currentDeviceMatch?: TrustedDevice | null;
   filters: TrustedDeviceFilters;
   trustedDevices: TrustedDevicePagination;
-  revokedDevices: TrustedDevicePagination;
   trustedDevicesForRevoke?: TrustedDevice[];
   stats: TrustedDeviceStats;
   recentActivity: TrustedDeviceActivityItem[];
@@ -195,7 +187,6 @@ function TrustedDevice(): JSX.Element {
           <TrustedDevicesStatCards />
           <TrustedDevicesInfoBanner />
           <TrustedDevicesTableSection />
-          <TrustedDevicesRevokedSection />
           <TrustedDevicesSecurityCallout />
         </div>
 
@@ -403,40 +394,6 @@ function TrustedDevicesTableSection(): JSX.Element {
         }}
       />
     </div>
-  );
-}
-
-function TrustedDevicesRevokedSection(): JSX.Element {
-  const { revokedDevices, stats } = usePage<TrustedDevicePageProps>().props;
-
-  return (
-    <Collapsible className="rounded-xl border bg-card shadow-sm">
-      <CollapsibleTrigger asChild>
-        <button
-          className="flex w-full items-center justify-between gap-4 p-4 text-left hover:bg-muted/30"
-          type="button"
-        >
-          <div className="flex items-center gap-3">
-            <Trash2 className="h-5 w-5 text-muted-foreground" />
-
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-semibold">Dispositivos revocados</span>
-
-              <span className="text-xs text-muted-foreground">
-                Mostrando {revokedDevices.total} dispositivo{revokedDevices.total === 1 ? "" : "s"}.
-                Total histórico: {stats.revoked}.
-              </span>
-            </div>
-          </div>
-
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform data-[state=open]:rotate-180" />
-        </button>
-      </CollapsibleTrigger>
-
-      <CollapsibleContent className="border-t p-4">
-        <TrustedDevicesRevokedTable devices={revokedDevices.data} pagination={revokedDevices} />
-      </CollapsibleContent>
-    </Collapsible>
   );
 }
 

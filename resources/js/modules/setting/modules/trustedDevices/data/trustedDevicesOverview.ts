@@ -1,12 +1,7 @@
-import { Calendar, Plus, RotateCw, Trash2, Users } from "lucide-react";
+import { Calendar, Eye, Pencil, Plus, RotateCw, Trash2, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import {
-  type DeviceActionGroup,
-  twoFactorDeviceActionKey,
-  type TwoFactorDeviceActionKey,
-  twoFactorDeviceActions,
-} from "@/modules/setting/modules/twoFactor/data/twoFactorEnable";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import type { IconColorVariant } from "@/shared/lib/styling";
 
@@ -38,49 +33,84 @@ export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
   },
 ];
 
-export const trustedDeviceRowActions: DeviceActionGroup[] = twoFactorDeviceActions;
-
-export type TrustedDeviceRowActionKey = TwoFactorDeviceActionKey;
-
-export { twoFactorDeviceActionKey as trustedDeviceRowActionKey };
-
-export const trustedDeviceRevokedRowActionKey = {
+export const trustedDeviceRowActionKey = {
+  viewDevice: "view-device",
+  renameDevice: "rename-device",
+  renewTrust: "renew-trust",
+  revokeDevice: "revoke-device",
   reactivate: "reactivate",
   forceDestroy: "force-destroy",
 } as const;
 
-export type TrustedDeviceRevokedRowActionKey =
-  (typeof trustedDeviceRevokedRowActionKey)[keyof typeof trustedDeviceRevokedRowActionKey];
+export type TrustedDeviceRowActionKey =
+  (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
-interface TrustedDeviceRevokedRowAction {
-  key: TrustedDeviceRevokedRowActionKey;
+export interface TrustedDeviceRowAction {
+  key: TrustedDeviceRowActionKey;
   icon: LucideIcon;
   label: string;
   className?: string;
   iconClassName?: string;
+  isEnabled: (device: TrustedDevice) => boolean;
 }
 
-interface TrustedDeviceRevokedRowActionGroup {
+export interface TrustedDeviceRowActionGroup {
   label?: string;
-  actions: TrustedDeviceRevokedRowAction[];
+  actions: TrustedDeviceRowAction[];
 }
 
-export const trustedDeviceRevokedRowActions: TrustedDeviceRevokedRowActionGroup[] = [
+const isRevoked = (device: TrustedDevice): boolean => device.deletedAt !== null;
+
+export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
   {
+    label: "Acciones del dispositivo",
     actions: [
       {
-        key: trustedDeviceRevokedRowActionKey.reactivate,
+        key: trustedDeviceRowActionKey.viewDevice,
+        icon: Eye,
+        label: "Ver dispositivo",
+        isEnabled: () => true,
+      },
+      {
+        key: trustedDeviceRowActionKey.renameDevice,
+        icon: Pencil,
+        label: "Renombrar dispositivo",
+        isEnabled: () => true,
+      },
+      {
+        key: trustedDeviceRowActionKey.renewTrust,
         icon: RotateCw,
-        label: "Reactivar",
+        label: "Renovar confianza",
+        isEnabled: (device) => !isRevoked(device),
       },
     ],
   },
   {
     actions: [
       {
-        key: trustedDeviceRevokedRowActionKey.forceDestroy,
+        key: trustedDeviceRowActionKey.reactivate,
+        icon: RotateCw,
+        label: "Reactivar",
+        isEnabled: isRevoked,
+      },
+    ],
+  },
+  {
+    actions: [
+      {
+        key: trustedDeviceRowActionKey.revokeDevice,
+        icon: Trash2,
+        label: "Revocar dispositivo",
+        isEnabled: (device) => !isRevoked(device),
+        className:
+          "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
+        iconClassName: "text-red-600 dark:text-red-500",
+      },
+      {
+        key: trustedDeviceRowActionKey.forceDestroy,
         icon: Trash2,
         label: "Eliminar definitivamente",
+        isEnabled: (device) => isRevoked(device),
         className:
           "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
         iconClassName: "text-red-600 dark:text-red-500",

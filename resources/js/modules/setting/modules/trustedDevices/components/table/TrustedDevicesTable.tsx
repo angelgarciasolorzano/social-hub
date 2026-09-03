@@ -10,6 +10,8 @@ import {
   RenameDeviceDialog,
   RenewTrustDialog,
   RevokeDeviceDialog,
+  TrustedDeviceForceDestroyDialog,
+  TrustedDeviceReactivationDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import TrustedDevicesPagination from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesPagination";
 import {
@@ -51,6 +53,8 @@ import {
 } from "@/shared/components/shadcn/ui/table";
 
 import { useDialog } from "@/shared/hooks";
+
+import { cn } from "@/shared/lib";
 
 import type { SharedData } from "@/shared/types";
 
@@ -189,13 +193,31 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
           />
         );
 
+      case trustedDeviceRowActionKey.reactivate:
+        return (
+          <TrustedDeviceReactivationDialog
+            device={selectedDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceRowActionKey.forceDestroy:
+        return (
+          <TrustedDeviceForceDestroyDialog
+            device={selectedDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
       default:
         return null;
     }
   };
 
   return (
-    <TableRow>
+    <TableRow className={cn(device.deletedAt !== null && "opacity-75")}>
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
           {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
@@ -208,9 +230,15 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
       <TableCell className="text-muted-foreground">{browserAndOs}</TableCell>
 
       <TableCell>
-        <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
-          {device.isActive ? "Activo" : "Expirado"}
-        </Badge>
+        {device.deletedAt !== null ? (
+          <Badge variant="destructive" className="rounded-md">
+            Revocado
+          </Badge>
+        ) : (
+          <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
+            {device.isActive ? "Activo" : "Expirado"}
+          </Badge>
+        )}
       </TableCell>
 
       <TableCell>
@@ -232,16 +260,31 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
                   {group.actions.map((action) => {
                     const Icon = action.icon;
+                    const enabled = action.isEnabled(device);
 
                     return (
                       <DropdownMenuItem
-                        className={action.className}
+                        className={cn(
+                          action.className,
+                          !enabled && "cursor-not-allowed opacity-50",
+                        )}
+                        disabled={!enabled}
                         key={action.key}
-                        onClick={() => {
+                        onClick={(event) => {
+                          if (!enabled) {
+                            event.preventDefault();
+                            return;
+                          }
+
                           handleDeviceAction(action.key, device);
                         }}
                       >
-                        <Icon className={action.iconClassName} />
+                        <Icon
+                          className={cn(
+                            action.iconClassName ?? "text-muted-foreground",
+                            !enabled && "opacity-70",
+                          )}
+                        />
                         {action.label}
                       </DropdownMenuItem>
                     );

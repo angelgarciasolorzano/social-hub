@@ -1,6 +1,7 @@
 export const statusOptions = [
   { value: "active", label: "Activo" },
   { value: "inactive", label: "Expirado" },
+  { value: "revoked", label: "Revocado" },
 ] as const;
 
 export type TrustedDeviceStatusFilter = (typeof statusOptions)[number]["value"];
