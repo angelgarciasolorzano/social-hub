@@ -82,9 +82,8 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
     }
 
     /**
-     * Find the still-active trusted device matching the current request, or null
-     * when the device is unknown. Delegates to the model so the matching rules
-     * (including the IP-required-for-match invariant) live in one place.
+     * Find the trusted device matching the current request fingerprint, including revoked/expired.
+     * Delegates to the model so the matching rules and IP-required invariant live in one place.
      */
     private function findCurrentDeviceMatch(): ?TrustedDevice
     {
@@ -102,7 +101,7 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
 
         $osInfo = $this->inferOsInfo($this->deviceDetector);
 
-        return TrustedDevice::findActiveMatch($user, $userAgent, $osInfo['name'], $this->request->ip());
+        return TrustedDevice::findAnyMatchForFingerprint($user, $userAgent, $osInfo['name'], $this->request->ip());
     }
 
     /**

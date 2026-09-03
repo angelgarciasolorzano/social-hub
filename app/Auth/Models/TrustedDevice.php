@@ -160,6 +160,35 @@ class TrustedDevice extends Model
     }
 
     /**
+     * Find any trusted device matching the fingerprint, preferring active over revoked.
+     * Used by the UI to surface "already registered" hints regardless of state.
+     */
+    public static function findAnyMatchForFingerprint(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+    ): ?self {
+        $active = self::findActiveMatch($user, $userAgent, $osName, $ip);
+
+        if ($active instanceof self) {
+            return $active;
+        }
+
+        if ($ip === null) {
+            return null;
+        }
+
+        return $user->trustedDevices()
+            ->onlyTrashed()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->latest('deleted_at')
+            ->first();
+    }
+
+    /**
      * Delete prior trusted devices for the same user + UA + OS + IP, excluding
      * `excludeId`. No-ops (with a warning) when `$ip` is null to avoid wiping
      * unrelated devices that share a UA string.

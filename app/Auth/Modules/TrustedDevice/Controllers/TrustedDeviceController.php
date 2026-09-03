@@ -337,6 +337,36 @@ class TrustedDeviceController extends Controller
         $userAgent = $trustedDeviceStoreRequest->userAgent();
         $ip = $trustedDeviceStoreRequest->ip();
 
+        if ($userAgent !== null && $ip !== null) {
+            $existingMatch = TrustedDevice::findAnyMatchForFingerprint(
+                $user,
+                $userAgent,
+                $osInfo['name'],
+                $ip,
+            );
+
+            if ($existingMatch instanceof TrustedDevice) {
+                if ($existingMatch->deleted_at !== null) {
+                    return Inertia::flash([
+                        'type' => 'error',
+                        'message' => 'Este dispositivo ya esta registrado pero fue revocado. Reactívalo desde la lista de dispositivos revocados en lugar de agregarlo nuevamente.',
+                    ])->back();
+                }
+
+                if (! $existingMatch->isActive()) {
+                    return Inertia::flash([
+                        'type' => 'error',
+                        'message' => 'Este dispositivo ya esta registrado pero su confianza expiro. Renueva su confianza desde la lista de dispositivos expirados en lugar de agregarlo nuevamente.',
+                    ])->back();
+                }
+
+                return Inertia::flash([
+                    'type' => 'error',
+                    'message' => 'Este dispositivo ya esta registrado como de confianza.',
+                ])->back();
+            }
+        }
+
         /** @var int $cookieLifetimeMinutes */
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
@@ -353,6 +383,8 @@ class TrustedDeviceController extends Controller
             $cookieLifetimeMinutes,
             $trustedDeviceStoreRequest,
         ): TrustedDevice {
+            // Race-safe re-check: another request may have created the row
+            // between the pre-check above and now.
             if ($userAgent !== null && $ip !== null) {
                 $existingMatch = TrustedDevice::findActiveMatch(
                     $user,
