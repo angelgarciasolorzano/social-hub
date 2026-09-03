@@ -26,7 +26,7 @@ enum TrustedDeviceAction: string
             self::Renamed => 'Dispositivo renombrado',
             self::Revoked => 'Dispositivo revocado',
             self::RevokedAll => 'Todos los dispositivos revocados',
-            self::Reactivated => 'Dispositivo re-confiado',
+            self::Reactivated => 'Dispositivo reactivado',
         };
     }
 }

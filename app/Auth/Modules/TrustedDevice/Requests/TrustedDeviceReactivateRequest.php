@@ -41,7 +41,7 @@ class TrustedDeviceReactivateRequest extends FormRequest
 
     /**
      * Verifies the OTP only when the browser doesn't already hold the device
-     * cookie; otherwise re-confirmation is silent.
+     * cookie; otherwise reactivation is silent.
      */
     public function withValidator(Validator $validator): void
     {

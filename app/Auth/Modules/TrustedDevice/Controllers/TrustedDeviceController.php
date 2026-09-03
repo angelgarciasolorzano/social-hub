@@ -486,8 +486,8 @@ class TrustedDeviceController extends Controller
         return Inertia::flash([
             'type' => 'success',
             'message' => $cookieMatches
-                ? 'Dispositivo re-confiado correctamente.'
-                : 'Dispositivo re-confiado. Se regeneró el token de confianza por seguridad.',
+                ? 'Dispositivo reactivado correctamente.'
+                : 'Dispositivo reactivado. Se regeneró el token de confianza por seguridad.',
         ])->back();
     }
 
