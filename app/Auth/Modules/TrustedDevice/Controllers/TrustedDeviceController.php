@@ -116,6 +116,11 @@ class TrustedDeviceController extends Controller
             'trustedDevices' => $query
                 ->paginate($perPage)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
+            'revokedDevices' => $user->trustedDevices()
+                ->onlyTrashed()
+                ->latest('deleted_at')
+                ->paginate($perPage, pageName: 'revokedPage')
+                ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
             'stats' => $this->buildStats($user),
             'recentActivity' => $user->trustedDeviceEvents()
                 ->latest('created_at')
