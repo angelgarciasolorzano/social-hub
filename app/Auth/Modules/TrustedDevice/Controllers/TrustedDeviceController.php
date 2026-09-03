@@ -442,29 +442,18 @@ class TrustedDeviceController extends Controller
         ])->back();
     }
 
-    /**
-     * Restore a soft-deleted trusted device. Two paths:
-     * - Cookie still matches: silent restore, same token_hash.
-     * - Cookie is gone: FormRequest enforces OTP, then we mint a fresh token.
-     */
     public function reactivate(TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $trustedDeviceReactivateRequest->user()?->getKey(), 403);
 
-        $cookieMatches = $trustedDeviceReactivateRequest->cookieMatchesDevice();
-
         /** @var int $cookieLifetimeMinutes */
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
-        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $cookieMatches, $cookieLifetimeMinutes): void {
-            $newToken = null;
-
-            if (! $cookieMatches) {
-                $newToken = $this->mintToken();
-                $trustedDevice->forceFill(['token_hash' => $newToken['hash']]);
-            }
+        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $cookieLifetimeMinutes): void {
+            $newToken = $this->mintToken();
 
             $trustedDevice->forceFill([
+                'token_hash' => $newToken['hash'],
                 'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
                 'last_used_at' => CarbonImmutable::now(),
             ])->save();
@@ -478,24 +467,15 @@ class TrustedDeviceController extends Controller
                 request: $trustedDeviceReactivateRequest,
             );
 
-            if ($newToken !== null) {
-                $this->queueTrustedDeviceCookie($newToken['token']);
-            }
+            $this->queueTrustedDeviceCookie($newToken['token']);
         });
 
         return Inertia::flash([
             'type' => 'success',
-            'message' => $cookieMatches
-                ? 'Dispositivo reactivado correctamente.'
-                : 'Dispositivo reactivado. Se regeneró el token de confianza por seguridad.',
+            'message' => 'Dispositivo reactivado correctamente. Se regeneró el token de confianza por seguridad.',
         ])->back();
     }
 
-    /**
-     * Permanently delete a soft-deleted trusted device (GDPR). The `Revoked`
-     * event is recorded BEFORE `forceDelete()` so the snapshot `device_label`
-     * survives the `nullOnDelete` on `trusted_device_events.trusted_device_id`.
-     */
     public function forceDestroy(TrustedDeviceDestroyForceRequest $trustedDeviceDestroyForceRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $trustedDeviceDestroyForceRequest->user()?->getKey(), 403);

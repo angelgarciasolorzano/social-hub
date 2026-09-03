@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Requests;
 
-use App\Auth\Models\TrustedDevice;
 use App\User\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,27 +31,24 @@ class TrustedDeviceReactivateRequest extends FormRequest
     {
         return [
             'otp_code' => FluentRule::string()
-                ->nullable()
-                ->requiredIf(fn (): bool => ! $this->cookieMatchesDevice())
-                ->min(6, message: 'El código debe tener al menos 6 caracteres.')
-                ->max(10, message: 'El código es demasiado largo.'),
+                ->required(message: 'Debes ingresar el código de verificación.')
+                ->min(6, message: 'El código debe tener 6 dígitos.')
+                ->max(6, message: 'El código debe tener 6 dígitos.')
+                ->rule('regex:/^[0-9]+$/', 'El código solo puede contener números.'),
         ];
     }
 
-    /**
-     * Verifies the OTP only when the browser doesn't already hold the device
-     * cookie; otherwise reactivation is silent.
-     */
+    /** Verifies the OTP against TOTP (and recovery codes as fallback). */
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if ($this->cookieMatchesDevice()) {
+            if ($validator->errors()->isNotEmpty()) {
                 return;
             }
 
             $code = $this->input('otp_code');
 
-            if (! is_string($code) || $code === '') {
+            if (! \is_string($code) || $code === '') {
                 return;
             }
 
@@ -62,27 +58,9 @@ class TrustedDeviceReactivateRequest extends FormRequest
         });
     }
 
-    /** True when `hash(cookie) === device.token_hash`. */
-    public function cookieMatchesDevice(): bool
-    {
-        $rawToken = $this->cookie('trusted_device');
-
-        if (! is_string($rawToken) || $rawToken === '') {
-            return false;
-        }
-
-        $device = $this->route('trustedDevice');
-
-        if (! $device instanceof TrustedDevice) {
-            return false;
-        }
-
-        return hash('sha256', $rawToken) === $device->token_hash;
-    }
-
     /**
-     * Mirrors Fortify's TOTP/recovery check without depending on the
-     * `login.id` session key.
+     * TOTP first; falls back to recovery codes. Logs (without the code) on
+     * decryption errors so we don't swallow legitimate failures silently.
      */
     private function isValidOtpCode(string $code): bool
     {
@@ -94,11 +72,11 @@ class TrustedDeviceReactivateRequest extends FormRequest
 
         $encryptedSecret = $user->two_factor_secret;
 
-        if (is_string($encryptedSecret) && $encryptedSecret !== '') {
+        if (\is_string($encryptedSecret) && $encryptedSecret !== '') {
             try {
                 $secret = Fortify::currentEncrypter()->decrypt($encryptedSecret);
 
-                if (is_string($secret) && resolve(TwoFactorAuthenticationProvider::class)->verify($secret, $code)) {
+                if (\is_string($secret) && resolve(TwoFactorAuthenticationProvider::class)->verify($secret, $code)) {
                     return true;
                 }
             } catch (Throwable $throwable) {
@@ -111,14 +89,14 @@ class TrustedDeviceReactivateRequest extends FormRequest
 
         $encryptedRecoveryCodes = $user->two_factor_recovery_codes;
 
-        if (is_string($encryptedRecoveryCodes) && $encryptedRecoveryCodes !== '') {
+        if (\is_string($encryptedRecoveryCodes) && $encryptedRecoveryCodes !== '') {
             try {
                 $decoded = Fortify::currentEncrypter()->decrypt($encryptedRecoveryCodes);
 
-                if (is_string($decoded)) {
+                if (\is_string($decoded)) {
                     $recoveryCodes = json_decode($decoded, true);
 
-                    if (is_array($recoveryCodes) && in_array($code, $recoveryCodes, true)) {
+                    if (\is_array($recoveryCodes) && \in_array($code, $recoveryCodes, true)) {
                         return true;
                     }
                 }
