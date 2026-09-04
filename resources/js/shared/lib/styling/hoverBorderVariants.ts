@@ -1,4 +1,4 @@
-export const hoverBorderColors = {
+export const hoverBorderVariants = {
   green: "hover:border-green-400 dark:hover:border-green-500/70",
   blue: "hover:border-blue-400 dark:hover:border-blue-500/70",
   yellow: "hover:border-yellow-400 dark:hover:border-yellow-500/70",
@@ -9,4 +9,4 @@ export const hoverBorderColors = {
   gray: "hover:border-gray-400 dark:hover:border-gray-500/70",
 } as const;
 
-export type HoverBorderColor = keyof typeof hoverBorderColors;
+export type HoverBorderVariant = keyof typeof hoverBorderVariants;

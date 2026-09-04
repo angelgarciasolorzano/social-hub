@@ -4,8 +4,8 @@ import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 
 import {
-  type HoverBorderColor,
-  hoverBorderColors,
+  type HoverBorderVariant,
+  hoverBorderVariants,
   type IconColorVariant,
   iconColorVariants,
 } from "@/shared/lib/styling";
@@ -50,7 +50,7 @@ export function OptionCard<TKey extends string = string>({
               className={cn(
                 "group flex flex-1 gap-4 rounded-xl border p-4 shadow-sm transition-all",
                 hasAction && "cursor-pointer hover:shadow-lg",
-                hasAction && hoverBorderColors[option.iconColor as HoverBorderColor],
+                hasAction && hoverBorderVariants[option.iconColor as HoverBorderVariant],
               )}
             >
               <div
