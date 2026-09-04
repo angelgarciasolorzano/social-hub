@@ -2,7 +2,12 @@ import type { JSX } from "react";
 
 import { ChevronRight } from "lucide-react";
 
-import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
+import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevices/components/dialog/TrustedDeviceRecommendationsDialog";
+import { trustedDeviceRecommendationsPreview } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
+import {
+  createDialogCloseHandler,
+  type DialogClosingState,
+} from "@/modules/setting/shared/utils/dialog";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -13,22 +18,26 @@ import {
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
 
+import { useDialog } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { iconColorVariants } from "@/shared/lib/styling";
 
-/**
- * Right-side "Recomendaciones" card. Moved out of TrustedDevice.tsx (SOC-22)
- * so each panel card lives next to its peers in components/ui/ and can wire
- * its own `useDialog` locally for the detail dialog (Phase 6).
- */
+interface RecommendationsDialogState extends DialogClosingState {
+  kind: "open";
+}
+
 function TrustedDevicesRecommendations(): JSX.Element {
+  const dialog = useDialog<RecommendationsDialogState | null>(null);
+  const handleClose = createDialogCloseHandler(dialog);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recomendaciones</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {trustedDeviceRecommendations.map((recommendation) => {
+        {trustedDeviceRecommendationsPreview.map((recommendation) => {
           const Icon = recommendation.icon;
 
           return (
@@ -58,13 +67,23 @@ function TrustedDevicesRecommendations(): JSX.Element {
           );
         })}
       </CardContent>
+
       <CardFooter className="mx-auto">
-        {/* SOC-22: CTA "Más recomendaciones" — wired to the detail dialog in Phase 6. */}
-        <Button variant="link" className="text-blue-700 dark:text-blue-500">
+        <Button
+          variant="link"
+          className="text-blue-700 dark:text-blue-500"
+          onClick={() => {
+            dialog.show({ kind: "open", closing: false });
+          }}
+        >
           Mas recomendaciones
           <ChevronRight className="h-4 w-4" />
         </Button>
       </CardFooter>
+
+      {dialog.state !== null && (
+        <TrustedDeviceRecommendationsDialog open={!dialog.state.closing} onClose={handleClose} />
+      )}
     </Card>
   );
 }

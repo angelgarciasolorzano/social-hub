@@ -1,4 +1,14 @@
-import { Calendar, Eye, Pencil, Plus, RotateCw, Trash2, Users } from "lucide-react";
+import {
+  Calendar,
+  Eye,
+  Pencil,
+  Plus,
+  RefreshCw,
+  RotateCw,
+  ShieldCheck,
+  Trash2,
+  Users,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
@@ -31,7 +41,22 @@ export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
     iconColor: "orange",
     title: "Revoca accesos que no reconzcas",
   },
+  {
+    description: "Reduce el riesgo de vulnerabilidades conocidas.",
+    icon: RefreshCw,
+    iconColor: "purple",
+    title: "Mantén tu navegador y sistema actualizados",
+  },
+  {
+    description: "Activa la verificacion en dos pasos para añadir una capa extra de seguridad.",
+    icon: ShieldCheck,
+    iconColor: "green",
+    title: "Habilita la autenticacion en dos pasos",
+  },
 ];
+
+export const trustedDeviceRecommendationsPreview: TrustedDeviceRecommendation[] =
+  trustedDeviceRecommendations.slice(0, 3);
 
 export const trustedDeviceRowActionKey = {
   viewDevice: "view-device",
