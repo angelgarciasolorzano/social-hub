@@ -52,7 +52,7 @@ import {
   TableRow,
 } from "@/shared/components/shadcn/ui/table";
 
-import { useDialog } from "@/shared/hooks";
+import { useAppearance, useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 
@@ -106,10 +106,12 @@ function TrustedDevicesTable({
               {devices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="p-0">
-                    <EmptyState
-                      icon={MonitorSmartphone}
-                      title="No tienes dispositivos de confianza registrados."
-                    />
+                    <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                      <EmptyState
+                        icon={MonitorSmartphone}
+                        title="No tienes dispositivos de confianza registrados."
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -132,6 +134,8 @@ interface TrustedDeviceRowProps {
 function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
   const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePagination }>().props
     .trustedDevices;
+
+  const { appearance } = useAppearance();
 
   const browserAndOs = deviceBrowserAndOs(device);
 
@@ -231,7 +235,12 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
       <TableCell>
         {device.deletedAt !== null ? (
-          <Badge className="rounded-md dark:bg-red-700 dark:text-white">Revocado</Badge>
+          <Badge
+            variant={appearance === "light" ? "destructive" : null}
+            className="rounded-md dark:bg-red-700 dark:text-white"
+          >
+            Revocado
+          </Badge>
         ) : (
           <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
             {device.isActive ? "Activo" : "Expirado"}

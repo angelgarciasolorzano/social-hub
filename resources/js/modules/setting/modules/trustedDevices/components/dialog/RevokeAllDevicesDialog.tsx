@@ -16,6 +16,7 @@ import {
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
@@ -232,10 +233,10 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         </ScrollArea>
       ) : (
         <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground dark:bg-input/10">
-          <div className="flex h-14 w-14 shrink-0 rounded-full border border-violet-100 p-2 dark:border-violet-200/10">
-            <MonitorOff className="m-auto h-8 w-8" />
-          </div>
-          Aun no tienes dispositivos de confianza registrados.
+          <EmptyState
+            icon={MonitorOff}
+            title="Aun no tienes dispositivos de confianza registrados."
+          />
         </div>
       )}
     </div>

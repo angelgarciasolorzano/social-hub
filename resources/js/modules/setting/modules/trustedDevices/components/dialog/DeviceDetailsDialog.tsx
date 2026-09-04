@@ -57,7 +57,8 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { useDialog } from "@/shared/hooks";
+import type { Appearance } from "@/shared/hooks";
+import { useAppearance, useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 import {
@@ -89,6 +90,8 @@ type DialogActionState = Pick<DeviceDetailsDialogProps, "device"> &
 
 function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps): JSX.Element {
   const dialogDevice = useDialog<DialogActionState | null>(null);
+  const { appearance } = useAppearance();
+
   const isRevoked = device.deletedAt !== null;
 
   const handleDeviceAction = (action: DeviceDetailsDialogAction, device: TrustedDevice): void => {
@@ -162,7 +165,12 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
               <Eye className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
               {isRevoked ? (
-                <Badge className="dark:bg-red-700 dark:text-white">Revocado</Badge>
+                <Badge
+                  variant={appearance === "light" ? "destructive" : null}
+                  className="dark:bg-red-700 dark:text-white"
+                >
+                  Revocado
+                </Badge>
               ) : (
                 <Badge className={badgeVariants.success}>Activo</Badge>
               )}
@@ -176,7 +184,7 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <DeviceOverviewCard device={device} isRevoked={isRevoked} />
+          <DeviceOverviewCard device={device} isRevoked={isRevoked} appearance={appearance} />
 
           <div className="grid grid-cols-[1.8fr_1.7fr_2fr] gap-4">
             <DeviceActivityCard device={device} />
@@ -209,9 +217,14 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
 interface DeviceOverviewCardProps {
   device: TrustedDevice;
   isRevoked: boolean;
+  appearance: Appearance;
 }
 
-function DeviceOverviewCard({ device, isRevoked }: DeviceOverviewCardProps): JSX.Element {
+function DeviceOverviewCard({
+  device,
+  isRevoked,
+  appearance,
+}: DeviceOverviewCardProps): JSX.Element {
   return (
     <Card className="dark:bg-input/10">
       <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
@@ -230,7 +243,10 @@ function DeviceOverviewCard({ device, isRevoked }: DeviceOverviewCardProps): JSX
               <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
 
               {isRevoked ? (
-                <Badge className="dark:bg-red-700 dark:text-white">
+                <Badge
+                  variant={appearance === "light" ? "destructive" : null}
+                  className="dark:bg-red-700 dark:text-white"
+                >
                   <ShieldOff className="size-3" data-icon="inline-start" />
                   Revocado
                 </Badge>

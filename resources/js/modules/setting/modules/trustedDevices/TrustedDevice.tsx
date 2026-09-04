@@ -283,6 +283,8 @@ function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Ele
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Acciones del dispositivo</DropdownMenuLabel>
+
           {trustedDeviceTitleActions.map((group, groupIndex) => (
             <Fragment key={groupIndex}>
               <DropdownMenuGroup>
