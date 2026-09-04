@@ -20,7 +20,7 @@ import {
   RenameDeviceDialog,
   RenewTrustDialog,
   RevokeAllDevicesDialog,
-  RevokeDeviceDialog,
+  TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
@@ -287,7 +287,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
 
       case twoFactorDeviceActionKey.revokeDevice:
         return (
-          <RevokeDeviceDialog
+          <TrustedDeviceRevokeDialog
             device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}

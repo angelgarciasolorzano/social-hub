@@ -32,7 +32,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
-interface RevokeDeviceDialogProps {
+interface TrustedDeviceRevokeDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
@@ -43,7 +43,11 @@ interface RevokeDeviceFormData {
   terms: boolean;
 }
 
-function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps): JSX.Element {
+function TrustedDeviceRevokeDialog({
+  device,
+  open,
+  onClose,
+}: TrustedDeviceRevokeDialogProps): JSX.Element {
   const { data, setData, submit, processing, reset, errors } = useForm<RevokeDeviceFormData>({
     password: "",
     terms: false,
@@ -99,28 +103,28 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
         <div className="flex flex-col gap-2">
           <DeviceSummaryCard
             device={device}
-            lastUsedAt={fromNow(device.lastUsedAt)}
             expiration={formatLongDate(device.expiresAt)}
+            lastUsedAt={fromNow(device.lastUsedAt)}
           />
 
           <RevokeConsequencesAlert />
 
           <RevokeDeviceForm
-            handleSubmit={handleSubmit}
-            errors={errors}
-            setData={setData}
             data={data}
+            errors={errors}
+            handleSubmit={handleSubmit}
+            setData={setData}
           />
         </div>
 
         <DialogFooter className="mt-1.5">
           <DialogClose asChild>
-            <Button type="button" variant="outline" disabled={processing}>
+            <Button disabled={processing} type="button" variant="outline">
               Cancelar
             </Button>
           </DialogClose>
 
-          <Button type="submit" form="revoke-trusted-device-form" disabled={processing}>
+          <Button disabled={processing} form="revoke-trusted-device-form" type="submit">
             {processing ? (
               <>
                 <Spinner />
@@ -155,32 +159,32 @@ function RevokeConsequencesAlert(): JSX.Element {
 }
 
 interface RevokeDeviceFormProps {
-  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
-  errors: FormDataErrors<RevokeDeviceFormData>;
-  setData: SetDataAction<RevokeDeviceFormData>;
   data: RevokeDeviceFormData;
+  errors: FormDataErrors<RevokeDeviceFormData>;
+  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  setData: SetDataAction<RevokeDeviceFormData>;
 }
 
 function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
   const { handleSubmit, errors, setData, data } = props;
 
   return (
-    <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
+    <form id="revoke-trusted-device-form" className="grid gap-4" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-2">
         <Label htmlFor="revoke-trusted-device">
           Para continuar, confirma y escribe tu contraseña
         </Label>
 
         <PasswordInput
+          aria-invalid={errors.password ? "true" : "false"}
+          autoFocus
           id="revoke-trusted-device"
           name="password"
-          required
-          autoFocus
           placeholder="Ingresa tu contraseña"
+          required
           onChange={(e) => {
             setData("password", e.target.value);
           }}
-          aria-invalid={errors.password ? "true" : "false"}
         />
 
         {errors.password && <InputError message={errors.password} />}
@@ -188,13 +192,13 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
 
       <div className="flex gap-2">
         <Checkbox
+          aria-invalid={errors.terms ? "true" : "false"}
+          checked={data.terms}
           id="revoke-trusted-device-terms"
           name="terms"
-          checked={data.terms}
           onCheckedChange={(checked) => {
             setData("terms", checked === true);
           }}
-          aria-invalid={errors.terms ? "true" : "false"}
         />
 
         <LabelForm htmlFor="revoke-trusted-device-terms">
@@ -207,4 +211,4 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
   );
 }
 
-export default RevokeDeviceDialog;
+export default TrustedDeviceRevokeDialog;

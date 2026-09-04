@@ -81,8 +81,8 @@ function TrustedDeviceForceDestroyDialog({
             </div>
           </DialogTitle>
           <DialogDescription>
-            Esta acción es irreversible. El dispositivo se borrará junto con su rastro del audit log
-            (los eventos quedan con el snapshot del nombre).
+            Esta acción es definitiva. El dispositivo se eliminara por completo de tu cuenta y no
+            podras volver a confiar en el.
           </DialogDescription>
         </DialogHeader>
 

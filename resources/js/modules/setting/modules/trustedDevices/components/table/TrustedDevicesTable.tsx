@@ -9,9 +9,9 @@ import {
   DeviceDetailsDialog,
   RenameDeviceDialog,
   RenewTrustDialog,
-  RevokeDeviceDialog,
   TrustedDeviceForceDestroyDialog,
   TrustedDeviceReactivationDialog,
+  TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevices/components/dialog";
 import TrustedDevicesPagination from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesPagination";
 import {
@@ -186,7 +186,7 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
       case trustedDeviceRowActionKey.revokeDevice:
         return (
-          <RevokeDeviceDialog
+          <TrustedDeviceRevokeDialog
             device={selectedDevice}
             onClose={handleDialogClose}
             open={!isClosing}

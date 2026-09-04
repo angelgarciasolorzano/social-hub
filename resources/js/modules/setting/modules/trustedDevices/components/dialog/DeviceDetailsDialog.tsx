@@ -64,9 +64,9 @@ import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/st
 
 import RenameDeviceDialog from "./RenameDeviceDialog";
 import RenewTrustDialog from "./RenewTrustDialog";
-import RevokeDeviceDialog from "./RevokeDeviceDialog";
 import TrustedDeviceForceDestroyDialog from "./TrustedDeviceForceDestroyDialog";
 import TrustedDeviceReactivationDialog from "./TrustedDeviceReactivationDialog";
+import TrustedDeviceRevokeDialog from "./TrustedDeviceRevokeDialog";
 
 interface DeviceDetailsDialogProps {
   device: TrustedDevice;
@@ -74,7 +74,6 @@ interface DeviceDetailsDialogProps {
   onClose: () => void;
 }
 
-/** Local action union for the details dialog (covers all lifecycle states, not just two-factor). */
 type DeviceDetailsDialogAction =
   "renameDevice" | "renewTrust" | "revokeDevice" | "reactivate" | "forceDestroy";
 
@@ -114,7 +113,11 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
 
       case "revokeDevice":
         return (
-          <RevokeDeviceDialog device={actionDevice} open={!isClosing} onClose={handleDialogClose} />
+          <TrustedDeviceRevokeDialog
+            device={actionDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
         );
 
       case "reactivate":
