@@ -2,12 +2,13 @@ import type { JSX } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { ArrowRight, CircleAlert, ShieldCheck } from "lucide-react";
+import { ArrowRight, CircleAlert, ShieldOff } from "lucide-react";
 
 import {
   TrustedDeviceDetailsHeader,
   TrustedDeviceInfoCard,
 } from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDeviceInfoCard";
+import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -26,22 +27,20 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { alertVariants } from "@/shared/lib/styling";
 
-interface DeviceAlreadyRegisteredDialogProps {
+interface TrustedDeviceRevokedDialogProps {
   existingDevice: TrustedDevice;
   open: boolean;
   onClose: () => void;
-  showListLink?: boolean;
 }
 
-function DeviceAlreadyRegisteredDialog({
+function TrustedDeviceRevokedDialog({
   existingDevice,
   open,
   onClose,
-  showListLink = true,
-}: DeviceAlreadyRegisteredDialogProps): JSX.Element {
-  const handleGoToList = (): void => {
+}: TrustedDeviceRevokedDialogProps): JSX.Element {
+  const handleGoToRevokedList = (): void => {
     onClose();
-    router.visit(index().url, {
+    router.visit(index({ query: { status: trustedDeviceStatusFilterValue.revoked } }).url, {
       preserveScroll: true,
       preserveState: true,
     });
@@ -60,30 +59,34 @@ function DeviceAlreadyRegisteredDialog({
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-              Dispositivo ya registrado
+              <ShieldOff className="h-5 w-5 text-muted-foreground" />
+              Dispositivo revocado
             </div>
           </DialogTitle>
           <DialogDescription>
-            Este dispositivo ya esta registrado como de confianza en tu cuenta. No es necesario
-            agregarlo nuevamente.
+            Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en él,
+            reactivarlo desde la lista de dispositivos revocados.
           </DialogDescription>
         </DialogHeader>
 
         <Separator />
 
         <TrustedDeviceDetailsHeader
-          description="Asi es como identificamos este dispositivo actualmente."
-          title="Detalles del dispositivo registrado"
+          description="Asi es como identificamos este dispositivo antes de ser revocado."
+          title="Detalles del dispositivo revocado"
         />
 
         <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
 
-        {showListLink && <AlreadyRegisteredActionsAlert onGoToList={handleGoToList} />}
+        <RevokedActionsAlert onGoToRevokedList={handleGoToRevokedList} />
 
         <DialogFooter>
-          <Button onClick={onClose} type="button">
+          <Button onClick={onClose} type="button" variant="outline">
             Cerrar
+          </Button>
+          <Button onClick={handleGoToRevokedList} type="button">
+            Ir a dispositivos revocados
+            <ArrowRight />
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -91,21 +94,19 @@ function DeviceAlreadyRegisteredDialog({
   );
 }
 
-interface AlreadyRegisteredActionsAlertProps {
-  onGoToList: () => void;
+interface RevokedActionsAlertProps {
+  onGoToRevokedList: () => void;
 }
 
-function AlreadyRegisteredActionsAlert({
-  onGoToList,
-}: AlreadyRegisteredActionsAlertProps): JSX.Element {
+function RevokedActionsAlert({ onGoToRevokedList }: RevokedActionsAlertProps): JSX.Element {
   return (
-    <Alert className={alertVariants.info}>
+    <Alert className={alertVariants.warning}>
       <CircleAlert />
-      <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
+      <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
       <AlertDescription className="flex items-center gap-4">
-        Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
-        <Button onClick={onGoToList} size="sm" variant="outline">
-          Ir a dispositivos de confianza
+        Reactivarlo desde la lista de revocados restaura la fila con un token nuevo por seguridad.
+        <Button onClick={onGoToRevokedList} size="sm" variant="outline">
+          Ir a la lista de revocados
           <ArrowRight />
         </Button>
       </AlertDescription>
@@ -113,4 +114,4 @@ function AlreadyRegisteredActionsAlert({
   );
 }
 
-export default DeviceAlreadyRegisteredDialog;
+export default TrustedDeviceRevokedDialog;

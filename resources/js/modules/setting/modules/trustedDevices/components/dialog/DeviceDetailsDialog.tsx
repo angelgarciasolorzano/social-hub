@@ -16,6 +16,8 @@ import {
   MapPin,
   Pencil,
   RefreshCcw,
+  RotateCw,
+  ShieldOff,
   Trash2,
 } from "lucide-react";
 
@@ -27,10 +29,6 @@ import DeviceMetadataItem, {
 } from "@/modules/setting/modules/trustedDevices/components/ui/DeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevices/utils/valueOrFallback";
-import {
-  twoFactorDeviceActionKey,
-  type TwoFactorDeviceActionKey,
-} from "@/modules/setting/modules/twoFactor/data/twoFactorEnable";
 import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
@@ -59,14 +57,22 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { useDialog } from "@/shared/hooks";
+import type { Appearance } from "@/shared/hooks";
+import { useAppearance, useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
-import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/styling";
+import {
+  alertVariants,
+  badgeVariants,
+  buttonVariants,
+  iconColorVariants,
+} from "@/shared/lib/styling";
 
 import RenameDeviceDialog from "./RenameDeviceDialog";
 import RenewTrustDialog from "./RenewTrustDialog";
-import RevokeDeviceDialog from "./RevokeDeviceDialog";
+import TrustedDeviceForceDestroyDialog from "./TrustedDeviceForceDestroyDialog";
+import TrustedDeviceReactivationDialog from "./TrustedDeviceReactivationDialog";
+import TrustedDeviceRevokeDialog from "./TrustedDeviceRevokeDialog";
 
 interface DeviceDetailsDialogProps {
   device: TrustedDevice;
@@ -74,18 +80,21 @@ interface DeviceDetailsDialogProps {
   onClose: () => void;
 }
 
+type DeviceDetailsDialogAction =
+  "renameDevice" | "renewTrust" | "revokeDevice" | "reactivate" | "forceDestroy";
+
 type DialogActionState = Pick<DeviceDetailsDialogProps, "device"> &
   DialogClosingState & {
-    kind: Exclude<TwoFactorDeviceActionKey, typeof twoFactorDeviceActionKey.viewDevice>;
+    kind: DeviceDetailsDialogAction;
   };
 
 function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps): JSX.Element {
   const dialogDevice = useDialog<DialogActionState | null>(null);
+  const { appearance } = useAppearance();
 
-  const handleDeviceAction = (
-    action: Exclude<TwoFactorDeviceActionKey, typeof twoFactorDeviceActionKey.viewDevice>,
-    device: TrustedDevice,
-  ): void => {
+  const isRevoked = device.deletedAt !== null;
+
+  const handleDeviceAction = (action: DeviceDetailsDialogAction, device: TrustedDevice): void => {
     dialogDevice.show({ kind: action, device, closing: false });
   };
 
@@ -97,30 +106,41 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
     }
 
     const isClosing = dialogDevice.state.closing;
+    const actionDevice = dialogDevice.state.device;
 
     switch (dialogDevice.state.kind) {
-      case twoFactorDeviceActionKey.renameDevice:
+      case "renameDevice":
         return (
-          <RenameDeviceDialog
-            device={dialogDevice.state.device}
+          <RenameDeviceDialog device={actionDevice} open={!isClosing} onClose={handleDialogClose} />
+        );
+
+      case "renewTrust":
+        return (
+          <RenewTrustDialog device={actionDevice} open={!isClosing} onClose={handleDialogClose} />
+        );
+
+      case "revokeDevice":
+        return (
+          <TrustedDeviceRevokeDialog
+            device={actionDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case "reactivate":
+        return (
+          <TrustedDeviceReactivationDialog
+            device={actionDevice}
             open={!isClosing}
             onClose={handleDialogClose}
           />
         );
 
-      case twoFactorDeviceActionKey.renewTrust:
+      case "forceDestroy":
         return (
-          <RenewTrustDialog
-            device={dialogDevice.state.device}
-            open={!isClosing}
-            onClose={handleDialogClose}
-          />
-        );
-
-      case twoFactorDeviceActionKey.revokeDevice:
-        return (
-          <RevokeDeviceDialog
-            device={dialogDevice.state.device}
+          <TrustedDeviceForceDestroyDialog
+            device={actionDevice}
             open={!isClosing}
             onClose={handleDialogClose}
           />
@@ -144,69 +164,48 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
             <div className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
-              <Badge className={badgeVariants.success}>Activo</Badge>
+              {isRevoked ? (
+                <Badge
+                  variant={appearance === "light" ? "destructive" : null}
+                  className="dark:bg-red-700 dark:text-white"
+                >
+                  Revocado
+                </Badge>
+              ) : (
+                <Badge className={badgeVariants.success}>Activo</Badge>
+              )}
             </div>
           </DialogTitle>
           <DialogDescription>
-            Consulta la información completa de este dispositivo de confianza.
+            {isRevoked
+              ? "Consulta la informacion del dispositivo que fue revocado de tu cuenta."
+              : "Consulta la información completa de este dispositivo de confianza."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <DeviceOverviewCard device={device} />
+          <DeviceOverviewCard device={device} isRevoked={isRevoked} appearance={appearance} />
 
           <div className="grid grid-cols-[1.8fr_1.7fr_2fr] gap-4">
             <DeviceActivityCard device={device} />
 
             <DeviceMetadataCard device={device} />
 
-            <DeviceStatusCallouts />
+            <DeviceStatusCallouts
+              isRevoked={isRevoked}
+              onReactivate={() => {
+                handleDeviceAction("reactivate", device);
+              }}
+            />
           </div>
         </div>
 
         <DialogFooter className="flex items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              className="cursor-pointer"
-              variant="outline"
-              onClick={() => {
-                handleDeviceAction(twoFactorDeviceActionKey.renameDevice, device);
-              }}
-            >
-              <Pencil data-icon="inline-start" />
-              Renombrar dispositivo
-            </Button>
-
-            <Button
-              type="button"
-              className="cursor-pointer"
-              variant="outline"
-              onClick={() => {
-                handleDeviceAction(twoFactorDeviceActionKey.renewTrust, device);
-              }}
-            >
-              <RefreshCcw data-icon="inline-start" />
-              Renovar confianza
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button type="button" className="cursor-pointer" variant="outline" onClick={onClose}>
-              Cerrar
-            </Button>
-
-            <Button
-              variant="destructive"
-              className="dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-              onClick={() => {
-                handleDeviceAction(twoFactorDeviceActionKey.revokeDevice, device);
-              }}
-            >
-              <Trash2 />
-              Revokar dispositivo
-            </Button>
-          </div>
+          {isRevoked ? (
+            <RevokedFooterActions device={device} onAction={handleDeviceAction} onClose={onClose} />
+          ) : (
+            <ActiveFooterActions device={device} onAction={handleDeviceAction} onClose={onClose} />
+          )}
         </DialogFooter>
 
         {renderDialogDevice()}
@@ -215,9 +214,17 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
   );
 }
 
-type DeviceOverviewCardProps = Pick<DeviceDetailsDialogProps, "device">;
+interface DeviceOverviewCardProps {
+  device: TrustedDevice;
+  isRevoked: boolean;
+  appearance: Appearance;
+}
 
-function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
+function DeviceOverviewCard({
+  device,
+  isRevoked,
+  appearance,
+}: DeviceOverviewCardProps): JSX.Element {
   return (
     <Card className="dark:bg-input/10">
       <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
@@ -235,13 +242,23 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
             <div className="flex items-center justify-center gap-2">
               <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
 
-              <Badge className={badgeVariants.success}>
-                <Circle
-                  className="size-1.5! fill-green-800 text-green-800 dark:fill-green-500 dark:text-green-500"
-                  data-icon="inline-start"
-                />
-                Activo
-              </Badge>
+              {isRevoked ? (
+                <Badge
+                  variant={appearance === "light" ? "destructive" : null}
+                  className="dark:bg-red-700 dark:text-white"
+                >
+                  <ShieldOff className="size-3" data-icon="inline-start" />
+                  Revocado
+                </Badge>
+              ) : (
+                <Badge className={badgeVariants.success}>
+                  <Circle
+                    className="size-1.5! fill-green-800 text-green-800 dark:fill-green-500 dark:text-green-500"
+                    data-icon="inline-start"
+                  />
+                  Activo
+                </Badge>
+              )}
             </div>
 
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -256,13 +273,13 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
 
               <FaCircle className="h-1 w-1" />
 
-              <span>Dispositivo de confianza</span>
+              <span>{isRevoked ? "Dispositivo revocado" : "Dispositivo de confianza"}</span>
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Este dispositivo ha sido verificado y agregado a tu lista de dispositivos de
-              confianza. No se te solicitara el codigo de verificacion cada vez que inicies sesion
-              desde este dispositivo hasta su fecha de expiracion.
+              {isRevoked
+                ? "Este dispositivo fue removido de tu lista de dispositivos de confianza. La proxima vez que inicies sesion desde el, se te solicitara el codigo de verificacion."
+                : "Este dispositivo ha sido verificado y agregado a tu lista de dispositivos de confianza. No se te solicitara el codigo de verificacion cada vez que inicies sesion desde este dispositivo hasta su fecha de expiracion."}
             </p>
           </div>
         </div>
@@ -290,8 +307,9 @@ function DeviceOverviewCard({ device }: DeviceOverviewCardProps): JSX.Element {
             <CircleAlert />
 
             <AlertTitle className="line-clamp-4">
-              Cuando expire, se te volvera a solicitar el codigo de verificacion al iniciar sesion
-              desde este dispositivo.
+              {isRevoked
+                ? "Aunque la fecha de expiracion siga vigente, este dispositivo ya no es de confianza. Reactivalo si quieres volver a confiar en el."
+                : "Cuando expire, se te volvera a solicitar el codigo de verificacion al iniciar sesion desde este dispositivo."}
             </AlertTitle>
           </Alert>
         </div>
@@ -348,11 +366,12 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
 type DeviceMetadataCardProps = Pick<DeviceDetailsDialogProps, "device">;
 
 type DeviceMetadataItems = Pick<DeviceMetadataItemProps, "icon" | "title" | "description"> & {
-  key: "browser" | "os" | "ip";
+  key: "browser" | "browserVersion" | "os" | "ip";
 };
 
 function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   const browser = valueOrFallback(device.browser, "Desconocido");
+  const browserVersion = valueOrFallback(device.browserVersion, "Desconocida");
   const osName = valueOrFallback(device.osName, "Desconocido");
   const ip = valueOrFallback(device.ip, "No disponible");
 
@@ -362,6 +381,12 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
       icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
       title: "Navegador",
       description: browser,
+    },
+    {
+      key: "browserVersion",
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      title: "Version del navegador",
+      description: browserVersion,
     },
     {
       key: "os",
@@ -400,7 +425,45 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   );
 }
 
-function DeviceStatusCallouts(): JSX.Element {
+interface DeviceStatusCalloutsProps {
+  isRevoked: boolean;
+  onReactivate: () => void;
+}
+
+function DeviceStatusCallouts({ isRevoked, onReactivate }: DeviceStatusCalloutsProps): JSX.Element {
+  if (isRevoked) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Alert className={alertVariants.warning}>
+          <ShieldOff />
+
+          <AlertTitle>Este dispositivo está revocado</AlertTitle>
+          <AlertDescription>
+            Ya no se considera de confianza. La proxima vez que inicies sesion desde el, se te
+            solicitara el codigo de verificacion.
+            <Separator className="my-1" />
+            <Button className="cursor-pointer" onClick={onReactivate} size="sm" variant="outline">
+              <RotateCw data-icon="inline-start" />
+              Reactivar ahora
+            </Button>
+          </AlertDescription>
+        </Alert>
+
+        <Alert className={cn(alertVariants.preview, "dark:text-purple-400")}>
+          <Lightbulb />
+
+          <AlertTitle>¿Que significa revocar un dispositivo?</AlertTitle>
+          <AlertDescription>
+            Revocar un dispositivo lo retira de tu lista de confianza y borra su token de acceso. La
+            proxima vez que inicies sesion desde el, deberas verificarte con un codigo OTP. Si fue
+            un error o quieres volver a confiar en el, puedes reactivarlo y se generara un token
+            nuevo por seguridad.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <Alert className={alertVariants.success}>
@@ -433,6 +496,99 @@ function DeviceStatusCallouts(): JSX.Element {
         </AlertDescription>
       </Alert>
     </div>
+  );
+}
+
+interface FooterActionsProps {
+  device: TrustedDevice;
+  onAction: (action: DeviceDetailsDialogAction, device: TrustedDevice) => void;
+  onClose: () => void;
+}
+
+function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps): JSX.Element {
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <Button
+          className="cursor-pointer"
+          onClick={() => {
+            onAction("renameDevice", device);
+          }}
+          type="button"
+          variant="outline"
+        >
+          <Pencil data-icon="inline-start" />
+          Renombrar dispositivo
+        </Button>
+
+        <Button
+          className="cursor-pointer"
+          onClick={() => {
+            onAction("renewTrust", device);
+          }}
+          type="button"
+          variant="outline"
+        >
+          <RefreshCcw data-icon="inline-start" />
+          Renovar confianza
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button className="cursor-pointer" onClick={onClose} type="button" variant="outline">
+          Cerrar
+        </Button>
+
+        <Button
+          className={buttonVariants.destructive}
+          onClick={() => {
+            onAction("revokeDevice", device);
+          }}
+          variant="destructive"
+        >
+          <Trash2 />
+          Revokar dispositivo
+        </Button>
+      </div>
+    </>
+  );
+}
+
+function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps): JSX.Element {
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <Button
+          className="cursor-pointer"
+          onClick={() => {
+            onAction("reactivate", device);
+          }}
+          type="button"
+          variant="outline"
+        >
+          <RotateCw data-icon="inline-start" />
+          Reactivar dispositivo
+        </Button>
+
+        <Button
+          className="cursor-pointer"
+          onClick={() => {
+            onAction("forceDestroy", device);
+          }}
+          type="button"
+          variant="outline"
+        >
+          <Trash2 data-icon="inline-start" />
+          Eliminar definitivamente
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button className="cursor-pointer" onClick={onClose} type="button" variant="outline">
+          Cerrar
+        </Button>
+      </div>
+    </>
   );
 }
 

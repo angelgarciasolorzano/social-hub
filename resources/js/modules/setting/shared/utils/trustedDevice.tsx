@@ -20,13 +20,17 @@ export function deviceLabel(device: TrustedDevice): string {
  * missing piece so the result never shows a dangling separator.
  *
  * @example
- * deviceBrowserAndOs(device)                  // "Chrome / macOS"
+ * deviceBrowserAndOs(device)                  // "Chrome 152 / macOS"
  * deviceBrowserAndOs({ browser: null, ... })  // "macOS"
  * deviceBrowserAndOs({ browser: "", ... })    // "macOS"
  * deviceBrowserAndOs({ ... no browser/os })    // "Desconocido"
  */
 export function deviceBrowserAndOs(device: TrustedDevice): string {
-  const parts = [device.browser, device.osName]
+  const browserLabel = [device.browser, device.browserVersion]
+    .filter((value) => value !== null && value !== "")
+    .join(" ");
+
+  const parts = [browserLabel, device.osName]
     .filter((value) => value !== null && value !== "")
     .join(" / ");
 

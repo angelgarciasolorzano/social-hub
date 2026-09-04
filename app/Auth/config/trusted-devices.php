@@ -18,15 +18,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Retention grace days
+    | Purge after days
     |--------------------------------------------------------------------------
     |
-    | Days after a trusted device's `expires_at` that the scheduled cleanup
-    | task keeps its row around for audit/revoke purposes before deleting.
-    | Defaults to 30 days. Override via the
-    | `TRUSTED_DEVICE_RETENTION_GRACE_DAYS` environment variable when needed.
+    | Days a soft-deleted trusted device row is kept in the table before the
+    | `trusted-devices:purge` Artisan command (scheduled daily at 03:00 by
+    | AuthServiceProvider) physically removes it. Defaults to 90 days. Override
+    | via `SOCIALHUB_AUTH_TRUSTED_DEVICE_PURGE_AFTER_DAYS` when needed.
     |
     */
 
-    'retention_grace_days' => (int) env('SOCIALHUB_AUTH_TRUSTED_DEVICE_RETENTION_GRACE_DAYS', 30),
+    'purge_after_days' => (int) env('SOCIALHUB_AUTH_TRUSTED_DEVICE_PURGE_AFTER_DAYS', 90),
 ];

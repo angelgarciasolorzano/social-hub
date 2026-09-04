@@ -11,7 +11,9 @@ use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Props\CurrentTrustedDeviceProps;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyForceRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceReactivateRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
@@ -66,7 +68,17 @@ class TrustedDeviceController extends Controller
         }
 
         if ($filters['status'] !== null) {
-            $query->where('expires_at', $filters['status'] === 'active' ? '>' : '<=', CarbonImmutable::now());
+            $query->where(function (Builder $builder) use ($filters): void {
+                foreach ($filters['status'] as $status) {
+                    if ($status === 'revoked') {
+                        $builder->orWhere(fn (Builder $builder): Builder => $builder->onlyTrashed());
+                    } elseif ($status === 'active') {
+                        $builder->orWhere('expires_at', '>', CarbonImmutable::now());
+                    } elseif ($status === 'inactive') {
+                        $builder->orWhere('expires_at', '<=', CarbonImmutable::now());
+                    }
+                }
+            });
         }
 
         if ($filters['browser'] !== null) {
@@ -143,7 +155,7 @@ class TrustedDeviceController extends Controller
      *
      * @return array{
      *     search: string,
-     *     status: 'active'|'inactive'|null,
+     *     status: list<'active'|'inactive'|'revoked'>|null,
      *     browser: list<'chrome'|'firefox'|'safari'|'edge'|'otro'>|null,
      *     deviceType: 'desktop / laptop'|'mobile / tablet'|null,
      *     lastAccess: list<'24h'|'7d'|'30d'>|null,
@@ -153,7 +165,7 @@ class TrustedDeviceController extends Controller
      */
     private function extractFilters(Request $request): array
     {
-        $allowedStatus = ['active', 'inactive'];
+        $allowedStatus = ['active', 'inactive', 'revoked'];
         $allowedBrowsers = ['chrome', 'firefox', 'safari', 'edge', 'otro'];
         $allowedDeviceTypes = ['desktop / laptop', 'mobile / tablet'];
         $allowedLastAccess = ['24h', '7d', '30d'];
@@ -174,7 +186,7 @@ class TrustedDeviceController extends Controller
 
         return [
             'search' => trim($request->string('search')->toString()),
-            'status' => \in_array($status, $allowedStatus, true) ? $status : null,
+            'status' => $this->parseMultiFilter($status, $allowedStatus),
             'browser' => $this->parseMultiFilter($browser, $allowedBrowsers),
             'deviceType' => \in_array($deviceType, $allowedDeviceTypes, true) ? $deviceType : null,
             'lastAccess' => $this->parseMultiFilter($lastAccess, $allowedLastAccess),
@@ -246,6 +258,39 @@ class TrustedDeviceController extends Controller
         ];
     }
 
+    /**
+     * Hard-delete any active sibling sharing the same fingerprint before a
+     * reactivate, locked against concurrent reads and recorded as Revoked.
+     */
+    private function dropDuplicateActiveDevice(
+        ?User $user,
+        TrustedDevice $trustedDevice,
+        TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest,
+    ): void {
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $duplicate = TrustedDevice::findActiveMatch(
+            $user,
+            $trustedDevice->user_agent,
+            $trustedDevice->os_name,
+            $trustedDevice->ip,
+            lockForUpdate: true,
+        );
+
+        if ($duplicate instanceof TrustedDevice && $duplicate->id !== $trustedDevice->id) {
+            TrustedDeviceEvent::record(
+                trustedDevice: $duplicate,
+                user: $user,
+                trustedDeviceAction: TrustedDeviceAction::Revoked,
+                request: $trustedDeviceReactivateRequest,
+            );
+
+            $duplicate->forceDelete();
+        }
+    }
+
     public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $trustedDeviceUpdateRequest->user()?->getKey(), 403);
@@ -309,13 +354,35 @@ class TrustedDeviceController extends Controller
         $userAgent = $trustedDeviceStoreRequest->userAgent();
         $ip = $trustedDeviceStoreRequest->ip();
 
+        if ($userAgent !== null && $ip !== null) {
+            $existingMatch = TrustedDevice::findAnyMatchForFingerprint(
+                $user,
+                $userAgent,
+                $osInfo['name'],
+                $ip,
+            );
+
+            if ($existingMatch instanceof TrustedDevice) {
+                if ($existingMatch->deleted_at !== null) {
+                    return Inertia::flash([
+                        'type' => 'error',
+                        'message' => 'Este dispositivo ya está registrado pero fue revocado. Reactívalo desde la lista de dispositivos revocados en lugar de agregarlo nuevamente.',
+                    ])->back();
+                }
+
+                return Inertia::flash([
+                    'type' => 'error',
+                    'message' => 'Este dispositivo ya está registrado como de confianza.',
+                ])->back();
+            }
+        }
+
         /** @var int $cookieLifetimeMinutes */
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         $token = $this->mintToken();
 
-        /** @var TrustedDevice $newDevice */
-        $newDevice = DB::transaction(function () use (
+        DB::transaction(function () use (
             $user,
             $deviceDetector,
             $osInfo,
@@ -345,7 +412,8 @@ class TrustedDeviceController extends Controller
                     : $this->inferDeviceName($deviceDetector),
                 'token_hash' => $token['hash'],
                 'user_agent' => $userAgent,
-                'browser' => $this->inferBrowser($deviceDetector),
+                'browser' => $this->inferBrowserName($deviceDetector),
+                'browser_version' => $this->inferBrowserVersion($deviceDetector),
                 'os_name' => $osInfo['name'],
                 'os_version' => $osInfo['version'],
                 'is_mobile' => $this->inferIsMobile($deviceDetector),
@@ -369,15 +437,6 @@ class TrustedDeviceController extends Controller
 
             return $created;
         });
-
-        $isFresh = $newDevice->wasRecentlyCreated;
-
-        if (! $isFresh) {
-            return Inertia::flash([
-                'type' => 'error',
-                'message' => 'Este dispositivo ya esta registrado como de confianza.',
-            ])->back();
-        }
 
         $this->queueTrustedDeviceCookie($token['token']);
 
@@ -432,6 +491,68 @@ class TrustedDeviceController extends Controller
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Todos los dispositivos de confianza fueron revocados.',
+        ])->back();
+    }
+
+    public function reactivate(TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest, TrustedDevice $trustedDevice): RedirectResponse
+    {
+        $user = $trustedDeviceReactivateRequest->user();
+
+        abort_unless($user instanceof User, 401);
+        abort_unless($trustedDevice->user_id === $user->getKey(), 403);
+        abort_if($trustedDevice->deleted_at === null, 404);
+
+        /** @var int $cookieLifetimeMinutes */
+        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
+
+        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $user, $cookieLifetimeMinutes): void {
+            $this->dropDuplicateActiveDevice($user, $trustedDevice, $trustedDeviceReactivateRequest);
+
+            $newToken = $this->mintToken();
+
+            $trustedDevice->forceFill([
+                'token_hash' => $newToken['hash'],
+                'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
+                'last_used_at' => CarbonImmutable::now(),
+            ])->save();
+
+            $trustedDevice->restore();
+
+            TrustedDeviceEvent::record(
+                trustedDevice: $trustedDevice,
+                user: $user,
+                trustedDeviceAction: TrustedDeviceAction::Reactivated,
+                request: $trustedDeviceReactivateRequest,
+            );
+
+            $this->queueTrustedDeviceCookie($newToken['token']);
+        });
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => 'Dispositivo reactivado correctamente. Se regeneró el token de confianza por seguridad.',
+        ])->back();
+    }
+
+    public function forceDestroy(TrustedDeviceDestroyForceRequest $trustedDeviceDestroyForceRequest, TrustedDevice $trustedDevice): RedirectResponse
+    {
+        abort_unless($trustedDevice->user_id === $trustedDeviceDestroyForceRequest->user()?->getKey(), 403);
+        abort_if($trustedDevice->deleted_at === null, 404);
+
+        DB::transaction(function () use ($trustedDeviceDestroyForceRequest, $trustedDevice): void {
+            TrustedDeviceEvent::record(
+                trustedDevice: $trustedDevice,
+                user: $trustedDeviceDestroyForceRequest->user(),
+                trustedDeviceAction: TrustedDeviceAction::Revoked,
+                request: $trustedDeviceDestroyForceRequest,
+            );
+
+            $trustedDevice->forceDelete();
+        });
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => 'Dispositivo eliminado permanentemente.',
         ])->back();
     }
 }

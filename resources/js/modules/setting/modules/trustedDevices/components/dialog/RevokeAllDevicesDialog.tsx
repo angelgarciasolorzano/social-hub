@@ -6,10 +6,17 @@ import { type SetDataAction, useForm, usePage } from "@inertiajs/react";
 import { FaCircle } from "react-icons/fa";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import { AlertTriangleIcon, CircleAlert, MonitorSmartphone, Trash2 } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  CircleAlert,
+  MonitorOff,
+  MonitorSmartphone,
+  Trash2,
+} from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
+import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
@@ -114,6 +121,7 @@ function RevokeAllDevicesDialog({
           errors={errors}
           setData={setData}
           data={data}
+          disabled={devices.length === 0}
         />
 
         <DialogFooter className="flex items-center gap-4 border-t sm:justify-between">
@@ -133,7 +141,11 @@ function RevokeAllDevicesDialog({
               </Button>
             </DialogClose>
 
-            <Button type="submit" form="revoke-trusted-device-form" disabled={processing}>
+            <Button
+              type="submit"
+              form="revoke-trusted-device-form"
+              disabled={processing || devices.length === 0}
+            >
               {processing ? (
                 <>
                   <Spinner />
@@ -169,6 +181,15 @@ function RevokeConsequencesAlert(): JSX.Element {
 type AffectedDevicesListProps = Pick<RevokeAllDevicesDialogProps, "devices">;
 
 function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element {
+  const deviceCount = devices.length;
+  const hasDevices = deviceCount > 0;
+  const headline = hasDevices
+    ? `${deviceCount} ${deviceCount === 1 ? "dispositivo sera revocado" : "dispositivos seran revocados"}`
+    : "No hay dispositivos para revocar";
+  const description = hasDevices
+    ? "Incluye todos los dispositivos de confianza registrados actualmente."
+    : "Cuando registres un nuevo dispositivo de confianza, aparecera aqui para que puedas revocarlo junto con los demas.";
+
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
       <div className="flex min-w-0 items-start gap-4">
@@ -182,36 +203,48 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-          <span className="font-semibold">3 dispositivos seran revocados</span>
-          <p className="text-sm text-muted-foreground">
-            Incluye todos los dispositivos de confianza registrados actualmente.
-          </p>
+          <span className="font-semibold">{headline}</span>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
 
-      <ScrollArea className="h-40 rounded-xl border py-3">
-        {devices.map((device, index) => (
-          <Fragment key={device.id}>
-            <div className="mx-4 flex items-center gap-2 text-sm">
-              {getDeviceIcon(device, "shrink-0")}
+      {hasDevices ? (
+        <ScrollArea className="h-40 rounded-xl border py-3 dark:bg-input/10">
+          {devices.map((device, index) => (
+            <Fragment key={device.id}>
+              <div className="mx-4 flex items-center gap-2 text-sm">
+                {getDeviceIcon(device, "shrink-0")}
 
-              <span className="max-w-20 truncate font-medium">{device.name}</span>
+                <span className="max-w-20 truncate font-medium">{device.name}</span>
 
-              <FaCircle className="h-1 w-1 text-muted-foreground" />
+                <FaCircle className="h-1 w-1 text-muted-foreground" />
 
-              <span className="text-muted-foreground">{device.browser}</span>
+                <span className="text-muted-foreground">
+                  {device.browser}
+                  {device.browserVersion !== null && device.browserVersion !== "" && (
+                    <> {device.browserVersion}</>
+                  )}
+                </span>
 
-              <FaCircle className="h-1 w-1 text-muted-foreground" />
+                <FaCircle className="h-1 w-1 text-muted-foreground" />
 
-              <span className="truncate text-muted-foreground">
-                Expira el {formatLongDate(device.expiresAt)}
-              </span>
-            </div>
+                <span className="truncate text-muted-foreground">
+                  Expira el {formatLongDate(device.expiresAt)}
+                </span>
+              </div>
 
-            {index < devices.length - 1 && <Separator className="my-2" />}
-          </Fragment>
-        ))}
-      </ScrollArea>
+              {index < devices.length - 1 && <Separator className="my-2" />}
+            </Fragment>
+          ))}
+        </ScrollArea>
+      ) : (
+        <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground dark:bg-input/10">
+          <EmptyState
+            icon={MonitorOff}
+            title="Aun no tienes dispositivos de confianza registrados."
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -221,10 +254,11 @@ interface RevokeDeviceFormProps {
   errors: FormDataErrors<RevokeDeviceFormData>;
   setData: SetDataAction<RevokeDeviceFormData>;
   data: RevokeDeviceFormData;
+  disabled: boolean;
 }
 
 function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
-  const { handleSubmit, errors, setData, data } = props;
+  const { handleSubmit, errors, setData, data, disabled } = props;
 
   return (
     <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
@@ -239,6 +273,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           required
           autoFocus
           placeholder="Ingresa tu contraseña"
+          disabled={disabled}
           onChange={(e) => {
             setData("password", e.target.value);
           }}
@@ -253,6 +288,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           id="revoke-trusted-device-terms"
           name="terms"
           checked={data.terms}
+          disabled={disabled}
           onCheckedChange={(checked) => {
             setData("terms", checked === true);
           }}

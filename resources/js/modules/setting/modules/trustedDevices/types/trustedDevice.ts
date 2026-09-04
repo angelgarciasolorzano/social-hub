@@ -12,6 +12,7 @@ export interface TrustedDevice {
   name: string | null;
   userAgent: string | null;
   browser: string | null;
+  browserVersion: string | null;
   osName: string | null;
   osVersion: string | null;
   isMobile: boolean;
@@ -19,10 +20,12 @@ export interface TrustedDevice {
   lastUsedAt: string | null;
   expiresAt: string;
   createdAt: string;
+  deletedAt: string | null;
   isActive: boolean;
 }
 
-export type TrustedDeviceAction = "created" | "renewed" | "renamed" | "revoked" | "revoked_all";
+export type TrustedDeviceAction =
+  "created" | "renewed" | "renamed" | "revoked" | "revoked_all" | "reactivated";
 
 export interface TrustedDeviceStats {
   total: number;
@@ -68,7 +71,7 @@ export interface TrustedDevicePagination {
 
 export interface TrustedDeviceFilters {
   search: string;
-  status: TrustedDeviceStatusFilter | null;
+  status: TrustedDeviceStatusFilter[] | null;
   browser: TrustedDeviceBrowserFilter[] | null;
   deviceType: TrustedDeviceDeviceTypeFilter | null;
   lastAccess: TrustedDeviceLastAccessFilter[] | null;

@@ -1,5 +1,6 @@
 export interface DevicePreview {
   browser: string;
+  browserVersion: string;
   osName: string;
   userAgent: string | null;
   isMobile: boolean;

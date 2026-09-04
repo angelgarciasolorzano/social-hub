@@ -38,9 +38,9 @@ trait InfersDeviceMetadata
     }
 
     /**
-     * Build a short browser label (e.g. "Chrome 125") from the parsed DeviceDetector.
+     * Resolve the browser name (e.g. "Chrome") from the parsed DeviceDetector.
      */
-    private function inferBrowser(DeviceDetector $deviceDetector): string
+    private function inferBrowserName(DeviceDetector $deviceDetector): string
     {
         $client = $deviceDetector->getClient();
 
@@ -50,21 +50,27 @@ trait InfersDeviceMetadata
 
         $name = $client['name'] ?? null;
 
-        if (! \is_string($name) || $name === '') {
+        return \is_string($name) ? $name : '';
+    }
+
+    /**
+     * Resolve the major browser version (e.g. "152") from the parsed DeviceDetector.
+     */
+    private function inferBrowserVersion(DeviceDetector $deviceDetector): string
+    {
+        $client = $deviceDetector->getClient();
+
+        if (! \is_array($client)) {
             return '';
         }
 
         $version = $client['version'] ?? null;
 
-        if (\is_string($version) && $version !== '') {
-            $major = explode('.', $version, 2)[0];
-
-            if ($major !== '') {
-                return \sprintf('%s %s', $name, $major);
-            }
+        if (! \is_string($version) || $version === '') {
+            return '';
         }
 
-        return $name;
+        return explode('.', $version, 2)[0];
     }
 
     /**

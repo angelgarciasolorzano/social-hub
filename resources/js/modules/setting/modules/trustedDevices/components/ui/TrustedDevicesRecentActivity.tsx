@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Pencil,
   RefreshCw,
+  RotateCw,
   ShieldQuestionMark,
   Trash2,
   UserPlus,
@@ -45,6 +46,7 @@ function TrustedDevicesRecentActivity(): JSX.Element {
       renamed: { icon: Pencil, color: "purple" },
       revoked: { icon: Trash2, color: "red" },
       revoked_all: { icon: Trash2, color: "red" },
+      reactivated: { icon: RotateCw, color: "green" },
     }),
     [],
   );

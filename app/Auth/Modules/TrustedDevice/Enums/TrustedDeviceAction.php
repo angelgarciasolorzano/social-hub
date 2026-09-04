@@ -16,6 +16,8 @@ enum TrustedDeviceAction: string
 
     case RevokedAll = 'revoked_all';
 
+    case Reactivated = 'reactivated';
+
     public function label(): string
     {
         return match ($this) {
@@ -24,6 +26,7 @@ enum TrustedDeviceAction: string
             self::Renamed => 'Dispositivo renombrado',
             self::Revoked => 'Dispositivo revocado',
             self::RevokedAll => 'Todos los dispositivos revocados',
+            self::Reactivated => 'Dispositivo reactivado',
         };
     }
 }

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Override;
@@ -24,6 +25,7 @@ use Override;
  * @property string $name
  * @property string $user_agent
  * @property string $browser
+ * @property string $browser_version
  * @property string $os_name
  * @property string $os_version
  * @property bool $is_mobile
@@ -32,6 +34,7 @@ use Override;
  * @property CarbonImmutable $expires_at
  * @property CarbonImmutable $created_at
  * @property CarbonImmutable $updated_at
+ * @property CarbonImmutable|null $deleted_at
  *
  * @mixin IdeHelperTrustedDevice
  */
@@ -42,6 +45,7 @@ use Override;
     'name',
     'user_agent',
     'browser',
+    'browser_version',
     'os_name',
     'os_version',
     'is_mobile',
@@ -55,6 +59,8 @@ class TrustedDevice extends Model
      * @use HasFactory<TrustedDeviceFactory>
      */
     use HasFactory;
+
+    use SoftDeletes;
 
     /**
      * The attributes that should be cast.
@@ -119,6 +125,7 @@ class TrustedDevice extends Model
             ->where('user_agent', $userAgent)
             ->where('os_name', $osName)
             ->where('ip', $ip)
+            ->whereNull('deleted_at')
             ->where('expires_at', '>', CarbonImmutable::now());
 
         if ($lockForUpdate) {
@@ -126,6 +133,35 @@ class TrustedDevice extends Model
         }
 
         return $builder->first();
+    }
+
+    /**
+     * Find any trusted device matching the fingerprint, preferring active over revoked.
+     * Used by the UI to surface "already registered" hints regardless of state.
+     */
+    public static function findAnyMatchForFingerprint(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+    ): ?self {
+        $active = self::findActiveMatch($user, $userAgent, $osName, $ip);
+
+        if ($active instanceof self) {
+            return $active;
+        }
+
+        if ($ip === null) {
+            return null;
+        }
+
+        return $user->trustedDevices()
+            ->onlyTrashed()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->latest('deleted_at')
+            ->first();
     }
 
     /**
@@ -141,7 +177,12 @@ class TrustedDevice extends Model
         int $excludeId,
     ): void {
         if ($ip === null) {
-            Log::warning('TrustedDevice::pruneOlder called with null IP; skipping to avoid over-deletion.');
+            Log::warning('TrustedDevice::pruneOlder skipped: null IP would risk over-deletion.', [
+                'user_id' => $user->getKey(),
+                'user_agent' => $userAgent,
+                'os_name' => $osName,
+                'exclude_id' => $excludeId,
+            ]);
 
             return;
         }
@@ -150,6 +191,7 @@ class TrustedDevice extends Model
             ->where('user_agent', $userAgent)
             ->where('os_name', $osName)
             ->where('ip', $ip)
+            ->whereNull('deleted_at')
             ->where('id', '!=', $excludeId)
             ->delete();
     }
@@ -168,6 +210,7 @@ class TrustedDevice extends Model
 
         $builder = $user->trustedDevices()
             ->where('token_hash', hash('sha256', $token))
+            ->whereNull('deleted_at')
             ->where('expires_at', '>', CarbonImmutable::now());
 
         $device = $builder->first();

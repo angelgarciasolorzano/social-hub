@@ -1,17 +1,14 @@
 import type { JSX, SubmitEvent } from "react";
 
-import type { SetDataAction } from "@inertiajs/react";
-import { useForm, usePage } from "@inertiajs/react";
+import { useForm } from "@inertiajs/react";
 
-import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
 import DeviceSummaryCard from "@/modules/setting/modules/trustedDevices/components/ui/DeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
-import { destroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+import { forceDestroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -29,27 +26,28 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { cn } from "@/shared/lib";
-import { alertVariants } from "@/shared/lib/styling";
+import { alertVariants, buttonVariants } from "@/shared/lib/styling";
 
-interface RevokeDeviceDialogProps {
+interface TrustedDeviceForceDestroyDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
 }
 
-interface RevokeDeviceFormData {
+interface ForceDestroyFormData {
   password: string;
   terms: boolean;
 }
 
-function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps): JSX.Element {
-  const { data, setData, submit, processing, reset, errors } = useForm<RevokeDeviceFormData>({
+function TrustedDeviceForceDestroyDialog({
+  device,
+  open,
+  onClose,
+}: TrustedDeviceForceDestroyDialogProps): JSX.Element {
+  const { data, setData, submit, processing, reset, errors } = useForm<ForceDestroyFormData>({
     password: "",
     terms: false,
   });
-
-  const pageProps = usePage().props as Record<string, unknown>;
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
@@ -60,18 +58,10 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
     onClose();
   };
 
-  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    submit(destroy({ trustedDevice: device.id }), {
-      only: pickReloadKeys(pageProps, [
-        "trustedDevices",
-        "stats",
-        "currentDeviceMatch",
-        "currentDevicePreview",
-        "trustedDevicesForRevoke",
-        "recentActivity",
-      ]),
+    submit(forceDestroy({ trustedDevice: device.id }), {
       onSuccess: () => {
         onClose();
         reset();
@@ -87,29 +77,29 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-muted-foreground" />
-              Revokar dispositivo
+              Eliminar permanentemente
             </div>
           </DialogTitle>
           <DialogDescription>
-            Eliminaras este dispositivo de confianza. Se te volvera a solicitar el codigo de
-            verificacion al iniciasr sesion.
+            Esta acción es definitiva. El dispositivo se eliminara por completo de tu cuenta y no
+            podras volver a confiar en el.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           <DeviceSummaryCard
             device={device}
             lastUsedAt={fromNow(device.lastUsedAt)}
-            expiration={formatLongDate(device.expiresAt)}
+            expiration={device.deletedAt !== null ? formatLongDate(device.deletedAt) : "—"}
           />
 
-          <RevokeConsequencesAlert />
+          <ForceDestroyConsequencesAlert />
 
-          <RevokeDeviceForm
-            handleSubmit={handleSubmit}
-            errors={errors}
-            setData={setData}
+          <ForceDestroyForm
             data={data}
+            errors={errors}
+            handleSubmit={handleSubmit}
+            setData={setData}
           />
         </div>
 
@@ -120,14 +110,19 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
             </Button>
           </DialogClose>
 
-          <Button type="submit" form="revoke-trusted-device-form" disabled={processing}>
+          <Button
+            type="submit"
+            form="force-destroy-trusted-device-form"
+            disabled={processing}
+            className={buttonVariants.destructive}
+          >
             {processing ? (
               <>
                 <Spinner />
-                Revocando...
+                Eliminando...
               </>
             ) : (
-              "Revocar dispositivo"
+              "Eliminar definitivamente"
             )}
           </Button>
         </DialogFooter>
@@ -136,17 +131,18 @@ function RevokeDeviceDialog({ device, open, onClose }: RevokeDeviceDialogProps):
   );
 }
 
-function RevokeConsequencesAlert(): JSX.Element {
+function ForceDestroyConsequencesAlert(): JSX.Element {
   return (
-    <Alert className={cn(alertVariants.destructive, "my-2")}>
+    <Alert className={alertVariants.destructive}>
       <AlertTriangleIcon />
-      <AlertTitle>¿Que pasara?</AlertTitle>
+      <AlertTitle>¿Qué pasará?</AlertTitle>
       <AlertDescription>
         <ul className="mt-1 list-inside list-disc space-y-2">
-          <li>Este dispositivo ya no estara registrado como de confianza.</li>
+          <li>Este dispositivo se eliminará permanentemente de la base de datos.</li>
+          <li>Ya no podrás reactivarlo desde la sección &quot;Revocados&quot;.</li>
           <li>
-            Se te pedira el codigo de verificacion la proxima vez que inicies sesion desde este
-            dispositivo.
+            Tu historial de actividad seguirá mostrando las acciones realizadas con este
+            dispositivo, pero ya no permitirá abrirlas para ver los detalles.
           </li>
         </ul>
       </AlertDescription>
@@ -154,31 +150,34 @@ function RevokeConsequencesAlert(): JSX.Element {
   );
 }
 
-interface RevokeDeviceFormProps {
-  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
-  errors: FormDataErrors<RevokeDeviceFormData>;
-  setData: SetDataAction<RevokeDeviceFormData>;
-  data: RevokeDeviceFormData;
+interface ForceDestroyFormProps {
+  data: ForceDestroyFormData;
+  errors: Partial<Record<keyof ForceDestroyFormData, string>>;
+  handleSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
+  setData: <K extends keyof ForceDestroyFormData>(key: K, value: ForceDestroyFormData[K]) => void;
 }
 
-function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
-  const { handleSubmit, errors, setData, data } = props;
-
+function ForceDestroyForm({
+  handleSubmit,
+  errors,
+  setData,
+  data,
+}: ForceDestroyFormProps): JSX.Element {
   return (
-    <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
+    <form id="force-destroy-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="revoke-trusted-device">
+        <Label htmlFor="force-destroy-trusted-device">
           Para continuar, confirma y escribe tu contraseña
         </Label>
 
         <PasswordInput
-          id="revoke-trusted-device"
+          id="force-destroy-trusted-device"
           name="password"
           required
           autoFocus
           placeholder="Ingresa tu contraseña"
-          onChange={(e) => {
-            setData("password", e.target.value);
+          onChange={(event) => {
+            setData("password", event.target.value);
           }}
           aria-invalid={errors.password ? "true" : "false"}
         />
@@ -188,7 +187,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
 
       <div className="flex gap-2">
         <Checkbox
-          id="revoke-trusted-device-terms"
+          id="force-destroy-trusted-device-terms"
           name="terms"
           checked={data.terms}
           onCheckedChange={(checked) => {
@@ -197,8 +196,8 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           aria-invalid={errors.terms ? "true" : "false"}
         />
 
-        <LabelForm htmlFor="revoke-trusted-device-terms">
-          Entiendo las consecuencias de revocar este dispositivo.
+        <LabelForm htmlFor="force-destroy-trusted-device-terms">
+          Entiendo que esta acción es irreversible.
         </LabelForm>
       </div>
 
@@ -207,4 +206,4 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
   );
 }
 
-export default RevokeDeviceDialog;
+export default TrustedDeviceForceDestroyDialog;

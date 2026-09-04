@@ -62,7 +62,7 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
     /**
      * Build a preview of the device that would be created from the current request.
      *
-     * @return array{browser: string, osName: string, userAgent: string|null, isMobile: bool, lastUsedAt: string, expiresAt: string}
+     * @return array{browser: string, browserVersion: string, osName: string, userAgent: string|null, isMobile: bool, lastUsedAt: string, expiresAt: string}
      */
     private function previewDevice(): array
     {
@@ -72,7 +72,8 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         return [
-            'browser' => $this->inferBrowser($this->deviceDetector),
+            'browser' => $this->inferBrowserName($this->deviceDetector),
+            'browserVersion' => $this->inferBrowserVersion($this->deviceDetector),
             'osName' => $osInfo['name'],
             'userAgent' => $this->request->userAgent(),
             'isMobile' => $this->inferIsMobile($this->deviceDetector),
@@ -82,9 +83,8 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
     }
 
     /**
-     * Find the still-active trusted device matching the current request, or null
-     * when the device is unknown. Delegates to the model so the matching rules
-     * (including the IP-required-for-match invariant) live in one place.
+     * Find the trusted device matching the current request fingerprint, including revoked/expired.
+     * Delegates to the model so the matching rules and IP-required invariant live in one place.
      */
     private function findCurrentDeviceMatch(): ?TrustedDevice
     {
@@ -102,7 +102,7 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
 
         $osInfo = $this->inferOsInfo($this->deviceDetector);
 
-        return TrustedDevice::findActiveMatch($user, $userAgent, $osInfo['name'], $this->request->ip());
+        return TrustedDevice::findAnyMatchForFingerprint($user, $userAgent, $osInfo['name'], $this->request->ip());
     }
 
     /**

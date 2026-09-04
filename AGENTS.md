@@ -98,6 +98,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Follow existing application Enum naming conventions.
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
+- Keep method docblock prose to **3 lines max**. Multi-line `@return`, `@param`, array-shape generics, and similar PHPDoc annotations are fine; the prose summary above them stays short.
 
 === deployments rules ===
 

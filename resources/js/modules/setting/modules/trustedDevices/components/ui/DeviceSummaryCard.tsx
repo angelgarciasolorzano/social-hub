@@ -39,6 +39,9 @@ function DeviceSummaryCard({
           {device.browser !== null && device.browser !== "" && (
             <span className="truncate text-sm text-muted-foreground">
               {device.osName} - {device.browser}
+              {device.browserVersion !== null && device.browserVersion !== "" && (
+                <> {device.browserVersion}</>
+              )}
             </span>
           )}
 

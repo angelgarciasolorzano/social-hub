@@ -145,7 +145,11 @@ type DevicePreviewItems = Pick<DeviceMetadataItemProps, "title" | "description" 
 };
 
 function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
-  const browser = valueOrFallback(preview?.browser, "Desconocido");
+  const browser = valueOrFallback(
+    [preview?.browser, preview?.browserVersion].filter((value) => value !== "").join(" "),
+    "Desconocido",
+  );
+
   const osName = valueOrFallback(preview?.osName, "Desconocido");
   const lastUsedAt = valueOrNow(preview?.lastUsedAt);
   const expiresAt = valueOrNow(preview?.expiresAt);
