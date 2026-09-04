@@ -75,7 +75,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
         key: trustedDeviceRowActionKey.renameDevice,
         icon: Pencil,
         label: "Renombrar dispositivo",
-        isEnabled: () => true,
+        isEnabled: (device) => !isRevoked(device),
       },
       {
         key: trustedDeviceRowActionKey.renewTrust,
