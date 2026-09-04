@@ -141,8 +141,8 @@ function ForceDestroyConsequencesAlert(): JSX.Element {
           <li>Este dispositivo se eliminará permanentemente de la base de datos.</li>
           <li>Ya no podrás reactivarlo desde la sección &quot;Revocados&quot;.</li>
           <li>
-            Los eventos del audit log conservarán el snapshot del nombre del dispositivo (para
-            trazabilidad forense), pero perderán la referencia directa al registro.
+            Tu historial de actividad seguirá mostrando las acciones realizadas con este
+            dispositivo, pero ya no permitirá abrirlas para ver los detalles.
           </li>
         </ul>
       </AlertDescription>
