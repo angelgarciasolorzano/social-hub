@@ -231,9 +231,7 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
       <TableCell>
         {device.deletedAt !== null ? (
-          <Badge variant="destructive" className="rounded-md">
-            Revocado
-          </Badge>
+          <Badge className="rounded-md dark:bg-red-700 dark:text-white">Revocado</Badge>
         ) : (
           <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
             {device.isActive ? "Activo" : "Expirado"}

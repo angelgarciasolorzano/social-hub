@@ -60,7 +60,12 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
-import { alertVariants, badgeVariants, iconColorVariants } from "@/shared/lib/styling";
+import {
+  alertVariants,
+  badgeVariants,
+  buttonVariants,
+  iconColorVariants,
+} from "@/shared/lib/styling";
 
 import RenameDeviceDialog from "./RenameDeviceDialog";
 import RenewTrustDialog from "./RenewTrustDialog";
@@ -157,7 +162,7 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
               <Eye className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
               {isRevoked ? (
-                <Badge variant="destructive">Revocado</Badge>
+                <Badge className="dark:bg-red-700 dark:text-white">Revocado</Badge>
               ) : (
                 <Badge className={badgeVariants.success}>Activo</Badge>
               )}
@@ -225,7 +230,7 @@ function DeviceOverviewCard({ device, isRevoked }: DeviceOverviewCardProps): JSX
               <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
 
               {isRevoked ? (
-                <Badge variant="destructive">
+                <Badge className="dark:bg-red-700 dark:text-white">
                   <ShieldOff className="size-3" data-icon="inline-start" />
                   Revocado
                 </Badge>
@@ -512,7 +517,7 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
         </Button>
 
         <Button
-          className="dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+          className={buttonVariants.destructive}
           onClick={() => {
             onAction("revokeDevice", device);
           }}

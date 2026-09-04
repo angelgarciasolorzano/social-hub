@@ -26,7 +26,7 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling";
+import { alertVariants, buttonVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceForceDestroyDialogProps {
   device: TrustedDevice;
@@ -114,7 +114,7 @@ function TrustedDeviceForceDestroyDialog({
             type="submit"
             form="force-destroy-trusted-device-form"
             disabled={processing}
-            variant="destructive"
+            className={buttonVariants.destructive}
           >
             {processing ? (
               <>
