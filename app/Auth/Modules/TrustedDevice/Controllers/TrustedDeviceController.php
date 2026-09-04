@@ -366,20 +366,13 @@ class TrustedDeviceController extends Controller
                 if ($existingMatch->deleted_at !== null) {
                     return Inertia::flash([
                         'type' => 'error',
-                        'message' => 'Este dispositivo ya esta registrado pero fue revocado. Reactívalo desde la lista de dispositivos revocados en lugar de agregarlo nuevamente.',
-                    ])->back();
-                }
-
-                if (! $existingMatch->isActive()) {
-                    return Inertia::flash([
-                        'type' => 'error',
-                        'message' => 'Este dispositivo ya esta registrado pero su confianza expiro. Renueva su confianza desde la lista de dispositivos expirados en lugar de agregarlo nuevamente.',
+                        'message' => 'Este dispositivo ya está registrado pero fue revocado. Reactívalo desde la lista de dispositivos revocados en lugar de agregarlo nuevamente.',
                     ])->back();
                 }
 
                 return Inertia::flash([
                     'type' => 'error',
-                    'message' => 'Este dispositivo ya esta registrado como de confianza.',
+                    'message' => 'Este dispositivo ya está registrado como de confianza.',
                 ])->back();
             }
         }
