@@ -71,7 +71,7 @@ class TrustedDeviceController extends Controller
             $query->where(function (Builder $builder) use ($filters): void {
                 foreach ($filters['status'] as $status) {
                     if ($status === 'revoked') {
-                        $builder->orWhere(fn (Builder $inner): Builder => $inner->onlyTrashed());
+                        $builder->orWhere(fn (Builder $builder): Builder => $builder->onlyTrashed());
                     } elseif ($status === 'active') {
                         $builder->orWhere('expires_at', '>', CarbonImmutable::now());
                     } elseif ($status === 'inactive') {

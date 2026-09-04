@@ -8,9 +8,7 @@ use App\Auth\Database\Factories\TrustedDeviceFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -108,30 +106,6 @@ class TrustedDevice extends Model
     }
 
     /**
-     * Scope: devices within their trust window. Soft-deleted rows are excluded
-     * automatically by the SoftDeletes trait.
-     *
-     * @param  Builder<TrustedDevice>  $builder
-     */
-    #[Scope]
-    protected function active(Builder $builder): void
-    {
-        $builder->where('expires_at', '>', CarbonImmutable::now());
-    }
-
-    /**
-     * Scope: devices past their trust window (expired but still in the table
-     * for audit purposes). Soft-deleted rows are excluded automatically.
-     *
-     * @param  Builder<TrustedDevice>  $builder
-     */
-    #[Scope]
-    protected function inactive(Builder $builder): void
-    {
-        $builder->where('expires_at', '<=', CarbonImmutable::now());
-    }
-
-    /**
      * Find the active trusted device for the same fingerprint, or null when
      * `$ip` is null. When `$lockForUpdate` is true, the read is serialised so
      * concurrent `store()` calls cannot both pass the check.
@@ -203,7 +177,12 @@ class TrustedDevice extends Model
         int $excludeId,
     ): void {
         if ($ip === null) {
-            Log::warning('TrustedDevice::pruneOlder called with null IP; skipping to avoid over-deletion.');
+            Log::warning('TrustedDevice::pruneOlder skipped: null IP would risk over-deletion.', [
+                'user_id' => $user->getKey(),
+                'user_agent' => $userAgent,
+                'os_name' => $osName,
+                'exclude_id' => $excludeId,
+            ]);
 
             return;
         }

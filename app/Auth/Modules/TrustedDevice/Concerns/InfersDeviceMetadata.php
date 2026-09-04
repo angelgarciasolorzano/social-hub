@@ -70,9 +70,7 @@ trait InfersDeviceMetadata
             return '';
         }
 
-        $major = explode('.', $version, 2)[0];
-
-        return $major;
+        return explode('.', $version, 2)[0];
     }
 
     /**
