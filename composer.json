@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.5",
         "inertiajs/inertia-laravel": "^3.3.1",
+        "inertiaui/modal": "^3.0.0",
         "laravel/fortify": "^1.38.0",
         "laravel/framework": "^13.25.0",
         "laravel/reverb": "^1.11.1",

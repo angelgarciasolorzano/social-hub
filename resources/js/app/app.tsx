@@ -1,5 +1,6 @@
 import { createInertiaApp } from "@inertiajs/react";
 
+import { ModalRoot, ModalStackProvider } from "@inertiaui/modal-react";
 import { configureEcho } from "@laravel/echo-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -53,7 +54,14 @@ void createInertiaApp({
     }
   },
   withApp(app) {
-    return <TooltipProvider>{app}</TooltipProvider>;
+    return (
+      <ModalStackProvider>
+        <TooltipProvider>
+          {app}
+          <ModalRoot />
+        </TooltipProvider>
+      </ModalStackProvider>
+    );
   },
   progress: {
     color: "#4B5563",
