@@ -18,6 +18,8 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
 
+import { useAppearance } from "@/shared/hooks";
+
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
@@ -66,6 +68,8 @@ interface TwoFactorTitleProps {
 }
 
 function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.Element {
+  const { appearance } = useAppearance();
+
   return (
     <div className="flex items-center gap-24 rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex items-start gap-4">
@@ -81,7 +85,10 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
             te solicitará un código único para verificar tu identidad.
           </p>
 
-          <Badge variant="destructive" className="inline-flex">
+          <Badge
+            variant={appearance === "light" ? "destructive" : null}
+            className="inline-flex dark:bg-red-700 dark:text-white"
+          >
             <ShieldAlert />
             Desactivado
           </Badge>
