@@ -64,7 +64,7 @@ function TrustedDeviceRevokedDialog({
             </div>
           </DialogTitle>
           <DialogDescription>
-            Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en el,
+            Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en él,
             reactivarlo desde la lista de dispositivos revocados.
           </DialogDescription>
         </DialogHeader>

@@ -65,7 +65,7 @@ function TrustedDeviceExpiredDialog({
           </DialogTitle>
           <DialogDescription>
             Este dispositivo ya fue registrado pero su confianza expiro. Para volver a confiar en
-            el, renueva su confianza desde la lista de dispositivos expirados.
+            él, renueva su confianza desde la lista de dispositivos expirados.
           </DialogDescription>
         </DialogHeader>
 
