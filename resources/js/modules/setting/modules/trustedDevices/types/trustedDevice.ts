@@ -34,6 +34,7 @@ export interface TrustedDeviceStats {
   recentlyAdded: number;
   inactive: number;
   revoked: number;
+  byDeviceType: { desktop: number; mobile: number };
 }
 
 export interface TrustedDeviceActivityItem {
@@ -77,4 +78,20 @@ export interface TrustedDeviceFilters {
   lastAccess: TrustedDeviceLastAccessFilter[] | null;
   sort: TrustedDeviceSortKey;
   perPage: TrustedDevicePerPage;
+}
+
+export interface TrustedDeviceActivityFilters {
+  action: TrustedDeviceAction[] | null;
+  sinceDays: 7 | 30 | 90 | 180 | 365;
+}
+
+export interface TrustedDeviceActivityEvent {
+  id: number;
+  action: TrustedDeviceAction;
+  actionLabel: string;
+  deviceId: number | null;
+  deviceLabel: string | null;
+  deviceIsMobile: boolean | null;
+  ip: string | null;
+  createdAt: string | null;
 }

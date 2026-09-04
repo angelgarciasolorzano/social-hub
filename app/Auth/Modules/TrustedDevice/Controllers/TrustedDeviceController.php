@@ -23,6 +23,7 @@ use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -166,7 +167,7 @@ class TrustedDeviceController extends Controller
         abort_unless($user instanceof User, 401);
 
         $allowedActions = array_map(
-            static fn (TrustedDeviceAction $actionCase): string => $actionCase->value,
+            static fn (TrustedDeviceAction $trustedDeviceAction): string => $trustedDeviceAction->value,
             TrustedDeviceAction::cases(),
         );
         $allowedSinceDays = [7, 30, 90, 180, 365];
@@ -198,16 +199,16 @@ class TrustedDeviceController extends Controller
 
         return Inertia::render('setting/modules/trustedDevices/ActivityDialog', [
             'trustedDeviceEvents' => Inertia::scroll(
-                fn (): \Illuminate\Pagination\CursorPaginator => $cursorPaginator->through(
-                    fn (TrustedDeviceEvent $event): array => [
-                        'id' => $event->id,
-                        'action' => $event->action->value,
-                        'actionLabel' => $event->action->label(),
-                        'deviceId' => $event->trusted_device_id,
-                        'deviceLabel' => $event->device_label ?? $event->device?->name,
-                        'deviceIsMobile' => $event->device?->is_mobile,
-                        'ip' => $event->ip,
-                        'createdAt' => $event->created_at?->toIso8601String(),
+                fn (): CursorPaginator => $cursorPaginator->through(
+                    fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
+                        'id' => $trustedDeviceEvent->id,
+                        'action' => $trustedDeviceEvent->action->value,
+                        'actionLabel' => $trustedDeviceEvent->action->label(),
+                        'deviceId' => $trustedDeviceEvent->trusted_device_id,
+                        'deviceLabel' => $trustedDeviceEvent->device_label ?? $trustedDeviceEvent->device?->name,
+                        'deviceIsMobile' => $trustedDeviceEvent->device?->is_mobile,
+                        'ip' => $trustedDeviceEvent->ip,
+                        'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
                     ],
                 ),
             ),
