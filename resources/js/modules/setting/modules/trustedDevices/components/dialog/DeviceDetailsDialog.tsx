@@ -366,11 +366,12 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
 type DeviceMetadataCardProps = Pick<DeviceDetailsDialogProps, "device">;
 
 type DeviceMetadataItems = Pick<DeviceMetadataItemProps, "icon" | "title" | "description"> & {
-  key: "browser" | "os" | "ip";
+  key: "browser" | "browserVersion" | "os" | "ip";
 };
 
 function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   const browser = valueOrFallback(device.browser, "Desconocido");
+  const browserVersion = valueOrFallback(device.browserVersion, "Desconocida");
   const osName = valueOrFallback(device.osName, "Desconocido");
   const ip = valueOrFallback(device.ip, "No disponible");
 
@@ -380,6 +381,12 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
       icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
       title: "Navegador",
       description: browser,
+    },
+    {
+      key: "browserVersion",
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      title: "Version del navegador",
+      description: browserVersion,
     },
     {
       key: "os",

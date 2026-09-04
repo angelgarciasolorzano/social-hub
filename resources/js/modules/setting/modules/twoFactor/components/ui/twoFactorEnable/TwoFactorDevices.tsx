@@ -317,6 +317,9 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
                 {device.browser !== null && device.browser !== "" && (
                   <span className="truncate text-xs text-muted-foreground">
                     {device.osName} - {device.browser}
+                    {device.browserVersion !== null && device.browserVersion !== "" && (
+                      <> {device.browserVersion}</>
+                    )}
                   </span>
                 )}
 

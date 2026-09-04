@@ -12,6 +12,7 @@ export interface TrustedDevice {
   name: string | null;
   userAgent: string | null;
   browser: string | null;
+  browserVersion: string | null;
   osName: string | null;
   osVersion: string | null;
   isMobile: boolean;

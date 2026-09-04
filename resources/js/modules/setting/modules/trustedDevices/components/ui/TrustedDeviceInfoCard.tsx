@@ -43,7 +43,13 @@ export function TrustedDeviceInfoCard({
   device,
   expirationLabel = "Expira el",
 }: TrustedDeviceInfoCardProps): JSX.Element {
-  const browser = valueOrFallback(device.browser, "Desconocido");
+  const browser = valueOrFallback(
+    [device.browser, device.browserVersion]
+      .filter((value) => value !== null && value !== "")
+      .join(" "),
+    "Desconocido",
+  );
+
   const osName = valueOrFallback(device.osName, "Desconocido");
   const ip = valueOrFallback(device.ip, "No disponible");
 

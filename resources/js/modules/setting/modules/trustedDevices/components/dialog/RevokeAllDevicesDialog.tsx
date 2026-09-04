@@ -219,7 +219,12 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
 
                 <FaCircle className="h-1 w-1 text-muted-foreground" />
 
-                <span className="text-muted-foreground">{device.browser}</span>
+                <span className="text-muted-foreground">
+                  {device.browser}
+                  {device.browserVersion !== null && device.browserVersion !== "" && (
+                    <> {device.browserVersion}</>
+                  )}
+                </span>
 
                 <FaCircle className="h-1 w-1 text-muted-foreground" />
 
