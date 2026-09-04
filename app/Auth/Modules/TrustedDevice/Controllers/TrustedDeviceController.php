@@ -383,8 +383,6 @@ class TrustedDeviceController extends Controller
             $cookieLifetimeMinutes,
             $trustedDeviceStoreRequest,
         ): TrustedDevice {
-            // Race-safe re-check: another request may have created the row
-            // between the pre-check above and now.
             if ($userAgent !== null && $ip !== null) {
                 $existingMatch = TrustedDevice::findActiveMatch(
                     $user,
