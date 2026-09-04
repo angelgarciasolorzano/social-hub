@@ -28,6 +28,8 @@ return new class extends Migration
 
             $blueprint->string('browser')->nullable();
 
+            $blueprint->string('browser_version')->nullable();
+
             $blueprint->string('os_name')->nullable();
 
             $blueprint->string('os_version')->nullable();

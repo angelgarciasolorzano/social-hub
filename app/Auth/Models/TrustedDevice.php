@@ -27,6 +27,7 @@ use Override;
  * @property string $name
  * @property string $user_agent
  * @property string $browser
+ * @property string $browser_version
  * @property string $os_name
  * @property string $os_version
  * @property bool $is_mobile
@@ -46,6 +47,7 @@ use Override;
     'name',
     'user_agent',
     'browser',
+    'browser_version',
     'os_name',
     'os_version',
     'is_mobile',

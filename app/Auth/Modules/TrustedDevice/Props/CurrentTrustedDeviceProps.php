@@ -62,7 +62,7 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
     /**
      * Build a preview of the device that would be created from the current request.
      *
-     * @return array{browser: string, osName: string, userAgent: string|null, isMobile: bool, lastUsedAt: string, expiresAt: string}
+     * @return array{browser: string, browserVersion: string, osName: string, userAgent: string|null, isMobile: bool, lastUsedAt: string, expiresAt: string}
      */
     private function previewDevice(): array
     {
@@ -72,7 +72,8 @@ final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaPropert
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
         return [
-            'browser' => $this->inferBrowser($this->deviceDetector),
+            'browser' => $this->inferBrowserName($this->deviceDetector),
+            'browserVersion' => $this->inferBrowserVersion($this->deviceDetector),
             'osName' => $osInfo['name'],
             'userAgent' => $this->request->userAgent(),
             'isMobile' => $this->inferIsMobile($this->deviceDetector),
