@@ -6,7 +6,13 @@ import { type SetDataAction, useForm, usePage } from "@inertiajs/react";
 import { FaCircle } from "react-icons/fa";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import { AlertTriangleIcon, CircleAlert, MonitorSmartphone, Trash2 } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  CircleAlert,
+  MonitorOff,
+  MonitorSmartphone,
+  Trash2,
+} from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevices/utils/inertiaPageProps";
@@ -133,7 +139,11 @@ function RevokeAllDevicesDialog({
               </Button>
             </DialogClose>
 
-            <Button type="submit" form="revoke-trusted-device-form" disabled={processing}>
+            <Button
+              type="submit"
+              form="revoke-trusted-device-form"
+              disabled={processing || devices.length === 0}
+            >
               {processing ? (
                 <>
                   <Spinner />
@@ -169,6 +179,15 @@ function RevokeConsequencesAlert(): JSX.Element {
 type AffectedDevicesListProps = Pick<RevokeAllDevicesDialogProps, "devices">;
 
 function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element {
+  const deviceCount = devices.length;
+  const hasDevices = deviceCount > 0;
+  const headline = hasDevices
+    ? `${deviceCount} ${deviceCount === 1 ? "dispositivo sera revocado" : "dispositivos seran revocados"}`
+    : "No hay dispositivos para revocar";
+  const description = hasDevices
+    ? "Incluye todos los dispositivos de confianza registrados actualmente."
+    : "Cuando registres un nuevo dispositivo de confianza, aparecera aqui para que puedas revocarlo junto con los demas.";
+
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
       <div className="flex min-w-0 items-start gap-4">
@@ -182,36 +201,43 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-          <span className="font-semibold">3 dispositivos seran revocados</span>
-          <p className="text-sm text-muted-foreground">
-            Incluye todos los dispositivos de confianza registrados actualmente.
-          </p>
+          <span className="font-semibold">{headline}</span>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
 
-      <ScrollArea className="h-40 rounded-xl border py-3">
-        {devices.map((device, index) => (
-          <Fragment key={device.id}>
-            <div className="mx-4 flex items-center gap-2 text-sm">
-              {getDeviceIcon(device, "shrink-0")}
+      {hasDevices ? (
+        <ScrollArea className="h-40 rounded-xl border py-3 dark:bg-input/10">
+          {devices.map((device, index) => (
+            <Fragment key={device.id}>
+              <div className="mx-4 flex items-center gap-2 text-sm">
+                {getDeviceIcon(device, "shrink-0")}
 
-              <span className="max-w-20 truncate font-medium">{device.name}</span>
+                <span className="max-w-20 truncate font-medium">{device.name}</span>
 
-              <FaCircle className="h-1 w-1 text-muted-foreground" />
+                <FaCircle className="h-1 w-1 text-muted-foreground" />
 
-              <span className="text-muted-foreground">{device.browser}</span>
+                <span className="text-muted-foreground">{device.browser}</span>
 
-              <FaCircle className="h-1 w-1 text-muted-foreground" />
+                <FaCircle className="h-1 w-1 text-muted-foreground" />
 
-              <span className="truncate text-muted-foreground">
-                Expira el {formatLongDate(device.expiresAt)}
-              </span>
-            </div>
+                <span className="truncate text-muted-foreground">
+                  Expira el {formatLongDate(device.expiresAt)}
+                </span>
+              </div>
 
-            {index < devices.length - 1 && <Separator className="my-2" />}
-          </Fragment>
-        ))}
-      </ScrollArea>
+              {index < devices.length - 1 && <Separator className="my-2" />}
+            </Fragment>
+          ))}
+        </ScrollArea>
+      ) : (
+        <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground dark:bg-input/10">
+          <div className="flex h-14 w-14 shrink-0 rounded-full border border-violet-100 p-2 dark:border-violet-200/10">
+            <MonitorOff className="m-auto h-8 w-8" />
+          </div>
+          Aun no tienes dispositivos de confianza registrados.
+        </div>
+      )}
     </div>
   );
 }
