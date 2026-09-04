@@ -151,6 +151,74 @@ class TrustedDeviceController extends Controller
     }
 
     /**
+     * Render the activity log modal (Dialog 3 — SOC-22). Wraps the paginated
+     * events with Inertia::scroll() so the frontend can use <InfiniteScroll>
+     * + reloadable filters via router.reload({ only, reset }).
+     *
+     * Filters (sanitized against whitelists):
+     *  - action: TrustedDeviceAction values (comma-separated for multi-select)
+     *  - since_days: 7 | 30 | 90 | 180 | 365 (default 30)
+     */
+    public function activity(Request $request): Response
+    {
+        $user = $request->user();
+
+        abort_unless($user instanceof User, 401);
+
+        $allowedActions = array_map(
+            static fn (TrustedDeviceAction $actionCase): string => $actionCase->value,
+            TrustedDeviceAction::cases(),
+        );
+        $allowedSinceDays = [7, 30, 90, 180, 365];
+
+        $actions = $this->parseMultiFilter(
+            $request->string('action')->toString(),
+            $allowedActions,
+        );
+
+        $requestedSinceDays = $request->integer('since_days');
+        $effectiveSinceDays = in_array($requestedSinceDays, $allowedSinceDays, true)
+            ? $requestedSinceDays
+            : 30;
+
+        $cutoff = CarbonImmutable::now()->subDays($effectiveSinceDays);
+
+        $query = $user->trustedDeviceEvents()
+            ->with(['device:id,name,is_mobile,browser,os_name'])
+            ->latest('created_at')
+            ->orderBy('id'); // stable tiebreaker required by cursorPaginate
+
+        if ($actions !== null) {
+            $query->whereIn('action', $actions);
+        }
+
+        $query->where('created_at', '>=', $cutoff);
+
+        $cursorPaginator = $query->cursorPaginate(20);
+
+        return Inertia::render('setting/modules/trustedDevices/ActivityDialog', [
+            'trustedDeviceEvents' => Inertia::scroll(
+                fn (): \Illuminate\Pagination\CursorPaginator => $cursorPaginator->through(
+                    fn (TrustedDeviceEvent $event): array => [
+                        'id' => $event->id,
+                        'action' => $event->action->value,
+                        'actionLabel' => $event->action->label(),
+                        'deviceId' => $event->trusted_device_id,
+                        'deviceLabel' => $event->device_label ?? $event->device?->name,
+                        'deviceIsMobile' => $event->device?->is_mobile,
+                        'ip' => $event->ip,
+                        'createdAt' => $event->created_at?->toIso8601String(),
+                    ],
+                ),
+            ),
+            'filters' => [
+                'action' => $actions,
+                'sinceDays' => $effectiveSinceDays,
+            ],
+        ]);
+    }
+
+    /**
      * Sanitize the filter query string against each whitelist, falling back to safe defaults.
      *
      * @return array{
@@ -229,6 +297,7 @@ class TrustedDeviceController extends Controller
      *     recentlyAdded: int,
      *     inactive: int,
      *     revoked: int,
+     *     byDeviceType: array{desktop: int, mobile: int},
      * }
      */
     private function buildStats(User $user): array
@@ -236,6 +305,20 @@ class TrustedDeviceController extends Controller
         $now = CarbonImmutable::now();
         $inSevenDays = $now->addDays(7);
         $sevenDaysAgo = $now->subDays(7);
+
+        // SOC-22: single GROUP BY query, excludes soft-deleted so the breakdown
+        // matches what the user sees in the active devices table.
+        $typeRows = $user->trustedDevices()
+            ->whereNull('deleted_at')
+            ->selectRaw('is_mobile, count(*) as aggregate_count')
+            ->groupBy('is_mobile')
+            ->get();
+
+        $byDeviceType = ['desktop' => 0, 'mobile' => 0];
+        foreach ($typeRows as $typeRow) {
+            $byDeviceTypeKey = (bool) $typeRow->is_mobile ? 'mobile' : 'desktop';
+            $byDeviceType[$byDeviceTypeKey] = (int) $typeRow->aggregate_count;
+        }
 
         return [
             'total' => $user->trustedDevices()->count(),
@@ -255,6 +338,7 @@ class TrustedDeviceController extends Controller
             'revoked' => $user->trustedDeviceEvents()
                 ->whereIn('action', [TrustedDeviceAction::Revoked, TrustedDeviceAction::RevokedAll])
                 ->count(),
+            'byDeviceType' => $byDeviceType,
         ];
     }
 
