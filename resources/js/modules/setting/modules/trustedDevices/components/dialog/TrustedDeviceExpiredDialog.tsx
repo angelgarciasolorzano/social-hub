@@ -8,6 +8,7 @@ import {
   TrustedDeviceDetailsHeader,
   TrustedDeviceInfoCard,
 } from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDeviceInfoCard";
+import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -39,7 +40,10 @@ function TrustedDeviceExpiredDialog({
 }: TrustedDeviceExpiredDialogProps): JSX.Element {
   const handleGoToExpiredList = (): void => {
     onClose();
-    router.visit(index({ query: { status: "inactive" } }).url);
+    router.visit(index({ query: { status: trustedDeviceStatusFilterValue.inactive } }).url, {
+      preserveScroll: true,
+      preserveState: true,
+    });
   };
 
   return (

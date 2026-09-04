@@ -6,6 +6,12 @@ export const statusOptions = [
 
 export type TrustedDeviceStatusFilter = (typeof statusOptions)[number]["value"];
 
+export const trustedDeviceStatusFilterValue = {
+  active: "active",
+  inactive: "inactive",
+  revoked: "revoked",
+} as const satisfies Record<string, TrustedDeviceStatusFilter>;
+
 export const browserOptions = [
   { value: "chrome", label: "Chrome" },
   { value: "firefox", label: "Firefox" },

@@ -41,7 +41,10 @@ function DeviceAlreadyRegisteredDialog({
 }: DeviceAlreadyRegisteredDialogProps): JSX.Element {
   const handleGoToList = (): void => {
     onClose();
-    router.visit(index().url);
+    router.visit(index().url, {
+      preserveScroll: true,
+      preserveState: true,
+    });
   };
 
   return (
@@ -88,7 +91,13 @@ function DeviceAlreadyRegisteredDialog({
   );
 }
 
-function AlreadyRegisteredActionsAlert({ onGoToList }: { onGoToList: () => void }): JSX.Element {
+interface AlreadyRegisteredActionsAlertProps {
+  onGoToList: () => void;
+}
+
+function AlreadyRegisteredActionsAlert({
+  onGoToList,
+}: AlreadyRegisteredActionsAlertProps): JSX.Element {
   return (
     <Alert className={alertVariants.info}>
       <CircleAlert />

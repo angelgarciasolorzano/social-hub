@@ -8,6 +8,7 @@ import {
   TrustedDeviceDetailsHeader,
   TrustedDeviceInfoCard,
 } from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDeviceInfoCard";
+import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -39,7 +40,10 @@ function TrustedDeviceRevokedDialog({
 }: TrustedDeviceRevokedDialogProps): JSX.Element {
   const handleGoToRevokedList = (): void => {
     onClose();
-    router.visit(index({ query: { status: "revoked" } }).url);
+    router.visit(index({ query: { status: trustedDeviceStatusFilterValue.revoked } }).url, {
+      preserveScroll: true,
+      preserveState: true,
+    });
   };
 
   return (
