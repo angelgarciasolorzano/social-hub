@@ -259,11 +259,14 @@ class TrustedDeviceController extends Controller
     }
 
     /**
-     * Drop an active sibling for the same fingerprint/IP before reactivating a
-     * soft-deleted row, so re-registering while revoked doesn't leave duplicates.
+     * Hard-delete any active sibling sharing the same fingerprint before a
+     * reactivate, locked against concurrent reads and recorded as Revoked.
      */
-    private function dropDuplicateActiveDevice(?User $user, TrustedDevice $trustedDevice): void
-    {
+    private function dropDuplicateActiveDevice(
+        ?User $user,
+        TrustedDevice $trustedDevice,
+        TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest,
+    ): void {
         if (! $user instanceof User) {
             return;
         }
@@ -273,9 +276,17 @@ class TrustedDeviceController extends Controller
             $trustedDevice->user_agent,
             $trustedDevice->os_name,
             $trustedDevice->ip,
+            lockForUpdate: true,
         );
 
         if ($duplicate instanceof TrustedDevice && $duplicate->id !== $trustedDevice->id) {
+            TrustedDeviceEvent::record(
+                trustedDevice: $duplicate,
+                user: $user,
+                trustedDeviceAction: TrustedDeviceAction::Revoked,
+                request: $trustedDeviceReactivateRequest,
+            );
+
             $duplicate->forceDelete();
         }
     }
@@ -378,8 +389,7 @@ class TrustedDeviceController extends Controller
 
         $token = $this->mintToken();
 
-        /** @var TrustedDevice $newDevice */
-        $newDevice = DB::transaction(function () use (
+        DB::transaction(function () use (
             $user,
             $deviceDetector,
             $osInfo,
@@ -434,15 +444,6 @@ class TrustedDeviceController extends Controller
 
             return $created;
         });
-
-        $isFresh = $newDevice->wasRecentlyCreated;
-
-        if (! $isFresh) {
-            return Inertia::flash([
-                'type' => 'error',
-                'message' => 'Este dispositivo ya esta registrado como de confianza.',
-            ])->back();
-        }
 
         $this->queueTrustedDeviceCookie($token['token']);
 
@@ -502,13 +503,17 @@ class TrustedDeviceController extends Controller
 
     public function reactivate(TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
-        abort_unless($trustedDevice->user_id === $trustedDeviceReactivateRequest->user()?->getKey(), 403);
+        $user = $trustedDeviceReactivateRequest->user();
+
+        abort_unless($user instanceof User, 401);
+        abort_unless($trustedDevice->user_id === $user->getKey(), 403);
+        abort_if($trustedDevice->deleted_at === null, 404);
 
         /** @var int $cookieLifetimeMinutes */
         $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
 
-        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $cookieLifetimeMinutes): void {
-            $this->dropDuplicateActiveDevice($trustedDeviceReactivateRequest->user(), $trustedDevice);
+        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $user, $cookieLifetimeMinutes): void {
+            $this->dropDuplicateActiveDevice($user, $trustedDevice, $trustedDeviceReactivateRequest);
 
             $newToken = $this->mintToken();
 
@@ -522,7 +527,7 @@ class TrustedDeviceController extends Controller
 
             TrustedDeviceEvent::record(
                 trustedDevice: $trustedDevice,
-                user: $trustedDeviceReactivateRequest->user(),
+                user: $user,
                 trustedDeviceAction: TrustedDeviceAction::Reactivated,
                 request: $trustedDeviceReactivateRequest,
             );
@@ -539,6 +544,7 @@ class TrustedDeviceController extends Controller
     public function forceDestroy(TrustedDeviceDestroyForceRequest $trustedDeviceDestroyForceRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         abort_unless($trustedDevice->user_id === $trustedDeviceDestroyForceRequest->user()?->getKey(), 403);
+        abort_if($trustedDevice->deleted_at === null, 404);
 
         DB::transaction(function () use ($trustedDeviceDestroyForceRequest, $trustedDevice): void {
             TrustedDeviceEvent::record(

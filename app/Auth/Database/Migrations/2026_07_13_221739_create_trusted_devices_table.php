@@ -28,8 +28,6 @@ return new class extends Migration
 
             $blueprint->string('browser')->nullable();
 
-            $blueprint->string('browser_version')->nullable();
-
             $blueprint->string('os_name')->nullable();
 
             $blueprint->string('os_version')->nullable();
@@ -41,8 +39,6 @@ return new class extends Migration
             $blueprint->timestamp('last_used_at')->nullable();
 
             $blueprint->timestamp('expires_at')->index();
-
-            $blueprint->softDeletes();
 
             $blueprint->timestamps();
         });
