@@ -26,10 +26,10 @@ import {
 import TrustedDevicesTable from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTable";
 import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevices/components/table/TrustedDevicesTableToolbar";
 import TrustedDevicesRecentActivity from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDevicesRecentActivity";
+import TrustedDevicesRecommendations from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDevicesRecommendations";
 import TrustedDevicesSummary from "@/modules/setting/modules/trustedDevices/components/ui/TrustedDevicesSummary";
 import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceFilters";
 import {
-  trustedDeviceRecommendations,
   trustedDeviceSectionActionKey,
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
@@ -50,13 +50,6 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/shadcn/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -470,52 +463,5 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
-  );
-}
-
-function TrustedDevicesRecommendations(): JSX.Element {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recomendaciones</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {trustedDeviceRecommendations.map((recommendation) => {
-          const Icon = recommendation.icon;
-
-          return (
-            <div className="flex items-center justify-between gap-4" key={recommendation.title}>
-              <div className="flex items-start gap-4">
-                <div
-                  className={cn(
-                    "flex h-10 w-10 rounded-full p-2",
-                    iconColorVariants[recommendation.iconColor].iconBgClass,
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      "h-6 w-6",
-                      iconColorVariants[recommendation.iconColor].iconFgClass,
-                    )}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <h4 className="text-sm font-semibold">{recommendation.title}</h4>
-
-                  <p className="text-sm text-muted-foreground">{recommendation.description}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </CardContent>
-      <CardFooter className="mx-auto">
-        <Button variant="link" className="text-blue-700 dark:text-blue-500">
-          Mas recomendaciones
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </CardFooter>
-    </Card>
   );
 }
