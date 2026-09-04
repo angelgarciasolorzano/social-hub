@@ -24,7 +24,7 @@ export interface TrustedDeviceFilterState {
   perPage: TrustedDevicePerPage;
   search: string;
   sort: TrustedDeviceSortKey;
-  status: TrustedDeviceStatusFilter | null;
+  status: TrustedDeviceStatusFilter[] | null;
 }
 
 interface UseTrustedDeviceFiltersApi {

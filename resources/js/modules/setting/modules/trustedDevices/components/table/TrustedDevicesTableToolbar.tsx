@@ -49,7 +49,7 @@ import { cn } from "@/shared/lib";
 interface TrustedDevicesTableToolbarProps {
   filters: TrustedDeviceFilters;
   onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: TrustedDeviceStatusFilter | null) => void;
+  onStatusFilterChange: (value: TrustedDeviceStatusFilter[] | null) => void;
   onBrowserFilterChange: (value: TrustedDeviceBrowserFilter[] | null) => void;
   onDeviceTypeFilterChange: (value: TrustedDeviceDeviceTypeFilter | null) => void;
   onLastAccessFilterChange: (value: TrustedDeviceLastAccessFilter[] | null) => void;
@@ -120,7 +120,7 @@ type TrustedDevicesFiltersPopoverProps = Omit<
   TrustedDevicesTableToolbarProps,
   "onSearchChange" | "onSortOrderChange" | "filters"
 > & {
-  statusFilter: TrustedDeviceStatusFilter | null;
+  statusFilter: TrustedDeviceStatusFilter[] | null;
   browserFilter: TrustedDeviceBrowserFilter[] | null;
   deviceTypeFilter: TrustedDeviceDeviceTypeFilter | null;
   lastAccessFilter: TrustedDeviceLastAccessFilter[] | null;
@@ -155,11 +155,17 @@ function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps):
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
       label: "Estado",
-      multiple: false,
+      multiple: true,
       options: statusOptions,
       value: statusFilter,
       onChange: (value) => {
-        onStatusFilterChange(value as TrustedDeviceStatusFilter | null);
+        if (value === null) {
+          onStatusFilterChange(null);
+        } else if (typeof value === "string") {
+          onStatusFilterChange([value as TrustedDeviceStatusFilter]);
+        } else {
+          onStatusFilterChange([...value] as TrustedDeviceStatusFilter[]);
+        }
       },
     },
     {

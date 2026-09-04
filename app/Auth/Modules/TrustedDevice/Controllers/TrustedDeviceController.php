@@ -67,12 +67,18 @@ class TrustedDeviceController extends Controller
             });
         }
 
-        if ($filters['status'] === 'revoked') {
-            $query->onlyTrashed();
-        } elseif ($filters['status'] === 'active') {
-            $query->where('expires_at', '>', CarbonImmutable::now());
-        } elseif ($filters['status'] === 'inactive') {
-            $query->where('expires_at', '<=', CarbonImmutable::now());
+        if ($filters['status'] !== null) {
+            $query->where(function (Builder $builder) use ($filters): void {
+                foreach ($filters['status'] as $status) {
+                    if ($status === 'revoked') {
+                        $builder->orWhere(fn (Builder $inner): Builder => $inner->onlyTrashed());
+                    } elseif ($status === 'active') {
+                        $builder->orWhere('expires_at', '>', CarbonImmutable::now());
+                    } elseif ($status === 'inactive') {
+                        $builder->orWhere('expires_at', '<=', CarbonImmutable::now());
+                    }
+                }
+            });
         }
 
         if ($filters['browser'] !== null) {
@@ -149,7 +155,7 @@ class TrustedDeviceController extends Controller
      *
      * @return array{
      *     search: string,
-     *     status: 'active'|'inactive'|'revoked'|null,
+     *     status: list<'active'|'inactive'|'revoked'>|null,
      *     browser: list<'chrome'|'firefox'|'safari'|'edge'|'otro'>|null,
      *     deviceType: 'desktop / laptop'|'mobile / tablet'|null,
      *     lastAccess: list<'24h'|'7d'|'30d'>|null,
@@ -180,7 +186,7 @@ class TrustedDeviceController extends Controller
 
         return [
             'search' => trim($request->string('search')->toString()),
-            'status' => \in_array($status, $allowedStatus, true) ? $status : null,
+            'status' => $this->parseMultiFilter($status, $allowedStatus),
             'browser' => $this->parseMultiFilter($browser, $allowedBrowsers),
             'deviceType' => \in_array($deviceType, $allowedDeviceTypes, true) ? $deviceType : null,
             'lastAccess' => $this->parseMultiFilter($lastAccess, $allowedLastAccess),
