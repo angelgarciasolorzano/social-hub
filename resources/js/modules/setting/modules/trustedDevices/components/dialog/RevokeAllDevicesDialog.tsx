@@ -121,6 +121,7 @@ function RevokeAllDevicesDialog({
           errors={errors}
           setData={setData}
           data={data}
+          disabled={devices.length === 0}
         />
 
         <DialogFooter className="flex items-center gap-4 border-t sm:justify-between">
@@ -248,10 +249,11 @@ interface RevokeDeviceFormProps {
   errors: FormDataErrors<RevokeDeviceFormData>;
   setData: SetDataAction<RevokeDeviceFormData>;
   data: RevokeDeviceFormData;
+  disabled: boolean;
 }
 
 function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
-  const { handleSubmit, errors, setData, data } = props;
+  const { handleSubmit, errors, setData, data, disabled } = props;
 
   return (
     <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
@@ -266,6 +268,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           required
           autoFocus
           placeholder="Ingresa tu contraseña"
+          disabled={disabled}
           onChange={(e) => {
             setData("password", e.target.value);
           }}
@@ -280,6 +283,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           id="revoke-trusted-device-terms"
           name="terms"
           checked={data.terms}
+          disabled={disabled}
           onCheckedChange={(checked) => {
             setData("terms", checked === true);
           }}
