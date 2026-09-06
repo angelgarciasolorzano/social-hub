@@ -143,6 +143,7 @@ class TrustedDeviceController extends Controller
                     'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
                 ])
                 ->all(),
+            ...$this->activity($request),
         ];
 
         return Inertia::render('setting/modules/trustedDevices/TrustedDevice', [
@@ -152,15 +153,28 @@ class TrustedDeviceController extends Controller
     }
 
     /**
-     * Render the activity log modal (Dialog 3 — SOC-22). Wraps the paginated
-     * events with Inertia::scroll() so the frontend can use <InfiniteScroll>
-     * + reloadable filters via router.reload({ only, reset }).
+     * Build the cursor-paginated activity log for SOC-22 Dialog 3.
      *
-     * Filters (sanitized against whitelists):
+     * Sanitizes query params against whitelists:
      *  - action: TrustedDeviceAction values (comma-separated for multi-select)
      *  - since_days: 7 | 30 | 90 | 180 | 365 (default 30)
+     *  - cursor: opaque cursor from the previous page (Laravel cursorPaginate)
+     *
+     * Returns the cursor paginator unserialized (plain CursorPaginator, no
+     * Inertia::scroll wrap), suitable for spreading into an Inertia::render()
+     * props array. The frontend parses `links.next` to load subsequent pages
+     * via router.get().
+     *
+     * @return array{
+     *     activityLog: CursorPaginator<array{
+     *         id: int, action: string, actionLabel: string, deviceId: int|null,
+     *         deviceLabel: string|null, deviceIsMobile: bool|null, ip: string|null,
+     *         createdAt: string|null
+     *     }>,
+     *     activityFilters: array{action: list<string>|null, sinceDays: 7|30|90|180|365},
+     * }
      */
-    public function activity(Request $request): Response
+    public function activity(Request $request): array
     {
         $user = $request->user();
 
@@ -178,45 +192,39 @@ class TrustedDeviceController extends Controller
         );
 
         $requestedSinceDays = $request->integer('since_days');
-        $effectiveSinceDays = in_array($requestedSinceDays, $allowedSinceDays, true)
+        $effectiveSinceDays = \in_array($requestedSinceDays, $allowedSinceDays, true)
             ? $requestedSinceDays
             : 30;
 
         $cutoff = CarbonImmutable::now()->subDays($effectiveSinceDays);
 
-        $query = $user->trustedDeviceEvents()
+        $cursorPaginator = $user->trustedDeviceEvents()
             ->with(['device:id,name,is_mobile,browser,os_name'])
             ->latest('created_at')
-            ->orderBy('id'); // stable tiebreaker required by cursorPaginate
+            ->orderBy('id')
+            ->where('created_at', '>=', $cutoff)
+            ->when($actions !== null, function (Builder $builder) use ($actions): void {
+                $builder->whereIn('action', $actions);
+            })
+            ->cursorPaginate(20)
+            ->through(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
+                'id' => $trustedDeviceEvent->id,
+                'action' => $trustedDeviceEvent->action->value,
+                'actionLabel' => $trustedDeviceEvent->action->label(),
+                'deviceId' => $trustedDeviceEvent->trusted_device_id,
+                'deviceLabel' => $trustedDeviceEvent->device_label ?? $trustedDeviceEvent->device?->name,
+                'deviceIsMobile' => $trustedDeviceEvent->device?->is_mobile,
+                'ip' => $trustedDeviceEvent->ip,
+                'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
+            ]);
 
-        if ($actions !== null) {
-            $query->whereIn('action', $actions);
-        }
-
-        $query->where('created_at', '>=', $cutoff);
-
-        $cursorPaginator = $query->cursorPaginate(20);
-
-        return Inertia::render('setting/modules/trustedDevices/ActivityDialog', [
-            'trustedDeviceEvents' => Inertia::scroll(
-                fn (): CursorPaginator => $cursorPaginator->through(
-                    fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
-                        'id' => $trustedDeviceEvent->id,
-                        'action' => $trustedDeviceEvent->action->value,
-                        'actionLabel' => $trustedDeviceEvent->action->label(),
-                        'deviceId' => $trustedDeviceEvent->trusted_device_id,
-                        'deviceLabel' => $trustedDeviceEvent->device_label ?? $trustedDeviceEvent->device?->name,
-                        'deviceIsMobile' => $trustedDeviceEvent->device?->is_mobile,
-                        'ip' => $trustedDeviceEvent->ip,
-                        'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
-                    ],
-                ),
-            ),
-            'filters' => [
+        return [
+            'activityLog' => $cursorPaginator,
+            'activityFilters' => [
                 'action' => $actions,
                 'sinceDays' => $effectiveSinceDays,
             ],
-        ]);
+        ];
     }
 
     /**
