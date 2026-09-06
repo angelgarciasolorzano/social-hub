@@ -2,14 +2,23 @@ import { useCallback, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
+import type {
+  TrustedDeviceActivityActionFilter,
+  TrustedDeviceActivitySinceDaysFilter,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
 import type { TrustedDeviceActivityEvent } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+
+interface ActivityFilters {
+  action: TrustedDeviceActivityActionFilter[] | null;
+  sinceDays: TrustedDeviceActivitySinceDaysFilter;
+}
 
 interface UsePaginatedActivityReturn {
   events: TrustedDeviceActivityEvent[];
   hasMore: boolean;
   isLoading: boolean;
   loadMore: () => void;
-  reload: (filters: { action: string; sinceDays: string }) => void;
+  reload: (filters: ActivityFilters) => void;
 }
 
 interface PaginatedActivity {
@@ -68,10 +77,10 @@ export function usePaginatedActivity(initial: PaginatedActivity): UsePaginatedAc
     );
   }, [nextUrl]);
 
-  const reload = useCallback((filters: { action: string; sinceDays: string }) => {
+  const reload = useCallback((filters: ActivityFilters) => {
     router.reload({
       data: {
-        action: filters.action === "" ? undefined : filters.action,
+        action: filters.action === null ? undefined : filters.action.join(","),
         since_days: filters.sinceDays,
       },
       replace: true,
@@ -97,4 +106,4 @@ export function usePaginatedActivity(initial: PaginatedActivity): UsePaginatedAc
   };
 }
 
-export type { PaginatedActivity };
+export type { ActivityFilters, PaginatedActivity };

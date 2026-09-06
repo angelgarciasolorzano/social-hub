@@ -5,6 +5,12 @@ import type { LucideIcon } from "lucide-react";
 import { Pencil, RefreshCw, RotateCw, ShieldQuestionMark, Trash2, UserPlus } from "lucide-react";
 import { useIntersectionObserver } from "usehooks-ts";
 
+import {
+  activityActionOptions,
+  activitySinceDaysOptions,
+  type TrustedDeviceActivityActionFilter,
+  type TrustedDeviceActivitySinceDaysFilter,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
 import { usePaginatedActivity } from "@/modules/setting/modules/trustedDevices/hooks/usePaginatedActivity";
 import type {
   TrustedDeviceAction,
@@ -16,6 +22,19 @@ import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@/shared/components/shadcn/ui/combobox";
 import {
   Dialog,
   DialogClose,
@@ -35,23 +54,6 @@ interface TrustedDeviceActivityDialogProps {
   initialActivity: TrustedDeviceActivityPaginated;
   initialFilters: TrustedDeviceActivityFilters;
 }
-
-const ACTION_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "Todos" },
-  { value: "renamed", label: "Renombrados" },
-  { value: "renewed", label: "Renovados" },
-  { value: "revoked", label: "Revocados" },
-  { value: "revoked_all", label: "Todos revocados" },
-  { value: "reactivated", label: "Reactivados" },
-];
-
-const SINCE_OPTIONS: { value: string; label: string }[] = [
-  { value: "7", label: "Últimos 7 días" },
-  { value: "30", label: "Últimos 30 días" },
-  { value: "90", label: "Últimos 90 días" },
-  { value: "180", label: "Últimos 180 días" },
-  { value: "365", label: "Todos" },
-];
 
 const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }> = {
   created: { icon: UserPlus, color: "blue" },
@@ -94,6 +96,117 @@ function EventRow({ event }: { event: TrustedDeviceActivityEvent }): JSX.Element
   );
 }
 
+interface FilterOption {
+  readonly label: string;
+  readonly value: string;
+}
+
+interface FilterComboboxConfig {
+  label: string;
+  multiple: boolean;
+  options: readonly FilterOption[];
+  value: string | readonly string[] | null;
+  onChange: (value: string | readonly string[] | null) => void;
+}
+
+function ActivityFilterCombobox({
+  label,
+  multiple,
+  options,
+  value,
+  onChange,
+}: FilterComboboxConfig): JSX.Element {
+  const anchor = useComboboxAnchor();
+
+  const findLabel = (candidate: string, candidates: readonly FilterOption[]): string => {
+    return candidates.find((opt) => opt.value === candidate)?.label ?? candidate;
+  };
+
+  const isStringArray = (val: string | readonly string[] | null): val is readonly string[] =>
+    Array.isArray(val);
+
+  if (multiple) {
+    const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
+
+    return (
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+        <Combobox
+          items={options}
+          multiple
+          onValueChange={(next: string[]) => {
+            onChange(next);
+          }}
+          value={arr}
+        >
+          <ComboboxChips className="min-h-9 w-full" ref={anchor}>
+            <ComboboxValue>
+              {(values: string[]) => (
+                <>
+                  {values.map((selected) => (
+                    <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
+                  ))}
+                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
+                </>
+              )}
+            </ComboboxValue>
+          </ComboboxChips>
+
+          <ComboboxContent anchor={anchor}>
+            <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+            <ComboboxList>
+              {(item: FilterOption) => (
+                <ComboboxItem key={item.value} value={item.value}>
+                  {item.label}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+    );
+  }
+
+  const single = typeof value === "string" ? value : null;
+  const singleLabel = single === null ? null : findLabel(single, options);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+      <Combobox
+        value={single}
+        onValueChange={(next) => {
+          onChange(next ?? null);
+        }}
+      >
+        <ComboboxTrigger
+          className={cn(
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
+            "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
+            singleLabel === null && "text-muted-foreground",
+          )}
+        >
+          <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
+            {singleLabel ?? label}
+          </span>
+        </ComboboxTrigger>
+
+        <ComboboxContent>
+          <ComboboxList>
+            {options.map((opt) => (
+              <ComboboxItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </ComboboxItem>
+            ))}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
+  );
+}
+
 export default function TrustedDeviceActivityDialog({
   open,
   onClose,
@@ -102,8 +215,12 @@ export default function TrustedDeviceActivityDialog({
 }: TrustedDeviceActivityDialogProps): JSX.Element {
   const { events, hasMore, isLoading, loadMore, reload } = usePaginatedActivity(initialActivity);
 
-  const [selectedAction, setSelectedAction] = useState<string>(initialFilters.action?.[0] ?? "");
-  const [selectedSince, setSelectedSince] = useState<string>(String(initialFilters.sinceDays));
+  const [selectedActions, setSelectedActions] = useState<TrustedDeviceActivityActionFilter[]>(
+    initialFilters.action ?? [],
+  );
+  const [selectedSince, setSelectedSince] = useState<TrustedDeviceActivitySinceDaysFilter>(
+    initialFilters.sinceDays,
+  );
 
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
   const loadMoreTimer = useRef<number | null>(null);
@@ -114,9 +231,56 @@ export default function TrustedDeviceActivityDialog({
     threshold: 0,
   });
 
-  const handleFilterChange = (nextAction: string, nextSince: string): void => {
-    reload({ action: nextAction, sinceDays: nextSince });
+  const triggerReload = (
+    nextActions: TrustedDeviceActivityActionFilter[] | TrustedDeviceActivityActionFilter | null,
+    nextSince: TrustedDeviceActivitySinceDaysFilter,
+  ): void => {
+    const actionsArray: TrustedDeviceActivityActionFilter[] | null = Array.isArray(nextActions)
+      ? Array.from(nextActions)
+      : nextActions === null
+        ? null
+        : [nextActions];
+
+    reload({
+      action: actionsArray,
+      sinceDays: nextSince,
+    });
   };
+
+  const filterConfigs: readonly FilterComboboxConfig[] = [
+    {
+      label: "Acción",
+      multiple: true,
+      options: activityActionOptions,
+      value: selectedActions,
+      onChange: (value) => {
+        if (value === null) {
+          setSelectedActions([]);
+          triggerReload(null, selectedSince);
+        } else if (typeof value === "string") {
+          const coerced = [value as TrustedDeviceActivityActionFilter];
+          setSelectedActions(coerced);
+          triggerReload(coerced, selectedSince);
+        } else {
+          const coerced = [...value] as TrustedDeviceActivityActionFilter[];
+          setSelectedActions(coerced);
+          triggerReload(coerced, selectedSince);
+        }
+      },
+    },
+    {
+      label: "Filtrar por rango temporal",
+      multiple: false,
+      options: activitySinceDaysOptions,
+      value: selectedSince,
+      onChange: (value) => {
+        if (value === null) return;
+        const coerced = value as TrustedDeviceActivitySinceDaysFilter;
+        setSelectedSince(coerced);
+        triggerReload(selectedActions, coerced);
+      },
+    },
+  ];
 
   useEffect(() => {
     if (!isIntersecting || isLoading || !hasMore) return;
@@ -151,39 +315,16 @@ export default function TrustedDeviceActivityDialog({
         </DialogHeader>
 
         <div className="flex gap-2">
-          <select
-            aria-label="Filtrar por acción"
-            className="rounded-md border bg-background px-3 py-1 text-sm"
-            value={selectedAction}
-            onChange={(event) => {
-              const next = event.target.value;
-              setSelectedAction(next);
-              handleFilterChange(next, selectedSince);
-            }}
-          >
-            {ACTION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            aria-label="Filtrar por rango temporal"
-            className="rounded-md border bg-background px-3 py-1 text-sm"
-            value={selectedSince}
-            onChange={(event) => {
-              const next = event.target.value;
-              setSelectedSince(next);
-              handleFilterChange(selectedAction, next);
-            }}
-          >
-            {SINCE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          {filterConfigs.map((config) => (
+            <ActivityFilterCombobox
+              key={config.label}
+              label={config.label}
+              multiple={config.multiple}
+              onChange={config.onChange}
+              options={config.options}
+              value={config.value}
+            />
+          ))}
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto rounded-md border" ref={setScrollRoot}>

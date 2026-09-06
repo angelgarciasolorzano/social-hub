@@ -1,4 +1,8 @@
 import type {
+  TrustedDeviceActivityActionFilter,
+  TrustedDeviceActivitySinceDaysFilter,
+} from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
+import type {
   TrustedDeviceBrowserFilter,
   TrustedDeviceDeviceTypeFilter,
   TrustedDeviceLastAccessFilter,
@@ -81,8 +85,8 @@ export interface TrustedDeviceFilters {
 }
 
 export interface TrustedDeviceActivityFilters {
-  action: TrustedDeviceAction[] | null;
-  sinceDays: 7 | 30 | 90 | 180 | 365;
+  action: TrustedDeviceActivityActionFilter[] | null;
+  sinceDays: TrustedDeviceActivitySinceDaysFilter;
 }
 
 export interface TrustedDeviceActivityEvent {
