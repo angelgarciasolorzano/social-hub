@@ -95,3 +95,9 @@ export interface TrustedDeviceActivityEvent {
   ip: string | null;
   createdAt: string | null;
 }
+
+export interface TrustedDeviceActivityPaginated {
+  data: TrustedDeviceActivityEvent[];
+  next_page_url: string | null;
+  per_page: number;
+}
