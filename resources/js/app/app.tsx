@@ -1,14 +1,11 @@
-import type { JSX, PropsWithChildren } from "react";
-
 import { createInertiaApp } from "@inertiajs/react";
 
-import ModalLayout from "@/shared/layouts/ModalLayout";
-import { ModalStackProvider } from "@inertiaui/modal-react";
 import { configureEcho } from "@laravel/echo-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
+import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
 import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
 import { TooltipProvider } from "@/shared/components/shadcn/ui/tooltip";
@@ -47,24 +44,16 @@ void createInertiaApp({
   layout: (name) => {
     // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
     switch (true) {
+      case name.startsWith("auth/"):
+        return AuthCardLayout;
       case name.startsWith("setting/"):
-        return function SettingLayoutWrapper({ children }: PropsWithChildren): JSX.Element {
-          return (
-            <ModalLayout>
-              <SettingLayout>{children}</SettingLayout>
-            </ModalLayout>
-          );
-        };
+        return SettingLayout;
       default:
-        return ModalLayout;
+        return undefined;
     }
   },
   withApp(app) {
-    return (
-      <ModalStackProvider>
-        <TooltipProvider>{app}</TooltipProvider>
-      </ModalStackProvider>
-    );
+    return <TooltipProvider>{app}</TooltipProvider>;
   },
   progress: {
     color: "#4B5563",

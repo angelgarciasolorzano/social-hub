@@ -6,7 +6,6 @@
 
 @source "../views";
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
-@source "../node_modules/@inertiaui/modal-react/src";
 
 @custom-variant dark (&:is(.dark *));
 
