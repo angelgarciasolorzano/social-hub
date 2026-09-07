@@ -184,6 +184,7 @@ class TrustedDeviceController extends Controller
             static fn (TrustedDeviceAction $trustedDeviceAction): string => $trustedDeviceAction->value,
             TrustedDeviceAction::cases(),
         );
+
         $allowedSinceDays = [7, 30, 90, 180, 365];
 
         $actions = $this->parseMultiFilter(
@@ -192,6 +193,7 @@ class TrustedDeviceController extends Controller
         );
 
         $requestedSinceDays = $request->integer('since_days');
+
         $effectiveSinceDays = \in_array($requestedSinceDays, $allowedSinceDays, true)
             ? $requestedSinceDays
             : 30;
@@ -217,6 +219,12 @@ class TrustedDeviceController extends Controller
                 'ip' => $trustedDeviceEvent->ip,
                 'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
             ]);
+
+        logger('Activity filters', [
+            'action' => $actions,
+            'sinceDays' => $effectiveSinceDays,
+            'data' => $cursorPaginator->toArray(),
+        ]);
 
         return [
             'activityLog' => $cursorPaginator,

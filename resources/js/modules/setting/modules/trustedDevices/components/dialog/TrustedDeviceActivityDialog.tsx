@@ -122,14 +122,14 @@ function ActivityFilterCombobox({
     return candidates.find((opt) => opt.value === candidate)?.label ?? candidate;
   };
 
-  const isStringArray = (val: string | readonly string[] | null): val is readonly string[] =>
-    Array.isArray(val);
+  const isStringArray = (value: string | readonly string[] | null): value is readonly string[] =>
+    Array.isArray(value);
 
   if (multiple) {
     const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
 
     return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
         <Combobox
@@ -153,10 +153,10 @@ function ActivityFilterCombobox({
             </ComboboxValue>
           </ComboboxChips>
 
-          <ComboboxContent anchor={anchor}>
+          <ComboboxContent anchor={anchor} className="pointer-events-auto">
             <ComboboxEmpty>Sin resultados</ComboboxEmpty>
             <ComboboxList>
-              {(item: FilterOption) => (
+              {(item: { label: string; value: string }) => (
                 <ComboboxItem key={item.value} value={item.value}>
                   {item.label}
                 </ComboboxItem>
@@ -172,7 +172,7 @@ function ActivityFilterCombobox({
   const singleLabel = single === null ? null : findLabel(single, options);
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
       <Combobox
@@ -193,7 +193,7 @@ function ActivityFilterCombobox({
           </span>
         </ComboboxTrigger>
 
-        <ComboboxContent>
+        <ComboboxContent className="pointer-events-auto">
           <ComboboxList>
             {options.map((opt) => (
               <ComboboxItem key={opt.value} value={opt.value}>
