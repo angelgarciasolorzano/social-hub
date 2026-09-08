@@ -43,7 +43,12 @@ import {
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { cn } from "@/shared/lib";
-import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
+import {
+  alertVariants,
+  type IconColorVariant,
+  iconColorVariants,
+  progressBarClassesByVariant,
+} from "@/shared/lib/styling";
 
 interface TrustedDeviceSummaryDialogProps {
   open: boolean;
@@ -128,49 +133,6 @@ function solidBarClass(variant: IconColorVariant): string {
     colors.iconFgClass.replace("-100", "-500").replace("-900", "-800"),
   );
 }
-
-const progressBarClassesByVariant = {
-  amber: cn(
-    "bg-amber-200 dark:bg-amber-800",
-    "**:data-[slot=progress-indicator]:bg-amber-700 dark:**:data-[slot=progress-indicator]:bg-amber-400",
-  ),
-  blue: cn(
-    "bg-blue-200 dark:bg-blue-800",
-    "**:data-[slot=progress-indicator]:bg-blue-700 dark:**:data-[slot=progress-indicator]:bg-blue-400",
-  ),
-  cyan: cn(
-    "bg-cyan-200 dark:bg-cyan-800",
-    "**:data-[slot=progress-indicator]:bg-cyan-700 dark:**:data-[slot=progress-indicator]:bg-cyan-400",
-  ),
-  gray: cn(
-    "bg-gray-200 dark:bg-gray-800",
-    "**:data-[slot=progress-indicator]:bg-gray-700 dark:**:data-[slot=progress-indicator]:bg-gray-400",
-  ),
-  green: cn(
-    "bg-green-200 dark:bg-green-800",
-    "**:data-[slot=progress-indicator]:bg-green-700 dark:**:data-[slot=progress-indicator]:bg-green-400",
-  ),
-  orange: cn(
-    "bg-orange-200 dark:bg-orange-800",
-    "**:data-[slot=progress-indicator]:bg-orange-700 dark:**:data-[slot=progress-indicator]:bg-orange-400",
-  ),
-  purple: cn(
-    "bg-purple-200 dark:bg-purple-800",
-    "**:data-[slot=progress-indicator]:bg-purple-700 dark:**:data-[slot=progress-indicator]:bg-purple-400",
-  ),
-  red: cn(
-    "bg-red-200 dark:bg-red-800",
-    "**:data-[slot=progress-indicator]:bg-red-700 dark:**:data-[slot=progress-indicator]:bg-red-400",
-  ),
-  violet: cn(
-    "bg-violet-200 dark:bg-violet-800",
-    "**:data-[slot=progress-indicator]:bg-violet-700 dark:**:data-[slot=progress-indicator]:bg-violet-400",
-  ),
-  yellow: cn(
-    "bg-yellow-200 dark:bg-yellow-800",
-    "**:data-[slot=progress-indicator]:bg-yellow-700 dark:**:data-[slot=progress-indicator]:bg-yellow-400",
-  ),
-} as const satisfies Record<IconColorVariant, string>;
 
 function StatCard({ icon: Icon, label, total, value, variant }: StatCardProps): JSX.Element {
   const percentage = percentageOf(value, total);
