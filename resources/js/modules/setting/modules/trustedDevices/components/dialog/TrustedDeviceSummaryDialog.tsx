@@ -19,6 +19,13 @@ import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/shadcn/ui/card";
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -33,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
+import { Progress } from "@/shared/components/shadcn/ui/progress";
 
 import { cn } from "@/shared/lib";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -120,6 +128,49 @@ function solidBarClass(variant: IconColorVariant): string {
     colors.iconFgClass.replace("-100", "-500").replace("-900", "-800"),
   );
 }
+
+const progressBarClassesByVariant = {
+  amber: cn(
+    "bg-amber-200 dark:bg-amber-800",
+    "**:data-[slot=progress-indicator]:bg-amber-700 dark:**:data-[slot=progress-indicator]:bg-amber-400",
+  ),
+  blue: cn(
+    "bg-blue-200 dark:bg-blue-800",
+    "**:data-[slot=progress-indicator]:bg-blue-700 dark:**:data-[slot=progress-indicator]:bg-blue-400",
+  ),
+  cyan: cn(
+    "bg-cyan-200 dark:bg-cyan-800",
+    "**:data-[slot=progress-indicator]:bg-cyan-700 dark:**:data-[slot=progress-indicator]:bg-cyan-400",
+  ),
+  gray: cn(
+    "bg-gray-200 dark:bg-gray-800",
+    "**:data-[slot=progress-indicator]:bg-gray-700 dark:**:data-[slot=progress-indicator]:bg-gray-400",
+  ),
+  green: cn(
+    "bg-green-200 dark:bg-green-800",
+    "**:data-[slot=progress-indicator]:bg-green-700 dark:**:data-[slot=progress-indicator]:bg-green-400",
+  ),
+  orange: cn(
+    "bg-orange-200 dark:bg-orange-800",
+    "**:data-[slot=progress-indicator]:bg-orange-700 dark:**:data-[slot=progress-indicator]:bg-orange-400",
+  ),
+  purple: cn(
+    "bg-purple-200 dark:bg-purple-800",
+    "**:data-[slot=progress-indicator]:bg-purple-700 dark:**:data-[slot=progress-indicator]:bg-purple-400",
+  ),
+  red: cn(
+    "bg-red-200 dark:bg-red-800",
+    "**:data-[slot=progress-indicator]:bg-red-700 dark:**:data-[slot=progress-indicator]:bg-red-400",
+  ),
+  violet: cn(
+    "bg-violet-200 dark:bg-violet-800",
+    "**:data-[slot=progress-indicator]:bg-violet-700 dark:**:data-[slot=progress-indicator]:bg-violet-400",
+  ),
+  yellow: cn(
+    "bg-yellow-200 dark:bg-yellow-800",
+    "**:data-[slot=progress-indicator]:bg-yellow-700 dark:**:data-[slot=progress-indicator]:bg-yellow-400",
+  ),
+} as const satisfies Record<IconColorVariant, string>;
 
 function StatCard({ icon: Icon, label, total, value, variant }: StatCardProps): JSX.Element {
   const percentage = percentageOf(value, total);
@@ -331,12 +382,13 @@ interface DeviceTypeBreakdownProps {
 
 function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Element {
   return (
-    <div className="rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Dispositivos por tipo</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Dispositivo por tipo</CardTitle>
+        <CardDescription>Cantidad de dispositivos por categoría</CardDescription>
+      </CardHeader>
 
-      <p className="mb-4 text-xs text-muted-foreground">Cantidad de dispositivos por categoría</p>
-
-      <div className="space-y-4">
+      <CardContent className="space-y-4">
         {rows.map((item) => {
           const percentage = percentageOf(item.count, total);
           const Icon = item.icon;
@@ -360,12 +412,10 @@ function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Ele
                 <span className="w-10 text-right text-xs text-muted-foreground">{percentage}%</span>
               </div>
 
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn("h-full rounded-full", solidBarClass(item.variant))}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
+              <Progress
+                className={cn("h-1.5", progressBarClassesByVariant[item.variant])}
+                value={percentage}
+              />
             </div>
           );
         })}
@@ -373,8 +423,8 @@ function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Ele
         {total === 0 && (
           <p className="text-sm text-muted-foreground">Aún no tienes dispositivos activos.</p>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
