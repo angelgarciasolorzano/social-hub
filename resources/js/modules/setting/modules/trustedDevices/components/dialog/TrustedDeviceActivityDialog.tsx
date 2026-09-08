@@ -64,149 +64,6 @@ const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: Icon
   reactivated: { icon: RotateCw, color: "green" },
 };
 
-function ActionBadge({ action }: { action: TrustedDeviceAction }): JSX.Element {
-  const visual = actionVisuals[action];
-  const Icon = visual.icon;
-  const colors = iconColorVariants[visual.color];
-
-  return (
-    <div className={cn("flex h-10 w-10 shrink-0 rounded-full p-2", colors.iconBgClass)}>
-      <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
-    </div>
-  );
-}
-
-function EventRow({ event }: { event: TrustedDeviceActivityEvent }): JSX.Element {
-  return (
-    <li className="flex items-start justify-between gap-4 p-4">
-      <div className="flex items-start gap-4">
-        <ActionBadge action={event.action} />
-
-        <div className="space-y-1">
-          <h4 className="text-sm font-semibold">{event.deviceLabel ?? "Un dispositivo"}</h4>
-
-          <p className="text-sm text-muted-foreground">{event.actionLabel}</p>
-
-          {event.ip !== null && <p className="text-xs text-muted-foreground">IP: {event.ip}</p>}
-        </div>
-      </div>
-
-      <p className="shrink-0 text-sm text-muted-foreground">{fromNow(event.createdAt)}</p>
-    </li>
-  );
-}
-
-interface FilterOption {
-  readonly label: string;
-  readonly value: string;
-}
-
-interface FilterComboboxConfig {
-  label: string;
-  multiple: boolean;
-  options: readonly FilterOption[];
-  value: string | readonly string[] | null;
-  onChange: (value: string | readonly string[] | null) => void;
-}
-
-function ActivityFilterCombobox({
-  label,
-  multiple,
-  options,
-  value,
-  onChange,
-}: FilterComboboxConfig): JSX.Element {
-  const anchor = useComboboxAnchor();
-
-  const findLabel = (candidate: string, candidates: readonly FilterOption[]): string => {
-    return candidates.find((opt) => opt.value === candidate)?.label ?? candidate;
-  };
-
-  const isStringArray = (value: string | readonly string[] | null): value is readonly string[] =>
-    Array.isArray(value);
-
-  if (multiple) {
-    const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
-
-    return (
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">{label}</label>
-
-        <Combobox
-          items={options}
-          multiple
-          onValueChange={(next: string[]) => {
-            onChange(next);
-          }}
-          value={arr}
-        >
-          <ComboboxChips className="min-h-9 w-full" ref={anchor}>
-            <ComboboxValue>
-              {(values: string[]) => (
-                <>
-                  {values.map((selected) => (
-                    <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
-                  ))}
-                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
-                </>
-              )}
-            </ComboboxValue>
-          </ComboboxChips>
-
-          <ComboboxContent anchor={anchor} className="pointer-events-auto">
-            <ComboboxEmpty>Sin resultados</ComboboxEmpty>
-            <ComboboxList>
-              {(item: { label: string; value: string }) => (
-                <ComboboxItem key={item.value} value={item.value}>
-                  {item.label}
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-      </div>
-    );
-  }
-
-  const single = typeof value === "string" ? value : null;
-  const singleLabel = single === null ? null : findLabel(single, options);
-
-  return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-
-      <Combobox
-        value={single}
-        onValueChange={(next) => {
-          onChange(next ?? null);
-        }}
-      >
-        <ComboboxTrigger
-          className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
-            "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
-            singleLabel === null && "text-muted-foreground",
-          )}
-        >
-          <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
-            {singleLabel ?? label}
-          </span>
-        </ComboboxTrigger>
-
-        <ComboboxContent className="pointer-events-auto">
-          <ComboboxList>
-            {options.map((opt) => (
-              <ComboboxItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </ComboboxItem>
-            ))}
-          </ComboboxList>
-        </ComboboxContent>
-      </Combobox>
-    </div>
-  );
-}
-
 export default function TrustedDeviceActivityDialog({
   open,
   onClose,
@@ -339,7 +196,7 @@ export default function TrustedDeviceActivityDialog({
           ) : (
             <ul className="divide-y">
               {events.map((event) => (
-                <EventRow event={event} key={event.id} />
+                <TrustedDeviceActivityDialogEventRow event={event} key={event.id} />
               ))}
             </ul>
           )}
@@ -360,5 +217,144 @@ export default function TrustedDeviceActivityDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface FilterOption {
+  readonly label: string;
+  readonly value: string;
+}
+
+interface FilterComboboxConfig {
+  label: string;
+  multiple: boolean;
+  options: readonly FilterOption[];
+  value: string | readonly string[] | null;
+  onChange: (value: string | readonly string[] | null) => void;
+}
+
+function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
+  const { label, multiple, options, value, onChange } = props;
+
+  const anchor = useComboboxAnchor();
+
+  const findLabel = (candidate: string, candidates: readonly FilterOption[]): string => {
+    return candidates.find((opt) => opt.value === candidate)?.label ?? candidate;
+  };
+
+  const isStringArray = (value: string | readonly string[] | null): value is readonly string[] =>
+    Array.isArray(value);
+
+  if (multiple) {
+    const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
+
+    return (
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+        <Combobox
+          items={options}
+          multiple
+          onValueChange={(next: string[]) => {
+            onChange(next);
+          }}
+          value={arr}
+        >
+          <ComboboxChips className="min-h-9 w-full" ref={anchor}>
+            <ComboboxValue>
+              {(values: string[]) => (
+                <>
+                  {values.map((selected) => (
+                    <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
+                  ))}
+                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
+                </>
+              )}
+            </ComboboxValue>
+          </ComboboxChips>
+
+          <ComboboxContent anchor={anchor} className="pointer-events-auto">
+            <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+            <ComboboxList>
+              {(item: { label: string; value: string }) => (
+                <ComboboxItem key={item.value} value={item.value}>
+                  {item.label}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+    );
+  }
+
+  const single = typeof value === "string" ? value : null;
+  const singleLabel = single === null ? null : findLabel(single, options);
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+
+      <Combobox
+        value={single}
+        onValueChange={(next) => {
+          onChange(next ?? null);
+        }}
+      >
+        <ComboboxTrigger
+          className={cn(
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
+            "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
+            singleLabel === null && "text-muted-foreground",
+          )}
+        >
+          <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
+            {singleLabel ?? label}
+          </span>
+        </ComboboxTrigger>
+
+        <ComboboxContent className="pointer-events-auto">
+          <ComboboxList>
+            {options.map((opt) => (
+              <ComboboxItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </ComboboxItem>
+            ))}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+    </div>
+  );
+}
+
+interface TrustedDeviceActivityDialogEventRowProps {
+  event: TrustedDeviceActivityEvent;
+}
+
+function TrustedDeviceActivityDialogEventRow({
+  event,
+}: TrustedDeviceActivityDialogEventRowProps): JSX.Element {
+  const visual = actionVisuals[event.action];
+  const Icon = visual.icon;
+  const colors = iconColorVariants[visual.color];
+
+  return (
+    <li className="flex items-start justify-between gap-4 p-4">
+      <div className="flex items-start gap-4">
+        <div className={cn("flex h-10 w-10 shrink-0 rounded-full p-2", colors.iconBgClass)}>
+          <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
+        </div>
+
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold">{event.deviceLabel ?? "Un dispositivo"}</h4>
+
+          <p className="text-sm text-muted-foreground">{event.actionLabel}</p>
+
+          {event.ip !== null && <p className="text-xs text-muted-foreground">IP: {event.ip}</p>}
+        </div>
+      </div>
+
+      <p className="shrink-0 text-sm text-muted-foreground">{fromNow(event.createdAt)}</p>
+    </li>
   );
 }
