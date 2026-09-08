@@ -63,13 +63,6 @@ interface StatCardProps {
   variant: IconColorVariant;
 }
 
-interface DeviceTypeRow {
-  count: number;
-  icon: LucideIcon;
-  label: string;
-  variant: IconColorVariant;
-}
-
 interface TrustedDeviceSummaryDatum {
   cantidad: number;
   estado: "activos" | "inactivos" | "porExpirar" | "revocados";
@@ -193,15 +186,6 @@ function TrustedDeviceSummaryDialog({
     },
   ];
 
-  const desktopCount = stats.byDeviceType.desktop;
-  const mobileCount = stats.byDeviceType.mobile;
-  const totalByType = desktopCount + mobileCount;
-
-  const deviceTypeRows: DeviceTypeRow[] = [
-    { count: desktopCount, icon: Laptop, label: "Escritorio / Laptop", variant: "violet" },
-    { count: mobileCount, icon: Smartphone, label: "Móvil / Tablet", variant: "green" },
-  ];
-
   return (
     <Dialog
       open={open}
@@ -315,7 +299,7 @@ function TrustedDeviceSummaryDialog({
             </div>
           </div>
 
-          <DeviceTypeBreakdown rows={deviceTypeRows} total={totalByType} />
+          <DeviceTypeBreakdown />
         </div>
 
         <Alert className={alertVariants.preview}>
@@ -337,12 +321,33 @@ function TrustedDeviceSummaryDialog({
   );
 }
 
-interface DeviceTypeBreakdownProps {
-  rows: DeviceTypeRow[];
-  total: number;
+interface DeviceTypeRow {
+  count: number;
+  icon: LucideIcon;
+  label: string;
+  variant: IconColorVariant;
 }
 
-function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Element {
+function DeviceTypeBreakdown(): JSX.Element {
+  const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
+
+  const deviceTypeRows: DeviceTypeRow[] = [
+    {
+      count: stats.byDeviceType.desktop,
+      icon: Laptop,
+      label: "Escritorio / Laptop",
+      variant: "violet",
+    },
+    {
+      count: stats.byDeviceType.mobile,
+      icon: Smartphone,
+      label: "Móvil / Tablet",
+      variant: "green",
+    },
+  ];
+
+  const totalByType = deviceTypeRows.reduce((sum, row) => sum + row.count, 0);
+
   return (
     <Card>
       <CardHeader>
@@ -351,8 +356,8 @@ function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Ele
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {rows.map((item) => {
-          const percentage = percentageOf(item.count, total);
+        {deviceTypeRows.map((item) => {
+          const percentage = percentageOf(item.count, totalByType);
           const Icon = item.icon;
 
           return (
@@ -382,7 +387,7 @@ function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Ele
           );
         })}
 
-        {total === 0 && (
+        {totalByType === 0 && (
           <p className="text-sm text-muted-foreground">Aún no tienes dispositivos activos.</p>
         )}
       </CardContent>

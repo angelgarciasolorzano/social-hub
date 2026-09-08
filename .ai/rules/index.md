@@ -5,3 +5,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | Applies to | Rule file |
 | --- | --- |
 | app/**/*.php | .ai/rules/app.md |
+| resources/js/**/*.tsx, resources/js/**/*.ts | .ai/rules/frontend.md |
