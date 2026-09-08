@@ -1,5 +1,7 @@
 import type { JSX } from "react";
 
+import { CircleAlert, Lightbulb } from "lucide-react";
+
 import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDevicesOverview";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
@@ -15,7 +17,7 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 
 import { cn } from "@/shared/lib";
-import { iconColorVariants } from "@/shared/lib/styling";
+import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceRecommendationsDialogProps {
   open: boolean;
@@ -35,9 +37,14 @@ function TrustedDeviceRecommendationsDialog({
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Recomendaciones de seguridad</DialogTitle>
+          <DialogTitle>
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-muted-foreground" />
+              Recomendaciones de seguridad
+            </div>
+          </DialogTitle>
           <DialogDescription>
-            Sigue estas recomendaciones para mantener tu cuenta segura.
+            Sigue estas recomendaciones para mantener tu cuenta y dispositivos de confianza seguros.
           </DialogDescription>
         </DialogHeader>
 
@@ -73,8 +80,11 @@ function TrustedDeviceRecommendationsDialog({
           })}
         </div>
 
-        <Alert>
+        <Alert className={alertVariants.info}>
+          <CircleAlert />
+
           <AlertTitle>Consejo</AlertTitle>
+
           <AlertDescription>
             Estas recomendaciones te ayudan a mantener tu cuenta y tus dispositivos de confianza
             seguros.

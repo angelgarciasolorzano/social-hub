@@ -1,14 +1,4 @@
-import {
-  Calendar,
-  Eye,
-  Pencil,
-  Plus,
-  RefreshCw,
-  RotateCw,
-  ShieldCheck,
-  Trash2,
-  Users,
-} from "lucide-react";
+import { Calendar, Eye, Pencil, Plus, RefreshCw, RotateCw, Trash2, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
@@ -24,34 +14,31 @@ export interface TrustedDeviceRecommendation {
 
 export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
   {
-    description: "Elimina los que ya no utilizas.",
+    description:
+      "Manten solo dispositivos que realmente utilizas y reconoce. Elimina aquellos que ya no estes usando.",
     icon: Calendar,
     iconColor: "blue",
     title: "Revisa tus dispositivos periodicamente",
   },
   {
-    description: "Marca solo equipos que esten bajo tu control.",
+    description:
+      "Marca como confiables unicamente dispositivos que esten bajo tu control. Evita computadoras publicas o equipos de uso compartido.",
     icon: Users,
     iconColor: "green",
     title: "No confies en dispositivos compartidos",
   },
   {
-    description: "Si ves algo extraño, elimina ese dispositivo.",
+    description: "Si ves un dispositivo que te resulte extraño, revoca su acceso de inmediato.",
     icon: Trash2,
     iconColor: "orange",
     title: "Revoca accesos que no reconzcas",
   },
   {
-    description: "Reduce el riesgo de vulnerabilidades conocidas.",
+    description:
+      "Reduce el riesgo de vulnerabilidades conocidas manteniendo tu navegador y sistema operativo al dia.",
     icon: RefreshCw,
     iconColor: "purple",
     title: "Mantén tu navegador y sistema actualizados",
-  },
-  {
-    description: "Activa la verificacion en dos pasos para añadir una capa extra de seguridad.",
-    icon: ShieldCheck,
-    iconColor: "green",
-    title: "Habilita la autenticacion en dos pasos",
   },
 ];
 
