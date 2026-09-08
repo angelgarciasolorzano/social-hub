@@ -171,7 +171,10 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
         const percentage = percentageOf(item.value, item.total);
 
         return (
-          <div className="flex items-center gap-3 rounded-lg border p-3" key={item.label}>
+          <div
+            className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm"
+            key={item.label}
+          >
             <div
               className={cn(
                 "flex h-10 w-10 shrink-0 rounded-full p-2",
@@ -353,7 +356,7 @@ function StateDistributionBreakdown({
       </CardHeader>
 
       <CardContent className="flex items-center gap-4">
-        <ChartContainer config={chartConfig} className="aspect-square max-h-32 w-32 shrink-0">
+        <ChartContainer config={chartConfig} className="aspect-square max-h-40 w-40 shrink-0">
           <RadialBarChart
             data={chartData}
             endAngle={380}
