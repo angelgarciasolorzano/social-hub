@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { usePage } from "@inertiajs/react";
 
 import {
+  ArrowRight,
   Circle,
   CircleAlert,
   Clock,
@@ -15,7 +16,12 @@ import {
 } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
+import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevices/components/dialog/TrustedDeviceRecommendationsDialog";
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import {
+  createDialogCloseHandler,
+  type DialogClosingState,
+} from "@/modules/setting/shared/utils/dialog";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -42,6 +48,8 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
+
+import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 import {
@@ -70,53 +78,76 @@ function TrustedDeviceSummaryDialog({
 }: TrustedDeviceSummaryDialogProps): JSX.Element {
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
+  const recommendationsDialog = useDialog<DialogClosingState | null>(null);
+  const handleRecommendationsClose = createDialogCloseHandler(recommendationsDialog);
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
-    >
-      <DialogContent className="sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-              Resumen de dispositivos
-            </div>
-          </DialogTitle>
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) onClose();
+        }}
+      >
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle asChild>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+                Resumen de dispositivos
+              </div>
+            </DialogTitle>
 
-          <DialogDescription>
-            Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de confianza.
-          </DialogDescription>
-        </DialogHeader>
+            <DialogDescription>
+              Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de
+              confianza.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid grid-cols-4 gap-3">
-          <StatCard trustedDeviceStats={stats} />
-        </div>
+          <div className="grid grid-cols-4 gap-3">
+            <StatCard trustedDeviceStats={stats} />
+          </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <StateDistributionBreakdown trustedDeviceStats={stats} />
+          <div className="grid grid-cols-2 gap-4">
+            <StateDistributionBreakdown trustedDeviceStats={stats} />
 
-          <DeviceTypeBreakdown trustedDeviceStats={stats} />
-        </div>
+            <DeviceTypeBreakdown trustedDeviceStats={stats} />
+          </div>
 
-        <Alert className={alertVariants.preview}>
-          <CircleAlert />
-          <AlertTitle>Mantén tus dispositivos seguros</AlertTitle>
-          <AlertDescription>
-            Revisa periódicamente los dispositivos que ya no utilizas y elimina aquellos que no
-            reconozcas. Esto ayuda a proteger tu cuenta y evitar accesos no autorizados.
-          </AlertDescription>
-        </Alert>
+          <Alert className={alertVariants.preview}>
+            <CircleAlert />
+            <AlertTitle>Mantén tus dispositivos seguros</AlertTitle>
+            <AlertDescription className="flex items-center gap-4">
+              Revisa periódicamente los dispositivos que ya no utilizas y elimina aquellos que no
+              reconozcas. Esto ayuda a proteger tu cuenta y evitar accesos no autorizados.
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  recommendationsDialog.show({ closing: false });
+                }}
+              >
+                Ver recomendaciones
+                <ArrowRight />
+              </Button>
+            </AlertDescription>
+          </Alert>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cerrar</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cerrar</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {recommendationsDialog.state !== null && (
+        <TrustedDeviceRecommendationsDialog
+          open={!recommendationsDialog.state.closing}
+          onClose={handleRecommendationsClose}
+        />
+      )}
+    </>
   );
 }
 
