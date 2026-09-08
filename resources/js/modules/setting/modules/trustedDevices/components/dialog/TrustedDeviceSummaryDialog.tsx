@@ -356,12 +356,14 @@ function StateDistributionBreakdown({
       </CardHeader>
 
       <CardContent className="flex items-center gap-4">
-        <ChartContainer config={chartConfig} className="aspect-square max-h-40 w-40 shrink-0">
+        <ChartContainer config={chartConfig} className="aspect-square max-h-44 w-44 shrink-0">
           <RadialBarChart
             data={chartData}
+            cy="50%"
+            cx="50%"
             endAngle={380}
-            innerRadius={30}
-            outerRadius={110}
+            innerRadius="40%"
+            outerRadius="100%"
             startAngle={-90}
           >
             <ChartTooltip
@@ -395,12 +397,10 @@ function StateDistributionBreakdown({
                   <span className="truncate text-sm">{item.label}</span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <span className="text-sm font-semibold">{item.cantidad}</span>
 
-                  <span className="w-10 text-right text-xs text-muted-foreground">
-                    {percentage}%
-                  </span>
+                  <span className="text-xs text-muted-foreground">{percentage}%</span>
                 </div>
               </li>
             );
