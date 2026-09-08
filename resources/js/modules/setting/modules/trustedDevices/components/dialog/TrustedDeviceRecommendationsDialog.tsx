@@ -37,7 +37,7 @@ function TrustedDeviceRecommendationsDialog({
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle asChild>
             <div className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-muted-foreground" />
               Recomendaciones de seguridad
