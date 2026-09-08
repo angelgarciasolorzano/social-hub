@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { usePage } from "@inertiajs/react";
 
 import {
+  Circle,
   CircleAlert,
   Clock,
   Laptop,
@@ -107,7 +108,7 @@ function TrustedDeviceSummaryDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
@@ -258,6 +259,7 @@ interface CharData {
   estado: "activos" | "inactivos" | "porExpirar" | "revocados";
   fill: string;
   label: string;
+  variant: IconColorVariant;
 }
 
 interface StateDistributionBreakdownProps {
@@ -268,13 +270,6 @@ function StateDistributionBreakdown({
   trustedDeviceStats,
 }: StateDistributionBreakdownProps): JSX.Element {
   const activeOnlyCount = Math.max(0, trustedDeviceStats.active - trustedDeviceStats.expiringSoon);
-
-  const colorVariantForEstado: Record<CharData["estado"], IconColorVariant> = {
-    activos: "green",
-    inactivos: "gray",
-    porExpirar: "amber",
-    revocados: "red",
-  };
 
   const chartConfig = {
     cantidad: { label: "Dispositivos" },
@@ -314,42 +309,39 @@ function StateDistributionBreakdown({
       estado: "activos",
       fill: "var(--color-activos)",
       label: "Activos",
+      variant: "green",
     },
     {
       cantidad: trustedDeviceStats.expiringSoon,
       estado: "porExpirar",
       fill: "var(--color-por-expirar)",
       label: "Próximos a expirar",
+      variant: "amber",
     },
     {
       cantidad: trustedDeviceStats.inactive,
       estado: "inactivos",
       fill: "var(--color-inactivos)",
       label: "Inactivos",
+      variant: "gray",
     },
     {
       cantidad: trustedDeviceStats.revoked,
       estado: "revocados",
       fill: "var(--color-revocados)",
       label: "Revocados",
+      variant: "red",
     },
   ];
 
-  const solidBarClass = (variant: IconColorVariant): string => {
-    const colors = iconColorVariants[variant];
-
-    return cn(
-      colors.iconBgClass.replace("/50", "").replace("/20", ""),
-      colors.iconFgClass.replace("-100", "-500").replace("-900", "-800"),
-    );
-  };
-
   return (
-    <div className="rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Distribución por estado</h3>
-      <p className="mb-4 text-xs text-muted-foreground">Porcentaje del total de dispositivos</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>Distribución por estado</CardTitle>
+        <CardDescription>Porcentaje del total de dispositivos</CardDescription>
+      </CardHeader>
 
-      <div className="flex items-center gap-4">
+      <CardContent className="flex items-center gap-4">
         <ChartContainer config={chartConfig} className="aspect-square max-h-32 w-32 shrink-0">
           <RadialBarChart
             data={chartData}
@@ -376,15 +368,17 @@ function StateDistributionBreakdown({
 
         <ul className="flex-1 space-y-2">
           {chartData.map((item) => {
-            const colorVariant = colorVariantForEstado[item.estado];
             const percentage = percentageOf(item.cantidad, trustedDeviceStats.total);
 
             return (
               <li className="flex items-center justify-between gap-2" key={item.estado}>
-                <div className="flex items-center gap-2">
-                  <div className={cn("h-2.5 w-2.5 rounded-full", solidBarClass(colorVariant))} />
+                <div className="flex min-w-0 items-center gap-2">
+                  <Circle
+                    className={cn("h-2 w-2 shrink-0", iconColorVariants[item.variant].iconFgClass)}
+                    fill="currentColor"
+                  />
 
-                  <span className="text-sm">{item.label}</span>
+                  <span className="truncate text-sm">{item.label}</span>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -398,8 +392,8 @@ function StateDistributionBreakdown({
             );
           })}
         </ul>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
