@@ -63,68 +63,12 @@ interface StatCardProps {
   variant: IconColorVariant;
 }
 
-interface TrustedDeviceSummaryDatum {
-  cantidad: number;
-  estado: "activos" | "inactivos" | "porExpirar" | "revocados";
-  fill: string;
-  label: string;
-}
-
-const chartConfig = {
-  cantidad: { label: "Dispositivos" },
-  activos: {
-    label: "Activos",
-    theme: {
-      light: "oklch(0.723 0.219 149.579)",
-      dark: "oklch(0.792 0.209 151.711)",
-    },
-  },
-  porExpirar: {
-    label: "Próximos a expirar",
-    theme: {
-      light: "oklch(0.769 0.188 70.08)",
-      dark: "oklch(0.828 0.189 84.429)",
-    },
-  },
-  inactivos: {
-    label: "Inactivos",
-    theme: {
-      light: "oklch(0.551 0.027 264.364)",
-      dark: "oklch(0.707 0.022 261.325)",
-    },
-  },
-  revocados: {
-    label: "Revocados",
-    theme: {
-      light: "oklch(0.637 0.237 25.331)",
-      dark: "oklch(0.704 0.191 22.216)",
-    },
-  },
-} satisfies ChartConfig;
-
-const colorVariantForEstado: Record<TrustedDeviceSummaryDatum["estado"], IconColorVariant> = {
-  activos: "green",
-  inactivos: "gray",
-  porExpirar: "amber",
-  revocados: "red",
-};
-
 function percentageOf(value: number, total: number): number {
   if (total <= 0) {
     return 0;
   }
 
   return Math.round((value / total) * 100);
-}
-
-function solidBarClass(variant: IconColorVariant): string {
-  // iconBgClass uses /50 (light) / /20 (dark) opacity — strip it for the progress bar fill
-  const colors = iconColorVariants[variant];
-
-  return cn(
-    colors.iconBgClass.replace("/50", "").replace("/20", ""),
-    colors.iconFgClass.replace("-100", "-500").replace("-900", "-800"),
-  );
 }
 
 function StatCard({ icon: Icon, label, total, value, variant }: StatCardProps): JSX.Element {
@@ -156,36 +100,6 @@ function TrustedDeviceSummaryDialog({
 }: TrustedDeviceSummaryDialogProps): JSX.Element {
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
-  const total = stats.total;
-  const activeOnlyCount = Math.max(0, stats.active - stats.expiringSoon);
-
-  const chartData: TrustedDeviceSummaryDatum[] = [
-    {
-      cantidad: activeOnlyCount,
-      estado: "activos",
-      fill: "var(--color-activos)",
-      label: "Activos",
-    },
-    {
-      cantidad: stats.expiringSoon,
-      estado: "porExpirar",
-      fill: "var(--color-por-expirar)",
-      label: "Próximos a expirar",
-    },
-    {
-      cantidad: stats.inactive,
-      estado: "inactivos",
-      fill: "var(--color-inactivos)",
-      label: "Inactivos",
-    },
-    {
-      cantidad: stats.revoked,
-      estado: "revocados",
-      fill: "var(--color-revocados)",
-      label: "Revocados",
-    },
-  ];
-
   return (
     <Dialog
       open={open}
@@ -211,95 +125,37 @@ function TrustedDeviceSummaryDialog({
           <StatCard
             icon={Monitor}
             label="Activos"
-            total={total}
+            total={stats.total}
             value={stats.active}
             variant="green"
           />
           <StatCard
             icon={Clock}
             label="Próximos a expirar"
-            total={total}
+            total={stats.total}
             value={stats.expiringSoon}
             variant="amber"
           />
           <StatCard
             icon={Monitor}
             label="Inactivos"
-            total={total}
+            total={stats.total}
             value={stats.inactive}
             variant="gray"
           />
           <StatCard
             icon={Trash2}
             label="Revocados"
-            total={total}
+            total={stats.total}
             value={stats.revoked}
             variant="red"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-lg border p-4">
-            <h3 className="text-sm font-semibold">Distribución por estado</h3>
-            <p className="mb-4 text-xs text-muted-foreground">
-              Porcentaje del total de dispositivos
-            </p>
+          <StateDistributionBreakdown trustedDeviceStats={stats} />
 
-            <div className="flex items-center gap-4">
-              <ChartContainer config={chartConfig} className="aspect-square max-h-32 w-32 shrink-0">
-                <RadialBarChart
-                  data={chartData}
-                  endAngle={380}
-                  innerRadius={30}
-                  outerRadius={110}
-                  startAngle={-90}
-                >
-                  <ChartTooltip
-                    content={<ChartTooltipContent hideLabel nameKey="estado" />}
-                    cursor={false}
-                  />
-
-                  <RadialBar background dataKey="cantidad">
-                    <LabelList
-                      className="fill-white capitalize mix-blend-luminosity"
-                      dataKey="label"
-                      fontSize={11}
-                      position="insideStart"
-                    />
-                  </RadialBar>
-                </RadialBarChart>
-              </ChartContainer>
-
-              <ul className="flex-1 space-y-2">
-                {chartData.map((item) => {
-                  const colorVariant = colorVariantForEstado[item.estado];
-                  const percentage = percentageOf(item.cantidad, total);
-
-                  return (
-                    <li className="flex items-center justify-between gap-2" key={item.estado}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={cn("h-2.5 w-2.5 rounded-full", solidBarClass(colorVariant))}
-                        />
-
-                        <span className="text-sm">{item.label}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold">{item.cantidad}</span>
-
-                        <span className="w-10 text-right text-xs text-muted-foreground">
-                          {percentage}%
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-
-          <DeviceTypeBreakdown />
+          <DeviceTypeBreakdown trustedDeviceStats={stats} />
         </div>
 
         <Alert className={alertVariants.preview}>
@@ -328,18 +184,20 @@ interface DeviceTypeRow {
   variant: IconColorVariant;
 }
 
-function DeviceTypeBreakdown(): JSX.Element {
-  const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
+interface DeviceTypeBreakdownProps {
+  trustedDeviceStats: TrustedDeviceStats;
+}
 
+function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): JSX.Element {
   const deviceTypeRows: DeviceTypeRow[] = [
     {
-      count: stats.byDeviceType.desktop,
+      count: trustedDeviceStats.byDeviceType.desktop,
       icon: Laptop,
       label: "Escritorio / Laptop",
       variant: "violet",
     },
     {
-      count: stats.byDeviceType.mobile,
+      count: trustedDeviceStats.byDeviceType.mobile,
       icon: Smartphone,
       label: "Móvil / Tablet",
       variant: "green",
@@ -392,6 +250,156 @@ function DeviceTypeBreakdown(): JSX.Element {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+interface CharData {
+  cantidad: number;
+  estado: "activos" | "inactivos" | "porExpirar" | "revocados";
+  fill: string;
+  label: string;
+}
+
+interface StateDistributionBreakdownProps {
+  trustedDeviceStats: TrustedDeviceStats;
+}
+
+function StateDistributionBreakdown({
+  trustedDeviceStats,
+}: StateDistributionBreakdownProps): JSX.Element {
+  const activeOnlyCount = Math.max(0, trustedDeviceStats.active - trustedDeviceStats.expiringSoon);
+
+  const colorVariantForEstado: Record<CharData["estado"], IconColorVariant> = {
+    activos: "green",
+    inactivos: "gray",
+    porExpirar: "amber",
+    revocados: "red",
+  };
+
+  const chartConfig = {
+    cantidad: { label: "Dispositivos" },
+    activos: {
+      label: "Activos",
+      theme: {
+        light: "oklch(0.723 0.219 149.579)",
+        dark: "oklch(0.792 0.209 151.711)",
+      },
+    },
+    porExpirar: {
+      label: "Próximos a expirar",
+      theme: {
+        light: "oklch(0.769 0.188 70.08)",
+        dark: "oklch(0.828 0.189 84.429)",
+      },
+    },
+    inactivos: {
+      label: "Inactivos",
+      theme: {
+        light: "oklch(0.551 0.027 264.364)",
+        dark: "oklch(0.707 0.022 261.325)",
+      },
+    },
+    revocados: {
+      label: "Revocados",
+      theme: {
+        light: "oklch(0.637 0.237 25.331)",
+        dark: "oklch(0.704 0.191 22.216)",
+      },
+    },
+  } satisfies ChartConfig;
+
+  const chartData: CharData[] = [
+    {
+      cantidad: activeOnlyCount,
+      estado: "activos",
+      fill: "var(--color-activos)",
+      label: "Activos",
+    },
+    {
+      cantidad: trustedDeviceStats.expiringSoon,
+      estado: "porExpirar",
+      fill: "var(--color-por-expirar)",
+      label: "Próximos a expirar",
+    },
+    {
+      cantidad: trustedDeviceStats.inactive,
+      estado: "inactivos",
+      fill: "var(--color-inactivos)",
+      label: "Inactivos",
+    },
+    {
+      cantidad: trustedDeviceStats.revoked,
+      estado: "revocados",
+      fill: "var(--color-revocados)",
+      label: "Revocados",
+    },
+  ];
+
+  const solidBarClass = (variant: IconColorVariant): string => {
+    const colors = iconColorVariants[variant];
+
+    return cn(
+      colors.iconBgClass.replace("/50", "").replace("/20", ""),
+      colors.iconFgClass.replace("-100", "-500").replace("-900", "-800"),
+    );
+  };
+
+  return (
+    <div className="rounded-lg border p-4">
+      <h3 className="text-sm font-semibold">Distribución por estado</h3>
+      <p className="mb-4 text-xs text-muted-foreground">Porcentaje del total de dispositivos</p>
+
+      <div className="flex items-center gap-4">
+        <ChartContainer config={chartConfig} className="aspect-square max-h-32 w-32 shrink-0">
+          <RadialBarChart
+            data={chartData}
+            endAngle={380}
+            innerRadius={30}
+            outerRadius={110}
+            startAngle={-90}
+          >
+            <ChartTooltip
+              content={<ChartTooltipContent hideLabel nameKey="estado" />}
+              cursor={false}
+            />
+
+            <RadialBar background dataKey="cantidad">
+              <LabelList
+                className="fill-white capitalize mix-blend-luminosity"
+                dataKey="label"
+                fontSize={11}
+                position="insideStart"
+              />
+            </RadialBar>
+          </RadialBarChart>
+        </ChartContainer>
+
+        <ul className="flex-1 space-y-2">
+          {chartData.map((item) => {
+            const colorVariant = colorVariantForEstado[item.estado];
+            const percentage = percentageOf(item.cantidad, trustedDeviceStats.total);
+
+            return (
+              <li className="flex items-center justify-between gap-2" key={item.estado}>
+                <div className="flex items-center gap-2">
+                  <div className={cn("h-2.5 w-2.5 rounded-full", solidBarClass(colorVariant))} />
+
+                  <span className="text-sm">{item.label}</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold">{item.cantidad}</span>
+
+                  <span className="w-10 text-right text-xs text-muted-foreground">
+                    {percentage}%
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }
 
