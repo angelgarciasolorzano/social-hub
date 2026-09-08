@@ -57,11 +57,6 @@ interface DeviceTypeRow {
   variant: IconColorVariant;
 }
 
-interface DeviceTypeBreakdownProps {
-  rows: DeviceTypeRow[];
-  total: number;
-}
-
 interface TrustedDeviceSummaryDatum {
   cantidad: number;
   estado: "activos" | "inactivos" | "porExpirar" | "revocados";
@@ -144,55 +139,6 @@ function StatCard({ icon: Icon, label, total, value, variant }: StatCardProps): 
         <span className="text-xs text-muted-foreground">{label}</span>
         <span className="text-xl font-semibold">{value}</span>
         <span className="text-xs text-muted-foreground">{percentage}% del total</span>
-      </div>
-    </div>
-  );
-}
-
-function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Element {
-  return (
-    <div className="rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Dispositivos por tipo</h3>
-
-      <p className="mb-4 text-xs text-muted-foreground">Cantidad de dispositivos por categoría</p>
-
-      <div className="space-y-4">
-        {rows.map((item) => {
-          const percentage = percentageOf(item.count, total);
-          const Icon = item.icon;
-
-          return (
-            <div className="space-y-1.5" key={item.label}>
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "flex h-10 w-10 shrink-0 rounded-md p-2",
-                    iconColorVariants[item.variant].iconBgClass,
-                  )}
-                >
-                  <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
-                </div>
-
-                <span className="flex-1 text-sm font-medium">{item.label}</span>
-
-                <span className="text-sm font-semibold">{item.count}</span>
-
-                <span className="w-10 text-right text-xs text-muted-foreground">{percentage}%</span>
-              </div>
-
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className={cn("h-full rounded-full", solidBarClass(item.variant))}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        {total === 0 && (
-          <p className="text-sm text-muted-foreground">Aún no tienes dispositivos activos.</p>
-        )}
       </div>
     </div>
   );
@@ -375,6 +321,60 @@ function TrustedDeviceSummaryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface DeviceTypeBreakdownProps {
+  rows: DeviceTypeRow[];
+  total: number;
+}
+
+function DeviceTypeBreakdown({ rows, total }: DeviceTypeBreakdownProps): JSX.Element {
+  return (
+    <div className="rounded-lg border p-4">
+      <h3 className="text-sm font-semibold">Dispositivos por tipo</h3>
+
+      <p className="mb-4 text-xs text-muted-foreground">Cantidad de dispositivos por categoría</p>
+
+      <div className="space-y-4">
+        {rows.map((item) => {
+          const percentage = percentageOf(item.count, total);
+          const Icon = item.icon;
+
+          return (
+            <div className="space-y-1.5" key={item.label}>
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex h-10 w-10 shrink-0 rounded-md p-2",
+                    iconColorVariants[item.variant].iconBgClass,
+                  )}
+                >
+                  <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
+                </div>
+
+                <span className="flex-1 text-sm font-medium">{item.label}</span>
+
+                <span className="text-sm font-semibold">{item.count}</span>
+
+                <span className="w-10 text-right text-xs text-muted-foreground">{percentage}%</span>
+              </div>
+
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className={cn("h-full rounded-full", solidBarClass(item.variant))}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+
+        {total === 0 && (
+          <p className="text-sm text-muted-foreground">Aún no tienes dispositivos activos.</p>
+        )}
+      </div>
+    </div>
   );
 }
 
