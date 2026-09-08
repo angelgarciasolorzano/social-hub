@@ -54,7 +54,7 @@ function TrustedDeviceRecommendationsDialog({
 
             return (
               <div
-                className="flex items-start gap-4 rounded-lg border p-4"
+                className="flex items-start gap-4 rounded-lg border bg-card p-4 shadow-sm dark:bg-input/20"
                 key={recommendation.title}
               >
                 <div
@@ -83,11 +83,11 @@ function TrustedDeviceRecommendationsDialog({
         <Alert className={alertVariants.info}>
           <CircleAlert />
 
-          <AlertTitle>Consejo</AlertTitle>
+          <AlertTitle>Estas recomendaciones te ayudan a mantener tu cuenta segura</AlertTitle>
 
           <AlertDescription>
-            Estas recomendaciones te ayudan a mantener tu cuenta y tus dispositivos de confianza
-            seguros.
+            Los dispositivos de confianza te permiten iniciar sesion mas rapido, pero es importante
+            revisarlos y mantener solo los que utilizas.
           </AlertDescription>
         </Alert>
 
