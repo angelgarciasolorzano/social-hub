@@ -200,9 +200,7 @@ interface DeviceTypeRow {
   variant: IconColorVariant;
 }
 
-interface DeviceTypeBreakdownProps {
-  trustedDeviceStats: TrustedDeviceStats;
-}
+type DeviceTypeBreakdownProps = StatCardProps;
 
 function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): JSX.Element {
   const deviceTypeRows: DeviceTypeRow[] = [
@@ -269,16 +267,14 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
   );
 }
 
+type StateDistributionBreakdownProps = StatCardProps;
+
 interface CharData {
   cantidad: number;
   estado: "activos" | "inactivos" | "porExpirar" | "revocados";
   fill: string;
   label: string;
   variant: IconColorVariant;
-}
-
-interface StateDistributionBreakdownProps {
-  trustedDeviceStats: TrustedDeviceStats;
 }
 
 function StateDistributionBreakdown({
