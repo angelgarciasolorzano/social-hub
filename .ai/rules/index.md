@@ -4,5 +4,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
-| app/**/*.php | .ai/rules/app.md |
+| app/**/*.php, resources/js/**/*.tsx, resources/js/**/*.ts | .ai/rules/app.md |
+| app/**/*.php | .ai/rules/backend.md |
 | resources/js/**/*.tsx, resources/js/**/*.ts | .ai/rules/frontend.md |
+| **/* (Linear issues, PRs, branches) | .ai/rules/linear.md |
