@@ -51,19 +51,6 @@ import {
   progressBarClassesByVariant,
 } from "@/shared/lib/styling";
 
-interface TrustedDeviceSummaryDialogProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-interface StatCardProps {
-  icon: LucideIcon;
-  label: string;
-  total: number;
-  value: number;
-  variant: IconColorVariant;
-}
-
 function percentageOf(value: number, total: number): number {
   if (total <= 0) {
     return 0;
@@ -72,27 +59,9 @@ function percentageOf(value: number, total: number): number {
   return Math.round((value / total) * 100);
 }
 
-function StatCard({ icon: Icon, label, total, value, variant }: StatCardProps): JSX.Element {
-  const percentage = percentageOf(value, total);
-
-  return (
-    <div className="flex items-center gap-3 rounded-lg border p-3">
-      <div
-        className={cn(
-          "flex h-10 w-10 shrink-0 rounded-full p-2",
-          iconColorVariants[variant].iconBgClass,
-        )}
-      >
-        <Icon className={cn("h-6 w-6", iconColorVariants[variant].iconFgClass)} />
-      </div>
-
-      <div className="flex flex-col">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-xl font-semibold">{value}</span>
-        <span className="text-xs text-muted-foreground">{percentage}% del total</span>
-      </div>
-    </div>
-  );
+interface TrustedDeviceSummaryDialogProps {
+  open: boolean;
+  onClose: () => void;
 }
 
 function TrustedDeviceSummaryDialog({
@@ -123,34 +92,7 @@ function TrustedDeviceSummaryDialog({
         </DialogHeader>
 
         <div className="grid grid-cols-4 gap-3">
-          <StatCard
-            icon={Monitor}
-            label="Activos"
-            total={stats.total}
-            value={stats.active}
-            variant="green"
-          />
-          <StatCard
-            icon={Clock}
-            label="Próximos a expirar"
-            total={stats.total}
-            value={stats.expiringSoon}
-            variant="amber"
-          />
-          <StatCard
-            icon={Monitor}
-            label="Inactivos"
-            total={stats.total}
-            value={stats.inactive}
-            variant="gray"
-          />
-          <StatCard
-            icon={Trash2}
-            label="Revocados"
-            total={stats.total}
-            value={stats.revoked}
-            variant="red"
-          />
+          <StatCard trustedDeviceStats={stats} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -175,6 +117,79 @@ function TrustedDeviceSummaryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface StatCardProps {
+  trustedDeviceStats: TrustedDeviceStats;
+}
+
+interface StatCardRow {
+  icon: LucideIcon;
+  label: string;
+  total: number;
+  value: number;
+  variant: IconColorVariant;
+}
+
+function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
+  const statCardRows: StatCardRow[] = [
+    {
+      icon: Monitor,
+      label: "Activos",
+      total: trustedDeviceStats.total,
+      value: trustedDeviceStats.active,
+      variant: "green",
+    },
+    {
+      icon: Clock,
+      label: "Próximos a expirar",
+      total: trustedDeviceStats.total,
+      value: trustedDeviceStats.expiringSoon,
+      variant: "amber",
+    },
+    {
+      icon: Monitor,
+      label: "Inactivos",
+      total: trustedDeviceStats.total,
+      value: trustedDeviceStats.inactive,
+      variant: "gray",
+    },
+    {
+      icon: Trash2,
+      label: "Revocados",
+      total: trustedDeviceStats.total,
+      value: trustedDeviceStats.revoked,
+      variant: "red",
+    },
+  ];
+
+  return (
+    <>
+      {statCardRows.map((item) => {
+        const Icon = item.icon;
+        const percentage = percentageOf(item.value, item.total);
+
+        return (
+          <div className="flex items-center gap-3 rounded-lg border p-3" key={item.label}>
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 rounded-full p-2",
+                iconColorVariants[item.variant].iconBgClass,
+              )}
+            >
+              <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-xs text-muted-foreground">{item.label}</span>
+              <span className="text-xl font-semibold">{item.value}</span>
+              <span className="text-xs text-muted-foreground">{percentage}% del total</span>
+            </div>
+          </div>
+        );
+      })}
+    </>
   );
 }
 
