@@ -134,8 +134,8 @@ interface DevicesPreviewSidebarProps {
 
 function DevicesPreviewSidebar({ copy, previews }: DevicesPreviewSidebarProps): JSX.Element {
   return (
-    <div className="flex h-full flex-col gap-6 rounded-xl border bg-muted/40 p-5">
-      <div className="space-y-3 rounded-xl border bg-card p-4">
+    <div className="flex h-full flex-col gap-6 rounded-xl border bg-muted/40 p-5 dark:bg-muted/20">
+      <div className="space-y-3 rounded-xl border bg-card p-4 dark:bg-muted/30">
         {previews.map((preview, index) => (
           <div className="space-y-3" key={preview.device.name}>
             <DevicePreviewCard preview={preview} />
