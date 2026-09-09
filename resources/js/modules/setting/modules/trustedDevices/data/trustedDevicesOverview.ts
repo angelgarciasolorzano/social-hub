@@ -1,49 +1,10 @@
-import { Calendar, Eye, Pencil, Plus, RefreshCw, RotateCw, Trash2, Users } from "lucide-react";
+import { Eye, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceRecommendations";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
-import type { IconColorVariant } from "@/shared/lib/styling";
-
-export interface TrustedDeviceRecommendation {
-  description: string;
-  icon: LucideIcon;
-  iconColor: IconColorVariant;
-  title: string;
-}
-
-export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
-  {
-    description:
-      "Manten solo dispositivos que realmente utilizas y reconoce. Elimina aquellos que ya no estes usando.",
-    icon: Calendar,
-    iconColor: "blue",
-    title: "Revisa tus dispositivos periodicamente",
-  },
-  {
-    description:
-      "Marca como confiables unicamente dispositivos que esten bajo tu control. Evita computadoras publicas o equipos de uso compartido.",
-    icon: Users,
-    iconColor: "green",
-    title: "No confies en dispositivos compartidos",
-  },
-  {
-    description: "Si ves un dispositivo que te resulte extraño, revoca su acceso de inmediato.",
-    icon: Trash2,
-    iconColor: "orange",
-    title: "Revoca accesos que no reconzcas",
-  },
-  {
-    description:
-      "Reduce el riesgo de vulnerabilidades conocidas manteniendo tu navegador y sistema operativo al dia.",
-    icon: RefreshCw,
-    iconColor: "purple",
-    title: "Mantén tu navegador y sistema actualizados",
-  },
-];
-
-export const trustedDeviceRecommendationsPreview: TrustedDeviceRecommendation[] =
-  trustedDeviceRecommendations.slice(0, 3);
+export const trustedDeviceRecommendationsPreview = trustedDeviceRecommendations.slice(0, 3);
 
 export const trustedDeviceRowActionKey = {
   viewDevice: "view-device",

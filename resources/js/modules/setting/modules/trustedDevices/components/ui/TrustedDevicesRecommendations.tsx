@@ -60,7 +60,9 @@ function TrustedDevicesRecommendations(): JSX.Element {
                 <div className="space-y-1.5">
                   <h4 className="text-sm font-semibold">{recommendation.title}</h4>
 
-                  <p className="text-sm text-muted-foreground">{recommendation.description}</p>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {recommendation.description}
+                  </p>
                 </div>
               </div>
             </div>
