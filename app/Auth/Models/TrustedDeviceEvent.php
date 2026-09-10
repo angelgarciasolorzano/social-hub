@@ -22,6 +22,8 @@ use Override;
  * @property int|null $user_id
  * @property TrustedDeviceAction $action
  * @property string|null $device_label
+ * @property bool|null $device_is_mobile
+ * @property string|null $device_os_name
  * @property string|null $ip
  * @property string|null $user_agent
  * @property CarbonImmutable|null $created_at
@@ -34,6 +36,8 @@ use Override;
     'user_id',
     'action',
     'device_label',
+    'device_is_mobile',
+    'device_os_name',
     'ip',
     'user_agent',
 ])]
@@ -54,6 +58,7 @@ class TrustedDeviceEvent extends Model
     {
         return [
             'action' => TrustedDeviceAction::class,
+            'device_is_mobile' => 'boolean',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
@@ -77,6 +82,8 @@ class TrustedDeviceEvent extends Model
                 'user_id' => $user->getKey(),
                 'action' => $trustedDeviceAction,
                 'device_label' => $trustedDevice?->name,
+                'device_is_mobile' => $trustedDevice?->is_mobile,
+                'device_os_name' => $trustedDevice?->os_name,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);

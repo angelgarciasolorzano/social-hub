@@ -1,8 +1,18 @@
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 
+import { FaCircle } from "react-icons/fa";
+
 import type { LucideIcon } from "lucide-react";
-import { Pencil, RefreshCw, RotateCw, ShieldQuestionMark, Trash2, UserPlus } from "lucide-react";
+import {
+  MapPin,
+  Pencil,
+  RefreshCw,
+  RotateCw,
+  ShieldQuestionMark,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import { useIntersectionObserver } from "usehooks-ts";
 
 import {
@@ -19,7 +29,8 @@ import type {
   TrustedDeviceActivityPaginated,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -184,7 +195,7 @@ export default function TrustedDeviceActivityDialog({
           ))}
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto rounded-md border" ref={setScrollRoot}>
+        <div className="max-h-[60vh] overflow-y-auto" ref={setScrollRoot}>
           {events.length === 0 ? (
             <div className="p-6">
               <EmptyState
@@ -194,7 +205,7 @@ export default function TrustedDeviceActivityDialog({
               />
             </div>
           ) : (
-            <ul className="divide-y">
+            <ul className="space-y-4 py-2">
               {events.map((event) => (
                 <TrustedDeviceActivityDialogEventRow event={event} key={event.id} />
               ))}
@@ -339,7 +350,7 @@ function TrustedDeviceActivityDialogEventRow({
   const colors = iconColorVariants[visual.color];
 
   return (
-    <li className="flex items-start justify-between gap-4 p-4">
+    <li className="flex items-start justify-between gap-4 rounded-xl border p-4 shadow-sm">
       <div className="flex items-start gap-4">
         <div className={cn("flex h-10 w-10 shrink-0 rounded-full p-2", colors.iconBgClass)}>
           <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
@@ -350,11 +361,35 @@ function TrustedDeviceActivityDialogEventRow({
 
           <p className="text-sm text-muted-foreground">{event.actionLabel}</p>
 
-          {event.ip !== null && <p className="text-xs text-muted-foreground">IP: {event.ip}</p>}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <MapPin className="h-3 w-3 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">IP: {event.ip ?? "No disponible"}</p>
+            </div>
+
+            <FaCircle className="h-1 w-1" />
+
+            <div className="flex items-center gap-1">
+              {getDeviceIcon(
+                { isMobile: event.deviceIsMobile ?? false, osName: event.deviceOsName },
+                "h-3 w-3 text-muted-foreground",
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                {event.deviceOsName ?? "Sistema operativo desconocido"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <p className="shrink-0 text-sm text-muted-foreground">{fromNow(event.createdAt)}</p>
+      <div className="flex flex-col gap-2 text-end">
+        <p className="shrink-0 text-sm font-medium text-muted-foreground">
+          {fromNow(event.createdAt)}
+        </p>
+
+        <p className="shrink-0 text-sm text-muted-foreground">{formatLongDate(event.createdAt)}</p>
+      </div>
     </li>
   );
 }

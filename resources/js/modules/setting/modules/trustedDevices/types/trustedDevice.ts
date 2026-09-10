@@ -96,6 +96,7 @@ export interface TrustedDeviceActivityEvent {
   deviceId: number | null;
   deviceLabel: string | null;
   deviceIsMobile: boolean | null;
+  deviceOsName: string | null;
   ip: string | null;
   createdAt: string | null;
 }

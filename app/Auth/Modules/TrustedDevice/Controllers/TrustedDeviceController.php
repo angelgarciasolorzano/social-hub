@@ -166,10 +166,10 @@ class TrustedDeviceController extends Controller
      * via router.get().
      *
      * @return array{
-     *     activityLog: CursorPaginator<array{
+     *     activityLog: CursorPaginator<int, array{
      *         id: int, action: string, actionLabel: string, deviceId: int|null,
-     *         deviceLabel: string|null, deviceIsMobile: bool|null, ip: string|null,
-     *         createdAt: string|null
+     *         deviceLabel: string|null, deviceIsMobile: bool|null, deviceOsName: string|null,
+     *         ip: string|null, createdAt: string|null
      *     }>,
      *     activityFilters: array{action: list<string>|null, sinceDays: 7|30|90|180|365},
      * }
@@ -201,7 +201,6 @@ class TrustedDeviceController extends Controller
         $cutoff = CarbonImmutable::now()->subDays($effectiveSinceDays);
 
         $cursorPaginator = $user->trustedDeviceEvents()
-            ->with(['device:id,name,is_mobile,browser,os_name'])
             ->latest('created_at')
             ->orderBy('id')
             ->where('created_at', '>=', $cutoff)
@@ -214,17 +213,12 @@ class TrustedDeviceController extends Controller
                 'action' => $trustedDeviceEvent->action->value,
                 'actionLabel' => $trustedDeviceEvent->action->label(),
                 'deviceId' => $trustedDeviceEvent->trusted_device_id,
-                'deviceLabel' => $trustedDeviceEvent->device_label ?? $trustedDeviceEvent->device?->name,
-                'deviceIsMobile' => $trustedDeviceEvent->device?->is_mobile,
+                'deviceLabel' => $trustedDeviceEvent->device_label,
+                'deviceIsMobile' => $trustedDeviceEvent->device_is_mobile,
+                'deviceOsName' => $trustedDeviceEvent->device_os_name,
                 'ip' => $trustedDeviceEvent->ip,
                 'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
             ]);
-
-        logger('Activity filters', [
-            'action' => $actions,
-            'sinceDays' => $effectiveSinceDays,
-            'data' => $cursorPaginator->toArray(),
-        ]);
 
         return [
             'activityLog' => $cursorPaginator,
@@ -323,8 +317,6 @@ class TrustedDeviceController extends Controller
         $inSevenDays = $now->addDays(7);
         $sevenDaysAgo = $now->subDays(7);
 
-        // SOC-22: single GROUP BY query, excludes soft-deleted so the breakdown
-        // matches what the user sees in the active devices table.
         $typeRows = $user->trustedDevices()
             ->whereNull('deleted_at')
             ->selectRaw('is_mobile, count(*) as aggregate_count')
