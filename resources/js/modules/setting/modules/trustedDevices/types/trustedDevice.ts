@@ -87,6 +87,7 @@ export interface TrustedDeviceFilters {
 export interface TrustedDeviceActivityFilters {
   action: TrustedDeviceActivityActionFilter[] | null;
   sinceDays: TrustedDeviceActivitySinceDaysFilter;
+  search: string;
 }
 
 export interface TrustedDeviceActivityEvent {
@@ -101,8 +102,18 @@ export interface TrustedDeviceActivityEvent {
   createdAt: string | null;
 }
 
-export interface TrustedDeviceActivityPaginated {
+export interface TrustedDeviceActivityPagination {
+  current_page: number;
   data: TrustedDeviceActivityEvent[];
+  first_page_url: string | null;
+  from: number | null;
+  last_page: number;
+  last_page_url: string | null;
+  links: TrustedDevicePaginationLink[];
   next_page_url: string | null;
+  path: string | null;
   per_page: number;
+  prev_page_url: string | null;
+  to: number | null;
+  total: number;
 }

@@ -1,5 +1,3 @@
-import type { TrustedDevicePagination } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-
 const VISIBLE_PAGES = 5;
 
 /**
@@ -44,12 +42,18 @@ export function computePaginationRange(
 
 /**
  * Resolve the URL for a given page from the Laravel pagination links array.
+ * Accepts any pagination shape that exposes a `links[]` of `{ page, url }`
+ * entries — works for `TrustedDevicePagination`, `TrustedDeviceActivityPagination`,
+ * or any future paginator that mirrors Laravel's standard payload.
  *
- * @param pagination  The full pagination payload (must contain `links`).
+ * @param pagination  The pagination payload (must contain `links`).
  * @param page        The page number to look up.
  * @returns           The URL string for that page, or `null` if disabled.
  */
-export function buildPageUrl(pagination: TrustedDevicePagination, page: number): string | null {
+export function buildPageUrl(
+  pagination: { links: { page: number; url: string | null }[] },
+  page: number,
+): string | null {
   const link = pagination.links.find((candidate) => candidate.page === page);
 
   return link?.url ?? null;
