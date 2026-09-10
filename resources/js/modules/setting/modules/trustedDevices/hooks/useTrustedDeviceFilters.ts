@@ -27,7 +27,7 @@ export interface TrustedDeviceFilterState {
   status: TrustedDeviceStatusFilter[] | null;
 }
 
-interface UseTrustedDeviceFiltersApi {
+interface UseTrustedDeviceFiltersReturn {
   filters: TrustedDeviceFilterState;
   resetFilters: () => void;
   updateFilter: <K extends keyof TrustedDeviceFilterState>(
@@ -48,7 +48,7 @@ interface UseTrustedDeviceFiltersApi {
 export function useTrustedDeviceFilters(
   initialFilters: TrustedDeviceFilters,
   delay = 500,
-): UseTrustedDeviceFiltersApi {
+): UseTrustedDeviceFiltersReturn {
   const [filters, setFilters] = useState<TrustedDeviceFilterState>(initialFilters);
 
   const isFirstSearchRenderRef = useRef<boolean>(true);

@@ -1,7 +1,6 @@
 import type { JSX } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Link, router } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
@@ -26,6 +25,7 @@ import {
   type TrustedDeviceActivityActionFilter,
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
+import { useActivityFilters } from "@/modules/setting/modules/trustedDevices/hooks/useActivityFilters";
 import type {
   TrustedDeviceAction,
   TrustedDeviceActivityEvent,
@@ -85,12 +85,6 @@ interface TrustedDeviceActivityDialogProps {
   initialFilters: TrustedDeviceActivityFilters;
 }
 
-interface ActivityReloadOverrides {
-  action?: TrustedDeviceActivityActionFilter[] | null;
-  sinceDays?: TrustedDeviceActivitySinceDaysFilter;
-  search?: string;
-}
-
 const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }> = {
   created: { icon: UserPlus, color: "blue" },
   renewed: { icon: RefreshCw, color: "green" },
@@ -106,70 +100,21 @@ export default function TrustedDeviceActivityDialog({
   initialActivity,
   initialFilters,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
-  const [selectedActions, setSelectedActions] = useState<TrustedDeviceActivityActionFilter[]>(
-    initialFilters.action ?? [],
-  );
-  const [selectedSince, setSelectedSince] = useState<TrustedDeviceActivitySinceDaysFilter>(
-    initialFilters.sinceDays,
-  );
-  const [searchQuery, setSearchQuery] = useState<string>(initialFilters.search);
-  const isFirstSearchRender = useRef<boolean>(true);
-
-  const reload = useCallback(
-    (overrides: ActivityReloadOverrides): void => {
-      const nextAction = overrides.action !== undefined ? overrides.action : selectedActions;
-      const nextSince = overrides.sinceDays ?? selectedSince;
-      const nextSearch = overrides.search ?? searchQuery;
-
-      router.reload({
-        data: {
-          action: nextAction === null || nextAction.length === 0 ? undefined : nextAction.join(","),
-          since_days: nextSince,
-          search: nextSearch === "" ? undefined : nextSearch,
-        },
-        only: ["activityLog"],
-        preserveUrl: true,
-        replace: true,
-      });
-    },
-    [selectedActions, selectedSince, searchQuery],
-  );
-
-  useEffect(() => {
-    if (isFirstSearchRender.current) {
-      isFirstSearchRender.current = false;
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      reload({ search: searchQuery });
-    }, 500);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [searchQuery, reload]);
+  const { filters, updateFilter } = useActivityFilters(initialFilters);
 
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
       label: "Acción",
       multiple: true,
       options: activityActionOptions,
-      value: selectedActions,
+      value: filters.action,
       onChange: (value) => {
         if (value === null) {
-          setSelectedActions([]);
-          reload({ action: null });
+          updateFilter("action", []);
         } else if (typeof value === "string") {
-          const coerced = [value as TrustedDeviceActivityActionFilter];
-
-          setSelectedActions(coerced);
-          reload({ action: coerced });
+          updateFilter("action", [value as TrustedDeviceActivityActionFilter]);
         } else {
-          const coerced = [...value] as TrustedDeviceActivityActionFilter[];
-
-          setSelectedActions(coerced);
-          reload({ action: coerced });
+          updateFilter("action", [...value] as TrustedDeviceActivityActionFilter[]);
         }
       },
     },
@@ -177,12 +122,10 @@ export default function TrustedDeviceActivityDialog({
       label: "Filtrar por rango temporal",
       multiple: false,
       options: activitySinceDaysOptions,
-      value: selectedSince,
+      value: filters.sinceDays,
       onChange: (value) => {
         if (value === null) return;
-        const coerced = value as TrustedDeviceActivitySinceDaysFilter;
-        setSelectedSince(coerced);
-        reload({ sinceDays: coerced });
+        updateFilter("sinceDays", value as TrustedDeviceActivitySinceDaysFilter);
       },
     },
   ];
@@ -210,10 +153,10 @@ export default function TrustedDeviceActivityDialog({
 
             <InputGroupInput
               onChange={(event) => {
-                setSearchQuery(event.target.value);
+                updateFilter("search", event.target.value);
               }}
               placeholder="Buscar por dispositivo, ubicación o IP..."
-              value={searchQuery}
+              value={filters.search}
             />
           </InputGroup>
 
