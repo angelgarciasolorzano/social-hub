@@ -203,7 +203,7 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
 
         return (
           <div
-            className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm"
+            className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm dark:bg-muted/20"
             key={item.label}
           >
             <div
@@ -255,7 +255,7 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
   const totalByType = deviceTypeRows.reduce((sum, row) => sum + row.count, 0);
 
   return (
-    <Card>
+    <Card className="dark:bg-muted/20">
       <CardHeader>
         <CardTitle>Dispositivo por tipo</CardTitle>
         <CardDescription>Cantidad de dispositivos por categoría</CardDescription>
@@ -380,7 +380,7 @@ function StateDistributionBreakdown({
   ];
 
   return (
-    <Card>
+    <Card className="dark:bg-muted/20">
       <CardHeader>
         <CardTitle>Distribución por estado</CardTitle>
         <CardDescription>Porcentaje del total de dispositivos</CardDescription>
