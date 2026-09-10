@@ -1,12 +1,11 @@
 import type { JSX } from "react";
 
-import { Link } from "@inertiajs/react";
-
 import { FaCircle } from "react-icons/fa";
 
 import {
   ChevronLeft,
   ChevronRight,
+  Clock,
   Info,
   MapPin,
   Pencil,
@@ -32,15 +31,12 @@ import type {
   TrustedDeviceActivityFilters,
   TrustedDeviceActivityPagination,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
-import {
-  buildPageUrl,
-  computePaginationRange,
-} from "@/modules/setting/modules/trustedDevices/utils/pagination";
+import { computePaginationRange } from "@/modules/setting/modules/trustedDevices/utils/pagination";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
-import { Button, buttonVariants } from "@/shared/components/shadcn/ui/button";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Combobox,
   ComboboxChip,
@@ -100,7 +96,7 @@ export default function TrustedDeviceActivityDialog({
   initialActivity,
   initialFilters,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
-  const { filters, updateFilter } = useActivityFilters(initialFilters);
+  const { filters, goToPage, updateFilter } = useActivityFilters(initialFilters);
 
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
@@ -141,7 +137,12 @@ export default function TrustedDeviceActivityDialog({
     >
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Actividad reciente de dispositivos</DialogTitle>
+          <DialogTitle>
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              Actividad reciente de dispositivos
+            </div>
+          </DialogTitle>
           <DialogDescription>
             Historial de eventos relacionados con tus dispositivos de confianza.
           </DialogDescription>
@@ -160,7 +161,7 @@ export default function TrustedDeviceActivityDialog({
                 onChange={(event) => {
                   updateFilter("search", event.target.value);
                 }}
-                placeholder="Buscar por dispositivo, ubicación o IP..."
+                placeholder="Buscar por dispositivo, nombre o IP..."
                 value={filters.search}
               />
             </InputGroup>
@@ -181,7 +182,7 @@ export default function TrustedDeviceActivityDialog({
           </div>
         </div>
 
-        <div className="max-h-[60vh]">
+        <div className="max-h-[60vh] rounded-xl border">
           {initialActivity.data.length === 0 ? (
             <div className="p-6">
               <EmptyState
@@ -191,7 +192,7 @@ export default function TrustedDeviceActivityDialog({
               />
             </div>
           ) : (
-            <ul>
+            <ul className="divide-y">
               {initialActivity.data.map((event) => (
                 <TrustedDeviceActivityDialogEventRow event={event} key={event.id} />
               ))}
@@ -211,7 +212,9 @@ export default function TrustedDeviceActivityDialog({
           </div>
 
           <div className="flex items-center gap-3">
-            {initialActivity.last_page > 1 && <ActivityPagination pagination={initialActivity} />}
+            {initialActivity.last_page > 1 && (
+              <ActivityPagination onPageChange={goToPage} pagination={initialActivity} />
+            )}
 
             <DialogClose asChild>
               <Button variant="outline">Cerrar</Button>
@@ -333,16 +336,17 @@ function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
 
 interface ActivityPaginationProps {
   pagination: TrustedDeviceActivityPagination;
+  onPageChange: (page: number) => void;
 }
 
-function ActivityPagination({ pagination }: ActivityPaginationProps): JSX.Element {
+function ActivityPagination({ pagination, onPageChange }: ActivityPaginationProps): JSX.Element {
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
     <Pagination>
       <PaginationContent>
         <PaginationItem>
-          <ActivityPaginationPreviousLink pagination={pagination} />
+          <ActivityPaginationPreviousButton onPageChange={onPageChange} pagination={pagination} />
         </PaginationItem>
 
         {pages.map((page, index) =>
@@ -352,117 +356,97 @@ function ActivityPagination({ pagination }: ActivityPaginationProps): JSX.Elemen
             </PaginationItem>
           ) : (
             <PaginationItem key={page}>
-              <ActivityPaginationNumberLink page={page} pagination={pagination} />
+              <ActivityPaginationNumberButton
+                onPageChange={onPageChange}
+                page={page}
+                pagination={pagination}
+              />
             </PaginationItem>
           ),
         )}
 
         <PaginationItem>
-          <ActivityPaginationNextLink pagination={pagination} />
+          <ActivityPaginationNextButton onPageChange={onPageChange} pagination={pagination} />
         </PaginationItem>
       </PaginationContent>
     </Pagination>
   );
 }
 
-interface ActivityPaginationNumberLinkProps {
+type ActivityPaginationNumberButtonProps = Pick<
+  ActivityPaginationProps,
+  "onPageChange" | "pagination"
+> & {
   page: number;
-  pagination: TrustedDeviceActivityPagination;
-}
+};
 
-function ActivityPaginationNumberLink({
+function ActivityPaginationNumberButton({
   page,
   pagination,
-}: ActivityPaginationNumberLinkProps): JSX.Element {
+  onPageChange,
+}: ActivityPaginationNumberButtonProps): JSX.Element {
   const isActive = page === pagination.current_page;
-  const url = buildPageUrl(pagination, page);
-
-  if (url === null) {
-    return (
-      <span
-        aria-current={isActive ? "page" : undefined}
-        className={cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size: "icon" }))}
-      >
-        {page}
-      </span>
-    );
-  }
 
   return (
-    <Link
+    <Button
       aria-current={isActive ? "page" : undefined}
-      className={cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size: "icon" }))}
-      href={url}
-      preserveScroll
+      onClick={() => {
+        onPageChange(page);
+      }}
+      size="icon"
+      variant={isActive ? "outline" : "ghost"}
     >
       {page}
-    </Link>
+    </Button>
   );
 }
 
-type ActivityPaginationPreviousLinkProps = Pick<ActivityPaginationNumberLinkProps, "pagination">;
+type ActivityPaginationPreviousButtonProps = Pick<
+  ActivityPaginationNumberButtonProps,
+  "pagination" | "onPageChange"
+>;
 
-function ActivityPaginationPreviousLink({
+function ActivityPaginationPreviousButton({
   pagination,
-}: ActivityPaginationPreviousLinkProps): JSX.Element {
-  const url = pagination.prev_page_url;
-
-  if (url === null) {
-    return (
-      <span
-        aria-disabled
-        aria-label="Pagina anterior"
-        className={cn(
-          buttonVariants({ variant: "outline", size: "icon" }),
-          "pointer-events-none opacity-50",
-        )}
-      >
-        <ChevronLeft className="size-4" />
-      </span>
-    );
-  }
+  onPageChange,
+}: ActivityPaginationPreviousButtonProps): JSX.Element {
+  const isDisabled = pagination.current_page <= 1;
 
   return (
-    <Link
+    <Button
       aria-label="Pagina anterior"
-      className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
-      href={url}
-      preserveScroll
+      disabled={isDisabled}
+      onClick={() => {
+        onPageChange(pagination.current_page - 1);
+      }}
+      size="icon"
+      variant="outline"
     >
       <ChevronLeft className="size-4" />
-    </Link>
+    </Button>
   );
 }
 
-type ActivityPaginationNextLinkProps = ActivityPaginationPreviousLinkProps;
+type ActivityPaginationNextButtonProps = ActivityPaginationPreviousButtonProps;
 
-function ActivityPaginationNextLink({ pagination }: ActivityPaginationNextLinkProps): JSX.Element {
-  const url = pagination.next_page_url;
-
-  if (url === null) {
-    return (
-      <span
-        aria-disabled
-        aria-label="Pagina siguiente"
-        className={cn(
-          buttonVariants({ variant: "outline", size: "icon" }),
-          "pointer-events-none opacity-50",
-        )}
-      >
-        <ChevronRight className="size-4" />
-      </span>
-    );
-  }
+function ActivityPaginationNextButton({
+  pagination,
+  onPageChange,
+}: ActivityPaginationNextButtonProps): JSX.Element {
+  const isDisabled = pagination.current_page >= pagination.last_page;
 
   return (
-    <Link
+    <Button
       aria-label="Pagina siguiente"
-      className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
-      href={url}
-      preserveScroll
+      disabled={isDisabled}
+      onClick={() => {
+        onPageChange(pagination.current_page + 1);
+      }}
+      size="icon"
+      variant="outline"
     >
       <ChevronRight className="size-4" />
-    </Link>
+    </Button>
   );
 }
 

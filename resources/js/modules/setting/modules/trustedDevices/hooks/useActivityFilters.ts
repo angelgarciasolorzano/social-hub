@@ -16,6 +16,7 @@ export interface ActivityFilterState {
 
 interface UseActivityFiltersReturn {
   filters: ActivityFilterState;
+  goToPage: (page: number) => void;
   updateFilter: <K extends keyof ActivityFilterState>(
     key: K,
     value: ActivityFilterState[K],
@@ -50,11 +51,12 @@ export function useActivityFilters(
     filtersRef.current = filters;
   }, [filters]);
 
-  const triggerReload = useCallback((next: ActivityFilterState): void => {
+  const triggerReload = useCallback((next: ActivityFilterState, page?: number): void => {
     router.reload({
       data: {
         action:
           next.action === null || next.action.length === 0 ? undefined : next.action.join(","),
+        page,
         search: next.search === "" ? undefined : next.search,
         since_days: next.sinceDays,
       },
@@ -97,5 +99,12 @@ export function useActivityFilters(
     [],
   );
 
-  return { filters, updateFilter };
+  const goToPage = useCallback(
+    (page: number): void => {
+      triggerReload(filtersRef.current, page);
+    },
+    [triggerReload],
+  );
+
+  return { filters, goToPage, updateFilter };
 }
