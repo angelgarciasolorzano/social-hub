@@ -224,7 +224,7 @@ class TrustedDeviceController extends Controller
                         ->orWhere('device_os_name', 'like', "%{$search}%");
                 });
             })
-            ->paginate(20)
+            ->paginate(5)
             ->through(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
                 'id' => $trustedDeviceEvent->id,
                 'action' => $trustedDeviceEvent->action->value,
