@@ -1,11 +1,13 @@
 import type { JSX } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { router } from "@inertiajs/react";
+import { Link, router } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
 import {
+  ChevronLeft,
+  ChevronRight,
   MapPin,
   Pencil,
   RefreshCw,
@@ -39,7 +41,7 @@ import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
-import { Button } from "@/shared/components/shadcn/ui/button";
+import { Button, buttonVariants } from "@/shared/components/shadcn/ui/button";
 import {
   Combobox,
   ComboboxChip,
@@ -72,9 +74,6 @@ import {
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/shared/components/shadcn/ui/pagination";
 
 import { cn } from "@/shared/lib";
@@ -143,8 +142,6 @@ export default function TrustedDeviceActivityDialog({
     [selectedActions, selectedSince, searchQuery],
   );
 
-  // Debounced search: reload on typing, but skip the first render to avoid
-  // an immediate reload when the dialog opens with a non-empty initial search.
   useEffect(() => {
     if (isFirstSearchRender.current) {
       isFirstSearchRender.current = false;
@@ -213,6 +210,7 @@ export default function TrustedDeviceActivityDialog({
             <InputGroupAddon>
               <Search />
             </InputGroupAddon>
+
             <InputGroupInput
               onChange={(event) => {
                 setSearchQuery(event.target.value);
@@ -386,48 +384,133 @@ interface ActivityPaginationProps {
 }
 
 function ActivityPagination({ pagination }: ActivityPaginationProps): JSX.Element {
-  const range = computePaginationRange(pagination.current_page, pagination.last_page);
-
-  const previousUrl = pagination.prev_page_url;
-  const nextUrl = pagination.next_page_url;
+  const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
     <Pagination>
       <PaginationContent>
         <PaginationItem>
-          <PaginationPrevious
-            aria-label="Ir a la pagina anterior"
-            className={cn(previousUrl === null && "pointer-events-none opacity-50")}
-            href={previousUrl ?? "#"}
-          />
+          <ActivityPaginationPreviousLink pagination={pagination} />
         </PaginationItem>
 
-        {range.map((entry, index) =>
-          entry === "ellipsis" ? (
+        {pages.map((page, index) =>
+          page === "ellipsis" ? (
             <PaginationItem key={`ellipsis-${index}`}>
               <PaginationEllipsis />
             </PaginationItem>
           ) : (
-            <PaginationItem key={entry}>
-              <PaginationLink
-                href={buildPageUrl(pagination, entry) ?? "#"}
-                isActive={entry === pagination.current_page}
-              >
-                {entry}
-              </PaginationLink>
+            <PaginationItem key={page}>
+              <ActivityPaginationNumberLink page={page} pagination={pagination} />
             </PaginationItem>
           ),
         )}
 
         <PaginationItem>
-          <PaginationNext
-            aria-label="Ir a la pagina siguiente"
-            className={cn(nextUrl === null && "pointer-events-none opacity-50")}
-            href={nextUrl ?? "#"}
-          />
+          <ActivityPaginationNextLink pagination={pagination} />
         </PaginationItem>
       </PaginationContent>
     </Pagination>
+  );
+}
+
+interface ActivityPaginationNumberLinkProps {
+  page: number;
+  pagination: TrustedDeviceActivityPagination;
+}
+
+function ActivityPaginationNumberLink({
+  page,
+  pagination,
+}: ActivityPaginationNumberLinkProps): JSX.Element {
+  const isActive = page === pagination.current_page;
+  const url = buildPageUrl(pagination, page);
+
+  if (url === null) {
+    return (
+      <span
+        aria-current={isActive ? "page" : undefined}
+        className={cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size: "icon" }))}
+      >
+        {page}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      aria-current={isActive ? "page" : undefined}
+      className={cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size: "icon" }))}
+      href={url}
+      preserveScroll
+    >
+      {page}
+    </Link>
+  );
+}
+
+type ActivityPaginationPreviousLinkProps = Pick<ActivityPaginationNumberLinkProps, "pagination">;
+
+function ActivityPaginationPreviousLink({
+  pagination,
+}: ActivityPaginationPreviousLinkProps): JSX.Element {
+  const url = pagination.prev_page_url;
+
+  if (url === null) {
+    return (
+      <span
+        aria-disabled
+        aria-label="Pagina anterior"
+        className={cn(
+          buttonVariants({ variant: "outline", size: "icon" }),
+          "pointer-events-none opacity-50",
+        )}
+      >
+        <ChevronLeft className="size-4" />
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      aria-label="Pagina anterior"
+      className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
+      href={url}
+      preserveScroll
+    >
+      <ChevronLeft className="size-4" />
+    </Link>
+  );
+}
+
+type ActivityPaginationNextLinkProps = ActivityPaginationPreviousLinkProps;
+
+function ActivityPaginationNextLink({ pagination }: ActivityPaginationNextLinkProps): JSX.Element {
+  const url = pagination.next_page_url;
+
+  if (url === null) {
+    return (
+      <span
+        aria-disabled
+        aria-label="Pagina siguiente"
+        className={cn(
+          buttonVariants({ variant: "outline", size: "icon" }),
+          "pointer-events-none opacity-50",
+        )}
+      >
+        <ChevronRight className="size-4" />
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      aria-label="Pagina siguiente"
+      className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
+      href={url}
+      preserveScroll
+    >
+      <ChevronRight className="size-4" />
+    </Link>
   );
 }
 
