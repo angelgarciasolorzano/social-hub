@@ -104,6 +104,7 @@ export default function TrustedDeviceActivityDialog({
 
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
+      className: "w-56",
       label: "Acción",
       multiple: true,
       options: activityActionOptions,
@@ -119,6 +120,7 @@ export default function TrustedDeviceActivityDialog({
       },
     },
     {
+      className: "w-48",
       label: "Filtrar por rango temporal",
       multiple: false,
       options: activitySinceDaysOptions,
@@ -145,25 +147,30 @@ export default function TrustedDeviceActivityDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-2">
-          <InputGroup className="flex-1">
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
+        <div className="flex items-start gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground select-none">Buscar</label>
 
-            <InputGroupInput
-              onChange={(event) => {
-                updateFilter("search", event.target.value);
-              }}
-              placeholder="Buscar por dispositivo, ubicación o IP..."
-              value={filters.search}
-            />
-          </InputGroup>
+            <InputGroup>
+              <InputGroupAddon>
+                <Search />
+              </InputGroupAddon>
+
+              <InputGroupInput
+                onChange={(event) => {
+                  updateFilter("search", event.target.value);
+                }}
+                placeholder="Buscar por dispositivo, ubicación o IP..."
+                value={filters.search}
+              />
+            </InputGroup>
+          </div>
 
           <div className="flex shrink-0 gap-2">
             {filterConfigs.map((config) => (
               <ActivityFilterCombobox
                 key={config.label}
+                className={config.className}
                 label={config.label}
                 multiple={config.multiple}
                 onChange={config.onChange}
@@ -222,6 +229,7 @@ interface FilterOption {
 }
 
 interface FilterComboboxConfig {
+  className?: string;
   label: string;
   multiple: boolean;
   options: readonly FilterOption[];
@@ -230,7 +238,7 @@ interface FilterComboboxConfig {
 }
 
 function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
-  const { label, multiple, options, value, onChange } = props;
+  const { className, label, multiple, options, value, onChange } = props;
 
   const anchor = useComboboxAnchor();
 
@@ -245,7 +253,7 @@ function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
     const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
 
     return (
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className={cn("flex min-w-0 shrink-0 flex-col gap-1.5", className)}>
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
         <Combobox
@@ -288,7 +296,7 @@ function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
   const singleLabel = single === null ? null : findLabel(single, options);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+    <div className={cn("flex min-w-0 shrink-0 flex-col gap-1.5", className)}>
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
       <Combobox
