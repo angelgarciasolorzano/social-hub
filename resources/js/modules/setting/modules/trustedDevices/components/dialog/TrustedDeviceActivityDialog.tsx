@@ -8,6 +8,7 @@ import { FaCircle } from "react-icons/fa";
 import {
   ChevronLeft,
   ChevronRight,
+  Info,
   MapPin,
   Pencil,
   RefreshCw,
@@ -38,8 +39,6 @@ import {
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
-
-import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { Button, buttonVariants } from "@/shared/components/shadcn/ui/button";
 import {
@@ -86,6 +85,12 @@ interface TrustedDeviceActivityDialogProps {
   initialFilters: TrustedDeviceActivityFilters;
 }
 
+interface ActivityReloadOverrides {
+  action?: TrustedDeviceActivityActionFilter[] | null;
+  sinceDays?: TrustedDeviceActivitySinceDaysFilter;
+  search?: string;
+}
+
 const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }> = {
   created: { icon: UserPlus, color: "blue" },
   renewed: { icon: RefreshCw, color: "green" },
@@ -110,34 +115,22 @@ export default function TrustedDeviceActivityDialog({
   const [searchQuery, setSearchQuery] = useState<string>(initialFilters.search);
   const isFirstSearchRender = useRef<boolean>(true);
 
-  const navigate = useCallback(
-    (overrides: {
-      action?: TrustedDeviceActivityActionFilter[] | null;
-      sinceDays?: TrustedDeviceActivitySinceDaysFilter;
-      search?: string;
-    }): void => {
-      const actionValue =
-        overrides.action !== undefined
-          ? overrides.action === null
-            ? undefined
-            : overrides.action.join(",")
-          : selectedActions.length === 0
-            ? undefined
-            : selectedActions.join(",");
+  const reload = useCallback(
+    (overrides: ActivityReloadOverrides): void => {
+      const nextAction = overrides.action !== undefined ? overrides.action : selectedActions;
+      const nextSince = overrides.sinceDays ?? selectedSince;
+      const nextSearch = overrides.search ?? searchQuery;
 
-      router.get(
-        index().url,
-        {
-          action: actionValue,
-          since_days: overrides.sinceDays ?? selectedSince,
-          search: overrides.search ?? searchQuery,
+      router.reload({
+        data: {
+          action: nextAction === null || nextAction.length === 0 ? undefined : nextAction.join(","),
+          since_days: nextSince,
+          search: nextSearch === "" ? undefined : nextSearch,
         },
-        {
-          only: ["activityLog"],
-          preserveState: true,
-          preserveUrl: true,
-        },
-      );
+        only: ["activityLog"],
+        preserveUrl: true,
+        replace: true,
+      });
     },
     [selectedActions, selectedSince, searchQuery],
   );
@@ -147,13 +140,15 @@ export default function TrustedDeviceActivityDialog({
       isFirstSearchRender.current = false;
       return;
     }
+
     const timer = window.setTimeout(() => {
-      navigate({ search: searchQuery });
+      reload({ search: searchQuery });
     }, 500);
+
     return () => {
       window.clearTimeout(timer);
     };
-  }, [searchQuery, navigate]);
+  }, [searchQuery, reload]);
 
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
@@ -164,15 +159,17 @@ export default function TrustedDeviceActivityDialog({
       onChange: (value) => {
         if (value === null) {
           setSelectedActions([]);
-          navigate({ action: null });
+          reload({ action: null });
         } else if (typeof value === "string") {
           const coerced = [value as TrustedDeviceActivityActionFilter];
+
           setSelectedActions(coerced);
-          navigate({ action: coerced });
+          reload({ action: coerced });
         } else {
           const coerced = [...value] as TrustedDeviceActivityActionFilter[];
+
           setSelectedActions(coerced);
-          navigate({ action: coerced });
+          reload({ action: coerced });
         }
       },
     },
@@ -185,7 +182,7 @@ export default function TrustedDeviceActivityDialog({
         if (value === null) return;
         const coerced = value as TrustedDeviceActivitySinceDaysFilter;
         setSelectedSince(coerced);
-        navigate({ sinceDays: coerced });
+        reload({ sinceDays: coerced });
       },
     },
   ];
@@ -253,11 +250,15 @@ export default function TrustedDeviceActivityDialog({
         </div>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
-          <span className="text-xs text-muted-foreground">
-            {initialActivity.total === 0
-              ? "Sin eventos"
-              : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
-          </span>
+          <div className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-muted-foreground" />
+
+            <span className="text-xs text-muted-foreground">
+              {initialActivity.total === 0
+                ? "Sin eventos"
+                : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
+            </span>
+          </div>
 
           <div className="flex items-center gap-3">
             {initialActivity.last_page > 1 && <ActivityPagination pagination={initialActivity} />}
