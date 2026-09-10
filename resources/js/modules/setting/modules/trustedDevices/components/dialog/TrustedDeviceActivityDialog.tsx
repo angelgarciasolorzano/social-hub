@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Funnel,
   Info,
   MapPin,
   Pencil,
@@ -70,6 +71,7 @@ import {
   PaginationEllipsis,
   PaginationItem,
 } from "@/shared/components/shadcn/ui/pagination";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -96,37 +98,7 @@ export default function TrustedDeviceActivityDialog({
   initialActivity,
   initialFilters,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
-  const { filters, goToPage, updateFilter } = useActivityFilters(initialFilters);
-
-  const filterConfigs: readonly FilterComboboxConfig[] = [
-    {
-      className: "w-56",
-      label: "Acción",
-      multiple: true,
-      options: activityActionOptions,
-      value: filters.action,
-      onChange: (value) => {
-        if (value === null) {
-          updateFilter("action", []);
-        } else if (typeof value === "string") {
-          updateFilter("action", [value as TrustedDeviceActivityActionFilter]);
-        } else {
-          updateFilter("action", [...value] as TrustedDeviceActivityActionFilter[]);
-        }
-      },
-    },
-    {
-      className: "w-48",
-      label: "Filtrar por rango temporal",
-      multiple: false,
-      options: activitySinceDaysOptions,
-      value: filters.sinceDays,
-      onChange: (value) => {
-        if (value === null) return;
-        updateFilter("sinceDays", value as TrustedDeviceActivitySinceDaysFilter);
-      },
-    },
-  ];
+  const { filters, goToPage, resetFilters, updateFilter } = useActivityFilters(initialFilters);
 
   return (
     <Dialog
@@ -148,38 +120,32 @@ export default function TrustedDeviceActivityDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-start gap-2">
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground select-none">Buscar</label>
+        <div className="flex items-center gap-2">
+          <InputGroup className="flex-1">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
 
-            <InputGroup>
-              <InputGroupAddon>
-                <Search />
-              </InputGroupAddon>
+            <InputGroupInput
+              onChange={(event) => {
+                updateFilter("search", event.target.value);
+              }}
+              placeholder="Buscar por dispositivo, nombre o IP..."
+              value={filters.search}
+            />
+          </InputGroup>
 
-              <InputGroupInput
-                onChange={(event) => {
-                  updateFilter("search", event.target.value);
-                }}
-                placeholder="Buscar por dispositivo, nombre o IP..."
-                value={filters.search}
-              />
-            </InputGroup>
-          </div>
-
-          <div className="flex shrink-0 gap-2">
-            {filterConfigs.map((config) => (
-              <ActivityFilterCombobox
-                key={config.label}
-                className={config.className}
-                label={config.label}
-                multiple={config.multiple}
-                onChange={config.onChange}
-                options={config.options}
-                value={config.value}
-              />
-            ))}
-          </div>
+          <ActivityFiltersPopover
+            actionFilter={filters.action}
+            onActionFilterChange={(value) => {
+              updateFilter("action", value);
+            }}
+            onResetFilters={resetFilters}
+            onSinceDaysFilterChange={(value) => {
+              updateFilter("sinceDays", value);
+            }}
+            sinceDaysFilter={filters.sinceDays}
+          />
         </div>
 
         <div className="max-h-[60vh] rounded-xl border">
@@ -226,13 +192,102 @@ export default function TrustedDeviceActivityDialog({
   );
 }
 
+interface ActivityFiltersPopoverProps {
+  actionFilter: TrustedDeviceActivityActionFilter[] | null;
+  sinceDaysFilter: TrustedDeviceActivitySinceDaysFilter;
+  onActionFilterChange: (value: TrustedDeviceActivityActionFilter[] | null) => void;
+  onSinceDaysFilterChange: (value: TrustedDeviceActivitySinceDaysFilter) => void;
+  onResetFilters: () => void;
+}
+
+function ActivityFiltersPopover(props: ActivityFiltersPopoverProps): JSX.Element {
+  const {
+    actionFilter,
+    sinceDaysFilter,
+    onActionFilterChange,
+    onSinceDaysFilterChange,
+    onResetFilters,
+  } = props;
+
+  const filterConfigs: readonly FilterComboboxConfig[] = [
+    {
+      label: "Acción",
+      multiple: true,
+      options: activityActionOptions,
+      value: actionFilter,
+      onChange: (value) => {
+        if (value === null) {
+          onActionFilterChange([]);
+        } else if (typeof value === "string") {
+          onActionFilterChange([value as TrustedDeviceActivityActionFilter]);
+        } else {
+          onActionFilterChange([...value] as TrustedDeviceActivityActionFilter[]);
+        }
+      },
+    },
+    {
+      label: "Filtrar por rango temporal",
+      multiple: false,
+      options: activitySinceDaysOptions,
+      value: sinceDaysFilter,
+      onChange: (value) => {
+        if (value === null) return;
+        onSinceDaysFilterChange(value as TrustedDeviceActivitySinceDaysFilter);
+      },
+    },
+  ];
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline">
+          <Funnel />
+          Filtros
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent align="end" className="w-72 p-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">Filtros</h4>
+
+            <Button
+              className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
+              onClick={onResetFilters}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              Restablecer
+            </Button>
+          </div>
+
+          {filterConfigs.map((config) => (
+            <ActivityFilterCombobox
+              key={config.label}
+              label={config.label}
+              multiple={config.multiple}
+              onChange={config.onChange}
+              options={config.options}
+              value={config.value}
+            />
+          ))}
+
+          <Button onClick={onResetFilters} type="button" variant="outline">
+            Limpiar filtros
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface FilterOption {
   readonly label: string;
   readonly value: string;
 }
 
 interface FilterComboboxConfig {
-  className?: string;
   label: string;
   multiple: boolean;
   options: readonly FilterOption[];
@@ -241,7 +296,7 @@ interface FilterComboboxConfig {
 }
 
 function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
-  const { className, label, multiple, options, value, onChange } = props;
+  const { label, multiple, options, value, onChange } = props;
 
   const anchor = useComboboxAnchor();
 
@@ -256,7 +311,7 @@ function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
     const arr: string[] = isStringArray(value) ? [...value] : value === null ? [] : [value];
 
     return (
-      <div className={cn("flex min-w-0 shrink-0 flex-col gap-1.5", className)}>
+      <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
         <Combobox
@@ -299,7 +354,7 @@ function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
   const singleLabel = single === null ? null : findLabel(single, options);
 
   return (
-    <div className={cn("flex min-w-0 shrink-0 flex-col gap-1.5", className)}>
+    <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
 
       <Combobox

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 
 import {
+  defaultActivityFilters,
   type TrustedDeviceActivityActionFilter,
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
@@ -17,6 +18,7 @@ export interface ActivityFilterState {
 interface UseActivityFiltersReturn {
   filters: ActivityFilterState;
   goToPage: (page: number) => void;
+  resetFilters: () => void;
   updateFilter: <K extends keyof ActivityFilterState>(
     key: K,
     value: ActivityFilterState[K],
@@ -106,5 +108,13 @@ export function useActivityFilters(
     [triggerReload],
   );
 
-  return { filters, goToPage, updateFilter };
+  const resetFilters = useCallback(() => {
+    setFilters({
+      action: [],
+      search: "",
+      sinceDays: defaultActivityFilters.sinceDays,
+    });
+  }, []);
+
+  return { filters, goToPage, resetFilters, updateFilter };
 }
