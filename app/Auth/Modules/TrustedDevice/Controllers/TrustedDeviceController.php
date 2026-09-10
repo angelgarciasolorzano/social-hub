@@ -23,7 +23,7 @@ use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -153,25 +153,32 @@ class TrustedDeviceController extends Controller
     }
 
     /**
-     * Build the cursor-paginated activity log for SOC-22 Dialog 3.
+     * Build the paginated activity log for SOC-22 Dialog 3.
      *
      * Sanitizes query params against whitelists:
      *  - action: TrustedDeviceAction values (comma-separated for multi-select)
      *  - since_days: 7 | 30 | 90 | 180 | 365 (default 30)
-     *  - cursor: opaque cursor from the previous page (Laravel cursorPaginate)
+     *  - search: free-text applied as a case-insensitive LIKE against the
+     *    denormalized columns `device_label`, `ip`, and `device_os_name`
+     *    (all snapshot fields on `trusted_device_events`, no join needed)
+     *  - page: 1-based page index (handled by Laravel's paginate())
      *
-     * Returns the cursor paginator unserialized (plain CursorPaginator, no
+     * Returns the paginator unserialized (plain LengthAwarePaginator, no
      * Inertia::scroll wrap), suitable for spreading into an Inertia::render()
-     * props array. The frontend parses `links.next` to load subsequent pages
+     * props array. The frontend parses `links[]` to navigate between pages
      * via router.get().
      *
      * @return array{
-     *     activityLog: CursorPaginator<int, array{
+     *     activityLog: LengthAwarePaginator<int, array{
      *         id: int, action: string, actionLabel: string, deviceId: int|null,
      *         deviceLabel: string|null, deviceIsMobile: bool|null, deviceOsName: string|null,
      *         ip: string|null, createdAt: string|null
      *     }>,
-     *     activityFilters: array{action: list<string>|null, sinceDays: 7|30|90|180|365},
+     *     activityFilters: array{
+     *         action: list<string>|null,
+     *         sinceDays: 7|30|90|180|365,
+     *         search: string
+     *     },
      * }
      */
     public function activity(Request $request): array
@@ -198,16 +205,26 @@ class TrustedDeviceController extends Controller
             ? $requestedSinceDays
             : 30;
 
+        $search = $request->string('search')->toString();
+
         $cutoff = CarbonImmutable::now()->subDays($effectiveSinceDays);
 
-        $cursorPaginator = $user->trustedDeviceEvents()
+        $paginator = $user->trustedDeviceEvents()
             ->latest('created_at')
             ->orderBy('id')
             ->where('created_at', '>=', $cutoff)
             ->when($actions !== null, function (Builder $builder) use ($actions): void {
                 $builder->whereIn('action', $actions);
             })
-            ->cursorPaginate(20)
+            ->when($search !== '', function (Builder $builder) use ($search): void {
+                $builder->where(function (Builder $builder) use ($search): void {
+                    $builder
+                        ->where('device_label', 'like', "%{$search}%")
+                        ->orWhere('ip', 'like', "%{$search}%")
+                        ->orWhere('device_os_name', 'like', "%{$search}%");
+                });
+            })
+            ->paginate(20)
             ->through(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
                 'id' => $trustedDeviceEvent->id,
                 'action' => $trustedDeviceEvent->action->value,
@@ -221,10 +238,11 @@ class TrustedDeviceController extends Controller
             ]);
 
         return [
-            'activityLog' => $cursorPaginator,
+            'activityLog' => $paginator,
             'activityFilters' => [
                 'action' => $actions,
                 'sinceDays' => $effectiveSinceDays,
+                'search' => $search,
             ],
         ];
     }
@@ -251,6 +269,8 @@ class TrustedDeviceController extends Controller
         $allowedSorts = ['most-recent', 'oldest', 'name-asc', 'name-desc', 'expiring-soon'];
         $allowedPerPage = [5, 10, 15, 25, 50];
 
+        $search = $request->string('search')->toString();
+
         $status = $request->string('status')->toString();
 
         $browser = $request->string('browser')->toString();
@@ -264,7 +284,7 @@ class TrustedDeviceController extends Controller
         $perPage = $request->integer('per_page');
 
         return [
-            'search' => trim($request->string('search')->toString()),
+            'search' => trim($search),
             'status' => $this->parseMultiFilter($status, $allowedStatus),
             'browser' => $this->parseMultiFilter($browser, $allowedBrowsers),
             'deviceType' => \in_array($deviceType, $allowedDeviceTypes, true) ? $deviceType : null,
