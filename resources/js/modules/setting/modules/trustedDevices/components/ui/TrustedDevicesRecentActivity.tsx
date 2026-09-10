@@ -19,7 +19,7 @@ import type {
   TrustedDeviceAction,
   TrustedDeviceActivityFilters,
   TrustedDeviceActivityItem,
-  TrustedDeviceActivityPaginated,
+  TrustedDeviceActivityPagination,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -51,7 +51,7 @@ interface ActivityDialogState extends DialogClosingState {
 
 interface TrustedDevicesRecentActivityPageProps extends SharedData {
   recentActivity: TrustedDeviceActivityItem[];
-  activityLog: TrustedDeviceActivityPaginated;
+  activityLog: TrustedDeviceActivityPagination;
   activityFilters: TrustedDeviceActivityFilters;
 }
 

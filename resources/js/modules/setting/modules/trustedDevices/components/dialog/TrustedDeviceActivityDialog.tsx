@@ -1,19 +1,21 @@
 import type { JSX } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { router } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
-import type { LucideIcon } from "lucide-react";
 import {
   MapPin,
   Pencil,
   RefreshCw,
   RotateCw,
+  Search,
   ShieldQuestionMark,
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { useIntersectionObserver } from "usehooks-ts";
+import type { LucideIcon } from "lucide-react";
 
 import {
   activityActionOptions,
@@ -21,16 +23,21 @@ import {
   type TrustedDeviceActivityActionFilter,
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
-import { usePaginatedActivity } from "@/modules/setting/modules/trustedDevices/hooks/usePaginatedActivity";
 import type {
   TrustedDeviceAction,
   TrustedDeviceActivityEvent,
   TrustedDeviceActivityFilters,
-  TrustedDeviceActivityPaginated,
+  TrustedDeviceActivityPagination,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import {
+  buildPageUrl,
+  computePaginationRange,
+} from "@/modules/setting/modules/trustedDevices/utils/pagination";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
+
+import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -55,6 +62,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/shared/components/shadcn/ui/input-group";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/shared/components/shadcn/ui/pagination";
 
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -62,7 +83,7 @@ import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 interface TrustedDeviceActivityDialogProps {
   open: boolean;
   onClose: () => void;
-  initialActivity: TrustedDeviceActivityPaginated;
+  initialActivity: TrustedDeviceActivityPagination;
   initialFilters: TrustedDeviceActivityFilters;
 }
 
@@ -81,39 +102,61 @@ export default function TrustedDeviceActivityDialog({
   initialActivity,
   initialFilters,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
-  const { events, hasMore, isLoading, loadMore, reload } = usePaginatedActivity(initialActivity);
-
   const [selectedActions, setSelectedActions] = useState<TrustedDeviceActivityActionFilter[]>(
     initialFilters.action ?? [],
   );
   const [selectedSince, setSelectedSince] = useState<TrustedDeviceActivitySinceDaysFilter>(
     initialFilters.sinceDays,
   );
+  const [searchQuery, setSearchQuery] = useState<string>(initialFilters.search);
+  const isFirstSearchRender = useRef<boolean>(true);
 
-  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
-  const loadMoreTimer = useRef<number | null>(null);
+  const navigate = useCallback(
+    (overrides: {
+      action?: TrustedDeviceActivityActionFilter[] | null;
+      sinceDays?: TrustedDeviceActivitySinceDaysFilter;
+      search?: string;
+    }): void => {
+      const actionValue =
+        overrides.action !== undefined
+          ? overrides.action === null
+            ? undefined
+            : overrides.action.join(",")
+          : selectedActions.length === 0
+            ? undefined
+            : selectedActions.join(",");
 
-  const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
-    root: scrollRoot,
-    rootMargin: "200px",
-    threshold: 0,
-  });
+      router.get(
+        index().url,
+        {
+          action: actionValue,
+          since_days: overrides.sinceDays ?? selectedSince,
+          search: overrides.search ?? searchQuery,
+        },
+        {
+          only: ["activityLog"],
+          preserveState: true,
+          preserveUrl: true,
+        },
+      );
+    },
+    [selectedActions, selectedSince, searchQuery],
+  );
 
-  const triggerReload = (
-    nextActions: TrustedDeviceActivityActionFilter[] | TrustedDeviceActivityActionFilter | null,
-    nextSince: TrustedDeviceActivitySinceDaysFilter,
-  ): void => {
-    const actionsArray: TrustedDeviceActivityActionFilter[] | null = Array.isArray(nextActions)
-      ? Array.from(nextActions)
-      : nextActions === null
-        ? null
-        : [nextActions];
-
-    reload({
-      action: actionsArray,
-      sinceDays: nextSince,
-    });
-  };
+  // Debounced search: reload on typing, but skip the first render to avoid
+  // an immediate reload when the dialog opens with a non-empty initial search.
+  useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      navigate({ search: searchQuery });
+    }, 500);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [searchQuery, navigate]);
 
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
@@ -124,15 +167,15 @@ export default function TrustedDeviceActivityDialog({
       onChange: (value) => {
         if (value === null) {
           setSelectedActions([]);
-          triggerReload(null, selectedSince);
+          navigate({ action: null });
         } else if (typeof value === "string") {
           const coerced = [value as TrustedDeviceActivityActionFilter];
           setSelectedActions(coerced);
-          triggerReload(coerced, selectedSince);
+          navigate({ action: coerced });
         } else {
           const coerced = [...value] as TrustedDeviceActivityActionFilter[];
           setSelectedActions(coerced);
-          triggerReload(coerced, selectedSince);
+          navigate({ action: coerced });
         }
       },
     },
@@ -145,27 +188,10 @@ export default function TrustedDeviceActivityDialog({
         if (value === null) return;
         const coerced = value as TrustedDeviceActivitySinceDaysFilter;
         setSelectedSince(coerced);
-        triggerReload(selectedActions, coerced);
+        navigate({ sinceDays: coerced });
       },
     },
   ];
-
-  useEffect(() => {
-    if (!isIntersecting || isLoading || !hasMore) return;
-    if (loadMoreTimer.current !== null) return;
-
-    loadMoreTimer.current = window.setTimeout(() => {
-      loadMoreTimer.current = null;
-      loadMore();
-    }, 300);
-
-    return () => {
-      if (loadMoreTimer.current !== null) {
-        window.clearTimeout(loadMoreTimer.current);
-        loadMoreTimer.current = null;
-      }
-    };
-  }, [loadMore, isIntersecting, isLoading, hasMore]);
 
   return (
     <Dialog
@@ -182,49 +208,66 @@ export default function TrustedDeviceActivityDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex gap-2">
-          {filterConfigs.map((config) => (
-            <ActivityFilterCombobox
-              key={config.label}
-              label={config.label}
-              multiple={config.multiple}
-              onChange={config.onChange}
-              options={config.options}
-              value={config.value}
+        <div className="flex items-center gap-2">
+          <InputGroup className="flex-1">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+              }}
+              placeholder="Buscar por dispositivo, ubicación o IP..."
+              value={searchQuery}
             />
-          ))}
+          </InputGroup>
+
+          <div className="flex shrink-0 gap-2">
+            {filterConfigs.map((config) => (
+              <ActivityFilterCombobox
+                key={config.label}
+                label={config.label}
+                multiple={config.multiple}
+                onChange={config.onChange}
+                options={config.options}
+                value={config.value}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto" ref={setScrollRoot}>
-          {events.length === 0 ? (
+        <div className="max-h-[60vh]">
+          {initialActivity.data.length === 0 ? (
             <div className="p-6">
               <EmptyState
-                description="Prueba cambiar el rango temporal o el tipo de acción."
+                description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
                 icon={ShieldQuestionMark}
                 title="Sin actividad para los filtros seleccionados."
               />
             </div>
           ) : (
-            <ul className="space-y-4 py-2">
-              {events.map((event) => (
+            <ul>
+              {initialActivity.data.map((event) => (
                 <TrustedDeviceActivityDialogEventRow event={event} key={event.id} />
               ))}
             </ul>
           )}
-
-          <div className="w-full" ref={sentinelRef} />
-
-          {hasMore && (
-            <p className="py-2 text-center text-sm text-muted-foreground">
-              {isLoading ? "Cargando..." : "Desliza para cargar más..."}
-            </p>
-          )}
         </div>
 
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cerrar</Button>
-          </DialogClose>
+        <DialogFooter className="flex items-center justify-between sm:justify-between">
+          <span className="text-xs text-muted-foreground">
+            {initialActivity.total === 0
+              ? "Sin eventos"
+              : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
+          </span>
+
+          <div className="flex items-center gap-3">
+            {initialActivity.last_page > 1 && <ActivityPagination pagination={initialActivity} />}
+
+            <DialogClose asChild>
+              <Button variant="outline">Cerrar</Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -338,6 +381,56 @@ function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
   );
 }
 
+interface ActivityPaginationProps {
+  pagination: TrustedDeviceActivityPagination;
+}
+
+function ActivityPagination({ pagination }: ActivityPaginationProps): JSX.Element {
+  const range = computePaginationRange(pagination.current_page, pagination.last_page);
+
+  const previousUrl = pagination.prev_page_url;
+  const nextUrl = pagination.next_page_url;
+
+  return (
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            aria-label="Ir a la pagina anterior"
+            className={cn(previousUrl === null && "pointer-events-none opacity-50")}
+            href={previousUrl ?? "#"}
+          />
+        </PaginationItem>
+
+        {range.map((entry, index) =>
+          entry === "ellipsis" ? (
+            <PaginationItem key={`ellipsis-${index}`}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={entry}>
+              <PaginationLink
+                href={buildPageUrl(pagination, entry) ?? "#"}
+                isActive={entry === pagination.current_page}
+              >
+                {entry}
+              </PaginationLink>
+            </PaginationItem>
+          ),
+        )}
+
+        <PaginationItem>
+          <PaginationNext
+            aria-label="Ir a la pagina siguiente"
+            className={cn(nextUrl === null && "pointer-events-none opacity-50")}
+            href={nextUrl ?? "#"}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  );
+}
+
 interface TrustedDeviceActivityDialogEventRowProps {
   event: TrustedDeviceActivityEvent;
 }
@@ -350,7 +443,7 @@ function TrustedDeviceActivityDialogEventRow({
   const colors = iconColorVariants[visual.color];
 
   return (
-    <li className="flex items-start justify-between gap-4 rounded-xl border p-4 shadow-sm">
+    <li className="flex items-start justify-between gap-4 p-4">
       <div className="flex items-start gap-4">
         <div className={cn("flex h-10 w-10 shrink-0 rounded-full p-2", colors.iconBgClass)}>
           <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
