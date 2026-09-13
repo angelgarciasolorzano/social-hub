@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 
 import {
-  defaultActivityFilters,
   type TrustedDeviceActivityActionFilter,
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceActivityFilters";
@@ -11,7 +10,7 @@ import type { TrustedDeviceActivityFilters } from "@/modules/setting/modules/tru
 
 export interface ActivityFilterState {
   action: TrustedDeviceActivityActionFilter[] | null;
-  sinceDays: TrustedDeviceActivitySinceDaysFilter;
+  sinceDays: TrustedDeviceActivitySinceDaysFilter[] | null;
   search: string;
 }
 
@@ -42,7 +41,7 @@ export function useActivityFilters(
   const [filters, setFilters] = useState<ActivityFilterState>({
     action: initialFilters.action ?? [],
     search: initialFilters.search,
-    sinceDays: initialFilters.sinceDays,
+    sinceDays: initialFilters.sinceDays ?? [],
   });
 
   const isFirstSearchRenderRef = useRef<boolean>(true);
@@ -54,13 +53,20 @@ export function useActivityFilters(
   }, [filters]);
 
   const triggerReload = useCallback((next: ActivityFilterState, page?: number): void => {
+    const action =
+      next.action === null || next.action.length === 0 ? undefined : next.action.join(",");
+
+    const search = next.search === "" ? undefined : next.search;
+
+    const sinceDays =
+      next.sinceDays === null || next.sinceDays.length === 0 ? undefined : next.sinceDays.join(",");
+
     router.reload({
       data: {
-        action:
-          next.action === null || next.action.length === 0 ? undefined : next.action.join(","),
+        action: action,
         page,
-        search: next.search === "" ? undefined : next.search,
-        since_days: next.sinceDays,
+        search: search,
+        since_days: sinceDays,
       },
       only: ["activityLog"],
       preserveUrl: true,
@@ -112,7 +118,7 @@ export function useActivityFilters(
     setFilters({
       action: [],
       search: "",
-      sinceDays: defaultActivityFilters.sinceDays,
+      sinceDays: [],
     });
   }, []);
 

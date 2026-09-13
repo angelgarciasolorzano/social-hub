@@ -22,10 +22,12 @@ export const activitySinceDaysOptions = [
 export type TrustedDeviceActivitySinceDaysFilter =
   (typeof activitySinceDaysOptions)[number]["value"];
 
+export const ALL_ACTIVITY_SINCE_DAYS = null;
+
 export const defaultActivityFilters = {
   action: ALL_ACTIVITY_ACTIONS,
-  sinceDays: "30",
+  sinceDays: ALL_ACTIVITY_SINCE_DAYS,
 } as const satisfies {
   action: TrustedDeviceActivityActionFilter[] | null;
-  sinceDays: TrustedDeviceActivitySinceDaysFilter;
+  sinceDays: TrustedDeviceActivitySinceDaysFilter[] | null;
 };

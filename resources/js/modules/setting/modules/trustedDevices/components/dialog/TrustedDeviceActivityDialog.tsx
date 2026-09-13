@@ -194,9 +194,9 @@ export default function TrustedDeviceActivityDialog({
 
 interface ActivityFiltersPopoverProps {
   actionFilter: TrustedDeviceActivityActionFilter[] | null;
-  sinceDaysFilter: TrustedDeviceActivitySinceDaysFilter;
+  sinceDaysFilter: TrustedDeviceActivitySinceDaysFilter[] | null;
   onActionFilterChange: (value: TrustedDeviceActivityActionFilter[] | null) => void;
-  onSinceDaysFilterChange: (value: TrustedDeviceActivitySinceDaysFilter) => void;
+  onSinceDaysFilterChange: (value: TrustedDeviceActivitySinceDaysFilter[] | null) => void;
   onResetFilters: () => void;
 }
 
@@ -227,12 +227,17 @@ function ActivityFiltersPopover(props: ActivityFiltersPopoverProps): JSX.Element
     },
     {
       label: "Filtrar por rango temporal",
-      multiple: false,
+      multiple: true,
       options: activitySinceDaysOptions,
       value: sinceDaysFilter,
       onChange: (value) => {
-        if (value === null) return;
-        onSinceDaysFilterChange(value as TrustedDeviceActivitySinceDaysFilter);
+        if (value === null) {
+          onSinceDaysFilterChange([]);
+        } else if (typeof value === "string") {
+          onSinceDaysFilterChange([value as TrustedDeviceActivitySinceDaysFilter]);
+        } else {
+          onSinceDaysFilterChange([...value] as TrustedDeviceActivitySinceDaysFilter[]);
+        }
       },
     },
   ];

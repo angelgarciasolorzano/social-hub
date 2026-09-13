@@ -86,7 +86,7 @@ export interface TrustedDeviceFilters {
 
 export interface TrustedDeviceActivityFilters {
   action: TrustedDeviceActivityActionFilter[] | null;
-  sinceDays: TrustedDeviceActivitySinceDaysFilter;
+  sinceDays: TrustedDeviceActivitySinceDaysFilter[] | null;
   search: string;
 }
 
