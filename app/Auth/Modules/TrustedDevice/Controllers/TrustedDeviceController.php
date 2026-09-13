@@ -157,7 +157,8 @@ class TrustedDeviceController extends Controller
      *
      * Sanitizes query params against whitelists:
      *  - action: TrustedDeviceAction values (comma-separated for multi-select)
-     *  - since_days: 7 | 30 | 90 | 180 | 365 (default 30)
+     *  - since_days: 7 | 30 | 90 | 180 | 365 (comma-separated for multi-select;
+     *    null means no lower bound, i.e. all events regardless of date)
      *  - search: free-text applied as a case-insensitive LIKE against the
      *    denormalized columns `device_label`, `ip`, and `device_os_name`
      *    (all snapshot fields on `trusted_device_events`, no join needed)
@@ -176,7 +177,7 @@ class TrustedDeviceController extends Controller
      *     }>,
      *     activityFilters: array{
      *         action: list<string>|null,
-     *         sinceDays: 7|30|90|180|365,
+     *         sinceDays: list<string>|null,
      *         search: string
      *     },
      * }
@@ -192,29 +193,38 @@ class TrustedDeviceController extends Controller
             TrustedDeviceAction::cases(),
         );
 
-        $allowedSinceDays = [7, 30, 90, 180, 365];
+        $allowedSinceDays = ['7', '30', '90', '180', '365'];
 
         $actions = $this->parseMultiFilter(
             $request->string('action')->toString(),
             $allowedActions,
         );
 
-        $requestedSinceDays = $request->integer('since_days');
-
-        $effectiveSinceDays = \in_array($requestedSinceDays, $allowedSinceDays, true)
-            ? $requestedSinceDays
-            : 30;
+        $sinceDays = $this->parseMultiFilter(
+            $request->string('since_days')->toString(),
+            $allowedSinceDays,
+        );
 
         $search = $request->string('search')->toString();
-
-        $cutoff = CarbonImmutable::now()->subDays($effectiveSinceDays);
 
         $paginator = $user->trustedDeviceEvents()
             ->latest('created_at')
             ->orderBy('id')
-            ->where('created_at', '>=', $cutoff)
             ->when($actions !== null, function (Builder $builder) use ($actions): void {
                 $builder->whereIn('action', $actions);
+            })
+            ->when($sinceDays !== null, function (Builder $builder) use ($sinceDays): void {
+                if ($sinceDays === null) {
+                    return;
+                }
+
+                $now = CarbonImmutable::now();
+
+                $builder->where(function (Builder $builder) use ($sinceDays, $now): void {
+                    foreach ($sinceDays as $sinceDay) {
+                        $builder->orWhere('created_at', '>=', $now->subDays((int) $sinceDay));
+                    }
+                });
             })
             ->when($search !== '', function (Builder $builder) use ($search): void {
                 $builder->where(function (Builder $builder) use ($search): void {
@@ -241,7 +251,7 @@ class TrustedDeviceController extends Controller
             'activityLog' => $paginator,
             'activityFilters' => [
                 'action' => $actions,
-                'sinceDays' => $effectiveSinceDays,
+                'sinceDays' => $sinceDays,
                 'search' => $search,
             ],
         ];
