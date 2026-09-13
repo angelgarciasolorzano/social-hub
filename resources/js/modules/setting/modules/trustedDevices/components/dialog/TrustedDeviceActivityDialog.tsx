@@ -16,6 +16,7 @@ import {
   SearchX,
   Trash2,
   UserPlus,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -63,6 +64,7 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
 import {
@@ -133,6 +135,20 @@ export default function TrustedDeviceActivityDialog({
               placeholder="Buscar por dispositivo, nombre o IP..."
               value={filters.search}
             />
+
+            {filters.search !== "" && (
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  aria-label="Limpiar búsqueda"
+                  onClick={() => {
+                    updateFilter("search", "");
+                  }}
+                  size="icon-xs"
+                >
+                  <X />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
           </InputGroup>
 
           <ActivityFiltersPopover
