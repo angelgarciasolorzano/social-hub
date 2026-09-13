@@ -13,7 +13,7 @@ import {
   RefreshCw,
   RotateCw,
   Search,
-  ShieldQuestionMark,
+  SearchX,
   Trash2,
   UserPlus,
 } from "lucide-react";
@@ -148,12 +148,12 @@ export default function TrustedDeviceActivityDialog({
           />
         </div>
 
-        <div className="max-h-[60vh] rounded-xl border">
+        <div className="max-h-[60vh] rounded-xl border dark:bg-muted/20">
           {initialActivity.data.length === 0 ? (
-            <div className="p-6">
+            <div className="gap-2 p-6">
               <EmptyState
                 description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
-                icon={ShieldQuestionMark}
+                icon={SearchX}
                 title="Sin actividad para los filtros seleccionados."
               />
             </div>

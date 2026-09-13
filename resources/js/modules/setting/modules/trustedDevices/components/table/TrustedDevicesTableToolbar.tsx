@@ -393,6 +393,7 @@ function TrustedDevicesSortPopover({
                   id={`sort-${option.value}`}
                   value={option.value}
                 />
+
                 <div className="flex flex-1 flex-col gap-0.5 leading-tight">
                   <span className="text-sm font-medium">{option.label}</span>
                   <span className="text-xs text-muted-foreground">{option.description}</span>
