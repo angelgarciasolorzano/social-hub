@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   Funnel,
+  Inbox,
   Info,
   MapPin,
   Pencil,
@@ -102,6 +103,11 @@ export default function TrustedDeviceActivityDialog({
 }: TrustedDeviceActivityDialogProps): JSX.Element {
   const { filters, goToPage, resetFilters, updateFilter } = useActivityFilters(initialFilters);
 
+  const hasActiveFilters =
+    filters.search !== "" ||
+    (filters.action !== null && filters.action.length > 0) ||
+    (filters.sinceDays !== null && filters.sinceDays.length > 0);
+
   return (
     <Dialog
       open={open}
@@ -167,11 +173,19 @@ export default function TrustedDeviceActivityDialog({
         <div className="max-h-[60vh] rounded-xl border dark:bg-muted/20">
           {initialActivity.data.length === 0 ? (
             <div className="gap-2 p-6">
-              <EmptyState
-                description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
-                icon={SearchX}
-                title="Sin actividad para los filtros seleccionados."
-              />
+              {hasActiveFilters ? (
+                <EmptyState
+                  description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
+                  icon={SearchX}
+                  title="Sin actividad para los filtros seleccionados."
+                />
+              ) : (
+                <EmptyState
+                  description="Los eventos de tus dispositivos de confianza aparecerán aquí."
+                  icon={Inbox}
+                  title="Aún no hay actividad registrada."
+                />
+              )}
             </div>
           ) : (
             <ul className="divide-y">

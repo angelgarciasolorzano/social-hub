@@ -402,6 +402,13 @@ function TrustedDevicesTableSection(): JSX.Element {
 
   const { filters, resetFilters, updateFilter } = useTrustedDeviceFilters(initialFilters);
 
+  const hasActiveFilters =
+    filters.search !== "" ||
+    filters.status !== null ||
+    filters.browser !== null ||
+    filters.deviceType !== null ||
+    filters.lastAccess !== null;
+
   return (
     <div className="flex flex-col gap-4">
       <TrustedDevicesTableToolbar
@@ -429,6 +436,7 @@ function TrustedDevicesTableSection(): JSX.Element {
 
       <TrustedDevicesTable
         devices={trustedDevices.data}
+        hasActiveFilters={hasActiveFilters}
         pagination={trustedDevices}
         onPerPageChange={(value) => {
           updateFilter("perPage", value as TrustedDevicePerPage);
