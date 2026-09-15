@@ -400,14 +400,15 @@ function TrustedDevicesInfoBanner() {
 function TrustedDevicesTableSection(): JSX.Element {
   const { filters: initialFilters, trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
-  const { filters, resetFilters, updateFilter } = useTrustedDeviceFilters(initialFilters);
+  const { committedFilters, filters, resetFilters, updateFilter } =
+    useTrustedDeviceFilters(initialFilters);
 
   const hasActiveFilters =
-    filters.search !== "" ||
-    filters.status !== null ||
-    filters.browser !== null ||
-    filters.deviceType !== null ||
-    filters.lastAccess !== null;
+    committedFilters.search !== "" ||
+    committedFilters.status !== null ||
+    committedFilters.browser !== null ||
+    committedFilters.deviceType !== null ||
+    committedFilters.lastAccess !== null;
 
   return (
     <div className="flex flex-col gap-4">

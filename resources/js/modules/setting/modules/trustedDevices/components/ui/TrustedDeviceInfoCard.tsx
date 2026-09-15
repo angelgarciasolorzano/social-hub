@@ -93,7 +93,7 @@ export function TrustedDeviceInfoCard({
   ];
 
   return (
-    <div className="flex flex-col gap-8 rounded-xl border bg-card p-6 shadow-sm dark:bg-input/10">
+    <div className="flex flex-col gap-8 rounded-xl border bg-card p-6 shadow-sm dark:bg-input/20">
       <DeviceInfoRow items={primaryRow} />
 
       <Separator />

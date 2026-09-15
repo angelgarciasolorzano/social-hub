@@ -101,12 +101,13 @@ export default function TrustedDeviceActivityDialog({
   initialActivity,
   initialFilters,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
-  const { filters, goToPage, resetFilters, updateFilter } = useActivityFilters(initialFilters);
+  const { committedFilters, filters, goToPage, resetFilters, updateFilter } =
+    useActivityFilters(initialFilters);
 
   const hasActiveFilters =
-    filters.search !== "" ||
-    (filters.action !== null && filters.action.length > 0) ||
-    (filters.sinceDays !== null && filters.sinceDays.length > 0);
+    committedFilters.search !== "" ||
+    (committedFilters.action !== null && committedFilters.action.length > 0) ||
+    (committedFilters.sinceDays !== null && committedFilters.sinceDays.length > 0);
 
   return (
     <Dialog

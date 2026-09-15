@@ -28,6 +28,7 @@ export interface TrustedDeviceFilterState {
 }
 
 interface UseTrustedDeviceFiltersReturn {
+  committedFilters: TrustedDeviceFilterState;
   filters: TrustedDeviceFilterState;
   resetFilters: () => void;
   updateFilter: <K extends keyof TrustedDeviceFilterState>(
@@ -51,6 +52,9 @@ export function useTrustedDeviceFilters(
 ): UseTrustedDeviceFiltersReturn {
   const [filters, setFilters] = useState<TrustedDeviceFilterState>(initialFilters);
 
+  const [committedFilters, setCommittedFilters] =
+    useState<TrustedDeviceFilterState>(initialFilters);
+
   const isFirstSearchRenderRef = useRef<boolean>(true);
   const isFirstNonSearchRenderRef = useRef<boolean>(true);
   const filtersRef = useRef<TrustedDeviceFilterState>(filters);
@@ -64,6 +68,9 @@ export function useTrustedDeviceFilters(
       only: ["trustedDevices"],
       preserveState: true,
       preserveScroll: true,
+      onFinish: () => {
+        setCommittedFilters(next);
+      },
     });
   }, []);
 
@@ -124,7 +131,7 @@ export function useTrustedDeviceFilters(
     }));
   }, []);
 
-  return { filters, resetFilters, updateFilter };
+  return { committedFilters, filters, resetFilters, updateFilter };
 }
 
 /** Serializes filters to query params, skipping empty values and converting camelCase keys to snake_case wire format. Multi-select values are joined as CSV. */

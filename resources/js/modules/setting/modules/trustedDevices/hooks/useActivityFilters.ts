@@ -15,6 +15,7 @@ export interface ActivityFilterState {
 }
 
 interface UseActivityFiltersReturn {
+  committedFilters: ActivityFilterState;
   filters: ActivityFilterState;
   goToPage: (page: number) => void;
   resetFilters: () => void;
@@ -44,6 +45,8 @@ export function useActivityFilters(
     sinceDays: initialFilters.sinceDays ?? [],
   });
 
+  const [committedFilters, setCommittedFilters] = useState<ActivityFilterState>(filters);
+
   const isFirstSearchRenderRef = useRef<boolean>(true);
   const isFirstNonSearchRenderRef = useRef<boolean>(true);
   const filtersRef = useRef<ActivityFilterState>(filters);
@@ -71,6 +74,9 @@ export function useActivityFilters(
       only: ["activityLog"],
       preserveUrl: true,
       replace: true,
+      onFinish: () => {
+        setCommittedFilters(next);
+      },
     });
   }, []);
 
@@ -122,5 +128,5 @@ export function useActivityFilters(
     });
   }, []);
 
-  return { filters, goToPage, resetFilters, updateFilter };
+  return { committedFilters, filters, goToPage, resetFilters, updateFilter };
 }
