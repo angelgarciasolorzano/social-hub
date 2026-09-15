@@ -347,17 +347,16 @@ class TrustedDeviceController extends Controller
         $inSevenDays = $now->addDays(7);
         $sevenDaysAgo = $now->subDays(7);
 
-        $typeRows = $user->trustedDevices()
-            ->whereNull('deleted_at')
-            ->selectRaw('is_mobile, count(*) as aggregate_count')
-            ->groupBy('is_mobile')
-            ->get();
-
-        $byDeviceType = ['desktop' => 0, 'mobile' => 0];
-        foreach ($typeRows as $typeRow) {
-            $byDeviceTypeKey = (bool) $typeRow->is_mobile ? 'mobile' : 'desktop';
-            $byDeviceType[$byDeviceTypeKey] = (int) $typeRow->aggregate_count;
-        }
+        $byDeviceType = [
+            'desktop' => $user->trustedDevices()
+                ->whereNull('deleted_at')
+                ->where('is_mobile', false)
+                ->count(),
+            'mobile' => $user->trustedDevices()
+                ->whereNull('deleted_at')
+                ->where('is_mobile', true)
+                ->count(),
+        ];
 
         return [
             'total' => $user->trustedDevices()->count(),
