@@ -359,7 +359,7 @@ function StateDistributionBreakdown({
     {
       cantidad: trustedDeviceStats.expiringSoon,
       estado: "porExpirar",
-      fill: "var(--color-por-expirar)",
+      fill: "var(--color-porExpirar)",
       label: "Próximos a expirar",
       variant: "amber",
     },

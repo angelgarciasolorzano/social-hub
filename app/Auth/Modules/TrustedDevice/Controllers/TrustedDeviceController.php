@@ -124,11 +124,11 @@ class TrustedDeviceController extends Controller
 
         $props = [
             'filters' => $filters,
-            'trustedDevices' => $query
+            'trustedDevices' => fn (): LengthAwarePaginator => $query
                 ->paginate($perPage)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
-            'stats' => $this->buildStats($user),
-            'recentActivity' => $user->trustedDeviceEvents()
+            'stats' => fn (): array => $this->buildStats($user),
+            'recentActivity' => fn (): array => $user->trustedDeviceEvents()
                 ->latest('created_at')
                 ->limit(3)
                 ->with(['device'])
@@ -209,7 +209,7 @@ class TrustedDeviceController extends Controller
 
         $paginator = $user->trustedDeviceEvents()
             ->latest('created_at')
-            ->orderBy('id')
+            ->orderByDesc('id')
             ->when($actions !== null, function (Builder $builder) use ($actions): void {
                 $builder->whereIn('action', $actions);
             })

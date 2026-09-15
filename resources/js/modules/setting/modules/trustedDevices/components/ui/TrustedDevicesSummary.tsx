@@ -99,7 +99,7 @@ function TrustedDevicesSummary(): JSX.Element {
       estado: "porExpirar",
       label: "Próximos a expirar",
       cantidad: stats.expiringSoon,
-      fill: "var(--color-por-expirar)",
+      fill: "var(--color-porExpirar)",
     },
     {
       estado: "inactivos",
