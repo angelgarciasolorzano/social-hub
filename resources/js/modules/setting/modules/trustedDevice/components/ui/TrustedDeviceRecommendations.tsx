@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { ChevronRight } from "lucide-react";
 
-import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevice/components/dialog/TrustedDeviceRecommendationsDialog";
+import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog";
 import { trustedDeviceRecommendationsPreview } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import {
   createDialogCloseHandler,

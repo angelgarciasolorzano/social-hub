@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
-import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevice/components/dialog/TrustedDeviceRecommendationsDialog";
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import {
   createDialogCloseHandler,
@@ -58,6 +57,8 @@ import {
   iconColorVariants,
   progressBarClassesByVariant,
 } from "@/shared/lib/styling";
+
+import TrustedDeviceRecommendationsDialog from "./TrustedDeviceRecommendationsDialog";
 
 function percentageOf(value: number, total: number): number {
   if (total <= 0) {

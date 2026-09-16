@@ -5,7 +5,7 @@ import { usePage } from "@inertiajs/react";
 import { ChevronRight, Circle } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
-import TrustedDeviceSummaryDialog from "@/modules/setting/modules/trustedDevice/components/dialog/TrustedDeviceSummaryDialog";
+import TrustedDeviceSummaryDialog from "@/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog";
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import {
   createDialogCloseHandler,
