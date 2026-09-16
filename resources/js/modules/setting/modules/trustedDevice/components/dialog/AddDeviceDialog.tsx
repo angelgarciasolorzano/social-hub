@@ -7,7 +7,7 @@ import type { FormDataErrors } from "@inertiajs/core";
 import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-react";
 
 import type { DeviceMetadataItemProps } from "@/modules/setting/modules/trustedDevice/components/ui/DeviceMetadataItem";
-import type { DevicePreview } from "@/modules/setting/modules/trustedDevice/types/devicePreview";
+import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import { formatLongDate, fromNow, valueOrNow } from "@/modules/setting/shared/utils/dateTime";
@@ -36,7 +36,7 @@ import { alertVariants, type IconColorVariant, iconColorVariants } from "@/share
 import { cn } from "@/shared/lib/utils";
 
 interface AddDeviceDialogProps {
-  preview: DevicePreview | null;
+  preview: TrustedDevicePreview | null;
   open: boolean;
   onClose: () => void;
 }

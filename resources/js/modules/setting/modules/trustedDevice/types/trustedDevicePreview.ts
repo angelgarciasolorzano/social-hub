@@ -1,4 +1,4 @@
-export interface DevicePreview {
+export interface TrustedDevicePreview {
   browser: string;
   browserVersion: string;
   osName: string;

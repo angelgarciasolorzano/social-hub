@@ -35,7 +35,6 @@ import {
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
-import type { DevicePreview } from "@/modules/setting/modules/trustedDevice/types/devicePreview";
 import type {
   TrustedDevice,
   TrustedDeviceActivityItem,
@@ -43,6 +42,7 @@ import type {
   TrustedDevicePagination,
   TrustedDeviceStats,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -68,7 +68,7 @@ import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import type { SharedData } from "@/shared/types";
 
 type TrustedDevicePageProps = SharedData & {
-  currentDevicePreview?: DevicePreview | null;
+  currentDevicePreview?: TrustedDevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
   filters: TrustedDeviceFilters;
   trustedDevices: TrustedDevicePagination;
