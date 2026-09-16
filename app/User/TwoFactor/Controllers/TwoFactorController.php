@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\User\TwoFactor\Controllers;
 
 use App\Auth\Models\TrustedDevice;
-use App\Auth\Modules\TrustedDevice\Props\CurrentTrustedDeviceProps;
+use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
@@ -41,7 +41,7 @@ class TwoFactorController extends Controller implements HasMiddleware
         return $user;
     }
 
-    public function index(TwoFactorRequest $twoFactorRequest, CurrentTrustedDeviceProps $currentTrustedDeviceProps): Response
+    public function index(TwoFactorRequest $twoFactorRequest, TrustedDeviceCurrentProps $trustedDeviceCurrentProps): Response
     {
         $user = $this->getAuthenticatedUser();
 
@@ -84,7 +84,7 @@ class TwoFactorController extends Controller implements HasMiddleware
 
         return Inertia::render('setting/modules/twoFactor/TwoFactor', [
             ...$props,
-            $currentTrustedDeviceProps,
+            $trustedDeviceCurrentProps,
         ]);
     }
 

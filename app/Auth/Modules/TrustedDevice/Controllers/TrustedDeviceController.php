@@ -9,7 +9,7 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
-use App\Auth\Modules\TrustedDevice\Props\CurrentTrustedDeviceProps;
+use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyForceRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
@@ -40,7 +40,7 @@ class TrustedDeviceController extends Controller
 
         abort_unless($user instanceof User, 401);
 
-        $currentTrustedDeviceProps = new CurrentTrustedDeviceProps(
+        $trustedDeviceCurrentProps = new TrustedDeviceCurrentProps(
             request: $request,
             deviceDetector: resolve(DeviceDetector::class),
             isOptional: false,
@@ -148,7 +148,7 @@ class TrustedDeviceController extends Controller
 
         return Inertia::render('setting/modules/trustedDevices/TrustedDevice', [
             ...$props,
-            $currentTrustedDeviceProps,
+            $trustedDeviceCurrentProps,
         ]);
     }
 

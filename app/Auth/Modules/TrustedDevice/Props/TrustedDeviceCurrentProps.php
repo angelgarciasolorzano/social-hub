@@ -15,7 +15,7 @@ use Inertia\Inertia;
 use Inertia\ProvidesInertiaProperties;
 use Inertia\RenderContext;
 
-final readonly class CurrentTrustedDeviceProps implements ProvidesInertiaProperties
+final readonly class TrustedDeviceCurrentProps implements ProvidesInertiaProperties
 {
     use InfersDeviceMetadata;
 
