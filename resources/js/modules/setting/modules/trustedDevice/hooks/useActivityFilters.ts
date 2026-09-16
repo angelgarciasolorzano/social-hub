@@ -6,7 +6,7 @@ import {
   type TrustedDeviceActivityActionFilter,
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
-import type { TrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type { TrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 
 export interface ActivityFilterState {
   action: TrustedDeviceActivityActionFilter[] | null;

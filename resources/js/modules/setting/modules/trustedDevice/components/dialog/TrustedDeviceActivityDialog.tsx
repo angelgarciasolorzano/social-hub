@@ -32,12 +32,12 @@ import {
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
 import { useActivityFilters } from "@/modules/setting/modules/trustedDevice/hooks/useActivityFilters";
+import type { TrustedDeviceAction } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type {
-  TrustedDeviceAction,
   TrustedDeviceActivityEvent,
   TrustedDeviceActivityFilters,
   TrustedDeviceActivityPagination,
-} from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+} from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 import { computePaginationRange } from "@/modules/setting/modules/trustedDevice/utils/pagination";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
