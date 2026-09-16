@@ -13,7 +13,7 @@ import {
   TrustedDeviceReactivationDialog,
   TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
-import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/TrustedDevicePagination";
+import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination";
 import {
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,

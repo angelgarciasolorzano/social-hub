@@ -23,8 +23,8 @@ import {
   TrustedDeviceExpiredDialog,
   TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
-import TrustedDeviceTable from "@/modules/setting/modules/trustedDevice/components/table/TrustedDeviceTable";
-import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/components/table/TrustedDeviceTableToolbar";
+import TrustedDeviceTable from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable";
+import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar";
 import TrustedDeviceRecentActivity from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity";
 import TrustedDeviceRecommendations from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations";
 import TrustedDeviceSummary from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary";
