@@ -153,21 +153,9 @@ class TrustedDeviceController extends Controller
     }
 
     /**
-     * Build the paginated activity log for SOC-22 Dialog 3.
-     *
-     * Sanitizes query params against whitelists:
-     *  - action: TrustedDeviceAction values (comma-separated for multi-select)
-     *  - since_days: 7 | 30 | 90 | 180 | 365 (comma-separated for multi-select;
-     *    null means no lower bound, i.e. all events regardless of date)
-     *  - search: free-text applied as a case-insensitive LIKE against the
-     *    denormalized columns `device_label`, `ip`, and `device_os_name`
-     *    (all snapshot fields on `trusted_device_events`, no join needed)
-     *  - page: 1-based page index (handled by Laravel's paginate())
-     *
-     * Returns the paginator unserialized (plain LengthAwarePaginator, no
-     * Inertia::scroll wrap), suitable for spreading into an Inertia::render()
-     * props array. The frontend parses `links[]` to navigate between pages
-     * via router.get().
+     * Build the paginated activity log for SOC-22 Dialog 3, sanitizing
+     * action/since_days/search query params against whitelists (see
+     * CLAUDE.md's SOC-22 section for filter semantics).
      *
      * @return array{
      *     activityLog: LengthAwarePaginator<int, array{

@@ -55,8 +55,7 @@ export function useTrustedDeviceFilters(
   const [committedFilters, setCommittedFilters] =
     useState<TrustedDeviceFilterState>(initialFilters);
 
-  const isFirstSearchRenderRef = useRef<boolean>(true);
-  const isFirstNonSearchRenderRef = useRef<boolean>(true);
+  const hasInteractedRef = useRef<boolean>(false);
   const filtersRef = useRef<TrustedDeviceFilterState>(filters);
 
   useEffect(() => {
@@ -75,11 +74,7 @@ export function useTrustedDeviceFilters(
   }, []);
 
   useEffect(() => {
-    if (isFirstSearchRenderRef.current) {
-      isFirstSearchRenderRef.current = false;
-
-      return;
-    }
+    if (!hasInteractedRef.current) return;
 
     const timer = setTimeout(() => {
       triggerReload(filtersRef.current);
@@ -91,11 +86,7 @@ export function useTrustedDeviceFilters(
   }, [filters.search, delay, triggerReload]);
 
   useEffect(() => {
-    if (isFirstNonSearchRenderRef.current) {
-      isFirstNonSearchRenderRef.current = false;
-
-      return;
-    }
+    if (!hasInteractedRef.current) return;
 
     triggerReload(filtersRef.current);
   }, [
@@ -113,12 +104,16 @@ export function useTrustedDeviceFilters(
       key: K,
       value: TrustedDeviceFilterState[K],
     ): void => {
+      hasInteractedRef.current = true;
+
       setFilters((prev) => ({ ...prev, [key]: value }));
     },
     [],
   );
 
   const resetFilters = useCallback(() => {
+    hasInteractedRef.current = true;
+
     setFilters((prev) => ({
       ...prev,
       search: "",

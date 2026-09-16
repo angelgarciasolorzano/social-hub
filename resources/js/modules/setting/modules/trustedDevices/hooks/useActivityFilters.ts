@@ -30,13 +30,7 @@ interface UseActivityFiltersReturn {
  *
  * `updateFilter` mutates state; the effects below trigger the reload via
  * `router.reload` (no URL mutation, suitable for dialogs) with `search`
- * debounced and the other fields firing immediately. Both effects are
- * gated on `hasInteractedRef`, set only inside `updateFilter`/`resetFilters`
- * — i.e. an actual user action — rather than an "is this the first render"
- * ref flipped inside the effect itself. The latter breaks under React
- * StrictMode's dev-only double-invoke-on-mount behavior: the first
- * simulated pass flips the flag, so the second pass sees it already
- * false and fires a spurious reload before the user has touched anything.
+ * debounced and the other fields firing immediately.
  *
  * @param initialFilters  Sanitized filters emitted by the backend.
  * @param delay           Debounce delay in ms for the `search` field (default 500).
