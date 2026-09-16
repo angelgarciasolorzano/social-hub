@@ -2,10 +2,9 @@ import type {
   TrustedDeviceActivityActionFilter,
   TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
-import type {
-  TrustedDeviceAction,
-  TrustedDevicePaginationLink,
-} from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type { TrustedDeviceAction } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+
+import type { LengthAwarePagination } from "@/shared/types";
 
 export interface TrustedDeviceActivityFilters {
   action: TrustedDeviceActivityActionFilter[] | null;
@@ -25,18 +24,4 @@ export interface TrustedDeviceActivityEvent {
   createdAt: string | null;
 }
 
-export interface TrustedDeviceActivityPagination {
-  current_page: number;
-  data: TrustedDeviceActivityEvent[];
-  first_page_url: string | null;
-  from: number | null;
-  last_page: number;
-  last_page_url: string | null;
-  links: TrustedDevicePaginationLink[];
-  next_page_url: string | null;
-  path: string | null;
-  per_page: number;
-  prev_page_url: string | null;
-  to: number | null;
-  total: number;
-}
+export type TrustedDeviceActivityPagination = LengthAwarePagination<TrustedDeviceActivityEvent>;
