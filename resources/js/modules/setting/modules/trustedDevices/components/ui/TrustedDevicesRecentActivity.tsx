@@ -17,9 +17,7 @@ import type { LucideIcon } from "lucide-react";
 import TrustedDeviceActivityDialog from "@/modules/setting/modules/trustedDevices/components/dialog/TrustedDeviceActivityDialog";
 import type {
   TrustedDeviceAction,
-  TrustedDeviceActivityFilters,
   TrustedDeviceActivityItem,
-  TrustedDeviceActivityPagination,
 } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -51,13 +49,10 @@ interface ActivityDialogState extends DialogClosingState {
 
 interface TrustedDevicesRecentActivityPageProps extends SharedData {
   recentActivity: TrustedDeviceActivityItem[];
-  activityLog: TrustedDeviceActivityPagination;
-  activityFilters: TrustedDeviceActivityFilters;
 }
 
 function TrustedDevicesRecentActivity(): JSX.Element {
-  const { recentActivity, activityLog, activityFilters } =
-    usePage<TrustedDevicesRecentActivityPageProps>().props;
+  const { recentActivity } = usePage<TrustedDevicesRecentActivityPageProps>().props;
 
   const activityDialog = useDialog<ActivityDialogState | null>(null);
   const handleActivityClose = createDialogCloseHandler(activityDialog);
@@ -142,8 +137,6 @@ function TrustedDevicesRecentActivity(): JSX.Element {
 
       {activityDialog.state !== null && (
         <TrustedDeviceActivityDialog
-          initialActivity={activityLog}
-          initialFilters={activityFilters}
           onClose={handleActivityClose}
           open={!activityDialog.state.closing}
         />

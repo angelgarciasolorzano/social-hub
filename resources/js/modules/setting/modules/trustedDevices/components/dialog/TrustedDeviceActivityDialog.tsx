@@ -1,4 +1,7 @@
 import type { JSX } from "react";
+import { useEffect, useRef } from "react";
+
+import { router, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
@@ -9,6 +12,7 @@ import {
   Funnel,
   Inbox,
   Info,
+  LoaderCircle,
   MapPin,
   Pencil,
   RefreshCw,
@@ -79,11 +83,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/sha
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
+import type { SharedData } from "@/shared/types";
+
 interface TrustedDeviceActivityDialogProps {
   open: boolean;
   onClose: () => void;
-  initialActivity: TrustedDeviceActivityPagination;
-  initialFilters: TrustedDeviceActivityFilters;
+}
+
+interface TrustedDeviceActivityPayload {
+  activityLog: TrustedDeviceActivityPagination;
+  activityFilters: TrustedDeviceActivityFilters;
+}
+
+interface TrustedDeviceActivityDialogPageProps extends SharedData {
+  activityDialog?: TrustedDeviceActivityPayload;
 }
 
 const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }> = {
@@ -98,16 +111,20 @@ const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: Icon
 export default function TrustedDeviceActivityDialog({
   open,
   onClose,
-  initialActivity,
-  initialFilters,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
-  const { committedFilters, filters, goToPage, resetFilters, updateFilter } =
-    useActivityFilters(initialFilters);
+  const { activityDialog } = usePage<TrustedDeviceActivityDialogPageProps>().props;
 
-  const hasActiveFilters =
-    committedFilters.search !== "" ||
-    (committedFilters.action !== null && committedFilters.action.length > 0) ||
-    (committedFilters.sinceDays !== null && committedFilters.sinceDays.length > 0);
+  const hasRequestedActivityRef = useRef(false);
+
+  useEffect(() => {
+    if (hasRequestedActivityRef.current) return;
+
+    hasRequestedActivityRef.current = true;
+
+    router.reload({ only: ["activityDialog"] });
+  }, []);
+
+  const isLoading = activityDialog === undefined;
 
   return (
     <Dialog
@@ -129,97 +146,130 @@ export default function TrustedDeviceActivityDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-2">
-          <InputGroup className="flex-1">
-            <InputGroupAddon>
-              <Search />
-            </InputGroupAddon>
-
-            <InputGroupInput
-              onChange={(event) => {
-                updateFilter("search", event.target.value);
-              }}
-              placeholder="Buscar por dispositivo, nombre o IP..."
-              value={filters.search}
-            />
-
-            {filters.search !== "" && (
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  aria-label="Limpiar búsqueda"
-                  onClick={() => {
-                    updateFilter("search", "");
-                  }}
-                  size="icon-xs"
-                >
-                  <X />
-                </InputGroupButton>
-              </InputGroupAddon>
-            )}
-          </InputGroup>
-
-          <ActivityFiltersPopover
-            actionFilter={filters.action}
-            onActionFilterChange={(value) => {
-              updateFilter("action", value);
-            }}
-            onResetFilters={resetFilters}
-            onSinceDaysFilterChange={(value) => {
-              updateFilter("sinceDays", value);
-            }}
-            sinceDaysFilter={filters.sinceDays}
+        {isLoading ? (
+          <div className="flex min-h-60 items-center justify-center">
+            <LoaderCircle className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <TrustedDeviceActivityDialogBody
+            initialActivity={activityDialog.activityLog}
+            initialFilters={activityDialog.activityFilters}
           />
-        </div>
-
-        <div className="max-h-[60vh] rounded-xl border dark:bg-muted/20">
-          {initialActivity.data.length === 0 ? (
-            <div className="gap-2 p-6">
-              {hasActiveFilters ? (
-                <EmptyState
-                  description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
-                  icon={SearchX}
-                  title="Sin actividad para los filtros seleccionados."
-                />
-              ) : (
-                <EmptyState
-                  description="Los eventos de tus dispositivos de confianza aparecerán aquí."
-                  icon={Inbox}
-                  title="Aún no hay actividad registrada."
-                />
-              )}
-            </div>
-          ) : (
-            <ul className="divide-y">
-              {initialActivity.data.map((event) => (
-                <TrustedDeviceActivityDialogEventRow event={event} key={event.id} />
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <DialogFooter className="flex items-center justify-between sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Info className="h-5 w-5 text-muted-foreground" />
-
-            <span className="text-xs text-muted-foreground">
-              {initialActivity.total === 0
-                ? "Sin eventos"
-                : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {initialActivity.last_page > 1 && (
-              <ActivityPagination onPageChange={goToPage} pagination={initialActivity} />
-            )}
-
-            <DialogClose asChild>
-              <Button variant="outline">Cerrar</Button>
-            </DialogClose>
-          </div>
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface TrustedDeviceActivityDialogBodyProps {
+  initialActivity: TrustedDeviceActivityPagination;
+  initialFilters: TrustedDeviceActivityFilters;
+}
+
+function TrustedDeviceActivityDialogBody({
+  initialActivity,
+  initialFilters,
+}: TrustedDeviceActivityDialogBodyProps): JSX.Element {
+  const { committedFilters, filters, goToPage, resetFilters, updateFilter } =
+    useActivityFilters(initialFilters);
+
+  const hasActiveFilters =
+    committedFilters.search !== "" ||
+    (committedFilters.action !== null && committedFilters.action.length > 0) ||
+    (committedFilters.sinceDays !== null && committedFilters.sinceDays.length > 0);
+
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <InputGroup className="flex-1">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+
+          <InputGroupInput
+            onChange={(event) => {
+              updateFilter("search", event.target.value);
+            }}
+            placeholder="Buscar por dispositivo, nombre o IP..."
+            value={filters.search}
+          />
+
+          {filters.search !== "" && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                aria-label="Limpiar búsqueda"
+                onClick={() => {
+                  updateFilter("search", "");
+                }}
+                size="icon-xs"
+              >
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+
+        <ActivityFiltersPopover
+          actionFilter={filters.action}
+          onActionFilterChange={(value) => {
+            updateFilter("action", value);
+          }}
+          onResetFilters={resetFilters}
+          onSinceDaysFilterChange={(value) => {
+            updateFilter("sinceDays", value);
+          }}
+          sinceDaysFilter={filters.sinceDays}
+        />
+      </div>
+
+      <div className="max-h-[60vh] rounded-xl border dark:bg-muted/20">
+        {initialActivity.data.length === 0 ? (
+          <div className="gap-2 p-6">
+            {hasActiveFilters ? (
+              <EmptyState
+                description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
+                icon={SearchX}
+                title="Sin actividad para los filtros seleccionados."
+              />
+            ) : (
+              <EmptyState
+                description="Los eventos de tus dispositivos de confianza aparecerán aquí."
+                icon={Inbox}
+                title="Aún no hay actividad registrada."
+              />
+            )}
+          </div>
+        ) : (
+          <ul className="divide-y">
+            {initialActivity.data.map((event) => (
+              <TrustedDeviceActivityDialogEventRow event={event} key={event.id} />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <DialogFooter className="flex items-center justify-between sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Info className="h-5 w-5 text-muted-foreground" />
+
+          <span className="text-xs text-muted-foreground">
+            {initialActivity.total === 0
+              ? "Sin eventos"
+              : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {initialActivity.last_page > 1 && (
+            <ActivityPagination onPageChange={goToPage} pagination={initialActivity} />
+          )}
+
+          <DialogClose asChild>
+            <Button variant="outline">Cerrar</Button>
+          </DialogClose>
+        </div>
+      </DialogFooter>
+    </>
   );
 }
 

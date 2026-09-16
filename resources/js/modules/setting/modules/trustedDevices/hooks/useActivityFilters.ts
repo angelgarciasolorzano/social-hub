@@ -28,9 +28,15 @@ interface UseActivityFiltersReturn {
 /**
  * Filter state + reload behaviour for the activity dialog.
  *
- * `updateFilter` mutates state; the effect below triggers the reload via
+ * `updateFilter` mutates state; the effects below trigger the reload via
  * `router.reload` (no URL mutation, suitable for dialogs) with `search`
- * debounced and the other fields firing immediately.
+ * debounced and the other fields firing immediately. Both effects are
+ * gated on `hasInteractedRef`, set only inside `updateFilter`/`resetFilters`
+ * — i.e. an actual user action — rather than an "is this the first render"
+ * ref flipped inside the effect itself. The latter breaks under React
+ * StrictMode's dev-only double-invoke-on-mount behavior: the first
+ * simulated pass flips the flag, so the second pass sees it already
+ * false and fires a spurious reload before the user has touched anything.
  *
  * @param initialFilters  Sanitized filters emitted by the backend.
  * @param delay           Debounce delay in ms for the `search` field (default 500).
@@ -47,8 +53,7 @@ export function useActivityFilters(
 
   const [committedFilters, setCommittedFilters] = useState<ActivityFilterState>(filters);
 
-  const isFirstSearchRenderRef = useRef<boolean>(true);
-  const isFirstNonSearchRenderRef = useRef<boolean>(true);
+  const hasInteractedRef = useRef<boolean>(false);
   const filtersRef = useRef<ActivityFilterState>(filters);
 
   useEffect(() => {
@@ -71,7 +76,7 @@ export function useActivityFilters(
         search: search,
         since_days: sinceDays,
       },
-      only: ["activityLog"],
+      only: ["activityDialog"],
       preserveUrl: true,
       replace: true,
       onFinish: () => {
@@ -81,11 +86,7 @@ export function useActivityFilters(
   }, []);
 
   useEffect(() => {
-    if (isFirstSearchRenderRef.current) {
-      isFirstSearchRenderRef.current = false;
-
-      return;
-    }
+    if (!hasInteractedRef.current) return;
 
     const timer = setTimeout(() => {
       triggerReload(filtersRef.current);
@@ -97,17 +98,15 @@ export function useActivityFilters(
   }, [filters.search, delay, triggerReload]);
 
   useEffect(() => {
-    if (isFirstNonSearchRenderRef.current) {
-      isFirstNonSearchRenderRef.current = false;
-
-      return;
-    }
+    if (!hasInteractedRef.current) return;
 
     triggerReload(filtersRef.current);
   }, [filters.action, filters.sinceDays, triggerReload]);
 
   const updateFilter = useCallback(
     <K extends keyof ActivityFilterState>(key: K, value: ActivityFilterState[K]): void => {
+      hasInteractedRef.current = true;
+
       setFilters((prev) => ({ ...prev, [key]: value }));
     },
     [],
@@ -121,6 +120,8 @@ export function useActivityFilters(
   );
 
   const resetFilters = useCallback(() => {
+    hasInteractedRef.current = true;
+
     setFilters({
       action: [],
       search: "",

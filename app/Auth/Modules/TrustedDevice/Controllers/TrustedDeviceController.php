@@ -143,7 +143,7 @@ class TrustedDeviceController extends Controller
                     'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
                 ])
                 ->all(),
-            ...$this->activity($request),
+            'activityDialog' => Inertia::optional(fn (): array => $this->activity($request)),
         ];
 
         return Inertia::render('setting/modules/trustedDevices/TrustedDevice', [
