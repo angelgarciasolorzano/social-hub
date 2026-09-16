@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
@@ -115,16 +115,22 @@ export default function TrustedDeviceActivityDialog({
   const { activityDialog } = usePage<TrustedDeviceActivityDialogPageProps>().props;
 
   const hasRequestedActivityRef = useRef(false);
+  const [hasFreshActivity, setHasFreshActivity] = useState(false);
 
   useEffect(() => {
     if (hasRequestedActivityRef.current) return;
 
     hasRequestedActivityRef.current = true;
 
-    router.reload({ only: ["activityDialog"] });
+    router.reload({
+      only: ["activityDialog"],
+      onFinish: () => {
+        setHasFreshActivity(true);
+      },
+    });
   }, []);
 
-  const isLoading = activityDialog === undefined;
+  const isLoading = !hasFreshActivity || activityDialog === undefined;
 
   return (
     <Dialog
