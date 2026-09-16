@@ -91,14 +91,14 @@ function TwoFactorActivationDetailsDialog({
     {
       key: twoFactorActivationDetailKey.activationTime,
       renderIcon: (className) => <Clock className={className} />,
-      iconVariant: "gray",
+      iconVariant: "yellow",
       label: "Hora de activación",
       value: activationTime,
     },
     {
       key: twoFactorActivationDetailKey.verificationMethod,
       renderIcon: (className) => <ShieldCheck className={className} />,
-      iconVariant: "gray",
+      iconVariant: "green",
       label: "Método de verificación",
       value: TWO_FACTOR_METHOD_LABEL,
     },
@@ -140,7 +140,7 @@ function TwoFactorActivationDetailsDialog({
           </AlertDescription>
         </Alert>
 
-        <Card className="dark:bg-input/10">
+        <Card className="dark:bg-input/20">
           <CardContent className="space-y-4">
             {details.map((detail) => {
               return (

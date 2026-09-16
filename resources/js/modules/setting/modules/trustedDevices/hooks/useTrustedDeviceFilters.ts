@@ -27,7 +27,8 @@ export interface TrustedDeviceFilterState {
   status: TrustedDeviceStatusFilter[] | null;
 }
 
-interface UseTrustedDeviceFiltersApi {
+interface UseTrustedDeviceFiltersReturn {
+  committedFilters: TrustedDeviceFilterState;
   filters: TrustedDeviceFilterState;
   resetFilters: () => void;
   updateFilter: <K extends keyof TrustedDeviceFilterState>(
@@ -48,11 +49,13 @@ interface UseTrustedDeviceFiltersApi {
 export function useTrustedDeviceFilters(
   initialFilters: TrustedDeviceFilters,
   delay = 500,
-): UseTrustedDeviceFiltersApi {
+): UseTrustedDeviceFiltersReturn {
   const [filters, setFilters] = useState<TrustedDeviceFilterState>(initialFilters);
 
-  const isFirstSearchRenderRef = useRef<boolean>(true);
-  const isFirstNonSearchRenderRef = useRef<boolean>(true);
+  const [committedFilters, setCommittedFilters] =
+    useState<TrustedDeviceFilterState>(initialFilters);
+
+  const hasInteractedRef = useRef<boolean>(false);
   const filtersRef = useRef<TrustedDeviceFilterState>(filters);
 
   useEffect(() => {
@@ -64,15 +67,14 @@ export function useTrustedDeviceFilters(
       only: ["trustedDevices"],
       preserveState: true,
       preserveScroll: true,
+      onFinish: () => {
+        setCommittedFilters(next);
+      },
     });
   }, []);
 
   useEffect(() => {
-    if (isFirstSearchRenderRef.current) {
-      isFirstSearchRenderRef.current = false;
-
-      return;
-    }
+    if (!hasInteractedRef.current) return;
 
     const timer = setTimeout(() => {
       triggerReload(filtersRef.current);
@@ -84,11 +86,7 @@ export function useTrustedDeviceFilters(
   }, [filters.search, delay, triggerReload]);
 
   useEffect(() => {
-    if (isFirstNonSearchRenderRef.current) {
-      isFirstNonSearchRenderRef.current = false;
-
-      return;
-    }
+    if (!hasInteractedRef.current) return;
 
     triggerReload(filtersRef.current);
   }, [
@@ -106,12 +104,16 @@ export function useTrustedDeviceFilters(
       key: K,
       value: TrustedDeviceFilterState[K],
     ): void => {
+      hasInteractedRef.current = true;
+
       setFilters((prev) => ({ ...prev, [key]: value }));
     },
     [],
   );
 
   const resetFilters = useCallback(() => {
+    hasInteractedRef.current = true;
+
     setFilters((prev) => ({
       ...prev,
       search: "",
@@ -124,7 +126,7 @@ export function useTrustedDeviceFilters(
     }));
   }, []);
 
-  return { filters, resetFilters, updateFilter };
+  return { committedFilters, filters, resetFilters, updateFilter };
 }
 
 /** Serializes filters to query params, skipping empty values and converting camelCase keys to snake_case wire format. Multi-select values are joined as CSV. */

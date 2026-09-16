@@ -3,7 +3,7 @@ import { Fragment } from "react";
 
 import { usePage } from "@inertiajs/react";
 
-import { MonitorSmartphone, MoreHorizontalIcon } from "lucide-react";
+import { MonitorSmartphone, MoreHorizontalIcon, SearchX } from "lucide-react";
 
 import {
   DeviceDetailsDialog,
@@ -68,6 +68,7 @@ interface RowDialogActionState extends DialogClosingState {
 
 interface TrustedDevicesTableProps {
   devices: TrustedDevice[];
+  hasActiveFilters: boolean;
   onPerPageChange: (value: number) => void;
   pagination: TrustedDevicePagination;
 }
@@ -78,6 +79,7 @@ interface TrustedDeviceTableColumn {
 
 function TrustedDevicesTable({
   devices,
+  hasActiveFilters,
   onPerPageChange,
   pagination,
 }: TrustedDevicesTableProps): JSX.Element {
@@ -107,10 +109,18 @@ function TrustedDevicesTable({
                 <TableRow>
                   <TableCell colSpan={5} className="p-0">
                     <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
-                      <EmptyState
-                        icon={MonitorSmartphone}
-                        title="No tienes dispositivos de confianza registrados."
-                      />
+                      {hasActiveFilters ? (
+                        <EmptyState
+                          description="Prueba ajustar o limpiar los filtros aplicados."
+                          icon={SearchX}
+                          title="No se encontraron dispositivos con esos filtros."
+                        />
+                      ) : (
+                        <EmptyState
+                          icon={MonitorSmartphone}
+                          title="No tienes dispositivos de confianza registrados."
+                        />
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

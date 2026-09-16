@@ -10,6 +10,7 @@ import {
   CircleAlert,
   CircleCheck,
   Clock,
+  Earth,
   Eye,
   Globe,
   Lightbulb,
@@ -226,7 +227,7 @@ function DeviceOverviewCard({
   appearance,
 }: DeviceOverviewCardProps): JSX.Element {
   return (
-    <Card className="dark:bg-input/10">
+    <Card className="dark:bg-input/20">
       <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
         <div className="flex gap-4">
           <div
@@ -352,7 +353,7 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/10">
+    <Card className="dark:bg-input/20">
       <CardHeader>
         <CardTitle>Actividad del dispositivo</CardTitle>
       </CardHeader>
@@ -365,7 +366,10 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
 
 type DeviceMetadataCardProps = Pick<DeviceDetailsDialogProps, "device">;
 
-type DeviceMetadataItems = Pick<DeviceMetadataItemProps, "icon" | "title" | "description"> & {
+type DeviceMetadataItems = Pick<
+  DeviceMetadataItemProps,
+  "icon" | "title" | "description" | "iconColor"
+> & {
   key: "browser" | "browserVersion" | "os" | "ip";
 };
 
@@ -378,45 +382,50 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   const items: DeviceMetadataItems[] = [
     {
       key: "browser",
-      icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      icon: <Globe className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />,
       title: "Navegador",
       description: browser,
+      iconColor: "blue",
     },
     {
       key: "browserVersion",
-      icon: <Globe className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      icon: <Earth className={cn("h-6 w-6", iconColorVariants.amber.iconFgClass)} />,
       title: "Version del navegador",
       description: browserVersion,
+      iconColor: "amber",
     },
     {
       key: "os",
-      icon: getDeviceIcon(device, cn("h-6 w-6", iconColorVariants.violet.iconFgClass)),
+      icon: getDeviceIcon(device, cn("h-6 w-6", iconColorVariants.purple.iconFgClass)),
       title: "Sistema operativo",
       description: osName,
+      iconColor: "purple",
     },
     {
       key: "ip",
-      icon: <MapPin className={cn("h-6 w-6", iconColorVariants.violet.iconFgClass)} />,
+      icon: <MapPin className={cn("h-6 w-6", iconColorVariants.green.iconFgClass)} />,
       title: "Direccion IP",
       description: ip,
+      iconColor: "green",
     },
   ];
 
   return (
-    <Card className="dark:bg-input/10">
+    <Card className="dark:bg-input/20">
       <CardHeader>
         <CardTitle>Informacion del dispositivo</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {items.map((item) => (
           <div
-            className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/20"
+            className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/30"
             key={item.key}
           >
             <DeviceMetadataItem
               icon={item.icon}
               title={item.title}
               description={item.description}
+              iconColor={item.iconColor}
             />
           </div>
         ))}
@@ -478,6 +487,7 @@ function DeviceStatusCallouts({ isRevoked, onReactivate }: DeviceStatusCalloutsP
             <li>Dispositivo verificado y de confianza.</li>
             <li>Acceso mas rapido y seguro.</li>
             <li>Puedes revocarlo en cualquier momento.</li>
+            <li>Puedes renovarlo en cualquier momento.</li>
           </ul>
         </AlertDescription>
       </Alert>

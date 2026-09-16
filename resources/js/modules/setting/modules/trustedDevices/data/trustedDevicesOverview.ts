@@ -1,37 +1,10 @@
-import { Calendar, Eye, Pencil, Plus, RotateCw, Trash2, Users } from "lucide-react";
+import { Eye, Pencil, Plus, RotateCw, Trash2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { trustedDeviceRecommendations } from "@/modules/setting/modules/trustedDevices/data/trustedDeviceRecommendations";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
 
-import type { IconColorVariant } from "@/shared/lib/styling";
-
-export interface TrustedDeviceRecommendation {
-  description: string;
-  icon: LucideIcon;
-  iconColor: IconColorVariant;
-  title: string;
-}
-
-export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
-  {
-    description: "Elimina los que ya no utilizas.",
-    icon: Calendar,
-    iconColor: "blue",
-    title: "Revisa tus dispositivos periodicamente",
-  },
-  {
-    description: "Marca solo equipos que esten bajo tu control.",
-    icon: Users,
-    iconColor: "green",
-    title: "No confies en dispositivos compartidos",
-  },
-  {
-    description: "Si ves algo extraño, elimina ese dispositivo.",
-    icon: Trash2,
-    iconColor: "orange",
-    title: "Revoca accesos que no reconzcas",
-  },
-];
+export const trustedDeviceRecommendationsPreview = trustedDeviceRecommendations.slice(0, 3);
 
 export const trustedDeviceRowActionKey = {
   viewDevice: "view-device",

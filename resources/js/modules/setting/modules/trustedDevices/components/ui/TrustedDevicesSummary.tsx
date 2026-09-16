@@ -5,7 +5,12 @@ import { usePage } from "@inertiajs/react";
 import { ChevronRight, Circle } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
+import TrustedDeviceSummaryDialog from "@/modules/setting/modules/trustedDevices/components/dialog/TrustedDeviceSummaryDialog";
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import {
+  createDialogCloseHandler,
+  type DialogClosingState,
+} from "@/modules/setting/shared/utils/dialog";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -22,6 +27,8 @@ import {
   ChartTooltipContent,
 } from "@/shared/components/shadcn/ui/chart";
 import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
+
+import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -71,9 +78,15 @@ const chartConfig = {
     },
   },
 } satisfies ChartConfig;
+interface SummaryDialogState extends DialogClosingState {
+  kind: "open";
+}
 
 function TrustedDevicesSummary(): JSX.Element {
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
+
+  const summaryDialog = useDialog<SummaryDialogState | null>(null);
+  const handleSummaryClose = createDialogCloseHandler(summaryDialog);
 
   const chartData: TrustedDeviceSummaryDatum[] = [
     {
@@ -86,7 +99,7 @@ function TrustedDevicesSummary(): JSX.Element {
       estado: "porExpirar",
       label: "Próximos a expirar",
       cantidad: stats.expiringSoon,
-      fill: "var(--color-por-expirar)",
+      fill: "var(--color-porExpirar)",
     },
     {
       estado: "inactivos",
@@ -162,12 +175,26 @@ function TrustedDevicesSummary(): JSX.Element {
           })}
         </ul>
       </CardContent>
+
       <CardFooter className="mx-auto">
-        <Button variant="link" className="text-blue-700 dark:text-blue-500">
+        <Button
+          variant="link"
+          className="text-blue-700 dark:text-blue-500"
+          onClick={() => {
+            summaryDialog.show({ kind: "open", closing: false });
+          }}
+        >
           Ver detalles
           <ChevronRight className="h-4 w-4" />
         </Button>
       </CardFooter>
+
+      {summaryDialog.state !== null && (
+        <TrustedDeviceSummaryDialog
+          open={!summaryDialog.state.closing}
+          onClose={handleSummaryClose}
+        />
+      )}
     </Card>
   );
 }

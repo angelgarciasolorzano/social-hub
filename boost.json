@@ -28,6 +28,7 @@
         "fluent-validation-migrate-messages",
         "fluent-validation-optimize",
         "medialibrary-development",
-        "debug-using-debugbar"
+        "debug-using-debugbar",
+        "social-hub-conventions"
     ]
 }

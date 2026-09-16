@@ -56,7 +56,7 @@ function DeviceAlreadyRegisteredDialog({
         }
       }}
     >
-      <DialogContent className="max-w-4xl min-w-3xl">
+      <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search, X } from "lucide-react";
 
 import {
   browserOptions,
@@ -38,6 +38,7 @@ import {
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
@@ -82,6 +83,20 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
             onSearchChange(event.target.value);
           }}
         />
+
+        {filters.search !== "" && (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              aria-label="Limpiar búsqueda"
+              onClick={() => {
+                onSearchChange("");
+              }}
+              size="icon-xs"
+            >
+              <X />
+            </InputGroupButton>
+          </InputGroupAddon>
+        )}
       </InputGroup>
 
       <div className="flex items-center justify-center gap-2">
@@ -393,6 +408,7 @@ function TrustedDevicesSortPopover({
                   id={`sort-${option.value}`}
                   value={option.value}
                 />
+
                 <div className="flex flex-1 flex-col gap-0.5 leading-tight">
                   <span className="text-sm font-medium">{option.label}</span>
                   <span className="text-xs text-muted-foreground">{option.description}</span>

@@ -20,7 +20,7 @@ function DeviceSummaryCard({
   expiration,
 }: DeviceSummaryCardProps): JSX.Element {
   return (
-    <div className="flex min-w-0 items-start gap-2.5 rounded-xl border p-4 shadow-xs dark:bg-input/10">
+    <div className="flex min-w-0 items-start gap-2.5 rounded-xl border p-4 shadow-xs dark:bg-input/20">
       <div
         className={cn(
           iconColorVariants.violet.iconBgClass,
