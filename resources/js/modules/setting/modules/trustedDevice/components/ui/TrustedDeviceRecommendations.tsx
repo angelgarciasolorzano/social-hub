@@ -3,7 +3,7 @@ import type { JSX } from "react";
 import { ChevronRight } from "lucide-react";
 
 import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevice/components/dialog/TrustedDeviceRecommendationsDialog";
-import { trustedDeviceRecommendationsPreview } from "@/modules/setting/modules/trustedDevice/data/trustedDevicesOverview";
+import { trustedDeviceRecommendationsPreview } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -27,7 +27,7 @@ interface RecommendationsDialogState extends DialogClosingState {
   kind: "open";
 }
 
-function TrustedDevicesRecommendations(): JSX.Element {
+function TrustedDeviceRecommendations(): JSX.Element {
   const dialog = useDialog<RecommendationsDialogState | null>(null);
   const handleClose = createDialogCloseHandler(dialog);
 
@@ -90,4 +90,4 @@ function TrustedDevicesRecommendations(): JSX.Element {
   );
 }
 
-export default TrustedDevicesRecommendations;
+export default TrustedDeviceRecommendations;

@@ -47,12 +47,12 @@ interface ActivityDialogState extends DialogClosingState {
   kind: "open";
 }
 
-interface TrustedDevicesRecentActivityPageProps extends SharedData {
+interface TrustedDeviceRecentActivityPageProps extends SharedData {
   recentActivity: TrustedDeviceActivityItem[];
 }
 
-function TrustedDevicesRecentActivity(): JSX.Element {
-  const { recentActivity } = usePage<TrustedDevicesRecentActivityPageProps>().props;
+function TrustedDeviceRecentActivity(): JSX.Element {
+  const { recentActivity } = usePage<TrustedDeviceRecentActivityPageProps>().props;
 
   const activityDialog = useDialog<ActivityDialogState | null>(null);
   const handleActivityClose = createDialogCloseHandler(activityDialog);
@@ -145,4 +145,4 @@ function TrustedDevicesRecentActivity(): JSX.Element {
   );
 }
 
-export default TrustedDevicesRecentActivity;
+export default TrustedDeviceRecentActivity;

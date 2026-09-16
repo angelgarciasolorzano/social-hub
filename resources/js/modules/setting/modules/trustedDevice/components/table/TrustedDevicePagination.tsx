@@ -30,15 +30,15 @@ import {
 
 import { cn } from "@/shared/lib";
 
-interface TrustedDevicesPaginationProps {
+interface TrustedDevicePaginationProps {
   onPerPageChange: (value: number) => void;
   pagination: TrustedDevicePagination;
 }
 
-function TrustedDevicesPagination({
+function TrustedDevicePagination({
   onPerPageChange,
   pagination,
-}: TrustedDevicesPaginationProps): JSX.Element {
+}: TrustedDevicePaginationProps): JSX.Element {
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
@@ -194,4 +194,4 @@ function PaginationNextLink({ pagination }: PaginationNextLinkProps): JSX.Elemen
   );
 }
 
-export default TrustedDevicesPagination;
+export default TrustedDevicePagination;

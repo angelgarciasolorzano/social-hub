@@ -82,7 +82,7 @@ interface SummaryDialogState extends DialogClosingState {
   kind: "open";
 }
 
-function TrustedDevicesSummary(): JSX.Element {
+function TrustedDeviceSummary(): JSX.Element {
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
   const summaryDialog = useDialog<SummaryDialogState | null>(null);
@@ -199,4 +199,4 @@ function TrustedDevicesSummary(): JSX.Element {
   );
 }
 
-export default TrustedDevicesSummary;
+export default TrustedDeviceSummary;

@@ -23,17 +23,17 @@ import {
   TrustedDeviceExpiredDialog,
   TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
-import TrustedDevicesTable from "@/modules/setting/modules/trustedDevice/components/table/TrustedDevicesTable";
-import TrustedDevicesTableToolbar from "@/modules/setting/modules/trustedDevice/components/table/TrustedDevicesTableToolbar";
-import TrustedDevicesRecentActivity from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDevicesRecentActivity";
-import TrustedDevicesRecommendations from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDevicesRecommendations";
-import TrustedDevicesSummary from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDevicesSummary";
+import TrustedDeviceTable from "@/modules/setting/modules/trustedDevice/components/table/TrustedDeviceTable";
+import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/components/table/TrustedDeviceTableToolbar";
+import TrustedDeviceRecentActivity from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity";
+import TrustedDeviceRecommendations from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations";
+import TrustedDeviceSummary from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary";
 import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import {
   trustedDeviceSectionActionKey,
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
-} from "@/modules/setting/modules/trustedDevice/data/trustedDevicesOverview";
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
 import type { DevicePreview } from "@/modules/setting/modules/trustedDevice/types/devicePreview";
 import type {
@@ -230,9 +230,9 @@ function TrustedDevice(): JSX.Element {
         </div>
 
         <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
-          <TrustedDevicesSummary />
-          <TrustedDevicesRecommendations />
-          <TrustedDevicesRecentActivity />
+          <TrustedDeviceSummary />
+          <TrustedDeviceRecommendations />
+          <TrustedDeviceRecentActivity />
         </div>
       </div>
 
@@ -412,7 +412,7 @@ function TrustedDevicesTableSection(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-4">
-      <TrustedDevicesTableToolbar
+      <TrustedDeviceTableToolbar
         filters={filters}
         onBrowserFilterChange={(value) => {
           updateFilter("browser", value);
@@ -435,7 +435,7 @@ function TrustedDevicesTableSection(): JSX.Element {
         }}
       />
 
-      <TrustedDevicesTable
+      <TrustedDeviceTable
         devices={trustedDevices.data}
         hasActiveFilters={hasActiveFilters}
         pagination={trustedDevices}

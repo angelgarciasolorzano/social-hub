@@ -47,7 +47,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
 
-interface TrustedDevicesTableToolbarProps {
+interface TrustedDeviceTableToolbarProps {
   filters: TrustedDeviceFilters;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (value: TrustedDeviceStatusFilter[] | null) => void;
@@ -58,7 +58,7 @@ interface TrustedDevicesTableToolbarProps {
   onResetFilters: () => void;
 }
 
-function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX.Element {
+function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.Element {
   const {
     filters,
     onSearchChange,
@@ -100,7 +100,7 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
       </InputGroup>
 
       <div className="flex items-center justify-center gap-2">
-        <TrustedDevicesFiltersPopover
+        <TrustedDeviceFiltersPopover
           browserFilter={filters.browser}
           deviceTypeFilter={filters.deviceType}
           lastAccessFilter={filters.lastAccess}
@@ -112,7 +112,7 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
           statusFilter={filters.status}
         />
 
-        <TrustedDevicesSortPopover onSortOrderChange={onSortOrderChange} sortOrder={filters.sort} />
+        <TrustedDeviceSortPopover onSortOrderChange={onSortOrderChange} sortOrder={filters.sort} />
 
         <Button
           type="button"
@@ -131,8 +131,8 @@ function TrustedDevicesTableToolbar(props: TrustedDevicesTableToolbarProps): JSX
   );
 }
 
-type TrustedDevicesFiltersPopoverProps = Omit<
-  TrustedDevicesTableToolbarProps,
+type TrustedDeviceFiltersPopoverProps = Omit<
+  TrustedDeviceTableToolbarProps,
   "onSearchChange" | "onSortOrderChange" | "filters"
 > & {
   statusFilter: TrustedDeviceStatusFilter[] | null;
@@ -154,7 +154,7 @@ interface FilterComboboxConfig {
   onChange: (value: string | readonly string[] | null) => void;
 }
 
-function TrustedDevicesFiltersPopover(props: TrustedDevicesFiltersPopoverProps): JSX.Element {
+function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): JSX.Element {
   const {
     statusFilter,
     onStatusFilterChange,
@@ -366,15 +366,15 @@ function FilterCombobox({
   );
 }
 
-interface TrustedDevicesSortPopoverProps {
+interface TrustedDeviceSortPopoverProps {
   sortOrder: TrustedDeviceSortKey;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
 }
 
-function TrustedDevicesSortPopover({
+function TrustedDeviceSortPopover({
   sortOrder,
   onSortOrderChange,
-}: TrustedDevicesSortPopoverProps): JSX.Element {
+}: TrustedDeviceSortPopoverProps): JSX.Element {
   const selectedSortLabel =
     trustedDeviceSortOptions.find((option) => option.value === sortOrder)?.label ?? "Ordenar por";
 
@@ -443,4 +443,4 @@ function TrustedDevicesSortPopover({
   );
 }
 
-export default TrustedDevicesTableToolbar;
+export default TrustedDeviceTableToolbar;

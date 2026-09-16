@@ -13,14 +13,14 @@ import {
   TrustedDeviceReactivationDialog,
   TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
-import TrustedDevicesPagination from "@/modules/setting/modules/trustedDevice/components/table/TrustedDevicesPagination";
+import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/TrustedDevicePagination";
 import {
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,
-} from "@/modules/setting/modules/trustedDevice/data/trustedDevicesOverview";
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import type {
   TrustedDevice,
-  TrustedDevicePagination,
+  TrustedDevicePagination as TrustedDevicePaginationData,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -66,23 +66,23 @@ interface RowDialogActionState extends DialogClosingState {
   kind: TrustedDeviceRowDialogActionKey;
 }
 
-interface TrustedDevicesTableProps {
+interface TrustedDeviceTableProps {
   devices: TrustedDevice[];
   hasActiveFilters: boolean;
   onPerPageChange: (value: number) => void;
-  pagination: TrustedDevicePagination;
+  pagination: TrustedDevicePaginationData;
 }
 
 interface TrustedDeviceTableColumn {
   label: "Dispositivo" | "Ultimo Acceso" | "Navegador / SO" | "Estado" | "Acciones";
 }
 
-function TrustedDevicesTable({
+function TrustedDeviceTable({
   devices,
   hasActiveFilters,
   onPerPageChange,
   pagination,
-}: TrustedDevicesTableProps): JSX.Element {
+}: TrustedDeviceTableProps): JSX.Element {
   const trustedDeviceTableColumns: readonly TrustedDeviceTableColumn[] = [
     { label: "Dispositivo" },
     { label: "Ultimo Acceso" },
@@ -132,7 +132,7 @@ function TrustedDevicesTable({
         </div>
       </div>
 
-      <TrustedDevicesPagination onPerPageChange={onPerPageChange} pagination={pagination} />
+      <TrustedDevicePagination onPerPageChange={onPerPageChange} pagination={pagination} />
     </div>
   );
 }
@@ -142,8 +142,8 @@ interface TrustedDeviceRowProps {
 }
 
 function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
-  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePagination }>().props
-    .trustedDevices;
+  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePaginationData }>()
+    .props.trustedDevices;
 
   const { appearance } = useAppearance();
 
@@ -320,4 +320,4 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
   );
 }
 
-export default TrustedDevicesTable;
+export default TrustedDeviceTable;
