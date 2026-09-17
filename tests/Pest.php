@@ -6,6 +6,7 @@ use App\Auth\Models\TrustedDevice;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -126,4 +127,29 @@ function validOtpFor(User $user): string
     $google2fa = resolve(Google2FA::class);
 
     return $google2fa->getCurrentOtp(decrypt($encryptedSecret));
+}
+
+/**
+ * Extract a LengthAwarePaginator-shaped Inertia prop's `data` array with a
+ * concrete type, sidestepping TestResponse::inertiaProps()'s untyped mixed.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function paginatedPropData(TestResponse $testResponse, string $prop): array
+{
+    /** @var array{data: array<int, array<string, mixed>>, total: int} $paginated */
+    $paginated = $testResponse->inertiaProps($prop);
+
+    return $paginated['data'];
+}
+
+/**
+ * Same as paginatedPropData(), but for the paginator's `total` count.
+ */
+function paginatedPropTotal(TestResponse $testResponse, string $prop): int
+{
+    /** @var array{data: array<int, array<string, mixed>>, total: int} $paginated */
+    $paginated = $testResponse->inertiaProps($prop);
+
+    return $paginated['total'];
 }
