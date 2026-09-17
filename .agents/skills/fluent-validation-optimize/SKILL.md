@@ -50,21 +50,17 @@ Read each file. Look for these specific patterns:
 Format the summary as:
 
 ```
-
 ## Validation Optimization Report
 
 ### High impact (performance)
-
 - `app/Http/Requests/ImportRequest.php` — 12 wildcard rules, no HasFluentRules trait
 - `app/Validators/JsonImportValidator.php` — custom Validator with cross-field wildcards, needs FluentValidator
 
 ### Medium impact (DX)
-
 - `app/Http/Requests/StorePostRequest.php` — 8 string rules convertible to fluent
 - `app/Http/Requests/StorePostRequest.php` — attributes() array replaceable with labels
 
 ### Low impact (cleanup)
-
 - `app/Http/Requests/SearchRequest.php` — 3 fixed children can use children()
 ```
 
