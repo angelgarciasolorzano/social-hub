@@ -14,16 +14,16 @@ import {
 } from "lucide-react";
 
 import {
-  AddDeviceDialog,
-  DeviceAlreadyRegisteredDialog,
-  DeviceDetailsDialog,
-  RenameDeviceDialog,
-  RenewTrustDialog,
-  RevokeAllDevicesDialog,
+  TrustedDeviceAddDialog,
+  TrustedDeviceAlreadyRegisteredDialog,
+  TrustedDeviceDetailsDialog,
+  TrustedDeviceRenameDialog,
+  TrustedDeviceRenewTrustDialog,
+  TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokeDialog,
-} from "@/modules/setting/modules/trustedDevices/components/dialog";
-import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
-import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+} from "@/modules/setting/modules/trustedDevice/components/dialog";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
@@ -63,7 +63,7 @@ import {
 } from "../../../data/twoFactorEnable";
 
 type TwoFactorDevicesPageProps = SharedData & {
-  currentDevicePreview?: DevicePreview | null;
+  currentDevicePreview?: TrustedDevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
   trustedDevices?: TrustedDevice[];
   trustedDevicesForRevoke?: TrustedDevice[];
@@ -124,7 +124,7 @@ function TwoFactorDevices(): JSX.Element {
     switch (sectionDialog.state.kind) {
       case twoFactorDeviceSectionActionKey.addDevice:
         return (
-          <AddDeviceDialog
+          <TrustedDeviceAddDialog
             preview={currentDevicePreview ?? null}
             open={!isClosing}
             onClose={handleSectionDialogClose}
@@ -137,7 +137,7 @@ function TwoFactorDevices(): JSX.Element {
         }
 
         return (
-          <DeviceAlreadyRegisteredDialog
+          <TrustedDeviceAlreadyRegisteredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
             onClose={handleSectionDialogClose}
@@ -146,7 +146,7 @@ function TwoFactorDevices(): JSX.Element {
 
       case twoFactorDeviceSectionActionKey.revokeAllDevices:
         return (
-          <RevokeAllDevicesDialog
+          <TrustedDeviceRevokeAllDialog
             devices={trustedDevicesForRevoke}
             open={!isClosing}
             onClose={handleSectionDialogClose}
@@ -264,7 +264,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
     switch (dialogDevice.state.kind) {
       case twoFactorDeviceActionKey.viewDevice:
         return (
-          <DeviceDetailsDialog
+          <TrustedDeviceDetailsDialog
             device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
@@ -273,7 +273,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
 
       case twoFactorDeviceActionKey.renameDevice:
         return (
-          <RenameDeviceDialog
+          <TrustedDeviceRenameDialog
             device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
@@ -282,7 +282,11 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
 
       case twoFactorDeviceActionKey.renewTrust:
         return (
-          <RenewTrustDialog device={selectedDevice} open={!isClosing} onClose={handleDialogClose} />
+          <TrustedDeviceRenewTrustDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
         );
 
       case twoFactorDeviceActionKey.revokeDevice:

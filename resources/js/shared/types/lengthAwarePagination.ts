@@ -1,0 +1,22 @@
+export interface PaginationLink {
+  url: string | null;
+  label: string;
+  page: number;
+  active: boolean;
+}
+
+export interface LengthAwarePagination<T> {
+  current_page: number;
+  data: T[];
+  first_page_url: string | null;
+  from: number | null;
+  last_page: number;
+  last_page_url: string | null;
+  links: PaginationLink[];
+  next_page_url: string | null;
+  path: string | null;
+  per_page: number;
+  prev_page_url: string | null;
+  to: number | null;
+  total: number;
+}

@@ -4,7 +4,7 @@ import { router, usePage } from "@inertiajs/react";
 
 import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
-import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import {
   formatActivationDate,
   formatActivationTime,

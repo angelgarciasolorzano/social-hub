@@ -14,5 +14,6 @@ export interface SharedData {
   sidebarOpen: boolean;
 }
 
+export type * from "./lengthAwarePagination";
 export type * from "./pagination";
 export type * from "./user";
