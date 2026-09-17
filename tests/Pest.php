@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Auth\Models\TrustedDevice;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,4 +69,23 @@ function createUser(): User
     $factory = User::factory();
 
     return $factory->createOne();
+}
+
+/**
+ * Create a persisted TrustedDevice, same #[UseFactory] workaround as
+ * createUser(). Pass `$user` to attach it to an existing owner, or omit it
+ * to let the factory create its own.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createTrustedDevice(?User $user = null, array $attributes = []): TrustedDevice
+{
+    /** @var Factory<TrustedDevice> $factory */
+    $factory = TrustedDevice::factory();
+
+    if ($user instanceof User) {
+        $factory = $factory->for($user);
+    }
+
+    return $factory->createOne($attributes);
 }
