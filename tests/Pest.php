@@ -6,6 +6,7 @@ use App\Auth\Models\TrustedDevice;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 /*
@@ -88,4 +89,41 @@ function createTrustedDevice(?User $user = null, array $attributes = []): Truste
     }
 
     return $factory->createOne($attributes);
+}
+
+/**
+ * Create a persisted User with two-factor authentication enabled, using a
+ * real TOTP secret and two 6-digit recovery codes (the format the OTP field
+ * itself requires) so tests can compute a genuinely valid code with
+ * validOtpFor() or exercise the recovery-code fallback.
+ */
+function createUserWithTwoFactor(): User
+{
+    $user = createUser();
+
+    /** @var Google2FA $google2fa */
+    $google2fa = resolve(Google2FA::class);
+
+    $user->forceFill([
+        'two_factor_secret' => encrypt($google2fa->generateSecretKey()),
+        'two_factor_recovery_codes' => encrypt(json_encode(['111111', '222222'])),
+        'two_factor_confirmed_at' => now(),
+    ])->save();
+
+    return $user;
+}
+
+/**
+ * Compute the current valid TOTP code for a user created via
+ * createUserWithTwoFactor().
+ */
+function validOtpFor(User $user): string
+{
+    /** @var string $encryptedSecret */
+    $encryptedSecret = $user->two_factor_secret;
+
+    /** @var Google2FA $google2fa */
+    $google2fa = resolve(Google2FA::class);
+
+    return $google2fa->getCurrentOtp(decrypt($encryptedSecret));
 }
