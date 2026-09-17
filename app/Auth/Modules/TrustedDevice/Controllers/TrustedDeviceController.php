@@ -146,7 +146,7 @@ class TrustedDeviceController extends Controller
             'activityDialog' => Inertia::optional(fn (): array => $this->activity($request)),
         ];
 
-        return Inertia::render('setting/modules/trustedDevices/TrustedDevice', [
+        return Inertia::render('setting/modules/trustedDevice/TrustedDevice', [
             ...$props,
             $trustedDeviceCurrentProps,
         ]);

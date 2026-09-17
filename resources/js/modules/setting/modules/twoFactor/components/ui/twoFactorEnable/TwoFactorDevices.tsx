@@ -21,9 +21,9 @@ import {
   RenewTrustDialog,
   RevokeAllDevicesDialog,
   TrustedDeviceRevokeDialog,
-} from "@/modules/setting/modules/trustedDevices/components/dialog";
-import type { DevicePreview } from "@/modules/setting/modules/trustedDevices/types/devicePreview";
-import type { TrustedDevice } from "@/modules/setting/modules/trustedDevices/types/trustedDevice";
+} from "@/modules/setting/modules/trustedDevice/components/dialog";
+import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
@@ -63,7 +63,7 @@ import {
 } from "../../../data/twoFactorEnable";
 
 type TwoFactorDevicesPageProps = SharedData & {
-  currentDevicePreview?: DevicePreview | null;
+  currentDevicePreview?: TrustedDevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
   trustedDevices?: TrustedDevice[];
   trustedDevicesForRevoke?: TrustedDevice[];
