@@ -6,7 +6,7 @@ import { useForm, usePage } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
-import DeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/DeviceSummaryCard";
+import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -101,7 +101,7 @@ function TrustedDeviceRevokeDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <DeviceSummaryCard
+          <TrustedDeviceSummaryCard
             device={device}
             expiration={formatLongDate(device.expiresAt)}
             lastUsedAt={fromNow(device.lastUsedAt)}

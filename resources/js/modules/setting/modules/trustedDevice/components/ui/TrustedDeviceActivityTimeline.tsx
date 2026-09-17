@@ -13,7 +13,7 @@ export interface ActivityStep {
   meta?: ReactNode;
 }
 
-interface ActivityTimelineProps {
+interface TrustedDeviceActivityTimelineProps {
   steps: ActivityStep[];
   variant?: TimelineVariant;
 }
@@ -34,7 +34,10 @@ const variantIconColor: Record<TimelineVariant, IconColorVariant> = {
   amber: "amber",
 };
 
-function ActivityTimeline({ steps, variant = "violet" }: ActivityTimelineProps): JSX.Element {
+function TrustedDeviceActivityTimeline({
+  steps,
+  variant = "violet",
+}: TrustedDeviceActivityTimelineProps): JSX.Element {
   const colors = iconColorVariants[variantIconColor[variant]];
   const lineColor = timelineLineColors[variant];
 
@@ -73,4 +76,4 @@ function ActivityTimeline({ steps, variant = "violet" }: ActivityTimelineProps):
   );
 }
 
-export default ActivityTimeline;
+export default TrustedDeviceActivityTimeline;

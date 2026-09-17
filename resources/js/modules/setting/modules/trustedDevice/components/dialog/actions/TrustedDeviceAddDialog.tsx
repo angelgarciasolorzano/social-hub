@@ -6,7 +6,7 @@ import { useForm, usePage } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { CalendarRange, CircleAlert, Clock, Globe, ShieldPlus } from "lucide-react";
 
-import type { DeviceMetadataItemProps } from "@/modules/setting/modules/trustedDevice/components/ui/DeviceMetadataItem";
+import type { TrustedDeviceMetadataItemProps } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem";
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
@@ -35,7 +35,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-interface AddDeviceDialogProps {
+interface TrustedDeviceAddDialogProps {
   preview: TrustedDevicePreview | null;
   open: boolean;
   onClose: () => void;
@@ -45,7 +45,11 @@ interface AddDeviceFormData {
   name: string;
 }
 
-function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.Element {
+function TrustedDeviceAddDialog({
+  preview,
+  open,
+  onClose,
+}: TrustedDeviceAddDialogProps): JSX.Element {
   const { setData, submit, processing, reset, errors } = useForm<AddDeviceFormData>({
     name: "",
   });
@@ -138,9 +142,9 @@ function AddDeviceDialog({ preview, open, onClose }: AddDeviceDialogProps): JSX.
   );
 }
 
-type DevicePreviewInfoProps = Pick<AddDeviceDialogProps, "preview">;
+type DevicePreviewInfoProps = Pick<TrustedDeviceAddDialogProps, "preview">;
 
-type DevicePreviewItems = Pick<DeviceMetadataItemProps, "title" | "description" | "icon"> & {
+type DevicePreviewItems = Pick<TrustedDeviceMetadataItemProps, "title" | "description" | "icon"> & {
   iconColor: IconColorVariant;
 };
 
@@ -247,4 +251,4 @@ function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): J
   );
 }
 
-export default AddDeviceDialog;
+export default TrustedDeviceAddDialog;

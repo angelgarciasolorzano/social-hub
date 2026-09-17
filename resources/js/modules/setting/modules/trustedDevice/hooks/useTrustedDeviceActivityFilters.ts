@@ -8,20 +8,20 @@ import {
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
 import type { TrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 
-export interface ActivityFilterState {
+export interface TrustedDeviceActivityFilterState {
   action: TrustedDeviceActivityActionFilter[] | null;
   sinceDays: TrustedDeviceActivitySinceDaysFilter[] | null;
   search: string;
 }
 
-interface UseActivityFiltersReturn {
-  committedFilters: ActivityFilterState;
-  filters: ActivityFilterState;
+interface UseTrustedDeviceActivityFiltersReturn {
+  committedFilters: TrustedDeviceActivityFilterState;
+  filters: TrustedDeviceActivityFilterState;
   goToPage: (page: number) => void;
   resetFilters: () => void;
-  updateFilter: <K extends keyof ActivityFilterState>(
+  updateFilter: <K extends keyof TrustedDeviceActivityFilterState>(
     key: K,
-    value: ActivityFilterState[K],
+    value: TrustedDeviceActivityFilterState[K],
   ) => void;
 }
 
@@ -35,49 +35,55 @@ interface UseActivityFiltersReturn {
  * @param initialFilters  Sanitized filters emitted by the backend.
  * @param delay           Debounce delay in ms for the `search` field (default 500).
  */
-export function useActivityFilters(
+export function useTrustedDeviceActivityFilters(
   initialFilters: TrustedDeviceActivityFilters,
   delay = 500,
-): UseActivityFiltersReturn {
-  const [filters, setFilters] = useState<ActivityFilterState>({
+): UseTrustedDeviceActivityFiltersReturn {
+  const [filters, setFilters] = useState<TrustedDeviceActivityFilterState>({
     action: initialFilters.action ?? [],
     search: initialFilters.search,
     sinceDays: initialFilters.sinceDays ?? [],
   });
 
-  const [committedFilters, setCommittedFilters] = useState<ActivityFilterState>(filters);
+  const [committedFilters, setCommittedFilters] =
+    useState<TrustedDeviceActivityFilterState>(filters);
 
   const hasInteractedRef = useRef<boolean>(false);
-  const filtersRef = useRef<ActivityFilterState>(filters);
+  const filtersRef = useRef<TrustedDeviceActivityFilterState>(filters);
 
   useEffect(() => {
     filtersRef.current = filters;
   }, [filters]);
 
-  const triggerReload = useCallback((next: ActivityFilterState, page?: number): void => {
-    const action =
-      next.action === null || next.action.length === 0 ? undefined : next.action.join(",");
+  const triggerReload = useCallback(
+    (next: TrustedDeviceActivityFilterState, page?: number): void => {
+      const action =
+        next.action === null || next.action.length === 0 ? undefined : next.action.join(",");
 
-    const search = next.search === "" ? undefined : next.search;
+      const search = next.search === "" ? undefined : next.search;
 
-    const sinceDays =
-      next.sinceDays === null || next.sinceDays.length === 0 ? undefined : next.sinceDays.join(",");
+      const sinceDays =
+        next.sinceDays === null || next.sinceDays.length === 0
+          ? undefined
+          : next.sinceDays.join(",");
 
-    router.reload({
-      data: {
-        action: action,
-        page,
-        search: search,
-        since_days: sinceDays,
-      },
-      only: ["activityDialog"],
-      preserveUrl: true,
-      replace: true,
-      onFinish: () => {
-        setCommittedFilters(next);
-      },
-    });
-  }, []);
+      router.reload({
+        data: {
+          action: action,
+          page,
+          search: search,
+          since_days: sinceDays,
+        },
+        only: ["activityDialog"],
+        preserveUrl: true,
+        replace: true,
+        onFinish: () => {
+          setCommittedFilters(next);
+        },
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!hasInteractedRef.current) return;
@@ -98,7 +104,10 @@ export function useActivityFilters(
   }, [filters.action, filters.sinceDays, triggerReload]);
 
   const updateFilter = useCallback(
-    <K extends keyof ActivityFilterState>(key: K, value: ActivityFilterState[K]): void => {
+    <K extends keyof TrustedDeviceActivityFilterState>(
+      key: K,
+      value: TrustedDeviceActivityFilterState[K],
+    ): void => {
       hasInteractedRef.current = true;
 
       setFilters((prev) => ({ ...prev, [key]: value }));

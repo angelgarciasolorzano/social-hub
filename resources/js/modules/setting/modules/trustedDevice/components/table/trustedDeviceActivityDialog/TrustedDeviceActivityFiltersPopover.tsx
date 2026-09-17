@@ -12,9 +12,11 @@ import {
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 
-import ActivityFilterCombobox, { type FilterComboboxConfig } from "./ActivityFilterCombobox";
+import TrustedDeviceActivityFilterCombobox, {
+  type FilterComboboxConfig,
+} from "./TrustedDeviceActivityFilterCombobox";
 
-export interface ActivityFiltersPopoverProps {
+export interface TrustedDeviceActivityFiltersPopoverProps {
   actionFilter: TrustedDeviceActivityActionFilter[] | null;
   sinceDaysFilter: TrustedDeviceActivitySinceDaysFilter[] | null;
   onActionFilterChange: (value: TrustedDeviceActivityActionFilter[] | null) => void;
@@ -22,7 +24,9 @@ export interface ActivityFiltersPopoverProps {
   onResetFilters: () => void;
 }
 
-export default function ActivityFiltersPopover(props: ActivityFiltersPopoverProps): JSX.Element {
+export default function TrustedDeviceActivityFiltersPopover(
+  props: TrustedDeviceActivityFiltersPopoverProps,
+): JSX.Element {
   const {
     actionFilter,
     sinceDaysFilter,
@@ -90,7 +94,7 @@ export default function ActivityFiltersPopover(props: ActivityFiltersPopoverProp
           </div>
 
           {filterConfigs.map((config) => (
-            <ActivityFilterCombobox
+            <TrustedDeviceActivityFilterCombobox
               key={config.label}
               label={config.label}
               multiple={config.multiple}

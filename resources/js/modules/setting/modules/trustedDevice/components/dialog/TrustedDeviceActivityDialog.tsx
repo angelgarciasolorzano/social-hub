@@ -5,13 +5,13 @@ import { router, usePage } from "@inertiajs/react";
 
 import { Clock, Info, LoaderCircle, Search, X } from "lucide-react";
 
-import ActivityEventList from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/ActivityEventList";
-import ActivityFiltersPopover from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/ActivityFiltersPopover";
-import ActivityPagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/ActivityPagination";
-import { useActivityFilters } from "@/modules/setting/modules/trustedDevice/hooks/useActivityFilters";
+import TrustedDeviceActivityEventList from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList";
+import TrustedDeviceActivityFiltersPopover from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover";
+import TrustedDeviceActivityPagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination";
+import { useTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
 import type {
   TrustedDeviceActivityFilters,
-  TrustedDeviceActivityPagination,
+  TrustedDeviceActivityPagination as TrustedDeviceActivityPaginationData,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -39,7 +39,7 @@ interface TrustedDeviceActivityDialogProps {
 }
 
 interface TrustedDeviceActivityPayload {
-  activityLog: TrustedDeviceActivityPagination;
+  activityLog: TrustedDeviceActivityPaginationData;
   activityFilters: TrustedDeviceActivityFilters;
 }
 
@@ -107,7 +107,7 @@ export default function TrustedDeviceActivityDialog({
 }
 
 interface TrustedDeviceActivityDialogBodyProps {
-  initialActivity: TrustedDeviceActivityPagination;
+  initialActivity: TrustedDeviceActivityPaginationData;
   initialFilters: TrustedDeviceActivityFilters;
 }
 
@@ -116,7 +116,7 @@ function TrustedDeviceActivityDialogBody({
   initialFilters,
 }: TrustedDeviceActivityDialogBodyProps): JSX.Element {
   const { committedFilters, filters, goToPage, resetFilters, updateFilter } =
-    useActivityFilters(initialFilters);
+    useTrustedDeviceActivityFilters(initialFilters);
 
   const hasActiveFilters =
     committedFilters.search !== "" ||
@@ -154,7 +154,7 @@ function TrustedDeviceActivityDialogBody({
           )}
         </InputGroup>
 
-        <ActivityFiltersPopover
+        <TrustedDeviceActivityFiltersPopover
           actionFilter={filters.action}
           onActionFilterChange={(value) => {
             updateFilter("action", value);
@@ -167,7 +167,10 @@ function TrustedDeviceActivityDialogBody({
         />
       </div>
 
-      <ActivityEventList events={initialActivity.data} hasActiveFilters={hasActiveFilters} />
+      <TrustedDeviceActivityEventList
+        events={initialActivity.data}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       <DialogFooter className="flex items-center justify-between sm:justify-between">
         <div className="flex items-center gap-2">
@@ -182,7 +185,7 @@ function TrustedDeviceActivityDialogBody({
 
         <div className="flex items-center gap-3">
           {initialActivity.last_page > 1 && (
-            <ActivityPagination onPageChange={goToPage} pagination={initialActivity} />
+            <TrustedDeviceActivityPagination onPageChange={goToPage} pagination={initialActivity} />
           )}
 
           <DialogClose asChild>

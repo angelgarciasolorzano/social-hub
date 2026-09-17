@@ -22,12 +22,12 @@ import {
   Trash2,
 } from "lucide-react";
 
-import ActivityTimeline, {
+import TrustedDeviceActivityTimeline, {
   type ActivityStep,
-} from "@/modules/setting/modules/trustedDevice/components/ui/ActivityTimeline";
-import DeviceMetadataItem, {
-  type DeviceMetadataItemProps,
-} from "@/modules/setting/modules/trustedDevice/components/ui/DeviceMetadataItem";
+} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline";
+import TrustedDeviceMetadataItem, {
+  type TrustedDeviceMetadataItemProps,
+} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -69,33 +69,40 @@ import {
   iconColorVariants,
 } from "@/shared/lib/styling";
 
-import RenameDeviceDialog from "./RenameDeviceDialog";
-import RenewTrustDialog from "./RenewTrustDialog";
 import TrustedDeviceForceDestroyDialog from "./TrustedDeviceForceDestroyDialog";
 import TrustedDeviceReactivationDialog from "./TrustedDeviceReactivationDialog";
+import TrustedDeviceRenameDialog from "./TrustedDeviceRenameDialog";
+import TrustedDeviceRenewTrustDialog from "./TrustedDeviceRenewTrustDialog";
 import TrustedDeviceRevokeDialog from "./TrustedDeviceRevokeDialog";
 
-interface DeviceDetailsDialogProps {
+interface TrustedDeviceDetailsDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
 }
 
-type DeviceDetailsDialogAction =
+type TrustedDeviceDetailsDialogAction =
   "renameDevice" | "renewTrust" | "revokeDevice" | "reactivate" | "forceDestroy";
 
-type DialogActionState = Pick<DeviceDetailsDialogProps, "device"> &
+type DialogActionState = Pick<TrustedDeviceDetailsDialogProps, "device"> &
   DialogClosingState & {
-    kind: DeviceDetailsDialogAction;
+    kind: TrustedDeviceDetailsDialogAction;
   };
 
-function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps): JSX.Element {
+function TrustedDeviceDetailsDialog({
+  device,
+  open,
+  onClose,
+}: TrustedDeviceDetailsDialogProps): JSX.Element {
   const dialogDevice = useDialog<DialogActionState | null>(null);
   const { appearance } = useAppearance();
 
   const isRevoked = device.deletedAt !== null;
 
-  const handleDeviceAction = (action: DeviceDetailsDialogAction, device: TrustedDevice): void => {
+  const handleDeviceAction = (
+    action: TrustedDeviceDetailsDialogAction,
+    device: TrustedDevice,
+  ): void => {
     dialogDevice.show({ kind: action, device, closing: false });
   };
 
@@ -112,12 +119,20 @@ function DeviceDetailsDialog({ device, open, onClose }: DeviceDetailsDialogProps
     switch (dialogDevice.state.kind) {
       case "renameDevice":
         return (
-          <RenameDeviceDialog device={actionDevice} open={!isClosing} onClose={handleDialogClose} />
+          <TrustedDeviceRenameDialog
+            device={actionDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
         );
 
       case "renewTrust":
         return (
-          <RenewTrustDialog device={actionDevice} open={!isClosing} onClose={handleDialogClose} />
+          <TrustedDeviceRenewTrustDialog
+            device={actionDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
         );
 
       case "revokeDevice":
@@ -319,7 +334,7 @@ function DeviceOverviewCard({
   );
 }
 
-type DeviceActivityCardProps = Pick<DeviceDetailsDialogProps, "device">;
+type DeviceActivityCardProps = Pick<TrustedDeviceDetailsDialogProps, "device">;
 
 function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   const activitySteps: ActivityStep[] = [
@@ -358,16 +373,16 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
         <CardTitle>Actividad del dispositivo</CardTitle>
       </CardHeader>
       <CardContent>
-        <ActivityTimeline steps={activitySteps} variant="violet" />
+        <TrustedDeviceActivityTimeline steps={activitySteps} variant="violet" />
       </CardContent>
     </Card>
   );
 }
 
-type DeviceMetadataCardProps = Pick<DeviceDetailsDialogProps, "device">;
+type DeviceMetadataCardProps = Pick<TrustedDeviceDetailsDialogProps, "device">;
 
 type DeviceMetadataItems = Pick<
-  DeviceMetadataItemProps,
+  TrustedDeviceMetadataItemProps,
   "icon" | "title" | "description" | "iconColor"
 > & {
   key: "browser" | "browserVersion" | "os" | "ip";
@@ -421,7 +436,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
             className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/30"
             key={item.key}
           >
-            <DeviceMetadataItem
+            <TrustedDeviceMetadataItem
               icon={item.icon}
               title={item.title}
               description={item.description}
@@ -511,7 +526,7 @@ function DeviceStatusCallouts({ isRevoked, onReactivate }: DeviceStatusCalloutsP
 
 interface FooterActionsProps {
   device: TrustedDevice;
-  onAction: (action: DeviceDetailsDialogAction, device: TrustedDevice) => void;
+  onAction: (action: TrustedDeviceDetailsDialogAction, device: TrustedDevice) => void;
   onClose: () => void;
 }
 
@@ -602,4 +617,4 @@ function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps)
   );
 }
 
-export default DeviceDetailsDialog;
+export default TrustedDeviceDetailsDialog;

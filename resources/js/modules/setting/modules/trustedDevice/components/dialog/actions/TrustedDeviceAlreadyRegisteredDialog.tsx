@@ -26,19 +26,19 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { alertVariants } from "@/shared/lib/styling";
 
-interface DeviceAlreadyRegisteredDialogProps {
+interface TrustedDeviceAlreadyRegisteredDialogProps {
   existingDevice: TrustedDevice;
   open: boolean;
   onClose: () => void;
   showListLink?: boolean;
 }
 
-function DeviceAlreadyRegisteredDialog({
+function TrustedDeviceAlreadyRegisteredDialog({
   existingDevice,
   open,
   onClose,
   showListLink = true,
-}: DeviceAlreadyRegisteredDialogProps): JSX.Element {
+}: TrustedDeviceAlreadyRegisteredDialogProps): JSX.Element {
   const handleGoToList = (): void => {
     onClose();
     router.visit(index().url, {
@@ -113,4 +113,4 @@ function AlreadyRegisteredActionsAlert({
   );
 }
 
-export default DeviceAlreadyRegisteredDialog;
+export default TrustedDeviceAlreadyRegisteredDialog;

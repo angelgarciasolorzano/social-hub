@@ -13,15 +13,15 @@ import {
   PaginationItem,
 } from "@/shared/components/shadcn/ui/pagination";
 
-export interface ActivityPaginationProps {
+export interface TrustedDeviceActivityPaginationProps {
   pagination: TrustedDeviceActivityPagination;
   onPageChange: (page: number) => void;
 }
 
-export default function ActivityPagination({
+export default function TrustedDeviceActivityPagination({
   pagination,
   onPageChange,
-}: ActivityPaginationProps): JSX.Element {
+}: TrustedDeviceActivityPaginationProps): JSX.Element {
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
@@ -56,7 +56,7 @@ export default function ActivityPagination({
 }
 
 type ActivityPaginationNumberButtonProps = Pick<
-  ActivityPaginationProps,
+  TrustedDeviceActivityPaginationProps,
   "onPageChange" | "pagination"
 > & {
   page: number;

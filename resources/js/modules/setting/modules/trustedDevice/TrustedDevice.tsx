@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 
 import {
-  AddDeviceDialog,
-  DeviceAlreadyRegisteredDialog,
-  RevokeAllDevicesDialog,
+  TrustedDeviceAddDialog,
+  TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceExpiredDialog,
+  TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
 import TrustedDeviceTable from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable";
@@ -155,7 +155,7 @@ function TrustedDevice(): JSX.Element {
     switch (sectionDialog.state.kind) {
       case trustedDeviceSectionActionKey.addDevice:
         return (
-          <AddDeviceDialog
+          <TrustedDeviceAddDialog
             preview={currentDevicePreview ?? null}
             open={!isClosing}
             onClose={handleSectionDialogClose}
@@ -168,7 +168,7 @@ function TrustedDevice(): JSX.Element {
         }
 
         return (
-          <DeviceAlreadyRegisteredDialog
+          <TrustedDeviceAlreadyRegisteredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
             onClose={handleSectionDialogClose}
@@ -204,7 +204,7 @@ function TrustedDevice(): JSX.Element {
 
       case trustedDeviceSectionActionKey.revokeAll:
         return (
-          <RevokeAllDevicesDialog
+          <TrustedDeviceRevokeAllDialog
             devices={trustedDevicesForRevoke}
             open={!isClosing}
             onClose={handleSectionDialogClose}

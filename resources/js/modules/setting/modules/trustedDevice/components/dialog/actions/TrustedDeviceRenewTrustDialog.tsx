@@ -5,7 +5,7 @@ import { useForm, usePage } from "@inertiajs/react";
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
 
-import DeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/DeviceSummaryCard";
+import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -36,7 +36,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
-interface RenewTrustDialogProps {
+interface TrustedDeviceRenewTrustDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
@@ -45,7 +45,11 @@ interface RenewTrustDialogProps {
 const TRUST_RENEWAL_DAYS = 30;
 const TRUST_RENEWAL_LABEL = "1 mes";
 
-function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX.Element {
+function TrustedDeviceRenewTrustDialog({
+  device,
+  open,
+  onClose,
+}: TrustedDeviceRenewTrustDialogProps): JSX.Element {
   const { submit, processing, reset } = useForm();
   const pageProps = usePage().props as Record<string, unknown>;
 
@@ -87,7 +91,7 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <DeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
+          <TrustedDeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
 
           <RenewDeviceForm device={device} handleSubmit={handleSubmit} />
 
@@ -117,7 +121,7 @@ function RenewTrustDialog({ device, open, onClose }: RenewTrustDialogProps): JSX
   );
 }
 
-type RenewDeviceFormProps = Pick<RenewTrustDialogProps, "device"> & {
+type RenewDeviceFormProps = Pick<TrustedDeviceRenewTrustDialogProps, "device"> & {
   handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
 };
 
@@ -173,4 +177,4 @@ function RenewInfoAlert(): JSX.Element {
   );
 }
 
-export default RenewTrustDialog;
+export default TrustedDeviceRenewTrustDialog;

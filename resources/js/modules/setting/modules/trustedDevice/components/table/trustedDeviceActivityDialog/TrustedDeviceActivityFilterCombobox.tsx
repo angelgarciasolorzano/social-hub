@@ -29,7 +29,9 @@ export interface FilterComboboxConfig {
   onChange: (value: string | readonly string[] | null) => void;
 }
 
-export default function ActivityFilterCombobox(props: FilterComboboxConfig): JSX.Element {
+export default function TrustedDeviceActivityFilterCombobox(
+  props: FilterComboboxConfig,
+): JSX.Element {
   const { label, multiple, options, value, onChange } = props;
 
   const anchor = useComboboxAnchor();

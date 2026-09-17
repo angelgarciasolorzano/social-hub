@@ -32,15 +32,15 @@ const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: Icon
   reactivated: { icon: RotateCw, color: "green" },
 };
 
-export interface ActivityEventListProps {
+export interface TrustedDeviceActivityEventListProps {
   events: TrustedDeviceActivityEvent[];
   hasActiveFilters: boolean;
 }
 
-export default function ActivityEventList({
+export default function TrustedDeviceActivityEventList({
   events,
   hasActiveFilters,
-}: ActivityEventListProps): JSX.Element {
+}: TrustedDeviceActivityEventListProps): JSX.Element {
   return (
     <div className="max-h-[60vh] rounded-xl border dark:bg-muted/20">
       {events.length === 0 ? (

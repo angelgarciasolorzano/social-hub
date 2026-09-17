@@ -8,17 +8,17 @@ import { deviceLabel, getDeviceIcon } from "@/modules/setting/shared/utils/trust
 import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-interface DeviceSummaryCardProps {
+interface TrustedDeviceSummaryCardProps {
   device: TrustedDevice;
   lastUsedAt: string;
   expiration?: string;
 }
 
-function DeviceSummaryCard({
+function TrustedDeviceSummaryCard({
   device,
   lastUsedAt,
   expiration,
-}: DeviceSummaryCardProps): JSX.Element {
+}: TrustedDeviceSummaryCardProps): JSX.Element {
   return (
     <div className="flex min-w-0 items-start gap-2.5 rounded-xl border p-4 shadow-xs dark:bg-input/20">
       <div
@@ -58,4 +58,4 @@ function DeviceSummaryCard({
   );
 }
 
-export default DeviceSummaryCard;
+export default TrustedDeviceSummaryCard;

@@ -5,7 +5,7 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { badgeVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-export interface DeviceMetadataItemProps {
+export interface TrustedDeviceMetadataItemProps {
   icon: ReactNode;
   title: string;
   description: string;
@@ -14,14 +14,14 @@ export interface DeviceMetadataItemProps {
   badgePosition?: "before" | "after";
 }
 
-function DeviceMetadataItem({
+function TrustedDeviceMetadataItem({
   icon,
   title,
   description,
   iconColor = "violet",
   badge,
   badgePosition = "before",
-}: DeviceMetadataItemProps): JSX.Element {
+}: TrustedDeviceMetadataItemProps): JSX.Element {
   const showBadge = badge !== undefined && badge !== "";
 
   const colors = iconColorVariants[iconColor];
@@ -47,4 +47,4 @@ function DeviceMetadataItem({
   );
 }
 
-export default DeviceMetadataItem;
+export default TrustedDeviceMetadataItem;

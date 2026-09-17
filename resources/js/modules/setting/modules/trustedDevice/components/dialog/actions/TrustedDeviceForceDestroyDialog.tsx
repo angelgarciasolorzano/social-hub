@@ -4,7 +4,7 @@ import { useForm } from "@inertiajs/react";
 
 import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
-import DeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/DeviceSummaryCard";
+import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
@@ -87,7 +87,7 @@ function TrustedDeviceForceDestroyDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <DeviceSummaryCard
+          <TrustedDeviceSummaryCard
             device={device}
             lastUsedAt={fromNow(device.lastUsedAt)}
             expiration={device.deletedAt !== null ? formatLongDate(device.deletedAt) : "—"}

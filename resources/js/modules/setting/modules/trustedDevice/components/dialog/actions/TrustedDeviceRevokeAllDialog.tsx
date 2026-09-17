@@ -43,7 +43,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-interface RevokeAllDevicesDialogProps {
+interface TrustedDeviceRevokeAllDialogProps {
   devices: TrustedDevice[];
   open: boolean;
   onClose: () => void;
@@ -54,11 +54,11 @@ interface RevokeDeviceFormData {
   terms: boolean;
 }
 
-function RevokeAllDevicesDialog({
+function TrustedDeviceRevokeAllDialog({
   devices,
   open,
   onClose,
-}: RevokeAllDevicesDialogProps): JSX.Element {
+}: TrustedDeviceRevokeAllDialogProps): JSX.Element {
   const { data, setData, submit, processing, reset, errors } = useForm<RevokeDeviceFormData>({
     password: "",
     terms: false,
@@ -178,7 +178,7 @@ function RevokeConsequencesAlert(): JSX.Element {
   );
 }
 
-type AffectedDevicesListProps = Pick<RevokeAllDevicesDialogProps, "devices">;
+type AffectedDevicesListProps = Pick<TrustedDeviceRevokeAllDialogProps, "devices">;
 
 function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element {
   const deviceCount = devices.length;
@@ -305,4 +305,4 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
   );
 }
 
-export default RevokeAllDevicesDialog;
+export default TrustedDeviceRevokeAllDialog;

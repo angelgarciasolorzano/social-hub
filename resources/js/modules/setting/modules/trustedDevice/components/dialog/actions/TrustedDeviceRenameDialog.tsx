@@ -6,7 +6,7 @@ import { useForm, usePage } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { Eye, Pencil } from "lucide-react";
 
-import DeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/DeviceSummaryCard";
+import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -32,7 +32,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-interface RenameDeviceDialogProps {
+interface TrustedDeviceRenameDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
@@ -42,7 +42,11 @@ interface RenameDeviceFormData {
   name: string | null;
 }
 
-function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps): JSX.Element {
+function TrustedDeviceRenameDialog({
+  device,
+  open,
+  onClose,
+}: TrustedDeviceRenameDialogProps): JSX.Element {
   const { setData, submit, processing, reset, errors, data } = useForm<RenameDeviceFormData>({
     name: device.name,
   });
@@ -88,7 +92,7 @@ function RenameDeviceDialog({ device, open, onClose }: RenameDeviceDialogProps):
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <DeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
+          <TrustedDeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
 
           <RenameDeviceForm handleSubmit={handleSubmit} errors={errors} setData={setData} />
 
@@ -176,4 +180,4 @@ function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
   );
 }
 
-export default RenameDeviceDialog;
+export default TrustedDeviceRenameDialog;

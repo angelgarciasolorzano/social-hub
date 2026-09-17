@@ -6,11 +6,11 @@ import { usePage } from "@inertiajs/react";
 import { MonitorSmartphone, MoreHorizontalIcon, SearchX } from "lucide-react";
 
 import {
-  DeviceDetailsDialog,
-  RenameDeviceDialog,
-  RenewTrustDialog,
+  TrustedDeviceDetailsDialog,
   TrustedDeviceForceDestroyDialog,
   TrustedDeviceReactivationDialog,
+  TrustedDeviceRenameDialog,
+  TrustedDeviceRenewTrustDialog,
   TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
 import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination";
@@ -177,7 +177,7 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
     switch (dialogDevice.state.kind) {
       case trustedDeviceRowActionKey.viewDevice:
         return (
-          <DeviceDetailsDialog
+          <TrustedDeviceDetailsDialog
             device={selectedDevice}
             onClose={handleDialogClose}
             open={!isClosing}
@@ -186,7 +186,7 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
       case trustedDeviceRowActionKey.renameDevice:
         return (
-          <RenameDeviceDialog
+          <TrustedDeviceRenameDialog
             device={selectedDevice}
             onClose={handleDialogClose}
             open={!isClosing}
@@ -195,7 +195,11 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
 
       case trustedDeviceRowActionKey.renewTrust:
         return (
-          <RenewTrustDialog device={selectedDevice} onClose={handleDialogClose} open={!isClosing} />
+          <TrustedDeviceRenewTrustDialog
+            device={selectedDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
         );
 
       case trustedDeviceRowActionKey.revokeDevice:

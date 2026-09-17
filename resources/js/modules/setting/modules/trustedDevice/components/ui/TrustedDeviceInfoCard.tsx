@@ -3,9 +3,9 @@ import { Fragment } from "react";
 
 import { CalendarRange, Clock4, Globe, MapPin } from "lucide-react";
 
-import DeviceMetadataItem, {
-  type DeviceMetadataItemProps,
-} from "@/modules/setting/modules/trustedDevice/components/ui/DeviceMetadataItem";
+import TrustedDeviceMetadataItem, {
+  type TrustedDeviceMetadataItemProps,
+} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -53,7 +53,7 @@ export function TrustedDeviceInfoCard({
   const osName = valueOrFallback(device.osName, "Desconocido");
   const ip = valueOrFallback(device.ip, "No disponible");
 
-  const primaryRow: Omit<DeviceMetadataItemProps, "badge" | "badgePosition">[] = [
+  const primaryRow: Omit<TrustedDeviceMetadataItemProps, "badge" | "badgePosition">[] = [
     {
       icon: <Globe className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />,
       iconColor: "blue",
@@ -74,7 +74,7 @@ export function TrustedDeviceInfoCard({
     },
   ];
 
-  const secondaryRow: DeviceMetadataItemProps[] = [
+  const secondaryRow: TrustedDeviceMetadataItemProps[] = [
     {
       icon: <Clock4 className={cn("h-6 w-6", iconColorVariants.cyan.iconFgClass)} />,
       iconColor: "cyan",
@@ -104,7 +104,7 @@ export function TrustedDeviceInfoCard({
 }
 
 interface DeviceInfoRowProps {
-  items: DeviceMetadataItemProps[];
+  items: TrustedDeviceMetadataItemProps[];
   columns?: 2 | 3;
 }
 
@@ -115,7 +115,7 @@ function DeviceInfoRow({ items, columns = 3 }: DeviceInfoRowProps): JSX.Element 
     <div className={`grid items-stretch gap-8 ${gridCols}`}>
       {items.map((item, index) => (
         <Fragment key={item.title}>
-          <DeviceMetadataItem {...item} />
+          <TrustedDeviceMetadataItem {...item} />
 
           {index < items.length - 1 && <Separator orientation="vertical" />}
         </Fragment>
