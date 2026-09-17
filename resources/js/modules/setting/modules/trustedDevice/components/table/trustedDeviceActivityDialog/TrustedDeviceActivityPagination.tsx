@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import type { TrustedDeviceActivityPagination } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
+import type { TrustedDeviceActivityPagination as TrustedDeviceActivityPaginationData } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 import { computePaginationRange } from "@/modules/setting/modules/trustedDevice/utils/pagination";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -14,7 +14,7 @@ import {
 } from "@/shared/components/shadcn/ui/pagination";
 
 export interface TrustedDeviceActivityPaginationProps {
-  pagination: TrustedDeviceActivityPagination;
+  pagination: TrustedDeviceActivityPaginationData;
   onPageChange: (page: number) => void;
 }
 
