@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import TrustedDeviceActivityDialog from "@/modules/setting/modules/trustedDevice/components/dialog/TrustedDeviceActivityDialog";
+import TrustedDeviceActivityDialog from "@/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog";
 import type {
   TrustedDeviceAction,
   TrustedDeviceActivityItem,

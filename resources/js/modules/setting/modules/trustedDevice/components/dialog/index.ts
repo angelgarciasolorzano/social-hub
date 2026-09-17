@@ -1,4 +1,4 @@
-export { default as TrustedDeviceActivityDialog } from "./TrustedDeviceActivityDialog";
+export { default as TrustedDeviceActivityDialog } from "./info/TrustedDeviceActivityDialog";
 export { default as TrustedDeviceAddDialog } from "./actions/TrustedDeviceAddDialog";
 export { default as TrustedDeviceAlreadyRegisteredDialog } from "./actions/TrustedDeviceAlreadyRegisteredDialog";
 export { default as TrustedDeviceDetailsDialog } from "./actions/TrustedDeviceDetailsDialog";
