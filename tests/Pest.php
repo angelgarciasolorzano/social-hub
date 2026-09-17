@@ -16,7 +16,7 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
-    ->in('Feature');
+    ->in('Feature', __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests');
 
 /*
 |--------------------------------------------------------------------------
