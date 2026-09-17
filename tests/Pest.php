@@ -1,5 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
+use App\User\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,9 +33,7 @@ pest()->extend(TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
+expect()->extend('toBeOne', fn () => $this->toBe(1));
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +46,26 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A realistic desktop Chrome/Windows User-Agent, for tests that need a
+ * deterministic device fingerprint (e.g. TrustedDevice matching).
+ */
+function chromeWindowsUserAgent(): string
 {
-    // ..
+    return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        .'(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+}
+
+/**
+ * Create a persisted User. `User` resolves its factory via the #[UseFactory]
+ * attribute, which Larastan doesn't infer on its own, so `User::factory()`
+ * alone type-checks as mixed (see App\User\Seeders\UserSeeder for the same
+ * `Factory<User>` workaround in application code).
+ */
+function createUser(): User
+{
+    /** @var Factory<User> $factory */
+    $factory = User::factory();
+
+    return $factory->createOne();
 }
