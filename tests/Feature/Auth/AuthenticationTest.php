@@ -18,9 +18,8 @@ final class AuthenticationTest extends TestCase
     {
         $testResponse = $this->get(route('login'));
 
-        $testResponse
-            ->assertOk()
-            ->assertSee('resources/js/modules/auth/login/Login.tsx', false);
+        $testResponse->assertOk()
+            ->assertSeeHtml('resources/js/modules/auth/login/Login.tsx');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -102,6 +101,7 @@ final class AuthenticationTest extends TestCase
 
         $errors = session('errors');
 
-        $this->assertStringContainsString('Too many login attempts', (string) $errors->first('email'));
+        expect((string) $errors->first('email'))
+            ->toContain('Too many login attempts');
     }
 }

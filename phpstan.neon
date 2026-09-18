@@ -46,6 +46,7 @@ parameters:
         - _ide_helper_models.php
         - phpstan-stubs/TwoFactorAuthenticationEvent.php
         - phpstan-stubs/RecoveryCodesGeneratedEvent.php
+        - tests/Pest.php
     
     ignoreErrors:
         - '#Dynamic call to static method Illuminate\\.*#'

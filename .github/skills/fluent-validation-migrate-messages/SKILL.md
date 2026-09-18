@@ -63,27 +63,22 @@ Each has a specific reason. Include the reason in the migration report so the us
 Before any edits, output a summary for each target file:
 
 ```
-
 ## Migration report: app/Http/Requests/ClearSelectedVideoContentRequest.php
 
 ### Portable (4)
-
 - items.*.action.type.required → ->required(message: '…') inside each() closure
 - search.value.string           → inline string(message: '…')
 - name.max                      → ->max(255, message: '…')
 - email.email                   → FluentRule::email(message: '…')
 
 ### Needs messageFor (2)
-
 - items.*.qty.integer          → ->digits(5)->messageFor('integer', '…') (composite non-last sub-rule)
 - required_with on email/phone → ->requiredWith(…)->messageFor('required_with', '…') (variadic method)
 
 ### Unportable, stays in messages() (1)
-
 - email_address.string  →  FluentRule::email() emits 'string' implicitly; no chain method to target. Keep.
 
 ### messages() method
-
 After migration: keeps 1 key, method retained.
 ```
 
@@ -105,9 +100,7 @@ One file at a time. For each:
 Before migration, capture the actual error messages produced by each `messages()` entry:
 
 ```
-
 # Write a snapshot test that exercises each rule with a failing input and asserts the custom message surfaces.
-
 ```
 
 Run the snapshot test after migration. The custom messages must still surface identically. If they don't, the migration is wrong — the skip-log classification probably missed a case.

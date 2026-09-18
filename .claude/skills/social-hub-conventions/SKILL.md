@@ -77,7 +77,7 @@ Details and rationale for each command: [`docs/development/backend-commands.md`]
 
 Hard rules:
 
-- Tests are PHPUnit only — never Pest. Create with `php artisan make:test --phpunit {Name}` (add `--unit` for unit tests).
+- Tests are written in Pest. Create with `php artisan make:test --pest {Name}` (add `--unit` for unit tests). Existing PHPUnit-class tests keep working side by side; write new tests in Pest.
 - Validation uses `HasFluentRules` + `FluentRule::*` chains. Never string rules, never `Rule::*` when a `FluentRule::` equivalent exists. The `fluent-validation` / `fluent-validation-optimize` skills have the method reference.
 - After every meaningful backend change, regenerate Wayfinder (it re-reads routes during `npm run dev` / `npm run build`) and review the diff under `resources/js/shared/wayfinder/`.
 

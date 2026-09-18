@@ -19,7 +19,7 @@ class TrustedDeviceFactory extends Factory
     /**
      * Define the model's default state.
      *
-     * @return array<string, CarbonInterface|string>
+     * @return array<string, CarbonInterface|string|bool>
      *
      * @phpstan-return array<model-property<TrustedDevice>, mixed>
      */
@@ -30,6 +30,11 @@ class TrustedDeviceFactory extends Factory
             'token_hash' => hash('sha256', Str::random(64)),
             'name' => fake()->optional(0.6)->userAgent(),
             'user_agent' => fake()->userAgent(),
+            'browser' => fake()->randomElement(['Chrome', 'Firefox', 'Safari', 'Edge']),
+            'browser_version' => (string) fake()->numberBetween(90, 140),
+            'os_name' => fake()->randomElement(['Windows', 'Mac', 'Linux']),
+            'os_version' => fake()->randomElement(['10', '11', '13', '22.04']),
+            'is_mobile' => fake()->boolean(),
             'ip' => fake()->ipv4(),
             'last_used_at' => fake()->optional(0.5)->dateTimeBetween('-30 days', 'now'),
             'expires_at' => Date::now()->addDays(30),

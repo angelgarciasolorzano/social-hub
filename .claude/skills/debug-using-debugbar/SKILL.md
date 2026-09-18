@@ -32,25 +32,19 @@ compatibility: Requires Laravel with fruitcake/laravel-debugbar installed and de
 ## Finding requests
 
 ```bash
-
 # List recent requests (shows summary with status, duration, memory, query count)
-
 php artisan debugbar:find
 
 # Filter by URI pattern (fnmatch) and/or HTTP method
-
 php artisan debugbar:find --uri="/api/*" --method=POST
 
 # Only show requests with issues (exceptions, slow queries, duplicates, errors)
-
 php artisan debugbar:find --issues --max=50
 
 # Customize issue thresholds (defaults: --min-queries=50, --min-duration=1000, --min-duplicates=2)
-
 php artisan debugbar:find --issues --min-queries=10 --min-duration=500
 
 # Threshold options also work standalone, filtering on just that criteria
-
 php artisan debugbar:find --min-queries=20
 ```
 
@@ -59,14 +53,11 @@ php artisan debugbar:find --min-queries=20
 ## Inspecting a request
 
 ```bash
-
 # Summary of all collectors (available collectors depend on config)
-
 php artisan debugbar:get latest
 php artisan debugbar:get {id}
 
 # Full data for a specific collector
-
 php artisan debugbar:get {id} --collector=exceptions
 ```
 
@@ -76,17 +67,13 @@ Pick the collector by issue type:
 ## Analyzing queries
 
 ```bash
-
 # Overview with duplicate detection and slow query flags
-
 php artisan debugbar:queries {id}
 
 # Backtrace and params for a specific statement
-
 php artisan debugbar:queries {id} --statement=N
 
 # EXPLAIN plan or re-execute a SELECT
-
 php artisan debugbar:queries {id} --statement=N --explain
 php artisan debugbar:queries {id} --statement=N --result
 ```
