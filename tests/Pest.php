@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Auth\Models\TrustedDevice;
+use App\Auth\Models\TrustedDeviceEvent;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -90,6 +91,35 @@ function createTrustedDevice(?User $user = null, array $attributes = []): Truste
     }
 
     return $factory->createOne($attributes);
+}
+
+/**
+ * Create a persisted TrustedDeviceEvent, same #[UseFactory] workaround as
+ * createUser(). `created_at` is force-filled after creation, since it isn't
+ * mass-assignable (see the model's #[Fillable] list), so date-filter tests
+ * can backdate an event deterministically.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createTrustedDeviceEvent(?User $user = null, array $attributes = []): TrustedDeviceEvent
+{
+    /** @var Factory<TrustedDeviceEvent> $factory */
+    $factory = TrustedDeviceEvent::factory();
+
+    if ($user instanceof User) {
+        $factory = $factory->for($user);
+    }
+
+    $createdAt = $attributes['created_at'] ?? null;
+    unset($attributes['created_at']);
+
+    $trustedDeviceEvent = $factory->createOne($attributes);
+
+    if ($createdAt !== null) {
+        $trustedDeviceEvent->forceFill(['created_at' => $createdAt])->save();
+    }
+
+    return $trustedDeviceEvent;
 }
 
 /**
