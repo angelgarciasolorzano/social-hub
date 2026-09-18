@@ -132,7 +132,7 @@ Files are handled via `spatie/laravel-medialibrary` with a custom path generator
 ## Tooling configuration quick reference
 
 - `phpstan.neon` — paths `app`, `bootstrap`, `database`, `routes`; excludes `bootstrap/cache` and `app/Http/Middleware/HandleInertiaRequests.php`; scans `_ide_helper_models.php`.
-- `phpunit.xml` — sqlite `:memory:`, `BCRYPT_ROUNDS=4`, array drivers for cache/queue/session/mail.
+- `phpunit.xml` — `APP_ENV=testing`; database and test runtime settings are configured in `.env.testing`.
 - `eslint.config.ts` — flat config with `typescript-eslint`, `eslint-plugin-react`, `eslint-plugin-perfectionist`, prettier integration.
 - `.prettierrc` — import order puts `react`, `@inertiajs/react`, `react-icons` first, then `@/modules`, then shared (`@/shared/components`, `@/shared/hooks`, etc.), then relative.
 - `vite.config.ts` — `laravel-vite-plugin` + `@inertiajs/vite` + `@vitejs/plugin-react` + `@rolldown/plugin-babel` (`reactCompilerPreset`) + `@tailwindcss/vite` + `@laravel/vite-plugin-wayfinder` (outputs to `resources/js/shared/wayfinder`).
