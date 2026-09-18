@@ -72,6 +72,9 @@ jobs:
           php artisan key:generate --ansi
           php artisan migrate --force
 
+      - name: Execute Laravel Doctor
+        run: composer doctor-ci
+
       - name: Generate IDE Helper files
         run: composer ide-helper
 
