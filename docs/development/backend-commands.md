@@ -91,6 +91,49 @@ Limpia la config cacheada y ejecuta la suite completa de PHPUnit.
 - ⚠️ **No** usar para tests rápidos — limpia caché antes de correr
 - ✅ Útil antes de abrir PR o en CI
 
+### `composer doctor`
+
+```bash
+composer doctor
+```
+
+Ejecuta los diagnósticos de Laravel Doctor en formato legible para desarrollo local.
+
+- 🔎 Revisa configuración, entorno, Composer, base de datos, cache, queue, sesiones y storage
+- 🛡️ No aplica reparaciones automáticamente porque usa `--no-interaction` y no incluye `--fix`
+- ⚠️ Puede fallar si los servicios configurados localmente no están disponibles
+
+**Cuándo:** al validar la salud del entorno local o investigar problemas de configuración.
+
+### `composer doctor-ci`
+
+```bash
+composer doctor-ci
+```
+
+Ejecuta Laravel Doctor con formato de anotaciones de GitHub para el workflow de CI.
+
+- ❌ Falla cuando Doctor encuentra diagnósticos con estado `fail` o `error`
+- 📋 Produce anotaciones que GitHub Actions puede mostrar directamente en el job
+- 🚫 No aplica reparaciones automáticas
+
+**Cuándo:** como gate obligatorio del workflow de calidad del backend.
+
+### `composer phpcpd`
+
+```bash
+composer phpcpd
+```
+
+Ejecuta PHPCPD Next con el preset de Laravel para detectar código duplicado.
+
+- 🧪 Es una herramienta experimental y actualmente no bloquea CI
+- ❗ Devuelve código `1` cuando encuentra clones, aunque el análisis sea válido
+- 🔍 Los hallazgos deben revisarse manualmente porque tests paralelos y configuraciones repetitivas pueden ser intencionales
+- 📊 En la primera ejecución detectó 8 clones, 119 líneas duplicadas y 1.14% de duplicación
+
+**Cuándo:** durante la evaluación de duplicación antes de decidir si se convierte en un gate obligatorio.
+
 ### `php artisan test --compact`
 
 ```bash
@@ -171,6 +214,9 @@ Limpia la caché de resultados de PHPStan.
 | `composer rector-dry`          | Preview refactor               | Antes de refactor grande        |
 | `composer rector`              | Aplicar refactor               | Después de confirmar el plan    |
 | `composer test`                | Suite completa PHPUnit         | Antes de PR                     |
+| `composer doctor`              | Diagnósticos locales Laravel   | Validar entorno local           |
+| `composer doctor-ci`           | Doctor con anotaciones GitHub  | Gate obligatorio en CI          |
+| `composer phpcpd`              | Detección experimental clones  | Evaluar duplicación             |
 | `php artisan test --compact`   | Tests rápidos con filtro       | Después de cada test modificado |
 | `composer ide-helper`          | Regenerar helpers IDE          | Después de cambiar modelos      |
 | `composer setup`               | Setup inicial                  | Primera vez                     |
