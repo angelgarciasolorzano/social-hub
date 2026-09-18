@@ -62,7 +62,10 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php -r \"file_exists('.env.testing') || copy('.env.testing.example', '.env.testing');\"",
             "@php artisan key:generate",
+            "@php artisan key:generate --env=testing",
+            "@php artisan --env=testing db:create-testing",
             "@php artisan migrate --force",
             "npm install",
             "npm run build"
