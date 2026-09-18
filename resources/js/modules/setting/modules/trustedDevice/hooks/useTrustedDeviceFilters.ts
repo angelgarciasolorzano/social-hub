@@ -15,7 +15,7 @@ import {
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceSort";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
-import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+import TrustedDeviceIndexController from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController";
 
 export interface TrustedDeviceFilterState {
   browser: TrustedDeviceBrowserFilter[] | null;
@@ -63,7 +63,7 @@ export function useTrustedDeviceFilters(
   }, [filters]);
 
   const triggerReload = useCallback((next: TrustedDeviceFilterState): void => {
-    router.get(index().url, toQueryBag(next), {
+    router.get(TrustedDeviceIndexController().url, toQueryBag(next), {
       only: ["trustedDevices"],
       preserveState: true,
       preserveScroll: true,

@@ -10,7 +10,7 @@ import {
 } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
-import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+import TrustedDeviceIndexController from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -41,7 +41,7 @@ function TrustedDeviceAlreadyRegisteredDialog({
 }: TrustedDeviceAlreadyRegisteredDialogProps): JSX.Element {
   const handleGoToList = (): void => {
     onClose();
-    router.visit(index().url, {
+    router.visit(TrustedDeviceIndexController().url, {
       preserveScroll: true,
       preserveState: true,
     });
