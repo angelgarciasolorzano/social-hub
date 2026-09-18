@@ -31,7 +31,7 @@ it("does not touch another user's devices", function (): void {
     $user = createUserWithTwoFactor();
 
     $otherUser = createUser();
-    $otherDevice = createTrustedDevice($otherUser);
+    $trustedDevice = createTrustedDevice($otherUser);
 
     $this->actingAs($user)
         ->delete(route('setting.security.two-factor-authentication.destroy'), [
@@ -39,5 +39,5 @@ it("does not touch another user's devices", function (): void {
             'code' => validOtpFor($user),
         ]);
 
-    expect($otherDevice->fresh()?->deleted_at)->toBeNull();
+    expect($trustedDevice->fresh()?->deleted_at)->toBeNull();
 });

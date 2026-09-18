@@ -81,13 +81,13 @@ it('filters by active and inactive status', function (): void {
     createTrustedDevice($user, ['name' => 'Active device', 'expires_at' => Date::now()->addDay()]);
     createTrustedDevice($user, ['name' => 'Expired device', 'expires_at' => Date::now()->subDay()]);
 
-    $activeResponse = $this->actingAs($user)
+    $testResponse = $this->actingAs($user)
         ->get(route('setting.security.trusted-devices.index', ['status' => 'active']));
 
     $inactiveResponse = $this->actingAs($user)
         ->get(route('setting.security.trusted-devices.index', ['status' => 'inactive']));
 
-    expect(collect(paginatedPropData($activeResponse, 'trustedDevices'))->pluck('name')->all())
+    expect(collect(paginatedPropData($testResponse, 'trustedDevices'))->pluck('name')->all())
         ->toBe(['Active device'])
         ->and(collect(paginatedPropData($inactiveResponse, 'trustedDevices'))->pluck('name')->all())
         ->toBe(['Expired device']);
@@ -140,13 +140,13 @@ it('sorts by name ascending and descending', function (): void {
     createTrustedDevice($user, ['name' => 'Zeta']);
     createTrustedDevice($user, ['name' => 'Alpha']);
 
-    $ascendingResponse = $this->actingAs($user)
+    $testResponse = $this->actingAs($user)
         ->get(route('setting.security.trusted-devices.index', ['sort' => 'name-asc']));
 
     $descendingResponse = $this->actingAs($user)
         ->get(route('setting.security.trusted-devices.index', ['sort' => 'name-desc']));
 
-    expect(collect(paginatedPropData($ascendingResponse, 'trustedDevices'))->pluck('name')->all())
+    expect(collect(paginatedPropData($testResponse, 'trustedDevices'))->pluck('name')->all())
         ->toBe(['Alpha', 'Zeta'])
         ->and(collect(paginatedPropData($descendingResponse, 'trustedDevices'))->pluck('name')->all())
         ->toBe(['Zeta', 'Alpha']);

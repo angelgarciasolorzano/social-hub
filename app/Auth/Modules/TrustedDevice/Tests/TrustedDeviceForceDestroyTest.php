@@ -53,8 +53,8 @@ it('returns not found for a device that is not revoked', function (): void {
 });
 
 it('forbids permanently deleting a device that belongs to another user', function (): void {
-    $owner = createUser();
-    $trustedDevice = createTrustedDevice($owner);
+    $user = createUser();
+    $trustedDevice = createTrustedDevice($user);
     $trustedDevice->delete();
 
     $intruder = createUser();

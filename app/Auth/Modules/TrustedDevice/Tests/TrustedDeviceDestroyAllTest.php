@@ -44,7 +44,7 @@ it("does not touch another user's devices", function (): void {
     createTrustedDevice($user);
 
     $otherUser = createUser();
-    $otherDevice = createTrustedDevice($otherUser);
+    $trustedDevice = createTrustedDevice($otherUser);
 
     $this->actingAs($user)
         ->delete(route('user.trusted-devices.destroy-all'), [
@@ -52,13 +52,13 @@ it("does not touch another user's devices", function (): void {
             'terms' => true,
         ]);
 
-    expect($otherDevice->fresh()?->deleted_at)->toBeNull();
+    expect($trustedDevice->fresh()?->deleted_at)->toBeNull();
 });
 
 it('does not re-revoke an already revoked device', function (): void {
     $user = createUser();
-    $revokedDevice = createTrustedDevice($user);
-    $revokedDevice->delete();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
 
     $activeDevice = createTrustedDevice($user);
 
@@ -69,7 +69,7 @@ it('does not re-revoke an already revoked device', function (): void {
         ]);
 
     expect(TrustedDeviceEvent::query()
-        ->where('trusted_device_id', $revokedDevice->id)
+        ->where('trusted_device_id', $trustedDevice->id)
         ->count())->toBe(0)
         ->and(TrustedDeviceEvent::query()
             ->where('trusted_device_id', $activeDevice->id)

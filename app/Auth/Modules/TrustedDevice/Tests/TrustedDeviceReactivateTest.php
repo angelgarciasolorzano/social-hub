@@ -95,8 +95,8 @@ it('returns not found for a device that is not revoked', function (): void {
 });
 
 it('forbids reactivating a device that belongs to another user', function (): void {
-    $owner = createUser();
-    $trustedDevice = createTrustedDevice($owner);
+    $user = createUser();
+    $trustedDevice = createTrustedDevice($user);
     $trustedDevice->delete();
 
     $intruder = createUserWithTwoFactor();

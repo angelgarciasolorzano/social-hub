@@ -38,9 +38,9 @@ it('extends the expiration and records a Renewed event', function (): void {
 });
 
 it('forbids renewing a device that belongs to another user', function (): void {
-    $owner = createUser();
+    $user = createUser();
     $expiresAt = Date::now()->addDay();
-    $trustedDevice = createTrustedDevice($owner, ['expires_at' => $expiresAt]);
+    $trustedDevice = createTrustedDevice($user, ['expires_at' => $expiresAt]);
 
     $intruder = createUser();
 

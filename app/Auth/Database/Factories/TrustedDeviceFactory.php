@@ -34,7 +34,7 @@ class TrustedDeviceFactory extends Factory
             'browser_version' => (string) fake()->numberBetween(90, 140),
             'os_name' => fake()->randomElement(['Windows', 'Mac', 'Linux']),
             'os_version' => fake()->randomElement(['10', '11', '13', '22.04']),
-            'is_mobile' => false,
+            'is_mobile' => fake()->boolean(),
             'ip' => fake()->ipv4(),
             'last_used_at' => fake()->optional(0.5)->dateTimeBetween('-30 days', 'now'),
             'expires_at' => Date::now()->addDays(30),

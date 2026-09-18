@@ -1,7 +1,9 @@
 <?php
 
-it('returns a successful response', function () {
-    $response = $this->get('/');
+declare(strict_types=1);
 
-    $response->assertStatus(200);
+it('returns a successful response', function (): void {
+    $testResponse = $this->get('/');
+
+    $testResponse->assertOk();
 });

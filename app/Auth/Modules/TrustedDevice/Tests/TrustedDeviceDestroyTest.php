@@ -39,8 +39,8 @@ it('soft deletes the device and records a Revoked event', function (): void {
 });
 
 it('forbids revoking a device that belongs to another user', function (): void {
-    $owner = createUser();
-    $trustedDevice = createTrustedDevice($owner);
+    $user = createUser();
+    $trustedDevice = createTrustedDevice($user);
 
     $intruder = createUser();
 

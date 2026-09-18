@@ -32,8 +32,8 @@ it('renames the device and records a Renamed event', function (): void {
 });
 
 it('forbids renaming a device that belongs to another user', function (): void {
-    $owner = createUser();
-    $trustedDevice = createTrustedDevice($owner, ['name' => 'Old name']);
+    $user = createUser();
+    $trustedDevice = createTrustedDevice($user, ['name' => 'Old name']);
 
     $intruder = createUser();
 
