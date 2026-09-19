@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
-import { Clock, Info, LoaderCircle, Search, X } from "lucide-react";
+import { Clock, Info, Search, X } from "lucide-react";
 
 import TrustedDeviceActivityEventList from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList";
 import TrustedDeviceActivityFiltersPopover from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover";
@@ -30,6 +30,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import type { SharedData } from "@/shared/types";
 
@@ -92,8 +93,27 @@ export default function TrustedDeviceActivityDialog({
         </DialogHeader>
 
         {isLoading ? (
-          <div className="flex min-h-60 items-center justify-center">
-            <LoaderCircle className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="min-h-60 space-y-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-10" />
+            </div>
+
+            <div className="space-y-4">
+              {["first", "second", "third"].map((eventKey) => (
+                <div className="flex items-center justify-between gap-4" key={eventKey}>
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </div>
+
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <TrustedDeviceActivityDialogBody
