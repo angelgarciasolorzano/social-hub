@@ -1,7 +1,7 @@
 import type { JSX, SubmitEvent } from "react";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
-import { type SetDataAction, useForm, usePage } from "@inertiajs/react";
+import { router, type SetDataAction, useForm, usePage } from "@inertiajs/react";
 
 import { FaCircle } from "react-icons/fa";
 
@@ -38,15 +38,21 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
+import type { SharedData } from "@/shared/types";
+
 interface TrustedDeviceRevokeAllDialogProps {
-  devices: TrustedDevice[];
   open: boolean;
   onClose: () => void;
+}
+
+interface TrustedDeviceRevokeAllDialogPageProps extends SharedData {
+  trustedDevicesForRevoke?: TrustedDevice[];
 }
 
 interface RevokeDeviceFormData {
@@ -55,7 +61,6 @@ interface RevokeDeviceFormData {
 }
 
 function TrustedDeviceRevokeAllDialog({
-  devices,
   open,
   onClose,
 }: TrustedDeviceRevokeAllDialogProps): JSX.Element {
@@ -64,7 +69,25 @@ function TrustedDeviceRevokeAllDialog({
     terms: false,
   });
 
-  const pageProps = usePage().props as Record<string, unknown>;
+  const page = usePage<TrustedDeviceRevokeAllDialogPageProps>();
+  const { trustedDevicesForRevoke } = page.props;
+  const pageProps = page.props as Record<string, unknown>;
+
+  const hasRequestedDevicesRef = useRef(false);
+  const [hasFreshDevices, setHasFreshDevices] = useState(false);
+
+  useEffect(() => {
+    if (hasRequestedDevicesRef.current) return;
+
+    hasRequestedDevicesRef.current = true;
+
+    router.reload({
+      only: ["trustedDevicesForRevoke"],
+      onFinish: () => {
+        setHasFreshDevices(true);
+      },
+    });
+  }, []);
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
@@ -95,6 +118,9 @@ function TrustedDeviceRevokeAllDialog({
     });
   };
 
+  const isLoading = !hasFreshDevices || trustedDevicesForRevoke === undefined;
+  const devices = trustedDevicesForRevoke ?? [];
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl min-w-2xl">
@@ -112,53 +138,113 @@ function TrustedDeviceRevokeAllDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <RevokeConsequencesAlert />
+        {isLoading ? (
+          <TrustedDeviceRevokeAllDialogSkeleton />
+        ) : (
+          <>
+            <RevokeConsequencesAlert />
 
-        <AffectedDevicesList devices={devices} />
+            <AffectedDevicesList devices={devices} />
 
-        <RevokeDeviceForm
-          handleSubmit={handleSubmit}
-          errors={errors}
-          setData={setData}
-          data={data}
-          disabled={devices.length === 0}
-        />
+            <RevokeDeviceForm
+              handleSubmit={handleSubmit}
+              errors={errors}
+              setData={setData}
+              data={data}
+              disabled={devices.length === 0}
+            />
 
-        <DialogFooter className="flex items-center gap-4 border-t sm:justify-between">
-          <Alert className="border-none bg-transparent">
-            <CircleAlert className="text-purple-500 dark:text-purple-500" />
-            <AlertTitle className="line-clamp-3 font-normal text-muted-foreground">
-              Si solo deseas eliminar uno, puedes revocarlo{" "}
-              <strong className="text-purple-700 dark:text-purple-500">individualmente</strong>{" "}
-              desde la lista de dispositivos.
-            </AlertTitle>
-          </Alert>
+            <DialogFooter className="flex items-center gap-4 border-t sm:justify-between">
+              <Alert className="border-none bg-transparent">
+                <CircleAlert className="text-purple-500 dark:text-purple-500" />
+                <AlertTitle className="line-clamp-3 font-normal text-muted-foreground">
+                  Si solo deseas eliminar uno, puedes revocarlo{" "}
+                  <strong className="text-purple-700 dark:text-purple-500">individualmente</strong>{" "}
+                  desde la lista de dispositivos.
+                </AlertTitle>
+              </Alert>
 
-          <div className="flex items-center justify-center gap-2">
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={processing}>
-                Cancelar
-              </Button>
-            </DialogClose>
+              <div className="flex items-center justify-center gap-2">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={processing}>
+                    Cancelar
+                  </Button>
+                </DialogClose>
 
-            <Button
-              type="submit"
-              form="revoke-trusted-device-form"
-              disabled={processing || devices.length === 0}
-            >
-              {processing ? (
-                <>
-                  <Spinner />
-                  Revocando...
-                </>
-              ) : (
-                "Revokar todos"
-              )}
-            </Button>
-          </div>
-        </DialogFooter>
+                <Button
+                  type="submit"
+                  form="revoke-trusted-device-form"
+                  disabled={processing || devices.length === 0}
+                >
+                  {processing ? (
+                    <>
+                      <Spinner />
+                      Revocando...
+                    </>
+                  ) : (
+                    "Revokar todos"
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function TrustedDeviceRevokeAllDialogSkeleton(): JSX.Element {
+  const deviceSkeletonKeys = ["first", "second", "third"];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-start gap-3 rounded-lg border p-4">
+        <Skeleton className="size-5 shrink-0 rounded-full" />
+
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <Skeleton className="h-5 w-28 max-w-full" />
+          <Skeleton className="h-4 w-full max-w-full" />
+          <Skeleton className="h-4 w-4/5 max-w-full" />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
+        <div className="flex min-w-0 items-start gap-4">
+          <Skeleton className="size-14 shrink-0 rounded-full" />
+
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Skeleton className="h-5 w-48 max-w-full" />
+            <Skeleton className="h-4 w-full max-w-full" />
+          </div>
+        </div>
+
+        <div className="flex h-40 flex-col gap-3 rounded-xl border p-3">
+          {deviceSkeletonKeys.map((deviceSkeletonKey) => (
+            <div className="flex min-w-0 items-center gap-3" key={deviceSkeletonKey}>
+              <Skeleton className="size-4 shrink-0 rounded-full" />
+              <Skeleton className="h-4 w-28 max-w-full" />
+              <Skeleton className="h-4 w-20 max-w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-4 w-64 max-w-full" />
+        <Skeleton className="h-10 w-full max-w-full" />
+
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-4 shrink-0" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t pt-4">
+        <Skeleton className="h-9 w-20 max-w-full" />
+        <Skeleton className="h-9 w-32 max-w-full" />
+      </div>
+    </div>
   );
 }
 
@@ -178,7 +264,9 @@ function RevokeConsequencesAlert(): JSX.Element {
   );
 }
 
-type AffectedDevicesListProps = Pick<TrustedDeviceRevokeAllDialogProps, "devices">;
+interface AffectedDevicesListProps {
+  devices: TrustedDevice[];
+}
 
 function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element {
   const deviceCount = devices.length;

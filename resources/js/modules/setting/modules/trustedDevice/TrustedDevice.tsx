@@ -74,7 +74,6 @@ type TrustedDevicePageProps = SharedData & {
   currentDeviceMatch?: TrustedDevice | null;
   filters: TrustedDeviceFilters;
   trustedDevices: TrustedDevicePagination;
-  trustedDevicesForRevoke?: TrustedDevice[];
   stats?: TrustedDeviceStats;
   recentActivity?: TrustedDeviceActivityItem[];
 };
@@ -84,11 +83,7 @@ interface SectionDialogState extends DialogClosingState {
 }
 
 function TrustedDevice(): JSX.Element {
-  const {
-    currentDevicePreview,
-    currentDeviceMatch,
-    trustedDevicesForRevoke = [],
-  } = usePage<TrustedDevicePageProps>().props;
+  const { currentDevicePreview, currentDeviceMatch } = usePage<TrustedDevicePageProps>().props;
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
 
@@ -117,12 +112,7 @@ function TrustedDevice(): JSX.Element {
   };
 
   const handleRevokeAllDevices = (): void => {
-    router.reload({
-      only: ["trustedDevicesForRevoke"],
-      onSuccess: () => {
-        sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
-      },
-    });
+    sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
   };
 
   const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
@@ -206,11 +196,7 @@ function TrustedDevice(): JSX.Element {
 
       case trustedDeviceSectionActionKey.revokeAll:
         return (
-          <TrustedDeviceRevokeAllDialog
-            devices={trustedDevicesForRevoke}
-            open={!isClosing}
-            onClose={handleSectionDialogClose}
-          />
+          <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleSectionDialogClose} />
         );
 
       default:

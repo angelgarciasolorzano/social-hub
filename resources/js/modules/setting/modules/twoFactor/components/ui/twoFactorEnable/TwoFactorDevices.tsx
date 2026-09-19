@@ -66,7 +66,6 @@ type TwoFactorDevicesPageProps = SharedData & {
   currentDevicePreview?: TrustedDevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
   trustedDevices?: TrustedDevice[];
-  trustedDevicesForRevoke?: TrustedDevice[];
 };
 
 interface SectionDialogState extends DialogClosingState {
@@ -78,7 +77,6 @@ function TwoFactorDevices(): JSX.Element {
     currentDevicePreview,
     currentDeviceMatch,
     trustedDevices = [],
-    trustedDevicesForRevoke = [],
   } = usePage<TwoFactorDevicesPageProps>().props;
 
   const hasDevices = trustedDevices.length > 0;
@@ -92,14 +90,9 @@ function TwoFactorDevices(): JSX.Element {
   }, []);
 
   const handleRevokeAllDevices = (): void => {
-    router.reload({
-      only: ["trustedDevicesForRevoke"],
-      onSuccess: () => {
-        sectionDialog.show({
-          kind: twoFactorDeviceSectionActionKey.revokeAllDevices,
-          closing: false,
-        });
-      },
+    sectionDialog.show({
+      kind: twoFactorDeviceSectionActionKey.revokeAllDevices,
+      closing: false,
     });
   };
 
@@ -146,11 +139,7 @@ function TwoFactorDevices(): JSX.Element {
 
       case twoFactorDeviceSectionActionKey.revokeAllDevices:
         return (
-          <TrustedDeviceRevokeAllDialog
-            devices={trustedDevicesForRevoke}
-            open={!isClosing}
-            onClose={handleSectionDialogClose}
-          />
+          <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleSectionDialogClose} />
         );
 
       default:
