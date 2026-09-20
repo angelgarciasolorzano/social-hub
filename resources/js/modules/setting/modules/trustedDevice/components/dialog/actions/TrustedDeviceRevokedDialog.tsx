@@ -11,7 +11,7 @@ import {
 import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
-import { index } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
+import TrustedDeviceIndexController from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -40,10 +40,14 @@ function TrustedDeviceRevokedDialog({
 }: TrustedDeviceRevokedDialogProps): JSX.Element {
   const handleGoToRevokedList = (): void => {
     onClose();
-    router.visit(index({ query: { status: trustedDeviceStatusFilterValue.revoked } }).url, {
-      preserveScroll: true,
-      preserveState: true,
-    });
+    router.visit(
+      TrustedDeviceIndexController({ query: { status: trustedDeviceStatusFilterValue.revoked } })
+        .url,
+      {
+        preserveScroll: true,
+        preserveState: true,
+      },
+    );
   };
 
   return (

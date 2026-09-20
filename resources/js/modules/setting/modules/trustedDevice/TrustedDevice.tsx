@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { Fragment } from "react";
 
-import { Head, router, usePage } from "@inertiajs/react";
+import { Deferred, Head, router, usePage } from "@inertiajs/react";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -50,6 +50,7 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDialog } from "@/shared/hooks";
 
@@ -72,9 +74,8 @@ type TrustedDevicePageProps = SharedData & {
   currentDeviceMatch?: TrustedDevice | null;
   filters: TrustedDeviceFilters;
   trustedDevices: TrustedDevicePagination;
-  trustedDevicesForRevoke?: TrustedDevice[];
-  stats: TrustedDeviceStats;
-  recentActivity: TrustedDeviceActivityItem[];
+  stats?: TrustedDeviceStats;
+  recentActivity?: TrustedDeviceActivityItem[];
 };
 
 interface SectionDialogState extends DialogClosingState {
@@ -82,11 +83,7 @@ interface SectionDialogState extends DialogClosingState {
 }
 
 function TrustedDevice(): JSX.Element {
-  const {
-    currentDevicePreview,
-    currentDeviceMatch,
-    trustedDevicesForRevoke = [],
-  } = usePage<TrustedDevicePageProps>().props;
+  const { currentDevicePreview, currentDeviceMatch } = usePage<TrustedDevicePageProps>().props;
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
 
@@ -115,12 +112,7 @@ function TrustedDevice(): JSX.Element {
   };
 
   const handleRevokeAllDevices = (): void => {
-    router.reload({
-      only: ["trustedDevicesForRevoke"],
-      onSuccess: () => {
-        sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
-      },
-    });
+    sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
   };
 
   const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
@@ -204,11 +196,7 @@ function TrustedDevice(): JSX.Element {
 
       case trustedDeviceSectionActionKey.revokeAll:
         return (
-          <TrustedDeviceRevokeAllDialog
-            devices={trustedDevicesForRevoke}
-            open={!isClosing}
-            onClose={handleSectionDialogClose}
-          />
+          <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleSectionDialogClose} />
         );
 
       default:
@@ -223,16 +211,62 @@ function TrustedDevice(): JSX.Element {
       <div className="flex gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle onTitleAction={handleTitleAction} />
-          <TrustedDevicesStatCards />
+
+          <Deferred
+            data="stats"
+            fallback={<TrustedDevicesStatCardsSkeleton />}
+            rescue={({ reloading }) => (
+              <TrustedDeviceDeferredError
+                message="No se pudieron cargar las estadísticas de tus dispositivos."
+                onRetry={() => {
+                  router.reload({ only: ["stats"] });
+                }}
+                reloading={reloading}
+              />
+            )}
+          >
+            <TrustedDevicesStatCards />
+          </Deferred>
+
           <TrustedDevicesInfoBanner />
           <TrustedDevicesTableSection />
           <TrustedDevicesSecurityCallout />
         </div>
 
         <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
-          <TrustedDeviceSummary />
+          <Deferred
+            data="stats"
+            fallback={<TrustedDeviceSummarySkeleton />}
+            rescue={({ reloading }) => (
+              <TrustedDeviceDeferredError
+                message="No se pudo cargar el resumen de tus dispositivos."
+                onRetry={() => {
+                  router.reload({ only: ["stats"] });
+                }}
+                reloading={reloading}
+              />
+            )}
+          >
+            <TrustedDeviceSummary />
+          </Deferred>
+
           <TrustedDeviceRecommendations />
-          <TrustedDeviceRecentActivity />
+
+          <Deferred
+            data="recentActivity"
+            fallback={<TrustedDeviceRecentActivitySkeleton />}
+            rescue={({ reloading }) => (
+              <TrustedDeviceDeferredError
+                message="No se pudo cargar la actividad reciente."
+                onRetry={() => {
+                  router.reload({ only: ["recentActivity"] });
+                }}
+                reloading={reloading}
+              />
+            )}
+          >
+            <TrustedDeviceRecentActivity />
+          </Deferred>
         </div>
       </div>
 
@@ -319,7 +353,7 @@ interface TrustedDeviceStatCard {
 }
 
 function TrustedDevicesStatCards(): JSX.Element {
-  const { stats } = usePage<TrustedDevicePageProps>().props;
+  const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
   const trustedDevicesStatCards: TrustedDeviceStatCard[] = [
     {
@@ -379,6 +413,112 @@ function TrustedDevicesStatCards(): JSX.Element {
         </div>
       ))}
     </div>
+  );
+}
+
+function TrustedDevicesStatCardsSkeleton(): JSX.Element {
+  const skeletonKeys = ["total", "active", "expiring", "recent"];
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {skeletonKeys.map((skeletonKey) => (
+        <div
+          className="flex h-full min-w-0 items-start gap-4 rounded-xl border bg-card p-4 shadow-sm"
+          key={skeletonKey}
+        >
+          <Skeleton className="h-12 w-12 shrink-0 rounded-md" />
+
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Skeleton className="h-8 w-20 max-w-full" />
+            <Skeleton className="h-4 w-36 max-w-full" />
+            <Skeleton className="h-8 w-full max-w-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TrustedDeviceSummarySkeleton(): JSX.Element {
+  return (
+    <Card className="flex flex-col">
+      <CardHeader className="items-center gap-2 pb-0">
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-4 w-56" />
+      </CardHeader>
+
+      <CardContent className="flex flex-1 items-center gap-4 pb-0">
+        <Skeleton className="h-40 w-40 shrink-0 rounded-full" />
+
+        <div className="flex flex-1 flex-col gap-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </CardContent>
+
+      <CardFooter className="mx-auto">
+        <Skeleton className="h-4 w-24" />
+      </CardFooter>
+    </Card>
+  );
+}
+
+function TrustedDeviceRecentActivitySkeleton(): JSX.Element {
+  const activitySkeletonKeys = ["first", "second", "third"];
+
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-5 w-40" />
+      </CardHeader>
+
+      <CardContent className="space-y-5">
+        {activitySkeletonKeys.map((activitySkeletonKey) => (
+          <div className="flex items-center justify-between gap-4" key={activitySkeletonKey}>
+            <div className="flex items-start gap-4">
+              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+
+            <Skeleton className="h-4 w-16" />
+          </div>
+        ))}
+      </CardContent>
+
+      <CardFooter className="mx-auto">
+        <Skeleton className="h-4 w-36" />
+      </CardFooter>
+    </Card>
+  );
+}
+
+interface TrustedDeviceDeferredErrorProps {
+  message: string;
+  onRetry: () => void;
+  reloading: boolean;
+}
+
+function TrustedDeviceDeferredError({
+  message,
+  onRetry,
+  reloading,
+}: TrustedDeviceDeferredErrorProps): JSX.Element {
+  return (
+    <Alert variant="destructive">
+      <AlertTitle>No se pudo cargar la información</AlertTitle>
+      <AlertDescription className="flex items-center justify-between gap-4">
+        <span>{message}</span>
+        <Button disabled={reloading} onClick={onRetry} size="sm" variant="outline">
+          {reloading ? "Reintentando..." : "Reintentar"}
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 }
 

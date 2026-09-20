@@ -8,6 +8,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
 import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
+import FlashToaster from "@/shared/components/FlashToaster";
 import { TooltipProvider } from "@/shared/components/shadcn/ui/tooltip";
 
 import "../../css/app.css";
@@ -53,7 +54,12 @@ void createInertiaApp({
     }
   },
   withApp(app) {
-    return <TooltipProvider>{app}</TooltipProvider>;
+    return (
+      <TooltipProvider>
+        {app}
+        <FlashToaster />
+      </TooltipProvider>
+    );
   },
   progress: {
     color: "#4B5563",

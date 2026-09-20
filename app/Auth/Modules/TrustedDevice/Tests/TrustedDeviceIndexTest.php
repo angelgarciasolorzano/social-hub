@@ -28,6 +28,21 @@ it('renders the page with default filters', function (): void {
         );
 });
 
+it('defers stats and recent activity until their deferred request', function (): void {
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->get(route('setting.security.trusted-devices.index'))
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->missing('stats')
+            ->missing('recentActivity')
+            ->loadDeferredProps(fn (Assert $assert): Assert => $assert
+                ->has('stats')
+                ->has('recentActivity')
+            )
+        );
+});
+
 it("only lists the authenticated user's devices", function (): void {
     $user = createUser();
     createTrustedDevice($user, ['name' => 'My laptop']);
