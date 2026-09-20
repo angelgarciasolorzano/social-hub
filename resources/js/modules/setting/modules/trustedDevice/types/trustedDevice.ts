@@ -43,7 +43,6 @@ export interface TrustedDeviceActivityItem {
   id: number;
   action: TrustedDeviceAction;
   actionLabel: string;
-  deviceId: number | null;
   deviceLabel: string | null;
   ip: string | null;
   createdAt: string | null;
