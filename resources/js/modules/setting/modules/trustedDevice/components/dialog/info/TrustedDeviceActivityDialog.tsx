@@ -114,6 +114,18 @@ export default function TrustedDeviceActivityDialog({
                 </div>
               ))}
             </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <Skeleton className="size-5 shrink-0" />
+                <Skeleton className="h-4 w-32 max-w-full" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-24 max-w-full" />
+                <Skeleton className="h-9 w-20 max-w-full" />
+              </div>
+            </div>
           </div>
         ) : (
           <TrustedDeviceActivityDialogBody
