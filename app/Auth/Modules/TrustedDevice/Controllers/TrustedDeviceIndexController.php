@@ -6,6 +6,7 @@ namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceFiltersData;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
@@ -33,9 +34,9 @@ final class TrustedDeviceIndexController extends Controller
             isOptional: false,
         );
 
-        $filters = $this->extractFilters($request);
+        $trustedDeviceFiltersData = TrustedDeviceFiltersData::fromRequest($request);
 
-        [$sortColumn, $sortDirection] = match ($filters['sort']) {
+        [$sortColumn, $sortDirection] = match ($trustedDeviceFiltersData->sort) {
             'most-recent' => ['last_used_at', 'desc'],
             'oldest' => ['last_used_at', 'asc'],
             'name-asc' => ['name', 'asc'],
@@ -45,8 +46,8 @@ final class TrustedDeviceIndexController extends Controller
 
         $query = $user->trustedDevices()->orderBy($sortColumn, $sortDirection);
 
-        if ($filters['search'] !== '') {
-            $search = $filters['search'];
+        if ($trustedDeviceFiltersData->search !== '') {
+            $search = $trustedDeviceFiltersData->search;
 
             $query->where(function (Builder $builder) use ($search): void {
                 $builder->where('name', 'like', "%{$search}%")
@@ -55,9 +56,9 @@ final class TrustedDeviceIndexController extends Controller
             });
         }
 
-        if ($filters['status'] !== null) {
-            $query->where(function (Builder $builder) use ($filters): void {
-                foreach ($filters['status'] as $status) {
+        if ($trustedDeviceFiltersData->status !== null) {
+            $query->where(function (Builder $builder) use ($trustedDeviceFiltersData): void {
+                foreach ($trustedDeviceFiltersData->status as $status) {
                     if ($status === 'revoked') {
                         $builder->orWhere(fn (Builder $builder): Builder => $builder->onlyTrashed());
                     } elseif ($status === 'active') {
@@ -69,8 +70,8 @@ final class TrustedDeviceIndexController extends Controller
             });
         }
 
-        if ($filters['browser'] !== null) {
-            $browsers = $filters['browser'];
+        if ($trustedDeviceFiltersData->browser !== null) {
+            $browsers = $trustedDeviceFiltersData->browser;
 
             $query->where(function (Builder $builder) use ($browsers): void {
                 if (\in_array('otro', $browsers, true)) {
@@ -87,15 +88,15 @@ final class TrustedDeviceIndexController extends Controller
             });
         }
 
-        if ($filters['deviceType'] !== null) {
-            $query->where('is_mobile', $filters['deviceType'] === 'mobile / tablet');
+        if ($trustedDeviceFiltersData->deviceType !== null) {
+            $query->where('is_mobile', $trustedDeviceFiltersData->deviceType === 'mobile / tablet');
         }
 
-        if ($filters['lastAccess'] !== null) {
+        if ($trustedDeviceFiltersData->lastAccess !== null) {
             $now = CarbonImmutable::now();
 
-            $query->where(function (Builder $builder) use ($filters, $now): void {
-                foreach ($filters['lastAccess'] as $value) {
+            $query->where(function (Builder $builder) use ($trustedDeviceFiltersData, $now): void {
+                foreach ($trustedDeviceFiltersData->lastAccess as $value) {
                     [$since] = match ($value) {
                         '24h' => [$now->subDay()],
                         '7d' => [$now->subDays(7)],
@@ -107,10 +108,10 @@ final class TrustedDeviceIndexController extends Controller
             });
         }
 
-        $perPage = $filters['perPage'];
+        $perPage = $trustedDeviceFiltersData->perPage;
 
         $props = [
-            'filters' => $filters,
+            'filters' => $trustedDeviceFiltersData->toArray(),
             'trustedDevices' => fn (): LengthAwarePaginator => $query
                 ->paginate($perPage)
                 ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
@@ -224,53 +225,6 @@ final class TrustedDeviceIndexController extends Controller
                 'sinceDays' => $sinceDays,
                 'search' => $search,
             ],
-        ];
-    }
-
-    /**
-     * Sanitize the filter query string against each whitelist.
-     *
-     * @return array{
-     *     search: string,
-     *     status: list<'active'|'inactive'|'revoked'>|null,
-     *     browser: list<'chrome'|'firefox'|'safari'|'edge'|'otro'>|null,
-     *     deviceType: 'desktop / laptop'|'mobile / tablet'|null,
-     *     lastAccess: list<'24h'|'7d'|'30d'>|null,
-     *     sort: 'most-recent'|'oldest'|'name-asc'|'name-desc'|'expiring-soon',
-     *     perPage: int,
-     * }
-     */
-    private function extractFilters(Request $request): array
-    {
-        $allowedStatus = ['active', 'inactive', 'revoked'];
-        $allowedBrowsers = ['chrome', 'firefox', 'safari', 'edge', 'otro'];
-        $allowedDeviceTypes = ['desktop / laptop', 'mobile / tablet'];
-        $allowedLastAccess = ['24h', '7d', '30d'];
-        $allowedSorts = ['most-recent', 'oldest', 'name-asc', 'name-desc', 'expiring-soon'];
-        $allowedPerPage = [5, 10, 15, 25, 50];
-
-        $search = $request->string('search')->toString();
-
-        $status = $request->string('status')->toString();
-
-        $browser = $request->string('browser')->toString();
-
-        $deviceType = $request->string('device_type')->toString();
-
-        $lastAccess = $request->string('last_access')->toString();
-
-        $sort = $request->query('sort');
-
-        $perPage = $request->integer('per_page');
-
-        return [
-            'search' => trim($search),
-            'status' => $this->parseMultiFilter($status, $allowedStatus),
-            'browser' => $this->parseMultiFilter($browser, $allowedBrowsers),
-            'deviceType' => \in_array($deviceType, $allowedDeviceTypes, true) ? $deviceType : null,
-            'lastAccess' => $this->parseMultiFilter($lastAccess, $allowedLastAccess),
-            'sort' => \in_array($sort, $allowedSorts, true) ? $sort : 'most-recent',
-            'perPage' => \in_array($perPage, $allowedPerPage, true) ? $perPage : 15,
         ];
     }
 
