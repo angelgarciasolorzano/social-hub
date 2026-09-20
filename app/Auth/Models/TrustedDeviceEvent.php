@@ -18,7 +18,6 @@ use Override;
 
 /**
  * @property int $id
- * @property int|null $trusted_device_id
  * @property int|null $user_id
  * @property TrustedDeviceAction $action
  * @property string|null $device_label
@@ -32,7 +31,6 @@ use Override;
  */
 #[UseFactory(TrustedDeviceEventFactory::class)]
 #[Fillable([
-    'trusted_device_id',
     'user_id',
     'action',
     'device_label',
@@ -78,7 +76,6 @@ class TrustedDeviceEvent extends Model
     ): self {
         return self::query()
             ->create([
-                'trusted_device_id' => $trustedDevice?->getKey(),
                 'user_id' => $user->getKey(),
                 'action' => $trustedDeviceAction,
                 'device_label' => $trustedDevice?->name,
@@ -87,16 +84,6 @@ class TrustedDeviceEvent extends Model
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
-    }
-
-    /**
-     * Get the trusted device this event refers to, when applicable.
-     *
-     * @return BelongsTo<TrustedDevice, $this>
-     */
-    public function device(): BelongsTo
-    {
-        return $this->belongsTo(TrustedDevice::class, 'trusted_device_id');
     }
 
     /**
