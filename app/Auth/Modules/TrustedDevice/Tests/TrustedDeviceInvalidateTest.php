@@ -22,7 +22,6 @@ it('revokes every trusted device and records one global RevokedAll event when 2F
         ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(2)
         ->and(TrustedDeviceEvent::query()
             ->where('user_id', $user->id)
-            ->whereNull('trusted_device_id')
             ->where('action', TrustedDeviceAction::RevokedAll)
             ->count())->toBe(1);
 });

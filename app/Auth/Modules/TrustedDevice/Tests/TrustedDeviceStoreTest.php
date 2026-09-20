@@ -29,7 +29,6 @@ it('creates a trusted device with an inferred name when no name is given', funct
         ->and($trustedDevice->is_mobile)->toBeFalse()
         ->and($trustedDevice->isActive())->toBeTrue()
         ->and(TrustedDeviceEvent::query()
-            ->where('trusted_device_id', $trustedDevice->id)
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::Created)
             ->exists())

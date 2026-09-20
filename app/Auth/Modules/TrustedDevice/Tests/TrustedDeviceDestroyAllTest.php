@@ -15,11 +15,9 @@ it('redirects guests to the login page', function (): void {
 
 it('revokes every active device and records a RevokedAll event for each', function (): void {
     $user = createUser();
-    $devices = collect([
-        createTrustedDevice($user),
-        createTrustedDevice($user),
-        createTrustedDevice($user),
-    ]);
+    createTrustedDevice($user);
+    createTrustedDevice($user);
+    createTrustedDevice($user);
 
     $testResponse = $this->actingAs($user)
         ->delete(route('user.trusted-devices.destroy-all'), [
@@ -35,7 +33,6 @@ it('revokes every active device and records a RevokedAll event for each', functi
         ->and(TrustedDeviceEvent::query()
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::RevokedAll)
-            ->whereIn('trusted_device_id', $devices->pluck('id'))
             ->count())->toBe(3);
 });
 
@@ -57,10 +54,9 @@ it("does not touch another user's devices", function (): void {
 
 it('does not re-revoke an already revoked device', function (): void {
     $user = createUser();
-    $trustedDevice = createTrustedDevice($user);
-    $trustedDevice->delete();
+    createTrustedDevice($user)->delete();
 
-    $activeDevice = createTrustedDevice($user);
+    $trustedDevice = createTrustedDevice($user);
 
     $this->actingAs($user)
         ->delete(route('user.trusted-devices.destroy-all'), [
@@ -69,12 +65,10 @@ it('does not re-revoke an already revoked device', function (): void {
         ]);
 
     expect(TrustedDeviceEvent::query()
-        ->where('trusted_device_id', $trustedDevice->id)
-        ->count())->toBe(0)
-        ->and(TrustedDeviceEvent::query()
-            ->where('trusted_device_id', $activeDevice->id)
-            ->where('action', TrustedDeviceAction::RevokedAll)
-            ->exists())->toBeTrue();
+        ->where('user_id', $user->id)
+        ->where('action', TrustedDeviceAction::RevokedAll)
+        ->count())->toBe(1)
+        ->and($trustedDevice->fresh()?->deleted_at)->not->toBeNull();
 });
 
 it('rejects an incorrect password', function (): void {

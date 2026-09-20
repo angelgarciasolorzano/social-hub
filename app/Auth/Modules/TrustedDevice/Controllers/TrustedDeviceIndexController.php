@@ -118,14 +118,12 @@ final class TrustedDeviceIndexController extends Controller
             'recentActivity' => Inertia::defer(fn (): array => $user->trustedDeviceEvents()
                 ->latest('created_at')
                 ->limit(3)
-                ->with(['device'])
                 ->get()
                 ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
                     'id' => $trustedDeviceEvent->id,
                     'action' => $trustedDeviceEvent->action->value,
                     'actionLabel' => $trustedDeviceEvent->action->label(),
-                    'deviceId' => $trustedDeviceEvent->trusted_device_id,
-                    'deviceLabel' => $trustedDeviceEvent->device_label ?? $trustedDeviceEvent->device?->name,
+                    'deviceLabel' => $trustedDeviceEvent->device_label,
                     'ip' => $trustedDeviceEvent->ip,
                     'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
                 ])
@@ -144,7 +142,7 @@ final class TrustedDeviceIndexController extends Controller
      *
      * @return array{
      *     activityLog: LengthAwarePaginator<int, array{
-     *         id: int, action: string, actionLabel: string, deviceId: int|null,
+     *         id: int, action: string, actionLabel: string,
      *         deviceLabel: string|null, deviceIsMobile: bool|null, deviceOsName: string|null,
      *         ip: string|null, createdAt: string|null
      *     }>,
@@ -212,7 +210,6 @@ final class TrustedDeviceIndexController extends Controller
                 'id' => $trustedDeviceEvent->id,
                 'action' => $trustedDeviceEvent->action->value,
                 'actionLabel' => $trustedDeviceEvent->action->label(),
-                'deviceId' => $trustedDeviceEvent->trusted_device_id,
                 'deviceLabel' => $trustedDeviceEvent->device_label,
                 'deviceIsMobile' => $trustedDeviceEvent->device_is_mobile,
                 'deviceOsName' => $trustedDeviceEvent->device_os_name,

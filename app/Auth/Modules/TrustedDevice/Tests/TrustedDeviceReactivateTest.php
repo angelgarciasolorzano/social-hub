@@ -32,7 +32,6 @@ it('reactivates a revoked device with a valid TOTP code', function (): void {
     expect($trustedDevice->deleted_at)->toBeNull()
         ->and($trustedDevice->isActive())->toBeTrue()
         ->and(TrustedDeviceEvent::query()
-            ->where('trusted_device_id', $trustedDevice->id)
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::Reactivated)
             ->exists())
