@@ -20,7 +20,7 @@ final readonly class TrustedDeviceRemember
     use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
 
-    public function __construct(private readonly TrustedDeviceService $trustedDeviceService) {}
+    public function __construct(private TrustedDeviceService $trustedDeviceService) {}
 
     public function handle(ValidTwoFactorAuthenticationCodeProvided $validTwoFactorAuthenticationCodeProvided): void
     {
@@ -43,7 +43,7 @@ final readonly class TrustedDeviceRemember
         $userAgent = $request->userAgent();
         $ip = $request->ip();
 
-        $newDevice = $this->trustedDeviceService->create(
+        $trustedDevice = $this->trustedDeviceService->create(
             user: $user,
             deviceDetector: $deviceDetector,
             tokenHash: $token['hash'],
@@ -53,12 +53,12 @@ final readonly class TrustedDeviceRemember
         );
 
         if ($userAgent !== null) {
-            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $newDevice->id);
+            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $trustedDevice->id);
         }
 
         $this->queueTrustedDeviceCookie($token['token']);
 
-        $this->recordEvent($user, $newDevice, $request);
+        $this->recordEvent($user, $trustedDevice, $request);
     }
 
     private function recordEvent(User $user, TrustedDevice $trustedDevice, Request $request): void

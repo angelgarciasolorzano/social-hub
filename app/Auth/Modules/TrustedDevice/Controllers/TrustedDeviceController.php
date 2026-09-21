@@ -178,7 +178,7 @@ class TrustedDeviceController extends Controller
                 }
             }
 
-            $created = $this->trustedDeviceService->create(
+            $trustedDevice = $this->trustedDeviceService->create(
                 user: $user,
                 deviceDetector: $deviceDetector,
                 tokenHash: $token['hash'],
@@ -188,19 +188,19 @@ class TrustedDeviceController extends Controller
             );
 
             if ($userAgent !== null) {
-                TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $created->id);
+                TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $trustedDevice->id);
             }
 
-            if ($created->wasRecentlyCreated) {
+            if ($trustedDevice->wasRecentlyCreated) {
                 TrustedDeviceEvent::record(
-                    trustedDevice: $created,
+                    trustedDevice: $trustedDevice,
                     user: $user,
                     trustedDeviceAction: TrustedDeviceAction::Created,
                     request: $trustedDeviceStoreRequest,
                 );
             }
 
-            return $created;
+            return $trustedDevice;
         });
 
         $this->queueTrustedDeviceCookie($token['token']);
