@@ -15,6 +15,7 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 | Factory                | `{Module}Factory`              | `PostFactory`                           |
 | Request                | `{Module}{Action}Request`      | `PostStoreRequest`, `PostUpdateRequest` |
 | Resource               | `{Module}Resource`             | `PostResource`                          |
+| Data                   | `{Module}{Concept}Data`        | `TrustedDeviceFiltersData`              |
 | Collection             | `{Module}Collection`           | `CommentCollection`                     |
 | Seeder                 | `{Module}Seeder`               | `PostSeeder`                            |
 | Enum                   | `{Module}{Concept}`            | `CommentableType`, `FriendshipStatus`   |
@@ -40,6 +41,8 @@ app/<Module>/
 ├── Resources/
 │   ├── {Module}Resource.php
 │   └── {Module}Collection.php        ← solo si hay listado
+├── Data/
+│   └── {Module}{Concept}Data.php      ← input, filtros y estructuras no modeladas
 ├── Factories/
 │   └── {Module}Factory.php
 ├── Seeders/
@@ -79,6 +82,8 @@ Cuando un módulo tiene **varias áreas independientes** que ameritan su propio 
 app/<Module>/<Submodule>/
 ├── Controllers/
 │   └── <Submodule>Controller.php
+├── Services/                         ← lógica de negocio compartida de la feature
+│   └── <Submodule>Service.php
 └── Requests/                          ← solo si hay validaciones específicas
     └── <Submodule>Request.php
 ```
@@ -105,8 +110,10 @@ app/<Module>/Modules/<Feature>/
 ├── Concerns/        ← traits / helpers locales (ej. HasPasswordConfirmation.php)
 ├── Controllers/     ← controladores específicos de la feature
 ├── Listeners/       ← listeners de Fortify / eventos del dominio scoped a la feature
+├── Data/            ← filtros y estructuras tipadas que no representan modelos
 ├── Requests/        ← FormRequests de la feature
-└── Resources/       ← Eloquent API Resources de los modelos de la feature
+├── Resources/       ← Eloquent API Resources de los modelos de la feature
+└── Services/        ← lógica de negocio compartida de la feature
 ```
 
 **Lo que se queda en el módulo padre** (nunca se duplica dentro del submodule):
@@ -114,7 +121,7 @@ app/<Module>/Modules/<Feature>/
 - `Providers/` — el `<Module>ServiceProvider` y `<Module>RouteServiceProvider` ya cubren la feature.
 - `Models/` — el modelo Eloquent vive en el padre para que las relaciones (`User::trustedDevices()`) queden junto al resto del dominio.
 - `routes/` — se registran a través del `AuthRouteServiceProvider` central con un archivo por concern (ej. `routes/trustedDevice.php`).
-- `Database/Migrations/` y `Database/Factories/` — registrados vía `<Module>ServiceProvider::loadMigrationsFrom`.
+- `Database/Migrations/`, `Database/Factories/` y `Database/Seeders/` — migraciones y factories se registran vía `<Module>ServiceProvider::loadMigrationsFrom`; los seeders se invocan desde `DatabaseSeeder`.
 - `config/` — la configuración del módulo vive en el padre.
 
 **Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantener la feature dentro del concern correspondiente (`app/Auth/Login/`, `app/Auth/Password/`, etc.).
@@ -127,6 +134,7 @@ app/<Module>/Modules/<Feature>/
 | **Model**                  | Entidad del dominio + relaciones Eloquent                          |
 | **Request**                | Valida input del usuario (FormRequest con FluentRule)              |
 | **Resource**               | Transforma un modelo al JSON que verá el cliente                   |
+| **Data**                   | Representa y normaliza input, filtros o estructuras no modeladas   |
 | **Factory**                | Genera instancias falsas para tests/seeders                        |
 | **Seeder**                 | Puebla la BD con datos iniciales                                   |
 | **Policy**                 | Reglas de autorización (quién puede hacer qué)                     |
@@ -136,6 +144,24 @@ app/<Module>/Modules/<Feature>/
 | **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                   |
 
 > 💡 Si una acción no cabe en un controller (muchos casos, reglas complejas, transacciones múltiples) → crea un **Service**. Si una autorización es reutilizable → crea una **Policy**.
+
+### Data y Resources
+
+- Usa `spatie/laravel-data` para filtros, input y estructuras internas tipadas que no representan un modelo Eloquent.
+- Usa `JsonResource` para serializar modelos Eloquent hacia Inertia o APIs.
+- No dupliques en un `Data` la transformación de un modelo que ya pertenece a un `Resource`.
+
+### Organización de pruebas
+
+Las pruebas de un submódulo se agrupan por responsabilidad dentro de `Tests/`:
+
+- `Crud/` para crear, actualizar y eliminar recursos.
+- `Lifecycle/` para renovaciones, reactivaciones y otros cambios de ciclo de vida.
+- `Listeners/` para comportamiento disparado por listeners.
+- `Queries/` para índices, listados y filtros.
+- `Seeders/` para datos iniciales.
+
+Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
 
 ## 5. Cómo crear un módulo nuevo
 

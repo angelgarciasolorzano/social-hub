@@ -98,11 +98,19 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
 
+=== rector/core rules ===
+
+# Rector
+
+- Los agentes de IA DEBEN ejecutar `composer rector-dry` y después `composer rector` en toda tarea que modifique archivos PHP, aunque el cambio no sea un refactor grande.
+- `composer rector` es un gate obligatorio y debe aplicarse automáticamente después de revisar el resultado de `composer rector-dry`; no requiere aprobación adicional del usuario.
+
 === deployments rules ===
 
 # Deployment
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
 
 === tests rules ===
 

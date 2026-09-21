@@ -18,7 +18,6 @@ use Override;
 
 /**
  * @property int $id
- * @property int|null $trusted_device_id
  * @property int|null $user_id
  * @property TrustedDeviceAction $action
  * @property string|null $device_label
@@ -32,7 +31,6 @@ use Override;
  */
 #[UseFactory(TrustedDeviceEventFactory::class)]
 #[Fillable([
-    'trusted_device_id',
     'user_id',
     'action',
     'device_label',
@@ -67,36 +65,23 @@ class TrustedDeviceEvent extends Model
     /**
      * Record a trusted device event. Centralised so every hook
      * (controller actions, listeners) writes through a single factory.
-     *
-     * @param  TrustedDevice|null  $trustedDevice  null for global events (e.g. 2FA disabled).
      */
     public static function record(
-        ?TrustedDevice $trustedDevice,
+        TrustedDevice $trustedDevice,
         User $user,
         TrustedDeviceAction $trustedDeviceAction,
         Request $request,
     ): self {
         return self::query()
             ->create([
-                'trusted_device_id' => $trustedDevice?->getKey(),
                 'user_id' => $user->getKey(),
                 'action' => $trustedDeviceAction,
-                'device_label' => $trustedDevice?->name,
-                'device_is_mobile' => $trustedDevice?->is_mobile,
-                'device_os_name' => $trustedDevice?->os_name,
+                'device_label' => $trustedDevice->name,
+                'device_is_mobile' => $trustedDevice->is_mobile,
+                'device_os_name' => $trustedDevice->os_name,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
-    }
-
-    /**
-     * Get the trusted device this event refers to, when applicable.
-     *
-     * @return BelongsTo<TrustedDevice, $this>
-     */
-    public function device(): BelongsTo
-    {
-        return $this->belongsTo(TrustedDevice::class, 'trusted_device_id');
     }
 
     /**

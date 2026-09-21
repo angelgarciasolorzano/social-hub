@@ -24,7 +24,6 @@ it('renames the device and records a Renamed event', function (): void {
 
     expect($trustedDevice->refresh()->name)->toBe('New name')
         ->and(TrustedDeviceEvent::query()
-            ->where('trusted_device_id', $trustedDevice->id)
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::Renamed)
             ->exists())

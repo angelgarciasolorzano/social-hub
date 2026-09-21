@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Auth\Database\Factories;
 
-use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\User\Models\User;
@@ -25,7 +24,6 @@ class TrustedDeviceEventFactory extends Factory
     public function definition(): array
     {
         return [
-            'trusted_device_id' => TrustedDevice::factory(),
             'user_id' => User::factory(),
             'action' => fake()->randomElement(TrustedDeviceAction::cases()),
             'device_label' => fake()->words(2, true),

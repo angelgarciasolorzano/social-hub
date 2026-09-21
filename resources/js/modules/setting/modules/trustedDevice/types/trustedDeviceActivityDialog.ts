@@ -16,7 +16,6 @@ export interface TrustedDeviceActivityEvent {
   id: number;
   action: TrustedDeviceAction;
   actionLabel: string;
-  deviceId: number | null;
   deviceLabel: string | null;
   deviceIsMobile: boolean | null;
   deviceOsName: string | null;

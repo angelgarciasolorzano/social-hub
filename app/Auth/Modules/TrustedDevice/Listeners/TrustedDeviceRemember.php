@@ -9,8 +9,8 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\User\Models\User;
-use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Laravel\Fortify\Events\ValidTwoFactorAuthenticationCodeProvided;
@@ -19,6 +19,8 @@ final readonly class TrustedDeviceRemember
 {
     use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
+
+    public function __construct(private TrustedDeviceService $trustedDeviceService) {}
 
     public function handle(ValidTwoFactorAuthenticationCodeProvided $validTwoFactorAuthenticationCodeProvided): void
     {
@@ -41,30 +43,22 @@ final readonly class TrustedDeviceRemember
         $userAgent = $request->userAgent();
         $ip = $request->ip();
 
-        /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
-
-        $newDevice = $user->trustedDevices()->create([
-            'name' => $this->inferDeviceName($deviceDetector),
-            'token_hash' => $token['hash'],
-            'user_agent' => $userAgent,
-            'browser' => $this->inferBrowserName($deviceDetector),
-            'browser_version' => $this->inferBrowserVersion($deviceDetector),
-            'os_name' => $osInfo['name'],
-            'os_version' => $osInfo['version'],
-            'is_mobile' => $this->inferIsMobile($deviceDetector),
-            'ip' => $ip,
-            'last_used_at' => CarbonImmutable::now(),
-            'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
-        ]);
+        $trustedDevice = $this->trustedDeviceService->create(
+            user: $user,
+            deviceDetector: $deviceDetector,
+            tokenHash: $token['hash'],
+            name: null,
+            userAgent: $userAgent,
+            ip: $ip,
+        );
 
         if ($userAgent !== null) {
-            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $newDevice->id);
+            TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $trustedDevice->id);
         }
 
         $this->queueTrustedDeviceCookie($token['token']);
 
-        $this->recordEvent($user, $newDevice, $request);
+        $this->recordEvent($user, $trustedDevice, $request);
     }
 
     private function recordEvent(User $user, TrustedDevice $trustedDevice, Request $request): void

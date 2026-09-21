@@ -31,7 +31,6 @@ it('soft deletes the device and records a Revoked event', function (): void {
     expect(TrustedDevice::withTrashed()->find($trustedDevice->id)?->deleted_at)->not->toBeNull()
         ->and(TrustedDevice::query()->whereKey($trustedDevice->id)->exists())->toBeFalse()
         ->and(TrustedDeviceEvent::query()
-            ->where('trusted_device_id', $trustedDevice->id)
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::Revoked)
             ->exists())

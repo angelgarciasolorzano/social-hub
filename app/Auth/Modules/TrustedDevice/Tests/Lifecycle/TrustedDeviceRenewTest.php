@@ -30,7 +30,6 @@ it('extends the expiration and records a Renewed event', function (): void {
         ->toBeGreaterThan(Date::now()->addMinutes($cookieLifetimeMinutes - 1))
         ->and($trustedDevice->isActive())->toBeTrue()
         ->and(TrustedDeviceEvent::query()
-            ->where('trusted_device_id', $trustedDevice->id)
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::Renewed)
             ->exists())

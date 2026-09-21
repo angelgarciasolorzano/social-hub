@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -85,16 +84,6 @@ class TrustedDevice extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get all events recorded against this device.
-     *
-     * @return HasMany<TrustedDeviceEvent, $this>
-     */
-    public function events(): HasMany
-    {
-        return $this->hasMany(TrustedDeviceEvent::class);
     }
 
     /**
