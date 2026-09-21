@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Data;
 
+use App\Auth\Modules\TrustedDevice\Concerns\ParsesMultiFilters;
 use Illuminate\Http\Request;
 use Spatie\LaravelData\Data;
 
 final class TrustedDeviceFiltersData extends Data
 {
+    use ParsesMultiFilters;
+
     private const array ALLOWED_STATUS = ['active', 'inactive', 'revoked'];
 
     private const array ALLOWED_BROWSERS = ['chrome', 'firefox', 'safari', 'edge', 'otro'];
@@ -67,28 +70,5 @@ final class TrustedDeviceFiltersData extends Data
                 : 'most-recent',
             perPage: \in_array($perPage, self::ALLOWED_PER_PAGE, true) ? $perPage : 15,
         );
-    }
-
-    /**
-     * Parse a comma-separated value against a whitelist.
-     *
-     * @template T of string
-     *
-     * @param  list<T>  $whitelist
-     * @return list<T>|null
-     */
-    private static function parseMultiFilter(string $raw, array $whitelist): ?array
-    {
-        $candidates = array_filter(
-            array_map(trim(...), explode(',', $raw)),
-            static fn (string $candidate): bool => $candidate !== '',
-        );
-
-        $valid = array_values(array_filter(
-            $candidates,
-            static fn (string $candidate): bool => \in_array($candidate, $whitelist, true),
-        ));
-
-        return $valid === [] ? null : $valid;
     }
 }
