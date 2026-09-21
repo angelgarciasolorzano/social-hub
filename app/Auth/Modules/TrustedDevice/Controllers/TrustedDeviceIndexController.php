@@ -6,6 +6,7 @@ namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceActivityFiltersData;
 use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceFiltersData;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
@@ -160,50 +161,33 @@ final class TrustedDeviceIndexController extends Controller
 
         abort_unless($user instanceof User, 401);
 
-        $allowedActions = array_map(
-            static fn (TrustedDeviceAction $trustedDeviceAction): string => $trustedDeviceAction->value,
-            TrustedDeviceAction::cases(),
-        );
-
-        $allowedSinceDays = ['7', '30', '90', '180', '365'];
-
-        $actions = $this->parseMultiFilter(
-            $request->string('action')->toString(),
-            $allowedActions,
-        );
-
-        $sinceDays = $this->parseMultiFilter(
-            $request->string('since_days')->toString(),
-            $allowedSinceDays,
-        );
-
-        $search = $request->string('search')->toString();
+        $activityFiltersData = TrustedDeviceActivityFiltersData::fromRequest($request);
 
         $paginator = $user->trustedDeviceEvents()
             ->latest('created_at')
             ->orderByDesc('id')
-            ->when($actions !== null, function (Builder $builder) use ($actions): void {
-                $builder->whereIn('action', $actions);
+            ->when($activityFiltersData->action !== null, function (Builder $builder) use ($activityFiltersData): void {
+                $builder->whereIn('action', $activityFiltersData->action);
             })
-            ->when($sinceDays !== null, function (Builder $builder) use ($sinceDays): void {
-                if ($sinceDays === null) {
+            ->when($activityFiltersData->sinceDays !== null, function (Builder $builder) use ($activityFiltersData): void {
+                if ($activityFiltersData->sinceDays === null) {
                     return;
                 }
 
                 $now = CarbonImmutable::now();
 
-                $builder->where(function (Builder $builder) use ($sinceDays, $now): void {
-                    foreach ($sinceDays as $sinceDay) {
+                $builder->where(function (Builder $builder) use ($activityFiltersData, $now): void {
+                    foreach ($activityFiltersData->sinceDays as $sinceDay) {
                         $builder->orWhere('created_at', '>=', $now->subDays((int) $sinceDay));
                     }
                 });
             })
-            ->when($search !== '', function (Builder $builder) use ($search): void {
-                $builder->where(function (Builder $builder) use ($search): void {
+            ->when($activityFiltersData->search !== '', function (Builder $builder) use ($activityFiltersData): void {
+                $builder->where(function (Builder $builder) use ($activityFiltersData): void {
                     $builder
-                        ->where('device_label', 'like', "%{$search}%")
-                        ->orWhere('ip', 'like', "%{$search}%")
-                        ->orWhere('device_os_name', 'like', "%{$search}%");
+                        ->where('device_label', 'like', "%{$activityFiltersData->search}%")
+                        ->orWhere('ip', 'like', "%{$activityFiltersData->search}%")
+                        ->orWhere('device_os_name', 'like', "%{$activityFiltersData->search}%");
                 });
             })
             ->paginate(5)
@@ -220,36 +204,8 @@ final class TrustedDeviceIndexController extends Controller
 
         return [
             'activityLog' => $paginator,
-            'activityFilters' => [
-                'action' => $actions,
-                'sinceDays' => $sinceDays,
-                'search' => $search,
-            ],
+            'activityFilters' => $activityFiltersData->toArray(),
         ];
-    }
-
-    /**
-     * Parse a comma-separated query string value against a whitelist.
-     * Returns null when no values match (no filter applied).
-     *
-     * @template T of string
-     *
-     * @param  list<T>  $whitelist
-     * @return list<T>|null
-     */
-    private function parseMultiFilter(string $raw, array $whitelist): ?array
-    {
-        $candidates = array_filter(
-            array_map(trim(...), explode(',', $raw)),
-            static fn (string $candidate): bool => $candidate !== '',
-        );
-
-        $valid = array_values(array_filter(
-            $candidates,
-            static fn (string $candidate): bool => \in_array($candidate, $whitelist, true),
-        ));
-
-        return $valid === [] ? null : $valid;
     }
 
     /**
