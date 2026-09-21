@@ -4,6 +4,9 @@ import { router } from "@inertiajs/react";
 
 import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search, X } from "lucide-react";
 
+import TrustedDeviceActiveFilterChips, {
+  type TrustedDeviceActiveFilterChipsProps,
+} from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips";
 import {
   browserOptions,
   deviceTypeOptions,
@@ -21,7 +24,6 @@ import {
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceSort";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
-import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Combobox,
@@ -48,16 +50,13 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
 
-interface TrustedDeviceTableToolbarProps {
+interface TrustedDeviceTableToolbarProps extends Omit<
+  TrustedDeviceActiveFilterChipsProps,
+  "filters"
+> {
   committedFilters: TrustedDeviceFilters;
   filters: TrustedDeviceFilters;
-  onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: TrustedDeviceStatusFilter[] | null) => void;
-  onBrowserFilterChange: (value: TrustedDeviceBrowserFilter[] | null) => void;
-  onDeviceTypeFilterChange: (value: TrustedDeviceDeviceTypeFilter | null) => void;
-  onLastAccessFilterChange: (value: TrustedDeviceLastAccessFilter[] | null) => void;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
-  onResetFilters: () => void;
 }
 
 function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.Element {
@@ -72,52 +71,6 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
     onSortOrderChange,
     onResetFilters,
   } = props;
-
-  const activeFilterChips: readonly TrustedDeviceActiveFilterChip[] = [
-    ...(committedFilters.search === ""
-      ? []
-      : [
-          {
-            key: "search",
-            label: `Búsqueda: ${committedFilters.search}`,
-            onRemove: () => {
-              onSearchChange("");
-            },
-          },
-        ]),
-    ...(committedFilters.status ?? []).map((status) => ({
-      key: `status-${status}`,
-      label: `Estado: ${findFilterOptionLabel(status, statusOptions)}`,
-      onRemove: () => {
-        onStatusFilterChange(removeFilterValue(committedFilters.status, status));
-      },
-    })),
-    ...(committedFilters.browser ?? []).map((browser) => ({
-      key: `browser-${browser}`,
-      label: `Navegador / SO: ${findFilterOptionLabel(browser, browserOptions)}`,
-      onRemove: () => {
-        onBrowserFilterChange(removeFilterValue(committedFilters.browser, browser));
-      },
-    })),
-    ...(committedFilters.deviceType === null
-      ? []
-      : [
-          {
-            key: "device-type",
-            label: `Tipo: ${findFilterOptionLabel(committedFilters.deviceType, deviceTypeOptions)}`,
-            onRemove: () => {
-              onDeviceTypeFilterChange(null);
-            },
-          },
-        ]),
-    ...(committedFilters.lastAccess ?? []).map((lastAccess) => ({
-      key: `last-access-${lastAccess}`,
-      label: `Último acceso: ${findFilterOptionLabel(lastAccess, lastAccessOptions)}`,
-      onRemove: () => {
-        onLastAccessFilterChange(removeFilterValue(committedFilters.lastAccess, lastAccess));
-      },
-    })),
-  ];
 
   return (
     <div className="flex flex-col gap-3">
@@ -182,74 +135,17 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
         </div>
       </div>
 
-      {activeFilterChips.length > 0 && (
-        <div
-          aria-label="Filtros activos"
-          className="flex flex-wrap items-center gap-2"
-          role="group"
-        >
-          <span className="text-sm text-muted-foreground">Filtros activos:</span>
-
-          {activeFilterChips.map((filterChip) => (
-            <TrustedDeviceActiveFilterChip
-              key={filterChip.key}
-              label={filterChip.label}
-              onRemove={filterChip.onRemove}
-            />
-          ))}
-
-          <Button type="button" variant="ghost" size="sm" onClick={onResetFilters}>
-            Limpiar filtros
-          </Button>
-        </div>
-      )}
+      <TrustedDeviceActiveFilterChips
+        filters={committedFilters}
+        onBrowserFilterChange={onBrowserFilterChange}
+        onDeviceTypeFilterChange={onDeviceTypeFilterChange}
+        onLastAccessFilterChange={onLastAccessFilterChange}
+        onResetFilters={onResetFilters}
+        onSearchChange={onSearchChange}
+        onStatusFilterChange={onStatusFilterChange}
+      />
     </div>
   );
-}
-
-interface TrustedDeviceActiveFilterChip {
-  key: string;
-  label: string;
-  onRemove: () => void;
-}
-
-interface TrustedDeviceActiveFilterChipProps {
-  label: string;
-  onRemove: () => void;
-}
-
-function TrustedDeviceActiveFilterChip({
-  label,
-  onRemove,
-}: TrustedDeviceActiveFilterChipProps): JSX.Element {
-  return (
-    <Badge className="gap-1.5 pr-1" variant="secondary">
-      <span>{label}</span>
-      <Button
-        aria-label={`Quitar filtro: ${label}`}
-        className="-mr-0.5"
-        onClick={onRemove}
-        size="icon-xs"
-        type="button"
-        variant="ghost"
-      >
-        <X data-icon="inline-start" />
-      </Button>
-    </Badge>
-  );
-}
-
-function findFilterOptionLabel(value: string, options: readonly FilterOption[]): string {
-  return options.find((option) => option.value === value)?.label ?? value;
-}
-
-function removeFilterValue<TValue>(
-  values: readonly TValue[] | null,
-  valueToRemove: TValue,
-): TValue[] | null {
-  const remainingValues = (values ?? []).filter((value) => value !== valueToRemove);
-
-  return remainingValues.length > 0 ? remainingValues : null;
 }
 
 type TrustedDeviceFiltersPopoverProps = Omit<
