@@ -3,6 +3,7 @@ import { Fragment } from "react";
 
 import { usePage } from "@inertiajs/react";
 
+import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { MonitorSmartphone, MoreHorizontalIcon, SearchX } from "lucide-react";
 
 import {
@@ -61,6 +62,41 @@ import type { SharedData } from "@/shared/types";
 type TrustedDeviceRowDialogActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
+const trustedDeviceTableFeatures = tableFeatures({});
+
+const trustedDeviceColumnHelper = createColumnHelper<
+  typeof trustedDeviceTableFeatures,
+  TrustedDevice
+>();
+
+const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
+  trustedDeviceColumnHelper.display({
+    id: "device",
+    header: "Dispositivo",
+    cell: ({ row }) => <TrustedDeviceDeviceCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: "lastAccess",
+    header: "Ultimo Acceso",
+    cell: ({ row }) => fromNow(row.original.lastUsedAt),
+  }),
+  trustedDeviceColumnHelper.display({
+    id: "browserAndOs",
+    header: "Navegador / SO",
+    cell: ({ row }) => deviceBrowserAndOs(row.original),
+  }),
+  trustedDeviceColumnHelper.display({
+    id: "status",
+    header: "Estado",
+    cell: ({ row }) => <TrustedDeviceStatusCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: "actions",
+    header: "Acciones",
+    cell: ({ row }) => <TrustedDeviceRowActions device={row.original} />,
+  }),
+]);
+
 interface RowDialogActionState extends DialogClosingState {
   device: TrustedDevice;
   kind: TrustedDeviceRowDialogActionKey;
@@ -73,23 +109,20 @@ interface TrustedDeviceTableProps {
   pagination: TrustedDevicePaginationData;
 }
 
-interface TrustedDeviceTableColumn {
-  label: "Dispositivo" | "Ultimo Acceso" | "Navegador / SO" | "Estado" | "Acciones";
-}
-
 function TrustedDeviceTable({
   devices,
   hasActiveFilters,
   onPerPageChange,
   pagination,
 }: TrustedDeviceTableProps): JSX.Element {
-  const trustedDeviceTableColumns: readonly TrustedDeviceTableColumn[] = [
-    { label: "Dispositivo" },
-    { label: "Ultimo Acceso" },
-    { label: "Navegador / SO" },
-    { label: "Estado" },
-    { label: "Acciones" },
-  ];
+  const table = useTable({
+    columns: trustedDeviceTableColumns,
+    data: devices,
+    features: trustedDeviceTableFeatures,
+    getRowId: (device) => String(device.id),
+  });
+
+  const tableRows = table.getRowModel().rows;
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,17 +130,24 @@ function TrustedDeviceTable({
         <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:rounded-md [&>div]:border">
           <Table>
             <TableHeader>
-              <TableRow className="sticky top-0 bg-muted/70 dark:bg-muted/40">
-                {trustedDeviceTableColumns.map((column) => (
-                  <TableHead key={column.label}>{column.label}</TableHead>
-                ))}
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow
+                  className="sticky top-0 bg-muted/70 dark:bg-muted/40"
+                  key={headerGroup.id}
+                >
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
             </TableHeader>
 
             <TableBody>
-              {devices.length === 0 ? (
+              {tableRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-0">
+                  <TableCell colSpan={trustedDeviceTableColumns.length} className="p-0">
                     <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
                       {hasActiveFilters ? (
                         <EmptyState
@@ -125,7 +165,21 @@ function TrustedDeviceTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                devices.map((device) => <TrustedDeviceRow device={device} key={device.id} />)
+                tableRows.map((row) => (
+                  <TableRow
+                    className={cn(row.original.deletedAt !== null && "opacity-75")}
+                    key={row.id}
+                  >
+                    {row.getAllCells().map((cell) => (
+                      <TableCell
+                        className={getTrustedDeviceTableCellClassName(cell.column.id)}
+                        key={cell.id}
+                      >
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
@@ -137,17 +191,65 @@ function TrustedDeviceTable({
   );
 }
 
-interface TrustedDeviceRowProps {
+interface TrustedDeviceDeviceCellProps {
   device: TrustedDevice;
 }
 
-function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
-  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePaginationData }>()
-    .props.trustedDevices;
+function TrustedDeviceDeviceCell({ device }: TrustedDeviceDeviceCellProps): JSX.Element {
+  return (
+    <div className="flex items-center gap-2">
+      {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
+      <span className="truncate">{deviceLabel(device)}</span>
+    </div>
+  );
+}
 
+interface TrustedDeviceStatusCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.Element {
   const { appearance } = useAppearance();
 
-  const browserAndOs = deviceBrowserAndOs(device);
+  if (device.deletedAt !== null) {
+    return (
+      <Badge
+        variant={appearance === "light" ? "destructive" : null}
+        className="rounded-md dark:bg-red-700 dark:text-white"
+      >
+        Revocado
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
+      {device.isActive ? "Activo" : "Expirado"}
+    </Badge>
+  );
+}
+
+function getTrustedDeviceTableCellClassName(columnId: string): string | undefined {
+  switch (columnId) {
+    case "device":
+      return "font-medium";
+
+    case "lastAccess":
+    case "browserAndOs":
+      return "text-muted-foreground";
+
+    default:
+      return undefined;
+  }
+}
+
+interface TrustedDeviceRowActionsProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.Element {
+  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePaginationData }>()
+    .props.trustedDevices;
 
   const dialogDevice = useDialog<RowDialogActionState | null>(null);
 
@@ -168,7 +270,9 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
     const isClosing = dialogDevice.state.closing;
 
     const selectedDevice =
-      trustedDevices.data.find((d) => d.id === dialogDevice.state?.device.id) ?? null;
+      trustedDevices.data.find(
+        (trustedDevice) => trustedDevice.id === dialogDevice.state?.device.id,
+      ) ?? null;
 
     if (selectedDevice === null) {
       return null;
@@ -235,92 +339,59 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
   };
 
   return (
-    <TableRow className={cn(device.deletedAt !== null && "opacity-75")}>
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-2">
-          {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
-          <span className="truncate">{deviceLabel(device)}</span>
-        </div>
-      </TableCell>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="ghost" className="size-8">
+            <MoreHorizontalIcon />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
 
-      <TableCell className="text-muted-foreground">{fromNow(device.lastUsedAt)}</TableCell>
+        <DropdownMenuContent align="end" className="w-60">
+          {trustedDeviceRowActions.map((group, groupIndex) => (
+            <Fragment key={groupIndex}>
+              <DropdownMenuGroup>
+                {group.label !== undefined && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
 
-      <TableCell className="text-muted-foreground">{browserAndOs}</TableCell>
+                {group.actions.map((action) => {
+                  const Icon = action.icon;
+                  const enabled = action.isEnabled(device);
 
-      <TableCell>
-        {device.deletedAt !== null ? (
-          <Badge
-            variant={appearance === "light" ? "destructive" : null}
-            className="rounded-md dark:bg-red-700 dark:text-white"
-          >
-            Revocado
-          </Badge>
-        ) : (
-          <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
-            {device.isActive ? "Activo" : "Expirado"}
-          </Badge>
-        )}
-      </TableCell>
+                  return (
+                    <DropdownMenuItem
+                      className={cn(action.className, !enabled && "cursor-not-allowed opacity-50")}
+                      disabled={!enabled}
+                      key={action.key}
+                      onClick={(event) => {
+                        if (!enabled) {
+                          event.preventDefault();
+                          return;
+                        }
 
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="size-8">
-              <MoreHorizontalIcon />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end" className="w-60">
-            {trustedDeviceRowActions.map((group, groupIndex) => (
-              <Fragment key={groupIndex}>
-                <DropdownMenuGroup>
-                  {group.label !== undefined && (
-                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                  )}
-
-                  {group.actions.map((action) => {
-                    const Icon = action.icon;
-                    const enabled = action.isEnabled(device);
-
-                    return (
-                      <DropdownMenuItem
+                        handleDeviceAction(action.key, device);
+                      }}
+                    >
+                      <Icon
                         className={cn(
-                          action.className,
-                          !enabled && "cursor-not-allowed opacity-50",
+                          action.iconClassName ?? "text-muted-foreground",
+                          !enabled && "opacity-70",
                         )}
-                        disabled={!enabled}
-                        key={action.key}
-                        onClick={(event) => {
-                          if (!enabled) {
-                            event.preventDefault();
-                            return;
-                          }
+                      />
+                      {action.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
 
-                          handleDeviceAction(action.key, device);
-                        }}
-                      >
-                        <Icon
-                          className={cn(
-                            action.iconClassName ?? "text-muted-foreground",
-                            !enabled && "opacity-70",
-                          )}
-                        />
-                        {action.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuGroup>
-
-                {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
-              </Fragment>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
+              {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
+            </Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {renderDialogDevice()}
-    </TableRow>
+    </>
   );
 }
 
