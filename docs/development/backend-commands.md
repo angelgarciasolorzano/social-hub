@@ -6,7 +6,7 @@ Referencia de los comandos Composer más usados para mantener consistencia y cal
 
 ## 1. Comandos esenciales (antes de cada commit)
 
-Estos tres son los que mantienen la consistencia del proyecto. **Ejecuta los tres en orden** antes de hacer commit.
+Estos cuatro son los que mantienen la consistencia del proyecto. **Los agentes de IA deben ejecutarlos en orden** antes de finalizar una tarea backend o hacer commit.
 
 ### `composer pint-dirty`
 
@@ -47,7 +47,7 @@ Muestra qué cambios aplicaría Rector **sin tocar archivos**.
 - 👀 Preview de cambios (PHP 8.5 syntax, Laravel-idiomatic patterns)
 - 🛡️ Modo seguro — no modifica nada
 
-**Cuándo:** antes de aplicar refactorizaciones grandes.
+**Cuándo:** después de cualquier modificación PHP. Es obligatorio para agentes de IA, aunque el cambio no sea un refactor grande.
 
 ### `composer rector`
 
@@ -60,7 +60,7 @@ Aplica las transformaciones de Rector.
 - ✏️ Reescribe archivos
 - ⚠️ Revisa el diff antes de commitear (`git diff`)
 
-**Cuándo:** después de confirmar el plan con `rector-dry`.
+**Cuándo:** después de revisar `rector-dry`, siempre como parte del gate obligatorio para tareas que modifiquen PHP.
 
 ## 2. Orden recomendado antes de commit
 
@@ -71,10 +71,11 @@ composer pint-dirty
 # 2. Verificar tipos
 composer phpstan
 
-# 3. Preview de refactorizaciones
+# 3. Preview obligatorio de Rector
 composer rector-dry
-# Si el plan te convence:
+# Aplicar el gate obligatorio:
 composer rector
+# Después de aplicar Rector, revalidar tipos
 composer phpstan   # Rector puede introducir issues de tipos, revalida
 ```
 
@@ -211,8 +212,8 @@ Limpia la caché de resultados de PHPStan.
 | ------------------------------ | ------------------------------ | ------------------------------- |
 | `composer pint-dirty`          | Formatear archivos modificados | Antes de commit                 |
 | `composer phpstan`             | Análisis estático              | Antes de commit                 |
-| `composer rector-dry`          | Preview refactor               | Antes de refactor grande        |
-| `composer rector`              | Aplicar refactor               | Después de confirmar el plan    |
+| `composer rector-dry`          | Preview Rector                 | Después de cualquier cambio PHP |
+| `composer rector`              | Aplicar Rector                 | Después de `rector-dry`         |
 | `composer test`                | Suite completa PHPUnit         | Antes de PR                     |
 | `composer doctor`              | Diagnósticos locales Laravel   | Validar entorno local           |
 | `composer doctor-ci`           | Doctor con anotaciones GitHub  | Gate obligatorio en CI          |
