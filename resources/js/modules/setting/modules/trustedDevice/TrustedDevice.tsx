@@ -553,6 +553,7 @@ function TrustedDevicesTableSection(): JSX.Element {
   return (
     <div className="flex flex-col gap-4">
       <TrustedDeviceTableToolbar
+        committedFilters={committedFilters}
         filters={filters}
         onBrowserFilterChange={(value) => {
           updateFilter("browser", value);
