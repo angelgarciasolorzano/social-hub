@@ -82,6 +82,8 @@ Cuando un módulo tiene **varias áreas independientes** que ameritan su propio 
 app/<Module>/<Submodule>/
 ├── Controllers/
 │   └── <Submodule>Controller.php
+├── Services/                         ← lógica de negocio compartida de la feature
+│   └── <Submodule>Service.php
 └── Requests/                          ← solo si hay validaciones específicas
     └── <Submodule>Request.php
 ```
@@ -110,7 +112,8 @@ app/<Module>/Modules/<Feature>/
 ├── Listeners/       ← listeners de Fortify / eventos del dominio scoped a la feature
 ├── Data/            ← filtros y estructuras tipadas que no representan modelos
 ├── Requests/        ← FormRequests de la feature
-└── Resources/       ← Eloquent API Resources de los modelos de la feature
+├── Resources/       ← Eloquent API Resources de los modelos de la feature
+└── Services/        ← lógica de negocio compartida de la feature
 ```
 
 **Lo que se queda en el módulo padre** (nunca se duplica dentro del submodule):

@@ -15,6 +15,7 @@ use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceReactivateRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -28,6 +29,8 @@ class TrustedDeviceController extends Controller
 {
     use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
+
+    public function __construct(private readonly TrustedDeviceService $trustedDeviceService) {}
 
     /**
      * Hard-delete any active sibling sharing the same fingerprint before a
@@ -148,19 +151,17 @@ class TrustedDeviceController extends Controller
             }
         }
 
-        /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
-
         $token = $this->mintToken();
+        $deviceName = $trustedDeviceStoreRequest->string('name')->toString();
 
         DB::transaction(function () use (
             $user,
             $deviceDetector,
             $osInfo,
             $token,
+            $deviceName,
             $userAgent,
             $ip,
-            $cookieLifetimeMinutes,
             $trustedDeviceStoreRequest,
         ): TrustedDevice {
             if ($userAgent !== null && $ip !== null) {
@@ -177,21 +178,14 @@ class TrustedDeviceController extends Controller
                 }
             }
 
-            $created = $user->trustedDevices()->create([
-                'name' => $trustedDeviceStoreRequest->string('name')->toString() !== ''
-                    ? $trustedDeviceStoreRequest->string('name')->toString()
-                    : $this->inferDeviceName($deviceDetector),
-                'token_hash' => $token['hash'],
-                'user_agent' => $userAgent,
-                'browser' => $this->inferBrowserName($deviceDetector),
-                'browser_version' => $this->inferBrowserVersion($deviceDetector),
-                'os_name' => $osInfo['name'],
-                'os_version' => $osInfo['version'],
-                'is_mobile' => $this->inferIsMobile($deviceDetector),
-                'ip' => $ip,
-                'last_used_at' => CarbonImmutable::now(),
-                'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
-            ]);
+            $created = $this->trustedDeviceService->create(
+                user: $user,
+                deviceDetector: $deviceDetector,
+                tokenHash: $token['hash'],
+                name: $deviceName,
+                userAgent: $userAgent,
+                ip: $ip,
+            );
 
             if ($userAgent !== null) {
                 TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $created->id);
