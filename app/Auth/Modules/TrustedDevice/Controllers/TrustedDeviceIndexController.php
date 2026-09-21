@@ -161,33 +161,33 @@ final class TrustedDeviceIndexController extends Controller
 
         abort_unless($user instanceof User, 401);
 
-        $activityFiltersData = TrustedDeviceActivityFiltersData::fromRequest($request);
+        $trustedDeviceActivityFiltersData = TrustedDeviceActivityFiltersData::fromRequest($request);
 
         $paginator = $user->trustedDeviceEvents()
             ->latest('created_at')
             ->orderByDesc('id')
-            ->when($activityFiltersData->action !== null, function (Builder $builder) use ($activityFiltersData): void {
-                $builder->whereIn('action', $activityFiltersData->action);
+            ->when($trustedDeviceActivityFiltersData->action !== null, function (Builder $builder) use ($trustedDeviceActivityFiltersData): void {
+                $builder->whereIn('action', $trustedDeviceActivityFiltersData->action);
             })
-            ->when($activityFiltersData->sinceDays !== null, function (Builder $builder) use ($activityFiltersData): void {
-                if ($activityFiltersData->sinceDays === null) {
+            ->when($trustedDeviceActivityFiltersData->sinceDays !== null, function (Builder $builder) use ($trustedDeviceActivityFiltersData): void {
+                if ($trustedDeviceActivityFiltersData->sinceDays === null) {
                     return;
                 }
 
                 $now = CarbonImmutable::now();
 
-                $builder->where(function (Builder $builder) use ($activityFiltersData, $now): void {
-                    foreach ($activityFiltersData->sinceDays as $sinceDay) {
+                $builder->where(function (Builder $builder) use ($trustedDeviceActivityFiltersData, $now): void {
+                    foreach ($trustedDeviceActivityFiltersData->sinceDays as $sinceDay) {
                         $builder->orWhere('created_at', '>=', $now->subDays((int) $sinceDay));
                     }
                 });
             })
-            ->when($activityFiltersData->search !== '', function (Builder $builder) use ($activityFiltersData): void {
-                $builder->where(function (Builder $builder) use ($activityFiltersData): void {
+            ->when($trustedDeviceActivityFiltersData->search !== '', function (Builder $builder) use ($trustedDeviceActivityFiltersData): void {
+                $builder->where(function (Builder $builder) use ($trustedDeviceActivityFiltersData): void {
                     $builder
-                        ->where('device_label', 'like', "%{$activityFiltersData->search}%")
-                        ->orWhere('ip', 'like', "%{$activityFiltersData->search}%")
-                        ->orWhere('device_os_name', 'like', "%{$activityFiltersData->search}%");
+                        ->where('device_label', 'like', "%{$trustedDeviceActivityFiltersData->search}%")
+                        ->orWhere('ip', 'like', "%{$trustedDeviceActivityFiltersData->search}%")
+                        ->orWhere('device_os_name', 'like', "%{$trustedDeviceActivityFiltersData->search}%");
                 });
             })
             ->paginate(5)
@@ -204,7 +204,7 @@ final class TrustedDeviceIndexController extends Controller
 
         return [
             'activityLog' => $paginator,
-            'activityFilters' => $activityFiltersData->toArray(),
+            'activityFilters' => $trustedDeviceActivityFiltersData->toArray(),
         ];
     }
 

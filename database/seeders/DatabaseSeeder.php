@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Auth\Seeders\TrustedDeviceSeeder;
 use App\Comment\Seeders\CommentSeeder;
 use App\Post\Seeders\PostSeeder;
 use App\User\Seeders\UserSeeder;
@@ -18,6 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
+            TrustedDeviceSeeder::class,
             PostSeeder::class,
             CommentSeeder::class,
         ]);
