@@ -6,10 +6,10 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 
-it('revokes every trusted device and records one global RevokedAll event when 2FA is disabled', function (): void {
+it('revokes every trusted device and records a RevokedAll event for each when 2FA is disabled', function (): void {
     $user = createUserWithTwoFactor();
-    createTrustedDevice($user);
-    createTrustedDevice($user);
+    createTrustedDevice($user, ['name' => 'MacBook']);
+    createTrustedDevice($user, ['name' => 'iPhone']);
 
     $this->actingAs($user)
         ->delete(route('setting.security.two-factor-authentication.destroy'), [
@@ -23,7 +23,17 @@ it('revokes every trusted device and records one global RevokedAll event when 2F
         ->and(TrustedDeviceEvent::query()
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::RevokedAll)
-            ->count())->toBe(1);
+            ->count())->toBe(2)
+        ->and(TrustedDeviceEvent::query()
+            ->where('user_id', $user->id)
+            ->where('action', TrustedDeviceAction::RevokedAll)
+            ->where('device_label', 'MacBook')
+            ->exists())->toBeTrue()
+        ->and(TrustedDeviceEvent::query()
+            ->where('user_id', $user->id)
+            ->where('action', TrustedDeviceAction::RevokedAll)
+            ->where('device_label', 'iPhone')
+            ->exists())->toBeTrue();
 });
 
 it("does not touch another user's devices", function (): void {

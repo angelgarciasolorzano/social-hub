@@ -65,11 +65,9 @@ class TrustedDeviceEvent extends Model
     /**
      * Record a trusted device event. Centralised so every hook
      * (controller actions, listeners) writes through a single factory.
-     *
-     * @param  TrustedDevice|null  $trustedDevice  null for global events (e.g. 2FA disabled).
      */
     public static function record(
-        ?TrustedDevice $trustedDevice,
+        TrustedDevice $trustedDevice,
         User $user,
         TrustedDeviceAction $trustedDeviceAction,
         Request $request,
@@ -78,9 +76,9 @@ class TrustedDeviceEvent extends Model
             ->create([
                 'user_id' => $user->getKey(),
                 'action' => $trustedDeviceAction,
-                'device_label' => $trustedDevice?->name,
-                'device_is_mobile' => $trustedDevice?->is_mobile,
-                'device_os_name' => $trustedDevice?->os_name,
+                'device_label' => $trustedDevice->name,
+                'device_is_mobile' => $trustedDevice->is_mobile,
+                'device_os_name' => $trustedDevice->os_name,
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
