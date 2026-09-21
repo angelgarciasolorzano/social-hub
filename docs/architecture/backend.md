@@ -15,6 +15,7 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 | Factory                | `{Module}Factory`              | `PostFactory`                           |
 | Request                | `{Module}{Action}Request`      | `PostStoreRequest`, `PostUpdateRequest` |
 | Resource               | `{Module}Resource`             | `PostResource`                          |
+| Data                   | `{Module}{Concept}Data`        | `TrustedDeviceFiltersData`              |
 | Collection             | `{Module}Collection`           | `CommentCollection`                     |
 | Seeder                 | `{Module}Seeder`               | `PostSeeder`                            |
 | Enum                   | `{Module}{Concept}`            | `CommentableType`, `FriendshipStatus`   |
@@ -40,6 +41,8 @@ app/<Module>/
 ├── Resources/
 │   ├── {Module}Resource.php
 │   └── {Module}Collection.php        ← solo si hay listado
+├── Data/
+│   └── {Module}{Concept}Data.php      ← input, filtros y estructuras no modeladas
 ├── Factories/
 │   └── {Module}Factory.php
 ├── Seeders/
@@ -105,6 +108,7 @@ app/<Module>/Modules/<Feature>/
 ├── Concerns/        ← traits / helpers locales (ej. HasPasswordConfirmation.php)
 ├── Controllers/     ← controladores específicos de la feature
 ├── Listeners/       ← listeners de Fortify / eventos del dominio scoped a la feature
+├── Data/            ← filtros y estructuras tipadas que no representan modelos
 ├── Requests/        ← FormRequests de la feature
 └── Resources/       ← Eloquent API Resources de los modelos de la feature
 ```
@@ -127,6 +131,7 @@ app/<Module>/Modules/<Feature>/
 | **Model**                  | Entidad del dominio + relaciones Eloquent                          |
 | **Request**                | Valida input del usuario (FormRequest con FluentRule)              |
 | **Resource**               | Transforma un modelo al JSON que verá el cliente                   |
+| **Data**                   | Representa y normaliza input, filtros o estructuras no modeladas   |
 | **Factory**                | Genera instancias falsas para tests/seeders                        |
 | **Seeder**                 | Puebla la BD con datos iniciales                                   |
 | **Policy**                 | Reglas de autorización (quién puede hacer qué)                     |
@@ -136,6 +141,12 @@ app/<Module>/Modules/<Feature>/
 | **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                   |
 
 > 💡 Si una acción no cabe en un controller (muchos casos, reglas complejas, transacciones múltiples) → crea un **Service**. Si una autorización es reutilizable → crea una **Policy**.
+
+### Data y Resources
+
+- Usa `spatie/laravel-data` para filtros, input y estructuras internas tipadas que no representan un modelo Eloquent.
+- Usa `JsonResource` para serializar modelos Eloquent hacia Inertia o APIs.
+- No dupliques en un `Data` la transformación de un modelo que ya pertenece a un `Resource`.
 
 ## 5. Cómo crear un módulo nuevo
 

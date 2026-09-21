@@ -173,6 +173,12 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
 
+### Data and Resources
+
+- Use `spatie/laravel-data` classes under `app/**/Data/` for typed request filters, input objects, and internal structures that do not represent Eloquent models.
+- Use Laravel `JsonResource` classes under `app/**/Resources/` to serialize Eloquent models for Inertia or API output.
+- Do not duplicate a model transformation in both a Data class and a Resource.
+
 ## Frontend Bundling
 
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
