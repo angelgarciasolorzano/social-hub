@@ -118,7 +118,7 @@ app/<Module>/Modules/<Feature>/
 - `Providers/` — el `<Module>ServiceProvider` y `<Module>RouteServiceProvider` ya cubren la feature.
 - `Models/` — el modelo Eloquent vive en el padre para que las relaciones (`User::trustedDevices()`) queden junto al resto del dominio.
 - `routes/` — se registran a través del `AuthRouteServiceProvider` central con un archivo por concern (ej. `routes/trustedDevice.php`).
-- `Database/Migrations/` y `Database/Factories/` — registrados vía `<Module>ServiceProvider::loadMigrationsFrom`.
+- `Database/Migrations/`, `Database/Factories/` y `Database/Seeders/` — migraciones y factories se registran vía `<Module>ServiceProvider::loadMigrationsFrom`; los seeders se invocan desde `DatabaseSeeder`.
 - `config/` — la configuración del módulo vive en el padre.
 
 **Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantener la feature dentro del concern correspondiente (`app/Auth/Login/`, `app/Auth/Password/`, etc.).
@@ -147,6 +147,18 @@ app/<Module>/Modules/<Feature>/
 - Usa `spatie/laravel-data` para filtros, input y estructuras internas tipadas que no representan un modelo Eloquent.
 - Usa `JsonResource` para serializar modelos Eloquent hacia Inertia o APIs.
 - No dupliques en un `Data` la transformación de un modelo que ya pertenece a un `Resource`.
+
+### Organización de pruebas
+
+Las pruebas de un submódulo se agrupan por responsabilidad dentro de `Tests/`:
+
+- `Crud/` para crear, actualizar y eliminar recursos.
+- `Lifecycle/` para renovaciones, reactivaciones y otros cambios de ciclo de vida.
+- `Listeners/` para comportamiento disparado por listeners.
+- `Queries/` para índices, listados y filtros.
+- `Seeders/` para datos iniciales.
+
+Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
 
 ## 5. Cómo crear un módulo nuevo
 

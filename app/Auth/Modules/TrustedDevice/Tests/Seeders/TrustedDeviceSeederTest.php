@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Auth\Database\Seeders\TrustedDeviceSeeder;
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
-use App\Auth\Seeders\TrustedDeviceSeeder;
 
 it('seeds trusted devices and creation events for every user', function (): void {
     $user = createUser();

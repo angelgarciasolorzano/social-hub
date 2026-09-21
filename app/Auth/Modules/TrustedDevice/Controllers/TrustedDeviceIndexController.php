@@ -10,6 +10,7 @@ use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceActivityFiltersData;
 use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceFiltersData;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
+use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceEventResource;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
@@ -121,14 +122,8 @@ final class TrustedDeviceIndexController extends Controller
                 ->latest('created_at')
                 ->limit(3)
                 ->get()
-                ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
-                    'id' => $trustedDeviceEvent->id,
-                    'action' => $trustedDeviceEvent->action->value,
-                    'actionLabel' => $trustedDeviceEvent->action->label(),
-                    'deviceLabel' => $trustedDeviceEvent->device_label,
-                    'ip' => $trustedDeviceEvent->ip,
-                    'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
-                ])
+                ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => new TrustedDeviceEventResource($trustedDeviceEvent)
+                    ->resolve($request))
                 ->all(), rescue: true),
             'activityDialog' => Inertia::optional(fn (): array => $this->buildActivity($request)),
         ];
@@ -191,16 +186,8 @@ final class TrustedDeviceIndexController extends Controller
                 });
             })
             ->paginate(5)
-            ->through(fn (TrustedDeviceEvent $trustedDeviceEvent): array => [
-                'id' => $trustedDeviceEvent->id,
-                'action' => $trustedDeviceEvent->action->value,
-                'actionLabel' => $trustedDeviceEvent->action->label(),
-                'deviceLabel' => $trustedDeviceEvent->device_label,
-                'deviceIsMobile' => $trustedDeviceEvent->device_is_mobile,
-                'deviceOsName' => $trustedDeviceEvent->device_os_name,
-                'ip' => $trustedDeviceEvent->ip,
-                'createdAt' => $trustedDeviceEvent->created_at?->toIso8601String(),
-            ]);
+            ->through(fn (TrustedDeviceEvent $trustedDeviceEvent): array => new TrustedDeviceEventResource($trustedDeviceEvent)
+                ->toArray($request));
 
         return [
             'activityLog' => $paginator,

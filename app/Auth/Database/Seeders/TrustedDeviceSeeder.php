@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Seeders;
+namespace App\Auth\Database\Seeders;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
