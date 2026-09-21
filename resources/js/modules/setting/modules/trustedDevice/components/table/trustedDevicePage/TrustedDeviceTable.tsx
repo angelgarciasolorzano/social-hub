@@ -3,7 +3,14 @@ import { Fragment } from "react";
 
 import { usePage } from "@inertiajs/react";
 
-import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import {
+  columnFilteringFeature,
+  createColumnHelper,
+  rowPaginationFeature,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import { MonitorSmartphone, MoreHorizontalIcon, SearchX } from "lucide-react";
 
 import {
@@ -62,7 +69,11 @@ import type { SharedData } from "@/shared/types";
 type TrustedDeviceRowDialogActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
-const trustedDeviceTableFeatures = tableFeatures({});
+const trustedDeviceTableFeatures = tableFeatures({
+  columnFilteringFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+});
 
 const trustedDeviceColumnHelper = createColumnHelper<
   typeof trustedDeviceTableFeatures,
@@ -120,6 +131,17 @@ function TrustedDeviceTable({
     data: devices,
     features: trustedDeviceTableFeatures,
     getRowId: (device) => String(device.id),
+    key: "trusted-devices",
+    manualFiltering: true,
+    manualPagination: true,
+    manualSorting: true,
+    rowCount: pagination.total,
+    state: {
+      pagination: {
+        pageIndex: pagination.current_page - 1,
+        pageSize: pagination.per_page,
+      },
+    },
   });
 
   const tableRows = table.getRowModel().rows;
