@@ -1,6 +1,8 @@
 import { createInertiaApp } from "@inertiajs/react";
 
 import { configureEcho } from "@laravel/echo-react";
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { tableDevtoolsPlugin } from "@tanstack/react-table-devtools";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -58,6 +60,7 @@ void createInertiaApp({
       <TooltipProvider>
         {app}
         <FlashToaster />
+        <TanStackDevtools plugins={[tableDevtoolsPlugin()]} />
       </TooltipProvider>
     );
   },

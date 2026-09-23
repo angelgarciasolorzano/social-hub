@@ -11,6 +11,7 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
+import { useTanStackTableDevtools } from "@tanstack/react-table-devtools";
 import { MonitorSmartphone, MoreHorizontalIcon, SearchX } from "lucide-react";
 
 import {
@@ -143,6 +144,8 @@ function TrustedDeviceTable({
       },
     },
   });
+
+  useTanStackTableDevtools(table);
 
   const tableRows = table.getRowModel().rows;
 
