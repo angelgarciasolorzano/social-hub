@@ -35,6 +35,7 @@ import { trustedDeviceColumnVisibilityOptions } from "@/modules/setting/modules/
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
+import { Checkbox } from "@/shared/components/shadcn/ui/checkbox";
 import {
   Combobox,
   ComboboxChip,
@@ -49,14 +50,12 @@ import {
   useComboboxAnchor,
 } from "@/shared/components/shadcn/ui/combobox";
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/components/shadcn/ui/dropdown-menu";
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/shared/components/shadcn/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -186,44 +185,61 @@ function TrustedDeviceColumnVisibilityMenu({
   onColumnVisibilityChange,
 }: TrustedDeviceColumnVisibilityMenuProps): JSX.Element {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <Button type="button" variant="outline">
           <Columns3 />
           Columnas
         </Button>
-      </DropdownMenuTrigger>
+      </PopoverTrigger>
 
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Columnas visibles</DropdownMenuLabel>
-        <DropdownMenuSeparator />
+      <PopoverContent align="end" className="w-60 p-3">
+        <FieldSet className="gap-2">
+          <FieldLegend className="mb-0" variant="label">
+            Columnas visibles
+          </FieldLegend>
 
-        {trustedDeviceColumnVisibilityOptions.map((columnOption) => (
-          <DropdownMenuCheckboxItem
-            checked={columnVisibility[columnOption.id] !== false}
-            key={columnOption.id}
-            onCheckedChange={(checked) => {
-              onColumnVisibilityChange((currentColumnVisibility) => ({
-                ...currentColumnVisibility,
-                [columnOption.id]: checked,
-              }));
-            }}
-          >
-            {columnOption.label}
-          </DropdownMenuCheckboxItem>
-        ))}
+          <FieldGroup className="mt-4 gap-2.5">
+            {trustedDeviceColumnVisibilityOptions.map((columnOption) => {
+              const checkboxId = `trusted-device-column-${columnOption.id}`;
 
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => {
+              return (
+                <Field className="gap-2" key={columnOption.id} orientation="horizontal">
+                  <Checkbox
+                    checked={columnVisibility[columnOption.id] !== false}
+                    id={checkboxId}
+                    onCheckedChange={(checked) => {
+                      onColumnVisibilityChange((currentColumnVisibility) => ({
+                        ...currentColumnVisibility,
+                        [columnOption.id]: checked === true,
+                      }));
+                    }}
+                  />
+                  <FieldLabel className="cursor-pointer font-normal" htmlFor={checkboxId}>
+                    {columnOption.label}
+                  </FieldLabel>
+                </Field>
+              );
+            })}
+          </FieldGroup>
+        </FieldSet>
+
+        <Separator className="my-3" />
+
+        <Button
+          className="w-full justify-start"
+          onClick={() => {
             onColumnVisibilityChange({});
           }}
+          size="sm"
+          type="button"
+          variant="ghost"
         >
           <RotateCcw data-icon="inline-start" />
           Restablecer columnas
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </Button>
+      </PopoverContent>
+    </Popover>
   );
 }
 
