@@ -1,8 +1,9 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 
 import { Deferred, Head, router, usePage } from "@inertiajs/react";
 
+import type { ColumnVisibilityState } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
@@ -540,6 +541,8 @@ function TrustedDevicesInfoBanner() {
 function TrustedDevicesTableSection(): JSX.Element {
   const { filters: initialFilters, trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+
   const { committedFilters, filters, resetFilters, updateFilter } =
     useTrustedDeviceFilters(initialFilters);
 
@@ -555,6 +558,8 @@ function TrustedDevicesTableSection(): JSX.Element {
       <TrustedDeviceTableToolbar
         committedFilters={committedFilters}
         filters={filters}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
         onBrowserFilterChange={(value) => {
           updateFilter("browser", value);
         }}
@@ -579,6 +584,8 @@ function TrustedDevicesTableSection(): JSX.Element {
       <TrustedDeviceTable
         devices={trustedDevices.data}
         hasActiveFilters={hasActiveFilters}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
         pagination={trustedDevices}
         onPerPageChange={(value) => {
           updateFilter("perPage", value as TrustedDevicePerPage);

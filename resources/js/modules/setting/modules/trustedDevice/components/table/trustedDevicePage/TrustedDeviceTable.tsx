@@ -5,7 +5,10 @@ import { usePage } from "@inertiajs/react";
 
 import {
   columnFilteringFeature,
+  columnVisibilityFeature,
+  type ColumnVisibilityState,
   createColumnHelper,
+  type OnChangeFn,
   rowPaginationFeature,
   rowSortingFeature,
   tableFeatures,
@@ -27,6 +30,7 @@ import {
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+import { trustedDeviceTableColumnIds } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import type {
   TrustedDevice,
   TrustedDevicePagination as TrustedDevicePaginationData,
@@ -72,6 +76,7 @@ type TrustedDeviceRowDialogActionKey =
 
 const trustedDeviceTableFeatures = tableFeatures({
   columnFilteringFeature,
+  columnVisibilityFeature,
   rowPaginationFeature,
   rowSortingFeature,
 });
@@ -83,28 +88,30 @@ const trustedDeviceColumnHelper = createColumnHelper<
 
 const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
-    id: "device",
+    id: trustedDeviceTableColumnIds.device,
     header: "Dispositivo",
+    enableHiding: false,
     cell: ({ row }) => <TrustedDeviceDeviceCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
-    id: "lastAccess",
-    header: "Ultimo Acceso",
+    id: trustedDeviceTableColumnIds.lastAccess,
+    header: "Último acceso",
     cell: ({ row }) => fromNow(row.original.lastUsedAt),
   }),
   trustedDeviceColumnHelper.display({
-    id: "browserAndOs",
+    id: trustedDeviceTableColumnIds.browserAndOs,
     header: "Navegador / SO",
     cell: ({ row }) => deviceBrowserAndOs(row.original),
   }),
   trustedDeviceColumnHelper.display({
-    id: "status",
+    id: trustedDeviceTableColumnIds.status,
     header: "Estado",
     cell: ({ row }) => <TrustedDeviceStatusCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
-    id: "actions",
+    id: trustedDeviceTableColumnIds.actions,
     header: "Acciones",
+    enableHiding: false,
     cell: ({ row }) => <TrustedDeviceRowActions device={row.original} />,
   }),
 ]);
@@ -117,6 +124,8 @@ interface RowDialogActionState extends DialogClosingState {
 interface TrustedDeviceTableProps {
   devices: TrustedDevice[];
   hasActiveFilters: boolean;
+  columnVisibility: ColumnVisibilityState;
+  onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState>;
   onPerPageChange: (value: number) => void;
   pagination: TrustedDevicePaginationData;
 }
@@ -124,6 +133,8 @@ interface TrustedDeviceTableProps {
 function TrustedDeviceTable({
   devices,
   hasActiveFilters,
+  columnVisibility,
+  onColumnVisibilityChange,
   onPerPageChange,
   pagination,
 }: TrustedDeviceTableProps): JSX.Element {
@@ -137,7 +148,9 @@ function TrustedDeviceTable({
     manualPagination: true,
     manualSorting: true,
     rowCount: pagination.total,
+    onColumnVisibilityChange,
     state: {
+      columnVisibility,
       pagination: {
         pageIndex: pagination.current_page - 1,
         pageSize: pagination.per_page,
@@ -172,7 +185,7 @@ function TrustedDeviceTable({
             <TableBody>
               {tableRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={trustedDeviceTableColumns.length} className="p-0">
+                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="p-0">
                     <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
                       {hasActiveFilters ? (
                         <EmptyState
@@ -195,7 +208,7 @@ function TrustedDeviceTable({
                     className={cn(row.original.deletedAt !== null && "opacity-75")}
                     key={row.id}
                   >
-                    {row.getAllCells().map((cell) => (
+                    {row.getVisibleCells().map((cell) => (
                       <TableCell
                         className={getTrustedDeviceTableCellClassName(cell.column.id)}
                         key={cell.id}
@@ -256,11 +269,11 @@ function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.
 
 function getTrustedDeviceTableCellClassName(columnId: string): string | undefined {
   switch (columnId) {
-    case "device":
+    case trustedDeviceTableColumnIds.device:
       return "font-medium";
 
-    case "lastAccess":
-    case "browserAndOs":
+    case trustedDeviceTableColumnIds.lastAccess:
+    case trustedDeviceTableColumnIds.browserAndOs:
       return "text-muted-foreground";
 
     default:

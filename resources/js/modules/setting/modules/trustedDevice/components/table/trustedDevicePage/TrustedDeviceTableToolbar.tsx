@@ -2,7 +2,16 @@ import type { JSX } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search, X } from "lucide-react";
+import type { ColumnVisibilityState, OnChangeFn } from "@tanstack/react-table";
+import {
+  ArrowDownNarrowWide,
+  Columns3,
+  Funnel,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  X,
+} from "lucide-react";
 
 import TrustedDeviceActiveFilterChips, {
   type TrustedDeviceActiveFilterChipsProps,
@@ -22,6 +31,7 @@ import {
   type TrustedDeviceSortKey,
   trustedDeviceSortOptions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceSort";
+import { trustedDeviceColumnVisibilityOptions } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -38,6 +48,15 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/shared/components/shadcn/ui/combobox";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/shadcn/ui/dropdown-menu";
 import {
   InputGroup,
   InputGroupAddon,
@@ -56,6 +75,8 @@ interface TrustedDeviceTableToolbarProps extends Omit<
 > {
   committedFilters: TrustedDeviceFilters;
   filters: TrustedDeviceFilters;
+  columnVisibility: ColumnVisibilityState;
+  onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState>;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
 }
 
@@ -63,6 +84,8 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
   const {
     committedFilters,
     filters,
+    columnVisibility,
+    onColumnVisibilityChange,
     onSearchChange,
     onStatusFilterChange,
     onBrowserFilterChange,
@@ -120,6 +143,11 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
             sortOrder={filters.sort}
           />
 
+          <TrustedDeviceColumnVisibilityMenu
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={onColumnVisibilityChange}
+          />
+
           <Button
             type="button"
             variant="outline"
@@ -148,9 +176,65 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
   );
 }
 
+interface TrustedDeviceColumnVisibilityMenuProps {
+  columnVisibility: ColumnVisibilityState;
+  onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState>;
+}
+
+function TrustedDeviceColumnVisibilityMenu({
+  columnVisibility,
+  onColumnVisibilityChange,
+}: TrustedDeviceColumnVisibilityMenuProps): JSX.Element {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="outline">
+          <Columns3 />
+          Columnas
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Columnas visibles</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        {trustedDeviceColumnVisibilityOptions.map((columnOption) => (
+          <DropdownMenuCheckboxItem
+            checked={columnVisibility[columnOption.id] !== false}
+            key={columnOption.id}
+            onCheckedChange={(checked) => {
+              onColumnVisibilityChange((currentColumnVisibility) => ({
+                ...currentColumnVisibility,
+                [columnOption.id]: checked,
+              }));
+            }}
+          >
+            {columnOption.label}
+          </DropdownMenuCheckboxItem>
+        ))}
+
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => {
+            onColumnVisibilityChange({});
+          }}
+        >
+          <RotateCcw data-icon="inline-start" />
+          Restablecer columnas
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 type TrustedDeviceFiltersPopoverProps = Omit<
   TrustedDeviceTableToolbarProps,
-  "committedFilters" | "onSearchChange" | "onSortOrderChange" | "filters"
+  | "committedFilters"
+  | "columnVisibility"
+  | "onColumnVisibilityChange"
+  | "onSearchChange"
+  | "onSortOrderChange"
+  | "filters"
 > & {
   statusFilter: TrustedDeviceStatusFilter[] | null;
   browserFilter: TrustedDeviceBrowserFilter[] | null;
