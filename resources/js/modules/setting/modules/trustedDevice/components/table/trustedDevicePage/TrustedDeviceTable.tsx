@@ -5,6 +5,8 @@ import { usePage } from "@inertiajs/react";
 
 import {
   columnFilteringFeature,
+  columnResizingFeature,
+  columnSizingFeature,
   columnVisibilityFeature,
   type ColumnVisibilityState,
   createColumnHelper,
@@ -25,6 +27,7 @@ import {
   TrustedDeviceRenewTrustDialog,
   TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
+import TrustedDeviceColumnResizeHandle from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle";
 import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination";
 import {
   trustedDeviceRowActionKey,
@@ -76,6 +79,8 @@ type TrustedDeviceRowDialogActionKey =
 
 const trustedDeviceTableFeatures = tableFeatures({
   columnFilteringFeature,
+  columnSizingFeature,
+  columnResizingFeature,
   columnVisibilityFeature,
   rowPaginationFeature,
   rowSortingFeature,
@@ -90,27 +95,42 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.device,
     header: "Dispositivo",
+    size: 180,
+    minSize: 150,
+    maxSize: 360,
     enableHiding: false,
     cell: ({ row }) => <TrustedDeviceDeviceCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.lastAccess,
     header: "Último acceso",
+    size: 140,
+    minSize: 120,
+    maxSize: 280,
     cell: ({ row }) => fromNow(row.original.lastUsedAt),
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.browserAndOs,
     header: "Navegador / SO",
+    size: 165,
+    minSize: 140,
+    maxSize: 320,
     cell: ({ row }) => deviceBrowserAndOs(row.original),
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.status,
     header: "Estado",
+    size: 100,
+    minSize: 90,
+    maxSize: 180,
     cell: ({ row }) => <TrustedDeviceStatusCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.actions,
     header: "Acciones",
+    size: 115,
+    minSize: 96,
+    maxSize: 180,
     enableHiding: false,
     cell: ({ row }) => <TrustedDeviceRowActions device={row.original} />,
   }),
@@ -147,6 +167,7 @@ function TrustedDeviceTable({
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
+    columnResizeMode: "onChange",
     rowCount: pagination.total,
     onColumnVisibilityChange,
     state: {
@@ -163,21 +184,52 @@ function TrustedDeviceTable({
   const tableRows = table.getRowModel().rows;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="w-full">
-        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:rounded-md [&>div]:border">
-          <Table>
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="w-full min-w-0">
+        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:w-full [&>div]:min-w-0 [&>div]:rounded-md [&>div]:border">
+          <Table className="table-fixed" style={{ width: `max(100%, ${table.getTotalSize()}px)` }}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
-                  className="sticky top-0 bg-muted/70 dark:bg-muted/40"
+                  className="sticky top-0 bg-muted/30 hover:bg-muted/30"
                   key={headerGroup.id}
                 >
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                    </TableHead>
-                  ))}
+                  {headerGroup.headers.map((header) => {
+                    const headerLabel =
+                      typeof header.column.columnDef.header === "string"
+                        ? header.column.columnDef.header
+                        : header.column.id;
+
+                    return (
+                      <TableHead
+                        className="group relative overflow-hidden"
+                        key={header.id}
+                        style={{ width: header.getSize() }}
+                      >
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+
+                        {header.column.getCanResize() && (
+                          <TrustedDeviceColumnResizeHandle
+                            ariaLabel={`Redimensionar columna ${headerLabel}`}
+                            isResizing={header.column.getIsResizing()}
+                            maximumSize={header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER}
+                            minimumSize={header.column.columnDef.minSize ?? 20}
+                            onMouseDown={header.getResizeHandler()}
+                            onResize={(nextSize) => {
+                              table.setColumnSizing((columnSizing) => ({
+                                ...columnSizing,
+                                [header.column.id]: nextSize,
+                              }));
+                            }}
+                            onTouchStart={header.getResizeHandler()}
+                            resizeDirection={table.options.columnResizeDirection ?? "ltr"}
+                            size={header.getSize()}
+                          />
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                  <TableHead aria-hidden="true" className="p-0" />
                 </TableRow>
               ))}
             </TableHeader>
@@ -185,7 +237,7 @@ function TrustedDeviceTable({
             <TableBody>
               {tableRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={table.getVisibleLeafColumns().length} className="p-0">
+                  <TableCell className="p-0" colSpan={table.getVisibleLeafColumns().length + 1}>
                     <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
                       {hasActiveFilters ? (
                         <EmptyState
@@ -210,12 +262,17 @@ function TrustedDeviceTable({
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
-                        className={getTrustedDeviceTableCellClassName(cell.column.id)}
+                        className={cn(
+                          "overflow-hidden",
+                          getTrustedDeviceTableCellClassName(cell.column.id),
+                        )}
                         key={cell.id}
+                        style={{ width: cell.column.getSize() }}
                       >
                         <table.FlexRender cell={cell} />
                       </TableCell>
                     ))}
+                    <TableCell aria-hidden="true" className="p-0" />
                   </TableRow>
                 ))
               )}

@@ -96,7 +96,7 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <InputGroup className="max-w-xs">
           <InputGroupAddon>
             <Search className="size-4" />
@@ -195,7 +195,7 @@ function TrustedDeviceColumnVisibilityMenu({
 
       <PopoverContent align="end" className="w-60 p-3">
         <FieldSet className="gap-2">
-          <FieldLegend className="mb-0" variant="label">
+          <FieldLegend className="mb-0 font-bold" variant="label">
             Columnas visibles
           </FieldLegend>
 

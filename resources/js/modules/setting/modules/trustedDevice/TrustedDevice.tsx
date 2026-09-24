@@ -209,7 +209,7 @@ function TrustedDevice(): JSX.Element {
     <>
       <Head title="Dispositivos de confianza" />
 
-      <div className="flex gap-4">
+      <div className="flex min-w-0 gap-4">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle onTitleAction={handleTitleAction} />
 
@@ -554,7 +554,7 @@ function TrustedDevicesTableSection(): JSX.Element {
     committedFilters.lastAccess !== null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <TrustedDeviceTableToolbar
         committedFilters={committedFilters}
         filters={filters}
