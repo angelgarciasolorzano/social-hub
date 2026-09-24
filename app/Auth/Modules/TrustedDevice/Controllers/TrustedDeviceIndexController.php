@@ -114,9 +114,12 @@ final class TrustedDeviceIndexController extends Controller
 
         $props = [
             'filters' => $trustedDeviceFiltersData->toArray(),
-            'trustedDevices' => fn (): LengthAwarePaginator => $query
-                ->paginate($perPage)
-                ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
+            'trustedDevices' => Inertia::defer(
+                fn (): LengthAwarePaginator => $query
+                    ->paginate($perPage)
+                    ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
+                rescue: true,
+            ),
             'stats' => Inertia::defer(fn (): array => $this->buildStats($user), rescue: true),
             'recentActivity' => Inertia::defer(fn (): array => $user->trustedDeviceEvents()
                 ->latest('created_at')
