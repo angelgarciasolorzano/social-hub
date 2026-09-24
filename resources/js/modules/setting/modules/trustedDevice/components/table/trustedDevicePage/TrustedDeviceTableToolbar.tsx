@@ -2,8 +2,20 @@ import type { JSX } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { ArrowDownNarrowWide, Funnel, RefreshCw, RotateCcw, Search, X } from "lucide-react";
+import type { ColumnVisibilityState, OnChangeFn } from "@tanstack/react-table";
+import {
+  ArrowDownNarrowWide,
+  Columns3,
+  Funnel,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  X,
+} from "lucide-react";
 
+import TrustedDeviceActiveFilterChips, {
+  type TrustedDeviceActiveFilterChipsProps,
+} from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips";
 import {
   browserOptions,
   deviceTypeOptions,
@@ -19,9 +31,14 @@ import {
   type TrustedDeviceSortKey,
   trustedDeviceSortOptions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceSort";
+import {
+  trustedDeviceColumnVisibilityOptions,
+  trustedDeviceDefaultColumnVisibility,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
+import { Checkbox } from "@/shared/components/shadcn/ui/checkbox";
 import {
   Combobox,
   ComboboxChip,
@@ -36,6 +53,13 @@ import {
   useComboboxAnchor,
 } from "@/shared/components/shadcn/ui/combobox";
 import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/shared/components/shadcn/ui/field";
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
@@ -47,20 +71,23 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
 
-interface TrustedDeviceTableToolbarProps {
+interface TrustedDeviceTableToolbarProps extends Omit<
+  TrustedDeviceActiveFilterChipsProps,
+  "filters"
+> {
+  committedFilters: TrustedDeviceFilters;
   filters: TrustedDeviceFilters;
-  onSearchChange: (value: string) => void;
-  onStatusFilterChange: (value: TrustedDeviceStatusFilter[] | null) => void;
-  onBrowserFilterChange: (value: TrustedDeviceBrowserFilter[] | null) => void;
-  onDeviceTypeFilterChange: (value: TrustedDeviceDeviceTypeFilter | null) => void;
-  onLastAccessFilterChange: (value: TrustedDeviceLastAccessFilter[] | null) => void;
+  columnVisibility: ColumnVisibilityState;
+  onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState>;
   onSortOrderChange: (value: TrustedDeviceSortKey) => void;
-  onResetFilters: () => void;
 }
 
 function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.Element {
   const {
+    committedFilters,
     filters,
+    columnVisibility,
+    onColumnVisibilityChange,
     onSearchChange,
     onStatusFilterChange,
     onBrowserFilterChange,
@@ -71,69 +98,162 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
   } = props;
 
   return (
-    <div className="flex items-center justify-between">
-      <InputGroup className="max-w-xs">
-        <InputGroupAddon>
-          <Search className="size-4" />
-        </InputGroupAddon>
-        <InputGroupInput
-          placeholder="Buscar dispositivo..."
-          value={filters.search}
-          onChange={(event) => {
-            onSearchChange(event.target.value);
-          }}
-        />
-
-        {filters.search !== "" && (
-          <InputGroupAddon align="inline-end">
-            <InputGroupButton
-              aria-label="Limpiar búsqueda"
-              onClick={() => {
-                onSearchChange("");
-              }}
-              size="icon-xs"
-            >
-              <X />
-            </InputGroupButton>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <InputGroup className="w-full max-w-xs xl:min-w-0 xl:flex-1">
+          <InputGroupAddon>
+            <Search className="size-4" />
           </InputGroupAddon>
-        )}
-      </InputGroup>
+          <InputGroupInput
+            placeholder="Buscar dispositivo..."
+            value={filters.search}
+            onChange={(event) => {
+              onSearchChange(event.target.value);
+            }}
+          />
 
-      <div className="flex items-center justify-center gap-2">
-        <TrustedDeviceFiltersPopover
-          browserFilter={filters.browser}
-          deviceTypeFilter={filters.deviceType}
-          lastAccessFilter={filters.lastAccess}
-          onBrowserFilterChange={onBrowserFilterChange}
-          onDeviceTypeFilterChange={onDeviceTypeFilterChange}
-          onLastAccessFilterChange={onLastAccessFilterChange}
-          onResetFilters={onResetFilters}
-          onStatusFilterChange={onStatusFilterChange}
-          statusFilter={filters.status}
-        />
+          {filters.search !== "" && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                aria-label="Limpiar búsqueda"
+                onClick={() => {
+                  onSearchChange("");
+                }}
+                size="icon-xs"
+              >
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
 
-        <TrustedDeviceSortPopover onSortOrderChange={onSortOrderChange} sortOrder={filters.sort} />
+        <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-nowrap xl:justify-center">
+          <TrustedDeviceFiltersPopover
+            browserFilter={filters.browser}
+            deviceTypeFilter={filters.deviceType}
+            lastAccessFilter={filters.lastAccess}
+            onBrowserFilterChange={onBrowserFilterChange}
+            onDeviceTypeFilterChange={onDeviceTypeFilterChange}
+            onLastAccessFilterChange={onLastAccessFilterChange}
+            onResetFilters={onResetFilters}
+            onStatusFilterChange={onStatusFilterChange}
+            statusFilter={filters.status}
+          />
+
+          <TrustedDeviceSortPopover
+            onSortOrderChange={onSortOrderChange}
+            sortOrder={filters.sort}
+          />
+
+          <TrustedDeviceColumnVisibilityMenu
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={onColumnVisibilityChange}
+          />
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              router.reload({
+                only: ["trustedDevices", "stats", "recentActivity"],
+              });
+            }}
+          >
+            <RefreshCw />
+            <span className="sr-only">Reload data</span>
+          </Button>
+        </div>
+      </div>
+
+      <TrustedDeviceActiveFilterChips
+        filters={committedFilters}
+        onBrowserFilterChange={onBrowserFilterChange}
+        onDeviceTypeFilterChange={onDeviceTypeFilterChange}
+        onLastAccessFilterChange={onLastAccessFilterChange}
+        onResetFilters={onResetFilters}
+        onSearchChange={onSearchChange}
+        onStatusFilterChange={onStatusFilterChange}
+      />
+    </div>
+  );
+}
+
+interface TrustedDeviceColumnVisibilityMenuProps {
+  columnVisibility: ColumnVisibilityState;
+  onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState>;
+}
+
+function TrustedDeviceColumnVisibilityMenu({
+  columnVisibility,
+  onColumnVisibilityChange,
+}: TrustedDeviceColumnVisibilityMenuProps): JSX.Element {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline">
+          <Columns3 />
+          Columnas
+        </Button>
+      </PopoverTrigger>
+
+      <PopoverContent align="end" className="w-60 p-3">
+        <FieldSet className="gap-2">
+          <FieldLegend className="mb-0 font-bold" variant="label">
+            Columnas visibles
+          </FieldLegend>
+
+          <FieldGroup className="mt-4 gap-2.5">
+            {trustedDeviceColumnVisibilityOptions.map((columnOption) => {
+              const checkboxId = `trusted-device-column-${columnOption.id}`;
+
+              return (
+                <Field className="gap-2" key={columnOption.id} orientation="horizontal">
+                  <Checkbox
+                    checked={columnVisibility[columnOption.id] !== false}
+                    id={checkboxId}
+                    onCheckedChange={(checked) => {
+                      onColumnVisibilityChange((currentColumnVisibility) => ({
+                        ...currentColumnVisibility,
+                        [columnOption.id]: checked === true,
+                      }));
+                    }}
+                  />
+                  <FieldLabel className="cursor-pointer font-normal" htmlFor={checkboxId}>
+                    {columnOption.label}
+                  </FieldLabel>
+                </Field>
+              );
+            })}
+          </FieldGroup>
+        </FieldSet>
+
+        <Separator className="my-3" />
 
         <Button
-          type="button"
-          variant="outline"
+          className="w-full justify-start"
           onClick={() => {
-            router.reload({
-              only: ["trustedDevices", "stats", "recentActivity"],
-            });
+            onColumnVisibilityChange(trustedDeviceDefaultColumnVisibility);
           }}
+          size="sm"
+          type="button"
+          variant="ghost"
         >
-          <RefreshCw />
-          <span className="sr-only">Reload data</span>
+          <RotateCcw data-icon="inline-start" />
+          Restablecer columnas
         </Button>
-      </div>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
 type TrustedDeviceFiltersPopoverProps = Omit<
   TrustedDeviceTableToolbarProps,
-  "onSearchChange" | "onSortOrderChange" | "filters"
+  | "committedFilters"
+  | "columnVisibility"
+  | "onColumnVisibilityChange"
+  | "onSearchChange"
+  | "onSortOrderChange"
+  | "filters"
 > & {
   statusFilter: TrustedDeviceStatusFilter[] | null;
   browserFilter: TrustedDeviceBrowserFilter[] | null;

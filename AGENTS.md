@@ -1,3 +1,14 @@
+<!-- intent-skills:start -->
+## Skill Loading
+
+Before editing files for a substantial task:
+- Run `npx @tanstack/intent@latest list` from the workspace root to see available local skills.
+- If a listed skill matches the task, run `npx @tanstack/intent@latest load <package>#<skill>` before changing files.
+- Use the loaded `SKILL.md` guidance while making the change.
+- Monorepos: when working across packages, run the skill check from the workspace root and prefer the local skill for the package being changed.
+- Multiple matches: prefer the most specific local skill for the package or concern you are changing; load additional skills only when the task spans multiple packages or concerns.
+<!-- intent-skills:end -->
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
@@ -167,6 +178,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Testing
 
+- Place new module-specific tests under the owning module's `Tests/` directory (`app/{Domain}/Tests/` or `app/{Domain}/Modules/{Feature}/Tests/`); reserve root `tests/` for cross-module, infrastructure, and existing tests.
+- Register new module test directories in `phpunit.xml` and configure their Pest base case/shared traits in `tests/Pest.php` as needed.
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
@@ -193,6 +206,7 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 # Pest
 
 - This project uses Pest. Create tests with `php artisan make:test --pest {name}`.
+- Module-specific tests belong in the owning module's `Tests/` directory; after using `make:test`, move the generated file from root `tests/` and register its module directory in `phpunit.xml`/`tests/Pest.php` when needed.
 - Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
 - Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
 - Do not delete tests or test files without approval. They are part of the application.

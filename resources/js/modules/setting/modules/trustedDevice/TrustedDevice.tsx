@@ -1,8 +1,9 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 
 import { Deferred, Head, router, usePage } from "@inertiajs/react";
 
+import type { ColumnVisibilityState } from "@tanstack/react-table";
 import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
@@ -23,7 +24,11 @@ import {
   TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
+import TrustedDeviceRecentActivitySkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDeviceRecentActivitySkeleton";
+import TrustedDevicesStatCardsSkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDevicesStatCardsSkeleton";
+import TrustedDeviceSummarySkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDeviceSummarySkeleton";
 import TrustedDeviceTable from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable";
+import TrustedDeviceTableSkeleton from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton";
 import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar";
 import TrustedDeviceRecentActivity from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity";
 import TrustedDeviceRecommendations from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations";
@@ -34,6 +39,7 @@ import {
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+import { trustedDeviceDefaultColumnVisibility } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
 import type {
   TrustedDevice,
@@ -50,7 +56,6 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,7 +65,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
-import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDialog } from "@/shared/hooks";
 
@@ -73,7 +77,7 @@ type TrustedDevicePageProps = SharedData & {
   currentDevicePreview?: TrustedDevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
   filters: TrustedDeviceFilters;
-  trustedDevices: TrustedDevicePagination;
+  trustedDevices?: TrustedDevicePagination;
   stats?: TrustedDeviceStats;
   recentActivity?: TrustedDeviceActivityItem[];
 };
@@ -208,7 +212,7 @@ function TrustedDevice(): JSX.Element {
     <>
       <Head title="Dispositivos de confianza" />
 
-      <div className="flex gap-4">
+      <div className="flex min-w-0 flex-col gap-4 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle onTitleAction={handleTitleAction} />
 
@@ -233,7 +237,7 @@ function TrustedDevice(): JSX.Element {
           <TrustedDevicesSecurityCallout />
         </div>
 
-        <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
+        <div className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0 xl:self-start">
           <Deferred
             data="stats"
             fallback={<TrustedDeviceSummarySkeleton />}
@@ -283,13 +287,13 @@ interface TrustedDeviceTitleProps {
 
 function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Element {
   return (
-    <div className="flex items-center justify-between gap-12 rounded-xl border bg-card p-6 shadow-sm">
-      <div className="flex items-start gap-6">
+    <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
+      <div className="flex min-w-0 items-start gap-4 sm:gap-6">
         <div className={cn(iconColorVariants.blue.iconBgClass, "rounded-3xl p-2")}>
           <ShieldCheck className={cn("h-12 w-12", iconColorVariants.blue.iconFgClass)} />
         </div>
 
-        <div className="flex flex-1 flex-col gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col gap-1">
             <h2 className="text-xl font-semibold">Dispositivos de confianza</h2>
 
@@ -416,88 +420,6 @@ function TrustedDevicesStatCards(): JSX.Element {
   );
 }
 
-function TrustedDevicesStatCardsSkeleton(): JSX.Element {
-  const skeletonKeys = ["total", "active", "expiring", "recent"];
-
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {skeletonKeys.map((skeletonKey) => (
-        <div
-          className="flex h-full min-w-0 items-start gap-4 rounded-xl border bg-card p-4 shadow-sm"
-          key={skeletonKey}
-        >
-          <Skeleton className="h-12 w-12 shrink-0 rounded-md" />
-
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <Skeleton className="h-8 w-20 max-w-full" />
-            <Skeleton className="h-4 w-36 max-w-full" />
-            <Skeleton className="h-8 w-full max-w-full" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TrustedDeviceSummarySkeleton(): JSX.Element {
-  return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center gap-2 pb-0">
-        <Skeleton className="h-5 w-48" />
-        <Skeleton className="h-4 w-56" />
-      </CardHeader>
-
-      <CardContent className="flex flex-1 items-center gap-4 pb-0">
-        <Skeleton className="h-40 w-40 shrink-0 rounded-full" />
-
-        <div className="flex flex-1 flex-col gap-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-      </CardContent>
-
-      <CardFooter className="mx-auto">
-        <Skeleton className="h-4 w-24" />
-      </CardFooter>
-    </Card>
-  );
-}
-
-function TrustedDeviceRecentActivitySkeleton(): JSX.Element {
-  const activitySkeletonKeys = ["first", "second", "third"];
-
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-5 w-40" />
-      </CardHeader>
-
-      <CardContent className="space-y-5">
-        {activitySkeletonKeys.map((activitySkeletonKey) => (
-          <div className="flex items-center justify-between gap-4" key={activitySkeletonKey}>
-            <div className="flex items-start gap-4">
-              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            </div>
-
-            <Skeleton className="h-4 w-16" />
-          </div>
-        ))}
-      </CardContent>
-
-      <CardFooter className="mx-auto">
-        <Skeleton className="h-4 w-36" />
-      </CardFooter>
-    </Card>
-  );
-}
-
 interface TrustedDeviceDeferredErrorProps {
   message: string;
   onRetry: () => void;
@@ -540,6 +462,10 @@ function TrustedDevicesInfoBanner() {
 function TrustedDevicesTableSection(): JSX.Element {
   const { filters: initialFilters, trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
+    trustedDeviceDefaultColumnVisibility,
+  );
+
   const { committedFilters, filters, resetFilters, updateFilter } =
     useTrustedDeviceFilters(initialFilters);
 
@@ -550,53 +476,89 @@ function TrustedDevicesTableSection(): JSX.Element {
     committedFilters.deviceType !== null ||
     committedFilters.lastAccess !== null;
 
-  return (
-    <div className="flex flex-col gap-4">
-      <TrustedDeviceTableToolbar
-        filters={filters}
-        onBrowserFilterChange={(value) => {
-          updateFilter("browser", value);
-        }}
-        onDeviceTypeFilterChange={(value) => {
-          updateFilter("deviceType", value);
-        }}
-        onLastAccessFilterChange={(value) => {
-          updateFilter("lastAccess", value);
-        }}
-        onResetFilters={resetFilters}
-        onSearchChange={(value) => {
-          updateFilter("search", value);
-        }}
-        onSortOrderChange={(value) => {
-          updateFilter("sort", value);
-        }}
-        onStatusFilterChange={(value) => {
-          updateFilter("status", value);
-        }}
-      />
+  const tableSkeleton = (
+    <TrustedDeviceTableSkeleton
+      columnVisibility={columnVisibility}
+      hasActiveFilters={hasActiveFilters}
+    />
+  );
 
-      <TrustedDeviceTable
-        devices={trustedDevices.data}
-        hasActiveFilters={hasActiveFilters}
-        pagination={trustedDevices}
-        onPerPageChange={(value) => {
-          updateFilter("perPage", value as TrustedDevicePerPage);
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <Deferred
+        data="trustedDevices"
+        fallback={tableSkeleton}
+        rescue={({ reloading }) => (
+          <TrustedDeviceDeferredError
+            message="No se pudieron cargar los dispositivos de confianza."
+            onRetry={() => {
+              router.reload({ only: ["trustedDevices"] });
+            }}
+            reloading={reloading}
+          />
+        )}
+      >
+        {({ reloading }) => {
+          if (reloading || trustedDevices === undefined) {
+            return tableSkeleton;
+          }
+
+          return (
+            <>
+              <TrustedDeviceTableToolbar
+                committedFilters={committedFilters}
+                filters={filters}
+                columnVisibility={columnVisibility}
+                onColumnVisibilityChange={setColumnVisibility}
+                onBrowserFilterChange={(value) => {
+                  updateFilter("browser", value);
+                }}
+                onDeviceTypeFilterChange={(value) => {
+                  updateFilter("deviceType", value);
+                }}
+                onLastAccessFilterChange={(value) => {
+                  updateFilter("lastAccess", value);
+                }}
+                onResetFilters={resetFilters}
+                onSearchChange={(value) => {
+                  updateFilter("search", value);
+                }}
+                onSortOrderChange={(value) => {
+                  updateFilter("sort", value);
+                }}
+                onStatusFilterChange={(value) => {
+                  updateFilter("status", value);
+                }}
+              />
+
+              <TrustedDeviceTable
+                devices={trustedDevices.data}
+                hasActiveFilters={hasActiveFilters}
+                columnVisibility={columnVisibility}
+                onColumnVisibilityChange={setColumnVisibility}
+                pagination={trustedDevices}
+                onPerPageChange={(value) => {
+                  updateFilter("perPage", value as TrustedDevicePerPage);
+                }}
+              />
+            </>
+          );
         }}
-      />
+      </Deferred>
     </div>
   );
 }
 
 function TrustedDevicesSecurityCallout(): JSX.Element {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-start gap-4">
+    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-4">
         <div className={cn("flex h-10 w-10 rounded-md p-2", iconColorVariants.blue.iconBgClass)}>
           <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
         </div>
 
-        <div className="flex w-full items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="flex w-full min-w-0 items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1">
             <h4 className="text-sm font-semibold">¿No reconoces algun dispositivo?</h4>
 
             <p className="text-sm text-muted-foreground">
@@ -607,7 +569,7 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
         </div>
       </div>
 
-      <Button variant="link" className="text-blue-700 dark:text-blue-500">
+      <Button className="shrink-0 text-blue-700 dark:text-blue-500" variant="link">
         Revisar actividad de seguridad
         <ChevronRight className="h-4 w-4" />
       </Button>

@@ -3,6 +3,20 @@ import { Fragment } from "react";
 
 import { usePage } from "@inertiajs/react";
 
+import {
+  columnFilteringFeature,
+  columnResizingFeature,
+  columnSizingFeature,
+  columnVisibilityFeature,
+  type ColumnVisibilityState,
+  createColumnHelper,
+  type OnChangeFn,
+  rowPaginationFeature,
+  rowSortingFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
+import { useTanStackTableDevtools } from "@tanstack/react-table-devtools";
 import { MonitorSmartphone, MoreHorizontalIcon, SearchX } from "lucide-react";
 
 import {
@@ -13,17 +27,22 @@ import {
   TrustedDeviceRenewTrustDialog,
   TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
+import TrustedDeviceColumnResizeHandle from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle";
 import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination";
 import {
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+import {
+  trustedDeviceTableColumnIds,
+  trustedDeviceTableColumnSizes,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import type {
   TrustedDevice,
   TrustedDevicePagination as TrustedDevicePaginationData,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { createDialogCloseHandler } from "@/modules/setting/shared/utils/dialog";
 import type { DialogClosingState } from "@/modules/setting/shared/utils/dialog";
 import {
@@ -61,6 +80,81 @@ import type { SharedData } from "@/shared/types";
 type TrustedDeviceRowDialogActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
+const trustedDeviceTableFeatures = tableFeatures({
+  columnFilteringFeature,
+  columnSizingFeature,
+  columnResizingFeature,
+  columnVisibilityFeature,
+  rowPaginationFeature,
+  rowSortingFeature,
+});
+
+const trustedDeviceColumnHelper = createColumnHelper<
+  typeof trustedDeviceTableFeatures,
+  TrustedDevice
+>();
+
+const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.device,
+    header: "Dispositivo",
+    size: trustedDeviceTableColumnSizes.device,
+    minSize: 150,
+    maxSize: 360,
+    enableHiding: false,
+    cell: ({ row }) => <TrustedDeviceDeviceCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.lastAccess,
+    header: "Último acceso",
+    size: trustedDeviceTableColumnSizes.lastAccess,
+    minSize: 120,
+    maxSize: 280,
+    cell: ({ row }) => fromNow(row.original.lastUsedAt),
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.browserAndOs,
+    header: "Navegador / SO",
+    size: trustedDeviceTableColumnSizes.browserAndOs,
+    minSize: 140,
+    maxSize: 320,
+    cell: ({ row }) => deviceBrowserAndOs(row.original),
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.ip,
+    header: "IP",
+    size: trustedDeviceTableColumnSizes.ip,
+    minSize: 120,
+    maxSize: 260,
+    cell: ({ row }) => <TrustedDeviceIpCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.expiration,
+    header: "Expira",
+    size: trustedDeviceTableColumnSizes.expiration,
+    minSize: 120,
+    maxSize: 240,
+    cell: ({ row }) => <TrustedDeviceExpirationCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.status,
+    header: "Estado",
+    size: trustedDeviceTableColumnSizes.status,
+    minSize: 90,
+    maxSize: 180,
+    cell: ({ row }) => <TrustedDeviceStatusCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.actions,
+    header: "Acciones",
+    size: trustedDeviceTableColumnSizes.actions,
+    minSize: 96,
+    maxSize: 180,
+    enableHiding: false,
+    cell: ({ row }) => <TrustedDeviceRowActions device={row.original} />,
+  }),
+]);
+
 interface RowDialogActionState extends DialogClosingState {
   device: TrustedDevice;
   kind: TrustedDeviceRowDialogActionKey;
@@ -69,45 +163,100 @@ interface RowDialogActionState extends DialogClosingState {
 interface TrustedDeviceTableProps {
   devices: TrustedDevice[];
   hasActiveFilters: boolean;
+  columnVisibility: ColumnVisibilityState;
+  onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState>;
   onPerPageChange: (value: number) => void;
   pagination: TrustedDevicePaginationData;
-}
-
-interface TrustedDeviceTableColumn {
-  label: "Dispositivo" | "Ultimo Acceso" | "Navegador / SO" | "Estado" | "Acciones";
 }
 
 function TrustedDeviceTable({
   devices,
   hasActiveFilters,
+  columnVisibility,
+  onColumnVisibilityChange,
   onPerPageChange,
   pagination,
 }: TrustedDeviceTableProps): JSX.Element {
-  const trustedDeviceTableColumns: readonly TrustedDeviceTableColumn[] = [
-    { label: "Dispositivo" },
-    { label: "Ultimo Acceso" },
-    { label: "Navegador / SO" },
-    { label: "Estado" },
-    { label: "Acciones" },
-  ];
+  const table = useTable({
+    columns: trustedDeviceTableColumns,
+    data: devices,
+    features: trustedDeviceTableFeatures,
+    getRowId: (device) => String(device.id),
+    key: "trusted-devices",
+    manualFiltering: true,
+    manualPagination: true,
+    manualSorting: true,
+    columnResizeMode: "onChange",
+    rowCount: pagination.total,
+    onColumnVisibilityChange,
+    state: {
+      columnVisibility,
+      pagination: {
+        pageIndex: pagination.current_page - 1,
+        pageSize: pagination.per_page,
+      },
+    },
+  });
+
+  useTanStackTableDevtools(table);
+
+  const tableRows = table.getRowModel().rows;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="w-full">
-        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:rounded-md [&>div]:border">
-          <Table>
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="w-full min-w-0">
+        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:w-full [&>div]:min-w-0 [&>div]:rounded-md [&>div]:border">
+          <Table className="table-fixed" style={{ width: `max(100%, ${table.getTotalSize()}px)` }}>
             <TableHeader>
-              <TableRow className="sticky top-0 bg-muted/70 dark:bg-muted/40">
-                {trustedDeviceTableColumns.map((column) => (
-                  <TableHead key={column.label}>{column.label}</TableHead>
-                ))}
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow
+                  className="sticky top-0 z-10 bg-muted hover:bg-muted"
+                  key={headerGroup.id}
+                >
+                  {headerGroup.headers.map((header) => {
+                    const headerLabel =
+                      typeof header.column.columnDef.header === "string"
+                        ? header.column.columnDef.header
+                        : header.column.id;
+
+                    return (
+                      <TableHead
+                        className="group relative overflow-hidden"
+                        key={header.id}
+                        style={{ width: header.getSize() }}
+                      >
+                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+
+                        {header.column.getCanResize() && (
+                          <TrustedDeviceColumnResizeHandle
+                            ariaLabel={`Redimensionar columna ${headerLabel}`}
+                            isResizing={header.column.getIsResizing()}
+                            maximumSize={header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER}
+                            minimumSize={header.column.columnDef.minSize ?? 20}
+                            onMouseDown={header.getResizeHandler()}
+                            onResize={(nextSize) => {
+                              table.setColumnSizing((columnSizing) => ({
+                                ...columnSizing,
+                                [header.column.id]: nextSize,
+                              }));
+                            }}
+                            onTouchStart={header.getResizeHandler()}
+                            resizeDirection={table.options.columnResizeDirection ?? "ltr"}
+                            size={header.getSize()}
+                          />
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                  <TableHead aria-hidden="true" className="p-0" />
+                </TableRow>
+              ))}
             </TableHeader>
 
             <TableBody>
-              {devices.length === 0 ? (
+              {tableRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-0">
+                  <TableCell className="p-0" colSpan={table.getVisibleLeafColumns().length + 1}>
                     <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
                       {hasActiveFilters ? (
                         <EmptyState
@@ -125,7 +274,26 @@ function TrustedDeviceTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                devices.map((device) => <TrustedDeviceRow device={device} key={device.id} />)
+                tableRows.map((row) => (
+                  <TableRow
+                    className={cn(row.original.deletedAt !== null && "opacity-75")}
+                    key={row.id}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        className={cn(
+                          "overflow-hidden",
+                          getTrustedDeviceTableCellClassName(cell.column.id),
+                        )}
+                        key={cell.id}
+                        style={{ width: cell.column.getSize() }}
+                      >
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
+                    <TableCell aria-hidden="true" className="p-0" />
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
@@ -137,17 +305,93 @@ function TrustedDeviceTable({
   );
 }
 
-interface TrustedDeviceRowProps {
+interface TrustedDeviceDeviceCellProps {
   device: TrustedDevice;
 }
 
-function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
-  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePaginationData }>()
-    .props.trustedDevices;
+function TrustedDeviceDeviceCell({ device }: TrustedDeviceDeviceCellProps): JSX.Element {
+  return (
+    <div className="flex items-center gap-2">
+      {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
+      <span className="truncate">{deviceLabel(device)}</span>
+    </div>
+  );
+}
 
+interface TrustedDeviceStatusCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.Element {
   const { appearance } = useAppearance();
 
-  const browserAndOs = deviceBrowserAndOs(device);
+  if (device.deletedAt !== null) {
+    return (
+      <Badge
+        variant={appearance === "light" ? "destructive" : null}
+        className="rounded-md dark:bg-red-700 dark:text-white"
+      >
+        Revocado
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
+      {device.isActive ? "Activo" : "Expirado"}
+    </Badge>
+  );
+}
+
+interface TrustedDeviceIpCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceIpCell({ device }: TrustedDeviceIpCellProps): JSX.Element {
+  const ipAddress = device.ip ?? "No disponible";
+
+  return (
+    <span className="block truncate font-mono text-xs" title={device.ip ?? undefined}>
+      {ipAddress}
+    </span>
+  );
+}
+
+interface TrustedDeviceExpirationCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceExpirationCell({ device }: TrustedDeviceExpirationCellProps): JSX.Element {
+  const isRevoked = device.deletedAt !== null;
+
+  return (
+    <span title={isRevoked ? undefined : formatLongDate(device.expiresAt)}>
+      {isRevoked ? "No aplica" : formatTimeUntil(device.expiresAt)}
+    </span>
+  );
+}
+
+function getTrustedDeviceTableCellClassName(columnId: string): string | undefined {
+  switch (columnId) {
+    case trustedDeviceTableColumnIds.device:
+      return "font-medium";
+
+    case trustedDeviceTableColumnIds.lastAccess:
+    case trustedDeviceTableColumnIds.browserAndOs:
+      return "text-muted-foreground";
+
+    default:
+      return undefined;
+  }
+}
+
+interface TrustedDeviceRowActionsProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.Element {
+  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePaginationData }>()
+    .props.trustedDevices;
 
   const dialogDevice = useDialog<RowDialogActionState | null>(null);
 
@@ -168,7 +412,9 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
     const isClosing = dialogDevice.state.closing;
 
     const selectedDevice =
-      trustedDevices.data.find((d) => d.id === dialogDevice.state?.device.id) ?? null;
+      trustedDevices.data.find(
+        (trustedDevice) => trustedDevice.id === dialogDevice.state?.device.id,
+      ) ?? null;
 
     if (selectedDevice === null) {
       return null;
@@ -235,92 +481,59 @@ function TrustedDeviceRow({ device }: TrustedDeviceRowProps): JSX.Element {
   };
 
   return (
-    <TableRow className={cn(device.deletedAt !== null && "opacity-75")}>
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-2">
-          {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
-          <span className="truncate">{deviceLabel(device)}</span>
-        </div>
-      </TableCell>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="ghost" className="size-8">
+            <MoreHorizontalIcon />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
 
-      <TableCell className="text-muted-foreground">{fromNow(device.lastUsedAt)}</TableCell>
+        <DropdownMenuContent align="end" className="w-60">
+          {trustedDeviceRowActions.map((group, groupIndex) => (
+            <Fragment key={groupIndex}>
+              <DropdownMenuGroup>
+                {group.label !== undefined && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
 
-      <TableCell className="text-muted-foreground">{browserAndOs}</TableCell>
+                {group.actions.map((action) => {
+                  const Icon = action.icon;
+                  const enabled = action.isEnabled(device);
 
-      <TableCell>
-        {device.deletedAt !== null ? (
-          <Badge
-            variant={appearance === "light" ? "destructive" : null}
-            className="rounded-md dark:bg-red-700 dark:text-white"
-          >
-            Revocado
-          </Badge>
-        ) : (
-          <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
-            {device.isActive ? "Activo" : "Expirado"}
-          </Badge>
-        )}
-      </TableCell>
+                  return (
+                    <DropdownMenuItem
+                      className={cn(action.className, !enabled && "cursor-not-allowed opacity-50")}
+                      disabled={!enabled}
+                      key={action.key}
+                      onClick={(event) => {
+                        if (!enabled) {
+                          event.preventDefault();
+                          return;
+                        }
 
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="size-8">
-              <MoreHorizontalIcon />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end" className="w-60">
-            {trustedDeviceRowActions.map((group, groupIndex) => (
-              <Fragment key={groupIndex}>
-                <DropdownMenuGroup>
-                  {group.label !== undefined && (
-                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                  )}
-
-                  {group.actions.map((action) => {
-                    const Icon = action.icon;
-                    const enabled = action.isEnabled(device);
-
-                    return (
-                      <DropdownMenuItem
+                        handleDeviceAction(action.key, device);
+                      }}
+                    >
+                      <Icon
                         className={cn(
-                          action.className,
-                          !enabled && "cursor-not-allowed opacity-50",
+                          action.iconClassName ?? "text-muted-foreground",
+                          !enabled && "opacity-70",
                         )}
-                        disabled={!enabled}
-                        key={action.key}
-                        onClick={(event) => {
-                          if (!enabled) {
-                            event.preventDefault();
-                            return;
-                          }
+                      />
+                      {action.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
 
-                          handleDeviceAction(action.key, device);
-                        }}
-                      >
-                        <Icon
-                          className={cn(
-                            action.iconClassName ?? "text-muted-foreground",
-                            !enabled && "opacity-70",
-                          )}
-                        />
-                        {action.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuGroup>
-
-                {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
-              </Fragment>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
+              {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
+            </Fragment>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {renderDialogDevice()}
-    </TableRow>
+    </>
   );
 }
 

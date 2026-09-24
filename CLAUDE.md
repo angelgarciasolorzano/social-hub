@@ -64,11 +64,14 @@ All commands run from the repo root.
 
 ### Tests
 
+- **Ubicación:** crea las pruebas específicas dentro del módulo dueño: `app/{Domain}/Tests/` o, si pertenecen a un submódulo, `app/{Domain}/Modules/{Feature}/Tests/`. Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes; no agregues allí nuevas pruebas específicas de un módulo.
+- Agrupa las pruebas modulares por responsabilidad (`Crud/`, `Lifecycle/`, `Listeners/`, `Queries/`, `Factories/`, `Seeders/`). Al agregar una carpeta nueva, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base/traits que necesite.
 - `composer test` — clears config then runs the Pest suite.
 - `php artisan test --compact` (or `vendor/bin/pest`) — full suite, compact output.
 - `php artisan test --compact tests/Feature/FooTest.php` — single file.
+- `php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceIndexTest.php` — ejemplo de una prueba dentro de su módulo.
 - `php artisan test --compact --filter=testName` — single test by name (use after every edit).
-- `php artisan make:test --pest {Name}` — create a feature test (most tests are feature tests; pass `--unit` for unit). Existing PHPUnit-class tests keep working side by side; new tests are written in Pest.
+- `php artisan make:test --pest {Name}` — crea el esqueleto de una prueba Pest (pass `--unit` for unit). Laravel lo genera bajo `tests/`; si la prueba pertenece a un módulo, muévela a su carpeta `Tests/` y asegúrate de registrarla en la configuración.
 
 ### Database / scaffolding
 
@@ -309,6 +312,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Testing
 
+- Place new module-specific tests under the owning module's `Tests/` directory (`app/{Domain}/Tests/` or `app/{Domain}/Modules/{Feature}/Tests/`); reserve root `tests/` for cross-module, infrastructure, and existing tests.
+- Register new module test directories in `phpunit.xml` and configure their Pest base case/shared traits in `tests/Pest.php` as needed.
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.

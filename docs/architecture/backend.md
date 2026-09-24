@@ -43,10 +43,13 @@ app/<Module>/
 │   └── {Module}Collection.php        ← solo si hay listado
 ├── Data/
 │   └── {Module}{Concept}Data.php      ← input, filtros y estructuras no modeladas
-├── Factories/
-│   └── {Module}Factory.php
-├── Seeders/
-│   └── {Module}Seeder.php            ← solo si hay datos iniciales
+├── Database/
+│   ├── Factories/
+│   │   └── {Module}Factory.php
+│   ├── Migrations/
+│   └── Seeders/
+│       └── {Module}Seeder.php        ← solo si hay datos iniciales
+├── Tests/                             ← solo si el módulo tiene pruebas propias
 ├── Providers/
 │   ├── {Module}ServiceProvider.php
 │   └── {Module}RouteServiceProvider.php
@@ -153,15 +156,23 @@ app/<Module>/Modules/<Feature>/
 
 ### Organización de pruebas
 
-Las pruebas de un submódulo se agrupan por responsabilidad dentro de `Tests/`:
+Las pruebas nuevas se guardan junto al módulo dueño de la funcionalidad:
+
+- Módulo de dominio: `app/<Domain>/Tests/`.
+- Funcionalidad de un submódulo: `app/<Domain>/Modules/<Feature>/Tests/`.
+- Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes que aún no se hayan migrado; no agregues allí nuevas pruebas específicas de un módulo.
+
+Dentro de cada `Tests/`, agrupa por responsabilidad:
 
 - `Crud/` para crear, actualizar y eliminar recursos.
+- `Factories/` para verificar factories cuando corresponda.
 - `Lifecycle/` para renovaciones, reactivaciones y otros cambios de ciclo de vida.
 - `Listeners/` para comportamiento disparado por listeners.
 - `Queries/` para índices, listados y filtros.
 - `Seeders/` para datos iniciales.
 
 Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
+Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente `app/Auth/Modules/TrustedDevice/Tests/` ya está registrado.
 
 ## 5. Cómo crear un módulo nuevo
 
@@ -170,12 +181,12 @@ Sigue esta checklist en orden:
 1. **Crear la estructura de carpetas:**
 
    ```bash
-   mkdir -p app/{Module}/{Models,Providers,routes,Controllers,Requests,Resources}
+   mkdir -p app/{Module}/{Models,Providers,routes,Controllers,Requests,Resources,Database/{Migrations,Factories,Seeders}}
    ```
 
 2. **Crear el modelo** en `app/{Module}/Models/{Module}.php`
 
-3. **Crear la factory** en `app/{Module}/Factories/{Module}Factory.php`
+3. **Crear la factory** en `app/{Module}/Database/Factories/{Module}Factory.php`. Su estado predeterminado debe cubrir los campos persistidos del modelo y su migración con valores realistas o `null` explícito; deja que Eloquent gestione la clave primaria y los timestamps.
 
 4. **Crear los dos providers:**
    - `app/{Module}/Providers/{Module}ServiceProvider.php` — su `boot()` registra el `RouteServiceProvider`
@@ -191,12 +202,13 @@ Sigue esta checklist en orden:
 
 9. **Definir las rutas** en `app/{Module}/routes/routes.php`
 
-10. **Tests feature** en `tests/Feature/{Module}/`
+10. **Crear las pruebas junto al código que cubren:** `app/{Module}/Tests/` para pruebas del módulo o `app/{Module}/Modules/{Feature}/Tests/` para un submódulo. Registra la carpeta en `phpunit.xml` y `tests/Pest.php` para que Pest la descubra y aplique la configuración correcta.
 
 ## 6. Convenciones adicionales
 
 - Todo archivo PHP empieza con `declare(strict_types=1);`
 - Namespaces PSR-4: `App\{Module}\{Type}`
+- Al cambiar un modelo o su esquema, revisa y actualiza su factory para cubrir sus campos persistidos con datos realistas o `null` explícito; omite solo los campos que Eloquent administra automáticamente, como la clave primaria y los timestamps.
 - Relaciones Eloquent declaran genéricos en PHPDoc: `@return HasMany<Post, $this>`
 - Models con `HasFactory` declaran el genérico: `/** @use HasFactory<{Module}Factory> */`
 - Constantes del modelo (MORPH_NAME, MORPH_COLUMN) llevan docblock descriptivo
@@ -207,14 +219,17 @@ Sigue esta checklist en orden:
 ```
 app/Post/
 ├── Controllers/PostController.php
-├── Factories/PostFactory.php
+├── Database/
+│   ├── Factories/PostFactory.php
+│   └── Seeders/PostSeeder.php
 ├── Models/Post.php
 ├── Providers/
 │   ├── PostServiceProvider.php
 │   └── PostRouteServiceProvider.php
 ├── Requests/PostRequest.php
 ├── Resources/PostResource.php
-├── Seeders/PostSeeder.php
+├── Tests/
+│   └── Crud/
 └── routes/routes.php
 ```
 
