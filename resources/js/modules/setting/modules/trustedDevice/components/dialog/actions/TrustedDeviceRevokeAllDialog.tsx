@@ -195,7 +195,7 @@ function TrustedDeviceRevokeAllDialog({
 }
 
 function TrustedDeviceRevokeAllDialogSkeleton(): JSX.Element {
-  const deviceSkeletonKeys = ["first", "second", "third"];
+  const deviceSkeletonKeys = ["first", "second", "third", "fourth", "fifth"];
 
   return (
     <div className="flex flex-col gap-6">
@@ -224,7 +224,7 @@ function TrustedDeviceRevokeAllDialogSkeleton(): JSX.Element {
             <div className="flex min-w-0 items-center gap-3" key={deviceSkeletonKey}>
               <Skeleton className="size-4 shrink-0 rounded-full" />
               <Skeleton className="h-4 w-28 max-w-full" />
-              <Skeleton className="h-4 w-20 max-w-full" />
+              <Skeleton className="h-4 w-100 max-w-full" />
             </div>
           ))}
         </div>
