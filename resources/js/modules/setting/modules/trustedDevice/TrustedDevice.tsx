@@ -211,7 +211,7 @@ function TrustedDevice(): JSX.Element {
     <>
       <Head title="Dispositivos de confianza" />
 
-      <div className="flex min-w-0 gap-4">
+      <div className="flex min-w-0 flex-col gap-4 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <TrustedDeviceTitle onTitleAction={handleTitleAction} />
 
@@ -236,7 +236,7 @@ function TrustedDevice(): JSX.Element {
           <TrustedDevicesSecurityCallout />
         </div>
 
-        <div className="flex w-full max-w-sm shrink-0 flex-col gap-6 self-start">
+        <div className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0 xl:self-start">
           <Deferred
             data="stats"
             fallback={<TrustedDeviceSummarySkeleton />}
@@ -286,13 +286,13 @@ interface TrustedDeviceTitleProps {
 
 function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Element {
   return (
-    <div className="flex items-center justify-between gap-12 rounded-xl border bg-card p-6 shadow-sm">
-      <div className="flex items-start gap-6">
+    <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
+      <div className="flex min-w-0 items-start gap-4 sm:gap-6">
         <div className={cn(iconColorVariants.blue.iconBgClass, "rounded-3xl p-2")}>
           <ShieldCheck className={cn("h-12 w-12", iconColorVariants.blue.iconFgClass)} />
         </div>
 
-        <div className="flex flex-1 flex-col gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col gap-1">
             <h2 className="text-xl font-semibold">Dispositivos de confianza</h2>
 
@@ -632,14 +632,14 @@ function TrustedDevicesTableSection(): JSX.Element {
 
 function TrustedDevicesSecurityCallout(): JSX.Element {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-start gap-4">
+    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-4">
         <div className={cn("flex h-10 w-10 rounded-md p-2", iconColorVariants.blue.iconBgClass)}>
           <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />
         </div>
 
-        <div className="flex w-full items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="flex w-full min-w-0 items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1">
             <h4 className="text-sm font-semibold">¿No reconoces algun dispositivo?</h4>
 
             <p className="text-sm text-muted-foreground">
@@ -650,7 +650,7 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
         </div>
       </div>
 
-      <Button variant="link" className="text-blue-700 dark:text-blue-500">
+      <Button className="shrink-0 text-blue-700 dark:text-blue-500" variant="link">
         Revisar actividad de seguridad
         <ChevronRight className="h-4 w-4" />
       </Button>

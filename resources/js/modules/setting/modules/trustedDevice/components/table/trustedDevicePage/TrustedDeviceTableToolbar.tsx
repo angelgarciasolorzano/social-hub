@@ -99,8 +99,8 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-4">
-        <InputGroup className="max-w-xs">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <InputGroup className="w-full max-w-xs xl:min-w-0 xl:flex-1">
           <InputGroupAddon>
             <Search className="size-4" />
           </InputGroupAddon>
@@ -127,7 +127,7 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
           )}
         </InputGroup>
 
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-nowrap xl:justify-center">
           <TrustedDeviceFiltersPopover
             browserFilter={filters.browser}
             deviceTypeFilter={filters.deviceType}

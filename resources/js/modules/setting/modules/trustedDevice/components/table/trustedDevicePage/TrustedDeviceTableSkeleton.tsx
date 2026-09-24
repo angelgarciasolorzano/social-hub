@@ -87,10 +87,10 @@ function TrustedDeviceTableSkeleton({
       </span>
 
       <div aria-hidden="true" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <Skeleton className="h-10 w-full max-w-xs" />
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <Skeleton className="h-10 w-full max-w-xs xl:min-w-0 xl:flex-1" />
 
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-nowrap xl:justify-center">
             <Skeleton className="h-10 w-24" />
             <Skeleton className="h-10 w-36" />
             <Skeleton className="h-10 w-28" />
