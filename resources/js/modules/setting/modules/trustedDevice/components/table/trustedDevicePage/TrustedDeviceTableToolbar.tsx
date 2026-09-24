@@ -31,7 +31,10 @@ import {
   type TrustedDeviceSortKey,
   trustedDeviceSortOptions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceSort";
-import { trustedDeviceColumnVisibilityOptions } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
+import {
+  trustedDeviceColumnVisibilityOptions,
+  trustedDeviceDefaultColumnVisibility,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -229,7 +232,7 @@ function TrustedDeviceColumnVisibilityMenu({
         <Button
           className="w-full justify-start"
           onClick={() => {
-            onColumnVisibilityChange({});
+            onColumnVisibilityChange(trustedDeviceDefaultColumnVisibility);
           }}
           size="sm"
           type="button"

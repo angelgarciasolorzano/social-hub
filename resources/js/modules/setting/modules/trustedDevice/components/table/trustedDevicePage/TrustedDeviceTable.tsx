@@ -39,7 +39,7 @@ import type {
   TrustedDevicePagination as TrustedDevicePaginationData,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { createDialogCloseHandler } from "@/modules/setting/shared/utils/dialog";
 import type { DialogClosingState } from "@/modules/setting/shared/utils/dialog";
 import {
@@ -116,6 +116,22 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
     minSize: 140,
     maxSize: 320,
     cell: ({ row }) => deviceBrowserAndOs(row.original),
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.ip,
+    header: "IP",
+    size: 150,
+    minSize: 120,
+    maxSize: 260,
+    cell: ({ row }) => <TrustedDeviceIpCell device={row.original} />,
+  }),
+  trustedDeviceColumnHelper.display({
+    id: trustedDeviceTableColumnIds.expiration,
+    header: "Expira",
+    size: 140,
+    minSize: 120,
+    maxSize: 240,
+    cell: ({ row }) => <TrustedDeviceExpirationCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.status,
@@ -321,6 +337,34 @@ function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.
     <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
       {device.isActive ? "Activo" : "Expirado"}
     </Badge>
+  );
+}
+
+interface TrustedDeviceIpCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceIpCell({ device }: TrustedDeviceIpCellProps): JSX.Element {
+  const ipAddress = device.ip ?? "No disponible";
+
+  return (
+    <span className="block truncate font-mono text-xs" title={device.ip ?? undefined}>
+      {ipAddress}
+    </span>
+  );
+}
+
+interface TrustedDeviceExpirationCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceExpirationCell({ device }: TrustedDeviceExpirationCellProps): JSX.Element {
+  const isRevoked = device.deletedAt !== null;
+
+  return (
+    <span title={isRevoked ? undefined : formatLongDate(device.expiresAt)}>
+      {isRevoked ? "No aplica" : formatTimeUntil(device.expiresAt)}
+    </span>
   );
 }
 

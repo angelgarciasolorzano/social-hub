@@ -35,6 +35,7 @@ import {
   type TrustedDeviceSectionActionKey,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+import { trustedDeviceDefaultColumnVisibility } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
 import type {
   TrustedDevice,
@@ -541,7 +542,9 @@ function TrustedDevicesInfoBanner() {
 function TrustedDevicesTableSection(): JSX.Element {
   const { filters: initialFilters, trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
+    trustedDeviceDefaultColumnVisibility,
+  );
 
   const { committedFilters, filters, resetFilters, updateFilter } =
     useTrustedDeviceFilters(initialFilters);
