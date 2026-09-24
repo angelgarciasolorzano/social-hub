@@ -10,6 +10,16 @@ export const trustedDeviceTableColumnIds = {
   actions: "actions",
 } as const;
 
+export const trustedDeviceTableColumnSizes = {
+  device: 180,
+  lastAccess: 140,
+  browserAndOs: 165,
+  ip: 150,
+  expiration: 140,
+  status: 100,
+  actions: 115,
+} as const;
+
 export const trustedDeviceDefaultColumnVisibility: ColumnVisibilityState = {
   [trustedDeviceTableColumnIds.ip]: false,
 };

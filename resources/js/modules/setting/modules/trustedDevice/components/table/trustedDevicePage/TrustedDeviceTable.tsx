@@ -33,7 +33,10 @@ import {
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
-import { trustedDeviceTableColumnIds } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
+import {
+  trustedDeviceTableColumnIds,
+  trustedDeviceTableColumnSizes,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import type {
   TrustedDevice,
   TrustedDevicePagination as TrustedDevicePaginationData,
@@ -95,7 +98,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.device,
     header: "Dispositivo",
-    size: 180,
+    size: trustedDeviceTableColumnSizes.device,
     minSize: 150,
     maxSize: 360,
     enableHiding: false,
@@ -104,7 +107,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.lastAccess,
     header: "Último acceso",
-    size: 140,
+    size: trustedDeviceTableColumnSizes.lastAccess,
     minSize: 120,
     maxSize: 280,
     cell: ({ row }) => fromNow(row.original.lastUsedAt),
@@ -112,7 +115,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.browserAndOs,
     header: "Navegador / SO",
-    size: 165,
+    size: trustedDeviceTableColumnSizes.browserAndOs,
     minSize: 140,
     maxSize: 320,
     cell: ({ row }) => deviceBrowserAndOs(row.original),
@@ -120,7 +123,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.ip,
     header: "IP",
-    size: 150,
+    size: trustedDeviceTableColumnSizes.ip,
     minSize: 120,
     maxSize: 260,
     cell: ({ row }) => <TrustedDeviceIpCell device={row.original} />,
@@ -128,7 +131,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.expiration,
     header: "Expira",
-    size: 140,
+    size: trustedDeviceTableColumnSizes.expiration,
     minSize: 120,
     maxSize: 240,
     cell: ({ row }) => <TrustedDeviceExpirationCell device={row.original} />,
@@ -136,7 +139,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.status,
     header: "Estado",
-    size: 100,
+    size: trustedDeviceTableColumnSizes.status,
     minSize: 90,
     maxSize: 180,
     cell: ({ row }) => <TrustedDeviceStatusCell device={row.original} />,
@@ -144,7 +147,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.actions,
     header: "Acciones",
-    size: 115,
+    size: trustedDeviceTableColumnSizes.actions,
     minSize: 96,
     maxSize: 180,
     enableHiding: false,
@@ -207,7 +210,7 @@ function TrustedDeviceTable({
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
-                  className="sticky top-0 bg-muted/30 hover:bg-muted/30"
+                  className="sticky top-0 z-10 bg-muted hover:bg-muted"
                   key={headerGroup.id}
                 >
                   {headerGroup.headers.map((header) => {
