@@ -24,6 +24,9 @@ import {
   TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
+import TrustedDeviceRecentActivitySkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDeviceRecentActivitySkeleton";
+import TrustedDevicesStatCardsSkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDevicesStatCardsSkeleton";
+import TrustedDeviceSummarySkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDeviceSummarySkeleton";
 import TrustedDeviceTable from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable";
 import TrustedDeviceTableSkeleton from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton";
 import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar";
@@ -53,7 +56,6 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +65,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
-import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDialog } from "@/shared/hooks";
 
@@ -416,88 +417,6 @@ function TrustedDevicesStatCards(): JSX.Element {
         </div>
       ))}
     </div>
-  );
-}
-
-function TrustedDevicesStatCardsSkeleton(): JSX.Element {
-  const skeletonKeys = ["total", "active", "expiring", "recent"];
-
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {skeletonKeys.map((skeletonKey) => (
-        <div
-          className="flex h-full min-w-0 items-start gap-4 rounded-xl border bg-card p-4 shadow-sm"
-          key={skeletonKey}
-        >
-          <Skeleton className="h-12 w-12 shrink-0 rounded-md" />
-
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <Skeleton className="h-8 w-20 max-w-full" />
-            <Skeleton className="h-4 w-36 max-w-full" />
-            <Skeleton className="h-8 w-full max-w-full" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TrustedDeviceSummarySkeleton(): JSX.Element {
-  return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center gap-2 pb-0">
-        <Skeleton className="h-5 w-48" />
-        <Skeleton className="h-4 w-56" />
-      </CardHeader>
-
-      <CardContent className="flex flex-1 items-center gap-4 pb-0">
-        <Skeleton className="h-40 w-40 shrink-0 rounded-full" />
-
-        <div className="flex flex-1 flex-col gap-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-      </CardContent>
-
-      <CardFooter className="mx-auto">
-        <Skeleton className="h-4 w-24" />
-      </CardFooter>
-    </Card>
-  );
-}
-
-function TrustedDeviceRecentActivitySkeleton(): JSX.Element {
-  const activitySkeletonKeys = ["first", "second", "third"];
-
-  return (
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-5 w-40" />
-      </CardHeader>
-
-      <CardContent className="space-y-5">
-        {activitySkeletonKeys.map((activitySkeletonKey) => (
-          <div className="flex items-center justify-between gap-4" key={activitySkeletonKey}>
-            <div className="flex items-start gap-4">
-              <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            </div>
-
-            <Skeleton className="h-4 w-16" />
-          </div>
-        ))}
-      </CardContent>
-
-      <CardFooter className="mx-auto">
-        <Skeleton className="h-4 w-36" />
-      </CardFooter>
-    </Card>
   );
 }
 
