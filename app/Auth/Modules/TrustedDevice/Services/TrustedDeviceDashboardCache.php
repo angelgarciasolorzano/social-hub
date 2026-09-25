@@ -120,4 +120,10 @@ final class TrustedDeviceDashboardCache
     {
         return \sprintf($cacheKeyTemplate, $userId);
     }
+
+    public function invalidate(User $user): void
+    {
+        Cache::forget($this->cacheKey(self::STATS_CACHE_KEY, $user->id));
+        Cache::forget($this->cacheKey(self::RECENT_ACTIVITY_CACHE_KEY, $user->id));
+    }
 }

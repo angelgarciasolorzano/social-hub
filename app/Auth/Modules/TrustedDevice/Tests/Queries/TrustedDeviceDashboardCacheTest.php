@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Auth\Models\TrustedDevice;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use Closure;
 use Illuminate\Support\Facades\Cache;
@@ -167,6 +169,214 @@ it('continues querying filtered device lists and activity dialogs on every reque
         ->and($secondFilteredDeviceRequest['queryCount'])->toBe(2)
         ->and($firstActivityDialogRequest['queryCount'])->toBe(2)
         ->and($secondActivityDialogRequest['queryCount'])->toBe(2);
+});
+
+it('invalidates dashboard cache after every successful trusted device mutation', function (): void {
+    $user = createUserWithTwoFactor();
+
+    $matchingFingerprint = [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '203.0.113.5',
+    ];
+
+    $trustedDevice = createTrustedDevice($user, [...$matchingFingerprint, 'name' => 'Revoked device']);
+    $trustedDevice->delete();
+
+    $duplicateDevice = createTrustedDevice($user, [...$matchingFingerprint, 'name' => 'Duplicate device']);
+
+    $mutableDevice = createTrustedDevice($user, [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '203.0.113.7',
+        'name' => 'Mutable device',
+    ]);
+
+    $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
+    $request = request();
+
+    $statsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
+    $recentActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
+
+    $assertInvalidatedAndRefreshed = function (
+        Closure $mutation,
+        int $expectedTotal,
+        int $expectedRevoked,
+        TrustedDeviceAction $trustedDeviceAction,
+    ) use ($trustedDeviceDashboardCache, $user, $request, $statsCacheKey, $recentActivityCacheKey): void {
+        $trustedDeviceDashboardCache->stats($user);
+        $trustedDeviceDashboardCache->recentActivity($user, $request);
+
+        expect(Cache::has($statsCacheKey))->toBeTrue()
+            ->and(Cache::has($recentActivityCacheKey))->toBeTrue();
+
+        $this->travel(1)->seconds();
+        $mutation();
+
+        expect(Cache::has($statsCacheKey))->toBeFalse()
+            ->and(Cache::has($recentActivityCacheKey))->toBeFalse();
+
+        $stats = $trustedDeviceDashboardCache->stats($user);
+        $recentActivity = $trustedDeviceDashboardCache->recentActivity($user, $request);
+
+        expect($stats->total)->toBe($expectedTotal)
+            ->and($stats->revoked)->toBe($expectedRevoked)
+            ->and(array_column($recentActivity, 'action'))->toContain($trustedDeviceAction->value);
+    };
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->withHeader('User-Agent', chromeWindowsUserAgent())
+            ->post(route('user.trusted-devices.store'), ['name' => 'New device'])
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 3,
+        expectedRevoked: 0,
+        trustedDeviceAction: TrustedDeviceAction::Created,
+    );
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->patch(route('user.trusted-devices.update', $mutableDevice), ['name' => 'Renamed device'])
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 3,
+        expectedRevoked: 0,
+        trustedDeviceAction: TrustedDeviceAction::Renamed,
+    );
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->post(route('user.trusted-devices.renew', $mutableDevice))
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 3,
+        expectedRevoked: 0,
+        trustedDeviceAction: TrustedDeviceAction::Renewed,
+    );
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
+                'otp_code' => validOtpFor($user),
+            ])
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 3,
+        expectedRevoked: 1,
+        trustedDeviceAction: TrustedDeviceAction::Reactivated,
+    );
+
+    expect(TrustedDevice::withTrashed()->find($duplicateDevice->id))->toBeNull();
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->delete(route('user.trusted-devices.destroy', $mutableDevice), [
+                'password' => 'password',
+                'terms' => true,
+            ])
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 2,
+        expectedRevoked: 2,
+        trustedDeviceAction: TrustedDeviceAction::Revoked,
+    );
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->delete(route('user.trusted-devices.destroy-all'), [
+                'password' => 'password',
+                'terms' => true,
+            ])
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 0,
+        expectedRevoked: 4,
+        trustedDeviceAction: TrustedDeviceAction::RevokedAll,
+    );
+
+    $assertInvalidatedAndRefreshed(
+        fn (): mixed => $this->actingAs($user)
+            ->delete(route('user.trusted-devices.force-destroy', $mutableDevice), [
+                'password' => 'password',
+                'terms' => true,
+            ])
+            ->assertInertiaFlash('type', 'success'),
+        expectedTotal: 0,
+        expectedRevoked: 5,
+        trustedDeviceAction: TrustedDeviceAction::Revoked,
+    );
+});
+
+it('keeps cache entries isolated when mutations fail or make no changes', function (): void {
+    $user = createUser();
+
+    $trustedDevice = createTrustedDevice($user, [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '127.0.0.1',
+    ]);
+
+    $otherUser = createUser();
+
+    $otherUsersDevices = [
+        createTrustedDevice($otherUser),
+        createTrustedDevice($otherUser),
+    ];
+
+    $otherUsersEvents = [
+        createTrustedDeviceEvent($otherUser),
+        createTrustedDeviceEvent($otherUser),
+    ];
+
+    $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
+    $request = request();
+
+    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
+    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
+    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
+    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+
+    Cache::forget($userStatsCacheKey);
+    Cache::forget($userActivityCacheKey);
+    Cache::forget($otherUserStatsCacheKey);
+    Cache::forget($otherUserActivityCacheKey);
+
+    $trustedDeviceDashboardCache->stats($user);
+    $trustedDeviceDashboardCache->recentActivity($user, $request);
+
+    $otherUsersStats = $trustedDeviceDashboardCache->stats($otherUser)->toArray();
+    $otherUsersRecentActivity = $trustedDeviceDashboardCache->recentActivity($otherUser, $request);
+
+    $this->actingAs($user)
+        ->patch(route('user.trusted-devices.update', $trustedDevice), ['name' => 'Updated name'])
+        ->assertInertiaFlash('type', 'success');
+
+    expect(Cache::has($userStatsCacheKey))->toBeFalse()
+        ->and(Cache::has($userActivityCacheKey))->toBeFalse()
+        ->and(Cache::has($otherUserStatsCacheKey))->toBeTrue()
+        ->and(Cache::has($otherUserActivityCacheKey))->toBeTrue()
+        ->and($trustedDeviceDashboardCache->stats($otherUser)->toArray())->toBe($otherUsersStats)
+        ->and($trustedDeviceDashboardCache->recentActivity($otherUser, $request))->toBe($otherUsersRecentActivity);
+
+    $trustedDeviceDashboardCache->stats($user);
+    $trustedDeviceDashboardCache->recentActivity($user, $request);
+
+    $this->actingAs($user)
+        ->patch(route('user.trusted-devices.update', $otherUsersDevices[0]), ['name' => 'Unauthorized name'])
+        ->assertForbidden();
+
+    $this->actingAs($user)
+        ->patch(route('user.trusted-devices.update', $trustedDevice), ['name' => ''])
+        ->assertSessionHasErrors('name');
+
+    $this->actingAs($user)
+        ->withHeader('User-Agent', chromeWindowsUserAgent())
+        ->post(route('user.trusted-devices.store'))
+        ->assertInertiaFlash('type', 'error');
+
+    expect(Cache::has($userStatsCacheKey))->toBeTrue()
+        ->and(Cache::has($userActivityCacheKey))->toBeTrue()
+        ->and(Cache::has($otherUserStatsCacheKey))->toBeTrue()
+        ->and(Cache::has($otherUserActivityCacheKey))->toBeTrue()
+        ->and($trustedDeviceDashboardCache->stats($user)->total)->toBe(1)
+        ->and($trustedDeviceDashboardCache->stats($otherUser)->total)->toBe(2)
+        ->and(array_column($trustedDeviceDashboardCache->recentActivity($user, $request), 'id'))
+        ->not->toContain($otherUsersEvents[0]->id, $otherUsersEvents[1]->id);
 });
 
 /**
