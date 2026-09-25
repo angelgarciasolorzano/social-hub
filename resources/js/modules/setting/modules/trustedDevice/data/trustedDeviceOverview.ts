@@ -97,11 +97,17 @@ export const trustedDeviceSectionActionKey = {
   deviceAlreadyRegistered: "device-already-registered",
   deviceExpired: "device-expired",
   deviceRevoked: "device-revoked",
+  keyboardShortcuts: "keyboard-shortcuts",
   revokeAll: "revoke-all",
 } as const;
 
 export type TrustedDeviceSectionActionKey =
   (typeof trustedDeviceSectionActionKey)[keyof typeof trustedDeviceSectionActionKey];
+
+export type TrustedDeviceSectionDialogKind = Exclude<
+  TrustedDeviceSectionActionKey,
+  typeof trustedDeviceSectionActionKey.keyboardShortcuts
+>;
 
 interface TrustedDeviceTitleAction {
   key: TrustedDeviceSectionActionKey;

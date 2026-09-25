@@ -8,6 +8,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   Clock4,
   Info,
   MonitorSmartphone,
@@ -22,6 +23,7 @@ import {
   TrustedDeviceAddDialog,
   TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceExpiredDialog,
+  TrustedDeviceKeyboardShortcutsDialog,
   TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokedDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
@@ -38,10 +40,12 @@ import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevi
 import {
   trustedDeviceSectionActionKey,
   type TrustedDeviceSectionActionKey,
+  type TrustedDeviceSectionDialogKind,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import { trustedDeviceDefaultColumnVisibility } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
+import { useTrustedDeviceShortcuts } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts";
 import type {
   TrustedDevice,
   TrustedDeviceActivityItem,
@@ -84,7 +88,7 @@ type TrustedDevicePageProps = SharedData & {
 };
 
 interface SectionDialogState extends DialogClosingState {
-  kind: TrustedDeviceSectionActionKey;
+  kind: TrustedDeviceSectionDialogKind;
 }
 
 interface ActivityDialogState extends DialogClosingState {
@@ -96,6 +100,7 @@ function TrustedDevice(): JSX.Element {
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
   const activityDialog = useDialog<ActivityDialogState | null>(null);
+  const keyboardShortcutsDialog = useDialog<DialogClosingState | null>(null);
 
   const resolveAddDeviceKind = (
     currentDeviceMatch: TrustedDevice | null | undefined,
@@ -125,10 +130,6 @@ function TrustedDevice(): JSX.Element {
     sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
   };
 
-  const handleOpenActivity = (): void => {
-    activityDialog.show({ kind: "open", closing: false });
-  };
-
   const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
     switch (action) {
       case trustedDeviceSectionActionKey.addDevice:
@@ -144,13 +145,58 @@ function TrustedDevice(): JSX.Element {
 
         break;
 
+      case trustedDeviceSectionActionKey.keyboardShortcuts:
+        keyboardShortcutsDialog.show({ closing: false });
+
+        break;
+
       default:
         break;
     }
   };
 
+  const handleOpenActivity = (): void => {
+    activityDialog.show({ kind: "open", closing: false });
+  };
+
+  const handleShortcutAction = (action: () => void): void => {
+    if (document.querySelector('[role="dialog"]') !== null) {
+      return;
+    }
+
+    action();
+  };
+
+  const handleShortcutOpenActivity = (): void => {
+    handleShortcutAction(handleOpenActivity);
+  };
+
+  const handleShortcutAddDevice = (): void => {
+    handleShortcutAction(() => {
+      handleTitleAction(trustedDeviceSectionActionKey.addDevice);
+    });
+  };
+
+  const handleShortcutOpenHelp = (): void => {
+    handleShortcutAction(() => {
+      handleTitleAction(trustedDeviceSectionActionKey.keyboardShortcuts);
+    });
+  };
+
   const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
   const handleActivityDialogClose = createDialogCloseHandler(activityDialog);
+  const handleKeyboardShortcutsDialogClose = createDialogCloseHandler(keyboardShortcutsDialog);
+
+  useTrustedDeviceShortcuts({
+    enabled: true,
+    isDialogOpen:
+      sectionDialog.state !== null ||
+      activityDialog.state !== null ||
+      keyboardShortcutsDialog.state !== null,
+    onOpenActivity: handleShortcutOpenActivity,
+    onOpenAddDevice: handleShortcutAddDevice,
+    onOpenHelp: handleShortcutOpenHelp,
+  });
 
   const renderSectionDialog = (): JSX.Element | null => {
     if (sectionDialog.state === null) {
@@ -287,6 +333,13 @@ function TrustedDevice(): JSX.Element {
 
       {renderSectionDialog()}
 
+      {keyboardShortcutsDialog.state !== null && (
+        <TrustedDeviceKeyboardShortcutsDialog
+          onClose={handleKeyboardShortcutsDialogClose}
+          open={!keyboardShortcutsDialog.state.closing}
+        />
+      )}
+
       {activityDialog.state !== null && (
         <TrustedDeviceActivityDialog
           onClose={handleActivityDialogClose}
@@ -323,45 +376,59 @@ function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Ele
         </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            <MoreHorizontal />
-            Administrar
-            <ChevronDown />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Acciones del dispositivo</DropdownMenuLabel>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <Button
+          variant="outline"
+          onClick={() => {
+            onTitleAction(trustedDeviceSectionActionKey.keyboardShortcuts);
+          }}
+        >
+          <CircleHelp aria-hidden="true" />
+          Atajos de teclado
+        </Button>
 
-          {trustedDeviceTitleActions.map((group, groupIndex) => (
-            <Fragment key={groupIndex}>
-              <DropdownMenuGroup>
-                {group.label !== undefined && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <MoreHorizontal />
+              Administrar
+              <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Acciones del dispositivo</DropdownMenuLabel>
 
-                {group.actions.map((action) => {
-                  const Icon = action.icon;
+            {trustedDeviceTitleActions.map((group, groupIndex) => (
+              <Fragment key={groupIndex}>
+                <DropdownMenuGroup>
+                  {group.label !== undefined && (
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                  )}
 
-                  return (
-                    <DropdownMenuItem
-                      key={action.key}
-                      onClick={() => {
-                        onTitleAction(action.key);
-                      }}
-                      className={action.className}
-                    >
-                      <Icon className={action.iconClassName} />
-                      {action.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuGroup>
+                  {group.actions.map((action) => {
+                    const Icon = action.icon;
 
-              {groupIndex < trustedDeviceTitleActions.length - 1 && <DropdownMenuSeparator />}
-            </Fragment>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                    return (
+                      <DropdownMenuItem
+                        key={action.key}
+                        onClick={() => {
+                          onTitleAction(action.key);
+                        }}
+                        className={action.className}
+                      >
+                        <Icon className={action.iconClassName} />
+                        {action.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+
+                {groupIndex < trustedDeviceTitleActions.length - 1 && <DropdownMenuSeparator />}
+              </Fragment>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
