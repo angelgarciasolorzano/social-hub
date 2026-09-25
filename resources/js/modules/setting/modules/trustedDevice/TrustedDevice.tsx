@@ -476,18 +476,55 @@ function TrustedDevicesTableSection(): JSX.Element {
     committedFilters.deviceType !== null ||
     committedFilters.lastAccess !== null;
 
-  const tableSkeleton = (
+  const initialTableSkeleton = (
     <TrustedDeviceTableSkeleton
       columnVisibility={columnVisibility}
       hasActiveFilters={hasActiveFilters}
+      skeletonVariant="initial"
+    />
+  );
+
+  const reloadingTableSkeleton = (
+    <TrustedDeviceTableSkeleton
+      columnVisibility={columnVisibility}
+      hasActiveFilters={hasActiveFilters}
+      skeletonVariant="table-only"
     />
   );
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      {trustedDevices !== undefined && (
+        <TrustedDeviceTableToolbar
+          committedFilters={committedFilters}
+          filters={filters}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={setColumnVisibility}
+          onBrowserFilterChange={(value) => {
+            updateFilter("browser", value);
+          }}
+          onDeviceTypeFilterChange={(value) => {
+            updateFilter("deviceType", value);
+          }}
+          onLastAccessFilterChange={(value) => {
+            updateFilter("lastAccess", value);
+          }}
+          onResetFilters={resetFilters}
+          onSearchChange={(value) => {
+            updateFilter("search", value);
+          }}
+          onSortOrderChange={(value) => {
+            updateFilter("sort", value);
+          }}
+          onStatusFilterChange={(value) => {
+            updateFilter("status", value);
+          }}
+        />
+      )}
+
       <Deferred
         data="trustedDevices"
-        fallback={tableSkeleton}
+        fallback={trustedDevices === undefined ? initialTableSkeleton : reloadingTableSkeleton}
         rescue={({ reloading }) => (
           <TrustedDeviceDeferredError
             message="No se pudieron cargar los dispositivos de confianza."
@@ -499,49 +536,25 @@ function TrustedDevicesTableSection(): JSX.Element {
         )}
       >
         {({ reloading }) => {
-          if (reloading || trustedDevices === undefined) {
-            return tableSkeleton;
+          if (trustedDevices === undefined) {
+            return initialTableSkeleton;
+          }
+
+          if (reloading) {
+            return reloadingTableSkeleton;
           }
 
           return (
-            <>
-              <TrustedDeviceTableToolbar
-                committedFilters={committedFilters}
-                filters={filters}
-                columnVisibility={columnVisibility}
-                onColumnVisibilityChange={setColumnVisibility}
-                onBrowserFilterChange={(value) => {
-                  updateFilter("browser", value);
-                }}
-                onDeviceTypeFilterChange={(value) => {
-                  updateFilter("deviceType", value);
-                }}
-                onLastAccessFilterChange={(value) => {
-                  updateFilter("lastAccess", value);
-                }}
-                onResetFilters={resetFilters}
-                onSearchChange={(value) => {
-                  updateFilter("search", value);
-                }}
-                onSortOrderChange={(value) => {
-                  updateFilter("sort", value);
-                }}
-                onStatusFilterChange={(value) => {
-                  updateFilter("status", value);
-                }}
-              />
-
-              <TrustedDeviceTable
-                devices={trustedDevices.data}
-                hasActiveFilters={hasActiveFilters}
-                columnVisibility={columnVisibility}
-                onColumnVisibilityChange={setColumnVisibility}
-                pagination={trustedDevices}
-                onPerPageChange={(value) => {
-                  updateFilter("perPage", value as TrustedDevicePerPage);
-                }}
-              />
-            </>
+            <TrustedDeviceTable
+              devices={trustedDevices.data}
+              hasActiveFilters={hasActiveFilters}
+              columnVisibility={columnVisibility}
+              onColumnVisibilityChange={setColumnVisibility}
+              pagination={trustedDevices}
+              onPerPageChange={(value) => {
+                updateFilter("perPage", value as TrustedDevicePerPage);
+              }}
+            />
           );
         }}
       </Deferred>

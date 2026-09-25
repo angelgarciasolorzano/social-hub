@@ -20,6 +20,7 @@ import {
 interface TrustedDeviceTableSkeletonProps {
   columnVisibility: ColumnVisibilityState;
   hasActiveFilters: boolean;
+  skeletonVariant: "initial" | "table-only";
 }
 
 const trustedDeviceSkeletonColumns = [
@@ -73,6 +74,7 @@ const trustedDeviceSkeletonWidths = ["w-1/2", "w-3/5", "w-2/3", "w-4/5"] as cons
 function TrustedDeviceTableSkeleton({
   columnVisibility,
   hasActiveFilters,
+  skeletonVariant,
 }: TrustedDeviceTableSkeletonProps): JSX.Element {
   const visibleColumns = trustedDeviceSkeletonColumns.filter(
     ({ id }) => columnVisibility[id] !== false,
@@ -86,26 +88,28 @@ function TrustedDeviceTableSkeleton({
         Cargando dispositivos de confianza
       </span>
 
-      <div aria-hidden="true" className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <Skeleton className="h-10 w-full max-w-xs xl:min-w-0 xl:flex-1" />
+      {skeletonVariant === "initial" && (
+        <div aria-hidden="true" className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <Skeleton className="h-10 w-full max-w-xs xl:min-w-0 xl:flex-1" />
 
-          <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-nowrap xl:justify-center">
-            <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-36" />
-            <Skeleton className="h-10 w-28" />
-            <Skeleton className="size-10 shrink-0" />
+            <div className="flex flex-wrap items-center justify-start gap-2 xl:flex-nowrap xl:justify-center">
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-36" />
+              <Skeleton className="h-10 w-28" />
+              <Skeleton className="size-10 shrink-0" />
+            </div>
           </div>
+
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-7 w-28 rounded-full" />
+              <Skeleton className="h-7 w-32 rounded-full" />
+            </div>
+          )}
         </div>
-
-        {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-7 w-28 rounded-full" />
-            <Skeleton className="h-7 w-32 rounded-full" />
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="w-full min-w-0" aria-hidden="true">
         <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:w-full [&>div]:min-w-0 [&>div]:rounded-md [&>div]:border">
@@ -141,20 +145,22 @@ function TrustedDeviceTableSkeleton({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4" aria-hidden="true">
-        <Skeleton className="h-4 w-24" />
+      {skeletonVariant === "initial" && (
+        <div className="flex items-center justify-between gap-4" aria-hidden="true">
+          <Skeleton className="h-4 w-24" />
 
-        <div className="flex flex-1 items-center justify-center gap-2">
-          <Skeleton className="size-10" />
-          <Skeleton className="size-10" />
-          <Skeleton className="size-10" />
-        </div>
+          <div className="flex flex-1 items-center justify-center gap-2">
+            <Skeleton className="size-10" />
+            <Skeleton className="size-10" />
+            <Skeleton className="size-10" />
+          </div>
 
-        <div className="flex items-center gap-3">
-          <Skeleton className="hidden h-4 w-28 sm:block" />
-          <Skeleton className="h-10 w-32" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="hidden h-4 w-28 sm:block" />
+            <Skeleton className="h-10 w-32" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
