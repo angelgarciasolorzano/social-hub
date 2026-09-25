@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import {
+  TrustedDeviceActivityDialog,
   TrustedDeviceAddDialog,
   TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceExpiredDialog,
@@ -86,10 +87,15 @@ interface SectionDialogState extends DialogClosingState {
   kind: TrustedDeviceSectionActionKey;
 }
 
+interface ActivityDialogState extends DialogClosingState {
+  kind: "open";
+}
+
 function TrustedDevice(): JSX.Element {
   const { currentDevicePreview, currentDeviceMatch } = usePage<TrustedDevicePageProps>().props;
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
+  const activityDialog = useDialog<ActivityDialogState | null>(null);
 
   const resolveAddDeviceKind = (
     currentDeviceMatch: TrustedDevice | null | undefined,
@@ -119,6 +125,10 @@ function TrustedDevice(): JSX.Element {
     sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
   };
 
+  const handleOpenActivity = (): void => {
+    activityDialog.show({ kind: "open", closing: false });
+  };
+
   const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
     switch (action) {
       case trustedDeviceSectionActionKey.addDevice:
@@ -140,6 +150,7 @@ function TrustedDevice(): JSX.Element {
   };
 
   const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
+  const handleActivityDialogClose = createDialogCloseHandler(activityDialog);
 
   const renderSectionDialog = (): JSX.Element | null => {
     if (sectionDialog.state === null) {
@@ -269,12 +280,19 @@ function TrustedDevice(): JSX.Element {
               />
             )}
           >
-            <TrustedDeviceRecentActivity />
+            <TrustedDeviceRecentActivity onOpenActivity={handleOpenActivity} />
           </Deferred>
         </div>
       </div>
 
       {renderSectionDialog()}
+
+      {activityDialog.state !== null && (
+        <TrustedDeviceActivityDialog
+          onClose={handleActivityDialogClose}
+          open={!activityDialog.state.closing}
+        />
+      )}
     </>
   );
 }
