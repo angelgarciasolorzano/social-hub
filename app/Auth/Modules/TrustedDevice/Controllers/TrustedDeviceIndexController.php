@@ -8,10 +8,10 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceActivityFiltersData;
 use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceFiltersData;
-use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceEventResource;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -24,6 +24,8 @@ use Inertia\Response;
 
 final class TrustedDeviceIndexController extends Controller
 {
+    public function __construct(private readonly TrustedDeviceDashboardCache $trustedDeviceDashboardCache) {}
+
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
@@ -120,14 +122,8 @@ final class TrustedDeviceIndexController extends Controller
                     ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
                 rescue: true,
             ),
-            'stats' => Inertia::defer(fn (): array => $this->buildStats($user), rescue: true),
-            'recentActivity' => Inertia::defer(fn (): array => $user->trustedDeviceEvents()
-                ->latest('created_at')
-                ->limit(3)
-                ->get()
-                ->map(fn (TrustedDeviceEvent $trustedDeviceEvent): array => new TrustedDeviceEventResource($trustedDeviceEvent)
-                    ->resolve($request))
-                ->all(), rescue: true),
+            'stats' => Inertia::defer(fn (): array => $this->trustedDeviceDashboardCache->stats($user), rescue: true),
+            'recentActivity' => Inertia::defer(fn (): array => $this->trustedDeviceDashboardCache->recentActivity($user, $request), rescue: true),
             'activityDialog' => Inertia::optional(fn (): array => $this->buildActivity($request)),
         ];
 
@@ -195,58 +191,6 @@ final class TrustedDeviceIndexController extends Controller
         return [
             'activityLog' => $paginator,
             'activityFilters' => $trustedDeviceActivityFiltersData->toArray(),
-        ];
-    }
-
-    /**
-     * Aggregate counters shown in the page header stat cards and chart segments.
-     *
-     * @return array{
-     *     total: int,
-     *     active: int,
-     *     expiringSoon: int,
-     *     recentlyAdded: int,
-     *     inactive: int,
-     *     revoked: int,
-     *     byDeviceType: array{desktop: int, mobile: int},
-     * }
-     */
-    private function buildStats(User $user): array
-    {
-        $now = CarbonImmutable::now();
-        $inSevenDays = $now->addDays(7);
-        $sevenDaysAgo = $now->subDays(7);
-
-        $byDeviceType = [
-            'desktop' => $user->trustedDevices()
-                ->whereNull('deleted_at')
-                ->where('is_mobile', false)
-                ->count(),
-            'mobile' => $user->trustedDevices()
-                ->whereNull('deleted_at')
-                ->where('is_mobile', true)
-                ->count(),
-        ];
-
-        return [
-            'total' => $user->trustedDevices()->count(),
-            'active' => $user->trustedDevices()
-                ->where('expires_at', '>', $now)
-                ->count(),
-            'expiringSoon' => $user->trustedDevices()
-                ->where('expires_at', '>', $now)
-                ->where('expires_at', '<', $inSevenDays)
-                ->count(),
-            'recentlyAdded' => $user->trustedDevices()
-                ->where('created_at', '>', $sevenDaysAgo)
-                ->count(),
-            'inactive' => $user->trustedDevices()
-                ->where('expires_at', '<=', $now)
-                ->count(),
-            'revoked' => $user->trustedDeviceEvents()
-                ->whereIn('action', [TrustedDeviceAction::Revoked, TrustedDeviceAction::RevokedAll])
-                ->count(),
-            'byDeviceType' => $byDeviceType,
         ];
     }
 }
