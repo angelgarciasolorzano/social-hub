@@ -15,10 +15,10 @@ export const trustedDeviceRowActionKey = {
   forceDestroy: "force-destroy",
 } as const;
 
-export type TrustedDeviceRowActionKey =
+type TrustedDeviceRowActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
-export interface TrustedDeviceRowAction {
+interface TrustedDeviceRowAction {
   key: TrustedDeviceRowActionKey;
   icon: LucideIcon;
   label: string;
@@ -27,7 +27,7 @@ export interface TrustedDeviceRowAction {
   isEnabled: (device: TrustedDevice) => boolean;
 }
 
-export interface TrustedDeviceRowActionGroup {
+interface TrustedDeviceRowActionGroup {
   label?: string;
   actions: TrustedDeviceRowAction[];
 }
@@ -92,32 +92,38 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
   },
 ];
 
-export const trustedDeviceSectionActionKey = {
+export const trustedDeviceDialogKind = {
   addDevice: "add-device",
   deviceAlreadyRegistered: "device-already-registered",
   deviceExpired: "device-expired",
   deviceRevoked: "device-revoked",
   keyboardShortcuts: "keyboard-shortcuts",
   revokeAll: "revoke-all",
+  activity: "activity",
 } as const;
 
-export type TrustedDeviceSectionActionKey =
-  (typeof trustedDeviceSectionActionKey)[keyof typeof trustedDeviceSectionActionKey];
+export type TrustedDeviceDialogKind =
+  (typeof trustedDeviceDialogKind)[keyof typeof trustedDeviceDialogKind];
 
-export type TrustedDeviceSectionDialogKind = Exclude<
-  TrustedDeviceSectionActionKey,
-  typeof trustedDeviceSectionActionKey.keyboardShortcuts
+export type TrustedDeviceAddDeviceDialogKind = Exclude<
+  TrustedDeviceDialogKind,
+  | typeof trustedDeviceDialogKind.keyboardShortcuts
+  | typeof trustedDeviceDialogKind.revokeAll
+  | typeof trustedDeviceDialogKind.activity
 >;
 
+export type TrustedDeviceAdminActionKey =
+  typeof trustedDeviceDialogKind.addDevice | typeof trustedDeviceDialogKind.revokeAll;
+
 interface TrustedDeviceTitleAction {
-  key: TrustedDeviceSectionActionKey;
+  key: TrustedDeviceAdminActionKey;
   label: string;
   icon: LucideIcon;
   iconClassName?: string;
   className?: string;
 }
 
-export interface TrustedDeviceTitleActionGroup {
+interface TrustedDeviceTitleActionGroup {
   label?: string;
   actions: TrustedDeviceTitleAction[];
 }
@@ -126,7 +132,7 @@ export const trustedDeviceTitleActions: TrustedDeviceTitleActionGroup[] = [
   {
     actions: [
       {
-        key: trustedDeviceSectionActionKey.addDevice,
+        key: trustedDeviceDialogKind.addDevice,
         icon: Plus,
         label: "Agregar dispositivo",
       },
@@ -135,7 +141,7 @@ export const trustedDeviceTitleActions: TrustedDeviceTitleActionGroup[] = [
   {
     actions: [
       {
-        key: trustedDeviceSectionActionKey.revokeAll,
+        key: trustedDeviceDialogKind.revokeAll,
         icon: Trash2,
         label: "Revocar todos",
         className:

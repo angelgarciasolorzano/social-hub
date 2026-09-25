@@ -38,9 +38,10 @@ import TrustedDeviceRecommendations from "@/modules/setting/modules/trustedDevic
 import TrustedDeviceSummary from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary";
 import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import {
-  trustedDeviceSectionActionKey,
-  type TrustedDeviceSectionActionKey,
-  type TrustedDeviceSectionDialogKind,
+  type TrustedDeviceAddDeviceDialogKind,
+  type TrustedDeviceAdminActionKey,
+  trustedDeviceDialogKind,
+  type TrustedDeviceDialogKind,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import { trustedDeviceDefaultColumnVisibility } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
@@ -87,76 +88,63 @@ type TrustedDevicePageProps = SharedData & {
   recentActivity?: TrustedDeviceActivityItem[];
 };
 
-interface SectionDialogState extends DialogClosingState {
-  kind: TrustedDeviceSectionDialogKind;
-}
-
-interface ActivityDialogState extends DialogClosingState {
-  kind: "open";
+interface TrustedDeviceDialogState extends DialogClosingState {
+  kind: TrustedDeviceDialogKind;
 }
 
 function TrustedDevice(): JSX.Element {
   const { currentDevicePreview, currentDeviceMatch } = usePage<TrustedDevicePageProps>().props;
 
-  const sectionDialog = useDialog<SectionDialogState | null>(null);
-  const activityDialog = useDialog<ActivityDialogState | null>(null);
-  const keyboardShortcutsDialog = useDialog<DialogClosingState | null>(null);
+  const trustedDeviceDialog = useDialog<TrustedDeviceDialogState | null>(null);
 
   const resolveAddDeviceKind = (
     currentDeviceMatch: TrustedDevice | null | undefined,
-  ): SectionDialogState["kind"] => {
+  ): TrustedDeviceAddDeviceDialogKind => {
     if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
-      return trustedDeviceSectionActionKey.addDevice;
+      return trustedDeviceDialogKind.addDevice;
     }
 
     if (currentDeviceMatch.deletedAt !== null) {
-      return trustedDeviceSectionActionKey.deviceRevoked;
+      return trustedDeviceDialogKind.deviceRevoked;
     }
 
     if (!currentDeviceMatch.isActive) {
-      return trustedDeviceSectionActionKey.deviceExpired;
+      return trustedDeviceDialogKind.deviceExpired;
     }
 
-    return trustedDeviceSectionActionKey.deviceAlreadyRegistered;
+    return trustedDeviceDialogKind.deviceAlreadyRegistered;
   };
 
   const handleAddDevice = (): void => {
-    const kind: SectionDialogState["kind"] = resolveAddDeviceKind(currentDeviceMatch);
+    const kind: TrustedDeviceAddDeviceDialogKind = resolveAddDeviceKind(currentDeviceMatch);
 
-    sectionDialog.show({ kind, closing: false });
+    trustedDeviceDialog.show({ kind, closing: false });
   };
 
   const handleRevokeAllDevices = (): void => {
-    sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.revokeAll, closing: false });
   };
 
-  const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
+  const handleTitleAction = (action: TrustedDeviceAdminActionKey): void => {
     switch (action) {
-      case trustedDeviceSectionActionKey.addDevice:
-      case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
-      case trustedDeviceSectionActionKey.deviceRevoked:
-      case trustedDeviceSectionActionKey.deviceExpired:
+      case trustedDeviceDialogKind.addDevice:
         handleAddDevice();
 
         break;
 
-      case trustedDeviceSectionActionKey.revokeAll:
+      case trustedDeviceDialogKind.revokeAll:
         handleRevokeAllDevices();
 
-        break;
-
-      case trustedDeviceSectionActionKey.keyboardShortcuts:
-        keyboardShortcutsDialog.show({ closing: false });
-
-        break;
-
-      default:
         break;
     }
   };
 
+  const handleOpenKeyboardShortcuts = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.keyboardShortcuts, closing: false });
+  };
+
   const handleOpenActivity = (): void => {
-    activityDialog.show({ kind: "open", closing: false });
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.activity, closing: false });
   };
 
   const handleShortcutAction = (action: () => void): void => {
@@ -173,49 +161,42 @@ function TrustedDevice(): JSX.Element {
 
   const handleShortcutAddDevice = (): void => {
     handleShortcutAction(() => {
-      handleTitleAction(trustedDeviceSectionActionKey.addDevice);
+      handleTitleAction(trustedDeviceDialogKind.addDevice);
     });
   };
 
   const handleShortcutOpenHelp = (): void => {
-    handleShortcutAction(() => {
-      handleTitleAction(trustedDeviceSectionActionKey.keyboardShortcuts);
-    });
+    handleShortcutAction(handleOpenKeyboardShortcuts);
   };
 
-  const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
-  const handleActivityDialogClose = createDialogCloseHandler(activityDialog);
-  const handleKeyboardShortcutsDialogClose = createDialogCloseHandler(keyboardShortcutsDialog);
+  const handleDialogClose = createDialogCloseHandler(trustedDeviceDialog);
 
   useTrustedDeviceShortcuts({
     enabled: true,
-    isDialogOpen:
-      sectionDialog.state !== null ||
-      activityDialog.state !== null ||
-      keyboardShortcutsDialog.state !== null,
+    isDialogOpen: trustedDeviceDialog.state !== null,
     onOpenActivity: handleShortcutOpenActivity,
     onOpenAddDevice: handleShortcutAddDevice,
     onOpenHelp: handleShortcutOpenHelp,
   });
 
-  const renderSectionDialog = (): JSX.Element | null => {
-    if (sectionDialog.state === null) {
+  const renderDialog = (): JSX.Element | null => {
+    if (trustedDeviceDialog.state === null) {
       return null;
     }
 
-    const isClosing = sectionDialog.state.closing;
+    const isClosing = trustedDeviceDialog.state.closing;
 
-    switch (sectionDialog.state.kind) {
-      case trustedDeviceSectionActionKey.addDevice:
+    switch (trustedDeviceDialog.state.kind) {
+      case trustedDeviceDialogKind.addDevice:
         return (
           <TrustedDeviceAddDialog
             preview={currentDevicePreview ?? null}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
           />
         );
 
-      case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
+      case trustedDeviceDialogKind.deviceAlreadyRegistered:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -224,12 +205,12 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceAlreadyRegisteredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
             showListLink={false}
           />
         );
 
-      case trustedDeviceSectionActionKey.deviceRevoked:
+      case trustedDeviceDialogKind.deviceRevoked:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -238,11 +219,11 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceRevokedDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
           />
         );
 
-      case trustedDeviceSectionActionKey.deviceExpired:
+      case trustedDeviceDialogKind.deviceExpired:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -251,14 +232,20 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceExpiredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
           />
         );
 
-      case trustedDeviceSectionActionKey.revokeAll:
+      case trustedDeviceDialogKind.revokeAll:
+        return <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleDialogClose} />;
+
+      case trustedDeviceDialogKind.keyboardShortcuts:
         return (
-          <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleSectionDialogClose} />
+          <TrustedDeviceKeyboardShortcutsDialog onClose={handleDialogClose} open={!isClosing} />
         );
+
+      case trustedDeviceDialogKind.activity:
+        return <TrustedDeviceActivityDialog onClose={handleDialogClose} open={!isClosing} />;
 
       default:
         return null;
@@ -271,7 +258,10 @@ function TrustedDevice(): JSX.Element {
 
       <div className="flex min-w-0 flex-col gap-4 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <TrustedDeviceTitle onTitleAction={handleTitleAction} />
+          <TrustedDeviceTitle
+            onOpenKeyboardShortcuts={handleOpenKeyboardShortcuts}
+            onTitleAction={handleTitleAction}
+          />
 
           <Deferred
             data="stats"
@@ -331,21 +321,7 @@ function TrustedDevice(): JSX.Element {
         </div>
       </div>
 
-      {renderSectionDialog()}
-
-      {keyboardShortcutsDialog.state !== null && (
-        <TrustedDeviceKeyboardShortcutsDialog
-          onClose={handleKeyboardShortcutsDialogClose}
-          open={!keyboardShortcutsDialog.state.closing}
-        />
-      )}
-
-      {activityDialog.state !== null && (
-        <TrustedDeviceActivityDialog
-          onClose={handleActivityDialogClose}
-          open={!activityDialog.state.closing}
-        />
-      )}
+      {renderDialog()}
     </>
   );
 }
@@ -353,10 +329,14 @@ function TrustedDevice(): JSX.Element {
 export default TrustedDevice;
 
 interface TrustedDeviceTitleProps {
-  onTitleAction: (action: TrustedDeviceSectionActionKey) => void;
+  onOpenKeyboardShortcuts: () => void;
+  onTitleAction: (action: TrustedDeviceAdminActionKey) => void;
 }
 
-function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Element {
+function TrustedDeviceTitle({
+  onOpenKeyboardShortcuts,
+  onTitleAction,
+}: TrustedDeviceTitleProps): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
       <div className="flex min-w-0 items-start gap-4 sm:gap-6">
@@ -377,12 +357,7 @@ function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Ele
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <Button
-          variant="outline"
-          onClick={() => {
-            onTitleAction(trustedDeviceSectionActionKey.keyboardShortcuts);
-          }}
-        >
+        <Button variant="outline" onClick={onOpenKeyboardShortcuts}>
           <CircleHelp aria-hidden="true" />
           Atajos de teclado
         </Button>
