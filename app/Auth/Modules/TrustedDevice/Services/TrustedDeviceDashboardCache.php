@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Services;
 
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\TrustedDevice\Data\TrustedDeviceDashboardStatsData;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceEventResource;
 use App\User\Models\User;
@@ -22,29 +23,15 @@ final class TrustedDeviceDashboardCache
 
     private const string RECENT_ACTIVITY_CACHE_KEY = 'trusted-device:dashboard:%s:recent-activity';
 
-    /**
-     * Return cached dashboard statistics for the given user.
-     *
-     * @return array{
-     *     total: int,
-     *     active: int,
-     *     expiringSoon: int,
-     *     recentlyAdded: int,
-     *     inactive: int,
-     *     revoked: int,
-     *     byDeviceType: array{desktop: int, mobile: int},
-     * }
-     */
-    public function stats(User $user): array
+    public function stats(User $user): TrustedDeviceDashboardStatsData
     {
-        /** @var array{total: int, active: int, expiringSoon: int, recentlyAdded: int, inactive: int, revoked: int, byDeviceType: array{desktop: int, mobile: int}} $stats */
-        $stats = Cache::remember(
+        $cachedStats = Cache::remember(
             $this->cacheKey(self::STATS_CACHE_KEY, $user->id),
             self::STATS_TTL_SECONDS,
-            fn (): array => $this->buildStats($user),
+            fn (): array => $this->buildStats($user)->toArray(),
         );
 
-        return $stats;
+        return TrustedDeviceDashboardStatsData::from($cachedStats);
     }
 
     /**
@@ -63,7 +50,18 @@ final class TrustedDeviceDashboardCache
      */
     public function recentActivity(User $user, Request $request): array
     {
-        /** @var list<array{id: int, action: string, actionLabel: string, deviceLabel: string|null, deviceIsMobile: bool|null, deviceOsName: string|null, ip: string|null, createdAt: string|null}> $recentActivity */
+        /**
+         * @var list<array{
+         *     id: int,
+         *     action: string,
+         *     actionLabel: string,
+         *     deviceLabel: string|null,
+         *     deviceIsMobile: bool|null,
+         *     deviceOsName: string|null,
+         *     ip: string|null,
+         *     createdAt: string|null,
+         * }> $recentActivity
+         */
         $recentActivity = Cache::remember(
             $this->cacheKey(self::RECENT_ACTIVITY_CACHE_KEY, $user->id),
             self::RECENT_ACTIVITY_TTL_SECONDS,
@@ -79,18 +77,7 @@ final class TrustedDeviceDashboardCache
         return $recentActivity;
     }
 
-    /**
-     * @return array{
-     *     total: int,
-     *     active: int,
-     *     expiringSoon: int,
-     *     recentlyAdded: int,
-     *     inactive: int,
-     *     revoked: int,
-     *     byDeviceType: array{desktop: int, mobile: int},
-     * }
-     */
-    private function buildStats(User $user): array
+    private function buildStats(User $user): TrustedDeviceDashboardStatsData
     {
         $now = CarbonImmutable::now();
         $inSevenDays = $now->addDays(7);
@@ -107,26 +94,26 @@ final class TrustedDeviceDashboardCache
                 ->count(),
         ];
 
-        return [
-            'total' => $user->trustedDevices()->count(),
-            'active' => $user->trustedDevices()
+        return new TrustedDeviceDashboardStatsData(
+            total: $user->trustedDevices()->count(),
+            active: $user->trustedDevices()
                 ->where('expires_at', '>', $now)
                 ->count(),
-            'expiringSoon' => $user->trustedDevices()
+            expiringSoon: $user->trustedDevices()
                 ->where('expires_at', '>', $now)
                 ->where('expires_at', '<', $inSevenDays)
                 ->count(),
-            'recentlyAdded' => $user->trustedDevices()
+            recentlyAdded: $user->trustedDevices()
                 ->where('created_at', '>', $sevenDaysAgo)
                 ->count(),
-            'inactive' => $user->trustedDevices()
+            inactive: $user->trustedDevices()
                 ->where('expires_at', '<=', $now)
                 ->count(),
-            'revoked' => $user->trustedDeviceEvents()
+            revoked: $user->trustedDeviceEvents()
                 ->whereIn('action', [TrustedDeviceAction::Revoked, TrustedDeviceAction::RevokedAll])
                 ->count(),
-            'byDeviceType' => $byDeviceType,
-        ];
+            byDeviceType: $byDeviceType,
+        );
     }
 
     private function cacheKey(string $cacheKeyTemplate, int $userId): string

@@ -122,7 +122,7 @@ final class TrustedDeviceIndexController extends Controller
                     ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
                 rescue: true,
             ),
-            'stats' => Inertia::defer(fn (): array => $this->trustedDeviceDashboardCache->stats($user), rescue: true),
+            'stats' => Inertia::defer(fn (): array => $this->trustedDeviceDashboardCache->stats($user)->toArray(), rescue: true),
             'recentActivity' => Inertia::defer(fn (): array => $this->trustedDeviceDashboardCache->recentActivity($user, $request), rescue: true),
             'activityDialog' => Inertia::optional(fn (): array => $this->buildActivity($request)),
         ];

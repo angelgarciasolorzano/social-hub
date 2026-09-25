@@ -10,14 +10,14 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 it('uses warm per-user cache entries for stats and recent activity', function (): void {
     $user = createUser();
-    createTrustedDevice($user);
+    createTrustedDevice($user, ['is_mobile' => false]);
     createTrustedDeviceEvent($user);
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
-    $coldStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user));
-    $warmStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user));
+    $coldStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
+    $warmStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
 
     $coldRecentActivity = measureTrustedDeviceTableQueries(
         fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
@@ -42,6 +42,7 @@ it('uses warm per-user cache entries for stats and recent activity', function ()
             'revoked',
             'byDeviceType',
         ])
+        ->and($warmStats['result']['byDeviceType'])->toBe(['desktop' => 1, 'mobile' => 0])
         ->and($coldRecentActivity['queryCount'])->toBe(1)
         ->and($warmRecentActivity['queryCount'])->toBe(0)
         ->and($warmRecentActivity['result'])->toBe($coldRecentActivity['result'])
@@ -59,6 +60,20 @@ it('uses warm per-user cache entries for stats and recent activity', function ()
         ->and(Cache::has('trusted-device:dashboard:'.$user->id.':recent-activity'))->toBeTrue();
 });
 
+it('keeps dashboard stats as the established deferred Inertia array', function (): void {
+    $user = createUser();
+    createTrustedDevice($user, ['is_mobile' => false]);
+
+    $this->actingAs($user)
+        ->get(route('setting.security.trusted-devices.index'))
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->loadDeferredProps(fn (Assert $assert): Assert => $assert
+                ->has('stats', 7)
+                ->where('stats.total', 1)
+                ->where('stats.byDeviceType.desktop', 1)
+                ->where('stats.byDeviceType.mobile', 0)));
+});
+
 it('expires recent activity after 30 seconds and stats after 60 seconds', function (): void {
     $user = createUser();
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
@@ -72,7 +87,7 @@ it('expires recent activity after 30 seconds and stats after 60 seconds', functi
 
     $this->travel(31)->seconds();
 
-    $warmStatsBeforeExpiry = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user));
+    $warmStatsBeforeExpiry = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
 
     $expiredRecentActivity = measureTrustedDeviceTableQueries(
         fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
@@ -81,7 +96,7 @@ it('expires recent activity after 30 seconds and stats after 60 seconds', functi
 
     $this->travel(30)->seconds();
 
-    $expiredStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user));
+    $expiredStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
 
     expect($warmStatsBeforeExpiry['queryCount'])->toBe(0)
         ->and($warmStatsBeforeExpiry['result']['total'])->toBe(0)
@@ -100,8 +115,8 @@ it('keeps dashboard cache entries isolated between users', function (): void {
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
-    $firstStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($firstUser));
-    $secondStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($secondUser));
+    $firstStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($firstUser)->toArray());
+    $secondStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($secondUser)->toArray());
 
     $firstRecentActivity = measureTrustedDeviceTableQueries(
         fn (): array => $trustedDeviceDashboardCache->recentActivity($firstUser, $request),
