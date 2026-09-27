@@ -147,36 +147,14 @@ function TrustedDevice(): JSX.Element {
     trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.activity, closing: false });
   };
 
-  const handleShortcutAction = (action: () => void): void => {
-    if (document.querySelector('[role="dialog"]') !== null) {
-      return;
-    }
-
-    action();
-  };
-
-  const handleShortcutOpenActivity = (): void => {
-    handleShortcutAction(handleOpenActivity);
-  };
-
-  const handleShortcutAddDevice = (): void => {
-    handleShortcutAction(() => {
-      handleTitleAction(trustedDeviceDialogKind.addDevice);
-    });
-  };
-
-  const handleShortcutOpenHelp = (): void => {
-    handleShortcutAction(handleOpenKeyboardShortcuts);
-  };
-
   const handleDialogClose = createDialogCloseHandler(trustedDeviceDialog);
 
   useTrustedDeviceShortcuts({
     enabled: true,
     isDialogOpen: trustedDeviceDialog.state !== null,
-    onOpenActivity: handleShortcutOpenActivity,
-    onOpenAddDevice: handleShortcutAddDevice,
-    onOpenHelp: handleShortcutOpenHelp,
+    onOpenActivity: handleOpenActivity,
+    onOpenAddDevice: handleAddDevice,
+    onOpenHelp: handleOpenKeyboardShortcuts,
   });
 
   const renderDialog = (): JSX.Element | null => {

@@ -1,5 +1,15 @@
 import { useHotkey, useHotkeySequence } from "@tanstack/react-hotkeys";
 
+function createShortcutHandler(action: () => void): () => void {
+  return (): void => {
+    if (typeof document !== "undefined" && document.querySelector('[role="dialog"]') !== null) {
+      return;
+    }
+
+    action();
+  };
+}
+
 export interface UseTrustedDeviceShortcutsOptions {
   enabled: boolean;
   isDialogOpen: boolean;
@@ -24,7 +34,7 @@ export function useTrustedDeviceShortcuts({
     stopPropagation: false,
   };
 
-  useHotkey({ key: "?", shift: true }, onOpenHelp, shortcutOptions);
-  useHotkeySequence(["G", "N"], onOpenAddDevice, shortcutOptions);
-  useHotkeySequence(["G", "A"], onOpenActivity, shortcutOptions);
+  useHotkey({ key: "?", shift: true }, createShortcutHandler(onOpenHelp), shortcutOptions);
+  useHotkeySequence(["G", "N"], createShortcutHandler(onOpenAddDevice), shortcutOptions);
+  useHotkeySequence(["G", "A"], createShortcutHandler(onOpenActivity), shortcutOptions);
 }
