@@ -4,6 +4,11 @@ import { Fragment, useSyncExternalStore } from "react";
 import { detectPlatform, formatForDisplay } from "@tanstack/react-hotkeys";
 import { Keyboard } from "lucide-react";
 
+import {
+  trustedDeviceGlobalShortcuts,
+  trustedDeviceRowActions,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
@@ -39,23 +44,37 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
     getServerPlatformSnapshot,
   );
 
-  const keyboardShortcuts = [
+  const globalKeyboardShortcuts = [
     {
       accessibleKeys: "Mayús y signo de interrogación",
       description: "Abrir esta ayuda",
       keys: [formatForDisplay({ key: "?", shift: true }, { platform })],
     },
-    {
-      accessibleKeys: "G, luego N",
-      description: "Agregar un dispositivo de confianza",
-      keys: [formatForDisplay("G", { platform }), formatForDisplay("N", { platform })],
-    },
-    {
-      accessibleKeys: "G, luego A",
-      description: "Abrir toda la actividad",
-      keys: [formatForDisplay("G", { platform }), formatForDisplay("A", { platform })],
-    },
+    ...Object.entries(trustedDeviceGlobalShortcuts).map(([shortcutKey, shortcut]) => ({
+      accessibleKeys: shortcut.sequence
+        .map((key) => formatForDisplay(key, { platform }))
+        .join(", luego "),
+      description:
+        shortcutKey === "activity"
+          ? `${shortcut.description} (sin una fila enfocada)`
+          : shortcutKey === "revokeAll"
+            ? `${shortcut.description} (sin una fila enfocada)`
+            : shortcut.description,
+      keys: shortcut.sequence.map((key) => formatForDisplay(key, { platform })),
+    })),
   ];
+
+  const rowKeyboardShortcuts = trustedDeviceRowActions.flatMap((group) =>
+    group.actions.map((action) => ({
+      accessibleKeys: action.shortcut
+        .map((key) => formatForDisplay(key, { platform }))
+        .join(", luego "),
+      description: `${action.label} para la fila enfocada`,
+      keys: action.shortcut.map((key) => formatForDisplay(key, { platform })),
+    })),
+  );
+
+  const keyboardShortcuts = [...globalKeyboardShortcuts, ...rowKeyboardShortcuts];
 
   return (
     <Dialog
@@ -73,7 +92,9 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
             </h2>
           </DialogTitle>
           <DialogDescription>
-            Usa estas combinaciones para navegar rápidamente por tus dispositivos de confianza.
+            Los atajos globales funcionan desde cualquier lugar. Para las acciones por dispositivo,
+            enfoca primero el botón de acciones (⋯) de esa fila. G → A y G → V aplican a la fila
+            enfocada cuando ese botón tiene el foco.
           </DialogDescription>
         </DialogHeader>
 

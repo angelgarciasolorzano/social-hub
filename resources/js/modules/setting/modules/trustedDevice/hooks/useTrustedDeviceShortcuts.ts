@@ -1,8 +1,13 @@
-import { useHotkey, useHotkeySequence } from "@tanstack/react-hotkeys";
+import { useHotkey, useHotkeySequences } from "@tanstack/react-hotkeys";
 
-function createShortcutHandler(action: () => void): () => void {
+import { trustedDeviceGlobalShortcuts } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+
+export function createTrustedDeviceShortcutHandler(action: () => void): () => void {
   return (): void => {
-    if (typeof document !== "undefined" && document.querySelector('[role="dialog"]') !== null) {
+    if (
+      typeof document !== "undefined" &&
+      document.querySelector('[role="dialog"], [role="menu"]') !== null
+    ) {
       return;
     }
 
@@ -13,17 +18,25 @@ function createShortcutHandler(action: () => void): () => void {
 export interface UseTrustedDeviceShortcutsOptions {
   enabled: boolean;
   isDialogOpen: boolean;
+  canOpenSummary: boolean;
   onOpenActivity: () => void;
   onOpenAddDevice: () => void;
   onOpenHelp: () => void;
+  onOpenRecommendations: () => void;
+  onOpenSummary: () => void;
+  onRevokeAllDevices: () => void;
 }
 
 export function useTrustedDeviceShortcuts({
   enabled,
   isDialogOpen,
+  canOpenSummary,
   onOpenActivity,
   onOpenAddDevice,
   onOpenHelp,
+  onOpenRecommendations,
+  onOpenSummary,
+  onRevokeAllDevices,
 }: UseTrustedDeviceShortcutsOptions): void {
   const areShortcutsEnabled = enabled && !isDialogOpen;
 
@@ -34,7 +47,48 @@ export function useTrustedDeviceShortcuts({
     stopPropagation: false,
   };
 
-  useHotkey({ key: "?", shift: true }, createShortcutHandler(onOpenHelp), shortcutOptions);
-  useHotkeySequence(["G", "N"], createShortcutHandler(onOpenAddDevice), shortcutOptions);
-  useHotkeySequence(["G", "A"], createShortcutHandler(onOpenActivity), shortcutOptions);
+  const isDeviceActionTriggerFocused = (): boolean =>
+    typeof document !== "undefined" &&
+    document.activeElement?.matches("[data-trusted-device-action-trigger]") === true;
+
+  useHotkey(
+    { key: "?", shift: true },
+    createTrustedDeviceShortcutHandler(onOpenHelp),
+    shortcutOptions,
+  );
+
+  useHotkeySequences(
+    [
+      {
+        sequence: [...trustedDeviceGlobalShortcuts.addDevice.sequence],
+        callback: createTrustedDeviceShortcutHandler(onOpenAddDevice),
+      },
+      {
+        sequence: [...trustedDeviceGlobalShortcuts.activity.sequence],
+        callback: createTrustedDeviceShortcutHandler(() => {
+          if (!isDeviceActionTriggerFocused()) {
+            onOpenActivity();
+          }
+        }),
+      },
+      {
+        sequence: [...trustedDeviceGlobalShortcuts.recommendations.sequence],
+        callback: createTrustedDeviceShortcutHandler(onOpenRecommendations),
+      },
+      {
+        sequence: [...trustedDeviceGlobalShortcuts.summary.sequence],
+        callback: createTrustedDeviceShortcutHandler(onOpenSummary),
+        options: { enabled: areShortcutsEnabled && canOpenSummary },
+      },
+      {
+        sequence: [...trustedDeviceGlobalShortcuts.revokeAll.sequence],
+        callback: createTrustedDeviceShortcutHandler(() => {
+          if (!isDeviceActionTriggerFocused()) {
+            onRevokeAllDevices();
+          }
+        }),
+      },
+    ],
+    shortcutOptions,
+  );
 }

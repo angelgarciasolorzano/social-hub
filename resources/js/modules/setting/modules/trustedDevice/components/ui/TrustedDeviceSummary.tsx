@@ -5,12 +5,7 @@ import { usePage } from "@inertiajs/react";
 import { ChevronRight, Circle } from "lucide-react";
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
-import TrustedDeviceSummaryDialog from "@/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog";
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
-import {
-  createDialogCloseHandler,
-  type DialogClosingState,
-} from "@/modules/setting/shared/utils/dialog";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -27,8 +22,6 @@ import {
   ChartTooltipContent,
 } from "@/shared/components/shadcn/ui/chart";
 import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
-
-import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -78,15 +71,12 @@ const chartConfig = {
     },
   },
 } satisfies ChartConfig;
-interface SummaryDialogState extends DialogClosingState {
-  kind: "open";
+interface TrustedDeviceSummaryProps {
+  onOpenSummary: () => void;
 }
 
-function TrustedDeviceSummary(): JSX.Element {
+function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX.Element {
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
-
-  const summaryDialog = useDialog<SummaryDialogState | null>(null);
-  const handleSummaryClose = createDialogCloseHandler(summaryDialog);
 
   const chartData: TrustedDeviceSummaryDatum[] = [
     {
@@ -177,24 +167,11 @@ function TrustedDeviceSummary(): JSX.Element {
       </CardContent>
 
       <CardFooter className="mx-auto">
-        <Button
-          variant="link"
-          className="text-blue-700 dark:text-blue-500"
-          onClick={() => {
-            summaryDialog.show({ kind: "open", closing: false });
-          }}
-        >
+        <Button variant="link" className="text-blue-700 dark:text-blue-500" onClick={onOpenSummary}>
           Ver detalles
           <ChevronRight className="h-4 w-4" />
         </Button>
       </CardFooter>
-
-      {summaryDialog.state !== null && (
-        <TrustedDeviceSummaryDialog
-          open={!summaryDialog.state.closing}
-          onClose={handleSummaryClose}
-        />
-      )}
     </Card>
   );
 }

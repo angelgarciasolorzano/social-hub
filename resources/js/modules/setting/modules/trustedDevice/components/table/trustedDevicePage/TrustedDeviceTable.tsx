@@ -1,8 +1,9 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 
 import { usePage } from "@inertiajs/react";
 
+import { useHotkeySequences } from "@tanstack/react-hotkeys";
 import {
   columnFilteringFeature,
   columnResizingFeature,
@@ -37,6 +38,7 @@ import {
   trustedDeviceTableColumnIds,
   trustedDeviceTableColumnSizes,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
+import { createTrustedDeviceShortcutHandler } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts";
 import type {
   TrustedDevice,
   TrustedDevicePagination as TrustedDevicePaginationData,
@@ -394,6 +396,7 @@ function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.
     .props.trustedDevices;
 
   const dialogDevice = useDialog<RowDialogActionState | null>(null);
+  const actionButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const handleDeviceAction = (
     action: RowDialogActionState["kind"],
@@ -403,6 +406,24 @@ function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.
   };
 
   const handleDialogClose = createDialogCloseHandler(dialogDevice);
+
+  const rowActionShortcutDefinitions = trustedDeviceRowActions
+    .flatMap((group) => group.actions)
+    .map((action) => ({
+      sequence: [...action.shortcut],
+      callback: createTrustedDeviceShortcutHandler(() => {
+        handleDeviceAction(action.key, device);
+      }),
+      options: { enabled: action.isEnabled(device) },
+    }));
+
+  useHotkeySequences(rowActionShortcutDefinitions, {
+    enabled: true,
+    ignoreInputs: true,
+    preventDefault: true,
+    stopPropagation: false,
+    target: actionButtonRef,
+  });
 
   const renderDialogDevice = (): JSX.Element | null => {
     if (dialogDevice.state === null) {
@@ -484,9 +505,15 @@ function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" variant="ghost" className="size-8">
+          <Button
+            ref={actionButtonRef}
+            aria-label={`Abrir acciones de ${deviceLabel(device)}`}
+            data-trusted-device-action-trigger=""
+            size="icon"
+            variant="ghost"
+            className="size-8"
+          >
             <MoreHorizontalIcon />
-            <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
 

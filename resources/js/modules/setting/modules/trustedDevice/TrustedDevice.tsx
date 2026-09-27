@@ -24,8 +24,10 @@ import {
   TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceExpiredDialog,
   TrustedDeviceKeyboardShortcutsDialog,
+  TrustedDeviceRecommendationsDialog,
   TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokedDialog,
+  TrustedDeviceSummaryDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
 import TrustedDeviceRecentActivitySkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDeviceRecentActivitySkeleton";
 import TrustedDevicesStatCardsSkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDevicesStatCardsSkeleton";
@@ -93,7 +95,8 @@ interface TrustedDeviceDialogState extends DialogClosingState {
 }
 
 function TrustedDevice(): JSX.Element {
-  const { currentDevicePreview, currentDeviceMatch } = usePage<TrustedDevicePageProps>().props;
+  const { currentDevicePreview, currentDeviceMatch, stats } =
+    usePage<TrustedDevicePageProps>().props;
 
   const trustedDeviceDialog = useDialog<TrustedDeviceDialogState | null>(null);
 
@@ -147,14 +150,26 @@ function TrustedDevice(): JSX.Element {
     trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.activity, closing: false });
   };
 
+  const handleOpenRecommendations = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.recommendations, closing: false });
+  };
+
+  const handleOpenSummary = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.summary, closing: false });
+  };
+
   const handleDialogClose = createDialogCloseHandler(trustedDeviceDialog);
 
   useTrustedDeviceShortcuts({
     enabled: true,
     isDialogOpen: trustedDeviceDialog.state !== null,
+    canOpenSummary: stats !== undefined,
     onOpenActivity: handleOpenActivity,
     onOpenAddDevice: handleAddDevice,
     onOpenHelp: handleOpenKeyboardShortcuts,
+    onOpenRecommendations: handleOpenRecommendations,
+    onOpenSummary: handleOpenSummary,
+    onRevokeAllDevices: handleRevokeAllDevices,
   });
 
   const renderDialog = (): JSX.Element | null => {
@@ -225,6 +240,12 @@ function TrustedDevice(): JSX.Element {
       case trustedDeviceDialogKind.activity:
         return <TrustedDeviceActivityDialog onClose={handleDialogClose} open={!isClosing} />;
 
+      case trustedDeviceDialogKind.recommendations:
+        return <TrustedDeviceRecommendationsDialog onClose={handleDialogClose} open={!isClosing} />;
+
+      case trustedDeviceDialogKind.summary:
+        return <TrustedDeviceSummaryDialog onClose={handleDialogClose} open={!isClosing} />;
+
       default:
         return null;
     }
@@ -276,10 +297,10 @@ function TrustedDevice(): JSX.Element {
               />
             )}
           >
-            <TrustedDeviceSummary />
+            <TrustedDeviceSummary onOpenSummary={handleOpenSummary} />
           </Deferred>
 
-          <TrustedDeviceRecommendations />
+          <TrustedDeviceRecommendations onOpenRecommendations={handleOpenRecommendations} />
 
           <Deferred
             data="recentActivity"
