@@ -163,6 +163,7 @@ function TrustedDeviceActivityDialogBody({
               updateFilter("search", event.target.value);
             }}
             placeholder="Buscar por dispositivo, nombre o IP..."
+            autoFocus
             value={filters.search}
           />
 
