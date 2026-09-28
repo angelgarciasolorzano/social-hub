@@ -123,6 +123,7 @@ function PaginationNumberLink({ page, pagination }: PaginationNumberLinkProps): 
       aria-current={isActive ? "page" : undefined}
       className={cn(buttonVariants({ variant: isActive ? "outline" : "ghost", size: "icon" }))}
       href={url}
+      only={["trustedDevices"]}
       preserveScroll
     >
       {page}
@@ -155,6 +156,7 @@ function PaginationPreviousLink({ pagination }: PaginationPreviousLinkProps): JS
       aria-label="Pagina anterior"
       className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
       href={url}
+      only={["trustedDevices"]}
       preserveScroll
     >
       <ChevronLeft className="size-4" />
@@ -187,6 +189,7 @@ function PaginationNextLink({ pagination }: PaginationNextLinkProps): JSX.Elemen
       aria-label="Pagina siguiente"
       className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
       href={url}
+      only={["trustedDevices"]}
       preserveScroll
     >
       <ChevronRight className="size-4" />
