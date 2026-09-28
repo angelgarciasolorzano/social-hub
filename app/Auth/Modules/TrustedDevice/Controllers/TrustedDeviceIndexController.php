@@ -119,6 +119,7 @@ final class TrustedDeviceIndexController extends Controller
             'trustedDevices' => Inertia::defer(
                 fn (): LengthAwarePaginator => $query
                     ->paginate($perPage)
+                    ->withQueryString()
                     ->through(fn (TrustedDevice $trustedDevice): array => new TrustedDeviceResource($trustedDevice)->resolve($request)),
                 rescue: true,
             ),
