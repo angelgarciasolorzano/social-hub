@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 
 import {
+  defaultTrustedDeviceActivityFilters,
   type TrustedDeviceActivityActionFilter,
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
@@ -14,10 +15,11 @@ export interface TrustedDeviceActivityFilterState {
   search: string;
 }
 
-interface UseTrustedDeviceActivityFiltersReturn {
+export interface TrustedDeviceActivityFiltersController {
   committedFilters: TrustedDeviceActivityFilterState;
   filters: TrustedDeviceActivityFilterState;
   goToPage: (page: number) => void;
+  reload: (onFinish?: () => void) => void;
   resetFilters: () => void;
   updateFilter: <K extends keyof TrustedDeviceActivityFilterState>(
     key: K,
@@ -38,12 +40,8 @@ interface UseTrustedDeviceActivityFiltersReturn {
 export function useTrustedDeviceActivityFilters(
   initialFilters: TrustedDeviceActivityFilters,
   delay = 500,
-): UseTrustedDeviceActivityFiltersReturn {
-  const [filters, setFilters] = useState<TrustedDeviceActivityFilterState>({
-    action: initialFilters.action ?? [],
-    search: initialFilters.search,
-    sinceDays: initialFilters.sinceDays ?? [],
-  });
+): TrustedDeviceActivityFiltersController {
+  const [filters, setFilters] = useState<TrustedDeviceActivityFilterState>(initialFilters);
 
   const [committedFilters, setCommittedFilters] =
     useState<TrustedDeviceActivityFilterState>(filters);
@@ -56,22 +54,17 @@ export function useTrustedDeviceActivityFilters(
   }, [filters]);
 
   const triggerReload = useCallback(
-    (next: TrustedDeviceActivityFilterState, page?: number): void => {
-      const action =
-        next.action === null || next.action.length === 0 ? undefined : next.action.join(",");
-
-      const search = next.search === "" ? undefined : next.search;
+    (next: TrustedDeviceActivityFilterState, page?: number, onFinish?: () => void): void => {
+      const action = next.action === null || next.action.length === 0 ? "" : next.action.join(",");
 
       const sinceDays =
-        next.sinceDays === null || next.sinceDays.length === 0
-          ? undefined
-          : next.sinceDays.join(",");
+        next.sinceDays === null || next.sinceDays.length === 0 ? "" : next.sinceDays.join(",");
 
       router.reload({
         data: {
-          action: action,
-          page,
-          search: search,
+          action,
+          page: page ?? 1,
+          search: next.search,
           since_days: sinceDays,
         },
         only: ["activityDialog"],
@@ -79,10 +72,18 @@ export function useTrustedDeviceActivityFilters(
         replace: true,
         onFinish: () => {
           setCommittedFilters(next);
+          onFinish?.();
         },
       });
     },
     [],
+  );
+
+  const reload = useCallback(
+    (onFinish?: () => void): void => {
+      triggerReload(filtersRef.current, undefined, onFinish);
+    },
+    [triggerReload],
   );
 
   useEffect(() => {
@@ -125,12 +126,15 @@ export function useTrustedDeviceActivityFilters(
   const resetFilters = useCallback(() => {
     hasInteractedRef.current = true;
 
-    setFilters({
-      action: [],
-      search: "",
-      sinceDays: [],
-    });
+    setFilters(defaultTrustedDeviceActivityFilters);
   }, []);
 
-  return { committedFilters, filters, goToPage, resetFilters, updateFilter };
+  return {
+    committedFilters,
+    filters,
+    goToPage,
+    reload,
+    resetFilters,
+    updateFilter,
+  };
 }

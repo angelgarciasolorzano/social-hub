@@ -43,11 +43,13 @@ export default function TrustedDeviceActivityFiltersPopover(
       value: actionFilter,
       onChange: (value) => {
         if (value === null) {
-          onActionFilterChange([]);
+          onActionFilterChange(null);
         } else if (typeof value === "string") {
           onActionFilterChange([value as TrustedDeviceActivityActionFilter]);
         } else {
-          onActionFilterChange([...value] as TrustedDeviceActivityActionFilter[]);
+          onActionFilterChange(
+            value.length === 0 ? null : ([...value] as TrustedDeviceActivityActionFilter[]),
+          );
         }
       },
     },
@@ -58,11 +60,13 @@ export default function TrustedDeviceActivityFiltersPopover(
       value: sinceDaysFilter,
       onChange: (value) => {
         if (value === null) {
-          onSinceDaysFilterChange([]);
+          onSinceDaysFilterChange(null);
         } else if (typeof value === "string") {
           onSinceDaysFilterChange([value as TrustedDeviceActivitySinceDaysFilter]);
         } else {
-          onSinceDaysFilterChange([...value] as TrustedDeviceActivitySinceDaysFilter[]);
+          onSinceDaysFilterChange(
+            value.length === 0 ? null : ([...value] as TrustedDeviceActivitySinceDaysFilter[]),
+          );
         }
       },
     },

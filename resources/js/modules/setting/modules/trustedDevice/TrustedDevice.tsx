@@ -38,6 +38,7 @@ import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/c
 import TrustedDeviceRecentActivity from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity";
 import TrustedDeviceRecommendations from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations";
 import TrustedDeviceSummary from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary";
+import { defaultTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
 import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import {
   type TrustedDeviceAddDeviceDialogKind,
@@ -47,6 +48,7 @@ import {
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import { trustedDeviceDefaultColumnVisibility } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
+import { useTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
 import { useTrustedDeviceShortcuts } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts";
 import type {
@@ -97,6 +99,10 @@ interface TrustedDeviceDialogState extends DialogClosingState {
 function TrustedDevice(): JSX.Element {
   const { currentDevicePreview, currentDeviceMatch, stats } =
     usePage<TrustedDevicePageProps>().props;
+
+  const activityFilterController = useTrustedDeviceActivityFilters(
+    defaultTrustedDeviceActivityFilters,
+  );
 
   const trustedDeviceDialog = useDialog<TrustedDeviceDialogState | null>(null);
 
@@ -238,7 +244,13 @@ function TrustedDevice(): JSX.Element {
         );
 
       case trustedDeviceDialogKind.activity:
-        return <TrustedDeviceActivityDialog onClose={handleDialogClose} open={!isClosing} />;
+        return (
+          <TrustedDeviceActivityDialog
+            filterController={activityFilterController}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
 
       case trustedDeviceDialogKind.recommendations:
         return <TrustedDeviceRecommendationsDialog onClose={handleDialogClose} open={!isClosing} />;

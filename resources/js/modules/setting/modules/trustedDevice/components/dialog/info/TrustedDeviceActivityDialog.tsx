@@ -1,18 +1,15 @@
 import type { JSX } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 
 import { Clock, Info, Search, X } from "lucide-react";
 
 import TrustedDeviceActivityEventList from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList";
 import TrustedDeviceActivityFiltersPopover from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover";
 import TrustedDeviceActivityPagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination";
-import { useTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
-import type {
-  TrustedDeviceActivityFilters,
-  TrustedDeviceActivityPagination as TrustedDeviceActivityPaginationData,
-} from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
+import type { TrustedDeviceActivityFiltersController } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
+import type { TrustedDeviceActivityPagination as TrustedDeviceActivityPaginationData } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -35,13 +32,13 @@ import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import type { SharedData } from "@/shared/types";
 
 interface TrustedDeviceActivityDialogProps {
+  filterController: TrustedDeviceActivityFiltersController;
   open: boolean;
   onClose: () => void;
 }
 
 interface TrustedDeviceActivityPayload {
   activityLog: TrustedDeviceActivityPaginationData;
-  activityFilters: TrustedDeviceActivityFilters;
 }
 
 interface TrustedDeviceActivityDialogPageProps extends SharedData {
@@ -51,8 +48,10 @@ interface TrustedDeviceActivityDialogPageProps extends SharedData {
 export default function TrustedDeviceActivityDialog({
   open,
   onClose,
+  filterController,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
   const { activityDialog } = usePage<TrustedDeviceActivityDialogPageProps>().props;
+  const { reload } = filterController;
 
   const hasRequestedActivityRef = useRef(false);
   const [hasFreshActivity, setHasFreshActivity] = useState(false);
@@ -62,13 +61,10 @@ export default function TrustedDeviceActivityDialog({
 
     hasRequestedActivityRef.current = true;
 
-    router.reload({
-      only: ["activityDialog"],
-      onFinish: () => {
-        setHasFreshActivity(true);
-      },
+    reload(() => {
+      setHasFreshActivity(true);
     });
-  }, []);
+  }, [reload]);
 
   const isLoading = !hasFreshActivity || activityDialog === undefined;
 
@@ -129,8 +125,8 @@ export default function TrustedDeviceActivityDialog({
           </div>
         ) : (
           <TrustedDeviceActivityDialogBody
+            filterController={filterController}
             initialActivity={activityDialog.activityLog}
-            initialFilters={activityDialog.activityFilters}
           />
         )}
       </DialogContent>
@@ -139,16 +135,15 @@ export default function TrustedDeviceActivityDialog({
 }
 
 interface TrustedDeviceActivityDialogBodyProps {
+  filterController: TrustedDeviceActivityFiltersController;
   initialActivity: TrustedDeviceActivityPaginationData;
-  initialFilters: TrustedDeviceActivityFilters;
 }
 
 function TrustedDeviceActivityDialogBody({
+  filterController,
   initialActivity,
-  initialFilters,
 }: TrustedDeviceActivityDialogBodyProps): JSX.Element {
-  const { committedFilters, filters, goToPage, resetFilters, updateFilter } =
-    useTrustedDeviceActivityFilters(initialFilters);
+  const { committedFilters, filters, goToPage, resetFilters, updateFilter } = filterController;
 
   const hasActiveFilters =
     committedFilters.search !== "" ||
