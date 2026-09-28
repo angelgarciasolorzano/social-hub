@@ -13,6 +13,15 @@ final class TrustedDeviceActivityFiltersData extends Data
 {
     use ParsesMultiFilters;
 
+    private const array ALLOWED_ACTIONS = [
+        TrustedDeviceAction::Created->value,
+        TrustedDeviceAction::Renewed->value,
+        TrustedDeviceAction::Renamed->value,
+        TrustedDeviceAction::Revoked->value,
+        TrustedDeviceAction::RevokedAll->value,
+        TrustedDeviceAction::Reactivated->value,
+    ];
+
     private const array ALLOWED_SINCE_DAYS = ['7', '30', '90', '180', '365'];
 
     /**
@@ -28,18 +37,13 @@ final class TrustedDeviceActivityFiltersData extends Data
     /** Create normalized activity filters from a request. */
     public static function fromRequest(Request $request): self
     {
-        $allowedActions = array_map(
-            static fn (TrustedDeviceAction $trustedDeviceAction): string => $trustedDeviceAction->value,
-            TrustedDeviceAction::cases(),
-        );
-
         return new self(
-            action: self::parseMultiFilter($request->string('action')->toString(), $allowedActions),
+            action: self::parseMultiFilter($request->string('action')->toString(), self::ALLOWED_ACTIONS),
             sinceDays: self::parseMultiFilter(
                 $request->string('since_days')->toString(),
                 self::ALLOWED_SINCE_DAYS,
             ),
-            search: $request->string('search')->toString(),
+            search: trim($request->string('search')->toString()),
         );
     }
 
