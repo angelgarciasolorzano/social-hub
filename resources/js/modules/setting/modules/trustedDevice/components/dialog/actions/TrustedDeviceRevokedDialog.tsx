@@ -45,7 +45,6 @@ function TrustedDeviceRevokedDialog({
         .url,
       {
         preserveScroll: true,
-        preserveState: true,
       },
     );
   };
