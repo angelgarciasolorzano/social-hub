@@ -75,6 +75,7 @@ import {
 import { useAppearance, useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
+import { badgeVariants } from "@/shared/lib/styling";
 
 type TrustedDeviceRowDialogActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
@@ -474,7 +475,9 @@ function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.
   }
 
   return (
-    <Badge variant={device.isActive ? "default" : "destructive"} className="rounded-md">
+    <Badge
+      className={cn(device.isActive ? badgeVariants.success : badgeVariants.warning, "rounded-md")}
+    >
       {device.isActive ? "Activo" : "Expirado"}
     </Badge>
   );

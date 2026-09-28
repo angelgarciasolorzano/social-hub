@@ -98,6 +98,7 @@ function TrustedDeviceDetailsDialog({
   const { appearance } = useAppearance();
 
   const isRevoked = device.deletedAt !== null;
+  const isExpired = !isRevoked && !device.isActive;
 
   const handleDeviceAction = (
     action: TrustedDeviceDetailsDialogAction,
@@ -187,6 +188,8 @@ function TrustedDeviceDetailsDialog({
                 >
                   Revocado
                 </Badge>
+              ) : isExpired ? (
+                <Badge className={badgeVariants.warning}>Expirado</Badge>
               ) : (
                 <Badge className={badgeVariants.success}>Activo</Badge>
               )}
@@ -195,12 +198,19 @@ function TrustedDeviceDetailsDialog({
           <DialogDescription>
             {isRevoked
               ? "Consulta la informacion del dispositivo que fue revocado de tu cuenta."
-              : "Consulta la información completa de este dispositivo de confianza."}
+              : isExpired
+                ? "Consulta la información de un dispositivo cuya confianza ya expiró."
+                : "Consulta la información completa de este dispositivo de confianza."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <DeviceOverviewCard device={device} isRevoked={isRevoked} appearance={appearance} />
+          <DeviceOverviewCard
+            device={device}
+            isExpired={isExpired}
+            isRevoked={isRevoked}
+            appearance={appearance}
+          />
 
           <div className="grid grid-cols-[1.8fr_1.7fr_2fr] gap-4">
             <DeviceActivityCard device={device} />
@@ -208,6 +218,7 @@ function TrustedDeviceDetailsDialog({
             <DeviceMetadataCard device={device} />
 
             <DeviceStatusCallouts
+              isExpired={isExpired}
               isRevoked={isRevoked}
               onReactivate={() => {
                 handleDeviceAction("reactivate", device);
@@ -232,12 +243,14 @@ function TrustedDeviceDetailsDialog({
 
 interface DeviceOverviewCardProps {
   device: TrustedDevice;
+  isExpired: boolean;
   isRevoked: boolean;
   appearance: Appearance;
 }
 
 function DeviceOverviewCard({
   device,
+  isExpired,
   isRevoked,
   appearance,
 }: DeviceOverviewCardProps): JSX.Element {
@@ -266,6 +279,11 @@ function DeviceOverviewCard({
                   <ShieldOff className="size-3" data-icon="inline-start" />
                   Revocado
                 </Badge>
+              ) : isExpired ? (
+                <Badge className={badgeVariants.warning}>
+                  <CalendarClock className="size-3" data-icon="inline-start" />
+                  Expirado
+                </Badge>
               ) : (
                 <Badge className={badgeVariants.success}>
                   <Circle
@@ -289,13 +307,21 @@ function DeviceOverviewCard({
 
               <FaCircle className="h-1 w-1" />
 
-              <span>{isRevoked ? "Dispositivo revocado" : "Dispositivo de confianza"}</span>
+              <span>
+                {isRevoked
+                  ? "Dispositivo revocado"
+                  : isExpired
+                    ? "Confianza expirada"
+                    : "Dispositivo de confianza"}
+              </span>
             </div>
 
             <p className="text-sm text-muted-foreground">
               {isRevoked
                 ? "Este dispositivo fue removido de tu lista de dispositivos de confianza. La proxima vez que inicies sesion desde el, se te solicitara el codigo de verificacion."
-                : "Este dispositivo ha sido verificado y agregado a tu lista de dispositivos de confianza. No se te solicitara el codigo de verificacion cada vez que inicies sesion desde este dispositivo hasta su fecha de expiracion."}
+                : isExpired
+                  ? "El periodo de confianza de este dispositivo expiró. Renueva la confianza para volver a omitir la verificación de dos factores."
+                  : "Este dispositivo ha sido verificado y agregado a tu lista de dispositivos de confianza. No se te solicitara el codigo de verificacion cada vez que inicies sesion desde este dispositivo hasta su fecha de expiracion."}
             </p>
           </div>
         </div>
@@ -325,7 +351,9 @@ function DeviceOverviewCard({
             <AlertTitle className="line-clamp-4">
               {isRevoked
                 ? "Aunque la fecha de expiracion siga vigente, este dispositivo ya no es de confianza. Reactivalo si quieres volver a confiar en el."
-                : "Cuando expire, se te volvera a solicitar el codigo de verificacion al iniciar sesion desde este dispositivo."}
+                : isExpired
+                  ? "El periodo de confianza ya expiró. Se te solicitará el código de verificación al iniciar sesión desde este dispositivo."
+                  : "Cuando expire, se te volvera a solicitar el codigo de verificacion al iniciar sesion desde este dispositivo."}
             </AlertTitle>
           </Alert>
         </div>
@@ -450,11 +478,16 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
 }
 
 interface DeviceStatusCalloutsProps {
+  isExpired: boolean;
   isRevoked: boolean;
   onReactivate: () => void;
 }
 
-function DeviceStatusCallouts({ isRevoked, onReactivate }: DeviceStatusCalloutsProps): JSX.Element {
+function DeviceStatusCallouts({
+  isExpired,
+  isRevoked,
+  onReactivate,
+}: DeviceStatusCalloutsProps): JSX.Element {
   if (isRevoked) {
     return (
       <div className="flex flex-col gap-3">
@@ -488,6 +521,24 @@ function DeviceStatusCallouts({ isRevoked, onReactivate }: DeviceStatusCalloutsP
     );
   }
 
+  if (isExpired) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Alert className={alertVariants.warning}>
+          <CalendarClock />
+
+          <AlertTitle>La confianza de este dispositivo expiró</AlertTitle>
+          <AlertDescription>
+            Ya no puede omitir la verificación de dos factores. Renueva la confianza para volver a
+            marcarlo como dispositivo de confianza.
+          </AlertDescription>
+        </Alert>
+
+        <TrustedDeviceInformationCallout />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <Alert className={alertVariants.success}>
@@ -507,20 +558,26 @@ function DeviceStatusCallouts({ isRevoked, onReactivate }: DeviceStatusCalloutsP
         </AlertDescription>
       </Alert>
 
-      <Alert className={cn(alertVariants.preview, "dark:text-purple-400")}>
-        <Lightbulb />
-
-        <AlertTitle>¿Que es un dispositivo de confianza?</AlertTitle>
-        <AlertDescription>
-          Los dispositivos de confianza reducen la frecuencia con la que se te solicita el codigo de
-          verificacion al iniciar sesion, manteniendo tu cuenta segura.
-          <span className="my-1 flex items-center justify-center gap-1 font-medium text-purple-800 hover:cursor-pointer hover:underline dark:text-purple-500">
-            Mas información
-            <ChevronRight className="h-5 w-5" />
-          </span>
-        </AlertDescription>
-      </Alert>
+      <TrustedDeviceInformationCallout />
     </div>
+  );
+}
+
+function TrustedDeviceInformationCallout(): JSX.Element {
+  return (
+    <Alert className={cn(alertVariants.preview, "dark:text-purple-400")}>
+      <Lightbulb />
+
+      <AlertTitle>¿Que es un dispositivo de confianza?</AlertTitle>
+      <AlertDescription>
+        Los dispositivos de confianza reducen la frecuencia con la que se te solicita el codigo de
+        verificacion al iniciar sesion, manteniendo tu cuenta segura.
+        <span className="my-1 flex items-center justify-center gap-1 font-medium text-purple-800 hover:cursor-pointer hover:underline dark:text-purple-500">
+          Mas información
+          <ChevronRight className="h-5 w-5" />
+        </span>
+      </AlertDescription>
+    </Alert>
   );
 }
 
