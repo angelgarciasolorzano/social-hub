@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { router } from "@inertiajs/react";
 
 import {
+  defaultTrustedDevicePerPage,
   type TrustedDeviceBrowserFilter,
   type TrustedDeviceDeviceTypeFilter,
   type TrustedDeviceLastAccessFilter,
@@ -122,7 +123,7 @@ export function useTrustedDeviceFilters(
       deviceType: null,
       lastAccess: null,
       sort: defaultTrustedDeviceSort,
-      perPage: 15,
+      perPage: defaultTrustedDevicePerPage,
     }));
   }, []);
 

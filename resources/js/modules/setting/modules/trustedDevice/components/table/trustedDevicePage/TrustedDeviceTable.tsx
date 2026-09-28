@@ -29,6 +29,7 @@ import {
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
 import TrustedDeviceColumnResizeHandle from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle";
 import TrustedDevicePagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination";
+import { defaultTrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import {
   trustedDeviceRowActionKey,
   trustedDeviceRowActions,
@@ -231,6 +232,7 @@ function TrustedDeviceTable({
   useTanStackTableDevtools(table);
 
   const tableRows = table.getRowModel().rows;
+  const isCompactPageSize = pagination.per_page < defaultTrustedDevicePerPage;
   const selectedDevice = table.getSelectedRowModel().rows[0]?.original ?? null;
 
   const rowActionShortcutDefinitions = trustedDeviceRowActions
@@ -334,7 +336,14 @@ function TrustedDeviceTable({
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <div className="w-full min-w-0">
-        <div className="[&>div]:max-h-140 [&>div]:min-h-130 [&>div]:w-full [&>div]:min-w-0 [&>div]:rounded-md [&>div]:border">
+        <div
+          className={cn(
+            "[&>div]:w-full [&>div]:min-w-0 [&>div]:rounded-md [&>div]:border",
+            isCompactPageSize
+              ? "[&>div]:max-h-none [&>div]:min-h-0"
+              : "[&>div]:max-h-140 [&>div]:min-h-130",
+          )}
+        >
           <Table className="table-fixed" style={{ width: `max(100%, ${table.getTotalSize()}px)` }}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -386,7 +395,12 @@ function TrustedDeviceTable({
               {tableRows.length === 0 ? (
                 <TableRow>
                   <TableCell className="p-0" colSpan={table.getVisibleLeafColumns().length + 1}>
-                    <div className="flex min-h-128 flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                    <div
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground",
+                        isCompactPageSize ? "min-h-48" : "min-h-128",
+                      )}
+                    >
                       {hasActiveFilters ? (
                         <EmptyState
                           description="Prueba ajustar o limpiar los filtros aplicados."
