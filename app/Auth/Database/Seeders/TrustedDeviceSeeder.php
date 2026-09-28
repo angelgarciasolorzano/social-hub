@@ -47,7 +47,10 @@ final class TrustedDeviceSeeder extends Seeder
      *     attributes: array{
      *         name: string,
      *         last_used_at: CarbonImmutable|null,
-     *         expires_at: CarbonImmutable
+     *         expires_at: CarbonImmutable,
+     *         os_name: string,
+     *         os_version: string,
+     *         is_mobile: bool
      *     },
      *     isRevoked: bool,
      *     lifecycleAction: TrustedDeviceAction|null
@@ -57,12 +60,15 @@ final class TrustedDeviceSeeder extends Seeder
     {
         $now = CarbonImmutable::now();
 
-        return [
+        $scenarioTemplates = [
             [
                 'attributes' => [
                     'name' => 'MacBook personal',
                     'last_used_at' => $now->subHours(2),
                     'expires_at' => $now->addDays(30),
+                    'os_name' => 'Mac',
+                    'os_version' => '15',
+                    'is_mobile' => false,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => TrustedDeviceAction::Renamed,
@@ -72,6 +78,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Computadora de trabajo',
                     'last_used_at' => $now->subHours(6),
                     'expires_at' => $now->addDays(30),
+                    'os_name' => 'Windows',
+                    'os_version' => '11',
+                    'is_mobile' => false,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => null,
@@ -81,6 +90,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'iPhone personal',
                     'last_used_at' => $now->subDay(),
                     'expires_at' => $now->addDays(30),
+                    'os_name' => 'iOS',
+                    'os_version' => '18',
+                    'is_mobile' => true,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => TrustedDeviceAction::Renewed,
@@ -90,6 +102,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Tablet próximo a expirar',
                     'last_used_at' => $now->subDays(2),
                     'expires_at' => $now->addDays(3),
+                    'os_name' => 'Android',
+                    'os_version' => '15',
+                    'is_mobile' => true,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => TrustedDeviceAction::Renewed,
@@ -99,6 +114,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Dispositivo reactivado',
                     'last_used_at' => null,
                     'expires_at' => $now->addDays(60),
+                    'os_name' => 'Linux',
+                    'os_version' => '24.04',
+                    'is_mobile' => false,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => TrustedDeviceAction::Reactivated,
@@ -108,6 +126,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Laptop expirado',
                     'last_used_at' => $now->subDays(14),
                     'expires_at' => $now->subDay(),
+                    'os_name' => 'Mac',
+                    'os_version' => '14',
+                    'is_mobile' => false,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => null,
@@ -117,6 +138,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Teléfono expirado',
                     'last_used_at' => $now->subDays(30),
                     'expires_at' => $now->subDays(30),
+                    'os_name' => 'Android',
+                    'os_version' => '14',
+                    'is_mobile' => true,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => null,
@@ -126,6 +150,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Tablet inactiva',
                     'last_used_at' => null,
                     'expires_at' => $now->subDays(7),
+                    'os_name' => 'Android',
+                    'os_version' => '15',
+                    'is_mobile' => true,
                 ],
                 'isRevoked' => false,
                 'lifecycleAction' => null,
@@ -135,6 +162,9 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Navegador revocado',
                     'last_used_at' => $now->subDays(3),
                     'expires_at' => $now->addDays(30),
+                    'os_name' => 'Linux',
+                    'os_version' => '22.04',
+                    'is_mobile' => false,
                 ],
                 'isRevoked' => true,
                 'lifecycleAction' => TrustedDeviceAction::Revoked,
@@ -144,11 +174,32 @@ final class TrustedDeviceSeeder extends Seeder
                     'name' => 'Laptop de trabajo revocado',
                     'last_used_at' => $now->subDays(30),
                     'expires_at' => $now->addDays(30),
+                    'os_name' => 'Mac',
+                    'os_version' => '15',
+                    'is_mobile' => false,
                 ],
                 'isRevoked' => true,
                 'lifecycleAction' => TrustedDeviceAction::Revoked,
             ],
         ];
+
+        $deviceScenarios = [];
+
+        foreach ([1, 2, 3] as $copyNumber) {
+            foreach ($scenarioTemplates as $scenarioTemplate) {
+                $copyOffset = $copyNumber - 1;
+                $scenarioTemplate['attributes']['name'] .= $copyNumber > 1 ? " {$copyNumber}" : '';
+                $scenarioTemplate['attributes']['last_used_at'] = $scenarioTemplate['attributes']['last_used_at']
+                    ?->subDays($copyOffset);
+                $scenarioTemplate['attributes']['expires_at'] = $scenarioTemplate['attributes']['expires_at']->isFuture()
+                    ? $scenarioTemplate['attributes']['expires_at']->addDays($copyOffset)
+                    : $scenarioTemplate['attributes']['expires_at']->subDays($copyOffset);
+
+                $deviceScenarios[] = $scenarioTemplate;
+            }
+        }
+
+        return $deviceScenarios;
     }
 
     private function recordEvent(User $user, TrustedDevice $trustedDevice, TrustedDeviceAction $trustedDeviceAction): void

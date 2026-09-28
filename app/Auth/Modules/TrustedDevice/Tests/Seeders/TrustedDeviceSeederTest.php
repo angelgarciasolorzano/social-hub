@@ -7,7 +7,7 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use Carbon\CarbonImmutable;
 
-it('seeds at least ten trusted devices with lifecycle states and events for every user', function (): void {
+it('seeds thirty trusted devices with lifecycle states and events for every user', function (): void {
     $users = [createUser(), createUser()];
 
     $this->seed(TrustedDeviceSeeder::class);
@@ -17,6 +17,18 @@ it('seeds at least ten trusted devices with lifecycle states and events for ever
     foreach ($users as $user) {
         $totalDevices = TrustedDevice::withTrashed()
             ->where('user_id', $user->id)
+            ->count();
+
+        $mobileMacDevices = TrustedDevice::withTrashed()
+            ->where('user_id', $user->id)
+            ->where('os_name', 'Mac')
+            ->where('is_mobile', true)
+            ->count();
+
+        $desktopMacDevices = TrustedDevice::withTrashed()
+            ->where('user_id', $user->id)
+            ->where('os_name', 'Mac')
+            ->where('is_mobile', false)
             ->count();
 
         $deviceStateCounts = [
@@ -59,13 +71,15 @@ it('seeds at least ten trusted devices with lifecycle states and events for ever
             ->count();
 
         $seededDataHasExpectedCoverage = [
-            'hasAtLeastTenDevices' => $totalDevices >= 10,
+            'hasThirtyDevices' => $totalDevices === 30,
             'hasActiveDevices' => $deviceStateCounts['active'] > 0,
             'hasExpiringSoonDevices' => $deviceStateCounts['expiringSoon'] > 0,
             'hasInactiveDevices' => $deviceStateCounts['inactive'] > 0,
             'hasRevokedDevices' => $deviceStateCounts['revoked'] > 0,
             'hasCreationEventForEveryDevice' => $eventCounts['created'] === $totalDevices,
             'creationEventsHaveDeviceMetadata' => $createdEventsWithDeviceMetadata === $totalDevices,
+            'hasMacDesktopDevices' => $desktopMacDevices > 0,
+            'hasNoMobileMacDevices' => $mobileMacDevices === 0,
             'hasRenewedEvents' => $eventCounts['renewed'] > 0,
             'hasRenamedEvents' => $eventCounts['renamed'] > 0,
             'hasRevokedEvents' => $eventCounts['revoked'] > 0,
@@ -73,13 +87,15 @@ it('seeds at least ten trusted devices with lifecycle states and events for ever
         ];
 
         expect($seededDataHasExpectedCoverage)->toBe([
-            'hasAtLeastTenDevices' => true,
+            'hasThirtyDevices' => true,
             'hasActiveDevices' => true,
             'hasExpiringSoonDevices' => true,
             'hasInactiveDevices' => true,
             'hasRevokedDevices' => true,
             'hasCreationEventForEveryDevice' => true,
             'creationEventsHaveDeviceMetadata' => true,
+            'hasMacDesktopDevices' => true,
+            'hasNoMobileMacDevices' => true,
             'hasRenewedEvents' => true,
             'hasRenamedEvents' => true,
             'hasRevokedEvents' => true,
