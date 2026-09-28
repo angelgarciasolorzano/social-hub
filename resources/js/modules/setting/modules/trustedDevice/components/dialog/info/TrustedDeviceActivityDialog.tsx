@@ -5,6 +5,7 @@ import { usePage } from "@inertiajs/react";
 
 import { Clock, Info, Search, X } from "lucide-react";
 
+import TrustedDeviceActivityActiveFilterChips from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips";
 import TrustedDeviceActivityEventList from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList";
 import TrustedDeviceActivityFiltersPopover from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover";
 import TrustedDeviceActivityPagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination";
@@ -194,6 +195,20 @@ function TrustedDeviceActivityDialogBody({
           sinceDaysFilter={filters.sinceDays}
         />
       </div>
+
+      <TrustedDeviceActivityActiveFilterChips
+        filters={committedFilters}
+        onActionFilterChange={(value) => {
+          updateFilter("action", value);
+        }}
+        onResetFilters={resetFilters}
+        onSearchChange={(value) => {
+          updateFilter("search", value);
+        }}
+        onSinceDaysFilterChange={(value) => {
+          updateFilter("sinceDays", value);
+        }}
+      />
 
       <TrustedDeviceActivityEventList
         events={initialActivity.data}
