@@ -50,16 +50,11 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
       description: "Abrir esta ayuda",
       keys: [formatForDisplay({ key: "?", shift: true }, { platform })],
     },
-    ...Object.entries(trustedDeviceGlobalShortcuts).map(([shortcutKey, shortcut]) => ({
+    ...Object.values(trustedDeviceGlobalShortcuts).map((shortcut) => ({
       accessibleKeys: shortcut.sequence
         .map((key) => formatForDisplay(key, { platform }))
         .join(", luego "),
-      description:
-        shortcutKey === "activity"
-          ? `${shortcut.description} (sin una fila enfocada)`
-          : shortcutKey === "revokeAll"
-            ? `${shortcut.description} (sin una fila enfocada)`
-            : shortcut.description,
+      description: shortcut.description,
       keys: shortcut.sequence.map((key) => formatForDisplay(key, { platform })),
     })),
   ];
@@ -69,7 +64,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
       accessibleKeys: action.shortcut
         .map((key) => formatForDisplay(key, { platform }))
         .join(", luego "),
-      description: `${action.label} para la fila enfocada`,
+      description: `${action.label} para la fila seleccionada`,
       keys: action.shortcut.map((key) => formatForDisplay(key, { platform })),
     })),
   );
@@ -92,9 +87,9 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
             </h2>
           </DialogTitle>
           <DialogDescription>
-            Los atajos globales funcionan desde cualquier lugar. Para las acciones por dispositivo,
-            enfoca primero el botón de acciones (⋯) de esa fila. G → A y G → V aplican a la fila
-            enfocada cuando ese botón tiene el foco.
+            Los atajos globales empiezan con G. Para las acciones por dispositivo, selecciona una
+            fila haciendo clic en ella o enfocando su botón de acciones (⋯); luego usa los atajos
+            que empiezan con F.
           </DialogDescription>
         </DialogHeader>
 

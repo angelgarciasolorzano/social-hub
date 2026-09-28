@@ -26,7 +26,7 @@ export const trustedDeviceGlobalShortcuts = {
 type TrustedDeviceRowActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
-type TrustedDeviceRowActionShortcut = readonly ["G", "A" | "D" | "E" | "T" | "V" | "X"];
+type TrustedDeviceRowActionShortcut = readonly ["F", "A" | "D" | "E" | "T" | "V" | "X"];
 
 interface TrustedDeviceRowAction {
   key: TrustedDeviceRowActionKey;
@@ -51,21 +51,21 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
     actions: [
       {
         key: trustedDeviceRowActionKey.viewDevice,
-        shortcut: ["G", "D"],
+        shortcut: ["F", "D"],
         icon: Eye,
         label: "Ver dispositivo",
         isEnabled: () => true,
       },
       {
         key: trustedDeviceRowActionKey.renameDevice,
-        shortcut: ["G", "E"],
+        shortcut: ["F", "E"],
         icon: Pencil,
         label: "Renombrar dispositivo",
         isEnabled: (device) => !isRevoked(device),
       },
       {
         key: trustedDeviceRowActionKey.renewTrust,
-        shortcut: ["G", "T"],
+        shortcut: ["F", "T"],
         icon: RotateCw,
         label: "Renovar confianza",
         isEnabled: (device) => !isRevoked(device),
@@ -76,7 +76,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
     actions: [
       {
         key: trustedDeviceRowActionKey.reactivate,
-        shortcut: ["G", "A"],
+        shortcut: ["F", "A"],
         icon: RotateCw,
         label: "Reactivar",
         isEnabled: isRevoked,
@@ -87,7 +87,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
     actions: [
       {
         key: trustedDeviceRowActionKey.revokeDevice,
-        shortcut: ["G", "V"],
+        shortcut: ["F", "V"],
         icon: Trash2,
         label: "Revocar dispositivo",
         isEnabled: (device) => !isRevoked(device),
@@ -97,7 +97,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
       },
       {
         key: trustedDeviceRowActionKey.forceDestroy,
-        shortcut: ["G", "X"],
+        shortcut: ["F", "X"],
         icon: Trash2,
         label: "Eliminar definitivamente",
         isEnabled: (device) => isRevoked(device),

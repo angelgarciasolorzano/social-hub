@@ -1,7 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useRef } from "react";
-
-import { usePage } from "@inertiajs/react";
+import { Fragment } from "react";
 
 import { useHotkeySequences } from "@tanstack/react-hotkeys";
 import {
@@ -13,6 +11,7 @@ import {
   createColumnHelper,
   type OnChangeFn,
   rowPaginationFeature,
+  rowSelectionFeature,
   rowSortingFeature,
   tableFeatures,
   useTable,
@@ -77,10 +76,17 @@ import { useAppearance, useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 
-import type { SharedData } from "@/shared/types";
-
 type TrustedDeviceRowDialogActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
+
+interface TrustedDeviceTableMeta {
+  onDeviceAction: (action: TrustedDeviceRowDialogActionKey, device: TrustedDevice) => void;
+}
+
+interface RowDialogActionState extends DialogClosingState {
+  deviceId: TrustedDevice["id"];
+  kind: TrustedDeviceRowDialogActionKey;
+}
 
 const trustedDeviceTableFeatures = tableFeatures({
   columnFilteringFeature,
@@ -88,7 +94,9 @@ const trustedDeviceTableFeatures = tableFeatures({
   columnResizingFeature,
   columnVisibilityFeature,
   rowPaginationFeature,
+  rowSelectionFeature,
   rowSortingFeature,
+  tableMeta: {} as TrustedDeviceTableMeta,
 });
 
 const trustedDeviceColumnHelper = createColumnHelper<
@@ -153,14 +161,19 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
     minSize: 96,
     maxSize: 180,
     enableHiding: false,
-    cell: ({ row }) => <TrustedDeviceRowActions device={row.original} />,
+    cell: ({ row, table }) => {
+      const onDeviceAction = table.options.meta?.onDeviceAction;
+
+      if (onDeviceAction === undefined) {
+        throw new Error(
+          "Trusted device row actions require an onDeviceAction table metadata handler.",
+        );
+      }
+
+      return <TrustedDeviceRowActions device={row.original} onDeviceAction={onDeviceAction} />;
+    },
   }),
 ]);
-
-interface RowDialogActionState extends DialogClosingState {
-  device: TrustedDevice;
-  kind: TrustedDeviceRowDialogActionKey;
-}
 
 interface TrustedDeviceTableProps {
   devices: TrustedDevice[];
@@ -179,6 +192,17 @@ function TrustedDeviceTable({
   onPerPageChange,
   pagination,
 }: TrustedDeviceTableProps): JSX.Element {
+  const deviceDialog = useDialog<RowDialogActionState | null>(null);
+
+  const handleDeviceAction = (
+    action: TrustedDeviceRowDialogActionKey,
+    device: TrustedDevice,
+  ): void => {
+    deviceDialog.show({ kind: action, deviceId: device.id, closing: false });
+  };
+
+  const handleDialogClose = createDialogCloseHandler(deviceDialog);
+
   const table = useTable({
     columns: trustedDeviceTableColumns,
     data: devices,
@@ -188,9 +212,12 @@ function TrustedDeviceTable({
     manualFiltering: true,
     manualPagination: true,
     manualSorting: true,
+    enableMultiRowSelection: false,
+    enableRowRangeSelection: false,
     columnResizeMode: "onChange",
     rowCount: pagination.total,
     onColumnVisibilityChange,
+    meta: { onDeviceAction: handleDeviceAction },
     state: {
       columnVisibility,
       pagination: {
@@ -203,6 +230,105 @@ function TrustedDeviceTable({
   useTanStackTableDevtools(table);
 
   const tableRows = table.getRowModel().rows;
+  const selectedDevice = table.getSelectedRowModel().rows[0]?.original ?? null;
+
+  const rowActionShortcutDefinitions = trustedDeviceRowActions
+    .flatMap((group) => group.actions)
+    .map((action) => ({
+      sequence: [...action.shortcut],
+      callback: createTrustedDeviceShortcutHandler(() => {
+        if (selectedDevice !== null) {
+          handleDeviceAction(action.key, selectedDevice);
+        }
+      }),
+      options: {
+        enabled:
+          deviceDialog.state === null &&
+          selectedDevice !== null &&
+          action.isEnabled(selectedDevice),
+      },
+    }));
+
+  useHotkeySequences(rowActionShortcutDefinitions, {
+    enabled: true,
+    ignoreInputs: true,
+    preventDefault: true,
+    stopPropagation: false,
+  });
+
+  const renderDialogDevice = (): JSX.Element | null => {
+    const currentDialog = deviceDialog.state;
+
+    if (currentDialog === null) {
+      return null;
+    }
+
+    const isClosing = currentDialog.closing;
+    const dialogDevice = devices.find((device) => device.id === currentDialog.deviceId) ?? null;
+
+    if (dialogDevice === null) {
+      return null;
+    }
+
+    switch (currentDialog.kind) {
+      case trustedDeviceRowActionKey.viewDevice:
+        return (
+          <TrustedDeviceDetailsDialog
+            device={dialogDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceRowActionKey.renameDevice:
+        return (
+          <TrustedDeviceRenameDialog
+            device={dialogDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceRowActionKey.renewTrust:
+        return (
+          <TrustedDeviceRenewTrustDialog
+            device={dialogDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceRowActionKey.revokeDevice:
+        return (
+          <TrustedDeviceRevokeDialog
+            device={dialogDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceRowActionKey.reactivate:
+        return (
+          <TrustedDeviceReactivationDialog
+            device={dialogDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceRowActionKey.forceDestroy:
+        return (
+          <TrustedDeviceForceDestroyDialog
+            device={dialogDevice}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -278,8 +404,16 @@ function TrustedDeviceTable({
               ) : (
                 tableRows.map((row) => (
                   <TableRow
+                    aria-selected={row.getIsSelected()}
                     className={cn(row.original.deletedAt !== null && "opacity-75")}
+                    data-state={row.getIsSelected() ? "selected" : undefined}
                     key={row.id}
+                    onClick={() => {
+                      row.toggleSelected(true);
+                    }}
+                    onFocusCapture={() => {
+                      row.toggleSelected(true);
+                    }}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
@@ -303,6 +437,7 @@ function TrustedDeviceTable({
       </div>
 
       <TrustedDevicePagination onPerPageChange={onPerPageChange} pagination={pagination} />
+      {renderDialogDevice()}
     </div>
   );
 }
@@ -325,12 +460,12 @@ interface TrustedDeviceStatusCellProps {
 }
 
 function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.Element {
-  const { appearance } = useAppearance();
+  const { resolvedAppearance } = useAppearance();
 
   if (device.deletedAt !== null) {
     return (
       <Badge
-        variant={appearance === "light" ? "destructive" : null}
+        variant={resolvedAppearance === "light" ? "destructive" : null}
         className="rounded-md dark:bg-red-700 dark:text-white"
       >
         Revocado
@@ -389,126 +524,19 @@ function getTrustedDeviceTableCellClassName(columnId: string): string | undefine
 
 interface TrustedDeviceRowActionsProps {
   device: TrustedDevice;
+  onDeviceAction: (action: TrustedDeviceRowDialogActionKey, device: TrustedDevice) => void;
 }
 
-function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.Element {
-  const trustedDevices = usePage<SharedData & { trustedDevices: TrustedDevicePaginationData }>()
-    .props.trustedDevices;
-
-  const dialogDevice = useDialog<RowDialogActionState | null>(null);
-  const actionButtonRef = useRef<HTMLButtonElement | null>(null);
-
-  const handleDeviceAction = (
-    action: RowDialogActionState["kind"],
-    targetDevice: TrustedDevice,
-  ): void => {
-    dialogDevice.show({ kind: action, device: targetDevice, closing: false });
-  };
-
-  const handleDialogClose = createDialogCloseHandler(dialogDevice);
-
-  const rowActionShortcutDefinitions = trustedDeviceRowActions
-    .flatMap((group) => group.actions)
-    .map((action) => ({
-      sequence: [...action.shortcut],
-      callback: createTrustedDeviceShortcutHandler(() => {
-        handleDeviceAction(action.key, device);
-      }),
-      options: { enabled: action.isEnabled(device) },
-    }));
-
-  useHotkeySequences(rowActionShortcutDefinitions, {
-    enabled: true,
-    ignoreInputs: true,
-    preventDefault: true,
-    stopPropagation: false,
-    target: actionButtonRef,
-  });
-
-  const renderDialogDevice = (): JSX.Element | null => {
-    if (dialogDevice.state === null) {
-      return null;
-    }
-
-    const isClosing = dialogDevice.state.closing;
-
-    const selectedDevice =
-      trustedDevices.data.find(
-        (trustedDevice) => trustedDevice.id === dialogDevice.state?.device.id,
-      ) ?? null;
-
-    if (selectedDevice === null) {
-      return null;
-    }
-
-    switch (dialogDevice.state.kind) {
-      case trustedDeviceRowActionKey.viewDevice:
-        return (
-          <TrustedDeviceDetailsDialog
-            device={selectedDevice}
-            onClose={handleDialogClose}
-            open={!isClosing}
-          />
-        );
-
-      case trustedDeviceRowActionKey.renameDevice:
-        return (
-          <TrustedDeviceRenameDialog
-            device={selectedDevice}
-            onClose={handleDialogClose}
-            open={!isClosing}
-          />
-        );
-
-      case trustedDeviceRowActionKey.renewTrust:
-        return (
-          <TrustedDeviceRenewTrustDialog
-            device={selectedDevice}
-            onClose={handleDialogClose}
-            open={!isClosing}
-          />
-        );
-
-      case trustedDeviceRowActionKey.revokeDevice:
-        return (
-          <TrustedDeviceRevokeDialog
-            device={selectedDevice}
-            onClose={handleDialogClose}
-            open={!isClosing}
-          />
-        );
-
-      case trustedDeviceRowActionKey.reactivate:
-        return (
-          <TrustedDeviceReactivationDialog
-            device={selectedDevice}
-            onClose={handleDialogClose}
-            open={!isClosing}
-          />
-        );
-
-      case trustedDeviceRowActionKey.forceDestroy:
-        return (
-          <TrustedDeviceForceDestroyDialog
-            device={selectedDevice}
-            onClose={handleDialogClose}
-            open={!isClosing}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
+function TrustedDeviceRowActions({
+  device,
+  onDeviceAction,
+}: TrustedDeviceRowActionsProps): JSX.Element {
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            ref={actionButtonRef}
             aria-label={`Abrir acciones de ${deviceLabel(device)}`}
-            data-trusted-device-action-trigger=""
             size="icon"
             variant="ghost"
             className="size-8"
@@ -538,7 +566,7 @@ function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.
                           return;
                         }
 
-                        handleDeviceAction(action.key, device);
+                        onDeviceAction(action.key, device);
                       }}
                     >
                       <Icon
@@ -558,8 +586,6 @@ function TrustedDeviceRowActions({ device }: TrustedDeviceRowActionsProps): JSX.
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      {renderDialogDevice()}
     </>
   );
 }

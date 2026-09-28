@@ -47,10 +47,6 @@ export function useTrustedDeviceShortcuts({
     stopPropagation: false,
   };
 
-  const isDeviceActionTriggerFocused = (): boolean =>
-    typeof document !== "undefined" &&
-    document.activeElement?.matches("[data-trusted-device-action-trigger]") === true;
-
   useHotkey(
     { key: "?", shift: true },
     createTrustedDeviceShortcutHandler(onOpenHelp),
@@ -66,9 +62,7 @@ export function useTrustedDeviceShortcuts({
       {
         sequence: [...trustedDeviceGlobalShortcuts.activity.sequence],
         callback: createTrustedDeviceShortcutHandler(() => {
-          if (!isDeviceActionTriggerFocused()) {
-            onOpenActivity();
-          }
+          onOpenActivity();
         }),
       },
       {
@@ -83,9 +77,7 @@ export function useTrustedDeviceShortcuts({
       {
         sequence: [...trustedDeviceGlobalShortcuts.revokeAll.sequence],
         callback: createTrustedDeviceShortcutHandler(() => {
-          if (!isDeviceActionTriggerFocused()) {
-            onRevokeAllDevices();
-          }
+          onRevokeAllDevices();
         }),
       },
     ],
