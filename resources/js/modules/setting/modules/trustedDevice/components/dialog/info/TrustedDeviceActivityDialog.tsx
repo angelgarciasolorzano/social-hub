@@ -228,28 +228,9 @@ function TrustedDeviceActivityDialogBody({
         hasActiveFilters={hasActiveFilters}
       />
 
-      <DialogFooter className="flex shrink-0 flex-col gap-3 sm:flex-col">
-        <div className="grid grid-cols-2 items-center gap-x-3 gap-y-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-          <div className="col-span-2 flex items-center gap-2 whitespace-nowrap md:col-span-1 md:justify-self-start">
-            <Info className="h-5 w-5 text-muted-foreground" />
-
-            <span className="text-xs text-muted-foreground">
-              {initialActivity.total === 0
-                ? "Sin eventos"
-                : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
-            </span>
-          </div>
-
-          <div className="col-span-2 flex justify-center md:col-span-1 md:col-start-2">
-            {initialActivity.last_page > 1 && (
-              <TrustedDeviceActivityPagination
-                onPageChange={goToPage}
-                pagination={initialActivity}
-              />
-            )}
-          </div>
-
-          <div className="col-span-2 flex items-center gap-2 justify-self-end md:col-span-1 md:col-start-3">
+      <DialogFooter className="flex shrink-0 flex-col gap-4 sm:flex-col">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-2 sm:justify-start">
             <Label
               className="text-xs whitespace-nowrap text-muted-foreground"
               htmlFor="trusted-device-activity-per-page"
@@ -263,7 +244,7 @@ function TrustedDeviceActivityDialogBody({
                 updateFilter("perPage", Number.parseInt(value, 10) as TrustedDevicePerPage);
               }}
             >
-              <SelectTrigger className="h-9 w-16" id="trusted-device-activity-per-page">
+              <SelectTrigger className="h-9 w-20" id="trusted-device-activity-per-page">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -277,12 +258,33 @@ function TrustedDeviceActivityDialogBody({
               </SelectContent>
             </Select>
           </div>
+
+          {initialActivity.last_page > 1 && (
+            <div className="flex justify-end">
+              <TrustedDeviceActivityPagination
+                onPageChange={goToPage}
+                pagination={initialActivity}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-end">
-          <DialogClose asChild>
-            <Button variant="outline">Cerrar</Button>
-          </DialogClose>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
+            <Info className="h-5 w-5 shrink-0 text-muted-foreground" />
+
+            <span className="text-xs text-muted-foreground">
+              {initialActivity.total === 0
+                ? "Sin eventos"
+                : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
+            </span>
+          </div>
+
+          <div className="flex justify-end">
+            <DialogClose asChild>
+              <Button variant="outline">Cerrar</Button>
+            </DialogClose>
+          </div>
         </div>
       </DialogFooter>
     </div>
