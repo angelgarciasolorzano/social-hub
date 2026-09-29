@@ -48,7 +48,9 @@ final class TrustedDeviceIndexController extends Controller
             'expiring-soon' => ['expires_at', 'asc'],
         };
 
-        $query = $user->trustedDevices()->orderBy($sortColumn, $sortDirection);
+        $query = $user->trustedDevices()
+            ->withTrashed()
+            ->orderBy($sortColumn, $sortDirection);
 
         if ($trustedDeviceFiltersData->search !== '') {
             $search = $trustedDeviceFiltersData->search;
@@ -61,14 +63,20 @@ final class TrustedDeviceIndexController extends Controller
         }
 
         if ($trustedDeviceFiltersData->status !== null) {
-            $query->where(function (Builder $builder) use ($trustedDeviceFiltersData): void {
+            $now = CarbonImmutable::now();
+
+            $query->where(function (Builder $builder) use ($trustedDeviceFiltersData, $now): void {
                 foreach ($trustedDeviceFiltersData->status as $status) {
                     if ($status === 'revoked') {
                         $builder->orWhere(fn (Builder $builder): Builder => $builder->onlyTrashed());
                     } elseif ($status === 'active') {
-                        $builder->orWhere('expires_at', '>', CarbonImmutable::now());
+                        $builder->orWhere(fn (Builder $builder): Builder => $builder
+                            ->whereNull('deleted_at')
+                            ->where('expires_at', '>', $now));
                     } elseif ($status === 'inactive') {
-                        $builder->orWhere('expires_at', '<=', CarbonImmutable::now());
+                        $builder->orWhere(fn (Builder $builder): Builder => $builder
+                            ->whereNull('deleted_at')
+                            ->where('expires_at', '<=', $now));
                     }
                 }
             });
