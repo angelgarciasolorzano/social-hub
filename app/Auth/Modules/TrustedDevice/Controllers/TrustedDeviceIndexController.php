@@ -193,7 +193,7 @@ final class TrustedDeviceIndexController extends Controller
                         ->orWhere('device_os_name', 'like', "%{$trustedDeviceActivityFiltersData->search}%");
                 });
             })
-            ->paginate(5)
+            ->paginate($trustedDeviceActivityFiltersData->perPage)
             ->through(fn (TrustedDeviceEvent $trustedDeviceEvent): array => new TrustedDeviceEventResource($trustedDeviceEvent)
                 ->toArray($request));
 

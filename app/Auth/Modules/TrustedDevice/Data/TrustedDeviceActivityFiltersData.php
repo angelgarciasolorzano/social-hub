@@ -24,6 +24,10 @@ final class TrustedDeviceActivityFiltersData extends Data
 
     private const array ALLOWED_SINCE_DAYS = ['7', '30', '90', '180', '365'];
 
+    private const array ALLOWED_PER_PAGE = [5, 10, 15, 25, 50];
+
+    private const int DEFAULT_PER_PAGE = 5;
+
     /**
      * @param  list<string>|null  $action
      * @param  list<string>|null  $sinceDays
@@ -32,11 +36,14 @@ final class TrustedDeviceActivityFiltersData extends Data
         public ?array $action,
         public ?array $sinceDays,
         public string $search,
+        public int $perPage,
     ) {}
 
     /** Create normalized activity filters from a request. */
     public static function fromRequest(Request $request): self
     {
+        $perPage = $request->integer('per_page');
+
         return new self(
             action: self::parseMultiFilter($request->string('action')->toString(), self::ALLOWED_ACTIONS),
             sinceDays: self::parseMultiFilter(
@@ -44,6 +51,7 @@ final class TrustedDeviceActivityFiltersData extends Data
                 self::ALLOWED_SINCE_DAYS,
             ),
             search: trim($request->string('search')->toString()),
+            perPage: \in_array($perPage, self::ALLOWED_PER_PAGE, true) ? $perPage : self::DEFAULT_PER_PAGE,
         );
     }
 
