@@ -9,5 +9,5 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/**/Data/** | .ai/rules/data.md |
 | app/**/Database/Factories/**/*.php | .ai/rules/factories.md |
 | resources/js/**/*.tsx, resources/js/**/*.ts | .ai/rules/frontend.md |
-| **/* (Linear issues, PRs, branches) | .ai/rules/linear.md |
+| **/* | .ai/rules/linear.md |
 | app/**/Resources/** | .ai/rules/resources.md |

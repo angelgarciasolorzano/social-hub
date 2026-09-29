@@ -204,7 +204,7 @@ Use `P0` through `P3` priorities:
 
 Before writing output, load `references/output-format.md`.
 
-Write both files:
+Write both files together in one plan-specific directory:
 
 - `.ulpi/plans/<plan-name>.md`
 - `.ulpi/plans/<plan-name>.json`
