@@ -1,9 +1,9 @@
-const VISIBLE_PAGES = 5;
+const MAX_VISIBLE_PAGE_NUMBERS = 5;
 
 /**
  * Build the list of page numbers and ellipsis markers to render in the
  * pagination control. Always centers on `currentPage` and shows up to
- * `VISIBLE_PAGES` nearby page numbers, with the first and last page always available.
+ * `MAX_VISIBLE_PAGE_NUMBERS` page numbers total, including the first and last page.
  *
  * @param currentPage  The page the user is currently on (1-indexed).
  * @param lastPage     The total number of pages.
@@ -13,14 +13,18 @@ export function computePaginationRange(
   currentPage: number,
   lastPage: number,
 ): (number | "ellipsis")[] {
-  const half = Math.floor(VISIBLE_PAGES / 2);
+  const nearbyPageCount = MAX_VISIBLE_PAGE_NUMBERS - 2;
+  const halfNearbyPageCount = Math.floor(nearbyPageCount / 2);
 
-  if (lastPage <= VISIBLE_PAGES) {
-    return Array.from({ length: lastPage }, (_, index) => index + 1);
+  if (lastPage <= MAX_VISIBLE_PAGE_NUMBERS) {
+    return Array.from({ length: lastPage }, (_pageNumber, pageIndex) => pageIndex + 1);
   }
 
-  const start = Math.max(2, currentPage - half);
-  const end = Math.min(lastPage - 1, currentPage + half);
+  const start = Math.max(
+    2,
+    Math.min(currentPage - halfNearbyPageCount, lastPage - nearbyPageCount),
+  );
+  const end = start + nearbyPageCount - 1;
 
   const pages: (number | "ellipsis")[] = [1];
 

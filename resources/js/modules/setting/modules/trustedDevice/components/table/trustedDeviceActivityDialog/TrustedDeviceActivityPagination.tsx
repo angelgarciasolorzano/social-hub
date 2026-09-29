@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { TrustedDeviceActivityPagination as TrustedDeviceActivityPaginationData } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
+import { computePaginationRange } from "@/modules/setting/modules/trustedDevice/utils/pagination";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -11,8 +12,6 @@ import {
   PaginationEllipsis,
   PaginationItem,
 } from "@/shared/components/shadcn/ui/pagination";
-
-const ACTIVITY_PAGINATION_VISIBLE_PAGE_COUNT = 4;
 
 export interface TrustedDeviceActivityPaginationProps {
   pagination: TrustedDeviceActivityPaginationData;
@@ -23,7 +22,7 @@ export default function TrustedDeviceActivityPagination({
   pagination,
   onPageChange,
 }: TrustedDeviceActivityPaginationProps): JSX.Element {
-  const pages = buildActivityPaginationRange(pagination.current_page, pagination.last_page);
+  const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
     <Pagination className="mx-0 w-auto shrink-0">
@@ -131,31 +130,4 @@ function ActivityPaginationNextButton({
       <ChevronRight className="size-4" />
     </Button>
   );
-}
-
-function buildActivityPaginationRange(
-  currentPage: number,
-  lastPage: number,
-): (number | "ellipsis")[] {
-  if (lastPage <= ACTIVITY_PAGINATION_VISIBLE_PAGE_COUNT) {
-    return Array.from({ length: lastPage }, (_pageNumber, pageIndex) => pageIndex + 1);
-  }
-
-  const nearbyStart = Math.min(Math.max(currentPage - 1, 2), lastPage - 2);
-  const nearbyEnd = nearbyStart + 1;
-  const pages: (number | "ellipsis")[] = [1];
-
-  if (nearbyStart > 2) {
-    pages.push("ellipsis");
-  }
-
-  pages.push(nearbyStart, nearbyEnd);
-
-  if (nearbyEnd < lastPage - 1) {
-    pages.push("ellipsis");
-  }
-
-  pages.push(lastPage);
-
-  return pages;
 }

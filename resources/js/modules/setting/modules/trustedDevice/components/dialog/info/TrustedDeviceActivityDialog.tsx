@@ -89,7 +89,7 @@ export default function TrustedDeviceActivityDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-4xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             <div className="flex items-center gap-2">
