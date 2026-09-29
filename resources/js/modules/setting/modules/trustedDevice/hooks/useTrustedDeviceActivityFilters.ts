@@ -2,17 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import {
-  defaultTrustedDeviceActivityFilters,
-  type TrustedDeviceActivityActionFilter,
-  type TrustedDeviceActivitySinceDaysFilter,
-} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
+import { defaultTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
+import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 
-export interface TrustedDeviceActivityFilterState {
-  action: TrustedDeviceActivityActionFilter[] | null;
-  sinceDays: TrustedDeviceActivitySinceDaysFilter[] | null;
-  search: string;
+export interface TrustedDeviceActivityFilterState extends TrustedDeviceActivityFilters {
+  perPage: TrustedDevicePerPage;
 }
 
 export interface TrustedDeviceActivityFiltersController {
@@ -28,17 +23,17 @@ export interface TrustedDeviceActivityFiltersController {
 }
 
 /**
- * Filter state + reload behaviour for the activity dialog.
+ * Filter and page-size state + reload behaviour for the activity dialog.
  *
  * `updateFilter` mutates state; the effects below trigger the reload via
  * `router.reload` (no URL mutation, suitable for dialogs) with `search`
  * debounced and the other fields firing immediately.
  *
- * @param initialFilters  Sanitized filters emitted by the backend.
+ * @param initialFilters  Initial activity filters and page size.
  * @param delay           Debounce delay in ms for the `search` field (default 500).
  */
 export function useTrustedDeviceActivityFilters(
-  initialFilters: TrustedDeviceActivityFilters,
+  initialFilters: TrustedDeviceActivityFilterState,
   delay = 500,
 ): TrustedDeviceActivityFiltersController {
   const [filters, setFilters] = useState<TrustedDeviceActivityFilterState>(initialFilters);
@@ -48,6 +43,7 @@ export function useTrustedDeviceActivityFilters(
 
   const hasInteractedRef = useRef<boolean>(false);
   const filtersRef = useRef<TrustedDeviceActivityFilterState>(filters);
+  const currentPageRef = useRef<number>(1);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -63,7 +59,8 @@ export function useTrustedDeviceActivityFilters(
       router.reload({
         data: {
           action,
-          page: page ?? 1,
+          page: page ?? currentPageRef.current,
+          per_page: next.perPage,
           search: next.search,
           since_days: sinceDays,
         },
@@ -102,7 +99,7 @@ export function useTrustedDeviceActivityFilters(
     if (!hasInteractedRef.current) return;
 
     triggerReload(filtersRef.current);
-  }, [filters.action, filters.sinceDays, triggerReload]);
+  }, [filters.action, filters.sinceDays, filters.perPage, triggerReload]);
 
   const updateFilter = useCallback(
     <K extends keyof TrustedDeviceActivityFilterState>(
@@ -110,6 +107,7 @@ export function useTrustedDeviceActivityFilters(
       value: TrustedDeviceActivityFilterState[K],
     ): void => {
       hasInteractedRef.current = true;
+      currentPageRef.current = 1;
 
       setFilters((prev) => ({ ...prev, [key]: value }));
     },
@@ -118,6 +116,8 @@ export function useTrustedDeviceActivityFilters(
 
   const goToPage = useCallback(
     (page: number): void => {
+      currentPageRef.current = page;
+
       triggerReload(filtersRef.current, page);
     },
     [triggerReload],
@@ -125,6 +125,7 @@ export function useTrustedDeviceActivityFilters(
 
   const resetFilters = useCallback(() => {
     hasInteractedRef.current = true;
+    currentPageRef.current = 1;
 
     setFilters(defaultTrustedDeviceActivityFilters);
   }, []);

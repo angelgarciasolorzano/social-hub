@@ -125,6 +125,7 @@ function PaginationNumberLink({ page, pagination }: PaginationNumberLinkProps): 
       href={url}
       only={["trustedDevices"]}
       preserveScroll
+      preserveState
     >
       {page}
     </Link>
@@ -158,6 +159,7 @@ function PaginationPreviousLink({ pagination }: PaginationPreviousLinkProps): JS
       href={url}
       only={["trustedDevices"]}
       preserveScroll
+      preserveState
     >
       <ChevronLeft className="size-4" />
     </Link>
@@ -191,6 +193,7 @@ function PaginationNextLink({ pagination }: PaginationNextLinkProps): JSX.Elemen
       href={url}
       only={["trustedDevices"]}
       preserveScroll
+      preserveState
     >
       <ChevronRight className="size-4" />
     </Link>

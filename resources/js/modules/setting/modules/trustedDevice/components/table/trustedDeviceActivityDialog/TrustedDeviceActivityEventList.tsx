@@ -20,6 +20,8 @@ import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
+import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
+
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
@@ -42,7 +44,7 @@ export default function TrustedDeviceActivityEventList({
   hasActiveFilters,
 }: TrustedDeviceActivityEventListProps): JSX.Element {
   return (
-    <div className="max-h-[60vh] rounded-xl border dark:bg-muted/20">
+    <ScrollArea className="min-h-0 flex-1 rounded-xl border dark:bg-muted/20">
       {events.length === 0 ? (
         <div className="gap-2 p-6">
           {hasActiveFilters ? (
@@ -66,7 +68,7 @@ export default function TrustedDeviceActivityEventList({
           ))}
         </ul>
       )}
-    </div>
+    </ScrollArea>
   );
 }
 

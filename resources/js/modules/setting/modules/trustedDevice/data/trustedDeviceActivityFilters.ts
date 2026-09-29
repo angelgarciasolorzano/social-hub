@@ -1,11 +1,15 @@
+import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
+
 export const defaultTrustedDeviceActivityFilters = {
   action: null,
   sinceDays: null,
   search: "",
+  perPage: 5,
 } as const satisfies {
   action: TrustedDeviceActivityActionFilter[] | null;
   sinceDays: TrustedDeviceActivitySinceDaysFilter[] | null;
   search: string;
+  perPage: TrustedDevicePerPage;
 };
 
 export const activityActionOptions = [

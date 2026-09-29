@@ -9,6 +9,10 @@ import TrustedDeviceActivityActiveFilterChips from "@/modules/setting/modules/tr
 import TrustedDeviceActivityEventList from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList";
 import TrustedDeviceActivityFiltersPopover from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover";
 import TrustedDeviceActivityPagination from "@/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination";
+import {
+  type TrustedDevicePerPage,
+  trustedDevicePerPageOptions,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDeviceActivityFiltersController } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
 import type { TrustedDeviceActivityPagination as TrustedDeviceActivityPaginationData } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 
@@ -28,6 +32,15 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
+import { Label } from "@/shared/components/shadcn/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/shadcn/ui/select";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import type { SharedData } from "@/shared/types";
@@ -76,7 +89,7 @@ export default function TrustedDeviceActivityDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>
             <div className="flex items-center gap-2">
@@ -90,7 +103,7 @@ export default function TrustedDeviceActivityDialog({
         </DialogHeader>
 
         {isLoading ? (
-          <div className="min-h-60 space-y-6">
+          <div className="min-h-0 space-y-6 overflow-y-auto">
             <div className="flex items-center gap-2">
               <Skeleton className="h-10 flex-1" />
               <Skeleton className="h-10 w-10" />
@@ -152,7 +165,7 @@ function TrustedDeviceActivityDialogBody({
     (committedFilters.sinceDays !== null && committedFilters.sinceDays.length > 0);
 
   return (
-    <>
+    <div className="flex min-h-0 flex-col gap-4">
       <div className="flex items-center gap-2">
         <InputGroup className="flex-1">
           <InputGroupAddon>
@@ -215,27 +228,63 @@ function TrustedDeviceActivityDialogBody({
         hasActiveFilters={hasActiveFilters}
       />
 
-      <DialogFooter className="flex items-center justify-between sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Info className="h-5 w-5 text-muted-foreground" />
+      <DialogFooter className="flex shrink-0 flex-col gap-3 sm:flex-col">
+        <div className="grid grid-cols-2 items-center gap-x-3 gap-y-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+          <div className="col-span-2 flex items-center gap-2 whitespace-nowrap md:col-span-1 md:justify-self-start">
+            <Info className="h-5 w-5 text-muted-foreground" />
 
-          <span className="text-xs text-muted-foreground">
-            {initialActivity.total === 0
-              ? "Sin eventos"
-              : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
-          </span>
+            <span className="text-xs text-muted-foreground">
+              {initialActivity.total === 0
+                ? "Sin eventos"
+                : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
+            </span>
+          </div>
+
+          <div className="col-span-2 flex justify-center md:col-span-1 md:col-start-2">
+            {initialActivity.last_page > 1 && (
+              <TrustedDeviceActivityPagination
+                onPageChange={goToPage}
+                pagination={initialActivity}
+              />
+            )}
+          </div>
+
+          <div className="col-span-2 flex items-center gap-2 justify-self-end md:col-span-1 md:col-start-3">
+            <Label
+              className="text-xs whitespace-nowrap text-muted-foreground"
+              htmlFor="trusted-device-activity-per-page"
+            >
+              Eventos por página
+            </Label>
+
+            <Select
+              value={String(filters.perPage)}
+              onValueChange={(value) => {
+                updateFilter("perPage", Number.parseInt(value, 10) as TrustedDevicePerPage);
+              }}
+            >
+              <SelectTrigger className="h-9 w-16" id="trusted-device-activity-per-page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {trustedDevicePerPageOptions.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {String(option)}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {initialActivity.last_page > 1 && (
-            <TrustedDeviceActivityPagination onPageChange={goToPage} pagination={initialActivity} />
-          )}
-
+        <div className="flex justify-end">
           <DialogClose asChild>
             <Button variant="outline">Cerrar</Button>
           </DialogClose>
         </div>
       </DialogFooter>
-    </>
+    </div>
   );
 }
