@@ -1,36 +1,51 @@
-# Plan: SOC-30 — Extra: Suite de pruebas para TrustedDevice
+# Plan: SOC-30 — Extra: Suite, coverage y estructura de entorno TrustedDevice
 
 **Tipo:** Extra complementario de SOC-30. **Modo:** EXPANSION. **Revisión predeterminada:** codex.
 
 ## Overview
 
-Agregar una suite PHPUnit llamada TrustedDevice para ejecutar las pruebas del módulo por nombre, sin incluirlas dos veces en la suite Feature.
+El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar las pruebas del módulo por nombre, sin incluirlas dos veces en Feature. También ordenará `.env.example` y `.env.ci` según `.env.testing.example`, y cubrirá con pruebas el comando de purga de dispositivos y documentará para los agentes cómo ejecutar coverage de Pest.
 
 ## Scope Challenge
 
-phpunit.xml actualmente coloca app/Auth/Modules/TrustedDevice/Tests dentro de Feature junto a tests/Feature. Laravel reenvía opciones de selección a Pest/PHPUnit; `php artisan test TrustedDevice` se interpreta como una ruta y falla, mientras `--testsuite=Unit --list-test-files` confirma que el selector se reenvía. Se confirmó usar el selector estándar `--testsuite=TrustedDevice`, con modo EXPANSION y revisión codex.
+`phpunit.xml` ya separa los 79 tests TrustedDevice de Feature y el comando `php artisan test --testsuite=TrustedDevice --compact` pasa. La expansión de entorno compara tres archivos: `.env.testing.example` usa secciones con separadores y explicación; `.env.example` y `.env.ci` tienen poca agrupación. Los workflows copian `.env.ci` a `.env`, así que debe seguir siendo mínimo. Una corrida de coverage ejecutó los 79 tests (79 pasaron) y reportó `TrustedDevicePurge` con 0.0%; el comando `herd coverage` falló al resolver PHP antes de llegar a Pest, por lo que se ejecutó Pest con el PHP de Herd y Xdebug habilitado. El alcance de cobertura de PHPUnit está definido en `phpunit.xml` e incluye actualmente `app`, aunque la selección de tests se limite al módulo.
+
+Se confirmó limitar la actualización de los archivos de entorno a estructura y comentarios, preservando las claves, su estado activo o comentado y sus valores actuales. No se copiarán claves entre archivos. Se mantienen el modo EXPANSION y la revisión codex.
 
 ## Prerequisites
 
-- El módulo tiene pruebas bajo app/Auth/Modules/TrustedDevice/Tests.
-- El proyecto usa PHPUnit 13.3.4, Pest 5.2.1 y Laravel 13.32.0; la configuración vigente es phpunit.xml.
+- El módulo tiene pruebas bajo `app/Auth/Modules/TrustedDevice/Tests`.
+- El proyecto usa PHPUnit 13.3.4, Pest 5.2.1 y Laravel 13.32.0; la configuración vigente es `phpunit.xml`.
+- `.env.testing.example` es la referencia de formato; los workflows de CI copian `.env.ci` a `.env`.
+- `app/Auth/Console/Commands/TrustedDevicePurge.php` valida días positivos, permite usar el valor configurado o `--days`, y elimina permanentemente solo dispositivos soft-deleted anteriores al corte.
+- Los agentes ejecutan coverage de Pest con Herd; la corrida previa confirmó que el wrapper puede fallar antes de iniciar Pest y que el informe sigue el alcance de `<source>` en `phpunit.xml`.
 
 ## Non-Goals
 
-- Cambiar pruebas, convenciones Pest, bases de datos de testing ni dependencias.
+- Cambiar pruebas existentes ajenas a esta expansión, convenciones Pest, bases de datos de testing ni dependencias.
 - Crear un comando Artisan personalizado para aceptar el argumento posicional `TrustedDevice`.
+- Cambiar, agregar o eliminar claves de entorno, cambiar sus valores, activar ejemplos comentados o copiar claves entre los tres archivos.
 
 ## Contracts
 
-- La suite TrustedDevice apunta a app/Auth/Modules/TrustedDevice/Tests.
-- La suite Feature contiene solo tests/Feature, para no registrar dos veces los tests del módulo.
-- Comando de selección: php artisan test --testsuite=TrustedDevice --compact; --list-suites muestra TrustedDevice como suite separada.
+- La suite TrustedDevice apunta a `app/Auth/Modules/TrustedDevice/Tests`.
+- La suite Feature contiene solo `tests/Feature`, para no registrar dos veces los tests del módulo.
+- Comando de selección: `php artisan test --testsuite=TrustedDevice --compact`; `--list-suites` muestra TrustedDevice como suite separada.
+- `.env.example` y `.env.ci` adoptan los encabezados separadores y comentarios de propósito de `.env.testing.example`, adaptados a sus propias claves.
+- En cada archivo de entorno se conservan exactamente las claves, valores y estado activo o comentado; `.env.ci` sigue siendo mínimo para CI.
+- El comando de coverage para el módulo es `herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests`; el reporte de archivos fuente se interpreta conforme a `phpunit.xml`, no como porcentaje aislado del módulo.
+- La purga elimina solo filas soft-deleted cuyo `deleted_at` sea anterior al corte; opciones inválidas no borran datos.
+- `AGENTS.md` documenta el comando para coverage de módulo y la alternativa con PHP de Herd y Xdebug si el wrapper `herd coverage` no llega a invocar Pest.
 
 ## Existing Code Leverage
 
-- phpunit.xml ya declara las suites Unit y Feature.
+- `phpunit.xml` ya declara las suites Unit y Feature.
 - Laravel TestCommand reenvía las opciones de selección a Pest/PHPUnit.
-- php artisan test --testsuite=Unit --list-test-files confirma que Artisan reenvía --testsuite.
+- `php artisan test --testsuite=Unit --list-test-files` confirma que Artisan reenvía `--testsuite`.
+- `.env.testing.example` ya documenta grupos con separadores y comentarios explicativos.
+- `.github/workflows/backend-code-quality.yml` y `frontend-code-quality.yml` copian `.env.ci` como entorno de CI.
+- `app/Auth/Console/Commands/TrustedDevicePurge.php` es el comando sin cobertura detectado; `TrustedDeviceFactory` y las utilidades Pest del módulo permiten probar el borrado en aislamiento.
+- `phpunit.xml` define el origen de cobertura; `AGENTS.md` contiene las instrucciones compartidas para agentes.
 
 ## Tasks
 
@@ -51,31 +66,115 @@ phpunit.xml actualmente coloca app/Auth/Modules/TrustedDevice/Tests dentro de Fe
 
 **Acceptance Criteria:**
 
-- php artisan test --list-suites muestra TrustedDevice como suite separada de Feature.
-- php artisan test --testsuite=TrustedDevice --compact ejecuta la suite TrustedDevice y pasa.
+- `php artisan test --list-suites` muestra TrustedDevice como suite separada de Feature.
+- `php artisan test --testsuite=TrustedDevice --compact` ejecuta la suite TrustedDevice y pasa.
 - La carpeta del módulo ya no aparece dentro de Feature, evitando pruebas duplicadas en la ejecución global.
 
 **validateCommand:** `php artisan test --list-suites && php artisan test --testsuite=TrustedDevice --compact`
 
+### TASK-002: Documentar y agrupar las variables de entorno
+
+**Description:** Reorganizar `.env.example` y `.env.ci` con secciones separadas y comentarios de propósito siguiendo el estilo de `.env.testing.example`, agrupando las claves que ya existen según su función y sin modificar sus asignaciones.
+
+**Type:** chore  
+**Priority:** P1  
+**Effort:** S  
+**Agent:** `general-purpose`  
+**Review:** `codex`  
+**Depends on:** —
+
+**writeScope:**
+
+- `.env.example`
+- `.env.ci`
+
+**Acceptance Criteria:**
+
+- Los dos archivos usan encabezados de sección con separadores y comentarios que explican la finalidad de cada grupo, siguiendo el formato de `.env.testing.example`.
+- `.env.example` agrupa por separado aplicación, localización, mantenimiento, servidor local, hashing, logs, base de datos, sesiones, servicios de broadcast/archivos/colas, caché, Memcached, Redis, correo, AWS, frontend y configuración propia de Social Hub. `.env.ci` agrupa aplicación, base de datos, servicios de ejecución (caché, cola y sesión), correo, broadcast/archivos y logs.
+- Se conservan exactamente las claves, sus valores y su estado activo o comentado en cada archivo; no se copian claves de testing o locales a `.env.ci`.
+- `.env.ci` continúa siendo el entorno CI mínimo usado por los workflows y las asignaciones mantienen sintaxis válida sin claves duplicadas.
+
+**validateCommand:** `rtk php -r '$files = [".env.example", ".env.ci"]; foreach ($files as $file) { $keys = []; foreach (file($file, FILE_IGNORE_NEW_LINES) as $line) { if ($line === "" || str_starts_with(ltrim($line), "#")) { continue; } if (! preg_match("/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/", $line, $matches)) { fwrite(STDERR, "Invalid assignment in {$file}" . PHP_EOL); exit(1); } if (isset($keys[$matches[1]])) { fwrite(STDERR, "Duplicate key in {$file}: {$matches[1]}" . PHP_EOL); exit(1); } $keys[$matches[1]] = true; } }'`
+
+### TASK-003: Cubrir el comando de purga de TrustedDevice
+
+**Description:** Añadir pruebas Pest para la retención configurada, el override `--days` y la validación de valores inválidos, verificando los registros que permanecen y los que se eliminan permanentemente.
+
+**Type:** test  
+**Priority:** P1  
+**Effort:** S  
+**Agent:** `laravel-senior-engineer`  
+**Review:** `codex`  
+**Depends on:** TASK-001
+
+**writeScope:**
+
+- Create: `app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php`
+
+**Acceptance Criteria:**
+
+- Con la retención configurada, solo se purgan dispositivos soft-deleted anteriores al corte; dispositivos activos, recientes o justo en el límite permanecen.
+- `--days` reemplaza la configuración para calcular el corte y el comando informa el número purgado con estado exitoso.
+- Con cero o días negativos, el comando devuelve estado inválido, informa el error y no elimina registros.
+
+**validateCommand:** `rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php`
+
+### TASK-004: Documentar coverage de Pest para agentes
+
+**Description:** Añadir a las instrucciones de testing para agentes el comando Herd solicitado para generar coverage, una variante para un archivo de prueba y las notas necesarias para interpretar o desbloquear el reporte.
+
+**Type:** docs  
+**Priority:** P1  
+**Effort:** S  
+**Agent:** `general-purpose`  
+**Review:** `codex`  
+**Depends on:** —
+
+**writeScope:**
+
+- Modify: `AGENTS.md`
+
+**Acceptance Criteria:**
+
+- `AGENTS.md` documenta literalmente `herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests` como comando para coverage del módulo y cómo sustituir la ruta por un archivo al investigar una prueba concreta.
+- La guía aclara que la ruta limita las pruebas ejecutadas, mientras que los archivos fuente medidos los determina `<source>` en `phpunit.xml` (actualmente `app`).
+- Si `herd coverage` falla antes de arrancar Pest al resolver PHP, la guía indica usar el PHP de Herd con Xdebug/`XDEBUG_MODE=coverage` y la configuración debug de Herd, sin presentar ese fallo del wrapper como un fallo de Pest.
+
+**validateCommand:** `rtk rg -n 'herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests|XDEBUG_MODE=coverage|phpunit.xml' AGENTS.md`
+
 ## Failure Modes
 
 - Si la carpeta del módulo sigue también dentro de Feature, la ejecución global puede registrar los mismos tests dos veces.
-- Si el nombre de suite o su ruta están mal, --testsuite=TrustedDevice no podrá seleccionar las pruebas del módulo.
-- El argumento posicional TrustedDevice se trata como un archivo y no sustituye a --testsuite.
+- Si el nombre de suite o su ruta están mal, `--testsuite=TrustedDevice` no podrá seleccionar las pruebas del módulo.
+- El argumento posicional `TrustedDevice` se trata como un archivo y no sustituye a `--testsuite`.
+- Cambiar valores de entorno mientras se reordenan líneas altera la configuración local o de CI.
+- Activar accidentalmente claves comentadas o copiar claves de testing amplía el comportamiento de `.env.ci`.
+- Una prueba de purga que no controle el tiempo o no distinga activos, soft-deleted recientes y anteriores al corte puede pasar sin proteger el límite de retención.
+- El wrapper `herd coverage` falló en esta máquina antes de iniciar Pest por la resolución del binario PHP; la alternativa directa requiere seleccionar el PHP de Herd con su configuración Xdebug de coverage.
+- Un porcentaje total de coverage no equivale a coverage del módulo si `phpunit.xml` incluye todo `app` como source.
 
 ## Ship Cut
 
-Completar cuando PHPUnit liste la suite TrustedDevice, esta ejecute los tests del módulo y la suite Feature deje de incluir ese directorio duplicado.
+Completar cuando PHPUnit ejecute TrustedDevice por suite, los archivos de entorno estén documentados sin cambiar asignaciones, `TrustedDevicePurge` tenga pruebas para los caminos de retención y error, y `AGENTS.md` permita repetir e interpretar coverage de Pest con Herd.
 
 ## Test Coverage Map
 
-- PHPUnit --list-suites valida el registro de TrustedDevice como suite separada.
-- php artisan test --testsuite=TrustedDevice --compact ejecuta las pruebas aisladas del módulo.
+- PHPUnit `--list-suites` valida el registro de TrustedDevice como suite separada.
+- `php artisan test --testsuite=TrustedDevice --compact` ejecuta las pruebas aisladas del módulo.
+- Un chequeo local confirma que las líneas activas de ambos archivos mantienen sintaxis `KEY=value` y no tienen claves duplicadas; la revisión del diff confirma que solo cambian comentarios, espacios y orden de asignaciones.
+- Pest cubre retención configurada, override, límite de fecha y entrada inválida del comando `trusted-devices:purge`.
+- La guía de agentes contiene el comando de coverage del módulo y su fallback de Herd/Xdebug; la lectura del informe distingue la selección de pruebas del origen de cobertura de PHPUnit.
 
 ## Execution Summary
 
-Ruta crítica: TASK-001. Cambio limitado a phpunit.xml; el comando de uso queda como `php artisan test --testsuite=TrustedDevice --compact`.
+TASK-001 registró la suite TrustedDevice. TASK-002 organiza los dos archivos de entorno; TASK-003 añade pruebas al comando de purga; TASK-004 documenta coverage para agentes. La revisión predeterminada codex se mantiene.
+
+**Ruta crítica:** TASK-001 → TASK-003. TASK-002 y TASK-004 son independientes.
 
 ## Task Dependencies
 
 - TASK-001 → —
+- TASK-002 → —
+- TASK-003 → TASK-001
+- TASK-004 → —
