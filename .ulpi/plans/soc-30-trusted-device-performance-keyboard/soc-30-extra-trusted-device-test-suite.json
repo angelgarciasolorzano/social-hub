@@ -5,7 +5,7 @@
   "mode": "EXPANSION",
   "defaultReview": "codex",
   "overview": "El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar el módulo por nombre. También ordenará .env.example y .env.ci según .env.testing.example, probará el comando de purga, documentará para agentes cómo ejecutar coverage de Pest y ubicará el comando dentro del módulo TrustedDevice.",
-  "scopeChallenge": "phpunit.xml separa los 79 tests TrustedDevice de Feature y la suite pasa. .env.testing.example sirve de referencia para agrupar los archivos de entorno, mientras .env.ci debe seguir siendo mínimo porque los workflows lo copian a .env. Una corrida de coverage ejecutó 79 tests y reportó TrustedDevicePurge con 0.0%. `herd coverage` falló al resolver PHP antes de llegar a Pest; Pest sí corrió con el PHP de Herd y Xdebug habilitado. Aunque el path de Pest limite las pruebas al módulo, phpunit.xml incluye actualmente app como origen del reporte.",
+  "scopeChallenge": "phpunit.xml separa los 79 tests TrustedDevice de Feature y la suite pasa. .env.testing.example sirve de referencia para agrupar los archivos de entorno, mientras .env.ci debe seguir siendo mínimo porque los workflows lo copian a .env. Una corrida previa de coverage reportó TrustedDevicePurge con 0.0%. `herd coverage` falló al resolver PHP antes de llegar a Pest; Pest sí corrió con el PHP de Herd y Xdebug habilitado. Para el comando documentado, Pest ejecuta toda la suite y phpunit.xml define app como origen del reporte.",
   "prerequisites": [
     "El módulo tiene pruebas bajo app/Auth/Modules/TrustedDevice/Tests.",
     "El proyecto usa PHPUnit 13.3.4, Pest 5.2.1 y Laravel 13.32.0; la configuración vigente es phpunit.xml.",
@@ -24,7 +24,7 @@
     "Comando de selección: php artisan test --testsuite=TrustedDevice --compact; --list-suites muestra TrustedDevice como suite separada.",
     ".env.example y .env.ci adoptan los encabezados separadores y comentarios de propósito de .env.testing.example, adaptados a sus propias claves.",
     "En cada archivo de entorno, se conservan exactamente las claves, valores y estado activo/comentado; .env.ci sigue siendo mínimo para CI.",
-    "Comando de coverage del módulo: herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests. La ruta de pruebas limita qué tests se ejecutan; phpunit.xml define el source medido y actualmente incluye app.",
+    "Comando de coverage de toda la suite: herd coverage ./vendor/bin/pest --coverage, sin ruta de módulo. phpunit.xml define el source medido y actualmente incluye app.",
     "La purga solo elimina permanentemente dispositivos soft-deleted con deleted_at anterior al corte; valores de días inválidos no eliminan registros.",
     "AGENTS.md explica el comando de coverage y el uso del PHP de Herd con Xdebug/XDEBUG_MODE=coverage si el wrapper falla antes de iniciar Pest.",
     "TrustedDevicePurge vive bajo app/Auth/Modules/TrustedDevice/Console/Commands y AuthServiceProvider registra esa clase, conservando la firma y comportamiento del comando."
@@ -46,7 +46,7 @@
     "Activar accidentalmente claves comentadas o copiar claves de testing amplía el comportamiento de .env.ci.",
     "Una prueba de purga que no controle el tiempo o no distinga activos, soft-deleted recientes y anteriores al corte puede pasar sin proteger el límite de retención.",
     "El wrapper herd coverage falló en esta máquina antes de iniciar Pest por la resolución del binario PHP; la alternativa directa requiere seleccionar PHP de Herd con su configuración Xdebug de coverage.",
-    "Un porcentaje total de coverage no equivale a coverage del módulo si phpunit.xml incluye todo app como source.",
+    "El reporte global mide las fuentes incluidas por phpunit.xml; como incluye app, abarca los módulos de la aplicación y no representa un porcentaje exclusivo de TrustedDevice.",
     "Mover la clase sin actualizar AuthServiceProvider rompe el registro y la tarea programada; cambiar la firma Artisan rompe las invocaciones existentes."
   ],
   "shipCut": "Completar cuando PHPUnit ejecute TrustedDevice por suite, los archivos de entorno estén organizados sin cambiar asignaciones, TrustedDevicePurge tenga pruebas de retención y error, y AGENTS.md permita repetir e interpretar coverage de Pest con Herd.",
@@ -55,9 +55,9 @@
     "php artisan test --testsuite=TrustedDevice --compact ejecuta las pruebas aisladas del módulo.",
     "Un chequeo local confirma que las líneas activas de ambos archivos mantienen sintaxis KEY=value y no tienen claves duplicadas; la revisión del diff confirma que solo cambian comentarios, espacios y orden de asignaciones.",
     "Pest cubre retención configurada, override, límite de fecha y entrada inválida del comando trusted-devices:purge.",
-    "La guía de agentes contiene el comando de coverage del módulo y su fallback Herd/Xdebug; el informe distingue la selección de tests del origen de cobertura de PHPUnit."
+    "La guía de agentes contiene el comando de coverage de toda la suite y su fallback Herd/Xdebug; el informe refleja el origen de cobertura configurado por PHPUnit."
   ],
-  "executionSummary": "TASK-001 registró la suite TrustedDevice. TASK-002 organiza los dos archivos de entorno; TASK-003 añade pruebas al comando de purga; TASK-004 documenta coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajusta la referencia de las constantes de Symfony. Las pruebas del comando pasan. Modo EXPANSION y revisión predeterminada codex se mantienen.",
+  "executionSummary": "TASK-001 registró la suite TrustedDevice; TASK-002 organizó los dos archivos de entorno; TASK-003 añadió pruebas al comando de purga; TASK-004 documentó coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajustó la referencia de las constantes de Symfony. Las pruebas del comando pasan. Modo EXPANSION y revisión predeterminada codex se mantienen.",
   "criticalPath": [
     "TASK-001",
     "TASK-003",
@@ -158,15 +158,15 @@
     {
       "id": "TASK-004",
       "title": "Documentar coverage de Pest para agentes",
-      "description": "Añadir a las instrucciones de testing el comando Herd para generar coverage, una variante para una prueba concreta y las notas necesarias para interpretar o desbloquear el reporte.",
+      "description": "Añadir a las instrucciones de testing el comando Herd que genera coverage para toda la suite y las notas necesarias para interpretar o desbloquear el reporte.",
       "priority": "P1",
       "type": "docs",
       "effort": "S",
       "agent": "general-purpose",
       "dependsOn": [],
       "acceptanceCriteria": [
-        "AGENTS.md documenta literalmente herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests y explica cómo sustituir la ruta por un archivo de prueba.",
-        "La guía aclara que la ruta limita los tests ejecutados, mientras phpunit.xml define los archivos fuente medidos y actualmente incluye app.",
+        "AGENTS.md documenta literalmente herd coverage ./vendor/bin/pest --coverage para ejecutar coverage de toda la suite, sin pasar una ruta de módulo.",
+        "La guía aclara que el comando sin ruta ejecuta toda la suite y que phpunit.xml define los archivos fuente medidos, actualmente app.",
         "Si herd coverage falla antes de iniciar Pest al resolver PHP, la guía indica usar PHP de Herd con Xdebug, XDEBUG_MODE=coverage y la configuración debug de Herd; no clasifica ese error del wrapper como fallo de Pest."
       ],
       "filesToModify": [
@@ -176,7 +176,7 @@
       "writeScope": [
         "AGENTS.md"
       ],
-      "validateCommand": "rtk rg -n 'herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests|XDEBUG_MODE=coverage|phpunit.xml' AGENTS.md",
+      "validateCommand": "rtk rg -n 'herd coverage ./vendor/bin/pest --coverage|XDEBUG_MODE=coverage|phpunit.xml' AGENTS.md",
       "review": "codex"
     },
     {

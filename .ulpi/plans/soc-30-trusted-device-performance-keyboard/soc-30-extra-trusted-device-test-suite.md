@@ -8,7 +8,7 @@ El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar las 
 
 ## Scope Challenge
 
-`phpunit.xml` ya separa los 79 tests TrustedDevice de Feature y el comando `php artisan test --testsuite=TrustedDevice --compact` pasa. La expansión de entorno compara tres archivos: `.env.testing.example` usa secciones con separadores y explicación; `.env.example` y `.env.ci` tienen poca agrupación. Los workflows copian `.env.ci` a `.env`, así que debe seguir siendo mínimo. Una corrida de coverage ejecutó los 79 tests (79 pasaron) y reportó `TrustedDevicePurge` con 0.0%; el comando `herd coverage` falló al resolver PHP antes de llegar a Pest, por lo que se ejecutó Pest con el PHP de Herd y Xdebug habilitado. El alcance de cobertura de PHPUnit está definido en `phpunit.xml` e incluye actualmente `app`, aunque la selección de tests se limite al módulo.
+`phpunit.xml` ya separa los 79 tests TrustedDevice de Feature y el comando `php artisan test --testsuite=TrustedDevice --compact` pasa. La expansión de entorno compara tres archivos: `.env.testing.example` usa secciones con separadores y explicación; `.env.example` y `.env.ci` tienen poca agrupación. Los workflows copian `.env.ci` a `.env`, así que debe seguir siendo mínimo. Una corrida previa de coverage con una selección limitada a TrustedDevice ejecutó 79 tests y reportó `TrustedDevicePurge` con 0.0%; el comando `herd coverage` falló al resolver PHP antes de llegar a Pest, por lo que se ejecutó Pest con el PHP de Herd y Xdebug habilitado. La guía usa ahora el comando sin path para ejecutar toda la suite; `phpunit.xml` incluye `app` como fuente medida.
 
 Se confirmó limitar la actualización de los archivos de entorno a estructura y comentarios, preservando las claves, su estado activo o comentado y sus valores actuales. No se copiarán claves entre archivos. Se mantienen el modo EXPANSION y la revisión codex.
 
@@ -33,9 +33,9 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 - Comando de selección: `php artisan test --testsuite=TrustedDevice --compact`; `--list-suites` muestra TrustedDevice como suite separada.
 - `.env.example` y `.env.ci` adoptan los encabezados separadores y comentarios de propósito de `.env.testing.example`, adaptados a sus propias claves.
 - En cada archivo de entorno se conservan exactamente las claves, valores y estado activo o comentado; `.env.ci` sigue siendo mínimo para CI.
-- El comando de coverage para el módulo es `herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests`; el reporte de archivos fuente se interpreta conforme a `phpunit.xml`, no como porcentaje aislado del módulo.
+- El comando de coverage para el proyecto es `herd coverage ./vendor/bin/pest --coverage`, sin ruta de módulo; ejecuta la suite completa y mide las fuentes configuradas en `phpunit.xml`.
 - La purga elimina solo filas soft-deleted cuyo `deleted_at` sea anterior al corte; opciones inválidas no borran datos.
-- `AGENTS.md` documenta el comando para coverage de módulo y la alternativa con PHP de Herd y Xdebug si el wrapper `herd coverage` no llega a invocar Pest.
+- `AGENTS.md` documenta el comando de coverage para toda la suite y la alternativa con PHP de Herd y Xdebug si el wrapper `herd coverage` no llega a invocar Pest.
 - `TrustedDevicePurge` vive bajo `app/Auth/Modules/TrustedDevice/Console/Commands`; conserva el nombre Artisan, opciones y comportamiento, y `AuthServiceProvider` registra la nueva clase.
 
 ## Existing Code Leverage
@@ -123,7 +123,7 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 
 ### TASK-004: Documentar coverage de Pest para agentes
 
-**Description:** Añadir a las instrucciones de testing para agentes el comando Herd solicitado para generar coverage, una variante para un archivo de prueba y las notas necesarias para interpretar o desbloquear el reporte.
+**Description:** Añadir a las instrucciones de testing para agentes el comando Herd que genera coverage para toda la suite y las notas necesarias para interpretar o desbloquear el reporte.
 
 **Type:** docs  
 **Priority:** P1  
@@ -138,11 +138,11 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 
 **Acceptance Criteria:**
 
-- `AGENTS.md` documenta literalmente `herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests` como comando para coverage del módulo y cómo sustituir la ruta por un archivo al investigar una prueba concreta.
-- La guía aclara que la ruta limita las pruebas ejecutadas, mientras que los archivos fuente medidos los determina `<source>` en `phpunit.xml` (actualmente `app`).
+- `AGENTS.md` documenta literalmente `herd coverage ./vendor/bin/pest --coverage` para ejecutar coverage de toda la suite, sin pasar una ruta de módulo.
+- La guía aclara que el comando sin ruta ejecuta toda la suite y que los archivos fuente medidos los determina `<source>` en `phpunit.xml` (actualmente `app`).
 - Si `herd coverage` falla antes de arrancar Pest al resolver PHP, la guía indica usar el PHP de Herd con Xdebug/`XDEBUG_MODE=coverage` y la configuración debug de Herd, sin presentar ese fallo del wrapper como un fallo de Pest.
 
-**validateCommand:** `rtk rg -n 'herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests|XDEBUG_MODE=coverage|phpunit.xml' AGENTS.md`
+**validateCommand:** `rtk rg -n 'herd coverage ./vendor/bin/pest --coverage|XDEBUG_MODE=coverage|phpunit.xml' AGENTS.md`
 
 ### TASK-005: Mover el comando de purga al módulo TrustedDevice
 
@@ -199,7 +199,7 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 - Activar accidentalmente claves comentadas o copiar claves de testing amplía el comportamiento de `.env.ci`.
 - Una prueba de purga que no controle el tiempo o no distinga activos, soft-deleted recientes y anteriores al corte puede pasar sin proteger el límite de retención.
 - El wrapper `herd coverage` falló en esta máquina antes de iniciar Pest por la resolución del binario PHP; la alternativa directa requiere seleccionar el PHP de Herd con su configuración Xdebug de coverage.
-- Un porcentaje total de coverage no equivale a coverage del módulo si `phpunit.xml` incluye todo `app` como source.
+- El reporte global mide las fuentes incluidas por `phpunit.xml`; como incluye `app`, abarca los módulos de la aplicación y no representa un porcentaje exclusivo de TrustedDevice.
 - Mover la clase sin actualizar `AuthServiceProvider` rompe el registro y la tarea programada; cambiar la firma Artisan rompe las invocaciones existentes.
 
 ## Ship Cut
@@ -212,11 +212,11 @@ Completar cuando PHPUnit ejecute TrustedDevice por suite, los archivos de entorn
 - `php artisan test --testsuite=TrustedDevice --compact` ejecuta las pruebas aisladas del módulo.
 - Un chequeo local confirma que las líneas activas de ambos archivos mantienen sintaxis `KEY=value` y no tienen claves duplicadas; la revisión del diff confirma que solo cambian comentarios, espacios y orden de asignaciones.
 - Pest cubre retención configurada, override, límite de fecha y entrada inválida del comando `trusted-devices:purge`.
-- La guía de agentes contiene el comando de coverage del módulo y su fallback de Herd/Xdebug; la lectura del informe distingue la selección de pruebas del origen de cobertura de PHPUnit.
+- La guía de agentes contiene el comando de coverage para toda la suite y su fallback de Herd/Xdebug; el informe incluye el origen de cobertura configurado por PHPUnit.
 
 ## Execution Summary
 
-TASK-001 registró la suite TrustedDevice. TASK-002 organiza los dos archivos de entorno; TASK-003 añade pruebas al comando de purga; TASK-004 documenta coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajusta la referencia de las constantes de Symfony. Las pruebas del comando pasan. La revisión predeterminada codex se mantiene.
+TASK-001 registró la suite TrustedDevice; TASK-002 organizó los dos archivos de entorno; TASK-003 añadió pruebas al comando de purga; TASK-004 documentó coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajustó la referencia de las constantes de Symfony. Las pruebas del comando pasan. La revisión predeterminada codex se mantiene.
 
 **Ruta crítica:** TASK-001 → TASK-003 → TASK-005. TASK-002 y TASK-004 son independientes.
 

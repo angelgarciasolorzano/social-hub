@@ -226,6 +226,12 @@ Review the generated diff under `resources/js/shared/wayfinder/`, including the 
 - Run `vendor/bin/pest` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 - After the feature tests pass, ask the user to run the complete suite with `php artisan test --compact`.
 
+## Pest Coverage with Herd
+
+- Run coverage for the complete Pest suite with `herd coverage ./vendor/bin/pest --coverage`. Do not pass a module path: coverage should run across the project.
+- PHPUnit's `<source>` configuration in `phpunit.xml` determines which application files are measured; it currently includes `app`.
+- If `herd coverage` fails while resolving PHP before Pest starts, run Pest with Herd's PHP binary directly and ensure that binary loads Xdebug with `XDEBUG_MODE=coverage` (or Herd's Xdebug-enabled debug configuration). Treat a wrapper startup failure separately from a Pest test or coverage failure.
+
 === inertia-react/core rules ===
 
 # Inertia + React
