@@ -379,6 +379,35 @@ it('keeps cache entries isolated when mutations fail or make no changes', functi
         ->not->toContain($otherUsersEvents[0]->id, $otherUsersEvents[1]->id);
 });
 
+it('excludes revoked devices from dashboard counts while retaining their events', function (): void {
+    $user = createUser();
+
+    createTrustedDevice($user, [
+        'expires_at' => now()->addDays(4),
+        'is_mobile' => false,
+    ]);
+
+    $trustedDevice = createTrustedDevice($user, [
+        'expires_at' => now()->subDay(),
+        'is_mobile' => true,
+    ]);
+
+    $trustedDevice->delete();
+    createTrustedDeviceEvent($user, ['action' => TrustedDeviceAction::Revoked]);
+
+    $this->assertSoftDeleted($trustedDevice);
+
+    $stats = resolve(TrustedDeviceDashboardCache::class)->stats($user)->toArray();
+
+    expect($stats['total'])->toBe(1)
+        ->and($stats['active'])->toBe(1)
+        ->and($stats['expiringSoon'])->toBe(1)
+        ->and($stats['recentlyAdded'])->toBe(1)
+        ->and($stats['inactive'])->toBe(0)
+        ->and($stats['revoked'])->toBe(1)
+        ->and($stats['byDeviceType'])->toBe(['desktop' => 1, 'mobile' => 0]);
+});
+
 /**
  * @template TResult
  *

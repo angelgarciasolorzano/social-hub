@@ -4,17 +4,20 @@
   "title": "SOC-30 — Extra: Suite, coverage y estructura de entorno TrustedDevice",
   "mode": "EXPANSION",
   "defaultReview": "codex",
-  "overview": "El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar el módulo por nombre. También ordenará .env.example y .env.ci según .env.testing.example, probará el comando de purga, documentará para agentes cómo ejecutar coverage de Pest y ubicará el comando dentro del módulo TrustedDevice.",
-  "scopeChallenge": "phpunit.xml separa los 79 tests TrustedDevice de Feature y la suite pasa. .env.testing.example sirve de referencia para agrupar los archivos de entorno, mientras .env.ci debe seguir siendo mínimo porque los workflows lo copian a .env. Una corrida previa de coverage reportó TrustedDevicePurge con 0.0%. `herd coverage` falló al resolver PHP antes de llegar a Pest; Pest sí corrió con el PHP de Herd y Xdebug habilitado. Para el comando documentado, Pest ejecuta toda la suite y phpunit.xml define app como origen del reporte.",
+  "overview": "El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar las pruebas del módulo por nombre, ordenó los archivos de entorno, cubrió el comando de purga, documentó coverage y ubicó el comando dentro del módulo. Esta expansión incorpora la revisión de Pullfrog y la falla de Laravel Doctor en el PR #31: probar el scope SoftDeletes, actualizar league/commonmark frente a dos advisories y clasificar APP_ENV=ci correctamente para Doctor.",
+  "scopeChallenge": "Pullfrog indicó que las estadísticas podrían incluir dispositivos revocados. TrustedDevice usa SoftDeletes y User::trustedDevices() no llama withTrashed(), por lo que Eloquent agrega whereNull(deleted_at) automáticamente; revoked consulta eventos por separado. El backend action falló porque composer audit encontró dos advisories en league/commonmark 2.10.1, ambos parcheados en 2.10.2. Los avisos de bootstrap y cola aparecen porque Laravel Doctor interpreta APP_ENV=ci como producción al no estar configurado. Reservar composer doctor y composer doctor-ci para el cierre, después de los demás gates.",
   "prerequisites": [
     "El módulo tiene pruebas bajo app/Auth/Modules/TrustedDevice/Tests.",
     "El proyecto usa PHPUnit 13.3.4, Pest 5.2.1 y Laravel 13.32.0; la configuración vigente es phpunit.xml.",
     ".env.testing.example es la referencia de formato; los workflows de CI copian .env.ci a .env.",
     "TrustedDevicePurge valida días positivos, permite --days o la retención configurada y purga solo filas soft-deleted anteriores al corte. Está en app/Auth/Modules/TrustedDevice/Console/Commands y AuthServiceProvider lo registra y programa.",
-    "La ejecución previa detectó 0.0% de cobertura en TrustedDevicePurge y un fallo de resolución PHP en el wrapper herd coverage antes de arrancar Pest."
+    "La ejecución previa detectó 0.0% de cobertura en TrustedDevicePurge y un fallo de resolución PHP en el wrapper herd coverage antes de arrancar Pest.",
+    "TrustedDeviceDashboardCache consulta una relación con SoftDeletingScope; las métricas regulares excluyen filas revocadas y el contador revoked proviene de eventos.",
+    "composer.lock fija league/commonmark 2.10.1; dos advisories reportan 2.10.2 como versión corregida, dentro del constraint transitivo de Laravel 13.32.0.",
+    ".env.ci define APP_ENV=ci y QUEUE_CONNECTION=sync; config/doctor.php puede asignar nombres de entorno a expectativas locales o de producción."
   ],
   "nonGoals": [
-    "Cambiar pruebas existentes fuera de los nuevos casos de TrustedDevicePurge, convenciones Pest, bases de datos de testing ni dependencias.",
+    "Cambiar pruebas existentes ajenas a esta expansión o convenciones Pest; agregar dependencias nuevas o actualizar paquetes ajenos a los advisories detectados.",
     "Crear un comando Artisan personalizado para aceptar el argumento posicional `TrustedDevice`.",
     "Cambiar, agregar o eliminar claves de entorno, cambiar sus valores, activar ejemplos comentados o copiar claves entre los tres archivos."
   ],
@@ -27,7 +30,11 @@
     "Comando de coverage de toda la suite: herd coverage ./vendor/bin/pest --coverage, sin ruta de módulo. phpunit.xml define el source medido y actualmente incluye app.",
     "La purga solo elimina permanentemente dispositivos soft-deleted con deleted_at anterior al corte; valores de días inválidos no eliminan registros.",
     "AGENTS.md explica el comando de coverage y el uso del PHP de Herd con Xdebug/XDEBUG_MODE=coverage si el wrapper falla antes de iniciar Pest.",
-    "TrustedDevicePurge vive bajo app/Auth/Modules/TrustedDevice/Console/Commands y AuthServiceProvider registra esa clase, conservando la firma y comportamiento del comando."
+    "TrustedDevicePurge vive bajo app/Auth/Modules/TrustedDevice/Console/Commands y AuthServiceProvider registra esa clase, conservando la firma y comportamiento del comando.",
+    "El scope global SoftDeletes excluye dispositivos revocados de las métricas y el historial los cuenta mediante eventos.",
+    "league/commonmark debe quedar en una versión parcheada sin ignorar advisories ni ampliar constraints innecesariamente.",
+    "Doctor trata ci y testing como entornos no productivos y conserva expectativas productivas para production y staging.",
+    "Los agentes ejecutan composer doctor como último gate; composer doctor-ci es la contraparte del workflow de GitHub."
   ],
   "existingCodeLeverage": [
     "phpunit.xml ya declara las suites Unit y Feature.",
@@ -36,9 +43,15 @@
     ".env.testing.example ya documenta grupos con separadores y comentarios explicativos.",
     ".github/workflows/backend-code-quality.yml y frontend-code-quality.yml copian .env.ci como entorno de CI.",
     "app/Auth/Modules/TrustedDevice/Console/Commands/TrustedDevicePurge.php contiene el comando; AuthServiceProvider es su punto de registro y TrustedDeviceFactory con las utilidades Pest permiten probar sus efectos observables.",
-    "phpunit.xml establece el origen de cobertura y AGENTS.md contiene instrucciones de testing para agentes."
+    "phpunit.xml establece el origen de cobertura y AGENTS.md contiene instrucciones de testing para agentes.",
+    "SoftDeletingScope::apply agrega whereNull(deleted_at) a las consultas Eloquent de TrustedDevice.",
+    "Laravel Doctor lee los modos de entorno de config/doctor.php y .env.ci define APP_ENV=ci con cola síncrona intencional."
   ],
   "failureModes": [
+    "Agregar whereNull(deleted_at) redundante a las estadísticas no corrige un defecto porque SoftDeletingScope ya aplica ese filtro; el test demuestra el contrato y el comentario de Pullfrog es un falso positivo.",
+    "Ignorar advisories deja paquetes vulnerables; resolver ambos a league/commonmark 2.10.2 o posterior es requisito de seguridad.",
+    "Si ci no está mapeado, Doctor aplica advertencias de producción al bootstrap no cacheado y la cola sync de CI.",
+    "Ejecutar Doctor antes de cerrar cambios puede validar un estado intermedio; sus comandos se reservan para la última verificación.",
     "Si la carpeta del módulo sigue también dentro de Feature, la ejecución global puede registrar los mismos tests dos veces.",
     "Si el nombre de suite o su ruta están mal, --testsuite=TrustedDevice no podrá seleccionar las pruebas del módulo.",
     "El argumento posicional TrustedDevice se trata como un archivo y no sustituye a --testsuite.",
@@ -47,21 +60,30 @@
     "Una prueba de purga que no controle el tiempo o no distinga activos, soft-deleted recientes y anteriores al corte puede pasar sin proteger el límite de retención.",
     "El wrapper herd coverage falló en esta máquina antes de iniciar Pest por la resolución del binario PHP; la alternativa directa requiere seleccionar PHP de Herd con su configuración Xdebug de coverage.",
     "El reporte global mide las fuentes incluidas por phpunit.xml; como incluye app, abarca los módulos de la aplicación y no representa un porcentaje exclusivo de TrustedDevice.",
-    "Mover la clase sin actualizar AuthServiceProvider rompe el registro y la tarea programada; cambiar la firma Artisan rompe las invocaciones existentes."
+    "Mover la clase sin actualizar AuthServiceProvider rompe el registro y la tarea programada; cambiar la firma Artisan rompe las invocaciones existentes.",
+    "Agregar whereNull(deleted_at) redundante a las estadísticas no corrige un defecto porque SoftDeletingScope ya aplica ese filtro; un test demuestra el contrato.",
+    "Ignorar advisories deja paquetes vulnerables; resolver ambos a league/commonmark 2.10.2 o posterior es requisito de seguridad.",
+    "Si ci no está mapeado, Doctor aplica advertencias de producción al bootstrap no cacheado y la cola sync de CI.",
+    "Ejecutar Doctor antes de cerrar cambios puede validar un estado intermedio; sus comandos se reservan para la última verificación."
   ],
-  "shipCut": "Completar cuando PHPUnit ejecute TrustedDevice por suite, los archivos de entorno estén organizados sin cambiar asignaciones, TrustedDevicePurge tenga pruebas de retención y error, y AGENTS.md permita repetir e interpretar coverage de Pest con Herd.",
+  "shipCut": "Completar cuando los entregables previos sigan pasando, el test descarte el falso positivo de Pullfrog, Composer no reporte los advisories, Doctor aplique expectativas adecuadas a CI, ambas guías indiquen cuándo ejecutarlo y los gates terminen con Doctor exitoso.",
   "testCoverageMap": [
     "PHPUnit --list-suites valida el registro de TrustedDevice como suite separada.",
     "php artisan test --testsuite=TrustedDevice --compact ejecuta las pruebas aisladas del módulo.",
     "Un chequeo local confirma que las líneas activas de ambos archivos mantienen sintaxis KEY=value y no tienen claves duplicadas; la revisión del diff confirma que solo cambian comentarios, espacios y orden de asignaciones.",
     "Pest cubre retención configurada, override, límite de fecha y entrada inválida del comando trusted-devices:purge.",
-    "La guía de agentes contiene el comando de coverage de toda la suite y su fallback Herd/Xdebug; el informe refleja el origen de cobertura configurado por PHPUnit."
+    "La guía de agentes contiene el comando de coverage de toda la suite y su fallback Herd/Xdebug; el informe refleja el origen de cobertura configurado por PHPUnit.",
+    "Pest compara estadísticas con un dispositivo vigente y otro soft-deleted y confirma que revoked cuenta el evento asociado.",
+    "composer show --locked league/commonmark confirma 2.10.2 o posterior y composer audit --locked no informa advisories.",
+    "config/doctor.php asigna ci y testing al modo local, preserva production y staging como productivos y composer doctor-ci valida esa clasificación al cierre.",
+    "AGENTS.md y docs/development/backend-commands.md indican que composer doctor es el último gate y distinguen composer doctor-ci para GitHub Actions."
   ],
-  "executionSummary": "TASK-001 registró la suite TrustedDevice; TASK-002 organizó los dos archivos de entorno; TASK-003 añadió pruebas al comando de purga; TASK-004 documentó coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajustó la referencia de las constantes de Symfony. Las pruebas del comando pasan. Modo EXPANSION y revisión predeterminada codex se mantienen.",
+  "executionSummary": "TASK-001 a TASK-006 del plan previo están completadas. En esta expansión TASK-007 quedó validada con 8 tests y 223 aserciones; Pint y PHPStan pasan, y Rector aplicó el cambio de variable que indicó el dry-run. El comentario de Pullfrog es un falso positivo por SoftDeletingScope. El action de backend falló porque Doctor detectó dos advisories de league/commonmark y clasificó APP_ENV=ci como producción. Modo EXPANSION y revisión codex.",
   "criticalPath": [
     "TASK-001",
     "TASK-003",
-    "TASK-005"
+    "TASK-005",
+    "TASK-011"
   ],
   "dependencyMap": {
     "TASK-001": [],
@@ -75,6 +97,16 @@
     ],
     "TASK-006": [
       "TASK-003"
+    ],
+    "TASK-007": [],
+    "TASK-008": [],
+    "TASK-009": [],
+    "TASK-010": [],
+    "TASK-011": [
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010"
     ]
   },
   "tasks": [
@@ -233,6 +265,129 @@
         "app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php"
       ],
       "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Afirmar el scope de SoftDeletes en las estadísticas",
+      "description": "Añadir una regresión con un dispositivo vigente y otro revocado para confirmar que el scope global de Eloquent excluye el revocado de las estadísticas, mientras el evento de revocación sigue contándose.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Con un dispositivo vigente y otro soft-deleted, total, estados, agregados recientes y tipo de dispositivo incluyen solo el vigente.",
+        "El contador revoked refleja el evento asociado y se mantiene separado de los conteos de dispositivos.",
+        "La forma de las estadísticas se conserva y pasa la suite de consulta afectada."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Actualizar league/commonmark con los parches de seguridad",
+      "description": "Actualizar league/commonmark a 2.10.2 o posterior dentro del constraint transitivo actual de Laravel y comprobar los advisories con Composer.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "composer.lock resuelve league/commonmark a 2.10.2 o posterior, compatible con la restricción declarada por Laravel.",
+        "No se ignora ningún advisory y composer audit --locked no informa los advisories detectados.",
+        "El lockfile no actualiza dependencias ajenas sin necesidad."
+      ],
+      "filesToModify": [
+        "composer.lock"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "composer.lock"
+      ],
+      "validateCommand": "rtk composer show --locked league/commonmark && rtk composer audit --locked",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Configurar expectativas de Laravel Doctor para CI",
+      "description": "Crear la configuración de Doctor y clasificar ci y testing como entornos no productivos para que las advertencias de cache y cola no se apliquen a .env.ci.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "ci y testing usan expectativas locales; production y staging conservan expectativas productivas.",
+        "QUEUE_CONNECTION=sync y bootstrap sin cache de .env.ci no se diagnostican bajo expectativas de producción.",
+        "Se conservan todos los diagnósticos y valores de entorno actuales."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "config/doctor.php"
+      ],
+      "writeScope": [
+        "config/doctor.php"
+      ],
+      "validateCommand": "rtk php artisan config:show doctor.environments",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Documentar Laravel Doctor como gate de cierre",
+      "description": "Documentar que Doctor se ejecuta tras terminar cambios y los demás gates, y distinguir el comando local del comando que usa CI.",
+      "priority": "P1",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "AGENTS.md y backend-commands.md indican que composer doctor es el último gate de la tarea backend.",
+        "La documentación distingue composer doctor local de composer doctor-ci para GitHub Actions.",
+        "La instrucción ubica Doctor después de tests, análisis y formatters."
+      ],
+      "filesToModify": [
+        "AGENTS.md",
+        "docs/development/backend-commands.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "AGENTS.md",
+        "docs/development/backend-commands.md"
+      ],
+      "validateCommand": "rtk rg -n -i 'doctor|último|final|después' AGENTS.md docs/development/backend-commands.md",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Ejecutar los gates y Laravel Doctor al cierre",
+      "description": "Ejecutar pruebas, gates backend y auditoría del lockfile. Ejecutar composer doctor y composer doctor-ci como las últimas verificaciones cuando los cambios estén cerrados.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "La prueba de dashboard, Pint, Rector dry-run y Rector, PHPStan y composer audit --locked pasan.",
+        "composer doctor y composer doctor-ci se ejecutan al finalizar los cambios y gates, sin ejecutar otro gate después.",
+        "Doctor termina correctamente; limitaciones de servicios locales se informan separadas de CI."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php && rtk vendor/bin/pint --dirty --format agent && rtk composer rector-dry && rtk composer rector && rtk composer phpstan && rtk composer audit --locked && rtk composer doctor && rtk composer doctor-ci",
       "review": "codex"
     }
   ],
