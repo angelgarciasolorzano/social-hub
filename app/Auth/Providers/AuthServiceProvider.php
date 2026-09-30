@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Providers;
 
-use App\Auth\Console\Commands\TrustedDevicePurge;
+use App\Auth\Modules\TrustedDevice\Console\Commands\TrustedDevicePurge;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Override;

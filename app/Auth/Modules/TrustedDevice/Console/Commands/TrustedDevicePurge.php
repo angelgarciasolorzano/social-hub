@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Console\Commands;
+namespace App\Auth\Modules\TrustedDevice\Console\Commands;
 
 use App\Auth\Models\TrustedDevice;
 use Carbon\CarbonImmutable;

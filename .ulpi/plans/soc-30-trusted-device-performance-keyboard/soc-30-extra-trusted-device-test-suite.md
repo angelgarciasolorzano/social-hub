@@ -4,7 +4,7 @@
 
 ## Overview
 
-El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar las pruebas del módulo por nombre, sin incluirlas dos veces en Feature. También ordenará `.env.example` y `.env.ci` según `.env.testing.example`, y cubrirá con pruebas el comando de purga de dispositivos y documentará para los agentes cómo ejecutar coverage de Pest.
+El plan extra agregó una suite PHPUnit llamada TrustedDevice para ejecutar las pruebas del módulo por nombre, sin incluirlas dos veces en Feature. También ordenará `.env.example` y `.env.ci` según `.env.testing.example`, cubrirá con pruebas el comando de purga de dispositivos, documentará para los agentes cómo ejecutar coverage de Pest y ubicará el comando de purga dentro de su módulo.
 
 ## Scope Challenge
 
@@ -17,7 +17,7 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 - El módulo tiene pruebas bajo `app/Auth/Modules/TrustedDevice/Tests`.
 - El proyecto usa PHPUnit 13.3.4, Pest 5.2.1 y Laravel 13.32.0; la configuración vigente es `phpunit.xml`.
 - `.env.testing.example` es la referencia de formato; los workflows de CI copian `.env.ci` a `.env`.
-- `app/Auth/Console/Commands/TrustedDevicePurge.php` valida días positivos, permite usar el valor configurado o `--days`, y elimina permanentemente solo dispositivos soft-deleted anteriores al corte.
+- `TrustedDevicePurge` valida días positivos, permite usar el valor configurado o `--days`, y elimina permanentemente solo dispositivos soft-deleted anteriores al corte. Se ubicó en `app/Auth/Modules/TrustedDevice/Console/Commands/TrustedDevicePurge.php`; `AuthServiceProvider` lo registra y programa.
 - Los agentes ejecutan coverage de Pest con Herd; la corrida previa confirmó que el wrapper puede fallar antes de iniciar Pest y que el informe sigue el alcance de `<source>` en `phpunit.xml`.
 
 ## Non-Goals
@@ -36,6 +36,7 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 - El comando de coverage para el módulo es `herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests`; el reporte de archivos fuente se interpreta conforme a `phpunit.xml`, no como porcentaje aislado del módulo.
 - La purga elimina solo filas soft-deleted cuyo `deleted_at` sea anterior al corte; opciones inválidas no borran datos.
 - `AGENTS.md` documenta el comando para coverage de módulo y la alternativa con PHP de Herd y Xdebug si el wrapper `herd coverage` no llega a invocar Pest.
+- `TrustedDevicePurge` vive bajo `app/Auth/Modules/TrustedDevice/Console/Commands`; conserva el nombre Artisan, opciones y comportamiento, y `AuthServiceProvider` registra la nueva clase.
 
 ## Existing Code Leverage
 
@@ -44,7 +45,7 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 - `php artisan test --testsuite=Unit --list-test-files` confirma que Artisan reenvía `--testsuite`.
 - `.env.testing.example` ya documenta grupos con separadores y comentarios explicativos.
 - `.github/workflows/backend-code-quality.yml` y `frontend-code-quality.yml` copian `.env.ci` como entorno de CI.
-- `app/Auth/Console/Commands/TrustedDevicePurge.php` es el comando sin cobertura detectado; `TrustedDeviceFactory` y las utilidades Pest del módulo permiten probar el borrado en aislamiento.
+- `app/Auth/Modules/TrustedDevice/Console/Commands/TrustedDevicePurge.php` contiene el comando; `AuthServiceProvider` es su punto de registro y `TrustedDeviceFactory` con las utilidades Pest permiten probar el borrado.
 - `phpunit.xml` define el origen de cobertura; `AGENTS.md` contiene las instrucciones compartidas para agentes.
 
 ## Tasks
@@ -143,6 +144,52 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 
 **validateCommand:** `rtk rg -n 'herd coverage ./vendor/bin/pest --coverage app/Auth/Modules/TrustedDevice/Tests|XDEBUG_MODE=coverage|phpunit.xml' AGENTS.md`
 
+### TASK-005: Mover el comando de purga al módulo TrustedDevice
+
+**Description:** Reubicar el comando Artisan de purga en la estructura del módulo y actualizar el proveedor que lo registra, sin cambiar su firma pública ni su comportamiento.
+
+**Type:** refactor  
+**Priority:** P1  
+**Effort:** S  
+**Agent:** `laravel-senior-engineer`  
+**Review:** `codex`  
+**Depends on:** TASK-003
+
+**writeScope:**
+
+- Move: `app/Auth/Console/Commands/TrustedDevicePurge.php` → `app/Auth/Modules/TrustedDevice/Console/Commands/TrustedDevicePurge.php`
+- Modify: `app/Auth/Providers/AuthServiceProvider.php`
+
+**Acceptance Criteria:**
+
+- El comando usa el namespace del módulo y `AuthServiceProvider` registra la nueva clase; la clase anterior desaparece.
+- `trusted-devices:purge`, su opción `--days`, su programación diaria y sus salidas conservan el contrato actual.
+- La prueba existente pasa y Artisan sigue listando la firma; no se registra dos veces.
+
+**validateCommand:** `rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php && rtk php artisan list --raw | rtk rg '^trusted-devices:purge'`
+
+### TASK-006: Referenciar constantes desde la clase que las declara
+
+**Description:** Importar la clase Symfony que declara `SUCCESS` e `INVALID` para evitar referenciar sus constantes heredadas mediante `IlluminateConsoleCommand`.
+
+**Type:** chore  
+**Priority:** P2  
+**Effort:** XS  
+**Agent:** `laravel-senior-engineer`  
+**Review:** `codex`  
+**Depends on:** TASK-003
+
+**writeScope:**
+
+- Modify: `app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php`
+
+**Acceptance Criteria:**
+
+- El test importa `Symfony\Component\Console\Command\Command` al comparar códigos de salida.
+- Las comprobaciones siguen validando los mismos códigos de éxito e inválido y la prueba continúa pasando.
+
+**validateCommand:** `rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Commands/TrustedDevicePurgeTest.php`
+
 ## Failure Modes
 
 - Si la carpeta del módulo sigue también dentro de Feature, la ejecución global puede registrar los mismos tests dos veces.
@@ -153,6 +200,7 @@ Se confirmó limitar la actualización de los archivos de entorno a estructura y
 - Una prueba de purga que no controle el tiempo o no distinga activos, soft-deleted recientes y anteriores al corte puede pasar sin proteger el límite de retención.
 - El wrapper `herd coverage` falló en esta máquina antes de iniciar Pest por la resolución del binario PHP; la alternativa directa requiere seleccionar el PHP de Herd con su configuración Xdebug de coverage.
 - Un porcentaje total de coverage no equivale a coverage del módulo si `phpunit.xml` incluye todo `app` como source.
+- Mover la clase sin actualizar `AuthServiceProvider` rompe el registro y la tarea programada; cambiar la firma Artisan rompe las invocaciones existentes.
 
 ## Ship Cut
 
@@ -168,9 +216,9 @@ Completar cuando PHPUnit ejecute TrustedDevice por suite, los archivos de entorn
 
 ## Execution Summary
 
-TASK-001 registró la suite TrustedDevice. TASK-002 organiza los dos archivos de entorno; TASK-003 añade pruebas al comando de purga; TASK-004 documenta coverage para agentes. La revisión predeterminada codex se mantiene.
+TASK-001 registró la suite TrustedDevice. TASK-002 organiza los dos archivos de entorno; TASK-003 añade pruebas al comando de purga; TASK-004 documenta coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajusta la referencia de las constantes de Symfony. Las pruebas del comando pasan. La revisión predeterminada codex se mantiene.
 
-**Ruta crítica:** TASK-001 → TASK-003. TASK-002 y TASK-004 son independientes.
+**Ruta crítica:** TASK-001 → TASK-003 → TASK-005. TASK-002 y TASK-004 son independientes.
 
 ## Task Dependencies
 
@@ -178,3 +226,5 @@ TASK-001 registró la suite TrustedDevice. TASK-002 organiza los dos archivos de
 - TASK-002 → —
 - TASK-003 → TASK-001
 - TASK-004 → —
+- TASK-005 → TASK-003
+- TASK-006 → TASK-003
