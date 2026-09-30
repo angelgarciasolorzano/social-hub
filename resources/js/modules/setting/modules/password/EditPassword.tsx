@@ -2,7 +2,7 @@ import { useRef } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import { update } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordController";
+import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/Password/Controllers/PasswordController";
 
 import { PasswordInput } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";

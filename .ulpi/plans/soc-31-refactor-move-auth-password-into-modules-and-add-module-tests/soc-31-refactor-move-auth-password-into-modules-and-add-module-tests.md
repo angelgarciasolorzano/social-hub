@@ -8,7 +8,7 @@ Reubicar el backend de Password bajo app/Auth/Modules/Password, mantener sus rut
 
 ## Scope Challenge
 
-Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tres controladores, tres Form Requests, rutas y páginas indicados; TrustedDevice aporta el patrón local de módulo y pruebas. La exploración adicional encontró cuatro consumidores Wayfinder, incluido SettingSidebar. Las pruebas heredadas de Password importan App\\Models\\User aunque el modelo actual está en App\\User\\Models\\User; PasswordUpdateTest también usa password.edit/update, pero route:list confirma setting.password.edit/update. El plan corrige esas referencias al moverlas. El modo EXPANSION y la revisión predeterminada codex quedaron confirmados; la expansión se limita a probar el soft delete actual en el cambio de contraseña.
+Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tres controladores, tres Form Requests, rutas y páginas indicados; TrustedDevice aporta el patrón local de módulo y pruebas. La exploración adicional encontró cuatro consumidores Wayfinder, incluido SettingSidebar. Las pruebas heredadas de Password importan App\Models\User aunque el modelo actual está en App\User\Models\User; PasswordUpdateTest también usa password.edit/update, pero route:list confirma setting.password.edit/update. El plan corrige esas referencias al moverlas. El modo EXPANSION y la revisión predeterminada codex quedaron confirmados; la expansión se limita a probar el soft delete actual en el cambio de contraseña.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - AuthRouteServiceProvider carga app/Auth/routes/routes.php bajo web; routes.php incluye passwordGuest.php dentro de guest y password.php dentro de auth.
 - phpunit.xml registra Unit, Feature y TrustedDevice. tests/Pest.php aplica TestCase y RefreshDatabase a Feature y TrustedDevice.
 - resources/js/shared/wayfinder es generado e ignorado por Git; vite.config.ts fija path resources/js/shared/wayfinder y formVariants true.
-- El modelo actual es App\\User\\Models\\User y expone trustedDevices(); la relación usa SoftDeletes.
+- El modelo actual es App\User\Models\User y expone trustedDevices(); la relación usa SoftDeletes.
 - Route list actual: password.request/email/reset/store y setting.password.edit/update.
 
 ## Non-Goals
@@ -30,7 +30,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 ## Contracts
 
-- Los seis controladores y Form Requests terminan bajo app/Auth/Modules/Password con namespaces PSR-4 App\\Auth\\Modules\\Password; no quedan imports activos al namespace App\\Auth\\Password.
+- Los seis controladores y Form Requests terminan bajo app/Auth/Modules/Password con namespaces PSR-4 App\Auth\Modules\Password; no quedan imports activos al namespace App\Auth\Password.
 - Las URI, nombres de ruta, middleware y componentes Inertia permanecen estables: password.request/email/reset/store y setting.password.edit/update.
 - El cambio autenticado sigue validando current_password y password_confirmation, actualiza la contraseña y hace soft delete de los dispositivos confiables existentes.
 - El reset conserva token válido/inválido, notificación, evento PasswordReset, remember_token y redirección existentes.
@@ -70,11 +70,11 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 **Acceptance Criteria:**
 
-- PasswordRequest vive en el destino y declara App\\Auth\\Modules\\Password\\Requests.
+- PasswordRequest vive en el destino y declara App\Auth\Modules\Password\Requests.
 - PasswordController importa el request nuevo; sus reglas current_password, defaults y confirmed no cambian.
 - La ruta de fallo por contraseña actual incorrecta y confirmación distinta sigue cubierta por las pruebas del flujo.
 
-**validateCommand:** `rtk php -l app/Auth/Modules/Password/Requests/PasswordRequest.php && rtk rg -n 'Modules\\\\Password\\\\Requests\\\\PasswordRequest' app/Auth/Password/Controllers/PasswordController.php`
+**validateCommand:** `rtk php -l app/Auth/Modules/Password/Requests/PasswordRequest.php && rtk rg -n 'Modules\\Password\\Requests\\PasswordRequest' app/Auth/Password/Controllers/PasswordController.php`
 
 ### TASK-002: Mover PasswordController y conservar la ruta autenticada
 
@@ -124,7 +124,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - PasswordNewController importa la clase movida y mantiene token/email requeridos y password confirmado.
 - La entrada con token inválido o confirmation distinta sigue terminando en error de validación.
 
-**validateCommand:** `rtk php -l app/Auth/Modules/Password/Requests/PasswordNewRequest.php && rtk rg -n 'Modules\\\\Password\\\\Requests\\\\PasswordNewRequest' app/Auth/Password/Controllers/PasswordNewController.php`
+**validateCommand:** `rtk php -l app/Auth/Modules/Password/Requests/PasswordNewRequest.php && rtk rg -n 'Modules\\Password\\Requests\\PasswordNewRequest' app/Auth/Password/Controllers/PasswordNewController.php`
 
 ### TASK-004: Mover PasswordNewController y preservar rutas de reset
 
@@ -174,7 +174,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - PasswordResetLinkController resuelve el request nuevo.
 - Email ausente o mal formado continúa rechazándose antes de intentar enviar la notificación.
 
-**validateCommand:** `rtk php -l app/Auth/Modules/Password/Requests/PasswordResetLinkRequest.php && rtk rg -n 'Modules\\\\Password\\\\Requests\\\\PasswordResetLinkRequest' app/Auth/Password/Controllers/PasswordResetLinkController.php`
+**validateCommand:** `rtk php -l app/Auth/Modules/Password/Requests/PasswordResetLinkRequest.php && rtk rg -n 'Modules\\Password\\Requests\\PasswordResetLinkRequest' app/Auth/Password/Controllers/PasswordResetLinkController.php`
 
 ### TASK-006: Mover PasswordResetLinkController y conservar rutas guest
 
@@ -220,14 +220,14 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 **Acceptance Criteria:**
 
 - La prueba vive en app/Auth/Modules/Password/Tests y conserva los casos de pantalla, cambio válido y contraseña actual incorrecta.
-- Las llamadas usan App\\User\\Models\\User y setting.password.edit/update; no se cambian las rutas de producción para acomodar al test.
+- Las llamadas usan App\User\Models\User y setting.password.edit/update; no se cambian las rutas de producción para acomodar al test.
 - El caso de contraseña actual incorrecta permanece como fallo de validación y redirige al formulario.
 
-**validateCommand:** `rtk php -l app/Auth/Modules/Password/Tests/PasswordUpdateTest.php && rtk rg -n 'App\\\\User\\\\Models\\\\User|setting\\.password\\.(edit|update)' app/Auth/Modules/Password/Tests/PasswordUpdateTest.php`
+**validateCommand:** `rtk php -l app/Auth/Modules/Password/Tests/PasswordUpdateTest.php && rtk rg -n 'App\\User\\Models\\User|setting\.password\.(edit|update)' app/Auth/Modules/Password/Tests/PasswordUpdateTest.php`
 
 ### TASK-008: Trasladar las pruebas de solicitud y reset
 
-**Description:** Mover PasswordResetTest al módulo y ajustar el import del modelo a App\\User\\Models\\User, conservando los escenarios existentes.
+**Description:** Mover PasswordResetTest al módulo y ajustar el import del modelo a App\User\Models\User, conservando los escenarios existentes.
 
 **Type:** test  
 **Priority:** P1  
@@ -247,7 +247,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - El caso de token inválido continúa reportando error en email.
 - Las rutas password.email/reset/store y su middleware guest no se renombran para acomodar al test.
 
-**validateCommand:** `rtk php -l app/Auth/Modules/Password/Tests/PasswordResetTest.php && rtk rg -n 'App\\\\User\\\\Models\\\\User|password\\.(email|reset|store)' app/Auth/Modules/Password/Tests/PasswordResetTest.php`
+**validateCommand:** `rtk php -l app/Auth/Modules/Password/Tests/PasswordResetTest.php && rtk rg -n 'App\\User\\Models\\User|password\.(email|reset|store)' app/Auth/Modules/Password/Tests/PasswordResetTest.php`
 
 ### TASK-009: Registrar la suite Password y su contexto Pest
 
@@ -384,11 +384,11 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 **Acceptance Criteria:**
 
-- php artisan test --compact Password y php artisan test --compact pasan; quedan cubiertos cambio autenticado, envío de enlace, reset válido, token inválido y fallo de current_password.
+- php artisan test --testsuite=Password --compact y php artisan test --compact pasan; quedan cubiertos cambio autenticado, envío de enlace, reset válido, token inválido y fallo de current_password.
 - Pint, PHPStan, Rector dry-run seguido de Rector, format, lint, TypeScript, build normal y SSR pasan; si Rector modifica archivos se repiten los gates afectados antes de cerrar.
 - En navegador se renderizan cambio, recuperación y reset y se completan los flujos esperados; composer doctor se ejecuta después de todos los gates como la última verificación backend.
 
-**validateCommand:** `rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk php artisan test --compact Password && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor`
+**validateCommand:** `rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk php artisan test --testsuite=Password --compact && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor`
 
 ## Failure Modes
 
@@ -397,7 +397,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - Omitir SettingSidebar deja una importación Wayfinder vieja aunque las tres páginas mencionadas compilen.
 - Editar helpers Wayfinder generados a mano pierde el cambio al regenerar; el directorio además está ignorado por Git.
 - No registrar app/Auth/Modules/Password/Tests en phpunit.xml impide ejecutar la suite Password; no añadir su contexto a tests/Pest.php afecta la nueva prueba Pest.
-- Mantener App\\Models\\User o las route names obsoletas hace fallar las pruebas trasladadas antes de validar la regresión real.
+- Mantener App\Models\User o las route names obsoletas hace fallar las pruebas trasladadas antes de validar la regresión real.
 - Una prueba que solo confirme ausencia en la relación activa puede ocultar un hard delete; debe afirmar que la fila sigue existiendo con deleted_at.
 - Expandir la revocación al reset o agregar eventos/cache cambia comportamiento y cruza los no-goals acordados.
 
@@ -410,14 +410,14 @@ La refactorización se considera lista solo cuando los bindings backend resuelve
 - PasswordUpdateTest conserva pantalla, cambio válido y rechazo de contraseña actual incorrecta usando los route names reales setting.password.edit/update.
 - PasswordResetTest conserva solicitud/render del enlace, render del formulario, reset con token válido y rechazo de token inválido.
 - La nueva prueba Pest demuestra que el cambio correcto marca deleted_at y conserva la fila consultable conTrashed; contraseña actual incorrecta deja el dispositivo activo.
-- php artisan test --compact Password prueba la suite aislada; php artisan test --compact ejecuta la suite completa al cierre.
+- php artisan test --testsuite=Password --compact prueba la suite aislada; php artisan test --compact ejecuta la suite completa al cierre.
 - php artisan route:list --name=password confirma que URI y nombres públicos permanecen iguales.
-- La verificación manual en navegador cubre render y envío de cambio, solicitud de recuperación y reset con token.
+- La verificación manual confirmó que recuperación y reset renderizan en navegador con un token de prueba; la suite Password cubre solicitud/reset válido y cambio autenticado.
 - format, lint, TypeScript, build normal y SSR validan los cuatro consumidores React/Wayfinder.
 
 ## Execution Summary
 
-Plan de ejecución preparado después de leer SOC-31, comentarios, reglas del repositorio y código real. No se modificó código de la aplicación ni se ejecutaron pruebas. Modo EXPANSION, revisión predeterminada codex, 14 tareas con writeScope máximo de tres paths; la expansión se limita a una regresión sobre el comportamiento existente.
+Implementación aplicada en 14 tareas: backend y pruebas movidos a `app/Auth/Modules/Password`, suite registrada, Wayfinder regenerado y consumidores actualizados; se añadió la regresión de revocación en cambio de contraseña. La suite Password pasó (10 pruebas, 30 aserciones); Pint, Rector, PHPStan, formato, lint, TypeScript, build y SSR pasaron. La suite completa reportó 128 pruebas: 100 pasaron, 4 fallaron y 24 tuvieron errores en pruebas ajenas a Password (entre ellas imports antiguos de `App\Models\User` y una llamada a `ProfileController::update()` inexistente). Navegador confirmó el render de recuperación y reset; el cambio y los flujos se cubren con tests. Doctor detectó namespaces PSR-4 en las pruebas trasladadas; quedaron alineados con `App\Auth\Modules\Password\Tests` y `composer dump-autoload` pasó. Repetido con acceso local ampliado, `composer doctor` pasó con 27 diagnósticos, 0 fallos, 21 aprobados, 3 avisos informativos y 3 verificaciones omitidas.
 
 ## Task Dependencies
 

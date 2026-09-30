@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Password\Controllers;
+namespace App\Auth\Modules\Password\Controllers;
 
-use App\Auth\Password\Requests\PasswordNewRequest;
+use App\Auth\Modules\Password\Requests\PasswordNewRequest;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Illuminate\Auth\Events\PasswordReset;

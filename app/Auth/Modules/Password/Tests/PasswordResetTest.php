@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Auth;
+namespace App\Auth\Modules\Password\Tests;
 
-use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -25,7 +24,7 @@ final class PasswordResetTest extends TestCase
     {
         Notification::fake();
 
-        $user = User::factory()->create();
+        $user = createUser();
 
         $this->post(route('password.email'), ['email' => $user->email]);
 
@@ -36,12 +35,12 @@ final class PasswordResetTest extends TestCase
     {
         Notification::fake();
 
-        $user = User::factory()->create();
+        $user = createUser();
 
         $this->post(route('password.email'), ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification): true {
-            $testResponse = $this->get(route('password.reset', $notification->token));
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $resetPassword): true {
+            $testResponse = $this->get(route('password.reset', $resetPassword->token));
 
             $testResponse->assertOk();
 
@@ -53,13 +52,13 @@ final class PasswordResetTest extends TestCase
     {
         Notification::fake();
 
-        $user = User::factory()->create();
+        $user = createUser();
 
         $this->post(route('password.email'), ['email' => $user->email]);
 
-        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user): true {
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $resetPassword) use ($user): true {
             $testResponse = $this->post(route('password.store'), [
-                'token' => $notification->token,
+                'token' => $resetPassword->token,
                 'email' => $user->email,
                 'password' => 'password',
                 'password_confirmation' => 'password',
@@ -75,7 +74,7 @@ final class PasswordResetTest extends TestCase
 
     public function test_password_cannot_be_reset_with_invalid_token(): void
     {
-        $user = User::factory()->create();
+        $user = createUser();
 
         $testResponse = $this->post(route('password.store'), [
             'token' => 'invalid-token',

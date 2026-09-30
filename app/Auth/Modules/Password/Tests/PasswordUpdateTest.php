@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Settings;
+namespace App\Auth\Modules\Password\Tests;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -15,23 +14,23 @@ final class PasswordUpdateTest extends TestCase
 
     public function test_password_update_page_is_displayed(): void
     {
-        $user = User::factory()->create();
+        $user = createUser();
 
         $testResponse = $this
             ->actingAs($user)
-            ->get(route('password.edit'));
+            ->get(route('setting.password.edit'));
 
         $testResponse->assertOk();
     }
 
     public function test_password_can_be_updated(): void
     {
-        $user = User::factory()->create();
+        $user = createUser();
 
         $testResponse = $this
             ->actingAs($user)
-            ->from(route('password.edit'))
-            ->put(route('password.update'), [
+            ->from(route('setting.password.edit'))
+            ->put(route('setting.password.update'), [
                 'current_password' => 'password',
                 'password' => 'new-password',
                 'password_confirmation' => 'new-password',
@@ -39,7 +38,7 @@ final class PasswordUpdateTest extends TestCase
 
         $testResponse
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('password.edit'));
+            ->assertRedirect(route('setting.password.edit'));
 
         expect(Hash::check('new-password', $user->refresh()->password))
             ->toBeTrue();
@@ -47,12 +46,12 @@ final class PasswordUpdateTest extends TestCase
 
     public function test_correct_password_must_be_provided_to_update_password(): void
     {
-        $user = User::factory()->create();
+        $user = createUser();
 
         $testResponse = $this
             ->actingAs($user)
-            ->from(route('password.edit'))
-            ->put(route('password.update'), [
+            ->from(route('setting.password.edit'))
+            ->put(route('setting.password.update'), [
                 'current_password' => 'wrong-password',
                 'password' => 'new-password',
                 'password_confirmation' => 'new-password',
@@ -60,6 +59,6 @@ final class PasswordUpdateTest extends TestCase
 
         $testResponse
             ->assertSessionHasErrors('current_password')
-            ->assertRedirect(route('password.edit'));
+            ->assertRedirect(route('setting.password.edit'));
     }
 }

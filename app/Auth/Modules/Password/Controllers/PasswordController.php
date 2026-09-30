@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Password\Controllers;
+namespace App\Auth\Modules\Password\Controllers;
 
-use App\Auth\Password\Requests\PasswordRequest;
+use App\Auth\Modules\Password\Requests\PasswordRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;

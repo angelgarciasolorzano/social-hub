@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Password\Controllers;
+namespace App\Auth\Modules\Password\Controllers;
 
-use App\Auth\Password\Requests\PasswordResetLinkRequest;
+use App\Auth\Modules\Password\Requests\PasswordResetLinkRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
