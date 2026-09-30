@@ -13,7 +13,7 @@
     "TrustedDevicePurge valida días positivos, permite --days o la retención configurada y purga solo filas soft-deleted anteriores al corte. Está en app/Auth/Modules/TrustedDevice/Console/Commands y AuthServiceProvider lo registra y programa.",
     "La ejecución previa detectó 0.0% de cobertura en TrustedDevicePurge y un fallo de resolución PHP en el wrapper herd coverage antes de arrancar Pest.",
     "TrustedDeviceDashboardCache consulta una relación con SoftDeletingScope; las métricas regulares excluyen filas revocadas y el contador revoked proviene de eventos.",
-    "composer.lock fija league/commonmark 2.10.1; dos advisories reportan 2.10.2 como versión corregida, dentro del constraint transitivo de Laravel 13.32.0.",
+    "composer.lock resuelve league/commonmark 2.10.3, compatible con el constraint transitivo de Laravel 13.32.0, y composer audit --locked no reporta advisories.",
     ".env.ci define APP_ENV=ci y QUEUE_CONNECTION=sync; config/doctor.php puede asignar nombres de entorno a expectativas locales o de producción."
   ],
   "nonGoals": [
@@ -78,7 +78,7 @@
     "config/doctor.php asigna ci y testing al modo local, preserva production y staging como productivos y composer doctor-ci valida esa clasificación al cierre.",
     "AGENTS.md y docs/development/backend-commands.md indican que composer doctor es el último gate y distinguen composer doctor-ci para GitHub Actions."
   ],
-  "executionSummary": "TASK-001 a TASK-006 del plan previo están completadas. En esta expansión TASK-007 quedó validada con 8 tests y 223 aserciones; Pint y PHPStan pasan, y Rector aplicó el cambio de variable que indicó el dry-run. El comentario de Pullfrog es un falso positivo por SoftDeletingScope. El action de backend falló porque Doctor detectó dos advisories de league/commonmark y clasificó APP_ENV=ci como producción. Modo EXPANSION y revisión codex.",
+  "executionSummary": "TASK-001 a TASK-006 del plan previo están completadas. En esta expansión TASK-007 pasó con 8 tests y 223 aserciones; Pint y PHPStan pasan, y Rector aplicó el cambio de variable que indicó el dry-run. TASK-008 actualizó league/commonmark de 2.10.1 a 2.10.3; composer audit --locked no reporta advisories. boost:update quitó reglas preexistentes de AGENTS.md y CLAUDE.md durante la actualización; se restauraron y el diff de implementación quedó limitado a composer.lock. El comentario de Pullfrog es un falso positivo por SoftDeletingScope. La falla inicial de Doctor también incluyó que APP_ENV=ci fue clasificado como producción; falta completar la configuración y ejecutar Doctor al cierre. Modo EXPANSION y revisión codex.",
   "criticalPath": [
     "TASK-001",
     "TASK-003",

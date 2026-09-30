@@ -54,7 +54,7 @@ Pullfrog señaló que los conteos de estadísticas podrían incluir dispositivos
 - `app/Auth/Modules/TrustedDevice/Console/Commands/TrustedDevicePurge.php` contiene el comando; `AuthServiceProvider` es su punto de registro y `TrustedDeviceFactory` con las utilidades Pest permiten probar el borrado.
 - `phpunit.xml` define el origen de cobertura; `AGENTS.md` contiene las instrucciones compartidas para agentes.
 - `TrustedDeviceDashboardCache::buildStats()` consulta `trustedDevices()`; `SoftDeletingScope::apply()` agrega `whereNull(deleted_at)` automáticamente.
-- `composer.lock` resuelve `league/commonmark` 2.10.1; GitHub informa 2.10.2 como parche para los dos advisories.
+- `composer.lock` resuelve `league/commonmark` 2.10.3; Composer ya no informa los dos advisories.
 - Laravel Doctor permite mapear nombres de entorno en `config/doctor.php`; `.env.ci` define `APP_ENV=ci` y usa cola síncrona deliberadamente.
 
 ## Tasks
@@ -348,7 +348,7 @@ Completar cuando los entregables previos sigan pasando, el test descarte el fals
 
 ## Execution Summary
 
-TASK-001 registró la suite TrustedDevice; TASK-002 organizó los dos archivos de entorno; TASK-003 añadió pruebas al comando de purga; TASK-004 documentó coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajustó la referencia de las constantes de Symfony. En esta expansión se completó TASK-007 con 8 tests y 223 aserciones verdes; Pint y PHPStan pasan, y Rector aplicó el renombre de variable indicado por su dry-run. El comentario de Pullfrog es un falso positivo por el scope global de SoftDeletes; la falla real de Doctor es `composer audit` con dos advisories de `league/commonmark`, y los avisos de bootstrap/cola vienen de que `ci` no está mapeado como no productivo. La revisión predeterminada codex se mantiene.
+TASK-001 registró la suite TrustedDevice; TASK-002 organizó los dos archivos de entorno; TASK-003 añadió pruebas al comando de purga; TASK-004 documentó coverage para agentes; TASK-005 reubicó el comando en el módulo y TASK-006 ajustó la referencia de las constantes de Symfony. En esta expansión, TASK-007 pasó con 8 tests y 223 aserciones; Pint y PHPStan pasan, y Rector aplicó el renombre indicado por el dry-run. TASK-008 actualizó `league/commonmark` de 2.10.1 a 2.10.3 y `composer audit --locked` no encontró advisories. La actualización ejecutó `boost:update`; restauré las reglas preexistentes que el script eliminó, así que el diff de implementación queda acotado al lockfile. El comentario de Pullfrog es un falso positivo por el scope global de SoftDeletes; los avisos restantes de Doctor sobre bootstrap/cola vienen de que `ci` no está mapeado como no productivo. La revisión predeterminada codex se mantiene.
 
 **Ruta crítica:** TASK-001 → TASK-003 → TASK-005 → TASK-011. TASK-002 y TASK-004 son independientes.
 
