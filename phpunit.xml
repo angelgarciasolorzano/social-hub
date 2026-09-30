@@ -10,6 +10,8 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="TrustedDevice">
             <directory>app/Auth/Modules/TrustedDevice/Tests</directory>
         </testsuite>
     </testsuites>

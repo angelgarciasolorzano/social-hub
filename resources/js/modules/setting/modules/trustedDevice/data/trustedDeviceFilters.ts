@@ -24,6 +24,8 @@ export type TrustedDeviceBrowserFilter = (typeof browserOptions)[number]["value"
 
 export const trustedDevicePerPageOptions = [5, 10, 15, 25, 50] as const;
 
+export const defaultTrustedDevicePerPage = 15;
+
 export type TrustedDevicePerPage = (typeof trustedDevicePerPageOptions)[number];
 
 export const deviceTypeOptions = [

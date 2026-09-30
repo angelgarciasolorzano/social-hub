@@ -192,7 +192,15 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 # Laravel Wayfinder
 
-Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `@/actions/` (controllers) or `@/routes/` (named routes).
+Before generating route helpers, inspect `wayfinder({ path: ... })` in `vite.config.ts` and use that configured output path. In this repository the generated files live under `resources/js/shared/wayfinder/`; import controller actions from `@/shared/wayfinder/actions/` and named routes from `@/shared/wayfinder/routes/`.
+
+After changing Laravel routes or controllers, regenerate helpers with the configured path and form variants:
+
+```bash
+php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction
+```
+
+Review the generated diff under `resources/js/shared/wayfinder/`, including the route URI and exported alias. Never edit generated files by hand; change the Laravel route or controller and regenerate instead.
 
 === pint/core rules ===
 
@@ -217,6 +225,17 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 - Rerun a test after each change to it.
 - Run `vendor/bin/pest` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 - After the feature tests pass, ask the user to run the complete suite with `php artisan test --compact`.
+
+## Pest Coverage with Herd
+
+- Run coverage for the complete Pest suite with `herd coverage ./vendor/bin/pest --coverage`. Do not pass a module path: coverage should run across the project.
+- PHPUnit's `<source>` configuration in `phpunit.xml` determines which application files are measured; it currently includes `app`.
+- If `herd coverage` fails while resolving PHP before Pest starts, run Pest with Herd's PHP binary directly and ensure that binary loads Xdebug with `XDEBUG_MODE=coverage` (or Herd's Xdebug-enabled debug configuration). Treat a wrapper startup failure separately from a Pest test or coverage failure.
+
+## Laravel Doctor
+
+- Run `composer doctor` only after implementation and all applicable backend gates are complete; it is the final local gate for a backend task. Do not run further checks after it.
+- `composer doctor` runs local diagnostics without applying fixes. `composer doctor-ci` is the backend CI workflow command and emits GitHub annotations; use it as a CI gate, not as an intermediate implementation check.
 
 === inertia-react/core rules ===
 

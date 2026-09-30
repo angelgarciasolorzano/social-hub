@@ -2,12 +2,7 @@ import type { JSX } from "react";
 
 import { ChevronRight } from "lucide-react";
 
-import TrustedDeviceRecommendationsDialog from "@/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog";
 import { trustedDeviceRecommendationsPreview } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
-import {
-  createDialogCloseHandler,
-  type DialogClosingState,
-} from "@/modules/setting/shared/utils/dialog";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -18,19 +13,16 @@ import {
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
 
-import { useDialog } from "@/shared/hooks";
-
 import { cn } from "@/shared/lib";
 import { iconColorVariants } from "@/shared/lib/styling";
 
-interface RecommendationsDialogState extends DialogClosingState {
-  kind: "open";
+interface TrustedDeviceRecommendationsProps {
+  onOpenRecommendations: () => void;
 }
 
-function TrustedDeviceRecommendations(): JSX.Element {
-  const dialog = useDialog<RecommendationsDialogState | null>(null);
-  const handleClose = createDialogCloseHandler(dialog);
-
+function TrustedDeviceRecommendations({
+  onOpenRecommendations,
+}: TrustedDeviceRecommendationsProps): JSX.Element {
   return (
     <Card>
       <CardHeader>
@@ -74,18 +66,12 @@ function TrustedDeviceRecommendations(): JSX.Element {
         <Button
           variant="link"
           className="text-blue-700 dark:text-blue-500"
-          onClick={() => {
-            dialog.show({ kind: "open", closing: false });
-          }}
+          onClick={onOpenRecommendations}
         >
           Mas recomendaciones
           <ChevronRight className="h-4 w-4" />
         </Button>
       </CardFooter>
-
-      {dialog.state !== null && (
-        <TrustedDeviceRecommendationsDialog open={!dialog.state.closing} onClose={handleClose} />
-      )}
     </Card>
   );
 }

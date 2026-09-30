@@ -20,6 +20,7 @@ it('renders the page with default filters', function (): void {
         ->assertOk()
         ->assertInertia(fn (Assert $assert): Assert => $assert
             ->component('setting/modules/trustedDevice/TrustedDevice')
+            ->missing('activityFilters')
             ->where('filters.search', '')
             ->where('filters.status', null)
             ->where('filters.browser', null)

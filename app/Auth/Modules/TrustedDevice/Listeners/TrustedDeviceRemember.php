@@ -9,6 +9,7 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
@@ -20,7 +21,10 @@ final readonly class TrustedDeviceRemember
     use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
 
-    public function __construct(private TrustedDeviceService $trustedDeviceService) {}
+    public function __construct(
+        private TrustedDeviceService $trustedDeviceService,
+        private TrustedDeviceDashboardCache $trustedDeviceDashboardCache,
+    ) {}
 
     public function handle(ValidTwoFactorAuthenticationCodeProvided $validTwoFactorAuthenticationCodeProvided): void
     {
@@ -59,6 +63,7 @@ final readonly class TrustedDeviceRemember
         $this->queueTrustedDeviceCookie($token['token']);
 
         $this->recordEvent($user, $trustedDevice, $request);
+        $this->trustedDeviceDashboardCache->invalidate($user);
     }
 
     private function recordEvent(User $user, TrustedDevice $trustedDevice, Request $request): void

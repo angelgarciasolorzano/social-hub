@@ -6,12 +6,15 @@ namespace App\Auth\Modules\TrustedDevice\Listeners;
 
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\User\Models\User;
 use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 
 final readonly class TrustedDeviceInvalidate
 {
+    public function __construct(private TrustedDeviceDashboardCache $trustedDeviceDashboardCache) {}
+
     public function handle(TwoFactorAuthenticationDisabled $twoFactorAuthenticationDisabled): void
     {
         /** @var User $user */
@@ -31,5 +34,7 @@ final readonly class TrustedDeviceInvalidate
 
             $user->trustedDevices()->delete();
         });
+
+        $this->trustedDeviceDashboardCache->invalidate($user);
     }
 }

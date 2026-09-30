@@ -17,3 +17,6 @@ Examples (from the project backlog):
 - ✅ `Feature: Implement soft delete, re-trust flow, and automated purge for TrustedDevice` (SOC-21)
 - ✅ `Chore: Improve social-hub-conventions skill (commands, conventional commits, mirror)` (SOC-19)
 - ❌ `Feature: 3 dialogs de detalle para /setting/trusted-devices` — Spanish title (the bug SOC-22 had before being fixed)
+
+## Plan every new implementation task
+Before starting implementation work in this project, use `.agents/skills/plan-to-task-list-with-dag/SKILL.md`, even for small tasks (a single-task DAG is fine). Continue an existing approved plan instead of duplicating it. Store each Markdown/JSON pair in `.ulpi/plans/<plan-slug>/<plan-slug>.md` and `.json`; start the shared slug with the task key (lowercase, e.g. `soc-30`) plus a clear description. When expanding an existing plan and creating a separate plan pair, save it in the original plan's folder instead of creating a new folder under `.ulpi/plans`. This project rule applies even when the skill's general guidance excludes trivial direct work.

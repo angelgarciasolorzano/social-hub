@@ -4,6 +4,7 @@ export { default as TrustedDeviceAlreadyRegisteredDialog } from "./actions/Trust
 export { default as TrustedDeviceDetailsDialog } from "./actions/TrustedDeviceDetailsDialog";
 export { default as TrustedDeviceExpiredDialog } from "./actions/TrustedDeviceExpiredDialog";
 export { default as TrustedDeviceForceDestroyDialog } from "./actions/TrustedDeviceForceDestroyDialog";
+export { default as TrustedDeviceKeyboardShortcutsDialog } from "./info/TrustedDeviceKeyboardShortcutsDialog";
 export { default as TrustedDeviceReactivationDialog } from "./actions/TrustedDeviceReactivationDialog";
 export { default as TrustedDeviceRecommendationsDialog } from "./info/TrustedDeviceRecommendationsDialog";
 export { default as TrustedDeviceRenameDialog } from "./actions/TrustedDeviceRenameDialog";

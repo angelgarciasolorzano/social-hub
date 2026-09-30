@@ -56,6 +56,27 @@ it('filters by action', function (): void {
         );
 });
 
+it('accepts every trusted device activity action', function (): void {
+    $user = createUser();
+    $actionValues = array_map(
+        static fn (TrustedDeviceAction $trustedDeviceAction): string => $trustedDeviceAction->value,
+        TrustedDeviceAction::cases(),
+    );
+
+    foreach (TrustedDeviceAction::cases() as $trustedDeviceAction) {
+        createTrustedDeviceEvent($user, ['action' => $trustedDeviceAction]);
+    }
+
+    $this->actingAs($user)
+        ->get(route('setting.security.trusted-devices.index', ['action' => implode(',', $actionValues)]))
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->reloadOnly('activityDialog', fn (Assert $assert): Assert => $assert
+                ->where('activityDialog.activityFilters.action', $actionValues)
+                ->where('activityDialog.activityLog.total', count($actionValues))
+            )
+        );
+});
+
 it('ignores an action value outside the whitelist', function (): void {
     $user = createUser();
     createTrustedDeviceEvent($user, ['action' => TrustedDeviceAction::Created]);

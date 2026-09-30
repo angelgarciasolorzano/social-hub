@@ -8,6 +8,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
   ChevronRight,
+  CircleHelp,
   Clock4,
   Info,
   MonitorSmartphone,
@@ -18,11 +19,15 @@ import {
 } from "lucide-react";
 
 import {
+  TrustedDeviceActivityDialog,
   TrustedDeviceAddDialog,
   TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceExpiredDialog,
+  TrustedDeviceKeyboardShortcutsDialog,
+  TrustedDeviceRecommendationsDialog,
   TrustedDeviceRevokeAllDialog,
   TrustedDeviceRevokedDialog,
+  TrustedDeviceSummaryDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
 import TrustedDeviceRecentActivitySkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDeviceRecentActivitySkeleton";
 import TrustedDevicesStatCardsSkeleton from "@/modules/setting/modules/trustedDevice/components/skeleton/overview/TrustedDevicesStatCardsSkeleton";
@@ -33,14 +38,19 @@ import TrustedDeviceTableToolbar from "@/modules/setting/modules/trustedDevice/c
 import TrustedDeviceRecentActivity from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity";
 import TrustedDeviceRecommendations from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations";
 import TrustedDeviceSummary from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary";
+import { defaultTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
 import type { TrustedDevicePerPage } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import {
-  trustedDeviceSectionActionKey,
-  type TrustedDeviceSectionActionKey,
+  type TrustedDeviceAddDeviceDialogKind,
+  type TrustedDeviceAdminActionKey,
+  trustedDeviceDialogKind,
+  type TrustedDeviceDialogKind,
   trustedDeviceTitleActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import { trustedDeviceDefaultColumnVisibility } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns";
+import { useTrustedDeviceActivityFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
 import { useTrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceFilters";
+import { useTrustedDeviceShortcuts } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts";
 import type {
   TrustedDevice,
   TrustedDeviceActivityItem,
@@ -82,83 +92,110 @@ type TrustedDevicePageProps = SharedData & {
   recentActivity?: TrustedDeviceActivityItem[];
 };
 
-interface SectionDialogState extends DialogClosingState {
-  kind: TrustedDeviceSectionActionKey;
+interface TrustedDeviceDialogState extends DialogClosingState {
+  kind: TrustedDeviceDialogKind;
 }
 
 function TrustedDevice(): JSX.Element {
-  const { currentDevicePreview, currentDeviceMatch } = usePage<TrustedDevicePageProps>().props;
+  const { currentDevicePreview, currentDeviceMatch, stats } =
+    usePage<TrustedDevicePageProps>().props;
 
-  const sectionDialog = useDialog<SectionDialogState | null>(null);
+  const activityFilterController = useTrustedDeviceActivityFilters(
+    defaultTrustedDeviceActivityFilters,
+  );
+
+  const trustedDeviceDialog = useDialog<TrustedDeviceDialogState | null>(null);
 
   const resolveAddDeviceKind = (
     currentDeviceMatch: TrustedDevice | null | undefined,
-  ): SectionDialogState["kind"] => {
+  ): TrustedDeviceAddDeviceDialogKind => {
     if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
-      return trustedDeviceSectionActionKey.addDevice;
+      return trustedDeviceDialogKind.addDevice;
     }
 
     if (currentDeviceMatch.deletedAt !== null) {
-      return trustedDeviceSectionActionKey.deviceRevoked;
+      return trustedDeviceDialogKind.deviceRevoked;
     }
 
     if (!currentDeviceMatch.isActive) {
-      return trustedDeviceSectionActionKey.deviceExpired;
+      return trustedDeviceDialogKind.deviceExpired;
     }
 
-    return trustedDeviceSectionActionKey.deviceAlreadyRegistered;
+    return trustedDeviceDialogKind.deviceAlreadyRegistered;
   };
 
   const handleAddDevice = (): void => {
-    const kind: SectionDialogState["kind"] = resolveAddDeviceKind(currentDeviceMatch);
+    const kind: TrustedDeviceAddDeviceDialogKind = resolveAddDeviceKind(currentDeviceMatch);
 
-    sectionDialog.show({ kind, closing: false });
+    trustedDeviceDialog.show({ kind, closing: false });
   };
 
   const handleRevokeAllDevices = (): void => {
-    sectionDialog.show({ kind: trustedDeviceSectionActionKey.revokeAll, closing: false });
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.revokeAll, closing: false });
   };
 
-  const handleTitleAction = (action: TrustedDeviceSectionActionKey): void => {
+  const handleTitleAction = (action: TrustedDeviceAdminActionKey): void => {
     switch (action) {
-      case trustedDeviceSectionActionKey.addDevice:
-      case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
-      case trustedDeviceSectionActionKey.deviceRevoked:
-      case trustedDeviceSectionActionKey.deviceExpired:
+      case trustedDeviceDialogKind.addDevice:
         handleAddDevice();
 
         break;
 
-      case trustedDeviceSectionActionKey.revokeAll:
+      case trustedDeviceDialogKind.revokeAll:
         handleRevokeAllDevices();
 
-        break;
-
-      default:
         break;
     }
   };
 
-  const handleSectionDialogClose = createDialogCloseHandler(sectionDialog);
+  const handleOpenKeyboardShortcuts = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.keyboardShortcuts, closing: false });
+  };
 
-  const renderSectionDialog = (): JSX.Element | null => {
-    if (sectionDialog.state === null) {
+  const handleOpenActivity = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.activity, closing: false });
+  };
+
+  const handleOpenRecommendations = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.recommendations, closing: false });
+  };
+
+  const handleOpenSummary = (): void => {
+    trustedDeviceDialog.show({ kind: trustedDeviceDialogKind.summary, closing: false });
+  };
+
+  const handleDialogClose = createDialogCloseHandler(trustedDeviceDialog);
+
+  useTrustedDeviceShortcuts({
+    enabled: true,
+    isDialogOpen: trustedDeviceDialog.state !== null,
+    canOpenSummary: stats !== undefined,
+    onOpenActivity: handleOpenActivity,
+    onOpenAddDevice: handleAddDevice,
+    onOpenHelp: handleOpenKeyboardShortcuts,
+    onOpenRecommendations: handleOpenRecommendations,
+    onOpenSummary: handleOpenSummary,
+    onRevokeAllDevices: handleRevokeAllDevices,
+  });
+
+  const renderDialog = (): JSX.Element | null => {
+    if (trustedDeviceDialog.state === null) {
       return null;
     }
 
-    const isClosing = sectionDialog.state.closing;
+    const isClosing = trustedDeviceDialog.state.closing;
 
-    switch (sectionDialog.state.kind) {
-      case trustedDeviceSectionActionKey.addDevice:
+    switch (trustedDeviceDialog.state.kind) {
+      case trustedDeviceDialogKind.addDevice:
         return (
           <TrustedDeviceAddDialog
             preview={currentDevicePreview ?? null}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
           />
         );
 
-      case trustedDeviceSectionActionKey.deviceAlreadyRegistered:
+      case trustedDeviceDialogKind.deviceAlreadyRegistered:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -167,12 +204,12 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceAlreadyRegisteredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
             showListLink={false}
           />
         );
 
-      case trustedDeviceSectionActionKey.deviceRevoked:
+      case trustedDeviceDialogKind.deviceRevoked:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -181,11 +218,11 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceRevokedDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
           />
         );
 
-      case trustedDeviceSectionActionKey.deviceExpired:
+      case trustedDeviceDialogKind.deviceExpired:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
@@ -194,14 +231,32 @@ function TrustedDevice(): JSX.Element {
           <TrustedDeviceExpiredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
-            onClose={handleSectionDialogClose}
+            onClose={handleDialogClose}
           />
         );
 
-      case trustedDeviceSectionActionKey.revokeAll:
+      case trustedDeviceDialogKind.revokeAll:
+        return <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleDialogClose} />;
+
+      case trustedDeviceDialogKind.keyboardShortcuts:
         return (
-          <TrustedDeviceRevokeAllDialog open={!isClosing} onClose={handleSectionDialogClose} />
+          <TrustedDeviceKeyboardShortcutsDialog onClose={handleDialogClose} open={!isClosing} />
         );
+
+      case trustedDeviceDialogKind.activity:
+        return (
+          <TrustedDeviceActivityDialog
+            filterController={activityFilterController}
+            onClose={handleDialogClose}
+            open={!isClosing}
+          />
+        );
+
+      case trustedDeviceDialogKind.recommendations:
+        return <TrustedDeviceRecommendationsDialog onClose={handleDialogClose} open={!isClosing} />;
+
+      case trustedDeviceDialogKind.summary:
+        return <TrustedDeviceSummaryDialog onClose={handleDialogClose} open={!isClosing} />;
 
       default:
         return null;
@@ -214,7 +269,10 @@ function TrustedDevice(): JSX.Element {
 
       <div className="flex min-w-0 flex-col gap-4 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <TrustedDeviceTitle onTitleAction={handleTitleAction} />
+          <TrustedDeviceTitle
+            onOpenKeyboardShortcuts={handleOpenKeyboardShortcuts}
+            onTitleAction={handleTitleAction}
+          />
 
           <Deferred
             data="stats"
@@ -251,10 +309,10 @@ function TrustedDevice(): JSX.Element {
               />
             )}
           >
-            <TrustedDeviceSummary />
+            <TrustedDeviceSummary onOpenSummary={handleOpenSummary} />
           </Deferred>
 
-          <TrustedDeviceRecommendations />
+          <TrustedDeviceRecommendations onOpenRecommendations={handleOpenRecommendations} />
 
           <Deferred
             data="recentActivity"
@@ -269,12 +327,12 @@ function TrustedDevice(): JSX.Element {
               />
             )}
           >
-            <TrustedDeviceRecentActivity />
+            <TrustedDeviceRecentActivity onOpenActivity={handleOpenActivity} />
           </Deferred>
         </div>
       </div>
 
-      {renderSectionDialog()}
+      {renderDialog()}
     </>
   );
 }
@@ -282,10 +340,14 @@ function TrustedDevice(): JSX.Element {
 export default TrustedDevice;
 
 interface TrustedDeviceTitleProps {
-  onTitleAction: (action: TrustedDeviceSectionActionKey) => void;
+  onOpenKeyboardShortcuts: () => void;
+  onTitleAction: (action: TrustedDeviceAdminActionKey) => void;
 }
 
-function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Element {
+function TrustedDeviceTitle({
+  onOpenKeyboardShortcuts,
+  onTitleAction,
+}: TrustedDeviceTitleProps): JSX.Element {
   return (
     <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
       <div className="flex min-w-0 items-start gap-4 sm:gap-6">
@@ -305,45 +367,54 @@ function TrustedDeviceTitle({ onTitleAction }: TrustedDeviceTitleProps): JSX.Ele
         </div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline">
-            <MoreHorizontal />
-            Administrar
-            <ChevronDown />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Acciones del dispositivo</DropdownMenuLabel>
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <Button variant="outline" onClick={onOpenKeyboardShortcuts}>
+          <CircleHelp aria-hidden="true" />
+          Atajos de teclado
+        </Button>
 
-          {trustedDeviceTitleActions.map((group, groupIndex) => (
-            <Fragment key={groupIndex}>
-              <DropdownMenuGroup>
-                {group.label !== undefined && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <MoreHorizontal />
+              Administrar
+              <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Acciones del dispositivo</DropdownMenuLabel>
 
-                {group.actions.map((action) => {
-                  const Icon = action.icon;
+            {trustedDeviceTitleActions.map((group, groupIndex) => (
+              <Fragment key={groupIndex}>
+                <DropdownMenuGroup>
+                  {group.label !== undefined && (
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                  )}
 
-                  return (
-                    <DropdownMenuItem
-                      key={action.key}
-                      onClick={() => {
-                        onTitleAction(action.key);
-                      }}
-                      className={action.className}
-                    >
-                      <Icon className={action.iconClassName} />
-                      {action.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuGroup>
+                  {group.actions.map((action) => {
+                    const Icon = action.icon;
 
-              {groupIndex < trustedDeviceTitleActions.length - 1 && <DropdownMenuSeparator />}
-            </Fragment>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                    return (
+                      <DropdownMenuItem
+                        key={action.key}
+                        onClick={() => {
+                          onTitleAction(action.key);
+                        }}
+                        className={action.className}
+                      >
+                        <Icon className={action.iconClassName} />
+                        {action.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuGroup>
+
+                {groupIndex < trustedDeviceTitleActions.length - 1 && <DropdownMenuSeparator />}
+              </Fragment>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
@@ -476,18 +547,55 @@ function TrustedDevicesTableSection(): JSX.Element {
     committedFilters.deviceType !== null ||
     committedFilters.lastAccess !== null;
 
-  const tableSkeleton = (
+  const initialTableSkeleton = (
     <TrustedDeviceTableSkeleton
       columnVisibility={columnVisibility}
       hasActiveFilters={hasActiveFilters}
+      skeletonVariant="initial"
+    />
+  );
+
+  const reloadingTableSkeleton = (
+    <TrustedDeviceTableSkeleton
+      columnVisibility={columnVisibility}
+      hasActiveFilters={hasActiveFilters}
+      skeletonVariant="table-only"
     />
   );
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
+      {trustedDevices !== undefined && (
+        <TrustedDeviceTableToolbar
+          committedFilters={committedFilters}
+          filters={filters}
+          columnVisibility={columnVisibility}
+          onColumnVisibilityChange={setColumnVisibility}
+          onBrowserFilterChange={(value) => {
+            updateFilter("browser", value);
+          }}
+          onDeviceTypeFilterChange={(value) => {
+            updateFilter("deviceType", value);
+          }}
+          onLastAccessFilterChange={(value) => {
+            updateFilter("lastAccess", value);
+          }}
+          onResetFilters={resetFilters}
+          onSearchChange={(value) => {
+            updateFilter("search", value);
+          }}
+          onSortOrderChange={(value) => {
+            updateFilter("sort", value);
+          }}
+          onStatusFilterChange={(value) => {
+            updateFilter("status", value);
+          }}
+        />
+      )}
+
       <Deferred
         data="trustedDevices"
-        fallback={tableSkeleton}
+        fallback={trustedDevices === undefined ? initialTableSkeleton : reloadingTableSkeleton}
         rescue={({ reloading }) => (
           <TrustedDeviceDeferredError
             message="No se pudieron cargar los dispositivos de confianza."
@@ -499,49 +607,25 @@ function TrustedDevicesTableSection(): JSX.Element {
         )}
       >
         {({ reloading }) => {
-          if (reloading || trustedDevices === undefined) {
-            return tableSkeleton;
+          if (trustedDevices === undefined) {
+            return initialTableSkeleton;
+          }
+
+          if (reloading) {
+            return reloadingTableSkeleton;
           }
 
           return (
-            <>
-              <TrustedDeviceTableToolbar
-                committedFilters={committedFilters}
-                filters={filters}
-                columnVisibility={columnVisibility}
-                onColumnVisibilityChange={setColumnVisibility}
-                onBrowserFilterChange={(value) => {
-                  updateFilter("browser", value);
-                }}
-                onDeviceTypeFilterChange={(value) => {
-                  updateFilter("deviceType", value);
-                }}
-                onLastAccessFilterChange={(value) => {
-                  updateFilter("lastAccess", value);
-                }}
-                onResetFilters={resetFilters}
-                onSearchChange={(value) => {
-                  updateFilter("search", value);
-                }}
-                onSortOrderChange={(value) => {
-                  updateFilter("sort", value);
-                }}
-                onStatusFilterChange={(value) => {
-                  updateFilter("status", value);
-                }}
-              />
-
-              <TrustedDeviceTable
-                devices={trustedDevices.data}
-                hasActiveFilters={hasActiveFilters}
-                columnVisibility={columnVisibility}
-                onColumnVisibilityChange={setColumnVisibility}
-                pagination={trustedDevices}
-                onPerPageChange={(value) => {
-                  updateFilter("perPage", value as TrustedDevicePerPage);
-                }}
-              />
-            </>
+            <TrustedDeviceTable
+              devices={trustedDevices.data}
+              hasActiveFilters={hasActiveFilters}
+              columnVisibility={columnVisibility}
+              onColumnVisibilityChange={setColumnVisibility}
+              pagination={trustedDevices}
+              onPerPageChange={(value) => {
+                updateFilter("perPage", value as TrustedDevicePerPage);
+              }}
+            />
           );
         }}
       </Deferred>

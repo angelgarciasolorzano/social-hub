@@ -1,0 +1,396 @@
+{
+  "plan": {
+    "id": "soc-30-trusted-device-performance-keyboard",
+    "title": "SOC-30 — Rendimiento y accesibilidad de TrustedDevice",
+    "issue": "SOC-30",
+    "mode": "EXPANSION",
+    "defaultReview": "codex",
+    "overview": "El plan cubre los tres frentes de SOC-30 y suma dos entregables acordados: una ayuda dedicada para los atajos y una medición repetible del ahorro de consultas. Conserva los contratos actuales de Inertia y filtros.",
+    "scopeChallenge": [
+      "Ya existen lecturas diferidas de estadísticas y actividad reciente; buildStats() hace ocho consultas agregadas y la actividad reciente carga tres eventos. La tabla filtrada y el diálogo de actividad tienen filtros y paginación propios, por lo que quedan fuera del caché.",
+      "Durante un reload, TrustedDevicesTableSection devuelve el skeleton y desmonta la barra que contiene el popover. Además, el diálogo de actividad reciente vive dentro de su tarjeta diferida; para abrirlo desde un atajo estable, su estado debe vivir en la página.",
+      "El módulo no tiene uso actual de caché ni una dependencia de Hotkeys. package.json tampoco declara un runner de pruebas frontend. Las consultas del módulo se basan en el usuario autenticado y no encontramos una dimensión de tenant en sus modelos."
+    ],
+    "prerequisites": [
+      "Usar el cache store configurado mediante la API compatible del framework, con claves explícitas por usuario y sin depender de cache tags.",
+      "Añadir @tanstack/react-hotkeys a dependencias de frontend. El listado actual de npm muestra 0.10.0 y marca la biblioteca como alpha; usar inicialmente ^0.10.0 y conservar la resolución exacta en package-lock.json.",
+      "La documentación React vigente usa useHotkeySequence para secuencias y formatForDisplay para las etiquetas; verificar las opciones de inputs contra esa versión antes de integrarla."
+    ],
+    "externalReferences": [
+      {
+        "label": "Listado del paquete",
+        "url": "https://www.npmjs.com/package/%40tanstack/react-hotkeys"
+      },
+      {
+        "label": "TanStack React Quick Start",
+        "url": "https://tanstack.com/hotkeys/latest/docs/framework/react/quick-start"
+      }
+    ],
+    "nonGoals": [
+      "Cambiar rutas, filtros, paginación, props de Inertia o semántica de acciones.",
+      "Añadir atajos fuera de TrustedDevice o atajos para acciones destructivas.",
+      "Añadir un runner frontend, instrumentación de caché en producción o migraciones de base de datos."
+    ],
+    "contracts": [
+      "Cachear solo stats y recentActivity, conservando sus estructuras actuales. TTL: 60 segundos para estadísticas y 30 segundos para actividad reciente. Claves: trusted-device:dashboard:{userId}:stats y trusted-device:dashboard:{userId}:recent-activity.",
+      "Invalidar ambas claves después de una mutación exitosa y después de completar las escrituras de los listeners. No añadir dimensión de tenant: el módulo observado solo particiona estos datos por usuario.",
+      "Atajos globales de la página: ? abre la ayuda; G → N abre el flujo existente de agregar dispositivo; G → A abre el diálogo de actividad. Se deshabilitan al escribir en campos editables o mientras hay un diálogo abierto. Las acciones de fila siguen disponibles con teclado por sus controles normales.",
+      "La prueba de rendimiento compara lecturas de las tablas pertinentes: estadísticas 8 → 0 consultas en una lectura caliente; actividad reciente 1 → 0. No se exige un umbral de latencia.",
+      "Sin runner frontend, la regresión visual y de atajos se documenta como QA manual en navegador, tal como se acordó."
+    ],
+    "existingCodeLeverage": [
+      {
+        "path": "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController.php",
+        "detail": "Lecturas diferidas actuales."
+      },
+      {
+        "path": "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+        "detail": "Sección de tabla, skeleton y estado de diálogos."
+      },
+      {
+        "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+        "detail": "Botón existente para abrir el historial."
+      },
+      {
+        "path": "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceIndexTest.php",
+        "detail": "Prueba backend existente."
+      },
+      {
+        "path": "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php",
+        "detail": "Prueba backend existente."
+      },
+      {
+        "path": "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php",
+        "detail": "Prueba backend existente."
+      }
+    ],
+    "tasks": [
+      {
+        "id": "TASK-001",
+        "title": "Añadir caché por usuario a estadísticas y actividad reciente",
+        "description": "Extraer las dos lecturas cacheables a TrustedDeviceDashboardCache, inyectarlo en el controlador de índice y conservar la serialización de recursos como arrays. Añadir una prueba que mida lecturas frías y calientes.",
+        "type": "feature",
+        "priority": "P0",
+        "effort": "M",
+        "agent": "laravel-senior-engineer",
+        "review": "codex",
+        "dependsOn": [],
+        "acceptanceCriteria": [
+          "Las props stats y recentActivity conservan su forma y se cachean con los TTL y claves definidos; ningún resultado de otro usuario puede reutilizarse.",
+          "La prueba demuestra 8→0 consultas de estadísticas y 1→0 de actividad en una lectura caliente; una lectura tras vencer el TTL vuelve a consultar.",
+          "Las listas filtradas y activityDialog continúan sin caché; la prueba cubre aislamiento entre usuarios."
+        ],
+        "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php",
+        "filesToModify": [
+          "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController.php"
+        ],
+        "filesToCreate": [
+          "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceDashboardCache.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+        ],
+        "writeScope": [
+          "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController.php",
+          "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceDashboardCache.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+        ]
+      },
+      {
+        "id": "TASK-002",
+        "title": "Invalidar caché tras mutaciones HTTP",
+        "description": "Invalidar ambas claves después de completar con éxito las mutaciones del controlador y cubrir actualización de datos, errores y aislamiento.",
+        "type": "feature",
+        "priority": "P1",
+        "effort": "M",
+        "agent": "laravel-senior-engineer",
+        "review": "codex",
+        "dependsOn": [
+          "TASK-001"
+        ],
+        "acceptanceCriteria": [
+          "Crear, renombrar, renovar, revocar uno o todos, reactivar y eliminar definitivamente invalidan después de completar sus escrituras.",
+          "Una lectura posterior al cambio devuelve las estadísticas y actividad nuevas, incluida la limpieza de un dispositivo duplicado durante reactivación.",
+          "Una petición rechazada o sin mutación no invalida datos de otro usuario ni expone datos entre cuentas."
+        ],
+        "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php",
+        "filesToModify": [
+          "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+        ],
+        "filesToCreate": [],
+        "writeScope": [
+          "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+        ]
+      },
+      {
+        "id": "TASK-003",
+        "title": "Invalidar caché al recordar un dispositivo",
+        "description": "Cubrir el flujo de segundo factor que registra un dispositivo y su evento.",
+        "type": "feature",
+        "priority": "P1",
+        "effort": "S",
+        "agent": "laravel-senior-engineer",
+        "review": "codex",
+        "dependsOn": [
+          "TASK-001"
+        ],
+        "acceptanceCriteria": [
+          "Con remember_device=true, estadísticas y actividad reflejan el dispositivo y evento recién creados.",
+          "Con remember_device=false, el listener no crea el evento ni invalida caché.",
+          "El cambio no invalida las claves de otro usuario."
+        ],
+        "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php",
+        "filesToModify": [
+          "app/Auth/Modules/TrustedDevice/Listeners/TrustedDeviceRemember.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php"
+        ],
+        "filesToCreate": [],
+        "writeScope": [
+          "app/Auth/Modules/TrustedDevice/Listeners/TrustedDeviceRemember.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php"
+        ]
+      },
+      {
+        "id": "TASK-004",
+        "title": "Invalidar caché al desactivar 2FA",
+        "description": "Invalidar después de que el listener termine de registrar eventos y revocar dispositivos dentro de su transacción.",
+        "type": "bug",
+        "priority": "P1",
+        "effort": "S",
+        "agent": "laravel-senior-engineer",
+        "review": "codex",
+        "dependsOn": [
+          "TASK-001"
+        ],
+        "acceptanceCriteria": [
+          "Después de desactivar 2FA, una lectura refleja dispositivos revocados y eventos nuevos.",
+          "La invalidación ocurre tras la transacción; la caché de otro usuario se mantiene intacta.",
+          "El test cubre el caso sin dispositivos y no produce errores ni datos compartidos."
+        ],
+        "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php",
+        "filesToModify": [
+          "app/Auth/Modules/TrustedDevice/Listeners/TrustedDeviceInvalidate.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php"
+        ],
+        "filesToCreate": [],
+        "writeScope": [
+          "app/Auth/Modules/TrustedDevice/Listeners/TrustedDeviceInvalidate.php",
+          "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php"
+        ]
+      },
+      {
+        "id": "TASK-005",
+        "title": "Mantener barra y popover durante la carga de filtros",
+        "description": "Mantener montada la barra de herramientas cuando ya existen datos y un reload reemplaza la tabla por skeleton.",
+        "type": "bug",
+        "priority": "P1",
+        "effort": "S",
+        "agent": "react-vite-tailwind-engineer",
+        "review": "codex",
+        "dependsOn": [],
+        "acceptanceCriteria": [
+          "Al aplicar cada filtro, la barra y el popover permanecen montados y abiertos mientras la tabla muestra skeleton y recibe resultados.",
+          "Escape y clic fuera cierran el popover; restablecer filtros no lo cierra durante el reload.",
+          "El skeleton inicial, los errores, los parámetros de URL y la semántica de filtros siguen iguales."
+        ],
+        "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+        "filesToModify": [
+          "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx"
+        ],
+        "filesToCreate": [],
+        "writeScope": [
+          "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx"
+        ]
+      },
+      {
+        "id": "TASK-006",
+        "title": "Llevar el diálogo de actividad al estado estable de la página",
+        "description": "Hacer que la página controle el diálogo y que la tarjeta de actividad invoque un callback para abrirlo. Esto permite que el atajo funcione aunque la tarjeta diferida se desmonte.",
+        "type": "refactor",
+        "priority": "P1",
+        "effort": "S",
+        "agent": "react-vite-tailwind-engineer",
+        "review": "codex",
+        "dependsOn": [
+          "TASK-005"
+        ],
+        "acceptanceCriteria": [
+          "El botón existente abre el mismo diálogo mediante onOpenActivity; no quedan dos dueños del estado.",
+          "El atajo puede abrir actividad aunque la tarjeta no esté montada; el diálogo solicita activityDialog como ahora.",
+          "Al cerrar por Escape, el foco no se coloca en el botón «Ver toda la actividad»."
+        ],
+        "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+        "filesToModify": [
+          "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+          "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx"
+        ],
+        "filesToCreate": [],
+        "writeScope": [
+          "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+          "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx"
+        ]
+      },
+      {
+        "id": "TASK-007",
+        "title": "Añadir dependencia y hook de atajos",
+        "description": "Instalar @tanstack/react-hotkeys@^0.10.0 y crear un hook de TrustedDevice que exponga callbacks para ayuda, alta y actividad. Registrar el hook en el nivel de página, no dentro de la tabla diferida.",
+        "type": "feature",
+        "priority": "P1",
+        "effort": "M",
+        "agent": "react-vite-tailwind-engineer",
+        "review": "codex",
+        "dependsOn": [],
+        "acceptanceCriteria": [
+          "El hook registra ?, G→N y G→A usando las APIs React documentadas; el lockfile resuelve la versión instalada.",
+          "Los callbacks no se disparan al escribir en inputs, textareas o contenido editable, ni desde un diálogo abierto.",
+          "El hook permite apagar los registros cuando la página no está activa y no intercepta combinaciones reservadas del navegador."
+        ],
+        "validateCommand": "rtk npm ls @tanstack/react-hotkeys && rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts.ts && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts.ts",
+        "filesToModify": [
+          "package.json",
+          "package-lock.json"
+        ],
+        "filesToCreate": [
+          "resources/js/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts.ts"
+        ],
+        "writeScope": [
+          "package.json",
+          "package-lock.json",
+          "resources/js/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts.ts"
+        ]
+      },
+      {
+        "id": "TASK-008",
+        "title": "Conectar atajos y ayuda accesible",
+        "description": "Conectar callbacks en la página, añadir un botón visible de ayuda y un diálogo que liste las combinaciones con etiquetas de teclas adaptadas a la plataforma.",
+        "type": "feature",
+        "priority": "P1",
+        "effort": "M",
+        "agent": "react-vite-tailwind-engineer",
+        "review": "codex",
+        "dependsOn": [
+          "TASK-005",
+          "TASK-006",
+          "TASK-007"
+        ],
+        "acceptanceCriteria": [
+          "? abre ayuda, G→N usa el flujo existente de alta y G→A abre actividad; ninguno ejecuta una mutación destructiva.",
+          "La ayuda es alcanzable con teclado, lista todas las combinaciones y presenta correctamente sus teclas; el diálogo conserva foco, Escape y retorno de foco.",
+          "Las acciones de fila siguen operables con teclado sin usar atajos."
+        ],
+        "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/index.ts && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/index.ts",
+        "filesToModify": [
+          "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+          "resources/js/modules/setting/modules/trustedDevice/components/dialog/index.ts"
+        ],
+        "filesToCreate": [
+          "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx"
+        ],
+        "writeScope": [
+          "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+          "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+          "resources/js/modules/setting/modules/trustedDevice/components/dialog/index.ts"
+        ]
+      },
+      {
+        "id": "TASK-009",
+        "title": "Ejecutar integración, QA manual y preparar revisión",
+        "description": "Ejecutar gates integrados, completar la matriz manual de teclado y filtros, revisar Wayfinder generado y preparar el PR con resumen de resultados para SOC-30. No mover el issue a Done hasta cumplir los gates y criterios.",
+        "type": "test",
+        "priority": "P2",
+        "effort": "M",
+        "agent": "general-purpose",
+        "review": "codex",
+        "dependsOn": [
+          "TASK-001",
+          "TASK-002",
+          "TASK-003",
+          "TASK-004",
+          "TASK-005",
+          "TASK-006",
+          "TASK-007",
+          "TASK-008"
+        ],
+        "acceptanceCriteria": [
+          "Pint, PHPStan, Rector dry-run seguido de Rector, tests backend y gates frontend pasan; cualquier diff de Wayfinder se revisa.",
+          "QA manual cubre skeleton inicial, cada filtro, popover abierto durante reload, Escape/clic fuera, ?, G→N, G→A, campos editables y que Escape no enfoque «Ver toda la actividad».",
+          "El PR usa la plantilla del repositorio y el resumen de SOC-30 registra los resultados y limitaciones de QA manual."
+        ],
+        "validateCommand": "rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr",
+        "filesToModify": [],
+        "filesToCreate": [],
+        "writeScope": []
+      }
+    ],
+    "dependencyMap": {
+      "TASK-001": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-009"
+      ],
+      "TASK-002": [
+        "TASK-009"
+      ],
+      "TASK-003": [
+        "TASK-009"
+      ],
+      "TASK-004": [
+        "TASK-009"
+      ],
+      "TASK-005": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-009"
+      ],
+      "TASK-006": [
+        "TASK-008",
+        "TASK-009"
+      ],
+      "TASK-007": [
+        "TASK-008",
+        "TASK-009"
+      ],
+      "TASK-008": [
+        "TASK-009"
+      ],
+      "TASK-009": []
+    },
+    "executionSummary": {
+      "parallelStart": [
+        "TASK-001",
+        "TASK-005",
+        "TASK-007"
+      ],
+      "criticalPath": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-008",
+        "TASK-009"
+      ],
+      "note": "TASK-002/003/004 esperan el contrato del caché; TASK-006 espera el arreglo del popover; TASK-008 une el hook con la página y diálogo de actividad. TASK-009 cierra gates y revisión."
+    },
+    "failureModes": [
+      "El cache store efectivo puede diferir del database predeterminado. Las claves explícitas y operaciones remember/forget evitan depender de tags; verificar el store configurado en el entorno de prueba y el de ejecución.",
+      "expiringSoon y recentlyAdded cambian con el tiempo sin mutaciones; el TTL de 60 s limita ese desfase. Las escrituras del módulo y listeners invalidan ambas entradas inmediatamente.",
+      "La API de Hotkeys es alpha; el hook debe compilar y funcionar en el build normal y SSR con la versión bloqueada.",
+      "La prueba de atajos será manual, no automatizada. Si se exige cumplir el criterio de regresión automatizada literalmente, este plan requerirá introducir un runner y cambiar el recorte aprobado."
+    ],
+    "shipCut": "No hay migraciones. El caché usa claves por usuario con TTL corto y se puede dejar vencer si se revierte la integración. No dar SOC-30 por completada si queda sin resolver el popover, falta una invalidación, los atajos se disparan dentro de campos/dialogs o falla un gate.",
+    "testCoverageMap": [
+      {
+        "area": "Pest",
+        "coverage": "cold/warm cache, conteo de consultas, TTL, aislamiento entre usuarios, mutaciones HTTP, remember-device y desactivación de 2FA."
+      },
+      {
+        "area": "Navegador manual",
+        "coverage": "reload de cada filtro sin cierre del popover; cierre normal; atajos en página, input y diálogo; foco inicial y que Escape no enfoque «Ver toda la actividad»."
+      },
+      {
+        "area": "Integración",
+        "coverage": "suite backend completa, Pint, PHPStan, Rector, format, lint, TypeScript, build normal y SSR."
+      }
+    ],
+    "dependencyMapDirection": "prerequisite-to-dependent"
+  }
+}

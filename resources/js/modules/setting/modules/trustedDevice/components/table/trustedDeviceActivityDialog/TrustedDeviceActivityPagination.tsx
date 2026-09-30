@@ -25,22 +25,22 @@ export default function TrustedDeviceActivityPagination({
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
-    <Pagination>
+    <Pagination className="mx-0 w-auto shrink-0">
       <PaginationContent>
         <PaginationItem>
           <ActivityPaginationPreviousButton onPageChange={onPageChange} pagination={pagination} />
         </PaginationItem>
 
-        {pages.map((page, index) =>
-          page === "ellipsis" ? (
-            <PaginationItem key={`ellipsis-${index}`}>
-              <PaginationEllipsis />
+        {pages.map((pageNumber, pageIndex) =>
+          pageNumber === "ellipsis" ? (
+            <PaginationItem key={`ellipsis-${pageIndex}`}>
+              <PaginationEllipsis className="size-8" />
             </PaginationItem>
           ) : (
-            <PaginationItem key={page}>
+            <PaginationItem key={pageNumber}>
               <ActivityPaginationNumberButton
                 onPageChange={onPageChange}
-                page={page}
+                page={pageNumber}
                 pagination={pagination}
               />
             </PaginationItem>
@@ -75,7 +75,7 @@ function ActivityPaginationNumberButton({
       onClick={() => {
         onPageChange(page);
       }}
-      size="icon"
+      size="icon-sm"
       variant={isActive ? "outline" : "ghost"}
     >
       {page}
@@ -101,7 +101,7 @@ function ActivityPaginationPreviousButton({
       onClick={() => {
         onPageChange(pagination.current_page - 1);
       }}
-      size="icon"
+      size="icon-sm"
       variant="outline"
     >
       <ChevronLeft className="size-4" />
@@ -124,7 +124,7 @@ function ActivityPaginationNextButton({
       onClick={() => {
         onPageChange(pagination.current_page + 1);
       }}
-      size="icon"
+      size="icon-sm"
       variant="outline"
     >
       <ChevronRight className="size-4" />

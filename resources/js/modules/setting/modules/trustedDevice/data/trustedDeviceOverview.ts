@@ -15,11 +15,22 @@ export const trustedDeviceRowActionKey = {
   forceDestroy: "force-destroy",
 } as const;
 
-export type TrustedDeviceRowActionKey =
+export const trustedDeviceGlobalShortcuts = {
+  addDevice: { sequence: ["G", "N"], description: "Agregar un dispositivo de confianza" },
+  activity: { sequence: ["G", "A"], description: "Abrir toda la actividad" },
+  recommendations: { sequence: ["G", "R"], description: "Abrir recomendaciones" },
+  summary: { sequence: ["G", "S"], description: "Abrir el resumen de dispositivos" },
+  revokeAll: { sequence: ["G", "V"], description: "Revocar todos los dispositivos" },
+} as const;
+
+type TrustedDeviceRowActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
-export interface TrustedDeviceRowAction {
+type TrustedDeviceRowActionShortcut = readonly ["F", "A" | "D" | "E" | "T" | "V" | "X"];
+
+interface TrustedDeviceRowAction {
   key: TrustedDeviceRowActionKey;
+  shortcut: TrustedDeviceRowActionShortcut;
   icon: LucideIcon;
   label: string;
   className?: string;
@@ -27,7 +38,7 @@ export interface TrustedDeviceRowAction {
   isEnabled: (device: TrustedDevice) => boolean;
 }
 
-export interface TrustedDeviceRowActionGroup {
+interface TrustedDeviceRowActionGroup {
   label?: string;
   actions: TrustedDeviceRowAction[];
 }
@@ -40,18 +51,21 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
     actions: [
       {
         key: trustedDeviceRowActionKey.viewDevice,
+        shortcut: ["F", "D"],
         icon: Eye,
         label: "Ver dispositivo",
         isEnabled: () => true,
       },
       {
         key: trustedDeviceRowActionKey.renameDevice,
+        shortcut: ["F", "E"],
         icon: Pencil,
         label: "Renombrar dispositivo",
         isEnabled: (device) => !isRevoked(device),
       },
       {
         key: trustedDeviceRowActionKey.renewTrust,
+        shortcut: ["F", "T"],
         icon: RotateCw,
         label: "Renovar confianza",
         isEnabled: (device) => !isRevoked(device),
@@ -62,6 +76,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
     actions: [
       {
         key: trustedDeviceRowActionKey.reactivate,
+        shortcut: ["F", "A"],
         icon: RotateCw,
         label: "Reactivar",
         isEnabled: isRevoked,
@@ -72,6 +87,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
     actions: [
       {
         key: trustedDeviceRowActionKey.revokeDevice,
+        shortcut: ["F", "V"],
         icon: Trash2,
         label: "Revocar dispositivo",
         isEnabled: (device) => !isRevoked(device),
@@ -81,6 +97,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
       },
       {
         key: trustedDeviceRowActionKey.forceDestroy,
+        shortcut: ["F", "X"],
         icon: Trash2,
         label: "Eliminar definitivamente",
         isEnabled: (device) => isRevoked(device),
@@ -92,26 +109,42 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
   },
 ];
 
-export const trustedDeviceSectionActionKey = {
+export const trustedDeviceDialogKind = {
   addDevice: "add-device",
   deviceAlreadyRegistered: "device-already-registered",
   deviceExpired: "device-expired",
   deviceRevoked: "device-revoked",
+  keyboardShortcuts: "keyboard-shortcuts",
+  recommendations: "recommendations",
+  summary: "summary",
   revokeAll: "revoke-all",
+  activity: "activity",
 } as const;
 
-export type TrustedDeviceSectionActionKey =
-  (typeof trustedDeviceSectionActionKey)[keyof typeof trustedDeviceSectionActionKey];
+export type TrustedDeviceDialogKind =
+  (typeof trustedDeviceDialogKind)[keyof typeof trustedDeviceDialogKind];
+
+export type TrustedDeviceAddDeviceDialogKind = Exclude<
+  TrustedDeviceDialogKind,
+  | typeof trustedDeviceDialogKind.keyboardShortcuts
+  | typeof trustedDeviceDialogKind.recommendations
+  | typeof trustedDeviceDialogKind.summary
+  | typeof trustedDeviceDialogKind.revokeAll
+  | typeof trustedDeviceDialogKind.activity
+>;
+
+export type TrustedDeviceAdminActionKey =
+  typeof trustedDeviceDialogKind.addDevice | typeof trustedDeviceDialogKind.revokeAll;
 
 interface TrustedDeviceTitleAction {
-  key: TrustedDeviceSectionActionKey;
+  key: TrustedDeviceAdminActionKey;
   label: string;
   icon: LucideIcon;
   iconClassName?: string;
   className?: string;
 }
 
-export interface TrustedDeviceTitleActionGroup {
+interface TrustedDeviceTitleActionGroup {
   label?: string;
   actions: TrustedDeviceTitleAction[];
 }
@@ -120,7 +153,7 @@ export const trustedDeviceTitleActions: TrustedDeviceTitleActionGroup[] = [
   {
     actions: [
       {
-        key: trustedDeviceSectionActionKey.addDevice,
+        key: trustedDeviceDialogKind.addDevice,
         icon: Plus,
         label: "Agregar dispositivo",
       },
@@ -129,7 +162,7 @@ export const trustedDeviceTitleActions: TrustedDeviceTitleActionGroup[] = [
   {
     actions: [
       {
-        key: trustedDeviceSectionActionKey.revokeAll,
+        key: trustedDeviceDialogKind.revokeAll,
         icon: Trash2,
         label: "Revocar todos",
         className:
