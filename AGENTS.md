@@ -232,6 +232,11 @@ Review the generated diff under `resources/js/shared/wayfinder/`, including the 
 - PHPUnit's `<source>` configuration in `phpunit.xml` determines which application files are measured; it currently includes `app`.
 - If `herd coverage` fails while resolving PHP before Pest starts, run Pest with Herd's PHP binary directly and ensure that binary loads Xdebug with `XDEBUG_MODE=coverage` (or Herd's Xdebug-enabled debug configuration). Treat a wrapper startup failure separately from a Pest test or coverage failure.
 
+## Laravel Doctor
+
+- Run `composer doctor` only after implementation and all applicable backend gates are complete; it is the final local gate for a backend task. Do not run further checks after it.
+- `composer doctor` runs local diagnostics without applying fixes. `composer doctor-ci` is the backend CI workflow command and emits GitHub annotations; use it as a CI gate, not as an intermediate implementation check.
+
 === inertia-react/core rules ===
 
 # Inertia + React

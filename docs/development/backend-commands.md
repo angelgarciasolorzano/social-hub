@@ -104,7 +104,7 @@ Ejecuta los diagnósticos de Laravel Doctor en formato legible para desarrollo l
 - 🛡️ No aplica reparaciones automáticamente porque usa `--no-interaction` y no incluye `--fix`
 - ⚠️ Puede fallar si los servicios configurados localmente no están disponibles
 
-**Cuándo:** al validar la salud del entorno local o investigar problemas de configuración.
+**Cuándo:** como último gate local de una tarea backend, después de completar implementación, tests, formatters, análisis estático, Rector y las demás verificaciones aplicables. No ejecutes otros gates después de `composer doctor`.
 
 ### `composer doctor-ci`
 
@@ -118,7 +118,7 @@ Ejecuta Laravel Doctor con formato de anotaciones de GitHub para el workflow de 
 - 📋 Produce anotaciones que GitHub Actions puede mostrar directamente en el job
 - 🚫 No aplica reparaciones automáticas
 
-**Cuándo:** como gate obligatorio del workflow de calidad del backend.
+**Cuándo:** el workflow de calidad del backend lo ejecuta con anotaciones para GitHub Actions. Su ejecución ocurre en CI al llegar a este paso; no sustituye el gate local final ni es un chequeo intermedio durante la implementación.
 
 ### `composer phpcpd`
 
@@ -215,8 +215,8 @@ Limpia la caché de resultados de PHPStan.
 | `composer rector-dry`          | Preview Rector                 | Después de cualquier cambio PHP |
 | `composer rector`              | Aplicar Rector                 | Después de `rector-dry`         |
 | `composer test`                | Suite completa PHPUnit         | Antes de PR                     |
-| `composer doctor`              | Diagnósticos locales Laravel   | Validar entorno local           |
-| `composer doctor-ci`           | Doctor con anotaciones GitHub  | Gate obligatorio en CI          |
+| `composer doctor`              | Diagnósticos locales Laravel   | Último gate local de tarea backend |
+| `composer doctor-ci`           | Doctor con anotaciones GitHub  | Gate del workflow de CI         |
 | `composer phpcpd`              | Detección experimental clones  | Evaluar duplicación             |
 | `php artisan test --compact`   | Tests rápidos con filtro       | Después de cada test modificado |
 | `composer ide-helper`          | Regenerar helpers IDE          | Después de cambiar modelos      |
