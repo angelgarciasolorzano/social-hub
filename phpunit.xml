@@ -26,6 +26,9 @@
         <testsuite name="Password">
             <directory>app/Auth/Modules/Password/Tests</directory>
         </testsuite>
+        <testsuite name="TwoFactor">
+            <directory>app/User/Modules/TwoFactor/Tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>

@@ -232,9 +232,9 @@ Mover el listener a app/User/Modules/TwoFactor/Listeners/ y actualizar su import
 rtk php -l app/User/Modules/TwoFactor/Listeners/TrackRecoveryCodesRegeneration.php && rtk rg -n 'TrackRecoveryCodesRegeneration|TrustedDeviceInvalidate|TrustedDeviceRemember' app/Auth/Providers/AuthEventServiceProvider.php
 ```
 
-### TASK-006: Co-ubicar las pruebas de configuración y registrar la suite TwoFactor
+### TASK-006: Convertir a Pest y co-ubicar la prueba de configuración TwoFactor
 
-Mover tests/Feature/Settings/TwoFactorAuthenticationTest.php a app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php, actualizar las expectativas al contrato actual y registrar la suite en phpunit.xml.
+Mover tests/Feature/Settings/TwoFactorAuthenticationTest.php a app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php, convertirla a declaraciones Pest, actualizar las expectativas al contrato actual y registrar el directorio Pest y la suite TwoFactor.
 
 **Type:** test  
 **Effort:** S  
@@ -245,27 +245,30 @@ Mover tests/Feature/Settings/TwoFactorAuthenticationTest.php a app/User/Modules/
 
 **Acceptance Criteria:**
 - La prueba de pantalla usa la ruta y el componente vigentes, no two-factor.show ni settings/two-factor.
-- Se conservan render, password.confirm habilitado/deshabilitado y estado Fortify deshabilitado.
-- php artisan test --compact TwoFactor descubre y ejecuta el test co-ubicado.
+- El archivo usa declaraciones Pest con nombres que describen los comportamientos de configuración de TwoFactor.
+- Se conservan render, password.confirm habilitado/deshabilitado y el estado `canManageTwoFactor=false` cuando Fortify deshabilita 2FA.
+- `tests/Pest.php` aplica TestCase y RefreshDatabase al módulo, y Pest con `--testsuite=TwoFactor` descubre y ejecuta el test co-ubicado.
 
 **Moves:**
-- `tests/Feature/Settings/TwoFactorAuthenticationTest.php` → `app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php`
+- `tests/Feature/Settings/TwoFactorAuthenticationTest.php` → `app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php`
 
 **Files to modify:**
+- `tests/Pest.php`
 - `phpunit.xml`
 
 **writeScope:**
-- `move tests/Feature/Settings/TwoFactorAuthenticationTest.php -> app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php`
+- `move tests/Feature/Settings/TwoFactorAuthenticationTest.php -> app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php`
+- `tests/Pest.php`
 - `phpunit.xml`
 
 **validateCommand:**
 ```bash
-rtk php artisan test --compact TwoFactor
+rtk vendor/bin/pest --configuration=phpunit.xml --testsuite=TwoFactor --compact
 ```
 
-### TASK-007: Registrar Pest y cubrir regeneración, listener y desactivación
+### TASK-007: Cubrir regeneración, listener y desactivación con Pest
 
-Añadir el directorio de TwoFactor a la configuración compartida de Pest y crear pruebas HTTP co-ubicadas para regeneración y desactivación. La prueba de regeneración valida el enlace RecoveryCodesGenerated -> listener -> timestamp.
+Crear pruebas HTTP Pest co-ubicadas para regeneración y desactivación. La prueba de regeneración valida el enlace RecoveryCodesGenerated -> listener -> timestamp. El directorio Pest se registra en TASK-006.
 
 **Type:** test  
 **Effort:** M  
@@ -277,17 +280,13 @@ Añadir el directorio de TwoFactor a la configuración compartida de Pest y crea
 **Acceptance Criteria:**
 - TwoFactorRecoveryCodesTest cubre contraseña válida/inválida; el éxito reemplaza códigos y actualiza recovery_codes_regenerated_at, y el fallo conserva ambos.
 - TwoFactorDisableTest cubre TOTP válido, contraseña incorrecta y código inválido; los rechazos conservan 2FA habilitado.
-- tests/Pest.php aplica TestCase y RefreshDatabase al módulo, y ambos archivos Pest pasan individualmente.
-
-**Files to modify:**
-- `tests/Pest.php`
+- Ambos archivos Pest pasan individualmente con el TestCase y RefreshDatabase registrados para TwoFactor.
 
 **Files to create:**
 - `app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php`
 - `app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php`
 
 **writeScope:**
-- `tests/Pest.php`
 - `app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php`
 - `app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php`
 
@@ -349,7 +348,7 @@ Actualizar la ubicación de User TwoFactor en CLAUDE.md y docs/architecture/back
 
 **validateCommand:**
 ```bash
-rtk grep -n 'app/User/Modules/TwoFactor' CLAUDE.md docs/architecture/backend.md && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact TwoFactor && rtk php artisan test --compact TrustedDevice && rtk php artisan test --compact tests/Feature/Auth/PasswordConfirmationTest.php && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor
+rtk grep -n 'app/User/Modules/TwoFactor' CLAUDE.md docs/architecture/backend.md && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pest --configuration=phpunit.xml --testsuite=TwoFactor --compact && rtk php artisan test --compact TrustedDevice && rtk php artisan test --compact tests/Feature/Auth/PasswordConfirmationTest.php && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor
 ```
 
 ## Failure Modes
@@ -368,7 +367,7 @@ No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/T
 
 | Área | Prueba | Casos principales |
 |---|---|---|
-| TwoFactor settings | `app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php` | pantalla y componente Inertia vigentes; password.confirm condicionado por configuración; Fortify deshabilitado bloquea administración |
+| TwoFactor settings | `app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php` | pantalla y componente Inertia vigentes; password.confirm condicionado por configuración; Fortify deshabilitado deja la administración indisponible |
 | Recovery codes + listener | `app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php` | regeneración válida; timestamp actualizado por RecoveryCodesGenerated; contraseña inválida conserva códigos y timestamp |
 | Disable 2FA | `app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php` | contraseña/TOTP válidos; contraseña incorrecta no desactiva; TOTP inválido no desactiva |
 | TrustedDevice integration | `app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php` | dispositivos/cachés del usuario se invalidan; datos de otros usuarios permanecen intactos |

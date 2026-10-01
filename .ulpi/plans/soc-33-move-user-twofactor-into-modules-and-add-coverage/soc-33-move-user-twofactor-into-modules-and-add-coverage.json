@@ -282,8 +282,8 @@
     },
     {
       "id": "TASK-006",
-      "title": "Co-ubicar las pruebas de configuración y registrar la suite TwoFactor",
-      "description": "Mover tests/Feature/Settings/TwoFactorAuthenticationTest.php a app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php, actualizar las expectativas al contrato actual y registrar la suite en phpunit.xml.",
+      "title": "Convertir a Pest y co-ubicar la prueba de configuración TwoFactor",
+      "description": "Mover tests/Feature/Settings/TwoFactorAuthenticationTest.php a app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php, convertirla a declaraciones Pest, actualizar las expectativas al contrato actual y registrar el directorio Pest y la suite TwoFactor.",
       "priority": "P1",
       "type": "test",
       "effort": "S",
@@ -293,30 +293,33 @@
       ],
       "acceptanceCriteria": [
         "La prueba de pantalla usa la ruta y el componente vigentes, no two-factor.show ni settings/two-factor.",
-        "Se conservan render, password.confirm habilitado/deshabilitado y estado Fortify deshabilitado.",
-        "php artisan test --compact TwoFactor descubre y ejecuta el test co-ubicado."
+        "El archivo usa declaraciones Pest con nombres que describen los comportamientos de configuración de TwoFactor.",
+        "Se conservan render, password.confirm habilitado/deshabilitado y el estado canManageTwoFactor=false cuando Fortify deshabilita 2FA.",
+        "tests/Pest.php aplica TestCase y RefreshDatabase al módulo, y Pest con --testsuite=TwoFactor descubre y ejecuta el test co-ubicado."
       ],
       "moves": [
         {
           "from": "tests/Feature/Settings/TwoFactorAuthenticationTest.php",
-          "to": "app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php"
+          "to": "app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php"
         }
       ],
       "filesToModify": [
+        "tests/Pest.php",
         "phpunit.xml"
       ],
       "filesToCreate": [],
       "writeScope": [
-        "move tests/Feature/Settings/TwoFactorAuthenticationTest.php -> app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php",
+        "move tests/Feature/Settings/TwoFactorAuthenticationTest.php -> app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php",
+        "tests/Pest.php",
         "phpunit.xml"
       ],
-      "validateCommand": "rtk php artisan test --compact TwoFactor",
+      "validateCommand": "rtk vendor/bin/pest --configuration=phpunit.xml --testsuite=TwoFactor --compact",
       "review": "codex"
     },
     {
       "id": "TASK-007",
-      "title": "Registrar Pest y cubrir regeneración, listener y desactivación",
-      "description": "Añadir el directorio de TwoFactor a la configuración compartida de Pest y crear pruebas HTTP co-ubicadas para regeneración y desactivación. La prueba de regeneración valida el enlace RecoveryCodesGenerated -> listener -> timestamp.",
+      "title": "Cubrir regeneración, listener y desactivación con Pest",
+      "description": "Crear pruebas HTTP Pest co-ubicadas para regeneración y desactivación. La prueba de regeneración valida el enlace RecoveryCodesGenerated -> listener -> timestamp. El directorio Pest se registra en TASK-006.",
       "priority": "P1",
       "type": "test",
       "effort": "M",
@@ -328,18 +331,15 @@
       "acceptanceCriteria": [
         "TwoFactorRecoveryCodesTest cubre contraseña válida/inválida; el éxito reemplaza códigos y actualiza recovery_codes_regenerated_at, y el fallo conserva ambos.",
         "TwoFactorDisableTest cubre TOTP válido, contraseña incorrecta y código inválido; los rechazos conservan 2FA habilitado.",
-        "tests/Pest.php aplica TestCase y RefreshDatabase al módulo, y ambos archivos Pest pasan individualmente."
+        "Ambos archivos Pest pasan individualmente con el TestCase y RefreshDatabase registrados para TwoFactor."
       ],
-      "filesToModify": [
-        "tests/Pest.php"
-      ],
+      "filesToModify": [],
       "filesToCreate": [
         "app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php",
         "app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php"
       ],
       "moves": [],
       "writeScope": [
-        "tests/Pest.php",
         "app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php",
         "app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php"
       ],
@@ -406,7 +406,7 @@
         "CLAUDE.md",
         "docs/architecture/backend.md"
       ],
-      "validateCommand": "rtk grep -n 'app/User/Modules/TwoFactor' CLAUDE.md docs/architecture/backend.md && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact TwoFactor && rtk php artisan test --compact TrustedDevice && rtk php artisan test --compact tests/Feature/Auth/PasswordConfirmationTest.php && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor",
+      "validateCommand": "rtk grep -n 'app/User/Modules/TwoFactor' CLAUDE.md docs/architecture/backend.md && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pest --configuration=phpunit.xml --testsuite=TwoFactor --compact && rtk php artisan test --compact TrustedDevice && rtk php artisan test --compact tests/Feature/Auth/PasswordConfirmationTest.php && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor",
       "review": "codex"
     }
   ],
@@ -467,7 +467,7 @@
   "testCoverageMap": [
     {
       "area": "TwoFactor settings",
-      "source": "app/User/Modules/TwoFactor/Tests/TwoFactorAuthenticationTest.php",
+      "source": "app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php",
       "cases": [
         "pantalla y componente Inertia vigentes",
         "password.confirm condicionado por configuración",
