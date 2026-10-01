@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Auth\Modules\Password\Controllers;
 
 use App\Auth\Modules\Password\Requests\PasswordRequest;
+use App\Auth\Modules\Password\Services\PasswordTrustedDeviceRevoker;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,8 +20,10 @@ class PasswordController extends Controller
         return Inertia::render('setting/modules/password/EditPassword');
     }
 
-    public function update(PasswordRequest $passwordRequest): RedirectResponse
-    {
+    public function update(
+        PasswordRequest $passwordRequest,
+        PasswordTrustedDeviceRevoker $passwordTrustedDeviceRevoker,
+    ): RedirectResponse {
         $user = $passwordRequest->user();
 
         /** @var string|null $password */
@@ -27,11 +31,13 @@ class PasswordController extends Controller
 
         abort_if($user === null || $password === null, 401);
 
-        $user->update([
-            'password' => Hash::make($password),
-        ]);
+        DB::transaction(function () use ($password, $passwordRequest, $passwordTrustedDeviceRevoker, $user): void {
+            $user->update([
+                'password' => Hash::make($password),
+            ]);
 
-        $user->trustedDevices()->delete();
+            $passwordTrustedDeviceRevoker->revokeAll($user, $passwordRequest);
+        });
 
         return Inertia::flash('success', 'Contraseña actualizada correctamente')->back();
     }

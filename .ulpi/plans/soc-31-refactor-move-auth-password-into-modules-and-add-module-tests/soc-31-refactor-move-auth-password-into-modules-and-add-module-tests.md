@@ -4,11 +4,11 @@
 
 ## Overview
 
-Reubicar el backend de Password bajo app/Auth/Modules/Password, mantener sus rutas y comportamiento, co-ubicar las pruebas de cambio y reset, registrar la suite Password, regenerar Wayfinder y actualizar sus consumidores. La expansión amplía la regresión de revocación para cubrir varios dispositivos y aislamiento entre usuarios, incorpora un aviso visible antes del cambio de contraseña y revoca dispositivos confiables tras un reset de correo válido.
+Reubicar el backend de Password bajo app/Auth/Modules/Password, mantener sus rutas y comportamiento, co-ubicar las pruebas de cambio y reset, registrar la suite Password, regenerar Wayfinder y actualizar sus consumidores. La expansión cubre revocación multi-dispositivo, aviso visible, revocación tras reset válido por correo y registro de un evento `TrustedDeviceAction::RevokedAll` por cada dispositivo confiable revocado en ambos flujos de contraseña.
 
 ## Scope Challenge
 
-Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tres controladores, tres Form Requests, rutas y páginas indicados; TrustedDevice aporta el patrón local de módulo y pruebas. La exploración adicional encontró cuatro consumidores Wayfinder, incluido SettingSidebar. Las pruebas heredadas de Password importan App\\Models\\User aunque el modelo actual está en App\\User\\Models\\User; PasswordUpdateTest también usa password.edit/update, pero route:list confirma setting.password.edit/update. El plan corrige esas referencias al moverlas. El modo EXPANSION y la revisión predeterminada codex quedaron confirmados. La ampliación ahora incluye alcance multi-dispositivo/entre usuarios, aviso en el formulario autenticado y revocación en reset válido por correo.
+Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tres controladores, tres Form Requests, rutas y páginas indicados; TrustedDevice aporta el patrón local de módulo y pruebas. La exploración adicional encontró cuatro consumidores Wayfinder, incluido SettingSidebar. Las pruebas heredadas de Password importan App\\Models\\User aunque el modelo actual está en App\\User\\Models\\User; PasswordUpdateTest también usa password.edit/update, pero route:list confirma setting.password.edit/update. El plan corrige esas referencias al moverlas. El modo EXPANSION y la revisión predeterminada codex quedaron confirmados. Las ampliaciones solicitadas cubren revocación multi-dispositivo/entre usuarios, aviso autenticado, reset por correo y registro de eventos por dispositivo revocado en ambos flujos.
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 ## Non-Goals
 
 - Cambiar las reglas de contraseña, el formato o vigencia de tokens, las notificaciones, el evento PasswordReset, la configuración de Fortify o los nombres de ruta.
-- Cerrar sesiones existentes, invalidar otros tokens de sesión, agregar eventos/auditoría/invalidación de caché o dependencias; el efecto solicitado se limita a soft delete de dispositivos confiables.
+- Cerrar sesiones existentes o invalidar otros tokens de sesión. La auditoría se limita a `TrustedDeviceEvent::RevokedAll` por dispositivo activo y a invalidar la caché del dashboard de ese usuario; no se agregan dependencias.
 - Cambiar URI, nombres de ruta, middleware, nombres de componentes Inertia o mover las páginas React.
 - Mover ni ampliar las pruebas de confirmación de contraseña de Fortify; tests/Feature/Auth/PasswordConfirmationTest.php permanece en su ubicación.
 - Añadir dependencias o alterar archivos de documentación.
@@ -36,6 +36,8 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - El cambio autenticado sigue validando current_password y password_confirmation, actualiza la contraseña y hace soft delete de todos los dispositivos confiables del usuario afectado; dispositivos de otros usuarios permanecen activos.
 - El formulario autenticado avisa antes del envío que se revocará la confianza de todos los dispositivos; aclara que, si 2FA está activo, tendrán que verificar de nuevo al iniciar sesión y que las sesiones ya abiertas no se cierran.
 - Un reset de correo con token válido actualiza contraseña y remember_token, emite PasswordReset y hace soft delete de todos los dispositivos confiables del usuario restablecido; token inválido deja los dispositivos intactos.
+- Cada cambio autenticado o reset válido registra un `TrustedDeviceEvent::RevokedAll` por dispositivo activo, usando IP y user-agent de la solicitud; escritura de eventos y soft delete son atómicos, y la caché del dashboard del usuario queda invalidada.
+- Una contraseña actual incorrecta o un token de reset inválido no revoca dispositivos ni crea eventos de revocación.
 - Las pruebas de cambio, solicitud de enlace y reset viven en app/Auth/Modules/Password/Tests; la suite dedicada se llama Password y Feature sigue apuntando a tests/Feature.
 - Los helpers Wayfinder se regeneran con la configuración del repo y nunca se editan manualmente.
 
@@ -51,6 +53,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - EditPassword.tsx, SettingSidebar.tsx, ForgotPassword.tsx y ResetPassword.tsx son los cuatro consumidores Wayfinder encontrados.
 - vite.config.ts y el comando Wayfinder del ticket determinan el destino generado.
 - resources/js/shared/components/shadcn/ui/alert.tsx ya ofrece el patrón de aviso para EditPassword; PasswordNewController y PasswordResetTest alojan el callback y los casos de reset que se amplían.
+- TrustedDeviceEvent::record(), TrustedDeviceAction::RevokedAll y TrustedDeviceDashboardCache proporcionan el formato de auditoría y la invalidación para cada dispositivo revocado.
 
 ## Tasks
 
@@ -420,11 +423,11 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 **Description:** Añadir la revocación de dispositivos del usuario dentro del callback exitoso de reset y ampliar PasswordResetTest para demostrar revocación propia, aislamiento de otros usuarios y ausencia de cambios cuando el token es inválido.
 
-**Type:** feature  
-**Priority:** P1  
-**Effort:** S  
-**Agent:** `laravel-senior-engineer`  
-**Review:** `codex`  
+**Type:** feature
+**Priority:** P1
+**Effort:** S
+**Agent:** `laravel-senior-engineer`
+**Review:** `codex`
 **Depends on:** TASK-006, TASK-008
 
 **writeScope:**
@@ -440,6 +443,56 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 **validateCommand:** `rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordResetTest.php`
 
+### TASK-018: Registrar eventos al cambiar la contraseña autenticado
+
+**Description:** Añadir `PasswordTrustedDeviceRevoker` para registrar `RevokedAll` por cada dispositivo activo, hacer soft delete e invalidar la caché; integrarlo transaccionalmente al cambio autenticado y cubrirlo con Pest.
+
+**Type:** feature
+**Priority:** P1
+**Effort:** S
+**Agent:** `laravel-senior-engineer`
+**Review:** `codex`
+**Depends on:** TASK-015
+
+**writeScope:**
+
+- `app/Auth/Modules/Password/Services/PasswordTrustedDeviceRevoker.php`
+- `app/Auth/Modules/Password/Controllers/PasswordController.php`
+- `app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php`
+
+**Acceptance Criteria:**
+
+- Un cambio válido registra exactamente un `TrustedDeviceEvent::RevokedAll` por dispositivo activo propio con IP y user-agent de la solicitud, y después hace soft delete de esos dispositivos.
+- Una contraseña actual incorrecta mantiene los dispositivos activos y no crea eventos; los dispositivos y eventos de otra cuenta permanecen intactos.
+- La caché de actividad y estadísticas del usuario afectado se invalida y PasswordTrustedDeviceRevocationTest pasa.
+
+**validateCommand:** `rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php`
+
+### TASK-019: Registrar eventos de revocación al restablecer por correo
+
+**Description:** Ampliar `PasswordTrustedDeviceRevoker` para aceptar el formulario de reset y usarlo desde el callback exitoso; un token inválido no debe crear eventos ni revocar dispositivos.
+
+**Type:** feature  
+**Priority:** P1  
+**Effort:** S  
+**Agent:** `laravel-senior-engineer`  
+**Review:** `codex`  
+**Depends on:** TASK-017, TASK-018
+
+**writeScope:**
+
+- `app/Auth/Modules/Password/Services/PasswordTrustedDeviceRevoker.php`
+- `app/Auth/Modules/Password/Controllers/PasswordNewController.php`
+- `app/Auth/Modules/Password/Tests/PasswordResetTest.php`
+
+**Acceptance Criteria:**
+
+- Un reset válido registra un evento RevokedAll por cada dispositivo activo del usuario y conserva activos los dispositivos de otra cuenta.
+- Un token inválido conserva los dispositivos y no registra eventos; PasswordReset, remember_token y el resultado válido conservan su comportamiento.
+- PasswordResetTest pasa con los casos válido e inválido usando el servicio compartido.
+
+**validateCommand:** `rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordResetTest.php`
+
 ### TASK-014: Validar suite, gates y flujos en navegador
 
 **Description:** Ejecutar la suite aislada y completa, gates backend/frontend y revisión manual de cambio, aviso, recuperación y reset. Laravel Doctor queda como último gate local.
@@ -449,7 +502,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 **Effort:** M  
 **Agent:** `general-purpose`  
 **Review:** `codex`  
-**Depends on:** TASK-006, TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-015, TASK-016, TASK-017
+**Depends on:** TASK-006, TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019
 
 **writeScope:**
 
@@ -457,7 +510,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 **Acceptance Criteria:**
 
-- La suite Password cubre cambio autenticado con varios dispositivos y aislamiento entre usuarios, solicitud de enlace, reset válido que revoca dispositivos propios, token inválido que no los revoca y fallo de current_password; la revisión de navegador confirma el aviso del formulario.
+- La suite Password cubre cambio autenticado con eventos RevokedAll por dispositivo, aislamiento entre usuarios, reset válido con los mismos eventos, token inválido que no revoca ni registra y fallo de current_password; la revisión de navegador confirma el aviso.
 - Pint, PHPStan, Rector dry-run seguido de Rector, format, lint, TypeScript, build normal y SSR pasan; si Rector modifica archivos se repiten los gates afectados antes de cerrar.
 - En navegador el aviso comunica correctamente el efecto sin sugerir cierre de sesiones; se renderizan recuperación y reset y se completan los flujos esperados. composer doctor se ejecuta después de todos los gates como última verificación backend.
 
@@ -474,16 +527,19 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - Comprobar solo que los dispositivos del usuario desaparecen de la relación activa puede ocultar hard delete o revocación cruzada; las pruebas deben verificar `deleted_at` y conservar activo el dispositivo de otro usuario.
 - Revocar antes de que reset confirme token válido afectaría dispositivos aunque la operación falle; el camino de token inválido debe preservar su estado.
 - Un aviso que prometa cerrar sesiones o exija 2FA cuando está desactivado no representa el comportamiento; el texto debe limitarse a confianza de dispositivos y al próximo inicio de sesión.
+- Registrar eventos después de un soft delete puede perder evidencia; guardar eventos y revocar deben compartir una transacción.
+- No invalidar la caché de actividad deja el dashboard con datos previos aunque los eventos de revocación ya existan.
+- Una contraseña incorrecta o un token inválido no debe crear eventos porque no se revocó ningún dispositivo.
 
 ## Ship Cut
 
-SOC-31 queda listo cuando se cumplen las tareas originales y las tres ampliaciones: el cambio autenticado revoca todos los dispositivos propios y conserva los ajenos, el formulario explica el efecto sin afirmar que cierra sesiones, y un reset válido por correo revoca los dispositivos propios mientras uno inválido no los altera. La suite Password, los gates backend/frontend y la revisión manual del aviso deben completarse; Laravel Doctor queda como último gate backend.
+SOC-31 queda listo cuando se cumplen las tareas originales y las ampliaciones: el cambio autenticado y el reset válido revocan dispositivos propios, conservan los ajenos y registran un evento RevokedAll por dispositivo; los caminos inválidos no revocan ni registran. El formulario explica el efecto sin afirmar que cierra sesiones. La suite Password, los gates backend/frontend y la revisión manual deben completarse; Laravel Doctor queda como último gate backend.
 
 ## Test Coverage Map
 
 - PasswordUpdateTest conserva pantalla, cambio válido y rechazo de contraseña actual incorrecta usando los route names reales setting.password.edit/update.
-- PasswordTrustedDeviceRevocationTest prueba que el cambio válido marca deleted_at para varios dispositivos del usuario y deja activo el de otra cuenta; una contraseña actual incorrecta no revoca los dispositivos del usuario.
-- PasswordResetTest conserva solicitud/render del enlace, render del reset, reset válido y rechazo de token inválido; añade que el reset válido revoca todos los dispositivos propios y preserva los de otra cuenta, mientras token inválido no revoca.
+- PasswordTrustedDeviceRevocationTest prueba que el cambio válido marca deleted_at y registra un evento RevokedAll por dispositivo propio, deja activo el de otra cuenta e invalida solo la caché del usuario; una contraseña incorrecta no revoca ni registra.
+- PasswordResetTest conserva solicitud/render del enlace, render del reset, reset válido y rechazo de token inválido; el reset válido registra eventos RevokedAll por dispositivos propios, preserva los de otra cuenta y el token inválido no revoca ni registra.
 - EditPassword muestra el aviso de revocación antes de enviar; revisión de navegador confirma el texto sobre nuevo desafío 2FA y sesiones existentes.
 - php artisan test --testsuite=Password --compact prueba la suite aislada; php artisan test --compact ejecuta la suite completa al cierre.
 - php artisan route:list --name=password confirma que URI y nombres públicos permanecen iguales.
@@ -492,11 +548,11 @@ SOC-31 queda listo cuando se cumplen las tareas originales y las tres ampliacion
 
 ## Execution Summary
 
-Implementación aplicada en 14 tareas: backend y pruebas movidos a app/Auth/Modules/Password, suite registrada, Wayfinder regenerado y consumidores actualizados; se añadió la regresión de revocación en cambio de contraseña. La suite Password pasó (10 pruebas, 30 aserciones); Pint, Rector, PHPStan, formato, lint, TypeScript, build y SSR pasaron. La suite completa reportó 128 pruebas: 100 pasaron, 4 fallaron y 24 tuvieron errores en pruebas ajenas a Password (entre ellas imports antiguos de App\Models\User y una llamada a ProfileController::update() inexistente). Navegador confirmó el render de recuperación y reset; el cambio y los flujos se cubren con tests. Doctor detectó namespaces PSR-4 en las pruebas trasladadas; quedaron alineados con App\Auth\Modules\Password\Tests y composer dump-autoload pasó. Repetido con acceso local ampliado, composer doctor pasó con 27 diagnósticos, 0 fallos, 21 aprobados, 3 avisos informativos y 3 verificaciones omitidas. Alcance ampliado por solicitud del usuario: TASK-015, TASK-016 y TASK-017 quedan pendientes para cubrir revocación multi-dispositivo y aislamiento entre usuarios, aviso visible en el cambio de contraseña y revocación después de un reset válido por correo; aún no se implementan.
+Las tareas originales y las ampliaciones TASK-015, TASK-016 y TASK-017 están implementadas. En la validación más reciente, la suite Password pasó (10 pruebas, 47 aserciones); Pint, PHPStan, Rector, format, lint (0 errores, 47 warnings), TypeScript, build normal, SSR y composer doctor pasaron. La suite completa reportó 128 pruebas: 100 pasaron, 4 fallaron y 24 tuvieron errores en pruebas preexistentes de Auth/Settings, incluyendo namespaces/rutas obsoletos y ProfileController::update() inexistente. El navegador confirmó el aviso y el render de recuperación/reset. Nueva ampliación solicitada: registrar TrustedDeviceAction::RevokedAll por cada dispositivo revocado al cambiar/restablecer contraseña. TASK-018 cubre el cambio autenticado; TASK-019 el reset por correo. TASK-014 debe repetirse después de ambos.
 
 ## Task Dependencies
 
-**Critical path:** TASK-003 → TASK-004 → TASK-006 → TASK-011 → TASK-013 → TASK-014. Las ampliaciones convergen en TASK-014 para validación final.
+**Critical path:** TASK-007 → TASK-009 → TASK-010 → TASK-015 → TASK-018 → TASK-019 → TASK-014. Las ampliaciones convergen en TASK-014 para validación final.
 
 - TASK-001: sin dependencias
 - TASK-002: TASK-001
@@ -514,4 +570,6 @@ Implementación aplicada en 14 tareas: backend y pruebas movidos a app/Auth/Modu
 - TASK-015: TASK-010
 - TASK-016: TASK-012
 - TASK-017: TASK-006, TASK-008
-- TASK-014: TASK-006, TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-015, TASK-016, TASK-017
+- TASK-018: TASK-015
+- TASK-019: TASK-017, TASK-018
+- TASK-014: TASK-006, TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019
