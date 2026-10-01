@@ -1,15 +1,17 @@
+import type { JSX } from "react";
+
 import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Email/Controllers/EmailVerificationNotificationController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/Email/Controllers/EmailVerificationNotificationController";
 
 import { logout } from "@/shared/wayfinder/routes";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import TextLink from "@/shared/components/TextLink";
 
-export default function VerifyEmail({ status }: { status?: string }) {
+export default function VerifyEmail({ status }: { status?: string }): JSX.Element {
   return (
     <>
       <Head title="Email verification" />

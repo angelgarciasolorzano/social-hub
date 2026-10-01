@@ -1,8 +1,10 @@
+import type { JSX } from "react";
+
 import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Login/Controllers/LoginSessionController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/Login/Controllers/LoginSessionController";
 
 import { register } from "@/shared/wayfinder/routes";
 import { request } from "@/shared/wayfinder/routes/password";
@@ -19,7 +21,7 @@ interface LoginProps {
   status?: string;
 }
 
-export default function Login({ status, canResetPassword }: LoginProps) {
+export default function Login({ status, canResetPassword }: LoginProps): JSX.Element {
   return (
     <>
       <Head title="Inicia sesión" />
