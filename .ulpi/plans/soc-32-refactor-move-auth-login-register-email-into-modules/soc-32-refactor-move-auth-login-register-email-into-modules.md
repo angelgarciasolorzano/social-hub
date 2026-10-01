@@ -256,7 +256,7 @@ Mover RegistrationTest a Register/Tests y reescribirla con Pest. Cubrir persiste
 
 ### TASK-009: Convertir y ampliar pruebas Email con Pest
 
-Mover EmailVerificationTest y VerificationNotificationTest a Email/Tests y reescribir ambas en Pest. Extender los límites de autenticación, firma, idempotencia y notificaciones.
+Mover EmailVerificationTest y VerificationNotificationTest a Email/Tests, renombrando la segunda como EmailVerificationNotificationTest para que empiece con el nombre del módulo, y reescribir ambas en Pest. Extender los límites de autenticación, firma, idempotencia y notificaciones.
 
 **Type:** test  
 **Effort:** M  
@@ -272,7 +272,7 @@ Mover EmailVerificationTest y VerificationNotificationTest a Email/Tests y reesc
 
 **writeScope:**
   - `move tests/Feature/Auth/EmailVerificationTest.php -> app/Auth/Modules/Email/Tests/EmailVerificationTest.php`
-  - `move tests/Feature/Auth/VerificationNotificationTest.php -> app/Auth/Modules/Email/Tests/VerificationNotificationTest.php`
+  - `move tests/Feature/Auth/VerificationNotificationTest.php -> app/Auth/Modules/Email/Tests/EmailVerificationNotificationTest.php`
 
 **validateCommand:**
 `rtk php artisan test --compact app/Auth/Modules/Email/Tests`
@@ -349,7 +349,7 @@ Comprobar rutas, suites modulares, flujos en navegador y gates backend/frontend 
 
 ## Failure Modes
 
-- AuthenticationTest, EmailVerificationTest y VerificationNotificationTest importan App\Models\User, pero el modelo actual está en App\User\Models\User.
+- AuthenticationTest, EmailVerificationTest y EmailVerificationNotificationTest importan App\Models\User, pero el modelo actual está en App\User\Models\User.
 - Las pruebas heredadas esperan route('dashboard'), mientras que el código actual usa route('home'); corregir las aserciones al trasladarlas, sin cambiar redirecciones de producción.
 - AuthenticationTest incluye un caso del login que redirige al challenge 2FA. Mantenerlo con Login como prueba de integración de login; dejar intacta la suite dedicada TwoFactorChallengeTest.
 - Wayfinder generado está ignorado por Git; validar los imports producidos y el typecheck/build para detectar referencias viejas.
@@ -366,7 +366,7 @@ No considerar la reorganización lista hasta que las tres suites estén registra
 |---|---|---|
 | Login | `AuthenticationTest.php` | página auth/login/Login y props canResetPassword/status; login válido establece sesión y redirige a home; contraseña errónea y email inexistente rechazan autenticación; rate limit bloquea sobre el umbral y el login válido limpia el contador; 2FA pendiente redirige al challenge sin autenticar; logout cierra sesión y redirige a / |
 | Register | `RegistrationTest.php` | página auth/register/Register; registro válido persiste usuario, hashea contraseña, dispara Registered, autentica y redirige a home; payload vacío y email inválido muestran errores sin persistir; email duplicado y password_confirmation inválida se rechazan sin autenticar; register.store conserva el límite guest |
-| Email | `EmailVerificationTest.php`, `VerificationNotificationTest.php` | notice protegido por auth y página para usuario pendiente; usuario verificado vuelve a home desde el notice; URL firmada válida marca email y dispara Verified una sola vez; hash/usuario inválidos y firmas manipuladas/expiradas no verifican; reenvío notifica al usuario pendiente y retorna status verification-link-sent; usuario verificado no recibe otra notificación |
+| Email | `EmailVerificationTest.php`, `EmailVerificationNotificationTest.php` | notice protegido por auth y página para usuario pendiente; usuario verificado vuelve a home desde el notice; URL firmada válida marca email y dispara Verified una sola vez; hash/usuario inválidos y firmas manipuladas/expiradas no verifican; reenvío notifica al usuario pendiente y retorna status verification-link-sent; usuario verificado no recibe otra notificación |
 | Excluidas | `TwoFactorChallengeTest.php`, `PasswordConfirmationTest.php`, `TrustedDevice tests` | permanecen en su ubicación y fuera de estos cambios |
 
 Convenciones: **Pest v5.2.1**. Usar it() de forma consistente, siguiendo app/Auth/Modules/Password/Tests; los archivos trasladados no deben conservar clases PHPUnit. Pruebas feature HTTP con Arrange-Act-Assert; TestCase y RefreshDatabase vienen de tests/Pest.php, sin repetir traits por archivo. Crear datos con factories dentro de cada prueba; usar datasets nombrados para entradas equivalentes; aislar Event::fake y Notification::fake en las pruebas que los necesitan. En escrituras comprobar respuesta, estado persistido y efectos; en fallos comprobar errores, ausencia de persistencia y que la sesión siga guest.

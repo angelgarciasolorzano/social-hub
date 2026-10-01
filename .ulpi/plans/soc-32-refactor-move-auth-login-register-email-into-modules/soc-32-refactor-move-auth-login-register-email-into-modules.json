@@ -149,7 +149,7 @@
     "Pest v5.2.1 está instalado y app/Auth/Modules/Password/Tests/ usa it(); tests/Pest.php aplica TestCase y RefreshDatabase a directorios de módulos."
   ],
   "risks": [
-    "AuthenticationTest, EmailVerificationTest y VerificationNotificationTest importan App\\Models\\User, pero el modelo actual está en App\\User\\Models\\User.",
+    "AuthenticationTest, EmailVerificationTest y EmailVerificationNotificationTest importan App\\Models\\User, pero el modelo actual está en App\\User\\Models\\User.",
     "Las pruebas heredadas esperan route('dashboard'), mientras que el código actual usa route('home'); corregir las aserciones al trasladarlas, sin cambiar redirecciones de producción.",
     "AuthenticationTest incluye un caso del login que redirige al challenge 2FA. Mantenerlo con Login como prueba de integración de login; dejar intacta la suite dedicada TwoFactorChallengeTest.",
     "Wayfinder generado está ignorado por Git; validar los imports producidos y el typecheck/build para detectar referencias viejas.",
@@ -423,7 +423,7 @@
     {
       "id": "TASK-009",
       "title": "Convertir y ampliar pruebas Email con Pest",
-      "description": "Mover EmailVerificationTest y VerificationNotificationTest a Email/Tests y reescribir ambas en Pest. Extender los límites de autenticación, firma, idempotencia y notificaciones.",
+      "description": "Mover EmailVerificationTest y VerificationNotificationTest a Email/Tests, renombrando la segunda como EmailVerificationNotificationTest para que empiece con el nombre del módulo, y reescribir ambas en Pest. Extender los límites de autenticación, firma, idempotencia y notificaciones.",
       "priority": "P1",
       "type": "test",
       "effort": "M",
@@ -443,17 +443,17 @@
         },
         {
           "from": "tests/Feature/Auth/VerificationNotificationTest.php",
-          "to": "app/Auth/Modules/Email/Tests/VerificationNotificationTest.php"
+          "to": "app/Auth/Modules/Email/Tests/EmailVerificationNotificationTest.php"
         }
       ],
       "filesToModify": [
         "app/Auth/Modules/Email/Tests/EmailVerificationTest.php",
-        "app/Auth/Modules/Email/Tests/VerificationNotificationTest.php"
+        "app/Auth/Modules/Email/Tests/EmailVerificationNotificationTest.php"
       ],
       "filesToCreate": [],
       "writeScope": [
         "move tests/Feature/Auth/EmailVerificationTest.php -> app/Auth/Modules/Email/Tests/EmailVerificationTest.php",
-        "move tests/Feature/Auth/VerificationNotificationTest.php -> app/Auth/Modules/Email/Tests/VerificationNotificationTest.php"
+        "move tests/Feature/Auth/VerificationNotificationTest.php -> app/Auth/Modules/Email/Tests/EmailVerificationNotificationTest.php"
       ],
       "validateCommand": "rtk php artisan test --compact app/Auth/Modules/Email/Tests",
       "review": "codex"
@@ -640,7 +640,7 @@
       "area": "Email",
       "source": [
         "EmailVerificationTest.php",
-        "VerificationNotificationTest.php"
+        "EmailVerificationNotificationTest.php"
       ],
       "cases": [
         "notice protegido por auth y página para usuario pendiente",
