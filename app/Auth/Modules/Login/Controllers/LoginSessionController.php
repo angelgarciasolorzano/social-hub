@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Login\Controllers;
+namespace App\Auth\Modules\Login\Controllers;
 
 use App\Auth\Login\Requests\LoginRequest;
 use App\Auth\Models\TrustedDevice;
