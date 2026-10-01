@@ -2,63 +2,51 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Modules\Password\Tests;
-
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Tests\TestCase;
 
-final class PasswordUpdateTest extends TestCase
-{
-    use RefreshDatabase;
+it('renders the password update page', function (): void {
+    $user = createUser();
 
-    public function test_password_update_page_is_displayed(): void
-    {
-        $user = createUser();
+    $testResponse = $this
+        ->actingAs($user)
+        ->get(route('setting.password.edit'));
 
-        $testResponse = $this
-            ->actingAs($user)
-            ->get(route('setting.password.edit'));
+    $testResponse->assertOk();
+});
 
-        $testResponse->assertOk();
-    }
+it('updates the password when the current password is correct', function (): void {
+    $user = createUser();
 
-    public function test_password_can_be_updated(): void
-    {
-        $user = createUser();
+    $testResponse = $this
+        ->actingAs($user)
+        ->from(route('setting.password.edit'))
+        ->put(route('setting.password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
 
-        $testResponse = $this
-            ->actingAs($user)
-            ->from(route('setting.password.edit'))
-            ->put(route('setting.password.update'), [
-                'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
-            ]);
+    $testResponse
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('setting.password.edit'));
 
-        $testResponse
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('setting.password.edit'));
+    expect(Hash::check('new-password', $user->refresh()->password))
+        ->toBeTrue();
+});
 
-        expect(Hash::check('new-password', $user->refresh()->password))
-            ->toBeTrue();
-    }
+it('rejects a password update when the current password is incorrect', function (): void {
+    $user = createUser();
 
-    public function test_correct_password_must_be_provided_to_update_password(): void
-    {
-        $user = createUser();
+    $testResponse = $this
+        ->actingAs($user)
+        ->from(route('setting.password.edit'))
+        ->put(route('setting.password.update'), [
+            'current_password' => 'wrong-password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ]);
 
-        $testResponse = $this
-            ->actingAs($user)
-            ->from(route('setting.password.edit'))
-            ->put(route('setting.password.update'), [
-                'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
-            ]);
-
-        $testResponse
-            ->assertSessionHasErrors('current_password')
-            ->assertRedirect(route('setting.password.edit'));
-    }
-}
+    $testResponse
+        ->assertSessionHasErrors('current_password')
+        ->assertRedirect(route('setting.password.edit'));
+});
