@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Auth\Register\Controllers\RegisterUserController;
+use App\Auth\Modules\Register\Controllers\RegisterUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('register', [RegisterUserController::class, 'create'])
