@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\User\TwoFactor\Controllers;
+namespace App\User\Modules\TwoFactor\Controllers;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
