@@ -21,7 +21,12 @@ it('sends a reset notification when the email belongs to a user', function (): v
 
     $user = createUser();
 
-    $this->post(route('password.email'), ['email' => $user->email]);
+    $testResponse = $this->post(route('password.email'), ['email' => $user->email]);
+
+    $testResponse->assertSessionHas(
+        'status',
+        'Se enviará un enlace de restablecimiento si la cuenta existe.',
+    );
 
     Notification::assertSentTo($user, ResetPassword::class);
 });
@@ -73,7 +78,8 @@ it('resets the password with a valid token', function (): void {
 
         $testResponse
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('login'));
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status', 'Tu contraseña se restableció correctamente.');
 
         return true;
     });
@@ -118,7 +124,9 @@ it('rejects an invalid password reset token', function (): void {
         'password_confirmation' => 'newpassword123',
     ]);
 
-    $testResponse->assertSessionHasErrors('email');
+    $testResponse->assertSessionHasErrors([
+        'email' => 'Este enlace para restablecer la contraseña no es válido.',
+    ]);
 
     $this->assertNotSoftDeleted($firstTrustedDevice);
     $this->assertNotSoftDeleted($secondTrustedDevice);

@@ -43,7 +43,9 @@ final readonly class PasswordTrustedDeviceRevoker
         });
 
         if ($revokedDevicesCount > 0) {
-            $this->trustedDeviceDashboardCache->invalidate($user);
+            DB::afterCommit(function () use ($user): void {
+                $this->trustedDeviceDashboardCache->invalidate($user);
+            });
         }
 
         return $revokedDevicesCount;

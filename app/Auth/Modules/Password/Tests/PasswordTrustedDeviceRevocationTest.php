@@ -3,9 +3,45 @@
 declare(strict_types=1);
 
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\Password\Requests\PasswordRequest;
+use App\Auth\Modules\Password\Services\PasswordTrustedDeviceRevoker;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+
+it('invalidates trusted device dashboard caches after the enclosing transaction commits', function (): void {
+    $user = createUser();
+    createTrustedDevice($user);
+
+    $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
+    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
+    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
+    $passwordRequest = PasswordRequest::create('/setting/password', 'PUT');
+
+    Cache::forget($userStatsCacheKey);
+    Cache::forget($userActivityCacheKey);
+
+    $trustedDeviceDashboardCache->stats($user);
+    $trustedDeviceDashboardCache->recentActivity($user, $passwordRequest);
+
+    DB::transaction(function () use (
+        $passwordRequest,
+        $user,
+        $userActivityCacheKey,
+        $userStatsCacheKey,
+    ): void {
+        $revokedDevicesCount = resolve(PasswordTrustedDeviceRevoker::class)
+            ->revokeAll($user, $passwordRequest);
+
+        expect($revokedDevicesCount)->toBe(1)
+            ->and(Cache::has($userStatsCacheKey))->toBeTrue()
+            ->and(Cache::has($userActivityCacheKey))->toBeTrue();
+    });
+
+    expect(Cache::has($userStatsCacheKey))->toBeFalse()
+        ->and(Cache::has($userActivityCacheKey))->toBeFalse();
+});
 
 it("revokes the authenticated user's trusted devices without affecting other users", function (): void {
     $user = createUser();
