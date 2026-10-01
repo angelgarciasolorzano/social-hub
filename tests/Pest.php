@@ -24,7 +24,7 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
-    ->in('Feature', __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests', __DIR__.'/../app/Auth/Modules/Password/Tests');
+    ->in('Feature', __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests', __DIR__.'/../app/Auth/Modules/Password/Tests', __DIR__.'/../app/Auth/Modules/Login/Tests');
 
 /*
 |--------------------------------------------------------------------------
