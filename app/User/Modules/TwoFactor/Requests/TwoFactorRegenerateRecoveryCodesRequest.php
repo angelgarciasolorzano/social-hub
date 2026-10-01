@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\User\TwoFactor\Requests;
+namespace App\User\Modules\TwoFactor\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
