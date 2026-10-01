@@ -47,6 +47,8 @@ class PasswordNewController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
+                $user->trustedDevices()->delete();
+
                 event(new PasswordReset($user));
             });
 
