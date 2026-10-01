@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Email\Controllers;
+namespace App\Auth\Modules\Email\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\User\Models\User;

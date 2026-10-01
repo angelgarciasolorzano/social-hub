@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Auth\Email\Controllers\EmailVerificationNotificationController;
-use App\Auth\Email\Controllers\EmailVerificationPromptController;
-use App\Auth\Email\Controllers\EmailVerifyController;
+use App\Auth\Modules\Email\Controllers\EmailVerificationNotificationController;
+use App\Auth\Modules\Email\Controllers\EmailVerificationPromptController;
+use App\Auth\Modules\Email\Controllers\EmailVerifyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('verify-email', EmailVerificationPromptController::class)

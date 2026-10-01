@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Auth\Login\Controllers\LoginSessionController;
+use App\Auth\Modules\Login\Controllers\LoginSessionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {

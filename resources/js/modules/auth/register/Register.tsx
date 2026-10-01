@@ -1,8 +1,10 @@
+import type { JSX } from "react";
+
 import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Register/Controllers/RegisterUserController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/Register/Controllers/RegisterUserController";
 
 import { login } from "@/shared/wayfinder/routes";
 
@@ -12,7 +14,7 @@ import { Input } from "@/shared/components/shadcn/ui/input";
 import { Label } from "@/shared/components/shadcn/ui/label";
 import TextLink from "@/shared/components/TextLink";
 
-export default function Register() {
+export default function Register(): JSX.Element {
   return (
     <>
       <Head title="Register" />
