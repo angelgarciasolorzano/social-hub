@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\User\TwoFactor\Listeners;
+namespace App\User\Modules\TwoFactor\Listeners;
 
 use Carbon\CarbonImmutable;
 use Laravel\Fortify\Events\RecoveryCodesGenerated;

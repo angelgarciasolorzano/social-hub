@@ -6,7 +6,7 @@ namespace App\Auth\Providers;
 
 use App\Auth\Modules\TrustedDevice\Listeners\TrustedDeviceInvalidate;
 use App\Auth\Modules\TrustedDevice\Listeners\TrustedDeviceRemember;
-use App\User\TwoFactor\Listeners\TrackRecoveryCodesRegeneration;
+use App\User\Modules\TwoFactor\Listeners\TrackRecoveryCodesRegeneration;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Fortify\Events\RecoveryCodesGenerated;
