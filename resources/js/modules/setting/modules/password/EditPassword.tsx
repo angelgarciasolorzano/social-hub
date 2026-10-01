@@ -40,18 +40,18 @@ export default function EditPassword(): JSX.Element {
           <>
             <Alert className={alertVariants.warning} role="note">
               <CircleAlert aria-hidden="true" />
-              <AlertTitle>Trusted devices will be revoked</AlertTitle>
+              <AlertTitle>Se revocará la confianza de tus dispositivos</AlertTitle>
               <AlertDescription>
-                Changing your password will revoke the trusted status of every device currently
-                marked as trusted on your account. If two-factor authentication is enabled, you will
-                need to verify again the next time you sign in from those devices. This will not
-                sign out sessions that are already open.
+                Al cambiar tu contraseña, se revocará la confianza de todos los dispositivos
+                asociados a tu cuenta. Si tienes activada la autenticación en dos pasos, tendrás que
+                verificarte de nuevo la próxima vez que inicies sesión desde esos dispositivos. Las
+                sesiones que ya estén abiertas seguirán activas.
               </AlertDescription>
             </Alert>
 
             <div className="grid gap-2">
               <LabelForm error={errors["current_password"]} htmlFor="current_password">
-                Current password
+                Contraseña actual
               </LabelForm>
 
               <PasswordInput
@@ -59,7 +59,7 @@ export default function EditPassword(): JSX.Element {
                 name="current_password"
                 autoComplete="current-password"
                 aria-invalid={!!errors["current_password"]}
-                placeholder="Current password"
+                placeholder="Contraseña actual"
                 ref={currentPasswordInput}
               />
 
@@ -68,7 +68,7 @@ export default function EditPassword(): JSX.Element {
 
             <div className="grid gap-2">
               <LabelForm error={errors["password"]} htmlFor="password">
-                New password
+                Nueva contraseña
               </LabelForm>
 
               <PasswordInput
@@ -76,7 +76,7 @@ export default function EditPassword(): JSX.Element {
                 name="password"
                 autoComplete="new-password"
                 aria-invalid={!!errors["password"]}
-                placeholder="New password"
+                placeholder="Nueva contraseña"
                 ref={passwordInput}
               />
 
@@ -85,7 +85,7 @@ export default function EditPassword(): JSX.Element {
 
             <div className="grid gap-2">
               <LabelForm error={errors["password_confirmation"]} htmlFor="password_confirmation">
-                Confirm password
+                Confirmar contraseña
               </LabelForm>
 
               <PasswordInput
@@ -93,7 +93,7 @@ export default function EditPassword(): JSX.Element {
                 name="password_confirmation"
                 autoComplete="new-password"
                 aria-invalid={!!errors["password_confirmation"]}
-                placeholder="Confirm password"
+                placeholder="Confirmar contraseña"
               />
 
               <InputError message={errors["password_confirmation"]} />
@@ -102,7 +102,7 @@ export default function EditPassword(): JSX.Element {
             <div className="flex items-center gap-4">
               <Button data-test="update-password-button" disabled={processing}>
                 {processing && <Spinner />}
-                Save password
+                Guardar contraseña
               </Button>
             </div>
           </>

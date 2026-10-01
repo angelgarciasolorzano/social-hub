@@ -38,7 +38,7 @@ export default function ForgotPassword({ status }: ForgotPasswordProps) {
                   type="email"
                   autoComplete="off"
                   autoFocus
-                  placeholder="email@example.com"
+                  placeholder="correo@ejemplo.com"
                 />
 
                 <InputError message={errors["email"]} />

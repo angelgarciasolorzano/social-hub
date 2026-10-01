@@ -27,7 +27,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
         {({ processing, errors }) => (
           <div className="grid gap-6">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Correo electrónico</Label>
 
               <Input
                 id="email"
@@ -43,7 +43,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Contraseña</Label>
 
               <Input
                 id="password"
@@ -52,14 +52,14 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 autoComplete="new-password"
                 className="mt-1 block w-full"
                 autoFocus
-                placeholder="Password"
+                placeholder="Nueva contraseña"
               />
 
               <InputError message={errors["password"]} />
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="password_confirmation">Confirm password</Label>
+              <Label htmlFor="password_confirmation">Confirmar contraseña</Label>
 
               <Input
                 id="password_confirmation"
@@ -67,7 +67,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                 type="password"
                 autoComplete="new-password"
                 className="mt-1 block w-full"
-                placeholder="Confirm password"
+                placeholder="Confirmar contraseña"
               />
 
               <InputError className="mt-2" message={errors["password_confirmation"]} />
@@ -80,7 +80,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
               disabled={processing}
             >
               {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-              Reset password
+              Restablecer contraseña
             </Button>
           </div>
         )}

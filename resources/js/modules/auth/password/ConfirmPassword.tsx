@@ -9,7 +9,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 export default function ConfirmPassword() {
   return (
     <>
-      <Head title="Confirm password" />
+      <Head title="Confirmar contraseña" />
 
       <Form
         {...store.form()}
