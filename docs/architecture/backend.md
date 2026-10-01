@@ -67,7 +67,7 @@ app/<Module>/
 
 Cuando un módulo tiene **varias áreas independientes** que ameritan su propio espacio, se subdivide. Ejemplos del proyecto:
 
-- `app/Auth/` → `Email/`, `Login/`, `Password/`, `Register/`
+- `app/Auth/Modules/` → `Email/`, `Login/`, `Password/`, `Register/`, `TrustedDevice/`
 - `app/User/` → `Profile/`, `Preferences/`, `TwoFactorAuthentication/`
 - `app/Auth/Modules/TrustedDevice/` → cookie-backed TOTP bypass (introducido en SOC-14)
 
@@ -127,7 +127,7 @@ app/<Module>/Modules/<Feature>/
 - `Database/Migrations/`, `Database/Factories/` y `Database/Seeders/` — migraciones y factories se registran vía `<Module>ServiceProvider::loadMigrationsFrom`; los seeders se invocan desde `DatabaseSeeder`.
 - `config/` — la configuración del módulo vive en el padre.
 
-**Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantener la feature dentro del concern correspondiente (`app/Auth/Login/`, `app/Auth/Password/`, etc.).
+**Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantenla en el concern correspondiente del módulo padre. SOC-32 define una excepción explícita para Auth: Email, Login y Register viven en `app/Auth/Modules/{Email,Login,Register}/` y sus pruebas se co-ubican allí; Login y Register quedan por debajo del umbral general, pero siguen la estructura acordada para esa tarea.
 
 ## 4. Responsabilidad de cada archivo
 
