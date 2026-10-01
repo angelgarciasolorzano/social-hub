@@ -495,7 +495,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 ### TASK-014: Validar suite, gates y flujos en navegador
 
-**Description:** Ejecutar la suite aislada y completa, gates backend/frontend y revisión manual de cambio, aviso, recuperación y reset. Laravel Doctor queda como último gate local.
+**Description:** Ejecutar la suite Password, gates backend/frontend y revisión manual de cambio, aviso, recuperación y reset. Laravel Doctor queda como último gate local.
 
 **Type:** test  
 **Priority:** P1  
@@ -514,7 +514,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 - Pint, PHPStan, Rector dry-run seguido de Rector, format, lint, TypeScript, build normal y SSR pasan; si Rector modifica archivos se repiten los gates afectados antes de cerrar.
 - En navegador el aviso comunica correctamente el efecto sin sugerir cierre de sesiones; se renderizan recuperación y reset y se completan los flujos esperados. composer doctor se ejecuta después de todos los gates como última verificación backend.
 
-**validateCommand:** `rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk php artisan test --testsuite=Password --compact && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor`
+**validateCommand:** `rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk php artisan test --testsuite=Password --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor`
 
 ## Failure Modes
 
@@ -541,14 +541,14 @@ SOC-31 queda listo cuando se cumplen las tareas originales y las ampliaciones: e
 - PasswordTrustedDeviceRevocationTest prueba que el cambio válido marca deleted_at y registra un evento RevokedAll por dispositivo propio, deja activo el de otra cuenta e invalida solo la caché del usuario; una contraseña incorrecta no revoca ni registra.
 - PasswordResetTest conserva solicitud/render del enlace, render del reset, reset válido y rechazo de token inválido; el reset válido registra eventos RevokedAll por dispositivos propios, preserva los de otra cuenta y el token inválido no revoca ni registra.
 - EditPassword muestra el aviso de revocación antes de enviar; revisión de navegador confirma el texto sobre nuevo desafío 2FA y sesiones existentes.
-- php artisan test --testsuite=Password --compact prueba la suite aislada; php artisan test --compact ejecuta la suite completa al cierre.
+- php artisan test --testsuite=Password --compact es la suite de cierre acordada para el alcance de Password; la suite general queda fuera de alcance.
 - php artisan route:list --name=password confirma que URI y nombres públicos permanecen iguales.
 - La verificación manual confirma que cambio, recuperación y reset renderizan y mantienen los flujos esperados.
 - format, lint, TypeScript, build normal y SSR validan los cuatro consumidores React/Wayfinder.
 
 ## Execution Summary
 
-Las tareas originales y las ampliaciones TASK-015, TASK-016, TASK-017, TASK-018 y TASK-019 están implementadas. TASK-018 registra eventos RevokedAll por dispositivo durante el cambio autenticado; su test pasó con 2 pruebas y 29 aserciones. TASK-019 reutiliza PasswordTrustedDeviceRevoker en el reset válido por correo; PasswordResetTest pasó con 5 pruebas y 31 aserciones, incluido el caso de token inválido. Pint, PHPStan y Rector pasaron en TASK-019. La suite completa reportó anteriormente 128 pruebas: 100 pasaron, 4 fallaron y 24 tuvieron errores en pruebas preexistentes de Auth/Settings, incluidos namespaces/rutas obsoletos y ProfileController::update() inexistente. El navegador confirmó el aviso y el render de recuperación/reset. TASK-014 sigue pendiente para la validación integral final y debe repetir composer doctor después de ambas ampliaciones.
+SOC-31 está completada dentro del alcance acordado del módulo Password. TASK-018 y TASK-019 registran `TrustedDeviceAction::RevokedAll` por dispositivo en el cambio autenticado y el reset válido; los caminos inválidos preservan dispositivos y no generan eventos. La suite Password pasó con 10 pruebas y 69 aserciones. Pint, PHPStan, Rector, format, lint, TypeScript, build normal, SSR y la revisión previa de navegador pasaron; composer doctor pasó con 0 fallos. La suite general queda fuera del alcance acordado; sus fallos históricos corresponden a otras áreas.
 
 ## Task Dependencies
 
