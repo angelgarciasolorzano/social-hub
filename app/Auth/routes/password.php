@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Auth\Password\Controllers\PasswordController;
+use App\Auth\Modules\Password\Controllers\PasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::controller(PasswordController::class)->prefix('setting')->middleware('verified')->name('setting.')->group(function (): void {

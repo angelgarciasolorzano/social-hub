@@ -2,7 +2,7 @@ import { Form, Head } from "@inertiajs/react";
 
 import { LoaderCircle } from "lucide-react";
 
-import { store } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordResetLinkController";
+import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/Password/Controllers/PasswordResetLinkController";
 
 import { login } from "@/shared/wayfinder/routes";
 
@@ -38,7 +38,7 @@ export default function ForgotPassword({ status }: ForgotPasswordProps) {
                   type="email"
                   autoComplete="off"
                   autoFocus
-                  placeholder="email@example.com"
+                  placeholder="correo@ejemplo.com"
                 />
 
                 <InputError message={errors["email"]} />

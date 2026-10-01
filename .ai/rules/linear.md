@@ -20,3 +20,6 @@ Examples (from the project backlog):
 
 ## Plan every new implementation task
 Before starting implementation work in this project, use `.agents/skills/plan-to-task-list-with-dag/SKILL.md`, even for small tasks (a single-task DAG is fine). Continue an existing approved plan instead of duplicating it. Store each Markdown/JSON pair in `.ulpi/plans/<plan-slug>/<plan-slug>.md` and `.json`; start the shared slug with the task key (lowercase, e.g. `soc-30`) plus a clear description. When expanding an existing plan and creating a separate plan pair, save it in the original plan's folder instead of creating a new folder under `.ulpi/plans`. This project rule applies even when the skill's general guidance excludes trivial direct work.
+
+## Pause after each implementation step for review
+For an approved multi-step plan, implement only the next atomic step. After it is complete, give the user a brief summary of changes and checks, then stop for review; continue only after the user explicitly asks to proceed. Finish any files needed to keep that step coherent before pausing.

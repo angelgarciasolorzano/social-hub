@@ -4,7 +4,7 @@ import { Link } from "@inertiajs/react";
 
 import { BookOpen, Bot, Command, SquareTerminal } from "lucide-react";
 
-import { edit as editPassword } from "@/shared/wayfinder/actions/App/Auth/Password/Controllers/PasswordController";
+import { edit as editPassword } from "@/shared/wayfinder/actions/App/Auth/Modules/Password/Controllers/PasswordController";
 import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/HomeController";
 import { appearance } from "@/shared/wayfinder/actions/App/User/Preferences/Controllers/PreferenceController";
 import { edit as editProfile } from "@/shared/wayfinder/actions/App/User/Profile/Controllers/ProfileController";

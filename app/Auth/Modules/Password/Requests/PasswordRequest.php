@@ -2,17 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Password\Requests;
+namespace App\Auth\Modules\Password\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
-/**
- * Summary of PasswordResetRequest
- *
- * @property-read string $email
- */
-class PasswordResetLinkRequest extends FormRequest
+class PasswordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -30,7 +26,8 @@ class PasswordResetLinkRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
         ];
     }
 }

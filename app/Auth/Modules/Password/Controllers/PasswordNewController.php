@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Password\Controllers;
+namespace App\Auth\Modules\Password\Controllers;
 
-use App\Auth\Password\Requests\PasswordNewRequest;
+use App\Auth\Modules\Password\Requests\PasswordNewRequest;
+use App\Auth\Modules\Password\Services\PasswordTrustedDeviceRevoker;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -35,27 +37,33 @@ class PasswordNewController extends Controller
     /**
      * Handle an incoming new password request.
      */
-    public function store(PasswordNewRequest $passwordNewRequest): RedirectResponse
-    {
+    public function store(
+        PasswordNewRequest $passwordNewRequest,
+        PasswordTrustedDeviceRevoker $passwordTrustedDeviceRevoker,
+    ): RedirectResponse {
         /** @var string $status */
         $status = Password::reset(
             $passwordNewRequest->only(
                 'email', 'password', 'password_confirmation', 'token'
-            ), function (User $user) use ($passwordNewRequest): void {
-                $user->forceFill([
-                    'password' => Hash::make($passwordNewRequest->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+            ), function (User $user) use ($passwordNewRequest, $passwordTrustedDeviceRevoker): void {
+                DB::transaction(function () use ($passwordNewRequest, $passwordTrustedDeviceRevoker, $user): void {
+                    $user->forceFill([
+                        'password' => Hash::make($passwordNewRequest->password),
+                        'remember_token' => Str::random(60),
+                    ])->save();
+
+                    $passwordTrustedDeviceRevoker->revokeAll($user, $passwordNewRequest);
+                });
 
                 event(new PasswordReset($user));
             });
 
         if ($status === Password::PASSWORD_RESET) {
-            return to_route('login')->with('status', __($status));
+            return to_route('login')->with('status', __($status, [], 'es'));
         }
 
         throw ValidationException::withMessages([
-            'email' => [__($status)],
+            'email' => [__($status, [], 'es')],
         ]);
     }
 }
