@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\Password\Services;
 
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\Password\Requests\PasswordNewRequest;
 use App\Auth\Modules\Password\Requests\PasswordRequest;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
@@ -17,7 +18,7 @@ final readonly class PasswordTrustedDeviceRevoker
         private TrustedDeviceDashboardCache $trustedDeviceDashboardCache,
     ) {}
 
-    public function revokeAll(User $user, PasswordRequest $passwordRequest): int
+    public function revokeAll(User $user, PasswordRequest|PasswordNewRequest $passwordRequest): int
     {
         $revokedDevicesCount = DB::transaction(function () use ($passwordRequest, $user): int {
             $trustedDevices = $user->trustedDevices()

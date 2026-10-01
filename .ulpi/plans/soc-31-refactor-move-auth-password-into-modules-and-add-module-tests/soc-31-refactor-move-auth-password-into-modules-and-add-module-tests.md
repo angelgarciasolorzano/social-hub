@@ -470,7 +470,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 ### TASK-019: Registrar eventos de revocación al restablecer por correo
 
-**Description:** Ampliar `PasswordTrustedDeviceRevoker` para aceptar el formulario de reset y usarlo desde el callback exitoso; un token inválido no debe crear eventos ni revocar dispositivos.
+**Description:** Ampliar `PasswordTrustedDeviceRevoker` para aceptar el formulario de reset y usarlo transaccionalmente desde el callback exitoso; un token inválido no debe crear eventos ni revocar dispositivos.
 
 **Type:** feature  
 **Priority:** P1  
@@ -487,7 +487,7 @@ Linear no tiene un plan previo para SOC-31. El código actual ya contiene los tr
 
 **Acceptance Criteria:**
 
-- Un reset válido registra un evento RevokedAll por cada dispositivo activo del usuario y conserva activos los dispositivos de otra cuenta.
+- Un reset válido registra un evento RevokedAll por cada dispositivo activo del usuario con la IP y el user-agent de la solicitud, guarda los eventos junto con el soft delete y conserva activos los dispositivos de otra cuenta.
 - Un token inválido conserva los dispositivos y no registra eventos; PasswordReset, remember_token y el resultado válido conservan su comportamiento.
 - PasswordResetTest pasa con los casos válido e inválido usando el servicio compartido.
 
@@ -548,7 +548,7 @@ SOC-31 queda listo cuando se cumplen las tareas originales y las ampliaciones: e
 
 ## Execution Summary
 
-Las tareas originales y las ampliaciones TASK-015, TASK-016 y TASK-017 están implementadas. En la validación más reciente, la suite Password pasó (10 pruebas, 47 aserciones); Pint, PHPStan, Rector, format, lint (0 errores, 47 warnings), TypeScript, build normal, SSR y composer doctor pasaron. La suite completa reportó 128 pruebas: 100 pasaron, 4 fallaron y 24 tuvieron errores en pruebas preexistentes de Auth/Settings, incluyendo namespaces/rutas obsoletos y ProfileController::update() inexistente. El navegador confirmó el aviso y el render de recuperación/reset. Nueva ampliación solicitada: registrar TrustedDeviceAction::RevokedAll por cada dispositivo revocado al cambiar/restablecer contraseña. TASK-018 cubre el cambio autenticado; TASK-019 el reset por correo. TASK-014 debe repetirse después de ambos.
+Las tareas originales y las ampliaciones TASK-015, TASK-016, TASK-017, TASK-018 y TASK-019 están implementadas. TASK-018 registra eventos RevokedAll por dispositivo durante el cambio autenticado; su test pasó con 2 pruebas y 29 aserciones. TASK-019 reutiliza PasswordTrustedDeviceRevoker en el reset válido por correo; PasswordResetTest pasó con 5 pruebas y 31 aserciones, incluido el caso de token inválido. Pint, PHPStan y Rector pasaron en TASK-019. La suite completa reportó anteriormente 128 pruebas: 100 pasaron, 4 fallaron y 24 tuvieron errores en pruebas preexistentes de Auth/Settings, incluidos namespaces/rutas obsoletos y ProfileController::update() inexistente. El navegador confirmó el aviso y el render de recuperación/reset. TASK-014 sigue pendiente para la validación integral final y debe repetir composer doctor después de ambas ampliaciones.
 
 ## Task Dependencies
 

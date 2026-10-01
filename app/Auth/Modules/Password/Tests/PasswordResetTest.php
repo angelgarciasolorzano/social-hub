@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
@@ -44,24 +46,30 @@ it('resets the password with a valid token', function (): void {
     Notification::fake();
 
     $user = createUser();
-    $firstTrustedDevice = createTrustedDevice($user);
-    $secondTrustedDevice = createTrustedDevice($user);
+    $firstTrustedDevice = createTrustedDevice($user, ['name' => 'Personal phone']);
+    $secondTrustedDevice = createTrustedDevice($user, ['name' => 'Work laptop']);
     $originalRememberToken = $user->remember_token;
 
     $otherUser = createUser();
     $otherUsersTrustedDevice = createTrustedDevice($otherUser);
+    createTrustedDeviceEvent($otherUser, ['action' => TrustedDeviceAction::Created]);
+
+    $expectedIp = '203.0.113.30';
+    $expectedUserAgent = 'Password reset regression test';
 
     Event::fake([PasswordReset::class]);
 
     $this->post(route('password.email'), ['email' => $user->email]);
 
-    Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $resetPassword) use ($user): true {
-        $testResponse = $this->post(route('password.store'), [
-            'token' => $resetPassword->token,
-            'email' => $user->email,
-            'password' => 'new-reset-password',
-            'password_confirmation' => 'new-reset-password',
-        ]);
+    Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $resetPassword) use ($expectedIp, $expectedUserAgent, $user): true {
+        $testResponse = $this->withServerVariables(['REMOTE_ADDR' => $expectedIp])
+            ->withHeaders(['User-Agent' => $expectedUserAgent])
+            ->post(route('password.store'), [
+                'token' => $resetPassword->token,
+                'email' => $user->email,
+                'password' => 'new-reset-password',
+                'password_confirmation' => 'new-reset-password',
+            ]);
 
         $testResponse
             ->assertSessionHasNoErrors()
@@ -74,13 +82,23 @@ it('resets the password with a valid token', function (): void {
     $this->assertSoftDeleted($secondTrustedDevice);
     $this->assertNotSoftDeleted($otherUsersTrustedDevice);
 
+    $revocationEvents = TrustedDeviceEvent::query()
+        ->where('user_id', $user->id)
+        ->where('action', TrustedDeviceAction::RevokedAll)
+        ->get();
+
     $user->refresh();
 
     expect(Hash::check('new-reset-password', $user->password))->toBeTrue()
         ->and($user->remember_token)->not->toBe($originalRememberToken)
         ->and($user->trustedDevices()->exists())->toBeFalse()
         ->and($otherUser->trustedDevices()->whereKey($otherUsersTrustedDevice->getKey())->exists())
-        ->toBeTrue();
+        ->toBeTrue()
+        ->and($revocationEvents)->toHaveCount(2)
+        ->and($revocationEvents->pluck('device_label')->all())->toContain('Personal phone', 'Work laptop')
+        ->and($revocationEvents->pluck('ip')->unique()->values()->all())->toBe([$expectedIp])
+        ->and($revocationEvents->pluck('user_agent')->unique()->values()->all())->toBe([$expectedUserAgent])
+        ->and(TrustedDeviceEvent::query()->where('user_id', $otherUser->id)->count())->toBe(1);
 
     Event::assertDispatched(PasswordReset::class);
 });
@@ -104,6 +122,11 @@ it('rejects an invalid password reset token', function (): void {
 
     $this->assertNotSoftDeleted($firstTrustedDevice);
     $this->assertNotSoftDeleted($secondTrustedDevice);
+
+    expect(TrustedDeviceEvent::query()
+        ->where('user_id', $user->id)
+        ->where('action', TrustedDeviceAction::RevokedAll)
+        ->count())->toBe(0);
 
     $user->refresh();
 
