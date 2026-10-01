@@ -14,6 +14,12 @@
         <testsuite name="Login">
             <directory>app/Auth/Modules/Login/Tests</directory>
         </testsuite>
+        <testsuite name="Register">
+            <directory>app/Auth/Modules/Register/Tests</directory>
+        </testsuite>
+        <testsuite name="Email">
+            <directory>app/Auth/Modules/Email/Tests</directory>
+        </testsuite>
         <testsuite name="TrustedDevice">
             <directory>app/Auth/Modules/TrustedDevice/Tests</directory>
         </testsuite>
