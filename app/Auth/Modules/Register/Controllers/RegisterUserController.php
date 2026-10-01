@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\Register\Controllers;
 
-use App\Auth\Register\Requests\RegisterRequest;
+use App\Auth\Modules\Register\Requests\RegisterRequest;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use Illuminate\Auth\Events\Registered;
