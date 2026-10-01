@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Auth\Login\Requests;
+namespace App\Auth\Modules\Login\Requests;
 
 use App\User\Models\User;
 use Illuminate\Auth\Events\Lockout;
