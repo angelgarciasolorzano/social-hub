@@ -6,8 +6,8 @@ import { BookOpen, Bot, Command, SquareTerminal } from "lucide-react";
 
 import { edit as editPassword } from "@/shared/wayfinder/actions/App/Auth/Modules/Password/Controllers/PasswordController";
 import HomeController from "@/shared/wayfinder/actions/App/Home/Controllers/HomeController";
+import { edit as editAccountSettings } from "@/shared/wayfinder/actions/App/User/Modules/AccountSettings/Controllers/AccountSettingsController";
 import { appearance } from "@/shared/wayfinder/actions/App/User/Preferences/Controllers/PreferenceController";
-import { edit as editProfile } from "@/shared/wayfinder/actions/App/User/Profile/Controllers/ProfileController";
 
 import { index as devicesIndex } from "@/shared/wayfinder/routes/setting/security/trusted-devices";
 import { index as indexTwoFactorAuthentication } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
@@ -41,7 +41,7 @@ const data = {
       items: [
         {
           title: "Perfil",
-          url: editProfile.url(),
+          url: editAccountSettings.url(),
         },
       ],
     },

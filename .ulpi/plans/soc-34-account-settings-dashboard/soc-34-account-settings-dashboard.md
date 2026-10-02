@@ -297,7 +297,7 @@ rtk php artisan route:list --name=profile --except-vendor -vv
 
 ### TASK-009: Regenerar Wayfinder y actualizar la navegación
 
-Regenerar los helpers después del cambio de controlador y apuntar el sidebar al nuevo endpoint de AccountSettings.
+Regenerar los helpers después del cambio de controlador y apuntar el sidebar y el menú del perfil al endpoint de AccountSettings.
 
 **Type:** feature  
 **Effort:** S  
@@ -307,12 +307,12 @@ Regenerar los helpers después del cambio de controlador y apuntar el sidebar al
 **Review:** codex
 
 **Acceptance Criteria:**
-1. SettingSidebar obtiene la URL de edición desde el helper generado de AccountSettingsController.
+1. SettingSidebar y el menú del perfil en Home obtienen la URL de edición desde el helper generado de AccountSettingsController.
 2. Los helpers profile.edit/profile.update reflejan los URI y métodos existentes.
 3. La salida en resources/js/shared/wayfinder es generada por Wayfinder y no se edita a mano.
 
 **writeScope:**
-- Actualizar el import/helper de perfil en SettingSidebar.tsx.
+- Actualizar los imports/helpers de edición en SettingSidebar.tsx y homeProfileItems.ts para usar AccountSettingsController.
 - Ejecutar php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction y revisar sus cambios generados.
 
 **validateCommand:**

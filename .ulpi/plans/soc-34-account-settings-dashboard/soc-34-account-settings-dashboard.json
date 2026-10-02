@@ -338,7 +338,7 @@
     {
       "id": "TASK-009",
       "title": "Regenerar Wayfinder y actualizar la navegación",
-      "description": "Regenerar los helpers después del cambio de controlador y apuntar el sidebar al nuevo endpoint de AccountSettings.",
+      "description": "Regenerar los helpers después del cambio de controlador y apuntar el sidebar y el menú del perfil al endpoint de AccountSettings.",
       "priority": "P1",
       "type": "feature",
       "effort": "S",
@@ -347,19 +347,20 @@
         "TASK-008"
       ],
       "acceptanceCriteria": [
-        "SettingSidebar obtiene la URL de edición desde el helper generado de AccountSettingsController.",
+        "SettingSidebar y el menú del perfil en Home obtienen la URL de edición desde el helper generado de AccountSettingsController.",
         "Los helpers profile.edit/profile.update reflejan los URI y métodos existentes.",
         "La salida en resources/js/shared/wayfinder es generada por Wayfinder y no se edita a mano."
       ],
       "filesToModify": [
         "resources/js/modules/setting/shared/components/SettingSidebar.tsx",
-        "resources/js/shared/wayfinder/routes/profile.ts"
+        "resources/js/modules/home/data/homeProfileItems.ts",
+        "resources/js/shared/wayfinder/routes/profile/index.ts"
       ],
       "filesToCreate": [
         "resources/js/shared/wayfinder/actions/App/User/Modules/AccountSettings/Controllers/AccountSettingsController.ts"
       ],
       "writeScope": [
-        "Actualizar el import/helper de perfil en SettingSidebar.tsx.",
+        "Actualizar los imports/helpers de edición en SettingSidebar.tsx y homeProfileItems.ts para usar AccountSettingsController.",
         "Ejecutar php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction y revisar sus cambios generados."
       ],
       "validateCommand": "rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction",

@@ -6,7 +6,7 @@ import { PiNutBold } from "react-icons/pi";
 
 import type { RouteDefinition } from "@/shared/wayfinder/wayfinder";
 
-import { edit } from "@/shared/wayfinder/actions/App/User/Profile/Controllers/ProfileController";
+import { edit as editAccountSettings } from "@/shared/wayfinder/actions/App/User/Modules/AccountSettings/Controllers/AccountSettingsController";
 
 import { home, logout } from "@/shared/wayfinder/routes";
 import { index } from "@/shared/wayfinder/routes/profile";
@@ -53,7 +53,7 @@ export const homeHeaderProfileMenuItems: MenuItem[] = [
   {
     key: "SETTING",
     label: LabelProfile.SETTING,
-    url: edit.url(),
+    url: editAccountSettings.url(),
     icon: PiNutBold,
   },
   {
