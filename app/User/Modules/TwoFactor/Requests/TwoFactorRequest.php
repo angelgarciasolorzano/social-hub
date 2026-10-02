@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\User\TwoFactor\Requests;
+namespace App\User\Modules\TwoFactor\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;

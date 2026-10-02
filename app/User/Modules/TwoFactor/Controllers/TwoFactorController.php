@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\User\TwoFactor\Controllers;
+namespace App\User\Modules\TwoFactor\Controllers;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
-use App\User\TwoFactor\Requests\TwoFactorDisableRequest;
-use App\User\TwoFactor\Requests\TwoFactorRegenerateRecoveryCodesRequest;
-use App\User\TwoFactor\Requests\TwoFactorRequest;
+use App\User\Modules\TwoFactor\Requests\TwoFactorDisableRequest;
+use App\User\Modules\TwoFactor\Requests\TwoFactorRegenerateRecoveryCodesRequest;
+use App\User\Modules\TwoFactor\Requests\TwoFactorRequest;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;

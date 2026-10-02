@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\User\Controllers;
 
 use App\Auth\Modules\TrustedDevice\Controllers\TrustedDeviceIndexController;
-use App\User\TwoFactor\Controllers\TwoFactorController;
+use App\User\Modules\TwoFactor\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('setting')->name('setting.security.')->group(function (): void {
