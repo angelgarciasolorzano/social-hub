@@ -71,7 +71,7 @@ Cuando un módulo tiene **varias áreas independientes** que ameritan su propio 
 - `app/User/` → `Profile/`, `Preferences/`, `Modules/TwoFactor/`
 - `app/Auth/Modules/TrustedDevice/` → cookie-backed TOTP bypass (introducido en SOC-14)
 
-La configuración de 2FA de User vive en `app/User/Modules/TwoFactor/`: ahí se agrupan su controller, Form Requests, listener de regeneración de códigos y pruebas. Las rutas siguen en `app/User/routes/security.php`, y el listener Fortify se registra desde `app/Auth/Providers/AuthEventServiceProvider.php`. El challenge de 2FA durante el login continúa siendo responsabilidad de Auth.
+La configuración de 2FA de User vive en `app/User/Modules/TwoFactor/`: ahí se agrupan su controller, Form Requests, listener de regeneración de códigos y pruebas. Las rutas siguen en `app/User/routes/security.php`. `UserServiceProvider` registra `app/User/Providers/UserEventServiceProvider.php`, que conecta el evento Fortify de regeneración con el listener de User; `AuthEventServiceProvider` conserva los listeners de TrustedDevice. El challenge de 2FA durante el login continúa siendo responsabilidad de Auth.
 
 ### Cuándo subdividir
 
