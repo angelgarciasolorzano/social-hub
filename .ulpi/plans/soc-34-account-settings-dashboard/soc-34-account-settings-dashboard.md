@@ -246,7 +246,7 @@ rtk php -l app/User/Modules/AccountSettings/Resources/AccountSettingsResource.ph
 
 ### TASK-007: Implementar controlador y validación de AccountSettings
 
-Crear el controlador privado para mostrar y actualizar la configuración, junto con una FormRequest que use Fluent Validation.
+Crear el controlador privado para mostrar y actualizar la configuración, junto con una FormRequest que use Fluent Validation y un Data object para transportar los valores validados con tipos explícitos.
 
 **Type:** feature  
 **Effort:** M  
@@ -257,16 +257,17 @@ Crear el controlador privado para mostrar y actualizar la configuración, junto 
 
 **Acceptance Criteria:**
 1. El GET de ajustes devuelve AccountSettingsResource para el usuario autenticado y renderiza setting/modules/accountSettings/AccountSettings.
-2. La actualización valida nombre, teléfono opcional, preferredLocale limitado a en/es y biography de máximo 160 caracteres con HasFluentRules y FluentRule.
-3. Email y last_login_at no son aceptados como datos editables; una petición mal formada devuelve errores por campo y no modifica otro usuario.
+2. AccountSettingsUpdateRequest conserva la autorización y validación con HasFluentRules/FluentRule; AccountSettingsUpdateData centraliza las reglas y expone propiedades tipadas a partir de validated(), sin volver a validar.
+3. Los campos opcionales ausentes conservan su valor y null explícito lo limpia; email y last_login_at no son editables, y solo se actualiza el usuario autenticado.
 
 **writeScope:**
 - Crear AccountSettingsController con métodos edit/update limitados al usuario autenticado.
-- Crear AccountSettingsUpdateRequest con HasFluentRules y las reglas FluentRule para los campos del formulario.
+- Crear AccountSettingsUpdateRequest con HasFluentRules y delegar las reglas FluentRule a AccountSettingsUpdateData.
+- Crear app/User/Modules/AccountSettings/Data/AccountSettingsUpdateData.php para tipos, reglas y mapeo a atributos de User; construirla desde los datos ya validados y preservar la semántica de campos opcionales.
 
 **validateCommand:**
 ```text
-rtk php -l app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php && rtk php -l app/User/Modules/AccountSettings/Requests/AccountSettingsUpdateRequest.php
+rtk php -l app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php && rtk php -l app/User/Modules/AccountSettings/Requests/AccountSettingsUpdateRequest.php && rtk php -l app/User/Modules/AccountSettings/Data/AccountSettingsUpdateData.php
 ```
 
 ### TASK-008: Conectar las rutas existentes al nuevo controlador
