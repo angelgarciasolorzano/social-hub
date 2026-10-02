@@ -2,6 +2,7 @@ import type { JSX } from "react";
 
 import { Head, usePage } from "@inertiajs/react";
 
+import AccountProfileForm from "@/modules/setting/modules/accountSettings/components/AccountProfileForm";
 import AccountSummaryCard from "@/modules/setting/modules/accountSettings/components/AccountSummaryCard";
 import type { AccountSettingsPageProps } from "@/modules/setting/modules/accountSettings/types/accountSettings";
 
@@ -21,13 +22,8 @@ function AccountSettings(): JSX.Element {
       </header>
 
       <div className="grid min-w-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <section aria-labelledby="account-profile-heading" className="min-w-0 space-y-2">
-          <h2 className="text-lg font-semibold" id="account-profile-heading">
-            Información personal
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Actualiza los datos personales que forman parte de tu perfil.
-          </p>
+        <section aria-labelledby="account-profile-heading" className="min-w-0">
+          <AccountProfileForm accountSettings={accountSettings} />
         </section>
 
         <aside aria-label="Resumen de la cuenta" className="min-w-0">
