@@ -20,7 +20,7 @@
     "mode": "EXPANSION",
     "reviewDefault": "codex",
     "confirmedByUser": true,
-    "scopeDecision": "Mover la gestión 2FA a app/User/Modules/TwoFactor, co-ubicar y ampliar regresión, corregir las expectativas obsoletas y convertir PasswordConfirmationTest a Pest sin moverla por ser integración entre módulos, registrar PHPUnit/Pest, regenerar Wayfinder y sincronizar documentación. Sin cambios funcionales ni del frontend.",
+    "scopeDecision": "Mover la gestión 2FA a app/User/Modules/TwoFactor, co-ubicar y ampliar regresión, corregir las expectativas obsoletas y convertir PasswordConfirmationTest a Pest sin moverla por ser integración entre módulos, registrar PHPUnit/Pest, regenerar Wayfinder y sincronizar documentación. Sin cambios funcionales ni del frontend. La revisión de cobertura añadió trasladar el registro de RecoveryCodesGenerated al proveedor compartido del dominio User; el listener permanece en TwoFactor.",
     "implementationApproval": "Autorizada la ejecución por tareas atómicas; pausar para revisión después de cada paso según .ai/rules/linear.md."
   },
   "prerequisites": [
@@ -29,7 +29,8 @@
     "vite.config.ts configura Wayfinder en resources/js/shared/wayfinder con formVariants activado.",
     "tests/Pest.php registra directorios modulares; la nueva carpeta debe añadirse junto con la suite en phpunit.xml.",
     "El árbol de trabajo estaba limpio durante el análisis.",
-    "Al ejecutar el plan, completar una tarea atómica y pausar para revisión antes de continuar, según .ai/rules/linear.md."
+    "Al ejecutar el plan, completar una tarea atómica y pausar para revisión antes de continuar, según .ai/rules/linear.md.",
+    "UserServiceProvider ya registra UserRouteServiceProvider y UserServiceProvider está en bootstrap/providers.php; los proveedores de submódulo permanecen en el padre del dominio."
   ],
   "nonGoals": [
     "Cambiar challenge de login, endpoints de Fortify o el flujo de activación/configuración 2FA.",
@@ -85,7 +86,7 @@
       ]
     },
     "eventBindings": [
-      "RecoveryCodesGenerated -> TrackRecoveryCodesRegeneration; persiste recovery_codes_regenerated_at.",
+      "RecoveryCodesGenerated -> TrackRecoveryCodesRegeneration; UserEventServiceProvider registra el listener y persiste recovery_codes_regenerated_at.",
       "TwoFactorAuthenticationDisabled -> TrustedDeviceInvalidate; conserva la invalidación de dispositivos confiables.",
       "ValidTwoFactorAuthenticationCodeProvided -> TrustedDeviceRemember; permanece intacto."
     ],
@@ -107,7 +108,7 @@
   "existingCodeLeverage": [
     "app/User/TwoFactor/ contiene un controlador, tres Form Requests y TrackRecoveryCodesRegeneration que pasarían a app/User/Modules/TwoFactor/.",
     "app/User/routes/security.php ya declara las rutas estables; solo requiere actualizar el import del controlador.",
-    "app/Auth/Providers/AuthEventServiceProvider.php registra eventos Fortify y requiere actualizar el import del listener.",
+    "app/Auth/Providers/AuthEventServiceProvider.php registra TrustedDevice y actualmente también el listener de User; la TASK-010 moverá este último a app/User/Providers/UserEventServiceProvider.php.",
     "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php cubre el efecto de desactivar 2FA.",
     "tests/Feature/Settings/TwoFactorAuthenticationTest.php es cobertura parcial, pero usa two-factor.show y settings/two-factor, ambos obsoletos.",
     "tests/Feature/Auth/PasswordConfirmationTest.php prueba el flujo genérico Fortify password.confirm; el destino y el componente Inertia esperado están desactualizados, y la clase aún usa sintaxis PHPUnit.",
@@ -389,10 +390,11 @@
         "TASK-005",
         "TASK-006",
         "TASK-007",
-        "TASK-008"
+        "TASK-008",
+        "TASK-010"
       ],
       "acceptanceCriteria": [
-        "La documentación indica app/User/Modules/TwoFactor como ubicación y elimina la referencia obsoleta como ubicación vigente.",
+        "La documentación ubica TwoFactor en app/User/Modules/TwoFactor y describe UserEventServiceProvider como dueño del registro RecoveryCodesGenerated; Auth conserva sus listeners TrustedDevice.",
         "Pasan TwoFactor, TrustedDevice, PasswordConfirmationTest, suite completa, Pint, PHPStan, Rector dry-run seguido de Rector, format, lint, TypeScript, build y SSR.",
         "La revisión manual confirma carga, password.confirm cuando aplica, regeneración y desactivación; composer doctor se ejecuta al final."
       ],
@@ -407,6 +409,39 @@
         "docs/architecture/backend.md"
       ],
       "validateCommand": "rtk grep -n 'app/User/Modules/TwoFactor' CLAUDE.md docs/architecture/backend.md && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk vendor/bin/pest --configuration=phpunit.xml --testsuite=TwoFactor --compact && rtk php artisan test --compact TrustedDevice && rtk php artisan test --compact tests/Feature/Auth/PasswordConfirmationTest.php && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Trasladar el registro del listener al proveedor de eventos de User",
+      "description": "Crear el proveedor compartido UserEventServiceProvider y registrarlo desde UserServiceProvider. Mover ahí el enlace RecoveryCodesGenerated -> TrackRecoveryCodesRegeneration; AuthEventServiceProvider conserva los listeners de TrustedDevice.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "UserServiceProvider registra UserEventServiceProvider y mantiene el registro de UserRouteServiceProvider.",
+        "RecoveryCodesGenerated se escucha una sola vez desde app/User/Providers/UserEventServiceProvider; AuthEventServiceProvider conserva solo los listeners de TrustedDevice y no importa código de User.",
+        "La prueba de regeneración confirma que el timestamp sigue actualizándose y que una contraseña incorrecta conserva códigos/timestamp; la prueba TrustedDevice sigue pasando."
+      ],
+      "filesToModify": [
+        "app/User/Providers/UserServiceProvider.php",
+        "app/Auth/Providers/AuthEventServiceProvider.php"
+      ],
+      "filesToCreate": [
+        "app/User/Providers/UserEventServiceProvider.php"
+      ],
+      "moves": [],
+      "writeScope": [
+        "app/User/Providers/UserEventServiceProvider.php",
+        "app/User/Providers/UserServiceProvider.php",
+        "app/Auth/Providers/AuthEventServiceProvider.php"
+      ],
+      "validateCommand": "rtk vendor/bin/pest --configuration=phpunit.xml --compact app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php && rtk vendor/bin/pest --configuration=phpunit.xml --compact app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php && rtk php -l app/User/Providers/UserEventServiceProvider.php && rtk php -l app/User/Providers/UserServiceProvider.php && rtk php -l app/Auth/Providers/AuthEventServiceProvider.php",
       "review": "codex"
     }
   ],
@@ -438,7 +473,12 @@
       "TASK-005",
       "TASK-006",
       "TASK-007",
-      "TASK-008"
+      "TASK-008",
+      "TASK-010"
+    ],
+    "TASK-010": [
+      "TASK-005",
+      "TASK-007"
     ]
   },
   "failureModes": [
@@ -461,9 +501,13 @@
     {
       "condition": "Un namespace, ruta o componente conserva una referencia vieja.",
       "expected": "route:list, la suite TwoFactor y el typecheck/build detectan el contrato roto."
+    },
+    {
+      "condition": "El listener permanece registrado en Auth o queda registrado dos veces después de crear UserEventServiceProvider.",
+      "expected": "La suite de integración confirma que el timestamp cambia; la inspección del proveedor confirma un único registro propiedad de User."
     }
   ],
-  "shipCut": "No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/TwoFactor, las rutas y props mantengan su contrato, TwoFactor/TrustedDevice/PasswordConfirmationTest y la suite completa pasen, Wayfinder esté regenerado, la documentación sincronizada, la verificación manual hecha y composer doctor haya sido el último gate.",
+  "shipCut": "No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/TwoFactor, las rutas y props mantengan su contrato, TwoFactor/TrustedDevice/PasswordConfirmationTest y la suite completa pasen, Wayfinder esté regenerado, la documentación sincronizada, la verificación manual hecha y composer doctor haya sido el último gate. El listener RecoveryCodesGenerated debe estar registrado una sola vez desde UserEventServiceProvider.",
   "testCoverageMap": [
     {
       "area": "TwoFactor settings",
@@ -522,7 +566,7 @@
     "validation": "Cada tarea valida su writeScope; los gates completos van en la integración final."
   },
   "executionSummary": {
-    "taskCount": 9,
+    "taskCount": 10,
     "independentStartingTasks": [
       "TASK-001",
       "TASK-002",
@@ -534,10 +578,11 @@
       "TASK-004",
       "TASK-006",
       "TASK-007",
+      "TASK-010",
       "TASK-009"
     ],
-    "criticalPathSummary": "Requests -> controlador/rutas -> suite co-ubicada -> cobertura Pest -> documentación y gates finales (6 tareas).",
-    "expectedParallelism": "PasswordConfirmationTest y el listener son independientes de la cadena Requests/controlador. El controlador desbloquea Wayfinder; las pruebas de módulo esperan al cableado.",
+    "criticalPathSummary": "Requests -> controlador/rutas -> suite co-ubicada -> cobertura Pest -> transferencia de registro del listener -> documentación y gates finales (7 tareas).",
+    "expectedParallelism": "PasswordConfirmationTest y el listener son independientes de la cadena Requests/controlador. El controlador desbloquea Wayfinder; las pruebas de módulo esperan al cableado. La transferencia del registro espera la cobertura de regeneración; la documentación final espera ese nuevo proveedor.",
     "projectExecutionRule": "Aunque el DAG identifica tareas independientes, ejecutar una tarea atómica y pausar para revisión explícita antes de continuar."
   }
 }

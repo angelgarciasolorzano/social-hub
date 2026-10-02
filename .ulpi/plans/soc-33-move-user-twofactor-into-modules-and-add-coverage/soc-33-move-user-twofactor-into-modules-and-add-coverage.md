@@ -6,7 +6,7 @@ SOC-33 reorganiza la gestión 2FA bajo User y completa su cobertura sin alterar 
 
 Issue: [SOC-33](https://linear.app/social-hub-ang/issue/SOC-33/refactor-move-user-twofactor-into-modules-and-add-module-coverage) — Backlog, prioridad Medium; relacionada con SOC-32 (Done).
 
-Modo confirmado: **EXPANSION**. Revisión por defecto: **codex**.
+Modo confirmado: **EXPANSION**. Revisión por defecto: **codex**. La revisión de cobertura añadió trasladar el registro de RecoveryCodesGenerated al proveedor compartido del dominio User; el listener permanece en TwoFactor.
 
 ## Scope Challenge
 
@@ -58,7 +58,7 @@ Props que deben conservarse:
 
 ### Eventos y comportamiento
 
-- RecoveryCodesGenerated -> TrackRecoveryCodesRegeneration; persiste recovery_codes_regenerated_at.
+- RecoveryCodesGenerated -> TrackRecoveryCodesRegeneration; UserEventServiceProvider lo registra y persiste recovery_codes_regenerated_at.
 - TwoFactorAuthenticationDisabled -> TrustedDeviceInvalidate; conserva la invalidación de dispositivos confiables.
 - ValidTwoFactorAuthenticationCodeProvided -> TrustedDeviceRemember; permanece intacto.
 - Regenerar recovery codes requiere la contraseña actual; el evento actualiza recovery_codes_regenerated_at.
@@ -71,7 +71,7 @@ Wayfinder usa `resources/js/shared/wayfinder`. Helpers nombrados que deben segui
 
 - app/User/TwoFactor/ contiene un controlador, tres Form Requests y TrackRecoveryCodesRegeneration que pasarían a app/User/Modules/TwoFactor/.
 - app/User/routes/security.php ya declara las rutas estables; solo requiere actualizar el import del controlador.
-- app/Auth/Providers/AuthEventServiceProvider.php registra eventos Fortify y requiere actualizar el import del listener.
+- app/Auth/Providers/AuthEventServiceProvider.php registra TrustedDevice y actualmente también el listener de User; TASK-010 trasladará este último a app/User/Providers/UserEventServiceProvider.php.
 - app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php cubre el efecto de desactivar 2FA.
 - tests/Feature/Settings/TwoFactorAuthenticationTest.php es cobertura parcial, pero usa two-factor.show y settings/two-factor, ambos obsoletos.
 - tests/Feature/Auth/PasswordConfirmationTest.php prueba el flujo genérico Fortify password.confirm; el destino y el componente Inertia esperado están desactualizados, y la clase aún usa sintaxis PHPUnit.
@@ -322,6 +322,36 @@ Ejecutar el generador con la ruta configurada en vite.config.ts. Revisar su sali
 rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction
 ```
 
+### TASK-010: Trasladar el registro del listener al proveedor de eventos de User
+
+Crear el proveedor compartido UserEventServiceProvider y registrarlo desde UserServiceProvider. Mover ahí el enlace RecoveryCodesGenerated -> TrackRecoveryCodesRegeneration; AuthEventServiceProvider conserva los listeners de TrustedDevice. Los proveedores permanecen en el padre del dominio, no dentro de Modules/TwoFactor.
+
+**Type:** refactor
+**Effort:** S
+**Agent:** laravel-senior-engineer
+**Priority:** P1
+**Depends on:** TASK-005, TASK-007
+**Review:** codex
+
+**Acceptance Criteria:**
+- UserServiceProvider registra UserEventServiceProvider y mantiene el registro de UserRouteServiceProvider.
+- RecoveryCodesGenerated se escucha una sola vez desde app/User/Providers/UserEventServiceProvider; AuthEventServiceProvider conserva solo los listeners de TrustedDevice y no importa código de User.
+- La prueba de regeneración confirma que el timestamp sigue actualizándose y que una contraseña incorrecta conserva códigos/timestamp; la prueba TrustedDevice sigue pasando.
+
+**Files to create:**
+- app/User/Providers/UserEventServiceProvider.php
+
+**Files to modify:**
+- app/User/Providers/UserServiceProvider.php
+- app/Auth/Providers/AuthEventServiceProvider.php
+
+**writeScope:**
+- app/User/Providers/UserEventServiceProvider.php
+- app/User/Providers/UserServiceProvider.php
+- app/Auth/Providers/AuthEventServiceProvider.php
+
+**validateCommand:** rtk vendor/bin/pest --configuration=phpunit.xml --compact app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php && rtk vendor/bin/pest --configuration=phpunit.xml --compact app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php && rtk php -l app/User/Providers/UserEventServiceProvider.php && rtk php -l app/User/Providers/UserServiceProvider.php && rtk php -l app/Auth/Providers/AuthEventServiceProvider.php
+
 ### TASK-009: Sincronizar documentación y ejecutar los gates finales
 
 Actualizar la ubicación de User TwoFactor en CLAUDE.md y docs/architecture/backend.md. Tras integrar los pasos anteriores, completar los gates de SOC-33 y la revisión manual en navegador.
@@ -330,11 +360,11 @@ Actualizar la ubicación de User TwoFactor en CLAUDE.md y docs/architecture/back
 **Effort:** M  
 **Agent:** laravel-senior-engineer  
 **Priority:** P2  
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008  
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-010
 **Review:** codex
 
 **Acceptance Criteria:**
-- La documentación indica app/User/Modules/TwoFactor como ubicación y elimina la referencia obsoleta como ubicación vigente.
+- La documentación ubica TwoFactor en app/User/Modules/TwoFactor y describe UserEventServiceProvider como dueño del registro RecoveryCodesGenerated; Auth conserva sus listeners TrustedDevice.
 - Pasan TwoFactor, TrustedDevice, PasswordConfirmationTest, suite completa, Pint, PHPStan, Rector dry-run seguido de Rector, format, lint, TypeScript, build y SSR.
 - La revisión manual confirma carga, password.confirm cuando aplica, regeneración y desactivación; composer doctor se ejecuta al final.
 
@@ -356,12 +386,12 @@ rtk grep -n 'app/User/Modules/TwoFactor' CLAUDE.md docs/architecture/backend.md 
 - **Fortify está deshabilitado o el usuario no confirmó contraseña.** Se conserva el rechazo por estado inválido y el redirect a password.confirm cuando confirmPassword está activo.
 - **La contraseña para regeneración es incorrecta.** Hay error de validación y recovery codes/timestamp no cambian.
 - **La contraseña de desactivación o el TOTP es inválido.** La petición vuelve con error, 2FA sigue activo y no ocurre la invalidación de dispositivos.
-- **Se pierde el registro del listener al moverlo.** La prueba HTTP detecta que recovery_codes_regenerated_at no se actualiza.
+- **Se pierde el registro del listener al moverlo.** La prueba HTTP detecta que recovery_codes_regenerated_at no se actualiza; la revisión de proveedores detecta si queda registrado en Auth o duplicado.
 - **Un namespace, ruta o componente conserva una referencia vieja.** route:list, la suite TwoFactor y el typecheck/build detectan el contrato roto.
 
 ## Ship Cut
 
-No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/TwoFactor, las rutas y props mantengan su contrato, TwoFactor/TrustedDevice/PasswordConfirmationTest y la suite completa pasen, Wayfinder esté regenerado, la documentación sincronizada, la verificación manual hecha y composer doctor haya sido el último gate.
+No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/TwoFactor, las rutas y props mantengan su contrato, TwoFactor/TrustedDevice/PasswordConfirmationTest y la suite completa pasen, Wayfinder esté regenerado, RecoveryCodesGenerated quede registrado una sola vez desde UserEventServiceProvider, la documentación sincronizada, la verificación manual hecha y composer doctor haya sido el último gate.
 
 ## Test Coverage Map
 
@@ -376,10 +406,10 @@ No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/T
 
 ## Execution Summary
 
-- Tareas: **9**.
+- Tareas: **10**.
 - Iniciales independientes: `TASK-001`, `TASK-002`, `TASK-005`.
-- Camino crítico (6 tareas): `TASK-002` → `TASK-003` → `TASK-004` → `TASK-006` → `TASK-007` → `TASK-009`.
-- Paralelismo: PasswordConfirmationTest y el listener son independientes de la cadena Requests/controlador. El controlador desbloquea Wayfinder; las pruebas de módulo esperan al cableado.
+- Camino crítico (7 tareas): TASK-002 -> TASK-003 -> TASK-004 -> TASK-006 -> TASK-007 -> TASK-010 -> TASK-009.
+- Paralelismo: PasswordConfirmationTest y el listener son independientes de la cadena Requests/controlador. El controlador desbloquea Wayfinder; las pruebas de módulo esperan al cableado. La transferencia del registro espera la cobertura de regeneración; la documentación final espera ese nuevo proveedor.
 - Regla de ejecución: Aunque el DAG identifica tareas independientes, ejecutar una tarea atómica y pausar para revisión explícita antes de continuar.
 
 ## Task Dependencies
@@ -392,7 +422,8 @@ No marcar SOC-33 terminado hasta que los imports activos no apunten a app/User/T
 - `TASK-006` ← `TASK-004`
 - `TASK-007` ← `TASK-005`, `TASK-006`
 - `TASK-008` ← `TASK-004`
-- `TASK-009` ← `TASK-001`, `TASK-002`, `TASK-003`, `TASK-004`, `TASK-005`, `TASK-006`, `TASK-007`, `TASK-008`
+- TASK-009 <- TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-010
+- TASK-010 <- TASK-005, TASK-007
 
 ## Test Methodology
 
