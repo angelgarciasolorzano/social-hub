@@ -143,8 +143,9 @@
         "El seeder conserva la creación de usuarios de prueba y su perfil de acceso local.",
         "Un namespace incorrecto o clase ausente hace fallar lint antes de integrar."
       ],
-      "filesToModify": [
-        "database/seeders/DatabaseSeeder.php"
+  "filesToModify": [
+    "database/seeders/DatabaseSeeder.php",
+    "tests/Pest.php"
       ],
       "filesToCreate": [
         "app/User/Database/Seeders/UserSeeder.php"
@@ -155,9 +156,10 @@
       "moves": [
         "app/User/Seeders/UserSeeder.php -> app/User/Database/Seeders/UserSeeder.php"
       ],
-      "writeScope": [
-        "Mover app/User/Seeders/UserSeeder.php a app/User/Database/Seeders/UserSeeder.php.",
-        "Actualizar el import UserSeeder en database/seeders/DatabaseSeeder.php."
+  "writeScope": [
+    "Mover app/User/Seeders/UserSeeder.php a app/User/Database/Seeders/UserSeeder.php.",
+    "Actualizar el import UserSeeder en database/seeders/DatabaseSeeder.php.",
+    "Actualizar la referencia del seeder en el PHPDoc de tests/Pest.php."
       ],
       "validateCommand": "rtk php -l app/User/Database/Seeders/UserSeeder.php && rtk php -l database/seeders/DatabaseSeeder.php",
       "review": "codex"

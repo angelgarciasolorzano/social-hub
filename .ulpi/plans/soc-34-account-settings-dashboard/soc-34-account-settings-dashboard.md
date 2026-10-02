@@ -134,6 +134,7 @@ Alinear el seeder de User con el patrón del dominio y actualizar la llamada des
 **writeScope:**
 - Mover app/User/Seeders/UserSeeder.php a app/User/Database/Seeders/UserSeeder.php.
 - Actualizar el import UserSeeder en database/seeders/DatabaseSeeder.php.
+- Actualizar la referencia del seeder en el PHPDoc de tests/Pest.php.
 
 **Moves:**
 - app/User/Seeders/UserSeeder.php -> app/User/Database/Seeders/UserSeeder.php
