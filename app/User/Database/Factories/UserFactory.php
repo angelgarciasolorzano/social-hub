@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\User\Factories;
+namespace App\User\Database\Factories;
 
 use App\User\Enums\UserImageType;
 use App\User\Models\User;

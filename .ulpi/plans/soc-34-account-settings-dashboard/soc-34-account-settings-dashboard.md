@@ -1,0 +1,603 @@
+# Plan: SOC-34: Dashboard unificado de configuración de cuenta
+
+## Overview
+
+Issue: [SOC-34](https://linear.app/social-hub-ang/issue/SOC-34/feature-recreate-the-profile-settings-dashboard-from-the-supplied) — Backlog, prioridad Medium.
+
+Modo confirmado: **EXPANSION**. Revisión predeterminada: **codex**. La ruta crítica comienza en el registro de migraciones User, avanza por esquema, evento de último acceso, recurso privado, controlador/rutas, Wayfinder y UI, y termina en documentación, gates/QA y decisión del estado de cuenta.
+
+El último elemento funcional es una revisión de producto del estado de cuenta. No se inventará su fuente; tras la decisión del usuario se añadirá el alcance exacto antes de implementar.
+
+## Scope Challenge
+
+- Se reutilizan el shell actual de Settings, el perfil público, el cambio de contraseña y la eliminación existente; la pantalla actual solo edita nombre/correo y no cubre los nuevos datos.
+- La implementación nueva se organiza como AccountSettings bajo User y como accountSettings bajo el módulo frontend setting.
+- La expansión acordada incluye modernizar la ubicación de UserFactory/UserSeeder y alojar la migración nueva en app/User/Database/Migrations.
+- Profile y Preferences existentes permanecen en sus ubicaciones actuales. Los archivos iniciales de Laravel en database/migrations no se mueven.
+- La fuente y semántica del estado de cuenta quedan como último punto de decisión con el usuario.
+
+## Prerequisites
+
+- Mantener la página en GET /setting/profile (profile.edit) y el guardado en PATCH /setting/profile (profile.update), ambos bajo auth y verified.
+- El módulo User carga las migraciones de app/User/Database/Migrations; los archivos iniciales existentes en database/migrations permanecen allí.
+- La cuenta objetivo siempre se obtiene del usuario autenticado. Ningún ID enviado por el navegador puede seleccionar otra cuenta para leer o actualizar.
+- UserResource continúa siendo seguro para el perfil público; la página privada usa un recurso AccountSettingsResource.
+- La selección de idioma persiste uno de los idiomas existentes en resources/lang (en o es) y se rehidrata al recargar. La traducción completa de toda la aplicación React queda fuera de este plan.
+- El último acceso se registra tras un Login exitoso. Intentos fallidos y el paso previo de un challenge 2FA no cuentan como acceso completado.
+- Cada paso de implementación termina con resumen y pausa para revisión; no se continúa hasta que el usuario lo pida.
+
+## Non-Goals
+
+- Mover los módulos existentes User/Profile o User/Preferences a Modules/.
+- Mover las migraciones iniciales de Laravel ni las migraciones existentes bajo database/migrations.
+- Implementar Ver actividad como navegación, diálogo o solicitud.
+- Persistir o activar Preferencias de comunicación; sus indicadores son visuales y estáticos.
+- Cambiar el flujo de cambio de contraseña de Auth/Modules/Password.
+- Habilitar edición de correo o implementar un flujo de cambio/verificación de correo.
+- Rediseñar otras páginas del producto o traducir toda la interfaz React.
+
+## Contracts
+
+### Rutas existentes
+
+- Conservar GET /setting/profile como profile.edit y PATCH /setting/profile como profile.update.
+- Mantener auth y verified desde app/User/routes/routes.php.
+- Conservar /profile como perfil público propio, el flujo existente de password.edit y user.destroy.
+
+### Datos privados y públicos
+
+- AccountSettingsResource devuelve datos de la cuenta autenticada: id, name, email, phone, preferredLocale, biography, createdAt y lastLoginAt.
+- El resumen muestra name como Usuario, ya que User no tiene un campo username.
+- No añadir teléfono, biografía, idioma ni lastLoginAt al UserResource compartido por el perfil público.
+
+### Validación y seguridad
+
+- El formulario acepta name, phone opcional, preferredLocale dentro de en/es y biography opcional de máximo 160 caracteres.
+- El correo se presenta de solo lectura y no forma parte del request validado de AccountSettings.
+- Las operaciones de lectura, guardado y borrado actúan solo sobre Auth::user(); contraseña incorrecta conserva la cuenta.
+
+### Último acceso
+
+- Usar el evento de autenticación exitosa que ocurre en los caminos Auth::login actuales, incluido el acceso por dispositivo confiable.
+- El challenge 2FA pendiente y los errores de credenciales no actualizan last_login_at.
+
+### Elementos estáticos
+
+- Ver actividad no tiene href, handler, modal ni solicitud.
+- Los indicadores de comunicación no son controles interactivos ni guardan preferencias.
+
+### Estado de cuenta
+
+- No se inventa un estado ni se deduce de email_verified_at, del último acceso o de la sesión activa.
+- La semántica y la fuente real se deciden con el usuario en la última tarea; después se concreta el alcance de código.
+
+## Existing Code Leverage
+
+- resources/js/modules/setting/modules/profile/EditProfile.tsx es la página a reemplazar y SettingLayout ya envuelve páginas del área.
+- app/User/Profile/Controllers/ProfileController.php conserva el perfil público; su método edit actual puede salir al nuevo controlador de AccountSettings.
+- app/User/Controllers/UserController.php ya actualiza usuarios desde Auth::user() y borra con current_password; el borrado se reutiliza con route user.destroy.
+- app/Auth/Modules/Password/Controllers/PasswordController.php provee el enlace existente de cambio de contraseña.
+- app/User/Resources/UserResource.php se mantiene como serialización pública; la configuración privada necesita AccountSettingsResource.
+- app/User/Modules/TwoFactor y app/Auth/Modules/TrustedDevice ilustran módulos de feature con Tests co-localizados.
+- app/Auth/Providers/AuthServiceProvider.php carga migraciones desde el directorio Database del dominio y sirve como patrón para User.
+- tests/Feature/Settings/ProfileUpdateTest.php contiene expectativas obsoletas: componente antiguo y route profile.destroy inexistente; se migrará y actualizará.
+- vite.config.ts configura Wayfinder en resources/js/shared/wayfinder con formVariants habilitado.
+- package.json no define un runner de pruebas frontend; la revisión visual y de teclado será manual.
+
+## Tasks
+
+### TASK-001: Mover UserFactory a Database/Factories
+
+Alinear la factory del modelo User con el patrón del dominio Auth, conservando sus estados y configuración de MediaLibrary.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P0  
+**Depends on:** Ninguna  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. User resuelve UserFactory desde App\User\Database\Factories y User::factory() sigue creando usuarios.
+2. El callback afterCreating conserva la lógica de imágenes de perfil/cobertura y su comportamiento por entorno.
+3. No quedan imports ni referencias a App\User\Factories\UserFactory.
+
+**writeScope:**
+- Mover app/User/Factories/UserFactory.php a app/User/Database/Factories/UserFactory.php.
+- Actualizar el atributo UseFactory y el PHPDoc HasFactory de app/User/Models/User.php.
+- Actualizar el import de UserFactory en app/Post/Factories/PostFactory.php.
+
+**Moves:**
+- app/User/Factories/UserFactory.php -> app/User/Database/Factories/UserFactory.php
+
+**validateCommand:**
+```text
+rtk php -l app/User/Database/Factories/UserFactory.php
+```
+
+### TASK-002: Mover UserSeeder a Database/Seeders
+
+Alinear el seeder de User con el patrón del dominio y actualizar la llamada desde el seeder raíz.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P0  
+**Depends on:** Ninguna  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. UserSeeder queda bajo App\User\Database\Seeders y DatabaseSeeder lo importa desde el namespace nuevo.
+2. El seeder conserva la creación de usuarios de prueba y su perfil de acceso local.
+3. Un namespace incorrecto o clase ausente hace fallar lint antes de integrar.
+
+**writeScope:**
+- Mover app/User/Seeders/UserSeeder.php a app/User/Database/Seeders/UserSeeder.php.
+- Actualizar el import UserSeeder en database/seeders/DatabaseSeeder.php.
+
+**Moves:**
+- app/User/Seeders/UserSeeder.php -> app/User/Database/Seeders/UserSeeder.php
+
+**validateCommand:**
+```text
+rtk php -l app/User/Database/Seeders/UserSeeder.php && rtk php -l database/seeders/DatabaseSeeder.php
+```
+
+### TASK-003: Registrar las migraciones del dominio User
+
+Hacer que UserServiceProvider descubra las migraciones nuevas de app/User/Database/Migrations, siguiendo el patrón de Auth.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P0  
+**Depends on:** Ninguna  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. UserServiceProvider carga app/User/Database/Migrations desde su boot.
+2. Las migraciones originales en database/migrations no se mueven ni renombran.
+3. Artisan puede descubrir migraciones del directorio User sin duplicar las migraciones raíz.
+
+**writeScope:**
+- Añadir loadMigrationsFrom para app/User/Database/Migrations en app/User/Providers/UserServiceProvider.php.
+
+**validateCommand:**
+```text
+rtk php artisan migrate:status --no-interaction
+```
+
+### TASK-004: Persistir los nuevos datos de perfil
+
+Añadir una migración modular y actualizar User y su factory para teléfono, idioma preferido, biografía y último acceso. La decisión del estado de cuenta queda fuera de esta migración.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P0  
+**Depends on:** TASK-001, TASK-003  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Una migración nueva bajo app/User/Database/Migrations añade phone nullable, preferred_locale, biography nullable con capacidad de 160 caracteres y last_login_at nullable.
+2. User expone los campos editables de manera explícita y convierte last_login_at a fecha inmutable; last_login_at no queda asignable desde el formulario.
+3. La migración down elimina solo las columnas nuevas y no modifica ni reemplaza las migraciones iniciales de Laravel.
+
+**writeScope:**
+- Crear la migración con php artisan make:migration add_account_settings_fields_to_users_table --table=users --path=app/User/Database/Migrations --no-interaction.
+- Añadir los atributos y casts de perfil necesarios a app/User/Models/User.php.
+- Definir valores realistas o null explícito para los nuevos atributos persistidos en UserFactory.
+
+**validateCommand:**
+```text
+rtk php artisan migrate --pretend --path=app/User/Database/Migrations --no-interaction
+```
+
+### TASK-005: Registrar el último acceso en logins exitosos
+
+Crear un listener de AccountSettings para el evento Login y registrarlo en UserEventServiceProvider.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-004  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Un evento Login exitoso actualiza last_login_at para el User que acaba de autenticarse.
+2. El acceso normal y el camino de Auth::login por dispositivo confiable actualizan el campo.
+3. Un intento fallido o un login.id pendiente de 2FA no cambia last_login_at.
+
+**writeScope:**
+- Crear app/User/Modules/AccountSettings/Listeners/TrackLastLogin.php.
+- Registrar el listener de Illuminate\Auth\Events\Login en app/User/Providers/UserEventServiceProvider.php.
+
+**validateCommand:**
+```text
+rtk php -l app/User/Modules/AccountSettings/Listeners/TrackLastLogin.php && rtk php -l app/User/Providers/UserEventServiceProvider.php
+```
+
+### TASK-006: Crear un recurso privado de AccountSettings
+
+Serializar los datos de configuración de la cuenta en un JsonResource de la feature, manteniendo UserResource acotado a datos públicos.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-004, TASK-005  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. AccountSettingsResource expone datos reales de la cuenta autenticada y los timestamps reales createdAt y lastLoginAt.
+2. El recurso incluye teléfono, preferredLocale y biography solo para la página privada.
+3. UserResource conserva su contrato público y no serializa los nuevos datos privados.
+
+**writeScope:**
+- Crear app/User/Modules/AccountSettings/Resources/AccountSettingsResource.php con PHPDoc de forma tipada.
+
+**validateCommand:**
+```text
+rtk php -l app/User/Modules/AccountSettings/Resources/AccountSettingsResource.php
+```
+
+### TASK-007: Implementar controlador y validación de AccountSettings
+
+Crear el controlador privado para mostrar y actualizar la configuración, junto con una FormRequest que use Fluent Validation.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-006  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. El GET de ajustes devuelve AccountSettingsResource para el usuario autenticado y renderiza setting/modules/accountSettings/AccountSettings.
+2. La actualización valida nombre, teléfono opcional, preferredLocale limitado a en/es y biography de máximo 160 caracteres con HasFluentRules y FluentRule.
+3. Email y last_login_at no son aceptados como datos editables; una petición mal formada devuelve errores por campo y no modifica otro usuario.
+
+**writeScope:**
+- Crear AccountSettingsController con métodos edit/update limitados al usuario autenticado.
+- Crear AccountSettingsUpdateRequest con HasFluentRules y las reglas FluentRule para los campos del formulario.
+
+**validateCommand:**
+```text
+rtk php -l app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php && rtk php -l app/User/Modules/AccountSettings/Requests/AccountSettingsUpdateRequest.php
+```
+
+### TASK-008: Conectar las rutas existentes al nuevo controlador
+
+Mantener las rutas públicas del perfil y mover únicamente el GET/PATCH de ajustes al controlador AccountSettings.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-007  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. GET /setting/profile y PATCH /setting/profile conservan los nombres profile.edit y profile.update y apuntan a AccountSettingsController.
+2. ProfileController conserva profile.index y profile.show, sin manejar la pantalla privada.
+3. La ruta profile.update deja de apuntar al método inexistente ProfileController@update y las rutas públicas no cambian.
+
+**writeScope:**
+- Actualizar app/User/routes/profile.php para usar AccountSettingsController en las dos rutas de ajustes.
+- Retirar edit de app/User/Profile/Controllers/ProfileController.php; conservar index/show.
+
+**validateCommand:**
+```text
+rtk php artisan route:list --name=profile --except-vendor -vv
+```
+
+### TASK-009: Regenerar Wayfinder y actualizar la navegación
+
+Regenerar los helpers después del cambio de controlador y apuntar el sidebar al nuevo endpoint de AccountSettings.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-008  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. SettingSidebar obtiene la URL de edición desde el helper generado de AccountSettingsController.
+2. Los helpers profile.edit/profile.update reflejan los URI y métodos existentes.
+3. La salida en resources/js/shared/wayfinder es generada por Wayfinder y no se edita a mano.
+
+**writeScope:**
+- Actualizar el import/helper de perfil en SettingSidebar.tsx.
+- Ejecutar php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction y revisar sus cambios generados.
+
+**validateCommand:**
+```text
+rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction
+```
+
+### TASK-010: Registrar pruebas modulares y actualizar ProfileUpdateTest
+
+Mover la cobertura obsoleta al nuevo módulo AccountSettings, convertirla a Pest y registrarla en phpunit.xml y tests/Pest.php.
+
+**Type:** test  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-008  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Las pruebas AccountSettings se descubren desde phpunit.xml y reciben TestCase/RefreshDatabase por tests/Pest.php.
+2. La prueba cubre persistencia, locale no soportado, bio sobre 160 caracteres, aislamiento entre usuarios y correo no editable.
+3. El borrado con contraseña incorrecta conserva la cuenta y el borrado válido usa user.destroy, cierra sesión y elimina la cuenta.
+
+**writeScope:**
+- Registrar app/User/Modules/AccountSettings/Tests en phpunit.xml y tests/Pest.php.
+- Mover y reescribir tests/Feature/Settings/ProfileUpdateTest.php como Pest en AccountSettings/Tests/Crud/AccountSettingsTest.php.
+
+**Moves:**
+- tests/Feature/Settings/ProfileUpdateTest.php -> app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php
+
+**validateCommand:**
+```text
+rtk php artisan test --compact app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php
+```
+
+### TASK-011: Probar resumen privado y seguimiento de login
+
+Añadir pruebas modulares que verifiquen timestamps reales, datos aislados y el ciclo correcto del evento Login.
+
+**Type:** test  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-005, TASK-006, TASK-010  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. El resumen muestra createdAt y lastLoginAt de la cuenta autenticada y no datos de otro usuario.
+2. El UserResource público no revela phone, biography, preferredLocale ni lastLoginAt.
+3. Login exitoso actualiza el timestamp; credenciales fallidas y challenge 2FA incompleto no lo actualizan.
+
+**writeScope:**
+- Crear pruebas del recurso/resumen privado en AccountSettings/Tests/Crud/AccountSettingsSummaryTest.php.
+- Crear pruebas del listener en AccountSettings/Tests/Listeners/TrackLastLoginTest.php.
+
+**validateCommand:**
+```text
+rtk php artisan test --compact app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsSummaryTest.php && rtk php artisan test --compact app/User/Modules/AccountSettings/Tests/Listeners/TrackLastLoginTest.php
+```
+
+### TASK-012: Crear la página AccountSettings y el resumen
+
+Mover la página actual al nuevo submódulo frontend y construir el shell de dos columnas con tipos explícitos y datos reales.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-006, TASK-009  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. La página se resuelve como setting/modules/accountSettings/AccountSettings y usa props locales tipadas.
+2. El resumen renderiza name como Usuario, email, createdAt y lastLoginAt desde AccountSettingsResource, sin valores de muestra.
+3. El layout se adapta a escritorio/móvil y no muestra una tarjeta de estado inventada.
+
+**writeScope:**
+- Mover EditProfile.tsx al nuevo AccountSettings.tsx y componer el shell de dos columnas.
+- Crear el tipo de props AccountSettings y el resumen con fechas reales.
+
+**Moves:**
+- resources/js/modules/setting/modules/profile/EditProfile.tsx -> resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx
+
+**validateCommand:**
+```text
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/types/accountSettings.ts resources/js/modules/setting/modules/accountSettings/components/AccountSummaryCard.tsx
+```
+
+### TASK-013: Implementar el formulario personal
+
+Crear el formulario accesible de datos personales y conectarlo al endpoint AccountSettings generado por Wayfinder.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-007, TASK-009, TASK-012  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Nombre, teléfono opcional, idioma en/es y biografía con contador hasta 160 se inicializan con datos reales y persisten al recargar.
+2. El correo está deshabilitado/de solo lectura y no se envía en el request.
+3. Errores por campo, procesamiento y confirmación de guardado se anuncian y son utilizables por teclado.
+
+**writeScope:**
+- Crear AccountProfileForm.tsx con el Form de Inertia y el helper .form() de Wayfinder.
+- Componer el formulario desde AccountSettings.tsx con errores, éxito y estado de procesamiento.
+
+**validateCommand:**
+```text
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountProfileForm.tsx
+```
+
+### TASK-014: Añadir las secciones estáticas del diseño
+
+Construir el aviso de privacidad y las preferencias de comunicación solo visuales, y presentar Ver actividad como elemento no operativo.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-012, TASK-013  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. El aviso y los indicadores de comunicación coinciden con la jerarquía visual del mock y son adaptables a móvil.
+2. Ver actividad no tiene href, onClick, diálogo ni solicitud.
+3. Los indicadores de comunicación no son controles interactivos y no envían datos.
+
+**writeScope:**
+- Crear AccountPrivacyAndPreferences.tsx como sección presentacional.
+- Componer el aviso y preferencias estáticas desde AccountSettings.tsx.
+- Representar Ver actividad visualmente en AccountSummaryCard sin acción.
+
+**validateCommand:**
+```text
+rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSummaryCard.tsx resources/js/modules/setting/modules/accountSettings/components/AccountPrivacyAndPreferences.tsx
+```
+
+### TASK-015: Conectar acciones de perfil, contraseña y borrado
+
+Enlazar los flujos existentes y añadir la confirmación de borrado con contraseña actual.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-009, TASK-013, TASK-014  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Ir a mi perfil público usa profile.index y Cambiar contraseña usa el helper existente de PasswordController.edit.
+2. Eliminar mi cuenta pide confirmación y contraseña actual mediante user.destroy.
+3. Una contraseña incorrecta mantiene el diálogo y muestra el error del servidor; una válida ejecuta el borrado y el logout existente.
+
+**writeScope:**
+- Crear AccountActionsPanel.tsx para acciones y enlaces Wayfinder.
+- Crear DeleteAccountDialog.tsx con confirmación, contraseña actual y error de servidor.
+- Componer acciones desde AccountSettings.tsx.
+
+**validateCommand:**
+```text
+rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/components/DeleteAccountDialog.tsx
+```
+
+### TASK-016: Sincronizar la documentación de arquitectura
+
+Documentar AccountSettings y la ubicación de infraestructura User en las guías fuente del proyecto.
+
+**Type:** docs  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P2  
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. CLAUDE.md registra la feature AccountSettings, su límite con Auth/Password y perfil público, y el patrón Database de User.
+2. Las guías backend/frontend documentan las nuevas ubicaciones sin afirmar que Profile/Preferences o migraciones iniciales se movieron.
+3. La documentación no presenta el estado de cuenta como resuelto antes de la decisión final.
+
+**writeScope:**
+- Actualizar CLAUDE.md y docs/architecture/backend.md para estructura AccountSettings y User/Database.
+- Actualizar docs/architecture/frontend.md para el submódulo setting/accountSettings.
+
+**validateCommand:**
+```text
+rtk git diff --check -- CLAUDE.md docs/architecture/backend.md docs/architecture/frontend.md
+```
+
+### TASK-017: Ejecutar gates y QA visual de AccountSettings
+
+Validar el slice integrado en escritorio y móvil, teclado, contratos de rutas y todos los gates del proyecto.
+
+**Type:** test  
+**Effort:** M  
+**Agent:** general-purpose  
+**Priority:** P1  
+**Depends on:** TASK-010, TASK-011, TASK-015, TASK-016  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Pasan las pruebas AccountSettings, el conjunto completo de Pest, Pint, PHPStan, Rector dry-run seguido de Rector y los gates frontend format/lint/types/build/build:ssr.
+2. La comparación manual contra el mock pasa en escritorio y móvil; se recorre el formulario y el diálogo de borrado con teclado.
+3. composer doctor corre como último gate local y no se ejecutan comprobaciones después.
+
+**writeScope:**
+**validateCommand:**
+```text
+rtk vendor/bin/pint --dirty --format agent; rtk composer phpstan; rtk composer rector-dry; rtk composer rector; rtk php artisan test --compact; rtk npm run format:check; rtk npm run lint:check; rtk npm run types; rtk npm run build; rtk npm run build:ssr; QA manual navegador escritorio/móvil/teclado; rtk composer doctor (último gate local, sin checks posteriores).
+```
+
+### TASK-018: Resolver la fuente del estado real de la cuenta
+
+Último punto funcional del plan. Revisar con el usuario qué significa el estado de cuenta y qué dato confiable debe respaldarlo; la inspección actual no encontró status ni soft-delete en User. No codificar una etiqueta ni inferirla de email_verified_at, last_login_at o de la sesión. Tras la decisión del usuario, ampliar el DAG con la implementación exacta —migración modular si corresponde, serialización privada, UI y prueba— antes de tocar código.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P1  
+**Depends on:** TASK-017  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. Se presentan al usuario las fuentes/semánticas posibles y se aprueba explícitamente una fuente real antes de implementarla.
+2. Si el producto elige un estado persistido, el plan actualizado asigna la migración nueva a app/User/Database/Migrations y conserva las migraciones iniciales en database/migrations.
+3. No se cierra SOC-34 ni se muestra un valor de muestra mientras el estado y su fuente no estén aprobados e implementados.
+
+**writeScope:**
+**validateCommand:**
+```text
+Revisión manual final con el usuario; actualizar este DAG con el alcance y las pruebas concretas aprobadas antes de implementar.
+```
+
+## Failure Modes
+
+- La migración nueva no se descubre porque UserServiceProvider no registra el directorio modular; comprobar migrate:status y migrate --pretend.
+- Una nueva propiedad privada se agrega por error a UserResource y aparece en el perfil público; mantener serializadores separados y cubrirlo con prueba.
+- Una ruta apunta a ProfileController@update inexistente o Wayfinder conserva un helper obsoleto; route:list y generación Wayfinder son gates explícitos.
+- El listener actualiza fecha en un challenge 2FA aún pendiente; probar acceso normal, dispositivo confiable, credenciales erróneas y challenge sin completar.
+- Una petición incluye el ID de otra cuenta, email o last_login_at; resolver el objetivo desde el usuario autenticado y rechazar/ignorar campos fuera del contrato.
+- La eliminación con contraseña incorrecta cierra la sesión o borra la cuenta; la prueba debe comprobar que la cuenta persiste y el error se muestra.
+- Los elementos estáticos parecen toggles activos o el botón de actividad ejecuta una acción accidental; validación manual de interacción.
+- El estado de cuenta se presenta como activo sin una fuente aprobada; detener el cierre de SOC-34 en TASK-018.
+
+## Ship Cut
+
+- Antes de TASK-017, el feature no está listo para integrar: los gates y QA de pantalla aún faltan.
+- TASK-017 valida todo lo acordado salvo estado de cuenta, cuya decisión queda expresamente al final.
+- No mover SOC-34 a Done hasta completar la decisión e implementación del estado real después de TASK-018.
+
+## Test Coverage Map
+
+| Comportamiento | Tarea | Cobertura |
+|---|---|---|
+| Persistencia, validación, correo de solo lectura y aislamiento entre cuentas | TASK-010 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` |
+| Datos de resumen reales y privacidad de serialización | TASK-011 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsSummaryTest.php` |
+| Último acceso solo tras autenticación exitosa | TASK-011 | `app/User/Modules/AccountSettings/Tests/Listeners/TrackLastLoginTest.php` |
+| Borrado válido/inválido con contraseña actual | TASK-010 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` |
+| Diseño, responsive y accesibilidad por teclado | TASK-017 | `QA manual contra mock Linear` |
+
+## Execution Summary
+
+- Tareas: 18.
+- Modo: EXPANSION.
+- Revisión predeterminada: codex.
+- Capas paralelas: [TASK-001, TASK-002, TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007] → [TASK-008] → [TASK-009, TASK-010] → [TASK-011, TASK-012] → [TASK-013] → [TASK-014] → [TASK-015] → [TASK-016] → [TASK-017] → [TASK-018].
+- Ruta crítica: TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-009 → TASK-012 → TASK-013 → TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018.
+
+## Task Dependencies
+
+| Tarea | Depends on |
+|---|---|
+| TASK-001 | — |
+| TASK-002 | — |
+| TASK-003 | — |
+| TASK-004 | TASK-001, TASK-003 |
+| TASK-005 | TASK-004 |
+| TASK-006 | TASK-004, TASK-005 |
+| TASK-007 | TASK-006 |
+| TASK-008 | TASK-007 |
+| TASK-009 | TASK-008 |
+| TASK-010 | TASK-008 |
+| TASK-011 | TASK-005, TASK-006, TASK-010 |
+| TASK-012 | TASK-006, TASK-009 |
+| TASK-013 | TASK-007, TASK-009, TASK-012 |
+| TASK-014 | TASK-012, TASK-013 |
+| TASK-015 | TASK-009, TASK-013, TASK-014 |
+| TASK-016 | TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015 |
+| TASK-017 | TASK-010, TASK-011, TASK-015, TASK-016 |
+| TASK-018 | TASK-017 |
