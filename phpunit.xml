@@ -29,6 +29,9 @@
         <testsuite name="TwoFactor">
             <directory>app/User/Modules/TwoFactor/Tests</directory>
         </testsuite>
+        <testsuite name="AccountSettings">
+            <directory>app/User/Modules/AccountSettings/Tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
