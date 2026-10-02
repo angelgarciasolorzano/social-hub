@@ -18,4 +18,12 @@ class UserServiceProvider extends ServiceProvider
         $this->app->register(UserRouteServiceProvider::class);
         $this->app->register(UserEventServiceProvider::class);
     }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+    }
 }
