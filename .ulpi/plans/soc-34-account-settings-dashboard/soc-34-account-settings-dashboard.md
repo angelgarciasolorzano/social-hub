@@ -180,14 +180,15 @@ Añadir una migración modular y actualizar User y su factory para teléfono, id
 **Review:** codex
 
 **Acceptance Criteria:**
-1. Una migración nueva bajo app/User/Database/Migrations añade phone nullable, preferred_locale, biography nullable con capacidad de 160 caracteres y last_login_at nullable.
+1. Una migración nueva bajo app/User/Database/Migrations añade phone nullable, preferred_locale no nulo de 2 caracteres con default en, biography nullable de 160 caracteres y last_login_at nullable.
 2. User expone los campos editables de manera explícita y convierte last_login_at a fecha inmutable; last_login_at no queda asignable desde el formulario.
 3. La migración down elimina solo las columnas nuevas y no modifica ni reemplaza las migraciones iniciales de Laravel.
+4. UserFactory define un valor realista o null explícito para cada columna persistida de User, excepto id y timestamps administrados por Eloquent.
 
 **writeScope:**
 - Crear la migración con php artisan make:migration add_account_settings_fields_to_users_table --table=users --path=app/User/Database/Migrations --no-interaction.
 - Añadir los atributos y casts de perfil necesarios a app/User/Models/User.php.
-- Definir valores realistas o null explícito para los nuevos atributos persistidos en UserFactory.
+- Completar UserFactory con valores realistas o null explícito para todos los campos persistidos de User, incluyendo los campos nullable existentes de 2FA y los nuevos atributos; omitir solo id y timestamps administrados por Eloquent.
 
 **validateCommand:**
 ```text

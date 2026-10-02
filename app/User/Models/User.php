@@ -28,6 +28,10 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * @property CarbonImmutable|null $created_at
+ * @property string|null $phone
+ * @property string $preferred_locale
+ * @property string|null $biography
+ * @property CarbonImmutable|null $last_login_at
  * @property CarbonImmutable|null $two_factor_confirmed_at
  * @property CarbonImmutable|null $recovery_codes_regenerated_at
  *
@@ -37,6 +41,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 #[Fillable([
     'name',
     'email',
+    'phone',
+    'preferred_locale',
+    'biography',
     'password',
 ])]
 #[Hidden([
@@ -99,6 +106,7 @@ class User extends Authenticatable implements HasMedia
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'immutable_datetime',
             'two_factor_confirmed_at' => 'datetime',
             'recovery_codes_regenerated_at' => 'datetime',
             'password' => 'hashed',

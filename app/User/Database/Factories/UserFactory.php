@@ -33,7 +33,7 @@ class UserFactory extends Factory
     /**
      * Define the model's default state.
      *
-     * @return array<string, CarbonInterface|string>
+     * @return array<string, CarbonInterface|string|null>
      *
      * @phpstan-return array<model-property<User>, mixed>
      */
@@ -44,6 +44,14 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+            'recovery_codes_regenerated_at' => null,
+            'phone' => null,
+            'preferred_locale' => 'en',
+            'biography' => null,
+            'last_login_at' => null,
             'remember_token' => Str::random(10),
         ];
     }
