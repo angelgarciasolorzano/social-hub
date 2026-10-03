@@ -15,11 +15,13 @@ import {
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
 
-interface AccountSummaryCardProps {
+interface AccountSettingsSummaryCardProps {
   accountSettings: AccountSettings;
 }
 
-function AccountSummaryCard({ accountSettings }: AccountSummaryCardProps): JSX.Element {
+function AccountSettingsSummaryCard({
+  accountSettings,
+}: AccountSettingsSummaryCardProps): JSX.Element {
   const userInitial = accountSettings.name.trim().charAt(0).toLocaleUpperCase("es");
 
   return (
@@ -88,4 +90,4 @@ function AccountSummaryCard({ accountSettings }: AccountSummaryCardProps): JSX.E
   );
 }
 
-export default AccountSummaryCard;
+export default AccountSettingsSummaryCard;

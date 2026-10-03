@@ -4,8 +4,8 @@ import { Head, usePage } from "@inertiajs/react";
 
 import { ShieldCheck } from "lucide-react";
 
-import AccountProfileForm from "@/modules/setting/modules/accountSettings/components/AccountProfileForm";
-import AccountSummaryCard from "@/modules/setting/modules/accountSettings/components/AccountSummaryCard";
+import AccountSettingsProfileForm from "@/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm";
+import AccountSettingsSummaryCard from "@/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard";
 import {
   communicationChannels,
   privacyPrinciples,
@@ -21,6 +21,9 @@ import {
 } from "@/shared/components/shadcn/ui/card";
 import { Switch } from "@/shared/components/shadcn/ui/switch";
 
+import { cn } from "@/shared/lib";
+import { iconColorVariants } from "@/shared/lib/styling";
+
 function AccountSettings(): JSX.Element {
   const { accountSettings } = usePage<AccountSettingsPageProps>().props;
 
@@ -28,25 +31,27 @@ function AccountSettings(): JSX.Element {
     <main className="max-w-8xl mx-auto flex w-full flex-1 flex-col gap-6">
       <Head title="Configuración de la cuenta" />
 
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-muted-foreground">Cuenta</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Configuración de la cuenta</h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Administra la información personal asociada a tu cuenta.
-        </p>
-      </header>
+      <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <header className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Cuenta</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Configuración de la cuenta</h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Administra la información personal asociada a tu cuenta.
+            </p>
+          </header>
 
-      <div className="grid min-w-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <section aria-labelledby="account-profile-heading" className="min-w-0">
-          <div className="space-y-6">
-            <AccountPrivacyNotice />
-            <AccountProfileForm accountSettings={accountSettings} />
-            <AccountCommunicationPreferences />
-          </div>
-        </section>
+          <section aria-labelledby="account-profile-heading" className="min-w-0">
+            <div className="space-y-6">
+              <AccountPrivacyNotice />
+              <AccountSettingsProfileForm accountSettings={accountSettings} />
+              <AccountCommunicationPreferences />
+            </div>
+          </section>
+        </div>
 
-        <aside aria-label="Resumen de la cuenta" className="min-w-0">
-          <AccountSummaryCard accountSettings={accountSettings} />
+        <aside className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0 xl:self-start">
+          <AccountSettingsSummaryCard accountSettings={accountSettings} />
         </aside>
       </div>
     </main>
@@ -75,13 +80,16 @@ function AccountPrivacyNotice(): JSX.Element {
         </div>
 
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {privacyPrinciples.map(({ description, icon: Icon, title }) => (
+          {privacyPrinciples.map(({ description, icon: Icon, iconColor, title }) => (
             <li className="flex min-w-0 items-start gap-3" key={title}>
               <span
                 aria-hidden="true"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                className={cn(
+                  "flex size-9 shrink-0 items-center justify-center rounded-full",
+                  iconColorVariants[iconColor].iconBgClass,
+                )}
               >
-                <Icon size={16} />
+                <Icon className={cn("size-4", iconColorVariants[iconColor].iconFgClass)} />
               </span>
 
               <div className="min-w-0 space-y-1">
@@ -107,13 +115,16 @@ function AccountCommunicationPreferences(): JSX.Element {
       </CardHeader>
 
       <CardContent className="space-y-4 px-5 pb-5 sm:px-6 sm:pb-6">
-        {communicationChannels.map(({ description, enabled, icon: Icon, id, title }) => (
+        {communicationChannels.map(({ description, enabled, icon: Icon, iconColor, id, title }) => (
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3" key={id}>
             <span
               aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-lg",
+                iconColorVariants[iconColor].iconBgClass,
+              )}
             >
-              <Icon size={18} />
+              <Icon className={cn("size-4.5", iconColorVariants[iconColor].iconFgClass)} />
             </span>
 
             <div className="min-w-0 space-y-0.5">

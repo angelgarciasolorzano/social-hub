@@ -29,11 +29,13 @@ import {
 } from "@/shared/components/shadcn/ui/select";
 import { Textarea } from "@/shared/components/shadcn/ui/textarea";
 
-interface AccountProfileFormProps {
+interface AccountSettingsProfileFormProps {
   accountSettings: AccountSettings;
 }
 
-function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.Element {
+function AccountSettingsProfileForm({
+  accountSettings,
+}: AccountSettingsProfileFormProps): JSX.Element {
   const [biographyLength, setBiographyLength] = useState(accountSettings.biography?.length ?? 0);
 
   function handleBiographyChange(event: ChangeEvent<HTMLTextAreaElement>): void {
@@ -223,4 +225,4 @@ function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.E
   );
 }
 
-export default AccountProfileForm;
+export default AccountSettingsProfileForm;
