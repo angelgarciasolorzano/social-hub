@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { Head, usePage } from "@inertiajs/react";
 
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, UserRound } from "lucide-react";
 
 import AccountSettingsProfileForm from "@/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm";
 import AccountSettingsSummaryCard from "@/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard";
@@ -33,17 +33,10 @@ function AccountSettings(): JSX.Element {
 
       <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <header className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Cuenta</p>
-            <h1 className="text-2xl font-semibold tracking-tight">Configuración de la cuenta</h1>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Administra la información personal asociada a tu cuenta.
-            </p>
-          </header>
+          <AccountSettingsPrivacyOverview />
 
           <section aria-labelledby="account-profile-heading" className="min-w-0">
             <div className="space-y-6">
-              <AccountPrivacyNotice />
               <AccountSettingsProfileForm accountSettings={accountSettings} />
               <AccountCommunicationPreferences />
             </div>
@@ -58,20 +51,51 @@ function AccountSettings(): JSX.Element {
   );
 }
 
-function AccountPrivacyNotice(): JSX.Element {
+function AccountSettingsPrivacyOverview(): JSX.Element {
   return (
     <Card className="gap-0 overflow-hidden py-0">
-      <CardContent className="space-y-5 p-5 sm:p-6">
-        <div className="flex items-start gap-3 rounded-lg border border-primary/10 bg-primary/5 p-4 sm:p-5">
+      <CardHeader className="flex grid-cols-1 grid-rows-none items-start gap-4 px-5 pt-5 pb-4 sm:px-6 sm:pt-6">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-2xl",
+            iconColorVariants.violet.iconBgClass,
+          )}
+        >
+          <UserRound className={cn("size-6", iconColorVariants.violet.iconFgClass)} />
+        </span>
+
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Información de tu perfil
+          </h1>
+          <CardDescription>
+            Administra la información personal asociada a tu cuenta.
+          </CardDescription>
+          <p className="text-sm text-muted-foreground">
+            Mantén tus datos actualizados para garantizar una mejor experiencia.
+          </p>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-5 px-5 pt-0 pb-5 sm:px-6 sm:pb-6">
+        <div className="flex items-start gap-3 rounded-lg border border-violet-200/70 bg-violet-50/80 p-4 sm:p-5 dark:border-violet-900/50 dark:bg-violet-950/30">
           <span
             aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-full",
+              iconColorVariants.violet.iconBgClass,
+            )}
           >
-            <ShieldCheck size={20} />
+            <ShieldCheck className={cn("size-5", iconColorVariants.violet.iconFgClass)} />
           </span>
 
           <div className="min-w-0 space-y-1">
-            <h2 className="font-semibold tracking-tight">Tu información es privada y segura</h2>
+            <h2
+              className={cn("font-semibold tracking-tight", iconColorVariants.violet.iconFgClass)}
+            >
+              Tu información es privada y segura
+            </h2>
             <p className="text-sm text-muted-foreground">
               Solo tú puedes ver y modificar estos datos. Nunca compartiremos tu información
               personal.
