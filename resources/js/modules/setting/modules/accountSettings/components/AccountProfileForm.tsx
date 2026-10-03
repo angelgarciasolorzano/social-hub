@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { Form } from "@inertiajs/react";
 
-import { Languages } from "lucide-react";
+import { FileText, Globe, Languages, Mail, Phone, UserRound } from "lucide-react";
 
 import type { AccountSettings } from "@/modules/setting/modules/accountSettings/types/accountSettings";
 
@@ -63,6 +63,11 @@ function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.E
           <CardContent className="grid min-w-0 grid-cols-1 items-start gap-x-6 gap-y-6 px-4 sm:px-6 md:grid-cols-2">
             <div className="grid min-w-0 gap-2">
               <LabelForm error={errors["name"]} htmlFor="account-name">
+                <UserRound
+                  aria-hidden="true"
+                  className="shrink-0 text-muted-foreground"
+                  size={16}
+                />
                 Nombre (obligatorio)
               </LabelForm>
 
@@ -83,6 +88,7 @@ function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.E
 
             <div className="grid min-w-0 gap-2">
               <LabelForm error={errors["phone"]} htmlFor="account-phone">
+                <Phone aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
                 Teléfono (opcional)
               </LabelForm>
 
@@ -101,7 +107,10 @@ function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.E
             </div>
 
             <div className="grid min-w-0 gap-2">
-              <LabelForm htmlFor="account-email">Correo electrónico</LabelForm>
+              <LabelForm htmlFor="account-email">
+                <Mail aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
+                Correo electrónico
+              </LabelForm>
 
               <Input
                 id="account-email"
@@ -119,6 +128,7 @@ function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.E
 
             <div className="grid min-w-0 gap-2">
               <LabelForm error={errors["preferredLocale"]} htmlFor="account-locale">
+                <Globe aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
                 Idioma preferido (obligatorio)
               </LabelForm>
 
@@ -164,6 +174,7 @@ function AccountProfileForm({ accountSettings }: AccountProfileFormProps): JSX.E
 
             <div className="grid min-w-0 gap-2 md:col-span-2">
               <LabelForm error={errors["biography"]} htmlFor="account-biography">
+                <FileText aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
                 Biografía (opcional)
               </LabelForm>
 

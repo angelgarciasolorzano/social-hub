@@ -1,5 +1,7 @@
 import type { JSX } from "react";
 
+import { CalendarDays, Clock, Mail } from "lucide-react";
+
 import type { AccountSettings } from "@/modules/setting/modules/accountSettings/types/accountSettings";
 import { formatActivationDate, formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 
@@ -42,12 +44,18 @@ function AccountSummaryCard({ accountSettings }: AccountSummaryCardProps): JSX.E
 
         <dl className="space-y-4 border-t pt-4">
           <div className="min-w-0 space-y-1">
-            <dt className="text-xs font-medium text-muted-foreground">Correo electrónico</dt>
+            <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Mail aria-hidden="true" className="shrink-0" size={14} />
+              Correo electrónico
+            </dt>
             <dd className="text-sm break-all">{accountSettings.email}</dd>
           </div>
 
           <div className="space-y-1">
-            <dt className="text-xs font-medium text-muted-foreground">Miembro desde</dt>
+            <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <CalendarDays aria-hidden="true" className="shrink-0" size={14} />
+              Miembro desde
+            </dt>
             <dd className="text-sm">
               <time dateTime={accountSettings.createdAt ?? undefined}>
                 {formatActivationDate(accountSettings.createdAt)}
@@ -56,7 +64,10 @@ function AccountSummaryCard({ accountSettings }: AccountSummaryCardProps): JSX.E
           </div>
 
           <div className="space-y-1">
-            <dt className="text-xs font-medium text-muted-foreground">Último acceso</dt>
+            <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Clock aria-hidden="true" className="shrink-0" size={14} />
+              Último acceso
+            </dt>
             <dd className="text-sm">
               <time dateTime={accountSettings.lastLoginAt ?? undefined}>
                 {formatLongDate(accountSettings.lastLoginAt)}
