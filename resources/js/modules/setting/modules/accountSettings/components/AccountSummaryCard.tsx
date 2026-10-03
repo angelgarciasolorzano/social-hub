@@ -1,11 +1,12 @@
 import type { JSX } from "react";
 
-import { CalendarDays, Clock, Mail } from "lucide-react";
+import { Activity, CalendarDays, Clock, Mail } from "lucide-react";
 
 import type { AccountSettings } from "@/modules/setting/modules/accountSettings/types/accountSettings";
 import { formatActivationDate, formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 
 import { Avatar, AvatarFallback } from "@/shared/components/shadcn/ui/avatar";
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Card,
   CardContent,
@@ -23,9 +24,16 @@ function AccountSummaryCard({ accountSettings }: AccountSummaryCardProps): JSX.E
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
-      <CardHeader className="border-b px-5 py-5 sm:px-6">
-        <CardTitle>Resumen de la cuenta</CardTitle>
-        <CardDescription>Información de tu perfil.</CardDescription>
+      <CardHeader className="flex flex-col gap-3 border-b px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div className="min-w-0 space-y-1">
+          <CardTitle className="sm:whitespace-nowrap">Resumen de la cuenta</CardTitle>
+          <CardDescription>Información de tu perfil.</CardDescription>
+        </div>
+
+        <Button className="shrink-0" disabled size="sm" type="button" variant="outline">
+          <Activity aria-hidden="true" data-icon="inline-start" />
+          Ver actividad
+        </Button>
       </CardHeader>
 
       <CardContent className="space-y-5 px-5 py-5 sm:px-6">
