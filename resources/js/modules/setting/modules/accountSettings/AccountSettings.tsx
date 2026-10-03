@@ -4,6 +4,7 @@ import { Head, usePage } from "@inertiajs/react";
 
 import { ShieldCheck, UserRound } from "lucide-react";
 
+import AccountActionsPanel from "@/modules/setting/modules/accountSettings/components/AccountActionsPanel";
 import AccountSettingsProfileForm from "@/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm";
 import AccountSettingsSummaryCard from "@/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard";
 import {
@@ -45,6 +46,7 @@ function AccountSettings(): JSX.Element {
 
         <aside className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0 xl:self-start">
           <AccountSettingsSummaryCard accountSettings={accountSettings} />
+          <AccountActionsPanel userId={accountSettings.id} />
         </aside>
       </div>
     </main>
