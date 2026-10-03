@@ -1,5 +1,5 @@
 import type { JSX, SubmitEvent } from "react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -24,9 +24,11 @@ import { Field, FieldGroup, FieldLabel } from "@/shared/components/shadcn/ui/fie
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { alertVariants } from "@/shared/lib/styling";
+import { useDialog } from "@/shared/hooks";
 
-interface DeleteAccountDialogProps {
+import { alertVariants, buttonVariants } from "@/shared/lib/styling";
+
+interface AccountSettingsDeleteDialogProps {
   userId: number;
 }
 
@@ -34,8 +36,8 @@ interface DeleteAccountFormData {
   password: string;
 }
 
-function DeleteAccountDialog({ userId }: DeleteAccountDialogProps): JSX.Element {
-  const [open, setOpen] = useState<boolean>(false);
+function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProps): JSX.Element {
+  const { open, setOpen } = useDialog();
 
   const passwordInput = useRef<HTMLInputElement>(null);
 
@@ -74,7 +76,7 @@ function DeleteAccountDialog({ userId }: DeleteAccountDialogProps): JSX.Element 
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger asChild>
         <Button
-          className="w-fit max-w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="w-fit max-w-full text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
           type="button"
           variant="outline"
         >
@@ -141,7 +143,7 @@ function DeleteAccountDialog({ userId }: DeleteAccountDialogProps): JSX.Element 
             disabled={processing}
             form="delete-account-form"
             type="submit"
-            variant="destructive"
+            className={buttonVariants.destructive}
           >
             {processing ? (
               <>
@@ -161,4 +163,4 @@ function DeleteAccountDialog({ userId }: DeleteAccountDialogProps): JSX.Element 
   );
 }
 
-export default DeleteAccountDialog;
+export default AccountSettingsDeleteDialog;

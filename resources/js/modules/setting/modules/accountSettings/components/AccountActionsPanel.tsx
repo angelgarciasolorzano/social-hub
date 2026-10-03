@@ -4,7 +4,7 @@ import { Link } from "@inertiajs/react";
 
 import { ChevronRight, ExternalLink, Eye, KeyRound, LockKeyhole, Trash2 } from "lucide-react";
 
-import DeleteAccountDialog from "@/modules/setting/modules/accountSettings/components/DeleteAccountDialog";
+import AccountSettingsDeleteDialog from "@/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog";
 
 import { edit as editPassword } from "@/shared/wayfinder/actions/App/Auth/Modules/Password/Controllers/PasswordController";
 
@@ -22,12 +22,7 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
     <div className="flex w-full min-w-0 flex-col gap-6">
       <Card className="gap-4 overflow-hidden py-0">
         <CardHeader className="flex grid-cols-1 grid-rows-none flex-row items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
-          <span
-            aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground"
-          >
-            <Eye className="size-5" />
-          </span>
+          <Eye aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-foreground" />
 
           <div className="min-w-0 space-y-1">
             <h2 className="font-semibold tracking-tight">Visibilidad del perfil</h2>
@@ -53,12 +48,7 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
 
       <Card className="gap-4 overflow-hidden py-0">
         <CardHeader className="flex grid-cols-1 grid-rows-none flex-row items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
-          <span
-            aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground"
-          >
-            <LockKeyhole className="size-5" />
-          </span>
+          <LockKeyhole aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-foreground" />
 
           <div className="min-w-0 space-y-1">
             <h2 className="font-semibold tracking-tight">Cambiar contraseña</h2>
@@ -82,7 +72,7 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
         </CardContent>
       </Card>
 
-      <Card className="gap-4 overflow-hidden border-destructive/30 py-0">
+      <Card className="gap-4 overflow-hidden py-0">
         <CardHeader className="flex grid-cols-1 grid-rows-none flex-row items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
           <span
             aria-hidden="true"
@@ -92,16 +82,18 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
           </span>
 
           <div className="min-w-0 space-y-1">
-            <h2 className="font-semibold tracking-tight text-destructive">Eliminar cuenta</h2>
+            <h2 className="font-semibold tracking-tight text-red-600 dark:text-red-400">
+              Eliminar cuenta
+            </h2>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4 px-5 pb-5 sm:px-6 sm:pb-6">
-          <p className="text-sm leading-6 text-destructive">
+          <p className="text-sm leading-6 text-red-600 dark:text-red-400">
             Esta acción es permanente. Se eliminarán los datos de tu cuenta.
           </p>
 
-          <DeleteAccountDialog userId={userId} />
+          <AccountSettingsDeleteDialog userId={userId} />
         </CardContent>
       </Card>
     </div>
