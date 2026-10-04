@@ -13,6 +13,8 @@ import { index as publicProfileIndex } from "@/shared/wayfinder/routes/profile";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 
+import { iconColorVariants } from "@/shared/lib/styling";
+
 interface AccountActionsPanelProps {
   userId: number;
 }
@@ -76,9 +78,9 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
         <CardHeader className="flex grid-cols-1 grid-rows-none flex-row items-start gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
           <span
             aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive"
+            className={`flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive ${iconColorVariants.red.iconBgClass}`}
           >
-            <Trash2 className="size-5" />
+            <Trash2 className={`size-5 ${iconColorVariants.red.iconFgClass}`} />
           </span>
 
           <div className="min-w-0 space-y-1">

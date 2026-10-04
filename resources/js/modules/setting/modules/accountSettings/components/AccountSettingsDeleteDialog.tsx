@@ -24,9 +24,9 @@ import { Field, FieldGroup, FieldLabel } from "@/shared/components/shadcn/ui/fie
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { useDialog } from "@/shared/hooks";
+import { useAppearance, useDialog } from "@/shared/hooks";
 
-import { alertVariants, buttonVariants } from "@/shared/lib/styling";
+import { alertVariants, buttonVariants, iconColorVariants } from "@/shared/lib/styling";
 
 interface AccountSettingsDeleteDialogProps {
   userId: number;
@@ -38,6 +38,7 @@ interface DeleteAccountFormData {
 
 function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProps): JSX.Element {
   const { open, setOpen } = useDialog();
+  const { resolvedAppearance } = useAppearance();
 
   const passwordInput = useRef<HTMLInputElement>(null);
 
@@ -88,7 +89,7 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Trash2 aria-hidden="true" className="size-5 text-destructive" />
+            <Trash2 aria-hidden="true" className={`size-5 ${iconColorVariants.red.iconFgClass}`} />
             Eliminar mi cuenta
           </DialogTitle>
           <DialogDescription>
@@ -143,6 +144,7 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
             disabled={processing}
             form="delete-account-form"
             type="submit"
+            variant={resolvedAppearance === "light" ? "destructive" : undefined}
             className={buttonVariants.destructive}
           >
             {processing ? (
