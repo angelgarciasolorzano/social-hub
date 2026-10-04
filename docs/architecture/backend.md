@@ -68,10 +68,14 @@ app/<Module>/
 Cuando un módulo tiene **varias áreas independientes** que ameritan su propio espacio, se subdivide. Ejemplos del proyecto:
 
 - `app/Auth/Modules/` → `Email/`, `Login/`, `Password/`, `Register/`, `TrustedDevice/`
-- `app/User/` → `Profile/`, `Preferences/`, `Modules/TwoFactor/`
+- `app/User/` → `Profile/`, `Preferences/`, `Modules/AccountSettings/`, `Modules/TwoFactor/`
 - `app/Auth/Modules/TrustedDevice/` → cookie-backed TOTP bypass (introducido en SOC-14)
 
 La configuración de 2FA de User vive en `app/User/Modules/TwoFactor/`: ahí se agrupan su controller, Form Requests, listener de regeneración de códigos y pruebas. Las rutas siguen en `app/User/routes/security.php`. `UserServiceProvider` registra `app/User/Providers/UserEventServiceProvider.php`, que conecta el evento Fortify de regeneración con el listener de User; `AuthEventServiceProvider` conserva los listeners de TrustedDevice. El challenge de 2FA durante el login continúa siendo responsabilidad de Auth.
+
+La configuración privada de la cuenta vive en `app/User/Modules/AccountSettings/`: agrupa el controller, Form Request, Data object construido con los datos validados, `AccountSettingsResource`, listener de último acceso y pruebas del módulo. El controller resuelve siempre al usuario autenticado. `UserResource` sigue reservado al perfil público; la información privada de configuración no se agrega a esa serialización. El perfil público continúa en `app/User/Profile/`, las preferencias existentes siguen en `app/User/Preferences/` y el cambio de contraseña permanece en `app/Auth/Modules/Password/`.
+
+La infraestructura compartida de User se organiza en `app/User/Database/{Migrations,Factories,Seeders}/`. `UserServiceProvider` carga las migraciones modulares; la migración de AccountSettings se encuentra allí. Las migraciones iniciales de Laravel permanecen en la carpeta raíz `database/migrations/` y no se mueven a User. La fuente real del estado de cuenta aún está pendiente de decisión, por lo que AccountSettings no lo define ni lo infiere de otros campos.
 
 ### Cuándo subdividir
 

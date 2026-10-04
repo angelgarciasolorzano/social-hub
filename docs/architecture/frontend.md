@@ -100,9 +100,16 @@ import { type Post, PostCard } from "@/modules/post";
 Cuando un módulo tiene **varias áreas grandes e independientes**, se subdivide. Ejemplos del proyecto:
 
 - `resources/js/modules/setting/modules/twoFactor/`
+- `resources/js/modules/setting/modules/accountSettings/`
 - `resources/js/modules/setting/modules/profile/`
 - `resources/js/modules/setting/modules/password/`
 - `resources/js/modules/setting/modules/preference/`
+
+### AccountSettings (SOC-34)
+
+La página de configuración de la cuenta vive en `resources/js/modules/setting/modules/accountSettings/`. `AccountSettings.tsx` compone el formulario (`AccountSettingsProfileForm`), el resumen (`AccountSettingsSummaryCard`), las acciones (`AccountActionsPanel`) y las secciones presentacionales de privacidad y preferencias de comunicación. Los arrays de privacidad y comunicación son estáticos y tipados en `data/accountSettingsSections.ts`; los switches y el botón “Ver actividad” son visuales y no ejecutan acciones. Los enlaces a perfil público y cambio de contraseña reutilizan sus rutas existentes, y `AccountSettingsDeleteDialog` confirma el borrado mediante `user.destroy`.
+
+El frontend no presenta todavía un estado real de cuenta. Su semántica y fuente de datos se deben decidir antes de añadirlo; no se deduce de la verificación del correo, del último acceso ni de la sesión activa.
 
 ### Cuándo subdividir
 
