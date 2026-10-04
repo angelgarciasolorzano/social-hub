@@ -7,7 +7,7 @@ import { AlertTriangle, Trash2 } from "lucide-react";
 
 import { destroy as destroyUser } from "@/shared/wayfinder/actions/App/User/Controllers/UserController";
 
-import { InputError } from "@/shared/components/form";
+import { InputError, PasswordInput } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -21,7 +21,6 @@ import {
   DialogTrigger,
 } from "@/shared/components/shadcn/ui/dialog";
 import { Field, FieldGroup, FieldLabel } from "@/shared/components/shadcn/ui/field";
-import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { useAppearance, useDialog } from "@/shared/hooks";
@@ -101,7 +100,9 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
           <AlertTriangle aria-hidden="true" />
           <AlertTitle>Esta acción es permanente</AlertTitle>
           <AlertDescription>
-            Se eliminarán los datos de tu cuenta y se cerrará tu sesión.
+            Se eliminará permanentemente tu cuenta y la información de perfil guardada en ella. Se
+            cerrará tu sesión y ya no podrás iniciar sesión con estas credenciales; para volver a
+            usar la plataforma tendrás que registrarte de nuevo. Esta acción no se puede deshacer.
           </AlertDescription>
         </Alert>
 
@@ -109,14 +110,15 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
           <FieldGroup className="gap-4">
             <Field className="gap-2" data-invalid={errors.password !== undefined}>
               <FieldLabel htmlFor="delete-account-password">Contraseña actual</FieldLabel>
-              <Input
+              <PasswordInput
                 ref={passwordInput}
                 id="delete-account-password"
                 name="password"
-                type="password"
                 autoComplete="current-password"
                 autoFocus
-                aria-describedby={errors.password ? "delete-account-password-error" : undefined}
+                aria-describedby={
+                  errors.password !== undefined ? "delete-account-password-error" : undefined
+                }
                 aria-invalid={errors.password !== undefined}
                 onChange={(event) => {
                   setData("password", event.target.value);

@@ -2,11 +2,11 @@
 
 ## Overview
 
-Issue: [SOC-34](https://linear.app/social-hub-ang/issue/SOC-34/feature-recreate-the-profile-settings-dashboard-from-the-supplied) — Backlog, prioridad Medium.
+Issue: [SOC-34](https://linear.app/social-hub-ang/issue/SOC-34/feature-recreate-the-profile-settings-dashboard-from-the-supplied) — In Review; prioridad inicial Medium.
 
-Modo confirmado: **EXPANSION**. Revisión predeterminada: **codex**. La ruta crítica comienza en el registro de migraciones User, avanza por esquema, evento de último acceso, recurso privado, controlador/rutas, Wayfinder y UI, y termina en documentación, gates/QA y decisión del estado de cuenta.
+Modo confirmado: **EXPANSION**. Revisión predeterminada: **codex**. La ruta crítica avanza desde la infraestructura User y AccountSettings hasta los diálogos de acciones, elimina la vista independiente de contraseña, sincroniza documentación y QA, y termina registrando que el estado real se difiere a SOC-35.
 
-El último elemento funcional es una revisión de producto del estado de cuenta. No se inventará su fuente; tras la decisión del usuario se añadirá el alcance exacto antes de implementar.
+El estado real de la cuenta queda fuera del alcance actual. El usuario decidió diferirlo a SOC-35 hasta que existan un panel administrativo y roles/permisos; SOC-34 no debe mostrar un estado ficticio ni esperar a esa implementación futura.
 
 ## Scope Challenge
 
@@ -14,7 +14,7 @@ El último elemento funcional es una revisión de producto del estado de cuenta.
 - La implementación nueva se organiza como AccountSettings bajo User y como accountSettings bajo el módulo frontend setting.
 - La expansión acordada incluye modernizar la ubicación de UserFactory/UserSeeder y alojar la migración nueva en app/User/Database/Migrations.
 - Profile y Preferences existentes permanecen en sus ubicaciones actuales. Los archivos iniciales de Laravel en database/migrations no se mueven.
-- La fuente y semántica del estado de cuenta quedan como último punto de decisión con el usuario.
+- El estado real de la cuenta se difiere a SOC-35 y solo se implementará cuando existan el panel administrativo y roles/permisos.
 
 ## Prerequisites
 
@@ -32,9 +32,10 @@ El último elemento funcional es una revisión de producto del estado de cuenta.
 - Mover las migraciones iniciales de Laravel ni las migraciones existentes bajo database/migrations.
 - Implementar Ver actividad como navegación, diálogo o solicitud.
 - Persistir o activar Preferencias de comunicación; sus indicadores son visuales y estáticos.
-- Cambiar el flujo de cambio de contraseña de Auth/Modules/Password.
+- Cambiar la validación o la lógica backend de PasswordController.update; el nuevo diálogo reutiliza el endpoint actual y conserva la revocación de dispositivos confiables.
 - Habilitar edición de correo o implementar un flujo de cambio/verificación de correo.
 - Rediseñar otras páginas del producto o traducir toda la interfaz React.
+- Mostrar o gestionar el estado real de cuenta en SOC-34; queda diferido a SOC-35 hasta que existan panel administrativo y roles/permisos.
 
 ## Contracts
 
@@ -42,7 +43,7 @@ El último elemento funcional es una revisión de producto del estado de cuenta.
 
 - Conservar GET /setting/profile como profile.edit y PATCH /setting/profile como profile.update.
 - Mantener auth y verified desde app/User/routes/routes.php.
-- Conservar /profile como perfil público propio, el flujo existente de password.edit y user.destroy.
+- Conservar /profile como perfil público propio, el endpoint PUT setting.password.update y user.destroy. El GET setting.password.edit se mantiene solo como redirección de compatibilidad a profile.edit; no existe una vista independiente de contraseña.
 
 ### Datos privados y públicos
 
@@ -69,14 +70,21 @@ El último elemento funcional es una revisión de producto del estado de cuenta.
 ### Estado de cuenta
 
 - No se inventa un estado ni se deduce de email_verified_at, del último acceso o de la sesión activa.
-- La semántica y la fuente real se deciden con el usuario en la última tarea; después se concreta el alcance de código.
+- SOC-34 no implementa ni muestra un estado real. SOC-35 cubre los estados activa/suspendida y solo debe iniciarse cuando existan panel administrativo y roles/permisos.
+
+### Cambio y eliminación de contraseña/cuenta
+
+- El diálogo de cambio de contraseña reutiliza PasswordController.update y conserva la validación actual y la revocación de dispositivos confiables; las sesiones actuales permanecen activas.
+- UserController.destroy valida la contraseña actual, cierra sesión, elimina el registro User e invalida la sesión. El texto no afirma efectos sobre contenido relacionado sin verificar sus relaciones/cascadas reales.
 
 ## Existing Code Leverage
 
 - resources/js/modules/setting/modules/profile/EditProfile.tsx es la página a reemplazar y SettingLayout ya envuelve páginas del área.
 - app/User/Profile/Controllers/ProfileController.php conserva el perfil público; su método edit actual puede salir al nuevo controlador de AccountSettings.
 - app/User/Controllers/UserController.php ya actualiza usuarios desde Auth::user() y borra con current_password; el borrado se reutiliza con route user.destroy.
-- app/Auth/Modules/Password/Controllers/PasswordController.php provee el enlace existente de cambio de contraseña.
+- app/Auth/Modules/Password/Controllers/PasswordController.php conserva la acción update; la vista EditPassword.tsx usa PasswordInput y explica la revocación de dispositivos confiables.
+- resources/js/shared/components/form/PasswordInput.tsx está exportado desde el barrel form y admite ref, autocomplete y errores, con control para mostrar/ocultar la contraseña.
+- AccountSettingsDeleteDialog.tsx ya usa useDialog; su campo actual es un Input type=password y el aviso solo indica permanencia, eliminación de datos y cierre de sesión.
 - app/User/Resources/UserResource.php se mantiene como serialización pública; la configuración privada necesita AccountSettingsResource.
 - app/User/Modules/TwoFactor y app/Auth/Modules/TrustedDevice ilustran módulos de feature con Tests co-localizados.
 - app/Auth/Providers/AuthServiceProvider.php carga migraciones desde el directorio Database del dominio y sirve como patrón para User.
@@ -452,9 +460,9 @@ Construir el aviso de privacidad y las preferencias de comunicación solo visual
 rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSummaryCard.tsx resources/js/modules/setting/modules/accountSettings/components/AccountPrivacyAndPreferences.tsx
 ```
 
-### TASK-015: Conectar acciones de perfil, contraseña y borrado
+### TASK-015: Implementar los diálogos de acciones de cuenta
 
-Enlazar los flujos existentes y añadir la confirmación de borrado con contraseña actual.
+Convertir el cambio de contraseña en diálogo y mejorar la confirmación de eliminación para explicar consecuencias verificadas y usar el componente PasswordInput existente.
 
 **Type:** feature  
 **Effort:** M  
@@ -464,59 +472,110 @@ Enlazar los flujos existentes y añadir la confirmación de borrado con contrase
 **Review:** codex
 
 **Acceptance Criteria:**
-1. Ir a mi perfil público usa profile.index y Cambiar contraseña usa el helper existente de PasswordController.edit.
-2. Eliminar mi cuenta pide confirmación y contraseña actual mediante user.destroy.
-3. Una contraseña incorrecta mantiene el diálogo y muestra el error del servidor; una válida ejecuta el borrado y el logout existente.
+1. Cambiar contraseña abre un diálogo con contraseña actual, nueva y confirmación, usa PasswordController.update y conserva el aviso de revocación de dispositivos confiables; los errores mantienen abierto el diálogo y el éxito lo cierra y limpia.
+2. Los cuatro campos de contraseña entre ambos diálogos usan el PasswordInput compartido con autocomplete apropiado y errores accesibles.
+3. El diálogo de eliminación explica que se elimina permanentemente el registro de cuenta y se cierra/invalida la sesión; cualquier afirmación sobre publicaciones, comentarios u otros datos relacionados coincide con los efectos verificados del backend. Una contraseña incorrecta conserva la cuenta.
 
 **writeScope:**
-- Crear AccountActionsPanel.tsx para acciones y enlaces Wayfinder.
-- Crear DeleteAccountDialog.tsx con confirmación, contraseña actual y error de servidor.
-- Componer acciones desde AccountSettings.tsx.
+- Reemplazar el enlace de cambio de contraseña en AccountActionsPanel.tsx por el trigger del nuevo diálogo.
+- Crear AccountSettingsPasswordDialog.tsx con useDialog, PasswordInput y el endpoint update existente; conservar el aviso sobre revocación de dispositivos.
+- Actualizar AccountSettingsDeleteDialog.tsx con consecuencias verificadas y PasswordInput, sin alterar UserController.destroy.
 
 **validateCommand:**
 ```text
-rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/components/DeleteAccountDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx
 ```
 
-### TASK-016: Sincronizar la documentación de arquitectura
+### TASK-016: Eliminar la vista independiente de cambio de contraseña
 
-Documentar AccountSettings y la ubicación de infraestructura User en las guías fuente del proyecto.
+Retirar EditPassword.tsx y convertir el GET antiguo en una redirección de compatibilidad al perfil; mantener intacta la acción PUT de actualización.
+
+**Type:** refactor
+**Effort:** S
+**Agent:** general-purpose
+**Priority:** P1
+**Depends on:** TASK-015
+**Review:** codex
+
+**Acceptance Criteria:**
+1. EditPassword.tsx deja de existir y GET /setting/password redirige a profile.edit sin renderizar una página independiente.
+2. PUT setting.password.update conserva la validación actual y la revocación de dispositivos confiables.
+3. Las pruebas comprueban la redirección al perfil y que credenciales actuales incorrectas no cambian la contraseña.
+
+**writeScope:**
+- Cambiar PasswordController.edit para redirigir a profile.edit y retirar imports que solo servían para renderizar Inertia.
+- Eliminar EditPassword.tsx después de que TASK-015 integre el diálogo.
+- Actualizar PasswordUpdateTest.php para verificar la redirección antigua y el flujo de actualización desde profile.edit.
+
+**validateCommand:**
+```text
+rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordUpdateTest.php
+```
+
+### TASK-017: Retirar el enlace obsoleto de contraseña del sidebar
+
+Quitar la navegación que llevaba a la vista eliminada y probar el cambio de contraseña con el diálogo desde el perfil.
+
+**Type:** refactor
+**Effort:** S
+**Agent:** general-purpose
+**Priority:** P2
+**Depends on:** TASK-016
+**Review:** codex
+
+**Acceptance Criteria:**
+1. El sidebar de Settings ya no ofrece una ruta aparte para cambiar contraseña ni importa el helper edit de PasswordController.
+2. Los tests de revocación de dispositivos usan profile.edit como referer y verifican que un cambio válido revoca los dispositivos.
+3. Una contraseña actual incorrecta devuelve el error al perfil y conserva activos los dispositivos confiables.
+
+**writeScope:**
+- Eliminar del grupo Seguridad en SettingSidebar.tsx el enlace a la página independiente de contraseña.
+- Actualizar PasswordTrustedDeviceRevocationTest.php para simular el referer profile.edit que usa el diálogo.
+
+**validateCommand:**
+```text
+rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php; rtk npm exec -- eslint resources/js/modules/setting/shared/components/SettingSidebar.tsx
+```
+
+### TASK-018: Sincronizar la documentación de arquitectura
+
+Documentar AccountSettings, su diálogo de cambio de contraseña y la ubicación de infraestructura User en las guías fuente del proyecto.
 
 **Type:** docs  
 **Effort:** S  
 **Agent:** general-purpose  
 **Priority:** P2  
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015  
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015, TASK-016, TASK-017
 **Review:** codex
 
 **Acceptance Criteria:**
-1. CLAUDE.md registra la feature AccountSettings, su límite con Auth/Password y perfil público, y el patrón Database de User.
-2. Las guías backend/frontend documentan las nuevas ubicaciones sin afirmar que Profile/Preferences o migraciones iniciales se movieron.
-3. La documentación no presenta el estado de cuenta como resuelto antes de la decisión final.
+1. CLAUDE.md registra AccountSettings, su límite con Auth/Password y perfil público, el uso del diálogo y el patrón Database de User.
+2. Las guías backend/frontend documentan las nuevas ubicaciones y explican que Auth/Password conserva la acción update aunque ya no exista la vista independiente.
+3. La documentación deja claro que el estado real de la cuenta está diferido a SOC-35 y no forma parte de SOC-34.
 
 **writeScope:**
 - Actualizar CLAUDE.md y docs/architecture/backend.md para estructura AccountSettings y User/Database.
-- Actualizar docs/architecture/frontend.md para el submódulo setting/accountSettings.
+- Actualizar docs/architecture/frontend.md para el submódulo setting/accountSettings, diálogo de contraseña y ausencia de la vista independiente.
 
 **validateCommand:**
 ```text
 rtk git diff --check -- CLAUDE.md docs/architecture/backend.md docs/architecture/frontend.md
 ```
 
-### TASK-017: Ejecutar gates y QA visual de AccountSettings
+### TASK-019: Ejecutar gates y QA visual de AccountSettings
 
-Validar el slice integrado en escritorio y móvil, teclado, contratos de rutas y todos los gates del proyecto.
+Validar el slice integrado en escritorio y móvil, la navegación por teclado, contratos de rutas y todos los gates del proyecto.
 
 **Type:** test  
 **Effort:** M  
 **Agent:** general-purpose  
 **Priority:** P1  
-**Depends on:** TASK-010, TASK-011, TASK-015, TASK-016  
+**Depends on:** TASK-010, TASK-011, TASK-015, TASK-016, TASK-017, TASK-018
 **Review:** codex
 
 **Acceptance Criteria:**
-1. Pasan las pruebas AccountSettings, el conjunto completo de Pest, Pint, PHPStan, Rector dry-run seguido de Rector y los gates frontend format/lint/types/build/build:ssr.
-2. La comparación manual contra el mock pasa en escritorio y móvil; se recorre el formulario y el diálogo de borrado con teclado.
+1. Pasan las pruebas AccountSettings y Password, el conjunto completo de Pest, Pint, PHPStan, Rector dry-run seguido de Rector y los gates frontend format/lint/types/build/build:ssr.
+2. La comparación manual contra el mock pasa en escritorio y móvil; se recorren con teclado el formulario y los diálogos de cambio de contraseña y eliminación.
 3. composer doctor corre como último gate local y no se ejecutan comprobaciones después.
 
 **writeScope:**
@@ -525,26 +584,26 @@ Validar el slice integrado en escritorio y móvil, teclado, contratos de rutas y
 rtk vendor/bin/pint --dirty --format agent; rtk composer phpstan; rtk composer rector-dry; rtk composer rector; rtk php artisan test --compact; rtk npm run format:check; rtk npm run lint:check; rtk npm run types; rtk npm run build; rtk npm run build:ssr; QA manual navegador escritorio/móvil/teclado; rtk composer doctor (último gate local, sin checks posteriores).
 ```
 
-### TASK-018: Resolver la fuente del estado real de la cuenta
+### TASK-020: Registrar el diferimiento del estado real de la cuenta
 
-Último punto funcional del plan. Revisar con el usuario qué significa el estado de cuenta y qué dato confiable debe respaldarlo; la inspección actual no encontró status ni soft-delete en User. No codificar una etiqueta ni inferirla de email_verified_at, last_login_at o de la sesión. Tras la decisión del usuario, ampliar el DAG con la implementación exacta —migración modular si corresponde, serialización privada, UI y prueba— antes de tocar código.
+Registrar la decisión de producto: SOC-34 no implementa ni muestra un estado real de cuenta. La gestión de estados activa/suspendida y su fuente persistida quedan en SOC-35, que solo debe iniciarse cuando haya panel administrativo y roles/permisos. No inferir el estado de email_verified_at, last_login_at ni de la sesión.
 
-**Type:** feature  
+**Type:** chore
 **Effort:** S  
 **Agent:** general-purpose  
-**Priority:** P1  
-**Depends on:** TASK-017  
+**Priority:** P2
+**Depends on:** TASK-019
 **Review:** codex
 
 **Acceptance Criteria:**
-1. Se presentan al usuario las fuentes/semánticas posibles y se aprueba explícitamente una fuente real antes de implementarla.
-2. Si el producto elige un estado persistido, el plan actualizado asigna la migración nueva a app/User/Database/Migrations y conserva las migraciones iniciales en database/migrations.
-3. No se cierra SOC-34 ni se muestra un valor de muestra mientras el estado y su fuente no estén aprobados e implementados.
+1. La decisión del usuario de diferir el estado real hasta que existan panel administrativo y roles/permisos queda registrada.
+2. SOC-35 contiene la semántica, los criterios de acceso y la condición de inicio para esa implementación futura.
+3. El alcance de SOC-34 excluye mostrar un estado ficticio y no espera a que SOC-35 se implemente.
 
 **writeScope:**
 **validateCommand:**
 ```text
-Revisión manual final con el usuario; actualizar este DAG con el alcance y las pruebas concretas aprobadas antes de implementar.
+Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en SOC-34.
 ```
 
 ## Failure Modes
@@ -555,14 +614,17 @@ Revisión manual final con el usuario; actualizar este DAG con el alcance y las 
 - El listener actualiza fecha en un challenge 2FA aún pendiente; probar acceso normal, dispositivo confiable, credenciales erróneas y challenge sin completar.
 - Una petición incluye el ID de otra cuenta, email o last_login_at; resolver el objetivo desde el usuario autenticado y rechazar/ignorar campos fuera del contrato.
 - La eliminación con contraseña incorrecta cierra la sesión o borra la cuenta; la prueba debe comprobar que la cuenta persiste y el error se muestra.
+- El diálogo afirma que publicaciones, comentarios u otros datos relacionados se eliminan sin que el backend o las relaciones/cascadas lo garanticen; limitar el texto a consecuencias verificadas.
+- El diálogo de cambio de contraseña pierde el aviso de revocación de dispositivos o no permanece abierto al recibir errores de validación; conservar el contrato del formulario actual.
+- La vista EditPassword se elimina sin cambiar su ruta GET a una redirección compatible o sin retirar el enlace viejo del sidebar.
 - Los elementos estáticos parecen toggles activos o el botón de actividad ejecuta una acción accidental; validación manual de interacción.
-- El estado de cuenta se presenta como activo sin una fuente aprobada; detener el cierre de SOC-34 en TASK-018.
+- El estado de cuenta se presenta como activo sin una fuente aprobada; mantenerlo fuera de SOC-34 y remitir la implementación a SOC-35.
 
 ## Ship Cut
 
-- Antes de TASK-017, el feature no está listo para integrar: los gates y QA de pantalla aún faltan.
-- TASK-017 valida todo lo acordado salvo estado de cuenta, cuya decisión queda expresamente al final.
-- No mover SOC-34 a Done hasta completar la decisión e implementación del estado real después de TASK-018.
+- Antes de TASK-019, el feature no está listo para integrar: los gates y QA de pantalla aún faltan.
+- TASK-019 valida el alcance acordado de SOC-34, incluidos ambos diálogos; el estado real queda expresamente diferido a SOC-35.
+- SOC-34 puede cerrarse con el estado real fuera de alcance; SOC-35 espera a que existan panel administrativo y roles/permisos.
 
 ## Test Coverage Map
 
@@ -572,15 +634,17 @@ Revisión manual final con el usuario; actualizar este DAG con el alcance y las 
 | Datos de resumen reales y privacidad de serialización | TASK-011 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsSummaryTest.php` |
 | Último acceso solo tras autenticación exitosa | TASK-011 | `app/User/Modules/AccountSettings/Tests/Listeners/TrackLastLoginTest.php` |
 | Borrado válido/inválido con contraseña actual | TASK-010 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` |
-| Diseño, responsive y accesibilidad por teclado | TASK-017 | `QA manual contra mock Linear` |
+| Cambio de contraseña desde el diálogo, redirección legacy y rechazo de contraseña actual inválida | TASK-016 | `app/Auth/Modules/Password/Tests/PasswordUpdateTest.php` |
+| Revocación de dispositivos confiables desde el referer del diálogo y preservación con error de contraseña | TASK-017 | `app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php` |
+| Diseño, responsive y accesibilidad por teclado | TASK-019 | `QA manual de los diálogos contra el mock Linear` |
 
 ## Execution Summary
 
-- Tareas: 18.
+- Tareas: 20.
 - Modo: EXPANSION.
 - Revisión predeterminada: codex.
-- Capas paralelas: [TASK-001, TASK-002, TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007] → [TASK-008] → [TASK-009, TASK-010] → [TASK-011, TASK-012] → [TASK-013] → [TASK-014] → [TASK-015] → [TASK-016] → [TASK-017] → [TASK-018].
-- Ruta crítica: TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-009 → TASK-012 → TASK-013 → TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018.
+- Capas paralelas: [TASK-001, TASK-002, TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007] → [TASK-008] → [TASK-009, TASK-010] → [TASK-011, TASK-012] → [TASK-013] → [TASK-014] → [TASK-015] → [TASK-016] → [TASK-017] → [TASK-018] → [TASK-019] → [TASK-020].
+- Ruta crítica: TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-009 → TASK-012 → TASK-013 → TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018 → TASK-019 → TASK-020 (registro del diferimiento a SOC-35).
 
 ## Task Dependencies
 
@@ -601,6 +665,8 @@ Revisión manual final con el usuario; actualizar este DAG con el alcance y las 
 | TASK-013 | TASK-007, TASK-009, TASK-012 |
 | TASK-014 | TASK-012, TASK-013 |
 | TASK-015 | TASK-009, TASK-013, TASK-014 |
-| TASK-016 | TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015 |
-| TASK-017 | TASK-010, TASK-011, TASK-015, TASK-016 |
-| TASK-018 | TASK-017 |
+| TASK-016 | TASK-015 |
+| TASK-017 | TASK-016 |
+| TASK-018 | TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015, TASK-016, TASK-017 |
+| TASK-019 | TASK-010, TASK-011, TASK-015, TASK-016, TASK-017, TASK-018 |
+| TASK-020 | TASK-019 |
