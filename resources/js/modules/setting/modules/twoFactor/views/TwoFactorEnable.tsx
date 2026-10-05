@@ -23,7 +23,7 @@ import {
 
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -180,8 +180,8 @@ function TwoFactorEnable(): JSX.Element {
   };
 
   return (
-    <div className="flex gap-4">
-      <div className="flex min-w-0 flex-1 flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
         <TwoFactorTitle onManageAction={handleManageAction} />
 
         <OptionCard
@@ -200,11 +200,11 @@ function TwoFactorEnable(): JSX.Element {
         <TwoFactorSafetyTips />
       </div>
 
-      <Card className="w-full max-w-sm shrink-0 self-start">
+      <Card className="w-full xl:max-w-sm xl:shrink-0 xl:self-start">
         <CardHeader>
-          <CardTitle>
+          <h2 className="leading-none font-semibold">
             {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
-          </CardTitle>
+          </h2>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-6">
@@ -237,21 +237,21 @@ interface TwoFactorTitleProps {
 
 function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
   return (
-    <div className="flex items-start gap-6 rounded-xl border bg-card p-6 shadow-sm">
+    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-sm sm:flex-row sm:gap-6 sm:p-6">
       <div className={cn(iconColorVariants.green.iconBgClass, "rounded-3xl p-2")}>
         <ShieldCheck className={cn("h-12 w-12", iconColorVariants.green.iconFgClass)} />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold">2FA está activo</h2>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">2FA está activo</h1>
 
           <p className="text-sm text-muted-foreground">
             Tu cuenta está protegida con autenticación de dos factores.
           </p>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-4">
           <div className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
 
@@ -274,7 +274,7 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline">
+          <Button className="w-full sm:w-auto" variant="outline">
             <Bolt />
             Administrar
             <ChevronDown />
@@ -449,10 +449,10 @@ function TwoFactorSafetyTips(): JSX.Element {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
+        <h2 className="flex items-center leading-none font-semibold">
           <Info className="mr-2 h-6 w-6 text-purple-700 dark:text-purple-500" />
           Consejos de seguridad
-        </CardTitle>
+        </h2>
       </CardHeader>
       <CardContent className="flex flex-1 gap-6">
         {twoFactorSafetyTips.map((tip) => {
@@ -470,7 +470,7 @@ function TwoFactorSafetyTips(): JSX.Element {
               </div>
 
               <div className="flex flex-1 flex-col gap-0.5">
-                <h4 className="text-sm font-medium">{tip.title}</h4>
+                <h3 className="text-sm font-medium">{tip.title}</h3>
 
                 <p className="text-sm text-muted-foreground">{tip.description}</p>
               </div>
