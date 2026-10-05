@@ -14,7 +14,6 @@ import {
   CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/shared/components/shadcn/ui/card";
 import {
   ChartContainer,
@@ -108,7 +107,7 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Resumen de dispositivos</CardTitle>
+        <h2 className="leading-none font-semibold tracking-tight">Resumen de dispositivos</h2>
         <CardDescription>Asi esta la seguridad de tus dispositivos</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 items-center gap-4 pb-0">
@@ -136,13 +135,14 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
           </RadialBarChart>
         </ChartContainer>
 
-        <ul className="flex flex-1 flex-col justify-center gap-3">
+        <ul className="flex flex-1 flex-col justify-center gap-3" role="list">
           {chartData.map((item) => {
             const colorVariant = colorVariantForEstado[item.estado];
 
             return (
               <li className="flex items-center gap-2" key={item.estado}>
                 <div
+                  aria-hidden="true"
                   className={cn(
                     "flex h-5 w-5 shrink-0 rounded-md p-1",
                     iconColorVariants[colorVariant].iconBgClass,
