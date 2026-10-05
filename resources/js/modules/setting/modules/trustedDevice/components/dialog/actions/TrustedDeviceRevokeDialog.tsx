@@ -14,7 +14,7 @@ import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime
 import { destroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
+import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Checkbox } from "@/shared/components/shadcn/ui/checkbox";
 import {
@@ -89,14 +89,15 @@ function TrustedDeviceRevokeDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-muted-foreground" />
-              Revokar dispositivo
-            </div>
+            <h2 className="flex items-center gap-2">
+              <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
+              Revocar dispositivo
+            </h2>
           </DialogTitle>
           <DialogDescription>
-            Eliminaras este dispositivo de confianza. Se te volvera a solicitar el codigo de
-            verificacion al iniciasr sesion.
+            Revocarás {device.name ?? "este dispositivo"}. Dejará de ser de confianza y se te
+            volverá a solicitar el código de verificación la próxima vez que inicies sesión desde
+            él.
           </DialogDescription>
         </DialogHeader>
 
@@ -142,9 +143,17 @@ function TrustedDeviceRevokeDialog({
 
 function RevokeConsequencesAlert(): JSX.Element {
   return (
-    <Alert className={cn(alertVariants.destructive, "my-2")}>
-      <AlertTriangleIcon />
-      <AlertTitle>¿Que pasara?</AlertTitle>
+    <Alert
+      aria-labelledby="revoke-device-warning-title"
+      className={cn(alertVariants.destructive, "my-2")}
+    >
+      <AlertTriangleIcon aria-hidden="true" />
+      <h3
+        className="col-start-2 min-h-4 font-medium tracking-tight"
+        id="revoke-device-warning-title"
+      >
+        Consecuencias de la revocación
+      </h3>
       <AlertDescription>
         <ul className="mt-1 list-inside list-disc space-y-2">
           <li>Este dispositivo ya no estara registrado como de confianza.</li>
@@ -161,7 +170,7 @@ function RevokeConsequencesAlert(): JSX.Element {
 interface RevokeDeviceFormProps {
   data: RevokeDeviceFormData;
   errors: FormDataErrors<RevokeDeviceFormData>;
-  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   setData: SetDataAction<RevokeDeviceFormData>;
 }
 
@@ -176,22 +185,30 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
         </Label>
 
         <PasswordInput
+          aria-describedby={errors.password ? "revoke-device-password-error" : undefined}
           aria-invalid={errors.password ? "true" : "false"}
           autoFocus
           id="revoke-trusted-device"
           name="password"
           placeholder="Ingresa tu contraseña"
           required
-          onChange={(e) => {
-            setData("password", e.target.value);
+          onChange={(event) => {
+            setData("password", event.target.value);
           }}
         />
 
-        {errors.password && <InputError message={errors.password} />}
+        {errors.password && (
+          <InputError
+            aria-live="polite"
+            id="revoke-device-password-error"
+            message={errors.password}
+          />
+        )}
       </div>
 
       <div className="flex gap-2">
         <Checkbox
+          aria-describedby={errors.terms ? "revoke-device-terms-error" : undefined}
           aria-invalid={errors.terms ? "true" : "false"}
           checked={data.terms}
           id="revoke-trusted-device-terms"
@@ -206,7 +223,9 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
         </LabelForm>
       </div>
 
-      {errors.terms && <InputError message={errors.terms} />}
+      {errors.terms && (
+        <InputError aria-live="polite" id="revoke-device-terms-error" message={errors.terms} />
+      )}
     </form>
   );
 }

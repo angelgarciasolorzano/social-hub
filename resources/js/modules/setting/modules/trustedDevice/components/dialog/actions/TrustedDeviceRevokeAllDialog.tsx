@@ -1,5 +1,5 @@
 import type { JSX, SubmitEvent } from "react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { router, type SetDataAction, useForm, usePage } from "@inertiajs/react";
 
@@ -37,7 +37,6 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
-import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
@@ -126,15 +125,15 @@ function TrustedDeviceRevokeAllDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Revocar todos los dispositivos
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
-            Eliminaras todos los dispositivos de confianza vinculados a tu cuenta. La proxima vez
-            que inicies sesion en cualquiera de ellos, se te volvera a solicitar el codigo de
-            verificacion.
+            Revocarás todos los dispositivos de confianza vinculados a tu cuenta. La próxima vez que
+            inicies sesión desde cualquiera de ellos, se te volverá a solicitar el código de
+            verificación.
           </DialogDescription>
         </DialogHeader>
 
@@ -182,7 +181,7 @@ function TrustedDeviceRevokeAllDialog({
                       Revocando...
                     </>
                   ) : (
-                    "Revokar todos"
+                    "Revocar todos"
                   )}
                 </Button>
               </div>
@@ -250,13 +249,15 @@ function TrustedDeviceRevokeAllDialogSkeleton(): JSX.Element {
 
 function RevokeConsequencesAlert(): JSX.Element {
   return (
-    <Alert className={alertVariants.destructive}>
-      <AlertTriangleIcon />
-      <AlertTitle>¿Que pasara?</AlertTitle>
+    <Alert aria-labelledby="revoke-all-warning-title" className={alertVariants.destructive}>
+      <AlertTriangleIcon aria-hidden="true" />
+      <h3 className="col-start-2 min-h-4 font-medium tracking-tight" id="revoke-all-warning-title">
+        Consecuencias de revocar todos los dispositivos
+      </h3>
       <AlertDescription>
         <ul className="mt-1 list-inside list-disc space-y-2">
-          <li>Se eliminaran todos los dispositivos de confianza vinculados a tu cuenta.</li>
-          <li>Se te volvera a solicitar el codigo de verificacion (2FA) en esos dispositivos.</li>
+          <li>Se eliminarán todos los dispositivos de confianza vinculados a tu cuenta.</li>
+          <li>Se te volverá a solicitar el código de verificación (2FA) en esos dispositivos.</li>
           <li>Esta acción no se puede deshacer.</li>
         </ul>
       </AlertDescription>
@@ -272,11 +273,11 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
   const deviceCount = devices.length;
   const hasDevices = deviceCount > 0;
   const headline = hasDevices
-    ? `${deviceCount} ${deviceCount === 1 ? "dispositivo sera revocado" : "dispositivos seran revocados"}`
+    ? `${deviceCount} ${deviceCount === 1 ? "dispositivo será revocado" : "dispositivos serán revocados"}`
     : "No hay dispositivos para revocar";
   const description = hasDevices
     ? "Incluye todos los dispositivos de confianza registrados actualmente."
-    : "Cuando registres un nuevo dispositivo de confianza, aparecera aqui para que puedas revocarlo junto con los demas.";
+    : "Cuando registres un nuevo dispositivo de confianza, aparecerá aquí para que puedas revocarlo junto con los demás.";
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -291,21 +292,21 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-          <span className="font-semibold">{headline}</span>
+          <h3 className="font-semibold">{headline}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
 
       {hasDevices ? (
         <ScrollArea className="h-40 rounded-xl border py-3 dark:bg-input/10">
-          {devices.map((device, index) => (
-            <Fragment key={device.id}>
-              <div className="mx-4 flex items-center gap-2 text-sm">
+          <ul className="divide-y" role="list">
+            {devices.map((device) => (
+              <li className="mx-4 flex items-center gap-2 py-1 text-sm" key={device.id}>
                 {getDeviceIcon(device, "shrink-0")}
 
                 <span className="max-w-20 truncate font-medium">{device.name}</span>
 
-                <FaCircle className="h-1 w-1 text-muted-foreground" />
+                <FaCircle aria-hidden="true" className="h-1 w-1 text-muted-foreground" />
 
                 <span className="text-muted-foreground">
                   {device.browser}
@@ -314,16 +315,14 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
                   )}
                 </span>
 
-                <FaCircle className="h-1 w-1 text-muted-foreground" />
+                <FaCircle aria-hidden="true" className="h-1 w-1 text-muted-foreground" />
 
                 <span className="truncate text-muted-foreground">
                   Expira el {formatLongDate(device.expiresAt)}
                 </span>
-              </div>
-
-              {index < devices.length - 1 && <Separator className="my-2" />}
-            </Fragment>
-          ))}
+              </li>
+            ))}
+          </ul>
         </ScrollArea>
       ) : (
         <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground dark:bg-input/10">
@@ -338,7 +337,7 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
 }
 
 interface RevokeDeviceFormProps {
-  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   errors: FormDataErrors<RevokeDeviceFormData>;
   setData: SetDataAction<RevokeDeviceFormData>;
   data: RevokeDeviceFormData;
@@ -362,13 +361,16 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           autoFocus
           placeholder="Ingresa tu contraseña"
           disabled={disabled}
-          onChange={(e) => {
-            setData("password", e.target.value);
+          onChange={(event) => {
+            setData("password", event.target.value);
           }}
+          aria-describedby={errors.password ? "revoke-all-password-error" : undefined}
           aria-invalid={errors.password ? "true" : "false"}
         />
 
-        {errors.password && <InputError message={errors.password} />}
+        {errors.password && (
+          <InputError aria-live="polite" id="revoke-all-password-error" message={errors.password} />
+        )}
       </div>
 
       <div className="flex gap-2">
@@ -380,15 +382,18 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           onCheckedChange={(checked) => {
             setData("terms", checked === true);
           }}
+          aria-describedby={errors.terms ? "revoke-all-terms-error" : undefined}
           aria-invalid={errors.terms ? "true" : "false"}
         />
 
         <LabelForm htmlFor="revoke-trusted-device-terms" className="text-muted-foreground">
-          Entiendo que esta accion eliminara todos mis dispositivos de confianza.
+          Entiendo que esta acción eliminará todos mis dispositivos de confianza.
         </LabelForm>
       </div>
 
-      {errors.terms && <InputError message={errors.terms} />}
+      {errors.terms && (
+        <InputError aria-live="polite" id="revoke-all-terms-error" message={errors.terms} />
+      )}
     </form>
   );
 }
