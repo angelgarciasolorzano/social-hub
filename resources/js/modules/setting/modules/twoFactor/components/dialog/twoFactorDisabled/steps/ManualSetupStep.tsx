@@ -8,7 +8,7 @@ import { AlertTriangleIcon, Check, Copy, Info, Loader2, RotateCcw } from "lucide
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Field, FieldDescription, FieldLabel } from "@/shared/components/shadcn/ui/field";
+import { Field, FieldLabel } from "@/shared/components/shadcn/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -67,13 +67,13 @@ function ManualSetupStep({
       <Field className="w-full">
         <FieldLabel htmlFor={manualSetupKeyId}>Código manual</FieldLabel>
 
-        <FieldDescription className="flex items-start gap-2" id={manualSetupInstructionsId}>
+        <Alert className={cn(alertVariants.info, "items-start")} role="note">
           <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-          <span>
+          <AlertDescription id={manualSetupInstructionsId}>
             En tu aplicación, selecciona &quot;Ingresar clave manualmente&quot; o &quot;Agregar
             cuenta manualmente&quot; y pega esta clave.
-          </span>
-        </FieldDescription>
+          </AlertDescription>
+        </Alert>
 
         <ManualSetupKeyInput
           Icon={isCopied ? Check : Copy}

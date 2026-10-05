@@ -418,6 +418,33 @@ rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDev
 rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx
 ```
 
+### TASK-018: Restaurar aviso manual, centrar OTP y mostrar verificación
+
+Recuperar el color del aviso informativo de configuración manual, centrar el rótulo y el grupo de casillas OTP en el diálogo, y dar feedback visual y accesible mientras se confirma el código.
+
+**Phase:** Diálogos y flujos
+**Type:** fix
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P1
+**Depends on:** TASK-004
+**Acceptance Criteria:**
+- La instrucción de configuración manual usa el Alert informativo shadcn y sigue asociada al campo de la clave.
+- El rótulo Código de verificación y el grupo OTP quedan centrados respecto al ancho disponible del diálogo en escritorio y móvil; la relación label/ID y las instrucciones accesibles se conservan.
+- Al enviar un código completo, el botón indica que está verificando, muestra el Spinner y evita envíos duplicados; ante error deja de cargar y permite reintentar.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx` — Restaurar el callout informativo shadcn conservando su asociación con el campo.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx` — Centrar el grupo OTP y exponer el estado de envío y reintento.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactorDisabled/steps/VerifyOtpStep.tsx
+```
+
+**QA manual:** Revisar los pasos manual y OTP en escritorio/móvil; confirmar el estado visual de carga sin enviar un OTP real.
+
 ### TASK-016: Cerrar QA semántico, visual y de teclado de SOC-36
 
 Correr los gates frontend existentes y validar manualmente rutas/estados de ambos módulos con teclado, estructura y viewport móvil. Confirmar que el refactor no cambió contratos ni comportamiento.
@@ -427,7 +454,7 @@ Correr los gates frontend existentes y validar manualmente rutas/estados de ambo
 **Effort:** M
 **Agent:** react-vite-tailwind-engineer
 **Priority:** P0
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-018
 **Acceptance Criteria:**
 - Pasan format:check, lint:check, types, build y build:ssr después de integrar todas las tareas.
 - QA manual confirma tabulación, activación con Enter/Espacio, foco al abrir/cerrar diálogos, etiquetas/nombres y encabezados en ambos módulos.
@@ -456,7 +483,7 @@ rtk npm run build:ssr
 
 ## Ship Cut
 
-SOC-36 se considera completo después de las 15 tareas de implementación y TASK-016. La tarea adyacente de PreferredLocale no bloquea el cierre del issue. Si se pausa, cada slice puede revisarse por separado; cerrar SOC-36 requiere ambos módulos, diálogos relevantes, gates frontend y QA de teclado/estados.
+SOC-36 se considera completo después de las 16 tareas de implementación y TASK-016. La tarea adyacente de PreferredLocale no bloquea el cierre del issue. Si se pausa, cada slice puede revisarse por separado; cerrar SOC-36 requiere ambos módulos, diálogos relevantes, gates frontend y QA de teclado/estados.
 
 ## Test Coverage Map
 
@@ -470,9 +497,9 @@ SOC-36 se considera completo después de las 15 tareas de implementación y TASK
 - Modo: **EXPANSION**
 - Ejecución: **Por fases**
 - Revisión por defecto: **codex**
-- Tareas SOC-36: **16** (15 implementación + QA); trabajo adyacente: **1**.
+- Tareas SOC-36: **17** (16 implementación + QA); trabajo adyacente: **1**.
 - Fases: **4**.
-- Critical path: TASK-001 → TASK-016.
+- Critical path: TASK-004 → TASK-018 → TASK-016.
 
 ## Task Dependencies
 
@@ -486,13 +513,13 @@ Controles, búsquedas, tarjetas, listas y metadatos semánticos. Tareas: TASK-00
 
 ### PHASE-3: Diálogos y flujos
 
-Diálogos nombrados, campos asociados y teclado preservado. Tareas: TASK-005, TASK-006, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014.
+Diálogos nombrados, campos asociados y teclado preservado. Tareas: TASK-005, TASK-006, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-018.
 
 ### PHASE-4: QA de cierre
 
 Gates frontend y revisión manual de teclado, estados y móvil. Tareas: TASK-016.
 
-Las tareas de implementación editan archivos disjuntos y no tienen dependencias artificiales; TASK-016 depende de todas.
+Las tareas iniciales de implementación editan archivos disjuntos. TASK-018 depende de TASK-004 porque completa el mismo flujo OTP, y TASK-016 depende de todas las tareas de implementación.
 
 ```mermaid
 flowchart TD
@@ -511,6 +538,8 @@ flowchart TD
   TASK-013 --> TASK-016
   TASK-014 --> TASK-016
   TASK-015 --> TASK-016
+  TASK-004 --> TASK-018
+  TASK-018 --> TASK-016
   TASK-017["TASK-017: trabajo adyacente e independiente"]
 ```
 

@@ -94,7 +94,8 @@
         "TASK-011",
         "TASK-012",
         "TASK-013",
-        "TASK-014"
+        "TASK-014",
+        "TASK-018"
       ],
       "outcome": "Diálogos nombrados, campos asociados y teclado preservado."
     },
@@ -674,6 +675,41 @@
       "review": "codex"
     },
     {
+      "id": "TASK-018",
+      "title": "Restaurar aviso manual, centrar OTP y mostrar verificación",
+      "phase": "Diálogos y flujos",
+      "description": "Recuperar el color del aviso informativo de configuración manual, centrar el rótulo y el grupo de casillas OTP en el diálogo, y dar feedback visual y accesible mientras se confirma el código.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "La instrucción de configuración manual usa el Alert informativo shadcn y sigue asociada al campo de la clave.",
+        "El rótulo Código de verificación y el grupo OTP quedan centrados respecto al ancho disponible del diálogo en escritorio y móvil; la relación label/ID y las instrucciones accesibles se conservan.",
+        "Al enviar un código completo, el botón indica que está verificando, muestra el Spinner y evita envíos duplicados; ante error deja de cargar y permite reintentar."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+          "role": "Restaurar el callout informativo shadcn conservando su asociación con el campo."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx",
+          "role": "Centrar el grupo OTP y exponer el estado de envío y reintento."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx\nQA manual en el navegador: pasos de configuración manual y OTP en escritorio/móvil; verificar estado visual de carga sin confirmar un código real.",
+      "review": "codex"
+    },
+    {
       "id": "TASK-016",
       "title": "Cerrar QA semántico, visual y de teclado de SOC-36",
       "phase": "QA de cierre",
@@ -742,15 +778,20 @@
       "TASK-012",
       "TASK-013",
       "TASK-014",
-      "TASK-015"
+      "TASK-015",
+      "TASK-018"
+    ],
+    "TASK-018": [
+      "TASK-004"
     ]
   },
   "criticalPath": {
     "tasks": [
-      "TASK-001",
+      "TASK-004",
+      "TASK-018",
       "TASK-016"
     ],
-    "rationale": "Una tarea de página y QA de integración; todas las tareas de implementación alimentan directamente el QA final."
+    "rationale": "TASK-004 alimenta el ajuste visual y accesible de TASK-018, que debe completarse antes del QA de integración TASK-016."
   },
   "failureModes": [
     "DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.",
@@ -760,7 +801,7 @@
     "Ajustes tipográficos amplios pueden alterar densidad responsive; mantenerlos locales y revisar móvil, vacío y error.",
     "Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos."
   ],
-  "shipCut": "SOC-36 se considera completo después de las 15 tareas de implementación y TASK-016. La tarea adyacente de PreferredLocale no bloquea el cierre del issue. Si se pausa, cada slice puede revisarse por separado; cerrar SOC-36 requiere ambos módulos, diálogos relevantes, gates frontend y QA de teclado/estados.",
+  "shipCut": "SOC-36 se considera completo después de las 16 tareas de implementación y TASK-016. La tarea adyacente de PreferredLocale no bloquea el cierre del issue. Si se pausa, cada slice puede revisarse por separado; cerrar SOC-36 requiere ambos módulos, diálogos relevantes, gates frontend y QA de teclado/estados.",
   "testCoverageMap": [
     {
       "scope": "Cada slice de implementación",
@@ -780,8 +821,8 @@
     }
   ],
   "executionSummary": {
-    "taskCount": 16,
-    "implementationTaskCount": 15,
+    "taskCount": 17,
+    "implementationTaskCount": 16,
     "phaseCount": 4,
     "dagLayers": [
       {
@@ -807,12 +848,18 @@
       {
         "layer": 2,
         "taskIds": [
+          "TASK-018"
+        ]
+      },
+      {
+        "layer": 3,
+        "taskIds": [
           "TASK-016"
         ]
       }
     ],
     "reviewDefault": "codex",
-    "linearTaskCount": 16,
+    "linearTaskCount": 17,
     "adjacentTaskCount": 1
   },
   "adjacentWork": {
