@@ -43,13 +43,14 @@ function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
-        className="cursor-pointer text-sm font-medium text-violet-700 underline-offset-4 hover:underline dark:text-violet-400"
+        className="h-auto cursor-pointer p-0 text-sm font-medium text-violet-700 dark:text-violet-400"
         onClick={onOpenManualSetup}
+        variant="link"
       >
         ¿No puedes escanear el código?
-      </button>
+      </Button>
 
       <Alert className={alertVariants.info}>
         <Info />

@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 export interface Step {
   number: number;
   title: string;
@@ -8,9 +10,9 @@ interface TimelineProps {
   steps: Step[];
 }
 
-function Timeline({ steps }: TimelineProps) {
+function Timeline({ steps }: TimelineProps): JSX.Element {
   return (
-    <div className="space-y-0">
+    <ol className="list-none space-y-0" role="list">
       {steps.map((step, index) => (
         <TimelineStep
           key={step.number}
@@ -20,7 +22,7 @@ function Timeline({ steps }: TimelineProps) {
           isLast={index === steps.length - 1}
         />
       ))}
-    </div>
+    </ol>
   );
 }
 
@@ -28,15 +30,18 @@ interface TimelineStepProps extends Step {
   isLast: boolean;
 }
 
-function TimelineStep({ number, title, description, isLast }: TimelineStepProps) {
+function TimelineStep({ number, title, description, isLast }: TimelineStepProps): JSX.Element {
   return (
-    <div className="flex gap-4">
+    <li className="flex gap-4">
       <div className="flex flex-col items-center">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-50 font-semibold text-green-600 dark:bg-green-900/20 dark:text-green-500">
+        <div
+          aria-hidden="true"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-50 font-semibold text-green-600 dark:bg-green-900/20 dark:text-green-500"
+        >
           {number}
         </div>
 
-        {!isLast && <div className="w-[1.5px] flex-1 bg-border" />}
+        {!isLast && <div aria-hidden="true" className="w-[1.5px] flex-1 bg-border" />}
       </div>
 
       <div className="pt-1 pb-8">
@@ -44,7 +49,7 @@ function TimelineStep({ number, title, description, isLast }: TimelineStepProps)
 
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
-    </div>
+    </li>
   );
 }
 

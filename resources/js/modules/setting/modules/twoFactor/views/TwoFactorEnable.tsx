@@ -421,14 +421,16 @@ function TwoFactorSecuritySummary({
       }
       case "chevron":
         return (
-          <button
+          <Button
             onClick={action.onClick}
-            className="cursor-pointer rounded-full p-1 transition-colors hover:bg-accent"
+            className="rounded-full"
+            size="icon"
             type="button"
             aria-label="Ver detalles"
+            variant="ghost"
           >
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </button>
+            <ChevronRight className="size-5 text-muted-foreground" />
+          </Button>
         );
       case "none":
         return null;
