@@ -31,13 +31,25 @@ function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
         <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
           <div className="z-10 flex h-full w-full items-center justify-center p-5">
             {qrCodeSvg ? (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: qrCodeSvg,
-                }}
-              />
+              <>
+                <div
+                  aria-label="Código QR para configurar la autenticación de dos factores"
+                  dangerouslySetInnerHTML={{
+                    __html: qrCodeSvg,
+                  }}
+                  role="img"
+                />
+                <span className="sr-only" role="status">
+                  Código QR listo para escanear.
+                </span>
+              </>
             ) : (
-              <Loader2 className="flex size-4 animate-spin" />
+              <>
+                <Loader2 aria-hidden="true" className="flex size-4 animate-spin" />
+                <span className="sr-only" role="status">
+                  Cargando código QR.
+                </span>
+              </>
             )}
           </div>
         </div>
@@ -53,7 +65,7 @@ function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
       </Button>
 
       <Alert className={alertVariants.info}>
-        <Info />
+        <Info aria-hidden="true" />
         <AlertTitle>Consejo</AlertTitle>
         <AlertDescription>
           Abre tu aplicación y usa la opción para agregar una nueva cuenta.
@@ -75,13 +87,13 @@ function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
   return (
     <div className="flex w-full flex-col items-center space-y-2">
       <Alert className={cn(alertVariants.destructive, "my-2")}>
-        <AlertTriangleIcon />
+        <AlertTriangleIcon aria-hidden="true" />
         <AlertTitle>Algo salió mal</AlertTitle>
         <AlertDescription>No pudimos cargar la información. Inténtalo de nuevo.</AlertDescription>
       </Alert>
 
       <Button className="w-full cursor-pointer" onClick={onRetry} type="button" variant="outline">
-        <RotateCcw />
+        <RotateCcw aria-hidden="true" />
         Reintentar
       </Button>
     </div>

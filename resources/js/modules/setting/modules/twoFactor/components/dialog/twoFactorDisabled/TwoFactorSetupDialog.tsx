@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from "react";
+import { type JSX, type ReactNode, useEffect, useRef } from "react";
 
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
@@ -39,6 +39,9 @@ interface TwoFactorSetupDialogProps {
 }
 
 export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): JSX.Element {
+  const dialogTitleRef = useRef<HTMLHeadingElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   const {
     clearSetupData,
     errors,
@@ -73,6 +76,12 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
     requiresConfirmation,
     twoFactorEnabled,
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      dialogTitleRef.current?.focus();
+    }
+  }, [isOpen, step]);
 
   const handleRetry = (): void => {
     void fetchSetupData();
@@ -123,7 +132,27 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
       }}
       open={isOpen}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        className="sm:max-w-md"
+        onOpenAutoFocus={() => {
+          const activeElement = document.activeElement;
+
+          returnFocusRef.current =
+            activeElement instanceof HTMLElement && activeElement !== document.body
+              ? activeElement
+              : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          const focusTarget = returnFocusRef.current;
+
+          if (focusTarget?.isConnected) {
+            event.preventDefault();
+            focusTarget.focus();
+          }
+
+          returnFocusRef.current = null;
+        }}
+      >
         {step === twoFactorActivationStepKey.manualSetup ? (
           <Button
             type="button"
@@ -140,7 +169,9 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
         <DialogHeader className="flex items-center justify-center">
           <DialogHeaderIcon step={step} />
 
-          <DialogTitle>{modalConfig.title}</DialogTitle>
+          <DialogTitle ref={dialogTitleRef} tabIndex={-1}>
+            {modalConfig.title}
+          </DialogTitle>
 
           <DialogDescription className="text-center">{modalConfig.description}</DialogDescription>
         </DialogHeader>
