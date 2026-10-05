@@ -62,10 +62,10 @@ function TrustedDeviceExpiredDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Confianza expirada
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Este dispositivo ya fue registrado pero su confianza expiro. Para volver a confiar en

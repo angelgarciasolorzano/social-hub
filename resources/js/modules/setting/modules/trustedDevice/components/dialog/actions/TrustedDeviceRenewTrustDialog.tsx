@@ -79,10 +79,10 @@ function TrustedDeviceRenewTrustDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <RefreshCcw className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <RefreshCcw aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Renovar confianza
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Extiende el periodo de confianza para evitar que se te solicite el codigo de

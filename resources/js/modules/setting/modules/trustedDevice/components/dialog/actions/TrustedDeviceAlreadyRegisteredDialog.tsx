@@ -59,10 +59,10 @@ function TrustedDeviceAlreadyRegisteredDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Dispositivo ya registrado
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Este dispositivo ya esta registrado como de confianza en tu cuenta. No es necesario
