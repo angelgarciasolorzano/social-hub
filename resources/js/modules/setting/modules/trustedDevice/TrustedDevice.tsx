@@ -265,72 +265,74 @@ function TrustedDevice(): JSX.Element {
 
   return (
     <>
-      <Head title="Dispositivos de confianza" />
+      <main className="max-w-8xl mx-auto flex w-full flex-1 flex-col gap-6">
+        <Head title="Dispositivos de confianza" />
 
-      <div className="flex min-w-0 flex-col gap-4 xl:flex-row">
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <TrustedDeviceTitle
-            onOpenKeyboardShortcuts={handleOpenKeyboardShortcuts}
-            onTitleAction={handleTitleAction}
-          />
+        <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
+          <div className="flex min-w-0 flex-1 flex-col gap-6">
+            <TrustedDeviceTitle
+              onOpenKeyboardShortcuts={handleOpenKeyboardShortcuts}
+              onTitleAction={handleTitleAction}
+            />
 
-          <Deferred
-            data="stats"
-            fallback={<TrustedDevicesStatCardsSkeleton />}
-            rescue={({ reloading }) => (
-              <TrustedDeviceDeferredError
-                message="No se pudieron cargar las estadísticas de tus dispositivos."
-                onRetry={() => {
-                  router.reload({ only: ["stats"] });
-                }}
-                reloading={reloading}
-              />
-            )}
-          >
-            <TrustedDevicesStatCards />
-          </Deferred>
+            <Deferred
+              data="stats"
+              fallback={<TrustedDevicesStatCardsSkeleton />}
+              rescue={({ reloading }) => (
+                <TrustedDeviceDeferredError
+                  message="No se pudieron cargar las estadísticas de tus dispositivos."
+                  onRetry={() => {
+                    router.reload({ only: ["stats"] });
+                  }}
+                  reloading={reloading}
+                />
+              )}
+            >
+              <TrustedDevicesStatCards />
+            </Deferred>
 
-          <TrustedDevicesInfoBanner />
-          <TrustedDevicesTableSection />
-          <TrustedDevicesSecurityCallout />
+            <TrustedDevicesInfoBanner />
+            <TrustedDevicesTableSection />
+            <TrustedDevicesSecurityCallout />
+          </div>
+
+          <aside className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0 xl:self-start">
+            <Deferred
+              data="stats"
+              fallback={<TrustedDeviceSummarySkeleton />}
+              rescue={({ reloading }) => (
+                <TrustedDeviceDeferredError
+                  message="No se pudo cargar el resumen de tus dispositivos."
+                  onRetry={() => {
+                    router.reload({ only: ["stats"] });
+                  }}
+                  reloading={reloading}
+                />
+              )}
+            >
+              <TrustedDeviceSummary onOpenSummary={handleOpenSummary} />
+            </Deferred>
+
+            <TrustedDeviceRecommendations onOpenRecommendations={handleOpenRecommendations} />
+
+            <Deferred
+              data="recentActivity"
+              fallback={<TrustedDeviceRecentActivitySkeleton />}
+              rescue={({ reloading }) => (
+                <TrustedDeviceDeferredError
+                  message="No se pudo cargar la actividad reciente."
+                  onRetry={() => {
+                    router.reload({ only: ["recentActivity"] });
+                  }}
+                  reloading={reloading}
+                />
+              )}
+            >
+              <TrustedDeviceRecentActivity onOpenActivity={handleOpenActivity} />
+            </Deferred>
+          </aside>
         </div>
-
-        <div className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0 xl:self-start">
-          <Deferred
-            data="stats"
-            fallback={<TrustedDeviceSummarySkeleton />}
-            rescue={({ reloading }) => (
-              <TrustedDeviceDeferredError
-                message="No se pudo cargar el resumen de tus dispositivos."
-                onRetry={() => {
-                  router.reload({ only: ["stats"] });
-                }}
-                reloading={reloading}
-              />
-            )}
-          >
-            <TrustedDeviceSummary onOpenSummary={handleOpenSummary} />
-          </Deferred>
-
-          <TrustedDeviceRecommendations onOpenRecommendations={handleOpenRecommendations} />
-
-          <Deferred
-            data="recentActivity"
-            fallback={<TrustedDeviceRecentActivitySkeleton />}
-            rescue={({ reloading }) => (
-              <TrustedDeviceDeferredError
-                message="No se pudo cargar la actividad reciente."
-                onRetry={() => {
-                  router.reload({ only: ["recentActivity"] });
-                }}
-                reloading={reloading}
-              />
-            )}
-          >
-            <TrustedDeviceRecentActivity onOpenActivity={handleOpenActivity} />
-          </Deferred>
-        </div>
-      </div>
+      </main>
 
       {renderDialog()}
     </>
@@ -349,7 +351,7 @@ function TrustedDeviceTitle({
   onTitleAction,
 }: TrustedDeviceTitleProps): JSX.Element {
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
+    <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
       <div className="flex min-w-0 items-start gap-4 sm:gap-6">
         <div className={cn(iconColorVariants.blue.iconBgClass, "rounded-3xl p-2")}>
           <ShieldCheck className={cn("h-12 w-12", iconColorVariants.blue.iconFgClass)} />
@@ -357,7 +359,9 @@ function TrustedDeviceTitle({
 
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-semibold">Dispositivos de confianza</h2>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              Dispositivos de confianza
+            </h1>
 
             <p className="text-sm text-muted-foreground">
               Estos son los dispositivos en los que has iniciado sesion y que has marcado como de

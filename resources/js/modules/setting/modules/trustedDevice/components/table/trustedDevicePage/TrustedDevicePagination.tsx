@@ -42,12 +42,12 @@ function TrustedDevicePagination({
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="grid min-w-0 grid-cols-1 items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
       <span className="text-sm text-muted-foreground">
-        Pagina {pagination.current_page} de {pagination.last_page}
+        Página {pagination.current_page} de {pagination.last_page}
       </span>
 
-      <Pagination className="flex-1">
+      <Pagination aria-label="Paginación de dispositivos de confianza" className="min-w-0">
         <PaginationContent>
           <PaginationItem>
             <PaginationPreviousLink pagination={pagination} />
@@ -71,8 +71,10 @@ function TrustedDevicePagination({
         </PaginationContent>
       </Pagination>
 
-      <div className="flex items-center gap-3">
-        <Label className="hidden whitespace-nowrap sm:block">Filas por pagina</Label>
+      <div className="flex items-center justify-between gap-3 sm:justify-self-end">
+        <Label className="text-sm whitespace-nowrap" htmlFor="trusted-devices-per-page">
+          Filas por página
+        </Label>
 
         <Select
           value={String(pagination.per_page)}
@@ -80,7 +82,7 @@ function TrustedDevicePagination({
             onPerPageChange(Number.parseInt(value, 10));
           }}
         >
-          <SelectTrigger className="w-full max-w-32">
+          <SelectTrigger className="w-20" id="trusted-devices-per-page">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -67,6 +67,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -345,6 +346,7 @@ function TrustedDeviceTable({
           )}
         >
           <Table className="table-fixed" style={{ width: `max(100%, ${table.getTotalSize()}px)` }}>
+            <TableCaption className="sr-only">Dispositivos de confianza registrados</TableCaption>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
@@ -361,6 +363,7 @@ function TrustedDeviceTable({
                       <TableHead
                         className="group relative overflow-hidden"
                         key={header.id}
+                        scope="col"
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder ? null : <table.FlexRender header={header} />}
