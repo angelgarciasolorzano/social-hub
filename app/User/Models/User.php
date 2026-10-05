@@ -10,6 +10,7 @@ use App\Comment\Models\Comment;
 use App\Like\Models\Like;
 use App\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
+use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -29,7 +30,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 /**
  * @property CarbonImmutable|null $created_at
  * @property string|null $phone
- * @property string $preferred_locale
+ * @property PreferredLocale $preferred_locale
  * @property string|null $biography
  * @property CarbonImmutable|null $last_login_at
  * @property CarbonImmutable|null $two_factor_confirmed_at
@@ -107,6 +108,7 @@ class User extends Authenticatable implements HasMedia
         return [
             'email_verified_at' => 'datetime',
             'last_login_at' => 'immutable_datetime',
+            'preferred_locale' => PreferredLocale::class,
             'two_factor_confirmed_at' => 'datetime',
             'recovery_codes_regenerated_at' => 'datetime',
             'password' => 'hashed',

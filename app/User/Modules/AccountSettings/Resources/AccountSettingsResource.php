@@ -34,7 +34,7 @@ class AccountSettingsResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'preferredLocale' => $this->preferred_locale,
+            'preferredLocale' => $this->preferred_locale->value,
             'biography' => $this->biography,
             'createdAt' => $this->created_at?->toIso8601String(),
             'lastLoginAt' => $this->last_login_at?->toIso8601String(),

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\User\Enums\PreferredLocale;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('renders the authenticated user account settings', function (): void {
@@ -60,7 +61,7 @@ it('updates account settings without allowing other accounts or protected fields
 
     expect($user->name)->toBe('Updated Account Owner')
         ->and($user->phone)->toBe('+505 8888 9999')
-        ->and($user->preferred_locale)->toBe('es')
+        ->and($user->preferred_locale)->toBe(PreferredLocale::SPANISH)
         ->and($user->biography)->toBe('Updated account biography.')
         ->and($user->email)->toBe('original@example.com')
         ->and($user->last_login_at?->toIso8601String())->toBe($lastLoginAt->toIso8601String())
@@ -78,7 +79,7 @@ it('preserves omitted optional fields and clears fields sent as null', function 
         ->from(route('profile.edit'))
         ->patch(route('profile.update'), [
             'name' => $user->name,
-            'preferredLocale' => $user->preferred_locale,
+            'preferredLocale' => $user->preferred_locale->value,
         ])
         ->assertSessionHasNoErrors();
 
@@ -90,7 +91,7 @@ it('preserves omitted optional fields and clears fields sent as null', function 
         ->patch(route('profile.update'), [
             'name' => $user->name,
             'phone' => null,
-            'preferredLocale' => $user->preferred_locale,
+            'preferredLocale' => $user->preferred_locale->value,
             'biography' => null,
         ])
         ->assertSessionHasNoErrors();
@@ -113,7 +114,7 @@ it('rejects unsupported preferred locales without changing the account', functio
         ->assertRedirect(route('profile.edit'));
 
     expect($user->refresh()->name)->toBe($originalName)
-        ->and($user->preferred_locale)->toBe('en');
+        ->and($user->preferred_locale)->toBe(PreferredLocale::ENGLISH);
 });
 
 it('rejects biographies longer than 160 characters without changing the account', function (): void {

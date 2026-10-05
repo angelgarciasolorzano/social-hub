@@ -4,7 +4,7 @@
 
 Issue: [SOC-34](https://linear.app/social-hub-ang/issue/SOC-34/feature-recreate-the-profile-settings-dashboard-from-the-supplied) — In Review; prioridad inicial Medium.
 
-Modo confirmado: **EXPANSION**. Revisión predeterminada: **codex**. La ruta crítica avanza desde la infraestructura User y AccountSettings hasta los diálogos de acciones, elimina la vista independiente de contraseña, sincroniza documentación y QA, y termina registrando que el estado real se difiere a SOC-35.
+Modo confirmado: **EXPANSION**. Revisión predeterminada: **codex**. La ruta crítica avanza desde la infraestructura User y AccountSettings hasta los diálogos de acciones, elimina la vista independiente de contraseña, sincroniza documentación y QA, registra que el estado real se difiere a SOC-35 y atiende los hallazgos de revisión del PR.
 
 El estado real de la cuenta queda fuera del alcance actual. El usuario decidió diferirlo a SOC-35 hasta que existan un panel administrativo y roles/permisos; SOC-34 no debe mostrar un estado ficticio ni esperar a esa implementación futura.
 
@@ -15,6 +15,7 @@ El estado real de la cuenta queda fuera del alcance actual. El usuario decidió 
 - La expansión acordada incluye modernizar la ubicación de UserFactory/UserSeeder y alojar la migración nueva en app/User/Database/Migrations.
 - Profile y Preferences existentes permanecen en sus ubicaciones actuales. Los archivos iniciales de Laravel en database/migrations no se mueven.
 - El estado real de la cuenta se difiere a SOC-35 y solo se implementará cuando existan el panel administrativo y roles/permisos.
+- La revisión de Pullfrog detectó afirmaciones de privacidad/visibilidad no respaldadas por el código y una validación de teléfono demasiado permisiva; se corrigen en dos tareas acotadas.
 
 ## Prerequisites
 
@@ -606,6 +607,64 @@ Registrar la decisión de producto: SOC-34 no implementa ni muestra un estado re
 Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en SOC-34.
 ```
 
+### TASK-021: Corregir afirmaciones de privacidad y visibilidad en AccountSettings
+
+Ajustar el aviso, los principios estáticos y la tarjeta del perfil público para describir solo capacidades verificables que ya existen.
+
+**Type:** chore  
+**Effort:** S  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P2  
+**Depends on:** TASK-020  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. El aviso y los principios ya no afirman cifrado, privacidad exclusiva ni confidencialidad que la implementación no garantiza.
+2. La tarjeta del perfil público describe que permite consultar el perfil y no promete controles de visibilidad.
+3. El contenido continúa reflejando las acciones disponibles sin sugerir controles inexistentes.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx`: reemplazar el aviso de privacidad por copy de gestión de datos verificable.
+- `resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx`: describir el enlace al perfil público sin afirmar que se controla su visibilidad.
+- `resources/js/modules/setting/modules/accountSettings/data/accountSettingsSections.ts`: actualizar títulos, descripciones e iconos de los principios estáticos para quitar promesas no respaldadas.
+
+**validateCommand:**
+```text
+rtk ./node_modules/.bin/prettier --check resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/data/accountSettingsSections.ts
+```
+
+### TASK-022: Validar el teléfono y tipar el idioma preferido de la cuenta
+
+Validar el teléfono opcional con un formato internacional práctico y representar `preferred_locale` con un enum respaldado, conservando `en`/`es` como contrato de almacenamiento y respuesta.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Depends on:** TASK-020  
+**Review:** codex
+
+**Acceptance Criteria:**
+1. El teléfono opcional acepta entre 7 y 15 dígitos con prefijo `+` opcional y separadores habituales; rechaza letras, símbolos no permitidos y longitudes inválidas.
+2. `User` convierte `preferred_locale` a `PreferredLocale` al leerlo, mientras `AccountSettingsResource` mantiene el payload como la cadena `en` o `es`.
+3. Los valores de locale fuera del enum siguen rechazándose y los ejemplos telefónicos existentes continúan siendo válidos.
+
+**writeScope:**
+- `app/User/Enums/PreferredLocale.php`: crear un enum string respaldado con los valores `en` y `es`.
+- `app/User/Models/User.php`: castear `preferred_locale` a `PreferredLocale`.
+- `app/User/Modules/AccountSettings/Requests/AccountSettingsUpdateRequest.php`: validar locale con el enum y limitar la longitud/formato del teléfono.
+- `app/User/Modules/AccountSettings/Resources/AccountSettingsResource.php`: serializar `preferred_locale` como su value string.
+- `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php`: ajustar las expectativas existentes del atributo casteado y enviar strings en las requests.
+
+**validateCommand:**
+```text
+rtk vendor/bin/pint --dirty --format agent
+rtk composer phpstan
+rtk composer rector-dry
+rtk composer rector
+rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction
+```
+
 ## Failure Modes
 
 - La migración nueva no se descubre porque UserServiceProvider no registra el directorio modular; comprobar migrate:status y migrate --pretend.
@@ -619,12 +678,15 @@ Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en S
 - La ruta GET de contraseña se elimina sin actualizar los consumidores generados, la navegación y las pruebas que usaban la pantalla antigua.
 - Los elementos estáticos parecen toggles activos o el botón de actividad ejecuta una acción accidental; validación manual de interacción.
 - El estado de cuenta se presenta como activo sin una fuente aprobada; mantenerlo fuera de SOC-34 y remitir la implementación a SOC-35.
+- El dashboard promete cifrado, privacidad exclusiva o controles de visibilidad que el código actual no implementa; mantener el texto ligado a acciones verificables.
+- La regla de teléfono acepta texto arbitrario o rechaza formatos internacionales válidos; limitar dígitos y separadores sin quitar el carácter opcional del campo.
 
 ## Ship Cut
 
 - Antes de TASK-019, el feature no está listo para integrar: los gates y QA de pantalla aún faltan.
 - TASK-019 valida el alcance acordado de SOC-34, incluidos ambos diálogos; el estado real queda expresamente diferido a SOC-35.
 - SOC-34 puede cerrarse con el estado real fuera de alcance; SOC-35 espera a que existan panel administrativo y roles/permisos.
+- Los hallazgos de Pullfrog se atienden con copy verificable y una validación acotada del teléfono; no se extrae el helper local de usuario autenticado.
 
 ## Test Coverage Map
 
@@ -634,17 +696,18 @@ Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en S
 | Datos de resumen reales y privacidad de serialización | TASK-011 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsSummaryTest.php` |
 | Último acceso solo tras autenticación exitosa | TASK-011 | `app/User/Modules/AccountSettings/Tests/Listeners/TrackLastLoginTest.php` |
 | Borrado válido/inválido con contraseña actual | TASK-010 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` |
+| Idioma de la cuenta tipado como PreferredLocale y serializado como en/es | TASK-022 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` |
 | Cambio de contraseña desde el diálogo, ausencia del GET antiguo y rechazo de contraseña actual inválida | TASK-016 | `app/Auth/Modules/Password/Tests/PasswordUpdateTest.php` |
 | Revocación de dispositivos confiables desde el referer del diálogo y preservación con error de contraseña | TASK-016 | `app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php` |
 | Diseño, responsive y accesibilidad por teclado | TASK-019 | `QA manual de los diálogos contra el mock Linear` |
 
 ## Execution Summary
 
-- Tareas: 20.
+- Tareas: 22.
 - Modo: EXPANSION.
 - Revisión predeterminada: codex.
-- Capas paralelas: [TASK-001, TASK-002, TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007] → [TASK-008] → [TASK-009, TASK-010] → [TASK-011, TASK-012] → [TASK-013] → [TASK-014] → [TASK-015] → [TASK-016] → [TASK-017] → [TASK-018] → [TASK-019] → [TASK-020].
-- Ruta crítica: TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-009 → TASK-012 → TASK-013 → TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018 → TASK-019 → TASK-020 (registro del diferimiento a SOC-35).
+- Capas paralelas: [TASK-001, TASK-002, TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007] → [TASK-008] → [TASK-009, TASK-010] → [TASK-011, TASK-012] → [TASK-013] → [TASK-014] → [TASK-015] → [TASK-016] → [TASK-017] → [TASK-018] → [TASK-019] → [TASK-020] → [TASK-021, TASK-022].
+- Ruta crítica: TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-009 → TASK-012 → TASK-013 → TASK-014 → TASK-015 → TASK-016 → TASK-017 → TASK-018 → TASK-019 → TASK-020 → TASK-021 (TASK-022 corre en paralelo).
 
 ## Task Dependencies
 
@@ -670,3 +733,5 @@ Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en S
 | TASK-018 | TASK-001, TASK-002, TASK-003, TASK-008, TASK-012, TASK-015, TASK-016, TASK-017 |
 | TASK-019 | TASK-010, TASK-011, TASK-015, TASK-016, TASK-017, TASK-018 |
 | TASK-020 | TASK-019 |
+| TASK-021 | TASK-020 |
+| TASK-022 | TASK-020 |
