@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useId } from "react";
 
 import { FaCheckCircle } from "react-icons/fa";
 
@@ -7,6 +8,7 @@ import { AlertTriangleIcon, Check, Copy, Info, Loader2, RotateCcw } from "lucide
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
+import { Field, FieldDescription, FieldLabel } from "@/shared/components/shadcn/ui/field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -36,6 +38,10 @@ function ManualSetupStep({
   onContinue,
   onRetry,
 }: ManualSetupStepProps): JSX.Element {
+  const manualSetupKeyId = useId();
+  const manualSetupInstructionsId = useId();
+  const manualSetupLoadingId = useId();
+
   const { copiedText, copy, isActive, progressPercent, secondsLeft } = useCopyWithCountdown({
     durationMs: COPY_FEEDBACK_DURATION_MS,
     tickMs: COPY_FEEDBACK_TICK_MS,
@@ -58,13 +64,22 @@ function ManualSetupStep({
 
   return (
     <div className="flex w-full flex-col items-center space-y-5">
-      <div className="flex w-full flex-col space-y-2">
-        <label htmlFor="manual-setup-key" className="text-sm font-medium text-muted-foreground">
-          Código manual
-        </label>
+      <Field className="w-full">
+        <FieldLabel htmlFor={manualSetupKeyId}>Código manual</FieldLabel>
+
+        <FieldDescription className="flex items-start gap-2" id={manualSetupInstructionsId}>
+          <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <span>
+            En tu aplicación, selecciona &quot;Ingresar clave manualmente&quot; o &quot;Agregar
+            cuenta manualmente&quot; y pega esta clave.
+          </span>
+        </FieldDescription>
 
         <ManualSetupKeyInput
           Icon={isCopied ? Check : Copy}
+          id={manualSetupKeyId}
+          instructionsId={manualSetupInstructionsId}
+          loadingId={manualSetupLoadingId}
           manualSetupKey={manualSetupKey}
           onCopy={handleCopy}
         />
@@ -72,16 +87,7 @@ function ManualSetupStep({
         {isActive && (
           <CopyFeedbackAlert progressPercent={progressPercent} secondsLeft={secondsLeft} />
         )}
-      </div>
-
-      <Alert className={alertVariants.info}>
-        <Info />
-        <AlertTitle>Consejo</AlertTitle>
-        <AlertDescription>
-          En tu aplicación, selecciona &quot;Ingresar clave manualmente&quot; o &quot;Agregar cuenta
-          manualmente&quot; y pega esta clave.
-        </AlertDescription>
-      </Alert>
+      </Field>
 
       <div className="flex w-full space-x-5">
         <Button className="w-full cursor-pointer" onClick={onContinue}>
@@ -98,7 +104,7 @@ function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
   return (
     <div className="flex w-full flex-col items-center space-y-2">
       <Alert className={cn(alertVariants.destructive, "my-2")}>
-        <AlertTriangleIcon />
+        <AlertTriangleIcon aria-hidden="true" />
         <AlertTitle>Algo salió mal</AlertTitle>
         <AlertDescription>No pudimos cargar la información. Inténtalo de nuevo.</AlertDescription>
       </Alert>
@@ -113,41 +119,57 @@ function StepErrorAlert({ onRetry }: StepErrorAlertProps) {
 
 type ManualSetupKeyInputProps = Pick<ManualSetupStepProps, "manualSetupKey"> & {
   Icon: LucideIcon;
+  id: string;
+  instructionsId: string;
+  loadingId: string;
   onCopy: () => void;
 };
 
-function ManualSetupKeyInput({ Icon, manualSetupKey, onCopy }: ManualSetupKeyInputProps) {
-  if (!manualSetupKey) {
-    return (
-      <div
-        aria-busy
-        className="flex h-9 w-full items-center justify-center rounded-md border border-input bg-muted/30"
-      >
-        <Loader2 className="size-4 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+function ManualSetupKeyInput({
+  Icon,
+  id,
+  instructionsId,
+  loadingId,
+  manualSetupKey,
+  onCopy,
+}: ManualSetupKeyInputProps) {
+  const isLoading = !manualSetupKey;
+  const describedBy = isLoading ? `${instructionsId} ${loadingId}` : instructionsId;
 
   return (
-    <InputGroup>
-      <InputGroupInput
-        className="font-mono"
-        id="manual-setup-key"
-        readOnly
-        value={manualSetupKey}
-      />
+    <>
+      <InputGroup aria-busy={isLoading}>
+        <InputGroupInput
+          aria-describedby={describedBy}
+          className="font-mono"
+          disabled={isLoading}
+          id={id}
+          readOnly
+          value={manualSetupKey ?? ""}
+        />
 
-      <InputGroupAddon align="inline-end">
-        <InputGroupButton
-          aria-label="Copiar código manual"
-          onClick={onCopy}
-          size="icon-sm"
-          className="cursor-pointer"
-        >
-          <Icon className="size-4" />
-        </InputGroupButton>
-      </InputGroupAddon>
-    </InputGroup>
+        <InputGroupAddon align="inline-end">
+          {isLoading ? (
+            <Loader2 aria-hidden="true" className="size-4 animate-spin text-muted-foreground" />
+          ) : (
+            <InputGroupButton
+              aria-label="Copiar código manual"
+              onClick={onCopy}
+              size="icon-sm"
+              className="cursor-pointer"
+            >
+              <Icon aria-hidden="true" className="size-4" />
+            </InputGroupButton>
+          )}
+        </InputGroupAddon>
+      </InputGroup>
+
+      {isLoading && (
+        <span className="sr-only" id={loadingId} role="status">
+          Cargando código manual.
+        </span>
+      )}
+    </>
   );
 }
 
@@ -163,7 +185,7 @@ function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertPr
       aria-live="polite"
       className={cn(alertVariants.success, "text-green-900 dark:text-green-400")}
     >
-      <FaCheckCircle />
+      <FaCheckCircle aria-hidden="true" />
 
       <AlertTitle>Clave copiada al portapapeles</AlertTitle>
 
