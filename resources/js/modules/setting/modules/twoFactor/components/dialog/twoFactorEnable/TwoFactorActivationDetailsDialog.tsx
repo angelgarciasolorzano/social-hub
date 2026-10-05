@@ -1,4 +1,4 @@
-import { type JSX, useEffect } from "react";
+import { type JSX, useEffect, useRef } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
@@ -66,6 +66,7 @@ function TwoFactorActivationDetailsDialog({
   setOpen,
   confirmedAt,
 }: TwoFactorActivationDetailsDialogProps): JSX.Element {
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const { firstTrustedDevice = null } = usePage<TwoFactorEnablePageProps>().props;
 
   const activationDate = formatActivationDate(confirmedAt);
@@ -119,13 +120,32 @@ function TwoFactorActivationDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent
+        onOpenAutoFocus={() => {
+          const activeElement = document.activeElement;
+
+          returnFocusRef.current =
+            activeElement instanceof HTMLElement && activeElement !== document.body
+              ? activeElement
+              : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          const focusTarget = returnFocusRef.current;
+
+          if (focusTarget?.isConnected) {
+            event.preventDefault();
+            focusTarget.focus();
+          }
+
+          returnFocusRef.current = null;
+        }}
+      >
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
               Fecha de activación
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Aquí puedes ver cuándo activaste la autenticación de dos factores (2FA) en tu cuenta.

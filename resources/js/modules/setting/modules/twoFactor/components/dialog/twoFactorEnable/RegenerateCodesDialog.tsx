@@ -1,4 +1,4 @@
-import type { JSX, SubmitEvent } from "react";
+import { type JSX, type SubmitEvent, useId, useRef } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -38,6 +38,12 @@ function RegenerateCodesDialog({
   setOpen,
   fetchRecoveryCodes,
 }: RegenerateCodesDialogProps): JSX.Element {
+  const idPrefix = useId();
+  const formId = `${idPrefix}-regenerate-codes-form`;
+  const passwordInputId = `${idPrefix}-password`;
+  const passwordErrorId = `${idPrefix}-password-error`;
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   const { setData, errors, submit, processing, reset, data } = useForm<RegenerateCodesFormData>({
     password: "",
   });
@@ -66,13 +72,32 @@ function RegenerateCodesDialog({
         setOpen(nextOpen);
       }}
     >
-      <DialogContent>
+      <DialogContent
+        onOpenAutoFocus={() => {
+          const activeElement = document.activeElement;
+
+          returnFocusRef.current =
+            activeElement instanceof HTMLElement && activeElement !== document.body
+              ? activeElement
+              : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          const focusTarget = returnFocusRef.current;
+
+          if (focusTarget?.isConnected) {
+            event.preventDefault();
+            focusTarget.focus();
+          }
+
+          returnFocusRef.current = null;
+        }}
+      >
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2">
               <RefreshCcwDot className="h-5 w-5 text-muted-foreground" />
               Regenerar códigos de respaldo
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             ¿Estás seguro de que quieres regenerar tus códigos de respaldo? Esta acción no se puede
@@ -88,26 +113,26 @@ function RegenerateCodesDialog({
           </AlertDescription>
         </Alert>
 
-        <form id="regenerate-codes-form" onSubmit={handleSubmit} className="mt-2 grid gap-2">
-          <LabelForm error={errors.password} htmlFor="regenerate-codes-password">
+        <form id={formId} onSubmit={handleSubmit} className="mt-2 grid gap-2">
+          <LabelForm error={errors.password} htmlFor={passwordInputId}>
             Para continuar, escribe tu contraseña
           </LabelForm>
 
           <PasswordInput
-            id="regenerate-codes-password"
+            id={passwordInputId}
             name="password"
             autoComplete="current-password"
             onChange={(e) => {
               setData("password", e.target.value);
             }}
             aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? passwordErrorId : undefined}
             required
-            autoFocus
             placeholder="Contraseña"
             value={data.password}
           />
 
-          <InputError message={errors.password} />
+          <InputError id={passwordErrorId} message={errors.password} />
         </form>
 
         <DialogFooter>
@@ -117,7 +142,7 @@ function RegenerateCodesDialog({
             </Button>
           </DialogClose>
 
-          <Button type="submit" form="regenerate-codes-form" disabled={processing}>
+          <Button type="submit" form={formId} disabled={processing}>
             {processing ? (
               <>
                 <Spinner />
