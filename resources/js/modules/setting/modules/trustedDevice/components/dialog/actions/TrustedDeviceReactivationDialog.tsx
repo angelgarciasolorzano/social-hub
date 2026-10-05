@@ -78,10 +78,10 @@ function TrustedDeviceReactivationDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <RotateCw className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <RotateCw aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Reactivar dispositivo
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Para volver a confiar en este dispositivo, ingresa el código de verificación de tu
@@ -110,6 +110,8 @@ function TrustedDeviceReactivationDialog({
                 maxLength={OTP_MAX_LENGTH}
                 pattern={REGEXP_ONLY_DIGITS}
                 value={data.otp_code}
+                aria-describedby={errors.otp_code ? "reactivate-otp-error" : undefined}
+                aria-invalid={errors.otp_code ? "true" : "false"}
               >
                 <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
                   {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
@@ -127,7 +129,9 @@ function TrustedDeviceReactivationDialog({
               </InputOTP>
             </div>
 
-            {errors.otp_code && <InputError message={errors.otp_code} />}
+            {errors.otp_code && (
+              <InputError aria-live="polite" id="reactivate-otp-error" message={errors.otp_code} />
+            )}
           </div>
         </form>
 

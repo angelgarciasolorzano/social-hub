@@ -90,10 +90,10 @@ function TrustedDeviceAddDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldPlus className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <ShieldPlus aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Agregar dispositivo de confianza
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Este navegador aún no está registrado como dispositivo de confianza. Al agregarlo, no se
@@ -232,7 +232,7 @@ function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): J
         Dale un nombre a este dispositivo (opcional)
       </LabelForm>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" id="add-device-name-description">
         Asi podras identificarlo facilmente si tienes varios dispositivos registrados.
       </p>
 
@@ -240,13 +240,18 @@ function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): J
         id="add-device-name"
         name="name"
         placeholder="Mi dispositivo"
+        aria-describedby={
+          errors.name
+            ? "add-device-name-description add-device-name-error"
+            : "add-device-name-description"
+        }
         onChange={(e) => {
           setData("name", e.target.value);
         }}
         aria-invalid={errors.name !== undefined ? "true" : "false"}
       />
 
-      <InputError message={errors.name} />
+      <InputError aria-live="polite" id="add-device-name-error" message={errors.name} />
     </form>
   );
 }

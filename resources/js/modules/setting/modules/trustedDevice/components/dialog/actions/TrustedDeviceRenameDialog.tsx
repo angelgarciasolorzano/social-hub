@@ -81,10 +81,10 @@ function TrustedDeviceRenameDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Pencil className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <Pencil aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Renombrar Dispositivo
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Asigna un nombre personalizado para identificar este dispositivo facilmente.
@@ -144,13 +144,16 @@ function RenameDeviceForm({ handleSubmit, errors, setData }: RenameDeviceFormPro
         onChange={(e) => {
           setData("name", e.target.value);
         }}
+        aria-describedby={errors.name ? "rename-trusted-device-error" : "rename-device-description"}
         aria-invalid={errors.name ? "true" : "false"}
       />
 
-      {errors.name && <InputError message={errors.name} />}
+      {errors.name && (
+        <InputError aria-live="polite" id="rename-trusted-device-error" message={errors.name} />
+      )}
 
       {!errors.name && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground" id="rename-device-description">
           Este sera el nombre con el que identificaras este dispositivo.
         </p>
       )}
