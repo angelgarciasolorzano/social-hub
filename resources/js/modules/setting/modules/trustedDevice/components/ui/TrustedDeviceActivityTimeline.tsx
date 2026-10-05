@@ -42,15 +42,16 @@ function TrustedDeviceActivityTimeline({
   const lineColor = timelineLineColors[variant];
 
   return (
-    <div>
+    <ol role="list">
       {steps.map((step, index) => {
         const Icon = step.icon;
         const isLast = index === steps.length - 1;
 
         return (
-          <div className="flex gap-4" key={index}>
+          <li className="flex gap-4" key={step.title}>
             <div className="flex flex-col items-center">
               <div
+                aria-hidden="true"
                 className={cn(
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
                   colors.iconBgClass,
@@ -69,10 +70,10 @@ function TrustedDeviceActivityTimeline({
                 <div className="text-sm text-muted-foreground">{step.meta}</div>
               )}
             </div>
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
 

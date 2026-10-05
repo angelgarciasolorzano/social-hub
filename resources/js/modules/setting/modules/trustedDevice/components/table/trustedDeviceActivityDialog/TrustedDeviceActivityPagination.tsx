@@ -21,12 +21,19 @@ export interface TrustedDeviceActivityPaginationProps {
 export default function TrustedDeviceActivityPagination({
   pagination,
   onPageChange,
-}: TrustedDeviceActivityPaginationProps): JSX.Element {
+}: TrustedDeviceActivityPaginationProps): JSX.Element | null {
+  if (pagination.last_page <= 1) {
+    return null;
+  }
+
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
-    <Pagination className="mx-0 w-auto shrink-0">
-      <PaginationContent>
+    <Pagination
+      aria-label="Paginación de la actividad de dispositivos"
+      className="mx-0 w-auto shrink-0"
+    >
+      <PaginationContent role="list">
         <PaginationItem>
           <ActivityPaginationPreviousButton onPageChange={onPageChange} pagination={pagination} />
         </PaginationItem>
@@ -71,6 +78,7 @@ function ActivityPaginationNumberButton({
 
   return (
     <Button
+      aria-label={isActive ? `Página actual ${page}` : `Ir a la página ${page}`}
       aria-current={isActive ? "page" : undefined}
       onClick={() => {
         onPageChange(page);
@@ -96,7 +104,7 @@ function ActivityPaginationPreviousButton({
 
   return (
     <Button
-      aria-label="Pagina anterior"
+      aria-label="Página anterior"
       disabled={isDisabled}
       onClick={() => {
         onPageChange(pagination.current_page - 1);
@@ -119,7 +127,7 @@ function ActivityPaginationNextButton({
 
   return (
     <Button
-      aria-label="Pagina siguiente"
+      aria-label="Página siguiente"
       disabled={isDisabled}
       onClick={() => {
         onPageChange(pagination.current_page + 1);
