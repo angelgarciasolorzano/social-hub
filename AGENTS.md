@@ -249,6 +249,7 @@ Review the generated diff under `resources/js/shared/wayfinder/`, including the 
 
 - This project uses `sandermuller/laravel-fluent-validation` for type-safe validation rules. Use `FluentRule::` instead of string rules or `Rule::` where possible.
 - FormRequests MUST use `HasFluentRules` trait. Livewire components MUST use `HasFluentValidation` trait.
+- Keep `FluentRule` definitions in the FormRequest `rules()` method. Build Laravel Data input DTOs from `$request->validated()` for typed access and mapping; do not define or return `FluentRule` rules from a Data class.
 - Do NOT use `->rule('string_rule')` when a native FluentRule method exists. Check the skill references before using escape hatches.
 - Available types: `FluentRule::string()`, `integer()`, `numeric()`, `email()`, `date()`, `dateTime()`, `boolean()`, `array()`, `file()`, `image()`, `password()`, `field()`.
 - Convenience shortcuts: `FluentRule::url()`, `uuid()`, `ulid()`, `ip()` — shorthand for `FluentRule::string()->url()`, etc.

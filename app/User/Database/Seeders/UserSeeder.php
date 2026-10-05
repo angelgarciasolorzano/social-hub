@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\User\Seeders;
+namespace App\User\Database\Seeders;
 
 use App\User\Enums\UserImageType;
 use App\User\Models\User;

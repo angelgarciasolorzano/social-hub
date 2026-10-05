@@ -7,7 +7,7 @@ namespace Database\Seeders;
 use App\Auth\Database\Seeders\TrustedDeviceSeeder;
 use App\Comment\Seeders\CommentSeeder;
 use App\Post\Seeders\PostSeeder;
-use App\User\Seeders\UserSeeder;
+use App\User\Database\Seeders\UserSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder

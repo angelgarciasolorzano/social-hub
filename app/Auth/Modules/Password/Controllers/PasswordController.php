@@ -10,16 +10,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
-use Inertia\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class PasswordController extends Controller
 {
-    public function edit(): Response
-    {
-        return Inertia::render('setting/modules/password/EditPassword');
-    }
-
     public function update(
         PasswordRequest $passwordRequest,
         PasswordTrustedDeviceRevoker $passwordTrustedDeviceRevoker,

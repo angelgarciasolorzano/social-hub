@@ -1,3 +1,7 @@
+import type { JSX } from "react";
+
+import { Link } from "@inertiajs/react";
+
 import { ChevronRight, type LucideIcon } from "lucide-react";
 
 import {
@@ -31,7 +35,7 @@ interface SettingSidebarNavMainProps {
   items: SettingSidebarNavMainItems[];
 }
 
-export function SettingSidebarNavMain({ items }: SettingSidebarNavMainProps) {
+export function SettingSidebarNavMain({ items }: SettingSidebarNavMainProps): JSX.Element {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Configuración</SidebarGroupLabel>
@@ -60,9 +64,9 @@ export function SettingSidebarNavMain({ items }: SettingSidebarNavMainProps) {
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
+                        <Link href={subItem.url}>
                           <span>{subItem.title}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

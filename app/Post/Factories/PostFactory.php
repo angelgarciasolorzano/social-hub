@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Post\Factories;
 
 use App\Post\Models\Post;
-use App\User\Factories\UserFactory;
+use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Override;

@@ -40,11 +40,4 @@ class ProfileController extends Controller
             'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
         ]);
     }
-
-    public function edit(): Response
-    {
-        return Inertia::render('setting/modules/profile/EditProfile', [
-            'user' => new UserResource(Auth::user())->resolve(request()),
-        ]);
-    }
 }

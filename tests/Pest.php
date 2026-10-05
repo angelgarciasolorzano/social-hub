@@ -32,6 +32,7 @@ pest()->extend(TestCase::class)
         __DIR__.'/../app/Auth/Modules/Register/Tests',
         __DIR__.'/../app/Auth/Modules/Email/Tests',
         __DIR__.'/../app/User/Modules/TwoFactor/Tests',
+        __DIR__.'/../app/User/Modules/AccountSettings/Tests',
     );
 
 /*
@@ -71,7 +72,7 @@ function chromeWindowsUserAgent(): string
 /**
  * Create a persisted User. `User` resolves its factory via the #[UseFactory]
  * attribute, which Larastan doesn't infer on its own, so `User::factory()`
- * alone type-checks as mixed (see App\User\Seeders\UserSeeder for the same
+ * alone type-checks as mixed (see App\User\Database\Seeders\UserSeeder for the same
  * `Factory<User>` workaround in application code).
  */
 function createUser(): User
