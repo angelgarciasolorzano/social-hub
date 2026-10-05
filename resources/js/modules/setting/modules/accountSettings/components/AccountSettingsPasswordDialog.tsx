@@ -92,7 +92,12 @@ function AccountSettingsPasswordDialog(): JSX.Element {
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger asChild>
-        <Button className="max-w-full justify-between" size="sm" type="button" variant="outline">
+        <Button
+          className="w-fit max-w-full justify-between"
+          size="sm"
+          type="button"
+          variant="outline"
+        >
           <KeyRound aria-hidden="true" data-icon="inline-start" />
           Cambiar contraseña
           <ChevronRight aria-hidden="true" data-icon="inline-end" />

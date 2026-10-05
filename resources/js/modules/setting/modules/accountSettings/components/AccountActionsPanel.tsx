@@ -35,7 +35,7 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
             Controla quién puede ver tu perfil público y qué información se muestra.
           </p>
 
-          <Button asChild className="max-w-full justify-between" size="sm" variant="outline">
+          <Button asChild className="w-fit max-w-full justify-between" size="sm" variant="outline">
             <Link href={publicProfileIndex.url()}>
               <span className="inline-flex min-w-0 items-center gap-2">
                 <ExternalLink aria-hidden="true" className="size-4 shrink-0" />
