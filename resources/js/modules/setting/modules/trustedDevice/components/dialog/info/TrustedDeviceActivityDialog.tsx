@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { usePage } from "@inertiajs/react";
 
@@ -158,6 +158,7 @@ function TrustedDeviceActivityDialogBody({
   initialActivity,
 }: TrustedDeviceActivityDialogBodyProps): JSX.Element {
   const { committedFilters, filters, goToPage, resetFilters, updateFilter } = filterController;
+  const searchInputId = useId();
 
   const hasActiveFilters =
     committedFilters.search !== "" ||
@@ -168,11 +169,15 @@ function TrustedDeviceActivityDialogBody({
     <div className="flex min-h-0 flex-col gap-4">
       <div className="flex items-center gap-2">
         <InputGroup className="flex-1">
+          <Label className="sr-only" htmlFor={searchInputId}>
+            Buscar actividad de dispositivos
+          </Label>
           <InputGroupAddon>
             <Search />
           </InputGroupAddon>
 
           <InputGroupInput
+            id={searchInputId}
             onChange={(event) => {
               updateFilter("search", event.target.value);
             }}

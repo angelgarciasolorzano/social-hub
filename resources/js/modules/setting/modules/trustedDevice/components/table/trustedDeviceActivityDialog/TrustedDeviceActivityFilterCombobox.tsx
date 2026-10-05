@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useId } from "react";
 
 import {
   Combobox,
@@ -13,6 +14,7 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/shared/components/shadcn/ui/combobox";
+import { FieldLabel } from "@/shared/components/shadcn/ui/field";
 
 import { cn } from "@/shared/lib";
 
@@ -35,6 +37,7 @@ export default function TrustedDeviceActivityFilterCombobox(
   const { label, multiple, options, value, onChange } = props;
 
   const anchor = useComboboxAnchor();
+  const filterControlId = useId();
 
   const findLabel = (candidate: string, candidates: readonly FilterOption[]): string => {
     return candidates.find((opt) => opt.value === candidate)?.label ?? candidate;
@@ -48,7 +51,9 @@ export default function TrustedDeviceActivityFilterCombobox(
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+        <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+          {label}
+        </FieldLabel>
 
         <Combobox
           items={options}
@@ -65,7 +70,10 @@ export default function TrustedDeviceActivityFilterCombobox(
                   {values.map((selected) => (
                     <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
                   ))}
-                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
+                  <ComboboxChipsInput
+                    id={filterControlId}
+                    placeholder={arr.length > 0 ? "" : label}
+                  />
                 </>
               )}
             </ComboboxValue>
@@ -91,7 +99,9 @@ export default function TrustedDeviceActivityFilterCombobox(
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+        {label}
+      </FieldLabel>
 
       <Combobox
         value={single}
@@ -105,6 +115,7 @@ export default function TrustedDeviceActivityFilterCombobox(
             "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
             singleLabel === null && "text-muted-foreground",
           )}
+          id={filterControlId}
         >
           <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
             {singleLabel ?? label}

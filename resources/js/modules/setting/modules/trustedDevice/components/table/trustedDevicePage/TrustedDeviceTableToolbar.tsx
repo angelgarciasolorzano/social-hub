@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useId } from "react";
 
 import { router } from "@inertiajs/react";
 
@@ -96,15 +97,20 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
     onSortOrderChange,
     onResetFilters,
   } = props;
+  const searchInputId = useId();
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <InputGroup className="w-full max-w-xs xl:min-w-0 xl:flex-1">
+          <FieldLabel className="sr-only" htmlFor={searchInputId}>
+            Buscar dispositivo
+          </FieldLabel>
           <InputGroupAddon>
             <Search className="size-4" />
           </InputGroupAddon>
           <InputGroupInput
+            id={searchInputId}
             placeholder="Buscar dispositivo..."
             value={filters.search}
             onChange={(event) => {
@@ -396,6 +402,7 @@ function FilterCombobox({
   onChange,
 }: FilterComboboxConfig): JSX.Element {
   const anchor = useComboboxAnchor();
+  const filterControlId = useId();
 
   const findLabel = (value: string, options: readonly FilterOption[]): string => {
     return options.find((opt) => opt.value === value)?.label ?? value;
@@ -410,7 +417,9 @@ function FilterCombobox({
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+        <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+          {label}
+        </FieldLabel>
 
         <Combobox
           items={options}
@@ -427,7 +436,10 @@ function FilterCombobox({
                   {values.map((selected) => (
                     <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
                   ))}
-                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
+                  <ComboboxChipsInput
+                    id={filterControlId}
+                    placeholder={arr.length > 0 ? "" : label}
+                  />
                 </>
               )}
             </ComboboxValue>
@@ -453,7 +465,9 @@ function FilterCombobox({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+        {label}
+      </FieldLabel>
 
       <Combobox
         value={single}
@@ -466,6 +480,7 @@ function FilterCombobox({
             "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
             "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
           )}
+          id={filterControlId}
         >
           <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
             {singleLabel ?? label}
