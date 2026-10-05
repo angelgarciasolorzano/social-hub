@@ -1,0 +1,853 @@
+{
+  "title": "SOC-36: HTML semántico y accesibilidad en TwoFactor y TrustedDevice",
+  "issue": {
+    "key": "SOC-36",
+    "title": "Refactor: Improve semantic HTML in TwoFactor and TrustedDevice",
+    "status": "Backlog",
+    "priority": "Low",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-36/refactor-improve-semantic-html-in-twofactor-and-trusteddevice",
+    "context": "Follow-up independiente posterior a SOC-34: revisar vistas, componentes y diálogos, preservar diseño/comportamiento, corregir jerarquía de títulos, etiquetas, accesibilidad y teclado, y cerrar con frontend checks y QA manual."
+  },
+  "planningMode": "EXPANSION",
+  "executionStyle": "Por fases",
+  "reviewDefault": "codex",
+  "overview": "Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice. El alcance aprobado incluye ajustes locales de tamaño, peso y espaciado tipográfico para alcanzar la jerarquía y estructura de AccountSettings, preservando los contratos y el comportamiento. El plan también registra un cambio adyacente del DTO de AccountSettings, fuera del issue SOC-36.",
+  "scopeChallenge": "Los módulos ya existen y la necesidad es endurecer su HTML/accesibilidad, no reescribirlos. EXPANSION añade pulido visual local dentro de SOC-36. El cambio de PreferredLocale se registra como trabajo adyacente fuera del issue y no bloquea su cierre. Las tareas con archivos disjuntos pueden avanzar en paralelo y QA integra el alcance de SOC-36.",
+  "prerequisites": [
+    "SOC-36 se mantiene como follow-up separado de SOC-34; el alcance cubre solo TwoFactor y TrustedDevice.",
+    "Usar AccountSettings como referencia de landmarks, títulos, ritmo tipográfico, espaciado, etiquetas y listas.",
+    "Conservar primitivas Dialog y contratos de componentes; no se requieren cambios de backend.",
+    "Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend existentes.",
+    "El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios."
+  ],
+  "nonGoals": [
+    "Cambiar rutas, métodos HTTP, autorización, persistencia, validación backend o contratos Inertia.",
+    "Modificar layout compartido, primitivas globales shadcn/Radix, tokens globales u otros módulos.",
+    "Rediseñar AccountSettings o trasladar su composición de columnas a los módulos de seguridad.",
+    "Cambiar TwoFactorChallenge.tsx, flujo independiente del desafío de inicio de sesión.",
+    "Agregar acciones de producto, campos o dependencias nuevas."
+  ],
+  "contracts": [
+    "Conservar rutas/métodos actuales: GET/DELETE /setting/two-factor-authentication, GET /setting/trusted-devices y acciones bajo /user/trusted-devices.",
+    "Conservar nombres/payloads existentes como password, code, otp_code, name y terms, además de errores, flash y navegación Inertia.",
+    "Mantener verificaciones de contraseña/OTP; cancelar, Escape o cerrar un diálogo no ejecuta una acción destructiva.",
+    "Los datos tabulares siguen siendo tabla; no introducir role=grid para suplir etiquetas o teclado.",
+    "Mantener Radix Dialog para nombre, foco inicial, contención/restauración del foco y cierre de teclado; semantizar títulos en los call sites.",
+    "Limitar la afinación visual a los componentes de alcance; no alterar estilos globales ni estructura funcional."
+  ],
+  "existingCodeLeverage": [
+    {
+      "path": "resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx",
+      "role": "Referencia de main/section/aside, encabezados h1-h3 y listas."
+    },
+    {
+      "path": "resources/js/modules/setting/modules/accountSettings/AccountSettingsProfileForm.tsx",
+      "role": "Referencia de etiquetas asociadas, errores y ayuda."
+    },
+    {
+      "path": "resources/js/modules/setting/modules/accountSettings/AccountActionsPanel.tsx",
+      "role": "Referencia de ritmo, padding y tipografía de tarjetas."
+    },
+    {
+      "path": "resources/js/shared/components/shadcn/ui/dialog.tsx",
+      "role": "Primitiva existente de diálogo; conservar foco y etiquetado."
+    },
+    {
+      "path": "resources/js/shared/components/shadcn/ui/card.tsx",
+      "role": "Agregar títulos semánticos en call sites sin cambiar CardTitle global."
+    },
+    {
+      "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+      "role": "Referencia existente de DialogTitle con h2."
+    }
+  ],
+  "phases": [
+    {
+      "id": "PHASE-1",
+      "title": "Fundamentos de página",
+      "taskIds": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "outcome": "Landmarks, títulos y estructura de página/tabla."
+    },
+    {
+      "id": "PHASE-2",
+      "title": "Contenido y controles",
+      "taskIds": [
+        "TASK-003",
+        "TASK-004",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-015"
+      ],
+      "outcome": "Controles, búsquedas, tarjetas, listas y metadatos semánticos."
+    },
+    {
+      "id": "PHASE-3",
+      "title": "Diálogos y flujos",
+      "taskIds": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "outcome": "Diálogos nombrados, campos asociados y teclado preservado."
+    },
+    {
+      "id": "PHASE-4",
+      "title": "QA de cierre",
+      "taskIds": [
+        "TASK-016"
+      ],
+      "outcome": "Gates frontend y revisión manual de teclado, estados y móvil."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Establecer landmarks y jerarquía de títulos en TwoFactor",
+      "phase": "Fundamentos de página",
+      "description": "Añadir landmark y jerarquía de encabezados a los estados de TwoFactor. Tomar AccountSettings como referencia de tipografía y espaciado local.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada estado visible expone un único título principal dentro del landmark del módulo y mantiene una secuencia de encabezados coherente.",
+        "Tamaño, peso y espaciado de títulos y secciones se armonizan localmente con AccountSettings sin cambiar la composición funcional.",
+        "Con gestión bloqueada o datos de 2FA ausentes, la pantalla y las acciones correspondientes siguen disponibles, sin títulos duplicados ni controles inaccesibles."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx",
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx",
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx",
+          "role": "Landmark principal y composición del módulo."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx",
+          "role": "Título y ritmo visual del estado desactivado."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+          "role": "Título y ritmo visual del estado activo."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Semantizar página, tabla y paginación de TrustedDevice",
+      "phase": "Fundamentos de página",
+      "description": "Mejorar landmark, título y semántica tabular; asociar el nombre del selector de filas y armonizar tipografía/espaciado local.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "La página tiene landmark y título principal; los datos conservan tabla, encabezados y relaciones de columna.",
+        "El selector de filas tiene nombre accesible asociado y la paginación conserva estados y distribución responsiva.",
+        "Con cero resultados, filtros o lista extensa en móvil, los estados vacíos y el desplazamiento mantienen contexto sin convertir la tabla en grid ARIA."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+          "role": "Landmark y título principal de la página."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+          "role": "Semántica de tabla y selección."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx",
+          "role": "Nombre del selector y controles de paginación."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Semantizar tarjetas y opciones de TwoFactor",
+      "phase": "Contenido y controles",
+      "description": "Usar controles nativos para opciones accionables y estructura de encabezado/lista para resúmenes y pasos.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Las opciones accionables se enfocan y activan por teclado, con nombre y estado comprensibles.",
+        "El resumen conserva encabezado y los pasos se representan como lista ordenada cuando expresan orden.",
+        "Las tarjetas estáticas no aparecen como controles y ninguna opción introduce controles anidados ni activa acciones al recibir foco."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx",
+          "role": "Control nativo para opciones accionables."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx",
+          "role": "Título semántico del resumen."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx",
+          "role": "Secuencia ordenada de pasos."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Mejorar semántica de recuperación y configuración OTP",
+      "phase": "Contenido y controles",
+      "description": "Asociar nombres, instrucciones y errores a OTP; marcar colecciones y configuración con semántica apropiada.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "OTP tiene etiqueta o nombre accesible y sus errores/instrucciones quedan asociados al control.",
+        "Códigos y configuración manual se presentan en estructuras semánticas conservando texto legible y copiable.",
+        "Con error de OTP o colección de códigos vacía, el usuario conserva contexto y puede reintentar; no se anuncian valores inexistentes."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
+          "role": "Lista de códigos y mensajes de estado."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx",
+          "role": "Nombre accesible, errores y estado de OTP."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+          "role": "Jerarquía de instrucciones y datos de configuración."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Semantizar diálogos de administración de TwoFactor",
+      "phase": "Diálogos y flujos",
+      "description": "Dar títulos semánticos a diálogos usando primitivas existentes y reparar asociación de etiquetas sin cambiar campos ni acciones.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada diálogo tiene un título semántico conectado al nombre accesible que ofrece la primitiva Dialog.",
+        "La etiqueta OTP usa id/for coincidentes y los errores siguen asociados al campo.",
+        "Si falla la confirmación o se cancela regeneración, se conserva validación, foco y cierre actuales sin mostrar éxito falso."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx",
+          "role": "Título y etiqueta del campo de confirmación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx",
+          "role": "Título y confirmación de regeneración."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx",
+          "role": "Título y estructura de detalles."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Semantizar diálogo y pasos de activación de TwoFactor",
+      "phase": "Diálogos y flujos",
+      "description": "Alinear título, instrucciones, opciones y confirmación de configuración con semántica nativa y estilos locales consistentes.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "El diálogo y sus pasos exponen títulos/instrucciones con jerarquía y relaciones accesibles claras.",
+        "La elección de método y confirmación se operan por teclado y mantienen el orden de foco previsto.",
+        "Al cambiar de paso, regresar o encontrar error, el diálogo conserva nombre y estado comprensibles sin duplicar títulos principales."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx",
+          "role": "Nombre y estructura del diálogo."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+          "role": "Selección accesible del método."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx",
+          "role": "Estado de éxito y acciones siguientes."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Nombrar filtros y búsquedas de TrustedDevice",
+      "phase": "Contenido y controles",
+      "description": "Asociar nombres explícitos a búsquedas/comboboxes y semantizar el diálogo de actividad preservando filtros actuales.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Las búsquedas tienen etiqueta o nombre explícito y las etiquetas de filtros se asocian a sus controles.",
+        "El diálogo de actividad usa título semántico conectado a la primitiva sin alterar comportamiento de filtrado.",
+        "Sin coincidencias o filtros, se pueden identificar/limpiar filtros y se conserva el nombre del diálogo y el estado vacío."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx",
+          "role": "Nombre accesible de búsqueda y filtros."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx",
+          "role": "Título y búsqueda del historial."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx",
+          "role": "Asociación entre etiqueta y combobox."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Semantizar resumen y contenido principal de TrustedDevice",
+      "phase": "Contenido y controles",
+      "description": "Expresar resumen, recomendaciones y actividad como secciones/listas semánticas con jerarquía tipográfica compatible con AccountSettings.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada bloque tiene encabezado adecuado y sus colecciones repetidas usan listas con elementos distinguibles.",
+        "Tipografía, peso y espaciado se armonizan sin cambiar la estructura funcional.",
+        "Sin recomendaciones o actividad, el estado vacío es entendible y no se anuncian listas vacías como contenido."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx",
+          "role": "Jerarquía semántica del resumen."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx",
+          "role": "Lista y título de recomendaciones."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+          "role": "Lista y título de actividad reciente."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Semantizar eventos, timeline y paginación de actividad",
+      "phase": "Contenido y controles",
+      "description": "Representar actividad como lista/secuencia ordenada y nombrar la paginación preservando estados de carga, vacío y diseño responsive.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Eventos repetidos usan estructura de lista y la línea temporal comunica el orden semánticamente.",
+        "Selectores y botones de paginación tienen nombres accesibles y conservan estados deshabilitados/actuales.",
+        "Con cero eventos o una página, no se anuncia navegación inexistente y el estado vacío sigue siendo legible."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx",
+          "role": "Lista semántica de eventos."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx",
+          "role": "Nombres y estados de paginación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
+          "role": "Orden cronológico semántico."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Semantizar diálogos para agregar, renombrar y reactivar dispositivos",
+      "phase": "Diálogos y flujos",
+      "description": "Semantizar títulos y formularios, asociar errores y etiquetas, y preservar contratos Inertia y acciones.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada diálogo tiene nombre accesible semántico; campos y errores quedan asociados.",
+        "Acciones conservan nombres de campo/valores y mantienen comportamiento de foco y teclado.",
+        "Con datos inválidos o al cancelar, errores/estado siguen visibles y no se confirma una acción incompleta."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+          "role": "Título, formulario y errores al agregar."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+          "role": "Título, etiqueta y validación del nombre."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+          "role": "Título y confirmación de reactivación."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Semantizar diálogos de revocación y destrucción",
+      "phase": "Diálogos y flujos",
+      "description": "Hacer explícitos propósito y alcance de acciones destructivas con encabezados/advertencias semánticos, preservando foco y acciones.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada confirmación identifica el alcance y asocia semánticamente la advertencia.",
+        "Cancelar y confirmar mantienen nombres/acciones actuales y funcionan con teclado y foco del diálogo.",
+        "Cancelar o cerrar nunca ejecuta destrucción; errores del servidor no se presentan como éxito."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx",
+          "role": "Título y confirmación de revocación individual."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx",
+          "role": "Título y alcance de revocación masiva."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx",
+          "role": "Título y advertencia de destrucción forzada."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Semantizar diálogos de renovación y estados de dispositivo",
+      "phase": "Diálogos y flujos",
+      "description": "Asegurar títulos y explicaciones accesibles para renovar confianza y explicar estados que impiden registrar un dispositivo.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada diálogo anuncia propósito/estado con encabezado semántico asociado a Dialog.",
+        "Acciones tienen nombres explícitos, orden de foco lógico y conservan comportamiento actual.",
+        "En estado expirado o duplicado no se ofrece acción incompatible y el mensaje explica el siguiente paso."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+          "role": "Título y acción de renovación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx",
+          "role": "Título y estado expirado."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
+          "role": "Título y explicación de duplicado."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Semantizar diálogos de detalles, resumen y dispositivo revocado",
+      "phase": "Diálogos y flujos",
+      "description": "Estructurar detalles/estados con títulos y relaciones de datos semánticas conservando las acciones vigentes.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Cada diálogo tiene título semántico/nombre accesible y jerarquía de secciones.",
+        "Relaciones etiqueta/valor y colecciones de detalles pueden recorrerse sin depender solo de estilo.",
+        "Si faltan metadatos o está revocado, el estado es claro y no aparecen valores vacíos ni acciones engañosas."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx",
+          "role": "Título y estado final de revocación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+          "role": "Título y estructura de detalles."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+          "role": "Título y resumen semántico."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Completar semántica de diálogos informativos",
+      "phase": "Diálogos y flujos",
+      "description": "Completar estructura de recomendaciones y validar que el título h2 existente de atajos siga conectado al diálogo.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Recomendaciones se presentan como colección semántica y el diálogo tiene título descriptivo.",
+        "El h2 existente de atajos permanece conectado al nombre accesible y las instrucciones mantienen orden claro.",
+        "Contenido exclusivamente informativo no aparece como control interactivo."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx",
+          "role": "Título y lista de recomendaciones."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+          "role": "Preservar h2 y orden de lectura de instrucciones."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Semantizar tarjetas informativas y metadatos de TrustedDevice",
+      "phase": "Contenido y controles",
+      "description": "Asegurar que tarjetas y pares de metadatos comuniquen títulos/relaciones explícitos respetando la jerarquía de su contexto.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Títulos usan nivel adecuado a la anidación y metadatos expresan relación etiqueta/valor sin depender del estilo.",
+        "Tipografía/espaciado se armonizan localmente y no alteran el orden de lectura.",
+        "Si falta título o valor opcional, no se genera encabezado vacío ni etiqueta que presente un dato inexistente."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx",
+          "role": "Título y estructura del resumen."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx",
+          "role": "Título y estructura informativa."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx",
+          "role": "Relación semántica etiqueta/valor."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Cerrar QA semántico, visual y de teclado de SOC-36",
+      "phase": "QA de cierre",
+      "description": "Correr los gates frontend existentes y validar manualmente rutas/estados de ambos módulos con teclado, estructura y viewport móvil. Confirmar que el refactor no cambió contratos ni comportamiento.",
+      "priority": "P0",
+      "type": "test",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "Pasan format:check, lint:check, types, build y build:ssr después de integrar todas las tareas.",
+        "QA manual confirma tabulación, activación con Enter/Espacio, foco al abrir/cerrar diálogos, etiquetas/nombres y encabezados en ambos módulos.",
+        "Estados de error, vacío, filtros sin resultados y controles deshabilitados no muestran acciones/datos engañosos y se conservan rutas/contratos."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr",
+      "review": "codex"
+    }
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [],
+    "TASK-004": [],
+    "TASK-005": [],
+    "TASK-006": [],
+    "TASK-007": [],
+    "TASK-008": [],
+    "TASK-009": [],
+    "TASK-010": [],
+    "TASK-011": [],
+    "TASK-012": [],
+    "TASK-013": [],
+    "TASK-014": [],
+    "TASK-015": [],
+    "TASK-016": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015"
+    ]
+  },
+  "criticalPath": {
+    "tasks": [
+      "TASK-001",
+      "TASK-016"
+    ],
+    "rationale": "Una tarea de página y QA de integración; todas las tareas de implementación alimentan directamente el QA final."
+  },
+  "failureModes": [
+    "DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.",
+    "Un div clicable puede quedar fuera del teclado; usar control nativo y evitar controles interactivos anidados.",
+    "Etiquetas sin asociación o búsquedas nombradas solo por placeholder fallan en lector de pantalla.",
+    "Reemplazar tabla por elementos genéricos/role=grid puede perder asociaciones y comportamiento existentes.",
+    "Ajustes tipográficos amplios pueden alterar densidad responsive; mantenerlos locales y revisar móvil, vacío y error.",
+    "Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos."
+  ],
+  "shipCut": "SOC-36 se considera completo después de las 15 tareas de implementación y TASK-016. La tarea adyacente de PreferredLocale no bloquea el cierre del issue. Si se pausa, cada slice puede revisarse por separado; cerrar SOC-36 requiere ambos módulos, diálogos relevantes, gates frontend y QA de teclado/estados.",
+  "testCoverageMap": [
+    {
+      "scope": "Cada slice de implementación",
+      "coverage": "Prettier --check y ESLint limitados a los archivos de writeScope."
+    },
+    {
+      "scope": "Integración frontend",
+      "coverage": "npm run format:check, lint:check, types, build y build:ssr."
+    },
+    {
+      "scope": "Accesibilidad/regresión manual",
+      "coverage": "Recorrer por teclado páginas, opciones, tablas, búsquedas, filtros y diálogos; revisar foco, nombres, errores y vacíos en desktop y móvil."
+    },
+    {
+      "scope": "Trabajo adyacente PreferredLocale",
+      "coverage": "Prueba del módulo AccountSettings para el casteo del DTO y locales inválidos; Pint, PHPStan, Rector y prueba feature del slice."
+    }
+  ],
+  "executionSummary": {
+    "taskCount": 16,
+    "implementationTaskCount": 15,
+    "phaseCount": 4,
+    "dagLayers": [
+      {
+        "layer": 1,
+        "taskIds": [
+          "TASK-001",
+          "TASK-002",
+          "TASK-003",
+          "TASK-004",
+          "TASK-005",
+          "TASK-006",
+          "TASK-007",
+          "TASK-008",
+          "TASK-009",
+          "TASK-010",
+          "TASK-011",
+          "TASK-012",
+          "TASK-013",
+          "TASK-014",
+          "TASK-015"
+        ]
+      },
+      {
+        "layer": 2,
+        "taskIds": [
+          "TASK-016"
+        ]
+      }
+    ],
+    "reviewDefault": "codex",
+    "linearTaskCount": 16,
+    "adjacentTaskCount": 1
+  },
+  "adjacentWork": {
+    "scope": "Fuera de Linear SOC-36; no bloquea el issue ni el QA final de SOC-36.",
+    "task": {
+      "id": "TASK-017",
+      "title": "Tipar PreferredLocale en el DTO de AccountSettings",
+      "description": "Reflejar el enum de dominio en el DTO y mantener una conversión explícita a su valor escalar al mapear atributos del modelo. La validación permanece en el FormRequest; cubrir que laravel-data convierta el string validado al enum.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "AccountSettingsUpdateData declara PreferredLocale para preferredLocale y laravel-data convierte los valores respaldados recibidos desde datos ya validados.",
+        "toUserAttributes devuelve el valor escalar del enum para preferred_locale y conserva su PHPDoc de array de atributos escalares.",
+        "La prueba del módulo verifica el casteo de es/en y el endpoint sigue rechazando un locale no soportado sin persistir cambios."
+      ],
+      "filesToModify": [
+        "app/User/Modules/AccountSettings/Data/AccountSettingsUpdateData.php",
+        "app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "app/User/Modules/AccountSettings/Data/AccountSettingsUpdateData.php",
+          "role": "Tipado de PreferredLocale y mapeo explícito al valor almacenado."
+        },
+        {
+          "path": "app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php",
+          "role": "Regresión del casteo del Data DTO y el rechazo de valores no soportados."
+        }
+      ],
+      "validateCommand": "rtk vendor/bin/pint --dirty --format agent\nrtk composer phpstan\nrtk composer rector-dry\nrtk composer rector\nrtk php artisan test --compact app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php",
+      "review": "codex"
+    }
+  }
+}
