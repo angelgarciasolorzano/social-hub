@@ -2,7 +2,7 @@ import type { JSX } from "react";
 
 import { Head, usePage } from "@inertiajs/react";
 
-import { ShieldCheck, UserRound } from "lucide-react";
+import { Info, UserRound } from "lucide-react";
 
 import AccountActionsPanel from "@/modules/setting/modules/accountSettings/components/AccountActionsPanel";
 import AccountSettingsProfileForm from "@/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm";
@@ -89,18 +89,18 @@ function AccountSettingsPrivacyOverview(): JSX.Element {
               iconColorVariants.violet.iconBgClass,
             )}
           >
-            <ShieldCheck className={cn("size-5", iconColorVariants.violet.iconFgClass)} />
+            <Info className={cn("size-5", iconColorVariants.violet.iconFgClass)} />
           </span>
 
           <div className="min-w-0 space-y-1">
             <h2
               className={cn("font-semibold tracking-tight", iconColorVariants.violet.iconFgClass)}
             >
-              Tu información es privada y segura
+              Administra tus datos
             </h2>
             <p className="text-sm text-muted-foreground">
-              Solo tú puedes ver y modificar estos datos. Nunca compartiremos tu información
-              personal.
+              Actualiza la información personal disponible y consulta cómo se muestra tu perfil
+              público.
             </p>
           </div>
         </div>

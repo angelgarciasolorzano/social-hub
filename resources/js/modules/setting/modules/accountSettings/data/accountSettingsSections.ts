@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bell, EyeOff, FileText, LockKeyhole, Mail, Megaphone, Settings2 } from "lucide-react";
+import { Bell, Eye, FileText, Mail, Megaphone, Settings2, UserRound } from "lucide-react";
 
 import type { IconColorVariant } from "@/shared/lib/styling";
 
@@ -21,28 +21,28 @@ export interface AccountCommunicationChannel {
 
 export const privacyPrinciples: readonly AccountPrivacyPrinciple[] = [
   {
-    description: "Usamos cifrado para mantener tu información segura.",
-    icon: LockKeyhole,
+    description: "Consulta y actualiza la información personal asociada a tu cuenta.",
+    icon: UserRound,
     iconColor: "blue",
-    title: "Datos protegidos",
+    title: "Datos de tu cuenta",
   },
   {
-    description: "Tus datos son visibles únicamente para ti.",
-    icon: EyeOff,
+    description: "Consulta cómo se muestra la información de tu perfil público.",
+    icon: Eye,
     iconColor: "violet",
-    title: "Solo tú tienes acceso",
+    title: "Perfil público",
   },
   {
-    description: "Puedes actualizar o eliminar tu información cuando quieras.",
+    description: "Puedes actualizar tus datos o eliminar tu cuenta desde las opciones disponibles.",
     icon: Settings2,
     iconColor: "amber",
     title: "Tú decides",
   },
   {
-    description: "Te explicamos cómo usamos tus datos.",
+    description: "Revisa las acciones disponibles para administrar tu cuenta.",
     icon: FileText,
     iconColor: "green",
-    title: "Transparencia",
+    title: "Opciones de cuenta",
   },
 ];
 
