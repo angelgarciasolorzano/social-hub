@@ -41,7 +41,7 @@
       "details": [
         "Conservar GET /setting/profile como profile.edit y PATCH /setting/profile como profile.update.",
         "Mantener auth y verified desde app/User/routes/routes.php.",
-        "Conservar /profile como perfil público propio, el endpoint PUT setting.password.update y user.destroy. El GET setting.password.edit se mantiene solo como redirección de compatibilidad a profile.edit; no existe una vista independiente de contraseña."
+        "Conservar /profile como perfil público propio, el endpoint PUT setting.password.update y user.destroy. El GET setting.password.edit se elimina; el cambio de contraseña se inicia desde un diálogo en la página de ajustes de cuenta."
       ]
     },
     {
@@ -93,7 +93,7 @@
     "resources/js/modules/setting/modules/profile/EditProfile.tsx es la página a reemplazar y SettingLayout ya envuelve páginas del área.",
     "app/User/Profile/Controllers/ProfileController.php conserva el perfil público; su método edit actual puede salir al nuevo controlador de AccountSettings.",
     "app/User/Controllers/UserController.php ya actualiza usuarios desde Auth::user() y borra con current_password; el borrado se reutiliza con route user.destroy.",
-    "app/Auth/Modules/Password/Controllers/PasswordController.php conserva la acción update; la vista EditPassword.tsx usa PasswordInput y explica la revocación de dispositivos confiables.",
+    "PasswordController conserva la acción update; AccountSettingsPasswordDialog la usa y mantiene el aviso de revocación de dispositivos confiables. La vista EditPassword ya se retiró.",
     "resources/js/shared/components/form/PasswordInput.tsx está exportado desde el barrel form y admite ref, autocomplete y errores, con control para mostrar/ocultar la contraseña.",
     "AccountSettingsDeleteDialog.tsx ya usa useDialog; su campo actual es un Input type=password y el aviso solo indica permanencia, eliminación de datos y cierre de sesión.",
     "app/User/Resources/UserResource.php se mantiene como serialización pública; la configuración privada necesita AccountSettingsResource.",
@@ -576,8 +576,8 @@
     },
     {
       "id": "TASK-016",
-      "title": "Eliminar la vista independiente de cambio de contraseña",
-      "description": "Retirar EditPassword.tsx y convertir el GET antiguo en una redirección de compatibilidad al perfil; mantener intacta la acción PUT de actualización.",
+      "title": "Eliminar el GET y la vista independiente de contraseña",
+      "description": "Retirar el endpoint de lectura y su página independiente, limpiar la navegación y consumidores antiguos, y conservar el endpoint PUT usado por el diálogo.",
       "priority": "P1",
       "type": "refactor",
       "effort": "S",
@@ -586,52 +586,57 @@
         "TASK-015"
       ],
       "acceptanceCriteria": [
-        "EditPassword.tsx deja de existir y GET /setting/password redirige a profile.edit sin renderizar una página independiente.",
-        "PUT setting.password.update conserva la validación actual y la revocación de dispositivos confiables.",
-        "Las pruebas comprueban la redirección al perfil y que credenciales actuales incorrectas no cambian la contraseña."
+        "GET /setting/password deja de estar registrado, EditPassword.tsx y su enlace del sidebar desaparecen, y Wayfinder ya no exporta el helper edit.",
+        "PUT setting.password.update conserva validación y revocación de dispositivos confiables; el diálogo vuelve a profile.edit tras éxito o error.",
+        "Las pruebas verifican que el GET no está permitido (405 porque el URI conserva solo el PUT), que el PUT actualiza con credenciales válidas y que una contraseña actual incorrecta no cambia la contraseña ni revoca dispositivos."
       ],
       "filesToModify": [
+        "app/Auth/routes/password.php",
         "app/Auth/Modules/Password/Controllers/PasswordController.php",
-        "app/Auth/Modules/Password/Tests/PasswordUpdateTest.php"
+        "app/Auth/Modules/Password/Tests/PasswordUpdateTest.php",
+        "app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php",
+        "resources/js/modules/setting/shared/components/SettingSidebar.tsx",
+        "resources/js/shared/wayfinder/actions/App/Auth/Modules/Password/Controllers/PasswordController.ts",
+        "resources/js/shared/wayfinder/routes/setting/password/index.ts"
       ],
       "filesToCreate": [],
       "filesToDelete": [
         "resources/js/modules/setting/modules/password/EditPassword.tsx"
       ],
       "writeScope": [
-        "Cambiar PasswordController.edit para redirigir a profile.edit y retirar imports que solo servían para renderizar Inertia.",
-        "Eliminar EditPassword.tsx después de que TASK-015 integre el diálogo.",
-        "Actualizar PasswordUpdateTest.php para verificar la redirección antigua y el flujo de actualización desde profile.edit."
+        "Eliminar la ruta GET password.edit de app/Auth/routes/password.php y el método edit de PasswordController, preservando el PUT update.",
+        "Actualizar PasswordUpdateTest.php y PasswordTrustedDeviceRevocationTest.php para usar profile.edit como referer; verificar 404 para el GET antiguo y conservar los casos de éxito/error del PUT.",
+        "Retirar el enlace de contraseña del sidebar y la página EditPassword.tsx; regenerar Wayfinder con la ruta configurada y revisar que solo se quite el helper GET."
       ],
-      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordUpdateTest.php",
+      "validateCommand": "rtk php artisan route:list --path=setting/password --except-vendor; rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordUpdateTest.php app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php; rtk npm exec -- eslint resources/js/modules/setting/shared/components/SettingSidebar.tsx",
       "review": "codex"
     },
     {
       "id": "TASK-017",
-      "title": "Retirar el enlace obsoleto de contraseña del sidebar",
-      "description": "Quitar la navegación que llevaba a la vista eliminada y probar el cambio de contraseña con el diálogo desde el perfil.",
+      "title": "Ajustar al contenido el ancho de los botones de cuenta",
+      "description": "Hacer que los botones de perfil público y cambio de contraseña ocupen solo el ancho de su contenido, igual que el botón para eliminar cuenta.",
       "priority": "P2",
-      "type": "refactor",
+      "type": "feature",
       "effort": "S",
-      "agent": "general-purpose",
+      "agent": "react-vite-tailwind-engineer",
       "dependsOn": [
         "TASK-016"
       ],
       "acceptanceCriteria": [
-        "El sidebar de Settings ya no ofrece una ruta aparte para cambiar contraseña ni importa el helper edit de PasswordController.",
-        "Los tests de revocación de dispositivos usan profile.edit como referer y verifican que un cambio válido revoca los dispositivos.",
-        "Una contraseña actual incorrecta devuelve el error al perfil y conserva activos los dispositivos confiables."
+        "Los botones Ir a mi perfil público y Cambiar contraseña usan el ancho de su contenido y quedan alineados con Eliminar mi cuenta.",
+        "Los textos descriptivos de las cards conservan todo el ancho disponible y los botones no desbordan en pantallas estrechas.",
+        "Los botones conservan sus enlaces/diálogo, estados de foco y comportamiento accesible."
       ],
       "filesToModify": [
-        "resources/js/modules/setting/shared/components/SettingSidebar.tsx",
-        "app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php"
+        "resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx"
       ],
       "filesToCreate": [],
       "writeScope": [
-        "Eliminar del grupo Seguridad en SettingSidebar.tsx el enlace a la página independiente de contraseña.",
-        "Actualizar PasswordTrustedDeviceRevocationTest.php para simular el referer profile.edit que usa el diálogo."
+        "Aplicar w-fit max-w-full a los botones de perfil público y cambio de contraseña, siguiendo el botón de eliminación.",
+        "Mantener el contenido descriptivo de cada card con ancho completo para no comprimir el texto al ajustar los botones."
       ],
-      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php; rtk npm exec -- eslint resources/js/modules/setting/shared/components/SettingSidebar.tsx",
+      "validateCommand": "rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx; rtk npm run types",
       "review": "codex"
     },
     {
@@ -825,7 +830,7 @@
     "La eliminación con contraseña incorrecta cierra la sesión o borra la cuenta; la prueba debe comprobar que la cuenta persiste y el error se muestra.",
     "El diálogo afirma que publicaciones, comentarios u otros datos relacionados se eliminan sin que el backend o las relaciones/cascadas lo garanticen; limitar el texto a consecuencias verificadas.",
     "El diálogo de cambio de contraseña pierde el aviso de revocación de dispositivos o no permanece abierto al recibir errores de validación; conservar el contrato del formulario actual.",
-    "La vista EditPassword se elimina sin cambiar su ruta GET a una redirección compatible o sin retirar el enlace viejo del sidebar.",
+    "El GET de contraseña se elimina sin actualizar los consumidores de rutas, la navegación y las pruebas que antes usaban la página independiente.",
     "Los elementos estáticos parecen toggles activos o el botón de actividad ejecuta una acción accidental; validación manual de interacción.",
     "El estado de cuenta se presenta como activo sin una fuente aprobada; mantenerlo fuera de SOC-34 y remitir la implementación a SOC-35."
   ],
@@ -856,7 +861,7 @@
       "path": "app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php"
     },
     {
-      "behavior": "Cambio de contraseña desde el diálogo, redirección legacy y rechazo de contraseña actual inválida",
+      "behavior": "Cambio de contraseña desde el diálogo, GET independiente no permitido y rechazo de contraseña actual inválida",
       "task": "TASK-016",
       "path": "app/Auth/Modules/Password/Tests/PasswordUpdateTest.php"
     },

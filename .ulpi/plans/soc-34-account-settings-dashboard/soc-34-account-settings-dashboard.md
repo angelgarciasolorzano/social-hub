@@ -43,7 +43,7 @@ El estado real de la cuenta queda fuera del alcance actual. El usuario decidió 
 
 - Conservar GET /setting/profile como profile.edit y PATCH /setting/profile como profile.update.
 - Mantener auth y verified desde app/User/routes/routes.php.
-- Conservar /profile como perfil público propio, el endpoint PUT setting.password.update y user.destroy. El GET setting.password.edit se mantiene solo como redirección de compatibilidad a profile.edit; no existe una vista independiente de contraseña.
+- Conservar /profile como perfil público propio, el endpoint PUT setting.password.update y user.destroy. El GET setting.password.edit se elimina; el cambio de contraseña se inicia desde un diálogo en la página de ajustes de cuenta.
 
 ### Datos privados y públicos
 
@@ -82,7 +82,7 @@ El estado real de la cuenta queda fuera del alcance actual. El usuario decidió 
 - resources/js/modules/setting/modules/profile/EditProfile.tsx es la página a reemplazar y SettingLayout ya envuelve páginas del área.
 - app/User/Profile/Controllers/ProfileController.php conserva el perfil público; su método edit actual puede salir al nuevo controlador de AccountSettings.
 - app/User/Controllers/UserController.php ya actualiza usuarios desde Auth::user() y borra con current_password; el borrado se reutiliza con route user.destroy.
-- app/Auth/Modules/Password/Controllers/PasswordController.php conserva la acción update; la vista EditPassword.tsx usa PasswordInput y explica la revocación de dispositivos confiables.
+- PasswordController conserva la acción update; AccountSettingsPasswordDialog la usa y mantiene el aviso de revocación de dispositivos confiables. La vista EditPassword ya se retiró.
 - resources/js/shared/components/form/PasswordInput.tsx está exportado desde el barrel form y admite ref, autocomplete y errores, con control para mostrar/ocultar la contraseña.
 - AccountSettingsDeleteDialog.tsx ya usa useDialog; su campo actual es un Input type=password y el aviso solo indica permanencia, eliminación de datos y cierre de sesión.
 - app/User/Resources/UserResource.php se mantiene como serialización pública; la configuración privada necesita AccountSettingsResource.
@@ -307,9 +307,9 @@ rtk php artisan route:list --name=profile --except-vendor -vv
 
 Regenerar los helpers después del cambio de controlador y apuntar el sidebar y el menú del perfil al endpoint de AccountSettings.
 
-**Type:** feature  
-**Effort:** S  
-**Agent:** react-vite-tailwind-engineer  
+**Type:** feature
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
 **Priority:** P1  
 **Depends on:** TASK-008  
 **Review:** codex
@@ -486,9 +486,9 @@ Convertir el cambio de contraseña en diálogo y mejorar la confirmación de eli
 rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx
 ```
 
-### TASK-016: Eliminar la vista independiente de cambio de contraseña
+### TASK-016: Eliminar el GET y la vista independiente de contraseña
 
-Retirar EditPassword.tsx y convertir el GET antiguo en una redirección de compatibilidad al perfil; mantener intacta la acción PUT de actualización.
+Retirar el endpoint de lectura y su página independiente, limpiar la navegación y consumidores antiguos, y conservar el endpoint PUT usado por el diálogo.
 
 **Type:** refactor
 **Effort:** S
@@ -498,43 +498,43 @@ Retirar EditPassword.tsx y convertir el GET antiguo en una redirección de compa
 **Review:** codex
 
 **Acceptance Criteria:**
-1. EditPassword.tsx deja de existir y GET /setting/password redirige a profile.edit sin renderizar una página independiente.
-2. PUT setting.password.update conserva la validación actual y la revocación de dispositivos confiables.
-3. Las pruebas comprueban la redirección al perfil y que credenciales actuales incorrectas no cambian la contraseña.
+1. GET /setting/password deja de estar registrado, EditPassword.tsx y su enlace del sidebar desaparecen, y Wayfinder ya no exporta el helper edit.
+2. PUT setting.password.update conserva validación y revocación de dispositivos confiables; el diálogo vuelve a profile.edit tras éxito o error.
+3. Las pruebas verifican que el GET no está permitido (405 porque el URI conserva solo el PUT), que el PUT actualiza con credenciales válidas y que una contraseña actual incorrecta no cambia la contraseña ni revoca dispositivos.
 
 **writeScope:**
-- Cambiar PasswordController.edit para redirigir a profile.edit y retirar imports que solo servían para renderizar Inertia.
-- Eliminar EditPassword.tsx después de que TASK-015 integre el diálogo.
-- Actualizar PasswordUpdateTest.php para verificar la redirección antigua y el flujo de actualización desde profile.edit.
+- Eliminar la ruta GET password.edit de app/Auth/routes/password.php y el método edit de PasswordController, preservando el PUT update.
+- Actualizar PasswordUpdateTest.php y PasswordTrustedDeviceRevocationTest.php para usar profile.edit como referer; verificar 404 para el GET antiguo y conservar los casos de éxito/error del PUT.
+- Retirar el enlace de contraseña del sidebar y la página EditPassword.tsx; regenerar Wayfinder con la ruta configurada y revisar que solo se quite el helper GET.
 
 **validateCommand:**
 ```text
-rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordUpdateTest.php
+rtk php artisan route:list --path=setting/password --except-vendor; rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordUpdateTest.php app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php; rtk npm exec -- eslint resources/js/modules/setting/shared/components/SettingSidebar.tsx
 ```
 
-### TASK-017: Retirar el enlace obsoleto de contraseña del sidebar
+### TASK-017: Ajustar al contenido el ancho de los botones de cuenta
 
-Quitar la navegación que llevaba a la vista eliminada y probar el cambio de contraseña con el diálogo desde el perfil.
+Hacer que los botones de perfil público y cambio de contraseña ocupen solo el ancho de su contenido, igual que el botón para eliminar cuenta.
 
-**Type:** refactor
+**Type:** feature
 **Effort:** S
-**Agent:** general-purpose
+**Agent:** react-vite-tailwind-engineer
 **Priority:** P2
 **Depends on:** TASK-016
 **Review:** codex
 
 **Acceptance Criteria:**
-1. El sidebar de Settings ya no ofrece una ruta aparte para cambiar contraseña ni importa el helper edit de PasswordController.
-2. Los tests de revocación de dispositivos usan profile.edit como referer y verifican que un cambio válido revoca los dispositivos.
-3. Una contraseña actual incorrecta devuelve el error al perfil y conserva activos los dispositivos confiables.
+1. Los botones Ir a mi perfil público y Cambiar contraseña usan el ancho de su contenido y quedan alineados con Eliminar mi cuenta.
+2. Los textos descriptivos de las cards conservan todo el ancho disponible y los botones no desbordan en pantallas estrechas.
+3. Los botones conservan sus enlaces/diálogo, estados de foco y comportamiento accesible.
 
 **writeScope:**
-- Eliminar del grupo Seguridad en SettingSidebar.tsx el enlace a la página independiente de contraseña.
-- Actualizar PasswordTrustedDeviceRevocationTest.php para simular el referer profile.edit que usa el diálogo.
+- Aplicar w-fit max-w-full a los botones de perfil público y cambio de contraseña, siguiendo el botón de eliminación.
+- Mantener el contenido descriptivo de cada card con ancho completo para no comprimir el texto al ajustar los botones.
 
 **validateCommand:**
 ```text
-rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php; rtk npm exec -- eslint resources/js/modules/setting/shared/components/SettingSidebar.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx; rtk npm run types
 ```
 
 ### TASK-018: Sincronizar la documentación de arquitectura
@@ -616,7 +616,7 @@ Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en S
 - La eliminación con contraseña incorrecta cierra la sesión o borra la cuenta; la prueba debe comprobar que la cuenta persiste y el error se muestra.
 - El diálogo afirma que publicaciones, comentarios u otros datos relacionados se eliminan sin que el backend o las relaciones/cascadas lo garanticen; limitar el texto a consecuencias verificadas.
 - El diálogo de cambio de contraseña pierde el aviso de revocación de dispositivos o no permanece abierto al recibir errores de validación; conservar el contrato del formulario actual.
-- La vista EditPassword se elimina sin cambiar su ruta GET a una redirección compatible o sin retirar el enlace viejo del sidebar.
+- La ruta GET de contraseña se elimina sin actualizar los consumidores generados, la navegación y las pruebas que usaban la pantalla antigua.
 - Los elementos estáticos parecen toggles activos o el botón de actividad ejecuta una acción accidental; validación manual de interacción.
 - El estado de cuenta se presenta como activo sin una fuente aprobada; mantenerlo fuera de SOC-34 y remitir la implementación a SOC-35.
 
@@ -634,8 +634,8 @@ Sincronizar este plan con SOC-34 y SOC-35; no implementar estados de cuenta en S
 | Datos de resumen reales y privacidad de serialización | TASK-011 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsSummaryTest.php` |
 | Último acceso solo tras autenticación exitosa | TASK-011 | `app/User/Modules/AccountSettings/Tests/Listeners/TrackLastLoginTest.php` |
 | Borrado válido/inválido con contraseña actual | TASK-010 | `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` |
-| Cambio de contraseña desde el diálogo, redirección legacy y rechazo de contraseña actual inválida | TASK-016 | `app/Auth/Modules/Password/Tests/PasswordUpdateTest.php` |
-| Revocación de dispositivos confiables desde el referer del diálogo y preservación con error de contraseña | TASK-017 | `app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php` |
+| Cambio de contraseña desde el diálogo, ausencia del GET antiguo y rechazo de contraseña actual inválida | TASK-016 | `app/Auth/Modules/Password/Tests/PasswordUpdateTest.php` |
+| Revocación de dispositivos confiables desde el referer del diálogo y preservación con error de contraseña | TASK-016 | `app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php` |
 | Diseño, responsive y accesibilidad por teclado | TASK-019 | `QA manual de los diálogos contra el mock Linear` |
 
 ## Execution Summary

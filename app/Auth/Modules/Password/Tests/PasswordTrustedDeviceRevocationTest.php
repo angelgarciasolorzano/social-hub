@@ -75,7 +75,7 @@ it("revokes the authenticated user's trusted devices without affecting other use
     $testResponse = $this->withServerVariables(['REMOTE_ADDR' => $expectedIp])
         ->withHeaders(['User-Agent' => $expectedUserAgent])
         ->actingAs($user)
-        ->from(route('setting.password.edit'))
+        ->from(route('profile.edit'))
         ->put(route('setting.password.update'), [
             'current_password' => 'password',
             'password' => 'new-password',
@@ -84,7 +84,7 @@ it("revokes the authenticated user's trusted devices without affecting other use
 
     $testResponse
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('setting.password.edit'));
+        ->assertRedirect(route('profile.edit'));
 
     $this->assertSoftDeleted($firstTrustedDevice);
     $this->assertSoftDeleted($secondTrustedDevice);
@@ -121,7 +121,7 @@ it('keeps every trusted device active when the current password is incorrect', f
     $secondTrustedDevice = createTrustedDevice($user);
 
     $testResponse = $this->actingAs($user)
-        ->from(route('setting.password.edit'))
+        ->from(route('profile.edit'))
         ->put(route('setting.password.update'), [
             'current_password' => 'incorrect-password',
             'password' => 'new-password',
@@ -130,7 +130,7 @@ it('keeps every trusted device active when the current password is incorrect', f
 
     $testResponse
         ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('setting.password.edit'));
+        ->assertRedirect(route('profile.edit'));
 
     $this->assertNotSoftDeleted($firstTrustedDevice);
     $this->assertNotSoftDeleted($secondTrustedDevice);

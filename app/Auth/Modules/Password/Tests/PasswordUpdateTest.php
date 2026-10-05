@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Hash;
 
-it('renders the password update page', function (): void {
+it('does not expose a standalone password settings page', function (): void {
     $user = createUser();
 
-    $testResponse = $this
-        ->actingAs($user)
-        ->get(route('setting.password.edit'));
-
-    $testResponse->assertOk();
+    $this->actingAs($user)
+        ->get('/setting/password')
+        ->assertMethodNotAllowed();
 });
 
 it('updates the password when the current password is correct', function (): void {
@@ -19,7 +17,7 @@ it('updates the password when the current password is correct', function (): voi
 
     $testResponse = $this
         ->actingAs($user)
-        ->from(route('setting.password.edit'))
+        ->from(route('profile.edit'))
         ->put(route('setting.password.update'), [
             'current_password' => 'password',
             'password' => 'new-password',
@@ -28,7 +26,7 @@ it('updates the password when the current password is correct', function (): voi
 
     $testResponse
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('setting.password.edit'));
+        ->assertRedirect(route('profile.edit'));
 
     expect(Hash::check('new-password', $user->refresh()->password))
         ->toBeTrue();
@@ -39,7 +37,7 @@ it('rejects a password update when the current password is incorrect', function 
 
     $testResponse = $this
         ->actingAs($user)
-        ->from(route('setting.password.edit'))
+        ->from(route('profile.edit'))
         ->put(route('setting.password.update'), [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
@@ -48,5 +46,5 @@ it('rejects a password update when the current password is incorrect', function 
 
     $testResponse
         ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('setting.password.edit'));
+        ->assertRedirect(route('profile.edit'));
 });
