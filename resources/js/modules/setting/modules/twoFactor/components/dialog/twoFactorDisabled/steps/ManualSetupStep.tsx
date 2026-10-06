@@ -189,7 +189,7 @@ function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertPr
 
       <AlertTitle>Clave copiada al portapapeles</AlertTitle>
 
-      <AlertDescription>
+      <AlertDescription className="text-xs">
         <span>
           Este mensaje desaparecerá automáticamente en {secondsLeft}{" "}
           {secondsLeft === 1 ? "segundo" : "segundos"}.
@@ -210,10 +210,7 @@ function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertPr
             )}
           />
 
-          <span
-            aria-live="off"
-            className="text-xs font-semibold text-green-900 dark:text-green-400"
-          >
+          <span aria-live="off" className="text-xs text-green-900 dark:text-green-400">
             {secondsLeft}s
           </span>
         </div>

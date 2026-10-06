@@ -90,7 +90,12 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps): JSX.Element {
               >
                 <InputOTPGroup>
                   {Array.from({ length: OTP_MAX_LENGTH }, (_, index) => (
-                    <InputOTPSlot aria-invalid={isOtpInvalid} index={index} key={index} />
+                    <InputOTPSlot
+                      aria-invalid={isOtpInvalid}
+                      className="text-lg"
+                      index={index}
+                      key={index}
+                    />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
