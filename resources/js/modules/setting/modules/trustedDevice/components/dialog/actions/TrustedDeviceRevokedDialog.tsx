@@ -61,10 +61,10 @@ function TrustedDeviceRevokedDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldOff className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <ShieldOff aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Dispositivo revocado
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en él,

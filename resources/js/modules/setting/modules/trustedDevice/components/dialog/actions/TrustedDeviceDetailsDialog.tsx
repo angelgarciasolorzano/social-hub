@@ -40,7 +40,7 @@ import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -178,8 +178,8 @@ function TrustedDeviceDetailsDialog({
       <DialogContent className="max-w-6xl min-w-5xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <Eye aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
               {isRevoked ? (
                 <Badge
@@ -193,7 +193,7 @@ function TrustedDeviceDetailsDialog({
               ) : (
                 <Badge className={badgeVariants.success}>Activo</Badge>
               )}
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             {isRevoked
@@ -269,7 +269,9 @@ function DeviceOverviewCard({
 
           <div className="flex flex-col items-start gap-3">
             <div className="flex items-center justify-center gap-2">
-              <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
+              <h3 className="max-w-90 truncate text-2xl font-semibold">
+                {valueOrFallback(device.name, "Dispositivo sin nombre")}
+              </h3>
 
               {isRevoked ? (
                 <Badge
@@ -298,12 +300,12 @@ function DeviceOverviewCard({
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 {getDeviceIcon(device, "h-4 w-4")}
-                <span>{device.osName}</span>
+                <span>{valueOrFallback(device.osName, "Desconocido")}</span>
               </div>
 
               <FaCircle className="h-1 w-1" />
 
-              <span>{device.browser}</span>
+              <span>{valueOrFallback(device.browser, "Desconocido")}</span>
 
               <FaCircle className="h-1 w-1" />
 
@@ -398,7 +400,7 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   return (
     <Card className="dark:bg-input/20">
       <CardHeader>
-        <CardTitle>Actividad del dispositivo</CardTitle>
+        <h3 className="leading-none font-semibold">Actividad del dispositivo</h3>
       </CardHeader>
       <CardContent>
         <TrustedDeviceActivityTimeline steps={activitySteps} variant="violet" />
@@ -456,7 +458,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   return (
     <Card className="dark:bg-input/20">
       <CardHeader>
-        <CardTitle>Informacion del dispositivo</CardTitle>
+        <h3 className="leading-none font-semibold">Informacion del dispositivo</h3>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {items.map((item) => (
