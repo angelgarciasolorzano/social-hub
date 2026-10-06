@@ -6,7 +6,7 @@ namespace App\Providers;
 
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Contracts\Foundation\Application;
