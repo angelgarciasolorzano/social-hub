@@ -103,6 +103,7 @@ it('preserves omitted optional fields and clears fields sent as null', function 
 it('rejects unsupported preferred locales without changing the account', function (): void {
     $user = createUser();
     $originalName = $user->name;
+    $originalLocale = $user->preferred_locale;
 
     $this->actingAs($user)
         ->from(route('profile.edit'))
@@ -114,7 +115,7 @@ it('rejects unsupported preferred locales without changing the account', functio
         ->assertRedirect(route('profile.edit'));
 
     expect($user->refresh()->name)->toBe($originalName)
-        ->and($user->preferred_locale)->toBe(PreferredLocale::ENGLISH);
+        ->and($user->preferred_locale)->toBe($originalLocale);
 });
 
 it('rejects biographies longer than 160 characters without changing the account', function (): void {

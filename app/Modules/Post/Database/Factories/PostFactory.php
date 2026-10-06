@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Post\Factories;
+namespace App\Modules\Post\Database\Factories;
 
 use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;

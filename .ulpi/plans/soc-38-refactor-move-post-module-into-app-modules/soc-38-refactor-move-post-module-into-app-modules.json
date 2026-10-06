@@ -19,13 +19,13 @@
   "nonGoals": [
     "Mover Auth, Comment, Friendship, Home, Like, MediaLibrary o User a app/Modules (tareas separadas; Auth pasará a app/Modules/Auth/ en su momento).",
     "Cambiar comportamiento, rutas, nombres de rutas o UI; el frontend solo cambia imports/Wayfinder.",
-    "Reorganizar el interior de Post (Controllers/Factories/Models/Providers/Requests/Resources/Seeders/routes se conservan).",
+    "Reorganizar el interior de Post (Controllers/Database/Models/Providers/Requests/Resources/routes se conservan; Factories y Seeders pasan a Database/, como en User).",
     "Cambiar comportamiento: la única excepción deliberada es la migración de PostRequest a FluentValidation (mismas reglas y mensajes; corrige el espacio en 'mimes:png,jpg, webp').",
     "Agregar tests a módulos distintos de Post.",
     "Corregir la discrepancia image/image_file de PostRequest vs PostController ni la regla 'mimes:png,jpg, webp' (se documenta, se cubre con tests de comportamiento actual y queda como seguimiento)."
   ],
   "contracts": [
-    "Namespace final: App\\Modules\\Post\\{Controllers,Factories,Models,Providers,Requests,Resources,Seeders}; ruta post.store (POST /post, middleware auth+verified) idéntica; morph key 'post' idéntica.",
+    "Namespace final: App\\Modules\\Post\\{Controllers,Database\\Factories,Database\\Seeders,Models,Providers,Requests,Resources}; ruta post.store (POST /post, middleware auth+verified) idéntica; morph key 'post' idéntica.",
     "Regla de arquitectura: dentro de app/Modules/ = módulos de dominio; fuera (listeners, policies, providers, middleware, eventos, comandos) = archivos globales. app/<Domain>/ y app/<Domain>/Modules/<Feature>/ son la arquitectura vieja en transición.",
     "Propiedad del registro: TASK-007 (bootstrap/providers.php, morph map en AppServiceProvider, DatabaseSeeder). TASK-014 posee el registro de la carpeta de tests (tests/Pest.php + phpunit.xml). TASK-011 posee la regeneración de Wayfinder.",
     "Persistencia/media: Post::PATH='posts' y la colección posts_images no cambian, de modo que la ruta de almacenamiento de MediaLibraryCustomPathGenerator es idéntica y no se mueven archivos subidos. Única diferencia funcional: TEST_IMAGES_GLOB_PATH se actualiza porque se resuelve con app_path().",
@@ -42,7 +42,7 @@
     {
       "id": "TASK-001",
       "title": "Crear capa de datos de Post en app/Modules/Post (Model, Factory, Seeder)",
-      "description": "Crear copias de Post, PostFactory y PostSeeder bajo el namespace App\\Modules\\Post\\{Models,Factories,Seeders} sin tocar los originales (estrategia crear-nuevo-luego-borrar-viejo). Post conserva #[UseFactory], la colección posts_images, MORPH_NAME y las relaciones user/comments/likes. TEST_IMAGES_GLOB_PATH se actualiza a 'Modules/Post/Seeders/Images/*.{jpg,jpeg,png}' porque se resuelve con app_path(); es la única diferencia funcional y es solo de ruta.",
+      "description": "Crear copias de Post, PostFactory y PostSeeder bajo el namespace App\\Modules\\Post\\{Models,Database\\Factories,Database\\Seeders} sin tocar los originales (estrategia crear-nuevo-luego-borrar-viejo). Post conserva #[UseFactory], la colección posts_images, MORPH_NAME y las relaciones user/comments/likes. TEST_IMAGES_GLOB_PATH se actualiza a 'Modules/Post/Database/Seeders/Images/*.{jpg,jpeg,png}' porque se resuelve con app_path(); es la única diferencia funcional y es solo de ruta.",
       "priority": "P0",
       "type": "refactor",
       "effort": "S",
@@ -50,22 +50,22 @@
       "dependsOn": [],
       "acceptanceCriteria": [
         "Los 3 archivos nuevos declaran namespace App\\Modules\\Post\\... y PHPStan nivel max pasa sin errores sobre ellos; Post usa #[UseFactory(PostFactory::class)] apuntando a la factory nueva.",
-        "Post::TEST_IMAGES_GLOB_PATH apunta a Modules/Post/Seeders/Images/*.{jpg,jpeg,png}; la factory sigue siendo tolerante cuando el glob no encuentra imágenes (hoy el directorio Images/ no existe en el repo).",
+        "Post::TEST_IMAGES_GLOB_PATH apunta a Modules/Post/Database/Seeders/Images/*.{jpg,jpeg,png}; la factory sigue siendo tolerante cuando el glob no encuentra imágenes (hoy el directorio Images/ no existe en el repo).",
         "Caso límite: los archivos originales de app/Post/ siguen intactos y la app sigue arrancando (php artisan route:list no falla por clases duplicadas)."
       ],
       "filesToModify": [],
       "filesToCreate": [
         "app/Modules/Post/Models/Post.php",
-        "app/Modules/Post/Factories/PostFactory.php",
-        "app/Modules/Post/Seeders/PostSeeder.php"
+        "app/Modules/Post/Database/Factories/PostFactory.php",
+        "app/Modules/Post/Database/Seeders/PostSeeder.php"
       ],
       "filesToDelete": [],
       "writeScope": [
         "app/Modules/Post/Models/Post.php",
-        "app/Modules/Post/Factories/PostFactory.php",
-        "app/Modules/Post/Seeders/PostSeeder.php"
+        "app/Modules/Post/Database/Factories/PostFactory.php",
+        "app/Modules/Post/Database/Seeders/PostSeeder.php"
       ],
-      "validateCommand": "vendor/bin/phpstan analyse app/Modules/Post/Models/Post.php app/Modules/Post/Factories/PostFactory.php app/Modules/Post/Seeders/PostSeeder.php --memory-limit=1G && php artisan route:list --name=post.store && vendor/bin/pint --dirty --format agent",
+      "validateCommand": "vendor/bin/phpstan analyse app/Modules/Post/Models/Post.php app/Modules/Post/Database/Factories/PostFactory.php app/Modules/Post/Database/Seeders/PostSeeder.php --memory-limit=1G && php artisan route:list --name=post.store && vendor/bin/pint --dirty --format agent",
       "notes": "Archivos nuevos: no se registran todavía. El registro (providers/morph map/seeder) lo posee TASK-004.",
       "review": "claude,codex,user"
     },
@@ -466,7 +466,7 @@
     {
       "id": "TASK-015",
       "title": "Tests del modelo y la factory de Post",
-      "description": "Crear Tests/Models/PostModelTest.php (relaciones user/comments/likes; morph map 'post' resuelve a Post::class; la colección posts_images es singleFile, la segunda imagen reemplaza a la primera) y Tests/Factories/PostFactoryTest.php (la factory crea un Post con content y user_id válidos, acepta ->for($user), y no falla cuando no hay imágenes de prueba disponibles).",
+      "description": "Crear Tests/Models/PostModelTest.php (relaciones user/comments/likes; morph map 'post' resuelve a Post::class; la colección posts_images es singleFile, la segunda imagen reemplaza a la primera) y Tests/Database/PostFactoryTest.php (la factory crea un Post con content y user_id válidos, acepta ->for($user), y no falla cuando no hay imágenes de prueba disponibles).",
       "priority": "P2",
       "type": "test",
       "effort": "S",
@@ -482,21 +482,21 @@
       "filesToModify": [],
       "filesToCreate": [
         "app/Modules/Post/Tests/Models/PostModelTest.php",
-        "app/Modules/Post/Tests/Factories/PostFactoryTest.php"
+        "app/Modules/Post/Tests/Database/PostFactoryTest.php"
       ],
       "filesToDelete": [],
       "writeScope": [
         "app/Modules/Post/Tests/Models/PostModelTest.php",
-        "app/Modules/Post/Tests/Factories/PostFactoryTest.php"
+        "app/Modules/Post/Tests/Database/PostFactoryTest.php"
       ],
-      "validateCommand": "vendor/bin/pest app/Modules/Post/Tests/Models/PostModelTest.php app/Modules/Post/Tests/Factories/PostFactoryTest.php && vendor/bin/pint --dirty --format agent",
+      "validateCommand": "vendor/bin/pest app/Modules/Post/Tests/Models/PostModelTest.php app/Modules/Post/Tests/Database/PostFactoryTest.php && vendor/bin/pint --dirty --format agent",
       "notes": "",
       "review": "claude,codex,user"
     },
     {
       "id": "TASK-016",
       "title": "Tests del PostRequest (FluentRulesTester), PostResource y PostSeeder",
-      "description": "Crear Tests/Requests/PostRequestTest.php con FluentRulesTester::for(PostRequest::class) (content requerido y min:10; image nullable, mimes png/jpg/webp, max 5120 KB; mensajes en español exactos; autorización falla para guest), Tests/Resources/PostResourceTest.php (llaves exactas id, content, image, createdAt; createdAt en ISO-8601; image vacía sin media y con URL cuando hay media en posts_images) y Tests/Seeders/PostSeederTest.php (con 2 usuarios, cada uno recibe entre 5 y 20 posts propios).",
+      "description": "Crear Tests/Requests/PostRequestTest.php con FluentRulesTester::for(PostRequest::class) (content requerido y min:10; image nullable, mimes png/jpg/webp, max 5120 KB; mensajes en español exactos; autorización falla para guest), Tests/Resources/PostResourceTest.php (llaves exactas id, content, image, createdAt; createdAt en ISO-8601; image vacía sin media y con URL cuando hay media en posts_images) y Tests/Database/PostSeederTest.php (con 2 usuarios, cada uno recibe entre 5 y 20 posts propios).",
       "priority": "P2",
       "type": "test",
       "effort": "S",
@@ -512,16 +512,16 @@
       "filesToModify": [],
       "filesToCreate": [
         "app/Modules/Post/Tests/Resources/PostResourceTest.php",
-        "app/Modules/Post/Tests/Seeders/PostSeederTest.php",
+        "app/Modules/Post/Tests/Database/PostSeederTest.php",
         "app/Modules/Post/Tests/Requests/PostRequestTest.php"
       ],
       "filesToDelete": [],
       "writeScope": [
         "app/Modules/Post/Tests/Resources/PostResourceTest.php",
-        "app/Modules/Post/Tests/Seeders/PostSeederTest.php",
+        "app/Modules/Post/Tests/Database/PostSeederTest.php",
         "app/Modules/Post/Tests/Requests/PostRequestTest.php"
       ],
-      "validateCommand": "vendor/bin/pest app/Modules/Post/Tests/Resources/PostResourceTest.php app/Modules/Post/Tests/Seeders/PostSeederTest.php app/Modules/Post/Tests/Requests/PostRequestTest.php && vendor/bin/pint --dirty --format agent",
+      "validateCommand": "vendor/bin/pest app/Modules/Post/Tests/Resources/PostResourceTest.php app/Modules/Post/Tests/Database/PostSeederTest.php app/Modules/Post/Tests/Requests/PostRequestTest.php && vendor/bin/pint --dirty --format agent",
       "notes": "",
       "review": "claude,codex,user"
     },

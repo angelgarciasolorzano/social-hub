@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Post\Seeders;
+namespace App\Modules\Post\Database\Seeders;
 
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
