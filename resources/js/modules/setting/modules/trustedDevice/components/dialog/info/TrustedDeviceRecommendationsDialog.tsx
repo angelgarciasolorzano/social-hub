@@ -45,10 +45,10 @@ function TrustedDeviceRecommendationsDialog({
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2">
+              <Lightbulb aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Recomendaciones de seguridad
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Sigue estas recomendaciones para mantener tu cuenta y dispositivos de confianza seguros.
@@ -56,7 +56,7 @@ function TrustedDeviceRecommendationsDialog({
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          <div className="space-y-4 lg:col-span-3">
+          <ul className="list-none space-y-4 lg:col-span-3" role="list">
             {trustedDeviceRecommendations.map((recommendation) => (
               <RecommendationCard
                 description={recommendation.description}
@@ -66,7 +66,7 @@ function TrustedDeviceRecommendationsDialog({
                 title={recommendation.title}
               />
             ))}
-          </div>
+          </ul>
 
           <div className="lg:col-span-2">
             <DevicesPreviewSidebar
@@ -77,7 +77,7 @@ function TrustedDeviceRecommendationsDialog({
         </div>
 
         <Alert className={alertVariants.info}>
-          <CircleAlert />
+          <CircleAlert aria-hidden="true" />
           <AlertTitle>Estas recomendaciones te ayudan a mantener tu cuenta segura</AlertTitle>
           <AlertDescription>
             Los dispositivos de confianza te permiten iniciar sesion mas rapido, pero es importante
@@ -109,8 +109,9 @@ function RecommendationCard({
   title,
 }: RecommendationCardProps): JSX.Element {
   return (
-    <div className="flex items-start gap-4 rounded-xl border bg-card p-4 shadow-sm dark:bg-input/20">
+    <li className="flex items-start gap-4 rounded-xl border bg-card p-4 shadow-sm dark:bg-input/20">
       <div
+        aria-hidden="true"
         className={cn(
           "flex h-10 w-10 shrink-0 rounded-full p-2",
           iconColorVariants[iconColor].iconBgClass,
@@ -120,10 +121,10 @@ function RecommendationCard({
       </div>
 
       <div className="space-y-1">
-        <h4 className="text-sm font-semibold">{title}</h4>
+        <h3 className="text-sm font-semibold">{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -146,11 +147,11 @@ function DevicesPreviewSidebar({ copy, previews }: DevicesPreviewSidebarProps): 
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-base leading-tight font-semibold">{copy.title}</h4>
+        <h3 className="text-base leading-tight font-semibold">{copy.title}</h3>
         <p className="text-sm text-muted-foreground">{copy.body}</p>
 
         <Alert className={alertVariants.success}>
-          <CircleAlert />
+          <CircleAlert aria-hidden="true" />
           <AlertTitle>{trustedDevicePreviewAlert.title}</AlertTitle>
           <AlertDescription>{trustedDevicePreviewAlert.body}</AlertDescription>
         </Alert>
@@ -171,6 +172,7 @@ function DevicePreviewCard({ preview }: DevicePreviewCardProps): JSX.Element {
     <div className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-2">
         <div
+          aria-hidden="true"
           className={cn(
             "flex h-9 w-9 shrink-0 rounded-md p-2",
             iconColorVariants[preview.device.iconVariant].iconBgClass,
@@ -195,7 +197,7 @@ function DevicePreviewCard({ preview }: DevicePreviewCardProps): JSX.Element {
         )}
       >
         {preview.badge.label}
-        <BadgeIcon className="h-3 w-3" />
+        <BadgeIcon aria-hidden="true" className="h-3 w-3" />
       </div>
     </div>
   );

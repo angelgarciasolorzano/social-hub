@@ -126,7 +126,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
                   {group.label}
                 </h3>
 
-                <ul className="space-y-1">
+                <ul className="space-y-1" role="list">
                   {group.shortcuts.map((shortcut) => (
                     <li
                       className="flex min-h-9 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1"
