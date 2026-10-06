@@ -9,7 +9,7 @@ Los dominios viven sueltos en la raíz de app/ junto a código global. SOC-38 in
 
 ## Scope Challenge
 
-Modo HOLD: se mantiene el alcance de la issue (mover Post backend+frontend/Wayfinder, tests de Post, docs/skill/reglas) sin ampliarlo ni recortarlo. Hallazgos que afinan el alcance: (1) Post tiene un solo endpoint (POST /post → PostController invocable, post.store), por lo que los tests cubren creación/validación/imagen y no CRUD completo; (2) el único consumidor frontend es PostForm.tsx; (3) resources/js/shared/wayfinder está versionado y la carpeta routes/post no cambia porque depende del nombre de ruta; (4) composer.json ya autocarga App\ => app/, no requiere cambios; (5) phpstan.neon/rector.php no mencionan Post. Review por defecto: claude, codex y revisión del usuario.
+Modo HOLD: se mantiene el alcance de la issue (mover Post backend+frontend/Wayfinder, tests de Post, docs/skill/reglas) sin ampliarlo ni recortarlo. Hallazgos que afinan el alcance: (1) Post tiene un solo endpoint (POST /post → PostController invocable, post.store), por lo que los tests cubren creación/validación/imagen y no CRUD completo; (2) el único consumidor frontend es PostForm.tsx; (3) resources/js/shared/wayfinder está gitignoreado (generado localmente) y la carpeta routes/post no cambia porque depende del nombre de ruta; (4) composer.json ya autocarga App\ => app/, no requiere cambios; (5) phpstan.neon/rector.php no mencionan Post. Review por defecto: claude, codex y revisión del usuario.
 
 ## Prerequisites
 
@@ -33,7 +33,7 @@ Modo HOLD: se mantiene el alcance de la issue (mover Post backend+frontend/Wayfi
 - Regla de arquitectura: dentro de app/Modules/ = módulos de dominio; fuera (listeners, policies, providers, middleware, eventos, comandos) = archivos globales. app/<Domain>/ y app/<Domain>/Modules/<Feature>/ son la arquitectura vieja en transición.
 - Propiedad del registro: TASK-007 (bootstrap/providers.php, morph map en AppServiceProvider, DatabaseSeeder). TASK-014 posee el registro de la carpeta de tests (tests/Pest.php + phpunit.xml). TASK-011 posee la regeneración de Wayfinder.
 - Persistencia/media: Post::PATH='posts' y la colección posts_images no cambian, de modo que la ruta de almacenamiento de MediaLibraryCustomPathGenerator es idéntica y no se mueven archivos subidos. Única diferencia funcional: TEST_IMAGES_GLOB_PATH se actualiza porque se resuelve con app_path().
-- Wayfinder: actions/App/Post/ → actions/App/Modules/Post/; routes/post/ sin cambios. El directorio generado se versiona.
+- Wayfinder: actions/App/Post/ → actions/App/Modules/Post/; routes/post/ sin cambios. El directorio generado está gitignoreado: cada entorno lo regenera (el plugin de Vite lo hace en dev/build).
 
 ## Existing Code Leverage
 
@@ -296,7 +296,7 @@ Borrar Post, PostFactory y PostSeeder viejos y los directorios vacíos restantes
 
 ### TASK-011: Regenerar Wayfinder para el namespace App/Modules/Post
 
-Ejecutar php artisan wayfinder:generate --with-form (equivale a formVariants:true de vite.config.ts). El generador escribe resources/js/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController.ts (más sus index.ts) y debe dejar de emitir actions/App/Post/. Salida autogenerada, no se edita a mano; el writeScope es el directorio generado (excepción documentada al tope de 3 archivos). resources/js/shared/wayfinder/routes/post/ no cambia porque depende del nombre de ruta, no del namespace.
+Ejecutar php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder (equivale a formVariants:true y path de vite.config.ts; sin --path escribe en resources/js/actions y resources/js/routes). El generador escribe resources/js/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController.ts (más sus index.ts) y debe dejar de emitir actions/App/Post/. Salida autogenerada y gitignoreada (/resources/js/shared/wayfinder/* en .gitignore): no se edita a mano ni aparece en el diff; el writeScope es el directorio generado (excepción documentada al tope de 3 archivos). resources/js/shared/wayfinder/routes/post/ no cambia porque depende del nombre de ruta, no del namespace.
 
 **Type:** refactor
 **Priority:** P1
@@ -309,13 +309,13 @@ Ejecutar php artisan wayfinder:generate --with-form (equivale a formVariants:tru
 
 - Existe resources/js/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController.ts y exporta la acción de post.store (POST /post).
 - Caso límite: ya no existe resources/js/shared/wayfinder/actions/App/Post/ (si el generador deja restos se eliminan a mano) y resources/js/shared/wayfinder/routes/post/index.ts queda sin cambios.
-- El diff del directorio wayfinder solo contiene el movimiento de Post (no se regeneran ni modifican otros dominios).
+- La generación no deja carpetas nuevas en resources/js (actions/, routes/, wayfinder/) fuera de shared/wayfinder; como el directorio está gitignoreado, la verificación es por existencia de archivos, no por diff.
 
 **writeScope:**
 
 - (sin archivos propios; ver notas)
 
-**validateCommand:** `php artisan wayfinder:generate --with-form && test -f resources/js/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController.ts && ! test -d resources/js/shared/wayfinder/actions/App/Post`
+**validateCommand:** `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder && test -f resources/js/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController.ts && ! test -d resources/js/shared/wayfinder/actions/App/Post`
 
 **Notas:** writeScope real: resources/js/shared/wayfinder/actions/App/** (generado). Se generó antes de los tests/docs para que el frontend compile contra la ruta final.
 
