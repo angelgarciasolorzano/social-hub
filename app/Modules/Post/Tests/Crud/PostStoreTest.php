@@ -49,7 +49,8 @@ it('creates the post for the authenticated user and flashes a success message', 
 
     expect($post->user_id)->toBe($user->id)
         ->and($post->content)->toBe('Mi primera publicación')
-        ->and($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))->toHaveCount(0);
+        ->and($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))
+        ->toBeEmpty();
 });
 
 it('stores the uploaded image in the posts_images collection', function (): void {
@@ -90,5 +91,6 @@ it('flashes an error but keeps the post when the image is too big', function ():
     $post = Post::query()->sole();
 
     expect($post->user_id)->toBe($user->id)
-        ->and($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))->toHaveCount(0);
+        ->and($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))
+        ->toBeEmpty();
 });

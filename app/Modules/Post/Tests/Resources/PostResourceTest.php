@@ -23,7 +23,7 @@ function createPostForResource(): Post
 it('serializes only the public post fields', function (): void {
     $post = createPostForResource();
 
-    $payload = (new PostResource($post))->toArray(request());
+    $payload = new PostResource($post)->toArray(request());
 
     expect(array_keys($payload))->toBe(['id', 'content', 'image', 'createdAt'])
         ->and($payload['id'])->toBe($post->id)
@@ -34,7 +34,7 @@ it('serializes only the public post fields', function (): void {
 it('returns an empty image when the post has no media', function (): void {
     $post = createPostForResource();
 
-    expect((new PostResource($post))->toArray(request())['image'])->toBe('');
+    expect(new PostResource($post)->toArray(request())['image'])->toBe('');
 });
 
 it('returns the image url when the post has an image in posts_images', function (): void {
@@ -44,7 +44,7 @@ it('returns the image url when the post has an image in posts_images', function 
     $post->addMedia(UploadedFile::fake()->image('photo.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
-    $image = (new PostResource($post->refresh()))->toArray(request())['image'];
+    $image = new PostResource($post->refresh())->toArray(request())['image'];
 
     expect($image)->toBeString()
         ->and($image)->not->toBe('')

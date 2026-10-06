@@ -20,21 +20,21 @@ it('passes with valid content and no image', function (): void {
 });
 
 it('requires the content with a custom message', function (): void {
-    $tester = FluentRulesTester::for(PostRequest::class)
+    $fluentRulesTester = FluentRulesTester::for(PostRequest::class)
         ->actingAs(createUser())
         ->with(['content' => ''])
         ->failsOnly('content', 'required');
 
-    expect($tester->errors()->first('content'))->toBe('El contenido de la publicación es obligatorio');
+    expect($fluentRulesTester->errors()->first('content'))->toBe('El contenido de la publicación es obligatorio');
 });
 
 it('rejects content shorter than 10 characters with a custom message', function (): void {
-    $tester = FluentRulesTester::for(PostRequest::class)
+    $fluentRulesTester = FluentRulesTester::for(PostRequest::class)
         ->actingAs(createUser())
         ->with(['content' => 'corto'])
         ->failsOnly('content', 'min');
 
-    expect($tester->errors()->first('content'))->toBe('El contenido de la publicación no debe ser menor a 10 caracteres');
+    expect($fluentRulesTester->errors()->first('content'))->toBe('El contenido de la publicación no debe ser menor a 10 caracteres');
 });
 
 it('accepts png, jpg and webp images', function (string $fileName): void {
@@ -48,7 +48,7 @@ it('accepts png, jpg and webp images', function (string $fileName): void {
 })->with(['photo.png', 'photo.jpg', 'photo.webp']);
 
 it('rejects files that are not png, jpg or webp images', function (): void {
-    $tester = FluentRulesTester::for(PostRequest::class)
+    $fluentRulesTester = FluentRulesTester::for(PostRequest::class)
         ->actingAs(createUser())
         ->with([
             'content' => 'Contenido de la publicación',
@@ -56,11 +56,11 @@ it('rejects files that are not png, jpg or webp images', function (): void {
         ])
         ->failsOnly('image', 'mimes');
 
-    expect($tester->errors()->first('image'))->toBe('El archivo debe ser de tipo png, jpg o webp');
+    expect($fluentRulesTester->errors()->first('image'))->toBe('El archivo debe ser de tipo png, jpg o webp');
 });
 
 it('rejects images larger than 5MB with a custom message', function (): void {
-    $tester = FluentRulesTester::for(PostRequest::class)
+    $fluentRulesTester = FluentRulesTester::for(PostRequest::class)
         ->actingAs(createUser())
         ->with([
             'content' => 'Contenido de la publicación',
@@ -68,5 +68,5 @@ it('rejects images larger than 5MB with a custom message', function (): void {
         ])
         ->failsOnly('image', 'max');
 
-    expect($tester->errors()->first('image'))->toBe('El archivo no debe ser mayor a 5MB');
+    expect($fluentRulesTester->errors()->first('image'))->toBe('El archivo no debe ser mayor a 5MB');
 });

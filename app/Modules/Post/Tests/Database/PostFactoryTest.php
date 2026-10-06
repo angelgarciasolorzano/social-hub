@@ -36,5 +36,6 @@ it('does not fail when no seeding images are available', function (): void {
 
     $post = $factory->createOne();
 
-    expect($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))->toHaveCount(0);
+    expect($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))
+        ->toBeEmpty();
 });
