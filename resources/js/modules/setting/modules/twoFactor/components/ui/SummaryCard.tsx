@@ -43,7 +43,7 @@ function SummaryCard({
   return (
     <Card>
       <CardHeader>
-        <h2 className="leading-none font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">{title}</h2>
       </CardHeader>
       <CardContent>
         <ul className="flex flex-col gap-4" role="list">

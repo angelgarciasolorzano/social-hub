@@ -63,7 +63,7 @@ export function OptionCard<TKey extends string = string>({
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-sm font-medium">{option.title}</span>
 
-                <span className="text-sm text-muted-foreground">{option.description}</span>
+                <span className="text-xs text-muted-foreground">{option.description}</span>
               </span>
 
               {hasAction && (
