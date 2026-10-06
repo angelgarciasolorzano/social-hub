@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\MediaLibrary;
 
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 
