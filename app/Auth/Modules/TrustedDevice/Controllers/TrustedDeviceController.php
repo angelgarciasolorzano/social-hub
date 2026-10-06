@@ -223,30 +223,7 @@ class TrustedDeviceController extends Controller
 
         abort_unless($user instanceof User, 401);
 
-        $hasRevokedDevices = DB::transaction(function () use ($trustedDeviceDestroyAllRequest, $user): bool {
-            $devices = $user->trustedDevices()->latest('last_used_at')->get();
-
-            if ($devices->isEmpty()) {
-                return false;
-            }
-
-            foreach ($devices as $device) {
-                TrustedDeviceEvent::record(
-                    trustedDevice: $device,
-                    user: $user,
-                    trustedDeviceAction: TrustedDeviceAction::RevokedAll,
-                    request: $trustedDeviceDestroyAllRequest,
-                );
-            }
-
-            $user->trustedDevices()->delete();
-
-            return true;
-        });
-
-        if ($hasRevokedDevices) {
-            $this->trustedDeviceDashboardCache->invalidate($user);
-        }
+        $this->trustedDeviceService->revokeAll($user, $trustedDeviceDestroyAllRequest);
 
         return Inertia::flash([
             'type' => 'success',

@@ -88,6 +88,39 @@ final readonly class TrustedDeviceService
     }
 
     /**
+     * Revoke every active device of the user, one RevokedAll event each.
+     * Returns how many devices were revoked; 0 leaves events and cache untouched.
+     */
+    public function revokeAll(User $user, Request $request): int
+    {
+        return DB::transaction(function () use ($user, $request): int {
+            $trustedDevices = $user->trustedDevices()
+                ->latest('last_used_at')
+                ->lockForUpdate()
+                ->get();
+
+            if ($trustedDevices->isEmpty()) {
+                return 0;
+            }
+
+            foreach ($trustedDevices as $trustedDevice) {
+                TrustedDeviceEvent::record(
+                    trustedDevice: $trustedDevice,
+                    user: $user,
+                    trustedDeviceAction: TrustedDeviceAction::RevokedAll,
+                    request: $request,
+                );
+            }
+
+            $user->trustedDevices()->delete();
+
+            $this->invalidateDashboardAfterCommit($user);
+
+            return $trustedDevices->count();
+        });
+    }
+
+    /**
      * Record the audit event now and refresh the dashboard cache once the
      * surrounding transaction commits.
      */
@@ -104,6 +137,11 @@ final readonly class TrustedDeviceService
             request: $request,
         );
 
+        $this->invalidateDashboardAfterCommit($user);
+    }
+
+    private function invalidateDashboardAfterCommit(User $user): void
+    {
         DB::afterCommit(function () use ($user): void {
             $this->trustedDeviceDashboardCache->invalidate($user);
         });
