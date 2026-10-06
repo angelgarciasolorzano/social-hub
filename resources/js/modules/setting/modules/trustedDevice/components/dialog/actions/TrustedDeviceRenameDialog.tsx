@@ -1,4 +1,4 @@
-import type { JSX, SubmitEvent } from "react";
+import { type JSX, type SubmitEvent, useRef } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
 import { useForm, usePage } from "@inertiajs/react";
@@ -36,6 +36,7 @@ interface TrustedDeviceRenameDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
+  returnFocusTarget?: HTMLElement | null;
 }
 
 interface RenameDeviceFormData {
@@ -46,7 +47,10 @@ function TrustedDeviceRenameDialog({
   device,
   open,
   onClose,
+  returnFocusTarget,
 }: TrustedDeviceRenameDialogProps): JSX.Element {
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   const { setData, submit, processing, reset, errors, data } = useForm<RenameDeviceFormData>({
     name: device.name,
   });
@@ -78,7 +82,27 @@ function TrustedDeviceRenameDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent
+        onOpenAutoFocus={() => {
+          const activeElement = document.activeElement;
+
+          returnFocusRef.current =
+            activeElement instanceof HTMLElement && activeElement !== document.body
+              ? activeElement
+              : (returnFocusTarget ?? null);
+        }}
+        onCloseAutoFocus={(event) => {
+          const capturedTarget = returnFocusRef.current;
+          const focusTarget = capturedTarget?.isConnected ? capturedTarget : returnFocusTarget;
+
+          if (focusTarget?.isConnected) {
+            event.preventDefault();
+            focusTarget.focus();
+          }
+
+          returnFocusRef.current = null;
+        }}
+      >
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">

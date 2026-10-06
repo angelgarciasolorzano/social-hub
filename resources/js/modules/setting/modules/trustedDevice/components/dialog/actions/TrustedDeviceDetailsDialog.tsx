@@ -79,6 +79,7 @@ interface TrustedDeviceDetailsDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
+  returnFocusTarget?: HTMLElement | null;
 }
 
 type TrustedDeviceDetailsDialogAction =
@@ -87,12 +88,14 @@ type TrustedDeviceDetailsDialogAction =
 type DialogActionState = Pick<TrustedDeviceDetailsDialogProps, "device"> &
   DialogClosingState & {
     kind: TrustedDeviceDetailsDialogAction;
+    returnFocusTarget: HTMLElement | null;
   };
 
 function TrustedDeviceDetailsDialog({
   device,
   open,
   onClose,
+  returnFocusTarget,
 }: TrustedDeviceDetailsDialogProps): JSX.Element {
   const dialogDevice = useDialog<DialogActionState | null>(null);
   const { appearance } = useAppearance();
@@ -104,7 +107,17 @@ function TrustedDeviceDetailsDialog({
     action: TrustedDeviceDetailsDialogAction,
     device: TrustedDevice,
   ): void => {
-    dialogDevice.show({ kind: action, device, closing: false });
+    const activeElement = document.activeElement;
+
+    dialogDevice.show({
+      kind: action,
+      device,
+      returnFocusTarget:
+        activeElement instanceof HTMLElement && activeElement !== document.body
+          ? activeElement
+          : null,
+      closing: false,
+    });
   };
 
   const handleDialogClose = createDialogCloseHandler(dialogDevice);
@@ -124,6 +137,7 @@ function TrustedDeviceDetailsDialog({
             device={actionDevice}
             open={!isClosing}
             onClose={handleDialogClose}
+            returnFocusTarget={dialogDevice.state.returnFocusTarget}
           />
         );
 
@@ -175,7 +189,15 @@ function TrustedDeviceDetailsDialog({
         if (!nextOpen) onClose();
       }}
     >
-      <DialogContent className="max-w-6xl min-w-5xl">
+      <DialogContent
+        className="max-w-6xl min-w-5xl"
+        onCloseAutoFocus={(event) => {
+          if (returnFocusTarget?.isConnected) {
+            event.preventDefault();
+            returnFocusTarget.focus();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">
