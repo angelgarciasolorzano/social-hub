@@ -107,7 +107,9 @@ function RegenerateCodesDialog({
 
         <Alert className={cn(alertVariants.destructive, "my-2")}>
           <AlertTriangleIcon />
-          <AlertTitle>Los códigos actuales dejarán de funcionar.</AlertTitle>
+          <AlertTitle className="font-normal">
+            Los códigos actuales dejarán de funcionar.
+          </AlertTitle>
           <AlertDescription>
             Una vez que generes nuevos códigos, los anteriores no pódran usarse.
           </AlertDescription>

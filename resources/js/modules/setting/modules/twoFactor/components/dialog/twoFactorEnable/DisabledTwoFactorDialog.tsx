@@ -114,7 +114,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
         <Alert className={alertVariants.info}>
           <ShieldQuestionMark />
 
-          <AlertTitle className="line-clamp-4">
+          <AlertTitle className="line-clamp-4 font-normal">
             ¿Estás seguro de que quieres desactivar la autenticación de dos factores?
           </AlertTitle>
 
