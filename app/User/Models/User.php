@@ -8,7 +8,7 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
 use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
