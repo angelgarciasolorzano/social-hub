@@ -32,7 +32,7 @@
     "La lectura de config module.auth.trusted_devices.cookie_lifetime_minutes para renew/reactivate vive solo en el Service.",
     "Los guards 403 (ownership), 404 (reactivate/forceDestroy sobre dispositivo no revocado) y 401 se conservan con el mismo código HTTP; la Policy (TASK-007) solo reemplaza el 403.",
     "Capability provider de persistencia/eventos/caché: TrustedDevice (Eloquent), TrustedDeviceEvent::record() y TrustedDeviceDashboardCache::invalidate(), todos existentes.",
-    "Wiring: el enum TrustedDeviceRegistrationResult (TASK-005) y la Policy (TASK-007) se autocargan por PSR-4; la Policy se registra con Gate::policy en AuthServiceProvider::boot (TASK-007)."
+    "Wiring: el enum TrustedDeviceRegistrationResult (TASK-005) y la Policy (TASK-007) se autocargan por PSR-4; la Policy se registra con el atributo #[UsePolicy] en el modelo TrustedDevice, igual que #[UseFactory] (TASK-007)."
   ],
   "existingCodeLeverage": [
     "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php: solo tiene create(); se amplía y se reutiliza InfersDeviceMetadata.",
@@ -225,7 +225,7 @@
     {
       "id": "TASK-007",
       "title": "Policy de ownership para TrustedDevice (opcional)",
-      "description": "Crear TrustedDevicePolicy con update, delete, restore y forceDelete (ownership por user_id), registrarla con Gate::policy en AuthServiceProvider::boot y reemplazar los abort_unless(... user_id ...) del controlador por Gate::authorize (el Controller base no usa AuthorizesRequests). Los abort_if(deleted_at === null, 404) y el estrechamiento de tipo del usuario se conservan en el controlador. Es un patrón nuevo en el proyecto (no existen Policies).",
+      "description": "Crear TrustedDevicePolicy con update, delete, restore y forceDelete (ownership por user_id), registrarla con el atributo #[UsePolicy] en el modelo TrustedDevice (la convención de descubrimiento de Laravel no la encuentra en Modules/TrustedDevice/Policies) y reemplazar los abort_unless(... user_id ...) del controlador por Gate::authorize (el Controller base no usa AuthorizesRequests). Los abort_if(deleted_at === null, 404) y el estrechamiento de tipo del usuario se conservan en el controlador. Es un patrón nuevo en el proyecto (no existen Policies).",
       "priority": "P3",
       "type": "refactor",
       "effort": "M",
@@ -239,19 +239,19 @@
         "Caso límite: reactivate/forceDestroy sobre un dispositivo no revocado siguen devolviendo 404 (no 403) y el binding withTrashed de las rutas no cambia."
       ],
       "filesToModify": [
-        "app/Auth/Providers/AuthServiceProvider.php",
+        "app/Auth/Models/TrustedDevice.php",
         "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php"
       ],
       "filesToCreate": [
         "app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php"
       ],
       "writeScope": [
-        "app/Auth/Providers/AuthServiceProvider.php",
+        "app/Auth/Models/TrustedDevice.php",
         "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
         "app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php"
       ],
       "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Crud app/Auth/Modules/TrustedDevice/Tests/Lifecycle && vendor/bin/pint --dirty --format agent",
-      "notes": "Registro ownership: AuthServiceProvider::boot. Si se decide no introducir Policies, esta tarea y TASK-008 se descartan sin afectar al resto.",
+      "notes": "Registro ownership: atributo #[UsePolicy] en app/Auth/Models/TrustedDevice.php. Si se decide no introducir Policies, esta tarea y TASK-008 se descartan sin afectar al resto.",
       "review": "claude,codex"
     },
     {

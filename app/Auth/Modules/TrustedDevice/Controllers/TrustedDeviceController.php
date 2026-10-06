@@ -18,6 +18,7 @@ use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -31,7 +32,8 @@ class TrustedDeviceController extends Controller
     {
         $user = $trustedDeviceUpdateRequest->user();
 
-        abort_unless($user instanceof User && $trustedDevice->user_id === $user->getKey(), 403);
+        abort_unless($user instanceof User, 401);
+        Gate::authorize('update', $trustedDevice);
 
         $this->trustedDeviceService->rename(
             $user,
@@ -47,7 +49,8 @@ class TrustedDeviceController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user instanceof User && $trustedDevice->user_id === $user->getKey(), 403);
+        abort_unless($user instanceof User, 401);
+        Gate::authorize('update', $trustedDevice);
 
         $this->trustedDeviceService->renew($user, $trustedDevice, $request);
 
@@ -84,7 +87,8 @@ class TrustedDeviceController extends Controller
     {
         $user = $trustedDeviceDestroyRequest->user();
 
-        abort_unless($user instanceof User && $trustedDevice->user_id === $user->getKey(), 403);
+        abort_unless($user instanceof User, 401);
+        Gate::authorize('delete', $trustedDevice);
 
         $this->trustedDeviceService->revoke($user, $trustedDevice, $trustedDeviceDestroyRequest);
 
@@ -107,7 +111,7 @@ class TrustedDeviceController extends Controller
         $user = $trustedDeviceReactivateRequest->user();
 
         abort_unless($user instanceof User, 401);
-        abort_unless($trustedDevice->user_id === $user->getKey(), 403);
+        Gate::authorize('restore', $trustedDevice);
         abort_if($trustedDevice->deleted_at === null, 404);
 
         $newToken = $this->trustedDeviceService->reactivate($user, $trustedDevice, $trustedDeviceReactivateRequest);
@@ -121,7 +125,8 @@ class TrustedDeviceController extends Controller
     {
         $user = $trustedDeviceDestroyForceRequest->user();
 
-        abort_unless($user instanceof User && $trustedDevice->user_id === $user->getKey(), 403);
+        abort_unless($user instanceof User, 401);
+        Gate::authorize('forceDelete', $trustedDevice);
         abort_if($trustedDevice->deleted_at === null, 404);
 
         $this->trustedDeviceService->forceDelete($user, $trustedDevice, $trustedDeviceDestroyForceRequest);
