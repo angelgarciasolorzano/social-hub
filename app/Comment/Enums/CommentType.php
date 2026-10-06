@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Comment\Enums;
 
 use App\Comment\Models\Comment;
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 
 enum CommentType: string
 {
