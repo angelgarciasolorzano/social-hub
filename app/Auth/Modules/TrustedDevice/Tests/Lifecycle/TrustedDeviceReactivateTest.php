@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
+use Illuminate\Http\Request;
 
 it('redirects guests to the login page', function (): void {
     $trustedDevice = createTrustedDevice();
@@ -136,4 +138,34 @@ it('drops an active duplicate with the same fingerprint and records it as Revoke
             ->where('action', TrustedDeviceAction::Revoked)
             ->exists())->toBeTrue()
         ->and($trustedDevice->refresh()->deleted_at)->toBeNull();
+});
+
+it('queues a cookie whose hash matches the regenerated token_hash', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, ['token_hash' => hash('sha256', 'old-token')]);
+    $trustedDevice->delete();
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
+            'otp_code' => validOtpFor($user),
+        ]);
+
+    $cookie = $testResponse->getCookie('trusted_device');
+
+    expect($cookie)->not->toBeNull()
+        ->and($trustedDevice->refresh()->token_hash)
+        ->toBe(hash('sha256', (string) $cookie?->getValue()))
+        ->not->toBe(hash('sha256', 'old-token'));
+});
+
+it('returns the raw token from the service and persists only its hash', function (): void {
+    $user = createUser();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    $rawToken = resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, Request::create('/', 'POST'));
+
+    expect($trustedDevice->refresh()->deleted_at)->toBeNull()
+        ->and($trustedDevice->token_hash)->toBe(hash('sha256', $rawToken))
+        ->and($trustedDevice->token_hash)->not->toBe($rawToken);
 });

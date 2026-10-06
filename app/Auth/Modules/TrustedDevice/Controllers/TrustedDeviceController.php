@@ -19,7 +19,6 @@ use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
-use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,39 +34,6 @@ class TrustedDeviceController extends Controller
         private readonly TrustedDeviceService $trustedDeviceService,
         private readonly TrustedDeviceDashboardCache $trustedDeviceDashboardCache,
     ) {}
-
-    /**
-     * Hard-delete any active sibling sharing the same fingerprint before a
-     * reactivate, locked against concurrent reads and recorded as Revoked.
-     */
-    private function dropDuplicateActiveDevice(
-        ?User $user,
-        TrustedDevice $trustedDevice,
-        TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest,
-    ): void {
-        if (! $user instanceof User) {
-            return;
-        }
-
-        $duplicate = TrustedDevice::findActiveMatch(
-            $user,
-            $trustedDevice->user_agent,
-            $trustedDevice->os_name,
-            $trustedDevice->ip,
-            lockForUpdate: true,
-        );
-
-        if ($duplicate instanceof TrustedDevice && $duplicate->id !== $trustedDevice->id) {
-            TrustedDeviceEvent::record(
-                trustedDevice: $duplicate,
-                user: $user,
-                trustedDeviceAction: TrustedDeviceAction::Revoked,
-                request: $trustedDeviceReactivateRequest,
-            );
-
-            $duplicate->forceDelete();
-        }
-    }
 
     public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
@@ -239,33 +205,9 @@ class TrustedDeviceController extends Controller
         abort_unless($trustedDevice->user_id === $user->getKey(), 403);
         abort_if($trustedDevice->deleted_at === null, 404);
 
-        /** @var int $cookieLifetimeMinutes */
-        $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
+        $newToken = $this->trustedDeviceService->reactivate($user, $trustedDevice, $trustedDeviceReactivateRequest);
 
-        DB::transaction(function () use ($trustedDeviceReactivateRequest, $trustedDevice, $user, $cookieLifetimeMinutes): void {
-            $this->dropDuplicateActiveDevice($user, $trustedDevice, $trustedDeviceReactivateRequest);
-
-            $newToken = $this->mintToken();
-
-            $trustedDevice->forceFill([
-                'token_hash' => $newToken['hash'],
-                'expires_at' => CarbonImmutable::now()->addMinutes($cookieLifetimeMinutes),
-                'last_used_at' => CarbonImmutable::now(),
-            ])->save();
-
-            $trustedDevice->restore();
-
-            TrustedDeviceEvent::record(
-                trustedDevice: $trustedDevice,
-                user: $user,
-                trustedDeviceAction: TrustedDeviceAction::Reactivated,
-                request: $trustedDeviceReactivateRequest,
-            );
-
-            $this->queueTrustedDeviceCookie($newToken['token']);
-        });
-
-        $this->trustedDeviceDashboardCache->invalidate($user);
+        $this->queueTrustedDeviceCookie($newToken);
 
         return Inertia::flash([
             'type' => 'success',

@@ -7,6 +7,7 @@ namespace App\Auth\Modules\TrustedDevice\Services;
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
+use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 final readonly class TrustedDeviceService
 {
     use InfersDeviceMetadata;
+    use MintsTrustedDeviceToken;
 
     public function __construct(private TrustedDeviceDashboardCache $trustedDeviceDashboardCache) {}
 
@@ -87,10 +89,28 @@ final readonly class TrustedDeviceService
         });
     }
 
-    /**
-     * Revoke every active device of the user, one RevokedAll event each.
-     * Returns how many devices were revoked; 0 leaves events and cache untouched.
-     */
+    public function reactivate(User $user, TrustedDevice $trustedDevice, Request $request): string
+    {
+        return DB::transaction(function () use ($user, $trustedDevice, $request): string {
+            $this->dropDuplicateActiveDevice($user, $trustedDevice, $request);
+
+            $newToken = $this->mintToken();
+            $now = CarbonImmutable::now();
+
+            $trustedDevice->forceFill([
+                'token_hash' => $newToken['hash'],
+                'expires_at' => $now->addMinutes($this->cookieLifetimeMinutes()),
+                'last_used_at' => $now,
+            ])->save();
+
+            $trustedDevice->restore();
+
+            $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Reactivated, $request);
+
+            return $newToken['token'];
+        });
+    }
+
     public function revokeAll(User $user, Request $request): int
     {
         return DB::transaction(function () use ($user, $request): int {
@@ -138,6 +158,27 @@ final readonly class TrustedDeviceService
         );
 
         $this->invalidateDashboardAfterCommit($user);
+    }
+
+    /**
+     * Hard-delete any active sibling sharing the same fingerprint before a
+     * reactivate, locked against concurrent reads and recorded as Revoked.
+     */
+    private function dropDuplicateActiveDevice(User $user, TrustedDevice $trustedDevice, Request $request): void
+    {
+        $duplicate = TrustedDevice::findActiveMatch(
+            $user,
+            $trustedDevice->user_agent,
+            $trustedDevice->os_name,
+            $trustedDevice->ip,
+            lockForUpdate: true,
+        );
+
+        if ($duplicate instanceof TrustedDevice && $duplicate->id !== $trustedDevice->id) {
+            $this->recordEvent($user, $duplicate, TrustedDeviceAction::Revoked, $request);
+
+            $duplicate->forceDelete();
+        }
     }
 
     private function invalidateDashboardAfterCommit(User $user): void
