@@ -159,7 +159,7 @@ function TwoFactorOperations() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="leading-none font-semibold">Cómo funciona</h2>
+        <h2 className="text-lg leading-none font-semibold">Cómo funciona</h2>
       </CardHeader>
       <CardContent>
         <Timeline steps={twoFactorOperationSteps} />
@@ -172,7 +172,7 @@ function TwoFactorRequirements() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="leading-none font-semibold">Requesitos</h2>
+        <h2 className="text-lg leading-none font-semibold">Requesitos</h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 text-sm">
@@ -192,7 +192,7 @@ function TwoFactorRecommendedApps() {
   return (
     <Card>
       <CardHeader>
-        <h2 className="leading-none font-semibold">Aplicaciones recomendadas</h2>
+        <h2 className="text-lg leading-none font-semibold">Aplicaciones recomendadas</h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-5 text-sm font-medium">

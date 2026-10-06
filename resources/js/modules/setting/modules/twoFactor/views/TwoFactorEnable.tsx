@@ -202,7 +202,7 @@ function TwoFactorEnable(): JSX.Element {
 
       <Card className="w-full xl:max-w-sm xl:shrink-0 xl:self-start">
         <CardHeader>
-          <h2 className="leading-none font-semibold">
+          <h2 className="text-lg leading-none font-semibold">
             {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
           </h2>
         </CardHeader>
@@ -256,7 +256,7 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
             <ClipboardCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
 
             <span className="text-sm text-muted-foreground">
-              <strong>Método: </strong>
+              <strong className="font-medium">Método: </strong>
               TOTP (Aplicación)
             </span>
           </div>
@@ -265,7 +265,7 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
             <Clock4 className="h-4 w-4 text-muted-foreground" />
 
             <span className="text-sm text-muted-foreground">
-              <strong>Última verificación: </strong>
+              <strong className="font-medium">Última verificación: </strong>
               hace 2 horas
             </span>
           </div>
@@ -451,7 +451,7 @@ function TwoFactorSafetyTips(): JSX.Element {
   return (
     <Card>
       <CardHeader>
-        <h2 className="flex items-center leading-none font-semibold">
+        <h2 className="flex items-center text-lg leading-none font-semibold">
           <Info className="mr-2 h-6 w-6 text-purple-700 dark:text-purple-500" />
           Consejos de seguridad
         </h2>
@@ -474,7 +474,7 @@ function TwoFactorSafetyTips(): JSX.Element {
               <div className="flex flex-1 flex-col gap-0.5">
                 <h3 className="text-sm font-medium">{tip.title}</h3>
 
-                <p className="text-sm text-muted-foreground">{tip.description}</p>
+                <p className="text-xs text-muted-foreground">{tip.description}</p>
               </div>
             </div>
           );
