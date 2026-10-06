@@ -7,43 +7,12 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
-use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
-use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-
-function trustedDeviceStatsCacheKey(User $user): string
-{
-    return \sprintf('trusted-device:dashboard:%s:stats', $user->id);
-}
-
-function warmTrustedDeviceStatsCache(User $user): void
-{
-    resolve(TrustedDeviceDashboardCache::class)->stats($user);
-
-    expect(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
-}
-
-function trustedDeviceAuditRequest(): Request
-{
-    return Request::create('/', 'POST', server: [
-        'REMOTE_ADDR' => '203.0.113.10',
-        'HTTP_USER_AGENT' => chromeWindowsUserAgent(),
-    ]);
-}
-
-function countTrustedDeviceEvents(User $user, TrustedDeviceAction $trustedDeviceAction): int
-{
-    return TrustedDeviceEvent::query()
-        ->where('user_id', $user->id)
-        ->where('action', $trustedDeviceAction)
-        ->count();
-}
 
 function parsedChromeWindowsDetector(): DeviceDetector
 {
@@ -56,21 +25,9 @@ function parsedChromeWindowsDetector(): DeviceDetector
 function trustedDeviceStoreRequest(): TrustedDeviceStoreRequest
 {
     return TrustedDeviceStoreRequest::create('/', 'POST', server: [
-        'REMOTE_ADDR' => '203.0.113.10',
-        'HTTP_USER_AGENT' => chromeWindowsUserAgent(),
+        'REMOTE_ADDR' => trustedDeviceFingerprint()['ip'],
+        'HTTP_USER_AGENT' => trustedDeviceFingerprint()['user_agent'],
     ]);
-}
-
-/**
- * @return array{user_agent: string, os_name: string, ip: string}
- */
-function trustedDeviceFingerprint(): array
-{
-    return [
-        'user_agent' => chromeWindowsUserAgent(),
-        'os_name' => 'Windows',
-        'ip' => '203.0.113.10',
-    ];
 }
 
 it('renames the device, records a Renamed event and invalidates the dashboard cache', function (): void {
@@ -84,7 +41,7 @@ it('renames the device, records a Renamed event and invalidates the dashboard ca
 
     expect($trustedDevice->refresh()->name)->toBe('New name')
         ->and($trustedDeviceEvent->action)->toBe(TrustedDeviceAction::Renamed)
-        ->and($trustedDeviceEvent->ip)->toBe('203.0.113.10')
+        ->and($trustedDeviceEvent->ip)->toBe(trustedDeviceFingerprint()['ip'])
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
 });
 
@@ -205,7 +162,7 @@ it('registers a new device, records a Created event and invalidates the dashboar
         ->and($trustedDevice->name)->toBe('Work laptop')
         ->and($trustedDevice->token_hash)->toBe(hash('sha256', 'new-token'))
         ->and($trustedDevice->os_name)->toBe('Windows')
-        ->and($trustedDevice->ip)->toBe('203.0.113.10')
+        ->and($trustedDevice->ip)->toBe(trustedDeviceFingerprint()['ip'])
         ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(1)
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
 });

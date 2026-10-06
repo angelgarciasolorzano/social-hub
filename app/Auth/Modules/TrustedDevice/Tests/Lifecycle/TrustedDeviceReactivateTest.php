@@ -5,8 +5,6 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
-use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
-use Illuminate\Http\Request;
 
 it('redirects guests to the login page', function (): void {
     $trustedDevice = createTrustedDevice();
@@ -114,14 +112,8 @@ it('forbids reactivating a device that belongs to another user', function (): vo
 it('drops an active duplicate with the same fingerprint and records it as Revoked', function (): void {
     $user = createUserWithTwoFactor();
 
-    $fingerprint = [
-        'user_agent' => chromeWindowsUserAgent(),
-        'os_name' => 'Windows',
-        'ip' => '203.0.113.5',
-    ];
-
-    $duplicate = createTrustedDevice($user, [...$fingerprint, 'name' => 'Duplicate device']);
-    $trustedDevice = createTrustedDevice($user, $fingerprint);
+    $duplicate = createTrustedDevice($user, [...trustedDeviceFingerprint(), 'name' => 'Duplicate device']);
+    $trustedDevice = createTrustedDevice($user, trustedDeviceFingerprint());
     $trustedDevice->delete();
 
     $testResponse = $this->actingAs($user)
@@ -156,16 +148,4 @@ it('queues a cookie whose hash matches the regenerated token_hash', function ():
         ->and($trustedDevice->refresh()->token_hash)
         ->toBe(hash('sha256', (string) $cookie?->getValue()))
         ->not->toBe(hash('sha256', 'old-token'));
-});
-
-it('returns the raw token from the service and persists only its hash', function (): void {
-    $user = createUser();
-    $trustedDevice = createTrustedDevice($user);
-    $trustedDevice->delete();
-
-    $rawToken = resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, Request::create('/', 'POST'));
-
-    expect($trustedDevice->refresh()->deleted_at)->toBeNull()
-        ->and($trustedDevice->token_hash)->toBe(hash('sha256', $rawToken))
-        ->and($trustedDevice->token_hash)->not->toBe($rawToken);
 });
