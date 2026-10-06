@@ -5,35 +5,27 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
-use App\Auth\Models\TrustedDeviceEvent;
-use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
-use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyForceRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceReactivateRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
-use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TrustedDeviceController extends Controller
 {
-    use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
 
-    public function __construct(
-        private readonly TrustedDeviceService $trustedDeviceService,
-        private readonly TrustedDeviceDashboardCache $trustedDeviceDashboardCache,
-    ) {}
+    public function __construct(private readonly TrustedDeviceService $trustedDeviceService) {}
 
     public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
@@ -48,10 +40,7 @@ class TrustedDeviceController extends Controller
             $trustedDeviceUpdateRequest,
         );
 
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Dispositivo renombrado correctamente.',
-        ])->back();
+        return Inertia::flash(TrustedDeviceRegistrationResult::Renamed->payload())->back();
     }
 
     public function renew(Request $request, TrustedDevice $trustedDevice): RedirectResponse
@@ -62,10 +51,7 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->renew($user, $trustedDevice, $request);
 
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Confianza renovada correctamente.',
-        ])->back();
+        return Inertia::flash(TrustedDeviceRegistrationResult::Renewed->payload())->back();
     }
 
     public function store(TrustedDeviceStoreRequest $trustedDeviceStoreRequest): RedirectResponse
@@ -77,96 +63,21 @@ class TrustedDeviceController extends Controller
         /** @var DeviceDetector $deviceDetector */
         $deviceDetector = resolve(DeviceDetector::class);
 
-        $osInfo = $this->inferOsInfo($deviceDetector);
-
-        $userAgent = $trustedDeviceStoreRequest->userAgent();
-        $ip = $trustedDeviceStoreRequest->ip();
-
-        if ($userAgent !== null && $ip !== null) {
-            $existingMatch = TrustedDevice::findAnyMatchForFingerprint(
-                $user,
-                $userAgent,
-                $osInfo['name'],
-                $ip,
-            );
-
-            if ($existingMatch instanceof TrustedDevice) {
-                if ($existingMatch->deleted_at !== null) {
-                    return Inertia::flash([
-                        'type' => 'error',
-                        'message' => 'Este dispositivo ya está registrado pero fue revocado. Reactívalo desde la lista de dispositivos revocados en lugar de agregarlo nuevamente.',
-                    ])->back();
-                }
-
-                return Inertia::flash([
-                    'type' => 'error',
-                    'message' => 'Este dispositivo ya está registrado como de confianza.',
-                ])->back();
-            }
-        }
-
         $token = $this->mintToken();
-        $deviceName = $trustedDeviceStoreRequest->string('name')->toString();
 
-        $trustedDevice = DB::transaction(function () use (
+        $trustedDeviceRegistrationResult = $this->trustedDeviceService->register(
             $user,
             $deviceDetector,
-            $osInfo,
-            $token,
-            $deviceName,
-            $userAgent,
-            $ip,
             $trustedDeviceStoreRequest,
-        ): TrustedDevice {
-            if ($userAgent !== null && $ip !== null) {
-                $existingMatch = TrustedDevice::findActiveMatch(
-                    $user,
-                    $userAgent,
-                    $osInfo['name'],
-                    $ip,
-                    lockForUpdate: true,
-                );
+            $token['hash'],
+            $trustedDeviceStoreRequest->string('name')->toString(),
+        );
 
-                if ($existingMatch instanceof TrustedDevice) {
-                    return $existingMatch;
-                }
-            }
-
-            $trustedDevice = $this->trustedDeviceService->create(
-                user: $user,
-                deviceDetector: $deviceDetector,
-                tokenHash: $token['hash'],
-                name: $deviceName,
-                userAgent: $userAgent,
-                ip: $ip,
-            );
-
-            if ($userAgent !== null) {
-                TrustedDevice::pruneOlder($user, $userAgent, $osInfo['name'], $ip, $trustedDevice->id);
-            }
-
-            if ($trustedDevice->wasRecentlyCreated) {
-                TrustedDeviceEvent::record(
-                    trustedDevice: $trustedDevice,
-                    user: $user,
-                    trustedDeviceAction: TrustedDeviceAction::Created,
-                    request: $trustedDeviceStoreRequest,
-                );
-            }
-
-            return $trustedDevice;
-        });
-
-        if ($trustedDevice->wasRecentlyCreated) {
-            $this->trustedDeviceDashboardCache->invalidate($user);
+        if ($trustedDeviceRegistrationResult->isSuccessful()) {
+            $this->queueTrustedDeviceCookie($token['token']);
         }
 
-        $this->queueTrustedDeviceCookie($token['token']);
-
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Dispositivo agregado correctamente.',
-        ])->back();
+        return Inertia::flash($trustedDeviceRegistrationResult->payload())->back();
     }
 
     public function destroy(TrustedDeviceDestroyRequest $trustedDeviceDestroyRequest, TrustedDevice $trustedDevice): RedirectResponse
@@ -177,10 +88,7 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->revoke($user, $trustedDevice, $trustedDeviceDestroyRequest);
 
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Dispositivo de confianza revocado correctamente.',
-        ])->back();
+        return Inertia::flash(TrustedDeviceRegistrationResult::Revoked->payload())->back();
     }
 
     public function destroyAll(TrustedDeviceDestroyAllRequest $trustedDeviceDestroyAllRequest): RedirectResponse
@@ -191,10 +99,7 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->revokeAll($user, $trustedDeviceDestroyAllRequest);
 
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Todos los dispositivos de confianza fueron revocados.',
-        ])->back();
+        return Inertia::flash(TrustedDeviceRegistrationResult::RevokedAll->payload())->back();
     }
 
     public function reactivate(TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest, TrustedDevice $trustedDevice): RedirectResponse
@@ -209,10 +114,7 @@ class TrustedDeviceController extends Controller
 
         $this->queueTrustedDeviceCookie($newToken);
 
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Dispositivo reactivado correctamente. Se regeneró el token de confianza por seguridad.',
-        ])->back();
+        return Inertia::flash(TrustedDeviceRegistrationResult::Reactivated->payload())->back();
     }
 
     public function forceDestroy(TrustedDeviceDestroyForceRequest $trustedDeviceDestroyForceRequest, TrustedDevice $trustedDevice): RedirectResponse
@@ -224,9 +126,6 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->forceDelete($user, $trustedDevice, $trustedDeviceDestroyForceRequest);
 
-        return Inertia::flash([
-            'type' => 'success',
-            'message' => 'Dispositivo eliminado permanentemente.',
-        ])->back();
+        return Inertia::flash(TrustedDeviceRegistrationResult::ForceDeleted->payload())->back();
     }
 }

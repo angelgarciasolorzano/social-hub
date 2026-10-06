@@ -5,12 +5,16 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\User\Models\User;
+use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 function trustedDeviceStatsCacheKey(User $user): string
@@ -121,4 +125,46 @@ it('rolls back the change and keeps the cache warm when recording the event fail
     expect($trustedDevice->refresh()->name)->toBe('Original')
         ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
+});
+
+it('reports AlreadyActive without creating anything when another request registers the device mid-flight', function (): void {
+    $user = createUser();
+    $fingerprint = [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '203.0.113.10',
+    ];
+
+    $deviceDetector = new DeviceDetector(chromeWindowsUserAgent());
+    $deviceDetector->parse();
+
+    $trustedDeviceStoreRequest = TrustedDeviceStoreRequest::create('/', 'POST', server: [
+        'REMOTE_ADDR' => '203.0.113.10',
+        'HTTP_USER_AGENT' => chromeWindowsUserAgent(),
+    ]);
+
+    $competingRequestRan = false;
+
+    DB::beforeExecuting(function (string $query) use (&$competingRequestRan, $user, $fingerprint): void {
+        if ($competingRequestRan || ! str_contains($query, 'is not null') || ! str_contains($query, 'deleted_at')) {
+            return;
+        }
+
+        $competingRequestRan = true;
+        createTrustedDevice($user, $fingerprint);
+    });
+
+    $trustedDeviceRegistrationResult = resolve(TrustedDeviceService::class)->register(
+        $user,
+        $deviceDetector,
+        $trustedDeviceStoreRequest,
+        hash('sha256', 'new-token'),
+        '',
+    );
+
+    expect($competingRequestRan)->toBeTrue()
+        ->and($trustedDeviceRegistrationResult)->toBe(TrustedDeviceRegistrationResult::AlreadyActive)
+        ->and($trustedDeviceRegistrationResult->isSuccessful())->toBeFalse()
+        ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(1)
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(0);
 });

@@ -9,6 +9,8 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
@@ -49,6 +51,57 @@ final readonly class TrustedDeviceService
             'last_used_at' => $now,
             'expires_at' => $now->addMinutes($this->cookieLifetimeMinutes()),
         ]);
+    }
+
+    public function register(
+        User $user,
+        DeviceDetector $deviceDetector,
+        TrustedDeviceStoreRequest $trustedDeviceStoreRequest,
+        string $tokenHash,
+        string $name,
+    ): TrustedDeviceRegistrationResult {
+        $userAgent = $trustedDeviceStoreRequest->userAgent();
+        $ip = $trustedDeviceStoreRequest->ip();
+        $osName = $this->inferOsInfo($deviceDetector)['name'];
+
+        if ($userAgent !== null && $ip !== null) {
+            $existingMatch = TrustedDevice::findAnyMatchForFingerprint($user, $userAgent, $osName, $ip);
+
+            if ($existingMatch instanceof TrustedDevice) {
+                return $existingMatch->deleted_at !== null
+                    ? TrustedDeviceRegistrationResult::AlreadyRevoked
+                    : TrustedDeviceRegistrationResult::AlreadyActive;
+            }
+        }
+
+        return DB::transaction(function () use (
+            $user,
+            $deviceDetector,
+            $trustedDeviceStoreRequest,
+            $tokenHash,
+            $name,
+            $userAgent,
+            $ip,
+            $osName,
+        ): TrustedDeviceRegistrationResult {
+            if ($userAgent !== null && $ip !== null) {
+                $concurrentMatch = TrustedDevice::findActiveMatch($user, $userAgent, $osName, $ip, lockForUpdate: true);
+
+                if ($concurrentMatch instanceof TrustedDevice) {
+                    return TrustedDeviceRegistrationResult::AlreadyActive;
+                }
+            }
+
+            $trustedDevice = $this->create($user, $deviceDetector, $tokenHash, $name, $userAgent, $ip);
+
+            if ($userAgent !== null) {
+                TrustedDevice::pruneOlder($user, $userAgent, $osName, $ip, $trustedDevice->id);
+            }
+
+            $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Created, $trustedDeviceStoreRequest);
+
+            return TrustedDeviceRegistrationResult::Created;
+        });
     }
 
     public function rename(User $user, TrustedDevice $trustedDevice, string $name, Request $request): void

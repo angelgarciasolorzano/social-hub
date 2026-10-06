@@ -23,11 +23,10 @@ Modo HOLD: se mantienen los 5 pasos acordados (Service, revokeAll unificado, rea
 - Cambios de frontend/UI, rutas o mensajes flash.
 - Tocar PasswordTrustedDeviceRevoker más allá de delegar en el Service (TASK-003).
 - TrustedDeviceTokenIssuer y que TrustedDeviceEvent::record() reciba ip/userAgent en vez del Request (ítems de EXPANSION, fuera de HOLD).
-- Corregir el comportamiento de la ruta de carrera en store (ver Failure Modes); se preserva y se deja como follow-up.
 
 ## Contracts
 
-- Rutas, nombres de ruta, FormRequests y mensajes flash de TrustedDeviceController permanecen idénticos (routes en app/Auth/routes/trustedDevice.php).
+- Rutas, nombres de ruta, FormRequests y mensajes flash de TrustedDeviceController permanecen idénticos (routes en app/Auth/routes/trustedDevice.php), con una única excepción deliberada: la rama de carrera de store (AlreadyActive).
 - Cada método del Service que cambia estado: ejecuta la transacción, graba exactamente el mismo TrustedDeviceEvent (Renamed, Renewed, Revoked, RevokedAll, Reactivated, Created) y programa la invalidación del TrustedDeviceDashboardCache con DB::afterCommit.
 - La invalidación del caché solo ocurre cuando hubo cambio real (store: solo si wasRecentlyCreated; revokeAll: solo si había dispositivos), igual que hoy.
 - Service::reactivate devuelve el token crudo; el controlador es el único que encola la cookie (queueTrustedDeviceCookie) tras la transacción.
@@ -147,7 +146,7 @@ Agregar reactivate(User, TrustedDevice, Request): string al Service (usa MintsTr
 
 ### TASK-005: Mover store al Service con enum de resultado
 
-Crear el enum TrustedDeviceRegistrationResult (Created, AlreadyActive, AlreadyRevoked, ConcurrentExisting) y agregar register(User, DeviceDetector, TrustedDeviceStoreRequest, string $tokenHash, ?string $name) al Service, preservando el doble chequeo de fingerprint (previo a la transacción y con lockForUpdate dentro), pruneOlder, el evento Created solo si wasRecentlyCreated y la invalidación solo cuando se creó. El controlador mintea el token, resuelve DeviceDetector, mapea el enum a flash/cookie y deja de usar InfersDeviceMetadata. ConcurrentExisting conserva el flash de éxito y la cookie actuales.
+Crear el enum TrustedDeviceRegistrationResult (Created, AlreadyActive, AlreadyRevoked), con message() e isSuccessful() para mapear flash y cookie, y agregar register(User, DeviceDetector, TrustedDeviceStoreRequest, string $tokenHash, string $name) al Service, preservando el doble chequeo de fingerprint (previo a la transacción y con lockForUpdate dentro), pruneOlder, el evento Created y la invalidación solo cuando se creó. El controlador mintea el token, resuelve DeviceDetector, mapea el enum a flash/cookie y deja de usar InfersDeviceMetadata. Corrección deliberada de comportamiento: si el chequeo con lock detecta un dispositivo activo (carrera), devuelve AlreadyActive (error, sin cookie) en lugar de éxito con una cookie no persistida.
 
 **Type:** refactor
 **Effort:** L
@@ -159,7 +158,7 @@ Crear el enum TrustedDeviceRegistrationResult (Created, AlreadyActive, AlreadyRe
 **Acceptance Criteria:**
 - [ ] store del controlador solo valida, mintea el token, llama a register y mapea el enum; ya no usa InfersDeviceMetadata ni TrustedDevice::findActiveMatch/pruneOlder; Crud/TrustedDeviceStoreTest pasa con sus aserciones originales.
 - [ ] Mensajes flash idénticos: AlreadyActive y AlreadyRevoked devuelven sus errores actuales sin crear dispositivo ni encolar cookie; Created devuelve éxito y encola cookie.
-- [ ] Caso límite (carrera): ConcurrentExisting no crea evento ni invalida el caché y mantiene el flash de éxito y la cookie actuales; con ip o userAgent nulos se omiten los chequeos de fingerprint como hoy.
+- [ ] Caso límite (carrera): si otro request registra el dispositivo entre el chequeo previo y el bloqueado, devuelve AlreadyActive, no crea evento, no invalida el caché ni encola cookie (test determinista con DB::beforeExecuting); con ip o userAgent nulos se omiten los chequeos de fingerprint como hoy.
 
 **writeScope:**
 - `app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php`
@@ -287,7 +286,7 @@ Ejecutar los gates de calidad sobre todo el cambio: Pint, PHPStan (level max), R
 
 ## Failure Modes
 
-- Condición de carrera en store: hoy, si el chequeo con lockForUpdate encuentra un dispositivo activo, se retorna el existente pero el controlador igual encola una cookie con un token que no quedó persistido y muestra éxito. El plan lo preserva (caso ConcurrentExisting) para no cambiar comportamiento; se recomienda un follow-up aparte.
+- Condición de carrera en store: hoy, si el chequeo con lockForUpdate encuentra un dispositivo activo, se retorna el existente pero el controlador igual encola una cookie con un token que no quedó persistido y muestra éxito. Se corrigió en TASK-005 a petición del usuario: ahora devuelve AlreadyActive (error, sin cookie). Es el único cambio de comportamiento del plan.
 - DB::afterCommit dentro del Service reemplaza la invalidación posterior a la transacción del controlador; es equivalente externamente y ya la usa PasswordTrustedDeviceRevoker con tests, pero conviene confirmarlo en TASK-001.
 - destroyAll gana lockForUpdate al unificarse con el revoker; reduce condiciones de carrera y no cambia el resultado observable.
 - La Policy es un patrón nuevo y el Controller base no usa AuthorizesRequests; mitigado usando Gate::authorize y manteniendo 404 en el controlador.
