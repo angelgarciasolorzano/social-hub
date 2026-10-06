@@ -1,5 +1,5 @@
 {
-  "title": "SOC-36: HTML semántico y accesibilidad en TwoFactor y TrustedDevice",
+  "title": "SOC-36: HTML semántico, accesibilidad y tipografía en TwoFactor y TrustedDevice",
   "issue": {
     "key": "SOC-36",
     "title": "Refactor: Improve semantic HTML in TwoFactor and TrustedDevice",
@@ -11,13 +11,14 @@
   "planningMode": "EXPANSION",
   "executionStyle": "Por fases",
   "reviewDefault": "codex",
-  "overview": "Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice. El alcance aprobado incluye ajustes locales de tamaño, peso y espaciado tipográfico para alcanzar la jerarquía y estructura de AccountSettings, preservando los contratos y el comportamiento. El plan también registra un cambio adyacente del DTO de AccountSettings, fuera del issue SOC-36.",
-  "scopeChallenge": "Los módulos ya existen y la necesidad es endurecer su HTML/accesibilidad, no reescribirlos. EXPANSION añade pulido visual local dentro de SOC-36. El cambio de PreferredLocale se registra como trabajo adyacente fuera del issue y no bloquea su cierre. Las tareas con archivos disjuntos pueden avanzar en paralelo y QA integra el alcance de SOC-36.",
+  "overview": "Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. Solo se cambian tamaño y peso de fuente.",
+  "scopeChallenge": "Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.",
   "prerequisites": [
     "SOC-36 se mantiene como follow-up separado de SOC-34; el alcance cubre solo TwoFactor y TrustedDevice.",
-    "Usar AccountSettings como referencia de landmarks, títulos, ritmo tipográfico, espaciado, etiquetas y listas.",
-    "Conservar primitivas Dialog y contratos de componentes; no se requieren cambios de backend.",
-    "Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend existentes.",
+    "Profile/AccountSettings es la referencia visual verificada en navegador a 1440×834: h1 de 20 px en móvil/24 px desde sm con peso 600, descripción de 14 px, sección de 18 px/600, título de tarjeta de 14 px/500, texto de apoyo compacto de 12 px y cuerpo general de 14 px.",
+    "Las métricas destacadas pueden usar 20 px/600; los datos y metadatos usan 14 px y 12 px según su función. OTP y códigos conservan su familia tipográfica actual y no bajan de 14 px (18 px para OTP).",
+    "La ampliación solo cambia utilities de tamaño y peso de fuente; conservar spacing, line-height, tracking, colores, copy, semántica, responsive behavior y contratos.",
+    "Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend y QA visual en desktop y móvil.",
     "El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios."
   ],
   "nonGoals": [
@@ -25,6 +26,7 @@
     "Modificar layout compartido, primitivas globales shadcn/Radix, tokens globales u otros módulos.",
     "Rediseñar AccountSettings o trasladar su composición de columnas a los módulos de seguridad.",
     "Cambiar TwoFactorChallenge.tsx, flujo independiente del desafío de inicio de sesión.",
+    "Cambiar familia tipográfica, spacing, padding, margin, line-height, tracking, colores, copy, estados, semántica o comportamiento como parte del alcance tipográfico.",
     "Agregar acciones de producto, campos o dependencias nuevas."
   ],
   "contracts": [
@@ -33,7 +35,10 @@
     "Mantener verificaciones de contraseña/OTP; cancelar, Escape o cerrar un diálogo no ejecuta una acción destructiva.",
     "Los datos tabulares siguen siendo tabla; no introducir role=grid para suplir etiquetas o teclado.",
     "Mantener Radix Dialog para nombre, foco inicial, contención/restauración del foco y cierre de teclado; semantizar títulos en los call sites.",
-    "Limitar la afinación visual a los componentes de alcance; no alterar estilos globales ni estructura funcional."
+    "Limitar la afinación visual a los componentes de alcance; no alterar estilos globales ni estructura funcional.",
+    "Escala de referencia: página 20/24 px con peso 600; sección 18 px/600; tarjeta 14 px/500; cuerpo 14 px/400; auxiliar compacto 12 px/400–500; métrica 20 px/600.",
+    "No reducir texto visible de apoyo o metadatos por debajo de 12 px; conservar OTP y códigos en su familia actual con tamaño mínimo de 18 px y 14 px respectivamente.",
+    "El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking."
   ],
   "existingCodeLeverage": [
     {
@@ -124,6 +129,39 @@
         "TASK-022"
       ],
       "outcome": "Gates frontend y QA manual repetidos con los hallazgos corregidos."
+    },
+    {
+      "id": "PHASE-7",
+      "title": "Alineación tipográfica",
+      "taskIds": [
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040"
+      ],
+      "outcome": "Ajustar tamaño y peso de todos los textos visibles de TwoFactor y TrustedDevice con Profile como referencia."
+    },
+    {
+      "id": "PHASE-8",
+      "title": "Verificación tipográfica",
+      "taskIds": [
+        "TASK-041"
+      ],
+      "outcome": "Confirmar en navegador la jerarquía tipográfica en desktop/móvil y repetir los gates frontend."
     }
   ],
   "tasks": [
@@ -775,10 +813,9 @@
         "TASK-016"
       ],
       "acceptanceCriteria": [
-        "Al cerrar los diálogos de atajos y resumen con Escape o su botón Cerrar, el foco regresa al control que los abrió cuando sigue montado.",
+        "Al cerrar diálogos directos con Escape o Cerrar, el foco vuelve al control que los abrió si sigue montado; si ya no existe, no se intenta enfocar un nodo desconectado.",
         "Al cerrar recomendaciones anidadas con Escape o Cerrar, el foco vuelve al botón que las abrió dentro del resumen, que permanece abierto.",
-        "La apertura con teclado conserva el foco inicial útil y el cierre no deja el foco en body ni deshabilita la contención de Radix.",
-        "Si el elemento que abrió el diálogo dejó de existir, el cierre no intenta enfocar un nodo desconectado ni produce errores."
+        "La apertura por teclado conserva un foco inicial útil, Radix mantiene la contención y el cierre no deja el foco en body."
       ],
       "filesToModify": [
         "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
@@ -905,6 +942,731 @@
       "writeScope": [],
       "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr",
       "review": "codex"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Alinear encabezados y estados de TwoFactor con Profile",
+      "phase": "Alineación tipográfica",
+      "description": "Revisar la jerarquía tipográfica de las vistas habilitada/deshabilitada. La cabecera de página ya coincide con Profile y debe conservarse; afinar solo secciones, valores y etiquetas que se aparten de esa escala.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos principales conservan la escala de Profile: 20 px en móvil y 24 px desde sm, con peso 600; las descripciones de página permanecen en 14 px.",
+        "Los títulos de sección y los valores/etiquetas de estado siguen la jerarquía 18/600 para sección, 14/500 para dato principal y 12/400–500 para metadatos, únicamente donde el componente se aparte de ella.",
+        "Con el estado habilitado, deshabilitado o con datos opcionales ausentes, los títulos y metadatos siguen legibles en móvil; no cambian contenido, color, espaciado, line-height ni comportamiento."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx",
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx",
+          "role": "Escala tipográfica de instrucciones y estado deshabilitado."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+          "role": "Escala tipográfica de secciones, resumen y estado habilitado."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Reducir énfasis de opciones, resumen y pasos visuales de TwoFactor",
+      "phase": "Alineación tipográfica",
+      "description": "Armonizar tarjetas y timeline con la escala de Profile: títulos de tarjeta compactos, auxiliares menores y cabeceras de sección claramente separadas.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de OptionCard pasan a 14 px/500 y su texto auxiliar a 12 px/400; las cabeceras de sección de SummaryCard mantienen 18 px/600 y sus filas usan 14 px/500 con apoyo de 14 px/400.",
+        "Los títulos de pasos de Timeline usan 14 px/500 y el detalle 14 px/400, siguiendo los roles de Profile sin cambiar la semántica de los encabezados.",
+        "Con nombres largos, textos traducidos o descripciones extensas, el contenido se puede leer y envolver en móvil sin desbordamiento ni controles anidados."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx",
+          "role": "Título y texto auxiliar de las opciones de seguridad."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx",
+          "role": "Jerarquía tipográfica del resumen y sus filas."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx",
+          "role": "Títulos y descripciones de los pasos."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Unificar tipografía de configuración manual y verificación OTP",
+      "phase": "Alineación tipográfica",
+      "description": "Alinear labels, instrucciones y ayudas de los pasos manual/OTP, reservando el tamaño mayor para el código de verificación y preservando la familia tipográfica actual de los valores y códigos.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Etiquetas e instrucciones principales usan 14 px/400–500; el texto auxiliar denso usa 12 px/400, según la jerarquía de Profile.",
+        "El OTP conserva la familia tipográfica actual y un tamaño de al menos 18 px; las claves de configuración manual mantienen su familia actual y un tamaño de al menos 14 px.",
+        "Los estados de error, reintento y entrada incompleta conservan la misma legibilidad y no alteran foco, validación ni el flujo de verificación."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+          "role": "Títulos de opciones y texto secundario de selección."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+          "role": "Instrucciones, datos copiables y avisos de configuración manual."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx",
+          "role": "Título, ayuda, error y entrada del código OTP."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Alinear diálogo de configuración y confirmación de TwoFactor",
+      "phase": "Alineación tipográfica",
+      "description": "Unificar el título/descripción del diálogo y el encabezado del estado final con Profile, manteniendo el tamaño de claves y códigos copiables.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "El título del diálogo y el encabezado de éxito quedan en 18 px/600; sus descripciones quedan en 14 px/400.",
+        "Los códigos y claves técnicas conservan su familia tipográfica actual y un tamaño de al menos 14 px; no se reduce el texto que el usuario deba copiar.",
+        "El paso de éxito y el diálogo siguen legibles con texto largo y en móvil, sin alterar estados de cierre, foco o confirmación."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx",
+          "role": "Título y descripción de la configuración guiada."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx",
+          "role": "Jerarquía de éxito, confirmación y valores técnicos."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Normalizar códigos, dispositivos y detalles de activación",
+      "phase": "Alineación tipográfica",
+      "description": "Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la lista de dispositivos y los detalles de activación.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de secciones de códigos/dispositivos/detalles usan 18 px/600 y las filas principales 14 px/500, con metadatos de 12 px/400–500.",
+        "Los códigos de respaldo conservan su familia tipográfica actual y usan al menos 14 px; los valores no se recortan ni pierden claridad.",
+        "Las listas vacías, cargando y completas conservan sus estados y acciones con texto legible, sin cambiar el comportamiento."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
+          "role": "Título, disponibilidad, explicaciones y códigos de respaldo."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx",
+          "role": "Título, filas de dispositivos y metadatos."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx",
+          "role": "Etiquetas, valores y ayuda de los detalles de activación."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Armonizar diálogos de desactivación y regeneración",
+      "phase": "Alineación tipográfica",
+      "description": "Normalizar títulos, descripciones y confirmación de las acciones sensibles con la jerarquía de los diálogos de Profile, conservando el énfasis de seguridad.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de desactivación y regeneración usan 18 px/600 y las descripciones/advertencias 14 px/400, con énfasis de 14 px/500 solo en la instrucción principal.",
+        "Los campos de confirmación y sus etiquetas usan al menos 14 px/500; se conservan colores, estados y copy de seguridad.",
+        "Errores, confirmación cancelada y nombres largos siguen legibles sin alterar el flujo destructivo ni el manejo del diálogo."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx",
+          "role": "Títulos, descripciones y confirmación de desactivación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx",
+          "role": "Títulos, descripciones y advertencias de regeneración."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Ajustar jerarquía de métricas y resumen de TrustedDevice",
+      "phase": "Alineación tipográfica",
+      "description": "Reducir la prominencia de las métricas para que las cifras no dominen tarjetas estrechas, y alinear el resumen de dispositivos con las tarjetas de AccountSettings.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "El valor de cada métrica baja de 24 px/500 a 20 px/600; los títulos de tarjeta usan 14 px/500 y su descripción compacta 12 px/400.",
+        "Los títulos de secciones y resumen usan 18 px/600; los datos primarios y etiquetas siguen el patrón Profile de 14 px y 12 px respectivamente.",
+        "Valores de varios dígitos, conteos cero y etiquetas truncables siguen identificables en móvil, sin desbordar las tarjetas."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+          "role": "Valores, títulos y descripciones de las tarjetas de métricas."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx",
+          "role": "Jerarquía del encabezado y valores del resumen."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx",
+          "role": "Nombre del dispositivo y valores de metadatos del resumen."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-030",
+      "title": "Alinear actividad, recomendaciones y avisos de TrustedDevice",
+      "phase": "Alineación tipográfica",
+      "description": "Armonizar títulos de tarjetas y texto de apoyo de los bloques de actividad, recomendaciones y avisos informativos.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los encabezados de actividad/recomendación usan 18 px/600 para sección y 14 px/500 para cada elemento; el texto explicativo compacto usa 12 px/400.",
+        "Los avisos que actúan como texto de lectura general conservan 14 px/400; no se reducen sus mensajes a tamaño de metadato.",
+        "Con recomendaciones largas o actividad vacía, títulos y descripciones siguen distinguibles en móvil, sin cambiar el contenido ni las acciones."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+          "role": "Títulos de eventos y texto de actividad."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx",
+          "role": "Títulos y explicaciones de recomendaciones."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx",
+          "role": "Título y descripción del aviso informativo."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-031",
+      "title": "Normalizar etiquetas y metadatos de dispositivos",
+      "phase": "Alineación tipográfica",
+      "description": "Aplicar escala uniforme a los rótulos, valores y descripciones cortas que se comparten entre las vistas de actividad y los dispositivos.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de metadatos usan 12 px/500 y sus valores 14 px/400; el detalle opcional usa 12 px/400.",
+        "Los títulos de eventos del timeline usan 14 px/500 y sus metadatos 12 px/400.",
+        "Valores largos, IP no disponible y metadatos opcionales conservan legibilidad sin alterar truncado, orden o semántica."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx",
+          "role": "Etiqueta, valor y descripción de un metadato."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
+          "role": "Título y metadato de cada evento del timeline."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-032",
+      "title": "Alinear tabla de dispositivos y barra de herramientas",
+      "phase": "Alineación tipográfica",
+      "description": "Normalizar la tipografía de filas, encabezados, controles y filtros de la tabla, reduciendo énfasis 700/600 que no representa un dato principal.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los nombres principales de dispositivos usan 14 px/500; fechas, navegador/SO y datos secundarios usan 12–14 px/400 según densidad.",
+        "Los controles de la barra de herramientas y las etiquetas de columnas usan 14 px/500; se elimina cualquier énfasis 700/600 que no represente un estado o valor principal.",
+        "Filas vacías, valores largos y columnas ocultas siguen comunicando su estado sin desbordamiento ni cambios a la tabla o a su interacción."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+          "role": "Nombres, valores, columnas y estado vacío de la tabla."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx",
+          "role": "Etiquetas de filtros, botones y opciones de la barra."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-033",
+      "title": "Ajustar filtros activos y paginación de dispositivos",
+      "phase": "Alineación tipográfica",
+      "description": "Hacer coincidir chips y paginación con los tamaños de labels y controles usados en Profile y el resto de TrustedDevice.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los chips y recuentos de filtros usan 12 px/400–500; la información y controles de paginación usan 14 px/400–500.",
+        "Los estados activos, nombres de filtro y etiquetas mantienen contraste visual por jerarquía tipográfica, sin modificar color, forma ni espaciado.",
+        "Con muchos filtros o en móvil, el texto puede envolverse o truncarse según el comportamiento actual sin ocultar su propósito."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx",
+          "role": "Etiquetas y recuentos de filtros activos."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx",
+          "role": "Texto de estado y controles de paginación."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-034",
+      "title": "Normalizar controles de filtros de actividad",
+      "phase": "Alineación tipográfica",
+      "description": "Alinear chips, etiquetas, opciones y controles de paginación del historial de actividad con la escala de controles de Profile.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Las etiquetas de filtros usan 12 px/500 y el texto de controles/opciones 14 px/400–500.",
+        "La paginación y los chips del diálogo aplican la misma escala que los controles de la página de dispositivos.",
+        "Opciones largas, combinación vacía de filtros y conteos de una sola página permanecen legibles y funcionales."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx",
+          "role": "Etiquetas compactas de filtros activos."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx",
+          "role": "Etiquetas y opciones de filtros."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx",
+          "role": "Texto y controles de paginación del historial."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-035",
+      "title": "Alinear eventos y contenedor del diálogo de actividad",
+      "phase": "Alineación tipográfica",
+      "description": "Aplicar la jerarquía común a títulos y metadatos de eventos, al popover de filtros y al título del diálogo.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "El título del diálogo usa 18 px/600; cada evento usa 14 px/500 para el dato principal, 14 px/400 para la acción y 12 px/400 para metadatos.",
+        "Las etiquetas del popover de filtros usan 14 px/500 para su título y 12 px/500 para etiquetas compactas.",
+        "Actividad vacía, IP ausente y nombres de dispositivo largos conservan legibilidad sin alterar scroll, filtros, paginación o foco."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx",
+          "role": "Título del evento, acción y metadatos."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx",
+          "role": "Título y labels de filtros."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx",
+          "role": "Título y contenido auxiliar del diálogo de actividad."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-036",
+      "title": "Normalizar diálogos de alta e identidad del dispositivo",
+      "phase": "Alineación tipográfica",
+      "description": "Alinear títulos, campos y ayudas de alta/renombrado con Profile y con los demás diálogos de TrustedDevice.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de los diálogos de alta, renombrado y dispositivo existente usan 18 px/600; los labels usan 14 px/500 y la ayuda 14 px/400.",
+        "Los nombres/valores de dispositivo usan 14 px/500 y el metadato auxiliar 12 px/400, acorde con Profile.",
+        "Errores de validación, listas vacías y texto de dispositivo largo siguen distinguibles sin cambiar el contrato o la acción."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+          "role": "Título, campos, opciones y texto de ayuda."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+          "role": "Título, etiqueta, ayuda y errores del renombrado."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
+          "role": "Título y explicación del dispositivo ya registrado."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-037",
+      "title": "Alinear diálogos de expiración, renovación y reactivación",
+      "phase": "Alineación tipográfica",
+      "description": "Unificar los títulos, datos de estado y copy explicativo de los tres diálogos de ciclo de confianza.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de expiración, renovación y reactivación usan 18 px/600; sus descripciones usan 14 px/400.",
+        "Los datos de confianza/expiración usan 14 px/400 y las etiquetas de contexto 12 px/500.",
+        "Estados expirados, reactivación fallida y textos largos siguen claros en móvil sin cambiar confirmaciones ni controles."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx",
+          "role": "Estado expirado, título y explicación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+          "role": "Título y datos auxiliares de renovación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+          "role": "Título, OTP y descripción de reactivación."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-038",
+      "title": "Armonizar títulos y contenido de revocación",
+      "phase": "Alineación tipográfica",
+      "description": "Ajustar el peso/tamaño de los títulos, advertencias, lista de dispositivos y mensajes en las acciones de revocación y destrucción.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de revocación/destrucción usan 18 px/600 y el texto explicativo 14 px/400; los nombres de elementos listados usan 14 px/500.",
+        "Los metadatos de contexto usan 12 px/400 y el mensaje de advertencia no queda por debajo de 14 px/400.",
+        "Las variantes individual, masiva y de destrucción conservan su énfasis de seguridad y legibilidad sin tocar colores, copy o acciones."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx",
+          "role": "Título, warning y explicación de revocación."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx",
+          "role": "Advertencia, lista y estado vacío de revocación masiva."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx",
+          "role": "Confirmación y etiquetas de destrucción forzada."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-039",
+      "title": "Ajustar el detalle y estado revocado",
+      "phase": "Alineación tipográfica",
+      "description": "Reducir el nombre sobredimensionado del dispositivo y hacer coherente la jerarquía de secciones, valores y estado final.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "El nombre principal en el detalle baja de 24 px/600 a 20 px/600; los encabezados internos usan 18 px/600 y los valores 14 px/400.",
+        "Las etiquetas del detalle usan 12 px/500 y los datos auxiliares 14 px/400.",
+        "Nombres extensos, valores faltantes y estado revocado conservan truncado/lectura y no desbordan el diálogo móvil."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+          "role": "Nombre, secciones, metadatos y valores del detalle."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx",
+          "role": "Título y explicación del estado revocado."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-040",
+      "title": "Alinear diálogos informativos",
+      "phase": "Alineación tipográfica",
+      "description": "Unificar títulos, texto explicativo y labels de resumen, recomendaciones y atajos de teclado.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los títulos de resumen/recomendaciones/atajos usan 18 px/600; los títulos de cada bloque usan 14 px/500 y el contenido general 14 px/400.",
+        "Las etiquetas compactas, atajos de teclado y porcentajes usan 12 px/400–500, sin reducir el texto descriptivo de lectura a menos de 12 px.",
+        "Los estados vacíos, recomendaciones extensas y diálogos de altura limitada mantienen lectura y scroll, sin alterar foco o comportamiento."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+          "role": "Títulos de diálogo y jerarquía de métricas."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx",
+          "role": "Títulos, cuerpos y valores de las recomendaciones."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+          "role": "Título, instrucciones y etiquetas de atajos."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-041",
+      "title": "QA visual final de la jerarquía tipográfica",
+      "phase": "Verificación tipográfica",
+      "description": "Repetir los gates frontend y revisar en navegador Profile como referencia, además de todos los componentes de texto de TrustedDevice y TwoFactor en desktop y móvil.",
+      "priority": "P0",
+      "type": "test",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040"
+      ],
+      "acceptanceCriteria": [
+        "Pasan format:check, lint:check, types, build y build:ssr después de todos los slices tipográficos.",
+        "La comparación en navegador a 1440×834 y 390×844 confirma la jerarquía acordada en Profile, las páginas, tablas y diálogos; no aparecen textos ilegibles, desbordados o menores de 12 px.",
+        "Se recorren los componentes visibles incluidos en TASK-023 a TASK-040; los archivos sin texto visible — `resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx` y los tres skeletons de `resources/js/modules/setting/modules/trustedDevice/components/skeleton/overview/` — quedan auditados y fuera de edición. No cambian color, copy, spacing, line-height, tracking, semántica o comportamiento."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr\nRevisión manual de tipografía en navegador: Profile, TwoFactor y TrustedDevice a 1440×834 y 390×844.",
+      "review": "codex"
     }
   ],
   "dependencyMap": {
@@ -923,6 +1685,23 @@
     "TASK-013": [],
     "TASK-014": [],
     "TASK-015": [],
+    "TASK-018": [
+      "TASK-004"
+    ],
+    "TASK-019": [
+      "TASK-016"
+    ],
+    "TASK-020": [
+      "TASK-016"
+    ],
+    "TASK-021": [
+      "TASK-016"
+    ],
+    "TASK-022": [
+      "TASK-019",
+      "TASK-020",
+      "TASK-021"
+    ],
     "TASK-016": [
       "TASK-001",
       "TASK-002",
@@ -941,22 +1720,79 @@
       "TASK-015",
       "TASK-018"
     ],
-    "TASK-018": [
-      "TASK-004"
+    "TASK-023": [
+      "TASK-022"
     ],
-    "TASK-019": [
-      "TASK-016"
+    "TASK-024": [
+      "TASK-022"
     ],
-    "TASK-020": [
-      "TASK-016"
+    "TASK-025": [
+      "TASK-022"
     ],
-    "TASK-021": [
-      "TASK-016"
+    "TASK-026": [
+      "TASK-022"
     ],
-    "TASK-022": [
-      "TASK-019",
-      "TASK-020",
-      "TASK-021"
+    "TASK-027": [
+      "TASK-022"
+    ],
+    "TASK-028": [
+      "TASK-022"
+    ],
+    "TASK-029": [
+      "TASK-022"
+    ],
+    "TASK-030": [
+      "TASK-022"
+    ],
+    "TASK-031": [
+      "TASK-022"
+    ],
+    "TASK-032": [
+      "TASK-022"
+    ],
+    "TASK-033": [
+      "TASK-022"
+    ],
+    "TASK-034": [
+      "TASK-022"
+    ],
+    "TASK-035": [
+      "TASK-022"
+    ],
+    "TASK-036": [
+      "TASK-022"
+    ],
+    "TASK-037": [
+      "TASK-022"
+    ],
+    "TASK-038": [
+      "TASK-022"
+    ],
+    "TASK-039": [
+      "TASK-022"
+    ],
+    "TASK-040": [
+      "TASK-022"
+    ],
+    "TASK-041": [
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038",
+      "TASK-039",
+      "TASK-040"
     ]
   },
   "criticalPath": {
@@ -965,9 +1801,11 @@
       "TASK-018",
       "TASK-016",
       "TASK-019",
-      "TASK-022"
+      "TASK-022",
+      "TASK-029",
+      "TASK-041"
     ],
-    "rationale": "TASK-004 alimenta el ajuste OTP TASK-018; después, TASK-016 descubre regresiones responsive y de foco, que llevan a TASK-019 y al QA final TASK-022."
+    "rationale": "El flujo existente conduce por la revisión responsive/foco hasta TASK-022; la expansión habilita las tareas tipográficas paralelas y la ruta de métricas de TrustedDevice representa el tramo de implementación antes de TASK-041, que integra todos los slices."
   },
   "failureModes": [
     "DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.",
@@ -977,9 +1815,13 @@
     "Ajustes tipográficos amplios pueden alterar densidad responsive; mantenerlos locales y revisar móvil, vacío y error.",
     "Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos.",
     "Cuadrículas con columnas fijas o diálogos sin límite de altura pueden desbordar el viewport móvil; comprobar ancho y scroll interno.",
-    "Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado."
+    "Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado.",
+    "Reducir todos los textos auxiliares por igual puede esconder información importante; reservar 12 px a ayuda compacta/metadatos y conservar 14 px para lectura general.",
+    "Métricas y nombres largos pueden perder legibilidad al reducirlos; revisar valores de varios dígitos, truncado y wrapping en móvil.",
+    "Cambiar la familia tipográfica actual o reducir demasiado OTP, códigos de respaldo y claves copiables puede dificultar su lectura; conservar la fuente existente y los mínimos de tamaño.",
+    "Clases tipográficas de shadcn heredadas pueden sobrescribirse localmente; cambiar solo el call site necesario y no la primitiva compartida."
   ],
-  "shipCut": "SOC-36 se considera completo después de las tareas de implementación TASK-001 a TASK-015, TASK-018 a TASK-021 y la verificación final TASK-022; TASK-016 es la auditoría inicial que registró los hallazgos corregidos. La tarea adyacente de PreferredLocale no bloquea el cierre del issue.",
+  "shipCut": "SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.",
   "testCoverageMap": [
     {
       "scope": "Cada slice de implementación",
@@ -996,12 +1838,20 @@
     {
       "scope": "Trabajo adyacente PreferredLocale",
       "coverage": "Prueba del módulo AccountSettings para el casteo del DTO y locales inválidos; Pint, PHPStan, Rector y prueba feature del slice."
+    },
+    {
+      "scope": "Alineación tipográfica",
+      "coverage": "Prettier --check y ESLint por writeScope; comparación manual con Profile en páginas, tablas, estados, tarjetas y todos los diálogos a 1440×834 y 390×844."
+    },
+    {
+      "scope": "Excepciones legibles",
+      "coverage": "Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px."
     }
   ],
   "executionSummary": {
-    "taskCount": 21,
-    "implementationTaskCount": 19,
-    "phaseCount": 6,
+    "taskCount": 40,
+    "implementationTaskCount": 37,
+    "phaseCount": 8,
     "dagLayers": [
       {
         "layer": 1,
@@ -1048,10 +1898,39 @@
         "taskIds": [
           "TASK-022"
         ]
+      },
+      {
+        "layer": 6,
+        "taskIds": [
+          "TASK-023",
+          "TASK-024",
+          "TASK-025",
+          "TASK-026",
+          "TASK-027",
+          "TASK-028",
+          "TASK-029",
+          "TASK-030",
+          "TASK-031",
+          "TASK-032",
+          "TASK-033",
+          "TASK-034",
+          "TASK-035",
+          "TASK-036",
+          "TASK-037",
+          "TASK-038",
+          "TASK-039",
+          "TASK-040"
+        ]
+      },
+      {
+        "layer": 7,
+        "taskIds": [
+          "TASK-041"
+        ]
       }
     ],
     "reviewDefault": "codex",
-    "linearTaskCount": 21,
+    "linearTaskCount": 40,
     "adjacentTaskCount": 1
   },
   "adjacentWork": {

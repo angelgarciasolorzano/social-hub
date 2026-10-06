@@ -1,19 +1,20 @@
-# Plan: SOC-36: HTML semántico y accesibilidad en TwoFactor y TrustedDevice
+# Plan: SOC-36: HTML semántico, accesibilidad y tipografía en TwoFactor y TrustedDevice
 
 ## Overview
 
-Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice. El alcance aprobado incluye ajustes locales de tamaño, peso y espaciado tipográfico para alcanzar la jerarquía y estructura de AccountSettings, preservando los contratos y el comportamiento. El plan también registra un cambio adyacente del DTO de AccountSettings, fuera del issue SOC-36.
+Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. Solo se cambian tamaño y peso de fuente.
 
 ## Scope Challenge
 
-Los módulos ya existen y la necesidad es endurecer su HTML/accesibilidad, no reescribirlos. EXPANSION añade pulido visual local dentro de SOC-36. El cambio de PreferredLocale se registra como trabajo adyacente fuera del issue y no bloquea su cierre. Las tareas con archivos disjuntos pueden avanzar en paralelo y QA integra el alcance de SOC-36.
+Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.
 
 ## Prerequisites
 
 - SOC-36 se mantiene como follow-up separado de SOC-34; el alcance cubre solo TwoFactor y TrustedDevice.
-- Usar AccountSettings como referencia de landmarks, títulos, ritmo tipográfico, espaciado, etiquetas y listas.
-- Conservar primitivas Dialog y contratos de componentes; no se requieren cambios de backend.
-- Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend existentes.
+- Profile/AccountSettings es la referencia visual verificada en navegador a 1440×834: h1 de 20 px en móvil/24 px desde sm con peso 600, descripción de 14 px, sección de 18 px/600, título de tarjeta de 14 px/500, texto de apoyo compacto de 12 px y cuerpo general de 14 px.
+- Las métricas destacadas pueden usar 20 px/600; los datos y metadatos usan 14 px y 12 px según su función. OTP y códigos conservan su familia tipográfica actual y no bajan de 14 px (18 px para OTP).
+- La ampliación solo cambia utilities de tamaño y peso de fuente; conservar spacing, line-height, tracking, colores, copy, semántica, responsive behavior y contratos.
+- Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend y QA visual en desktop y móvil.
 - El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios.
 
 ## Non-Goals
@@ -22,6 +23,7 @@ Los módulos ya existen y la necesidad es endurecer su HTML/accesibilidad, no re
 - Modificar layout compartido, primitivas globales shadcn/Radix, tokens globales u otros módulos.
 - Rediseñar AccountSettings o trasladar su composición de columnas a los módulos de seguridad.
 - Cambiar TwoFactorChallenge.tsx, flujo independiente del desafío de inicio de sesión.
+- Cambiar familia tipográfica, spacing, padding, margin, line-height, tracking, colores, copy, estados, semántica o comportamiento como parte del alcance tipográfico.
 - Agregar acciones de producto, campos o dependencias nuevas.
 
 ## Contracts
@@ -32,6 +34,9 @@ Los módulos ya existen y la necesidad es endurecer su HTML/accesibilidad, no re
 - Los datos tabulares siguen siendo tabla; no introducir role=grid para suplir etiquetas o teclado.
 - Mantener Radix Dialog para nombre, foco inicial, contención/restauración del foco y cierre de teclado; semantizar títulos en los call sites.
 - Limitar la afinación visual a los componentes de alcance; no alterar estilos globales ni estructura funcional.
+- Escala de referencia: página 20/24 px con peso 600; sección 18 px/600; tarjeta 14 px/500; cuerpo 14 px/400; auxiliar compacto 12 px/400–500; métrica 20 px/600.
+- No reducir texto visible de apoyo o metadatos por debajo de 12 px; conservar OTP y códigos en su familia actual con tamaño mínimo de 18 px y 14 px respectivamente.
+- El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking.
 
 ## Existing Code Leverage
 
@@ -440,10 +445,9 @@ Recuperar el color del aviso informativo de configuración manual, centrar el r�
 **validateCommand:**
 ```sh
 rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx
-rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactorDisabled/steps/VerifyOtpStep.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx
+QA manual en el navegador: pasos de configuración manual y OTP en escritorio/móvil; verificar estado visual de carga sin confirmar un código real.
 ```
-
-**QA manual:** Revisar los pasos manual y OTP en escritorio/móvil; confirmar el estado visual de carga sin enviar un OTP real.
 
 ### TASK-019: Corregir desbordamientos móviles en seguridad y resumen de dispositivos
 
@@ -462,14 +466,14 @@ Ajustar los consejos de TwoFactor y el diálogo de resumen de TrustedDevice para
 
 **writeScope:**
 - `resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx` — Apilar consejos en pantallas estrechas sin cambiar el orden semántico.
-- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Adaptar cuadrículas y limitar el diálogo al viewport con desplazamiento vertical.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Adaptar las cuadrículas y limitar el diálogo al viewport con desplazamiento vertical.
 
 **validateCommand:**
 ```sh
 rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx
 rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx
+QA manual en navegador a 390 px y escritorio: confirmar ausencia de desbordamiento, acceso al cierre y scroll vertical del diálogo.
 ```
-**QA manual:** A 390 px y escritorio: confirmar ausencia de desbordamiento, acceso al cierre y scroll vertical del diálogo.
 
 ### TASK-020: Restaurar el foco en diálogos informativos de TrustedDevice
 
@@ -482,22 +486,21 @@ Añadir restauración local del foco al cerrar los diálogos de atajos, resumen 
 **Priority:** P1
 **Depends on:** TASK-016
 **Acceptance Criteria:**
-- Al cerrar los diálogos de atajos y resumen con Escape o su botón Cerrar, el foco regresa al control que los abrió cuando sigue montado.
+- Al cerrar diálogos directos con Escape o Cerrar, el foco vuelve al control que los abrió si sigue montado; si ya no existe, no se intenta enfocar un nodo desconectado.
 - Al cerrar recomendaciones anidadas con Escape o Cerrar, el foco vuelve al botón que las abrió dentro del resumen, que permanece abierto.
-- La apertura con teclado conserva el foco inicial útil y el cierre no deja el foco en body ni deshabilita la contención de Radix.
-- Si el elemento que abrió el diálogo dejó de existir, el cierre no intenta enfocar un nodo desconectado ni produce errores.
+- La apertura por teclado conserva un foco inicial útil, Radix mantiene la contención y el cierre no deja el foco en body.
 
 **writeScope:**
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx` — Capturar y restaurar el foco en el ciclo de vida del diálogo controlado.
-- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Restaurar foco al invocador sin interferir con recomendaciones anidadas.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Restaurar foco al invocador sin interferir con el diálogo anidado de recomendaciones.
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx` — Devolver el foco al botón que abre recomendaciones dentro del resumen.
 
 **validateCommand:**
 ```sh
 rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx
 rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx
+QA manual con teclado: abrir atajos, resumen y recomendaciones; cerrar cada diálogo con Escape y con Cerrar y comprobar el foco restaurado al control que lo abrió.
 ```
-**QA manual:** Abrir atajos, resumen y recomendaciones; cerrar cada diálogo con Escape y con Cerrar y comprobar que el foco vuelve al control que lo abrió.
 
 ### TASK-021: Restaurar el foco en detalle y renombrado de dispositivos
 
@@ -515,16 +518,16 @@ Conservar un destino de foco estable desde la acción de fila hasta los diálogo
 - Si cambia la página o desaparece la fila, no se enfoca un elemento desconectado, no se ejecuta una acción y los cierres bloqueados mientras se guarda siguen respetándose.
 
 **writeScope:**
-- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx` — Retener y propagar el control estable de la fila iniciadora.
-- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx` — Restaurar foco y propagar el destino estable a acciones anidadas.
-- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx` — Restaurar foco desde la tabla y desde el diálogo de detalle.
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx` — Retener y propagar el control estable de la fila iniciadora a sus diálogos.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx` — Restaurar foco al origen válido y propagar el destino estable a acciones anidadas.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx` — Capturar/restaurar foco para aperturas desde tabla y desde el diálogo de detalle.
 
 **validateCommand:**
 ```sh
 rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx
 rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx
+QA manual con teclado: abrir detalle desde acciones de fila, abrir renombrado desde tabla y desde detalle, y comprobar retorno de foco tras cada cierre.
 ```
-**QA manual:** Abrir detalle desde acciones de fila, abrir renombrado desde tabla y desde detalle, y comprobar retorno de foco tras cada cierre.
 
 ### TASK-022: Repetir QA de integración después de las correcciones
 
@@ -541,7 +544,8 @@ Ejecutar de nuevo los gates frontend y la revisión manual de teclado, semántic
 - En escritorio y a 390 px, TwoFactor y resumen de TrustedDevice no desbordan y el resumen permanece operable dentro del viewport.
 - Los diálogos de atajos, resumen, detalle y renombrado cierran con teclado y restauran el foco al origen válido sin alterar datos ni contratos.
 
-**writeScope:** Sin archivos editables; integración y verificación.
+**writeScope:**
+- Sin archivos editables; integración y QA.
 
 **validateCommand:**
 ```sh
@@ -550,12 +554,12 @@ rtk npm run lint:check
 rtk npm run types
 rtk npm run build
 rtk npm run build:ssr
+QA manual en navegador: páginas móviles y diálogos TrustedDevice con teclado y retorno de foco.
 ```
-**QA manual:** Revisar páginas móviles y diálogos TrustedDevice con teclado y retorno de foco.
 
 ### TASK-016: Auditar QA semántico, visual y de teclado de SOC-36
 
-Auditoría inicial de integración: los gates frontend pasaron. La QA manual detectó desbordamiento horizontal en TwoFactor, desbordamiento del resumen móvil y falta de restauración de foco en diálogos TrustedDevice; TASK-019 a TASK-021 corrigen estos hallazgos.
+Auditoría inicial de integración: ejecutar los gates frontend y validar ambos módulos. Los gates pasaron; la QA manual detectó desbordamiento horizontal en TwoFactor, desbordamiento del resumen móvil y falta de restauración de foco en diálogos TrustedDevice, que se corrigen en TASK-019 a TASK-021.
 
 **Phase:** Auditoría QA
 **Type:** test
@@ -569,7 +573,7 @@ Auditoría inicial de integración: los gates frontend pasaron. La QA manual det
 - Los hallazgos reproducibles de viewport móvil y restauración de foco quedan especificados como trabajo dependiente antes del cierre final.
 
 **writeScope:**
-- Sin archivos editables; integración y verificación.
+- Sin archivos editables; integración y QA.
 
 **validateCommand:**
 ```sh
@@ -578,6 +582,495 @@ rtk npm run lint:check
 rtk npm run types
 rtk npm run build
 rtk npm run build:ssr
+```
+
+### TASK-023: Alinear encabezados y estados de TwoFactor con Profile
+
+Revisar la jerarquía tipográfica de las vistas habilitada/deshabilitada. La cabecera de página ya coincide con Profile y debe conservarse; afinar solo secciones, valores y etiquetas que se aparten de esa escala.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos principales conservan la escala de Profile: 20 px en móvil y 24 px desde sm, con peso 600; las descripciones de página permanecen en 14 px.
+- Los títulos de sección y los valores/etiquetas de estado siguen la jerarquía 18/600 para sección, 14/500 para dato principal y 12/400–500 para metadatos, únicamente donde el componente se aparte de ella.
+- Con el estado habilitado, deshabilitado o con datos opcionales ausentes, los títulos y metadatos siguen legibles en móvil; no cambian contenido, color, espaciado, line-height ni comportamiento.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx` — Escala tipográfica de instrucciones y estado deshabilitado.
+- `resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx` — Escala tipográfica de secciones, resumen y estado habilitado.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx
+```
+
+### TASK-024: Reducir énfasis de opciones, resumen y pasos visuales de TwoFactor
+
+Armonizar tarjetas y timeline con la escala de Profile: títulos de tarjeta compactos, auxiliares menores y cabeceras de sección claramente separadas.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de OptionCard pasan a 14 px/500 y su texto auxiliar a 12 px/400; las cabeceras de sección de SummaryCard mantienen 18 px/600 y sus filas usan 14 px/500 con apoyo de 14 px/400.
+- Los títulos de pasos de Timeline usan 14 px/500 y el detalle 14 px/400, siguiendo los roles de Profile sin cambiar la semántica de los encabezados.
+- Con nombres largos, textos traducidos o descripciones extensas, el contenido se puede leer y envolver en móvil sin desbordamiento ni controles anidados.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx` — Título y texto auxiliar de las opciones de seguridad.
+- `resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx` — Jerarquía tipográfica del resumen y sus filas.
+- `resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx` — Títulos y descripciones de los pasos.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/SummaryCard.tsx resources/js/modules/setting/modules/twoFactor/components/ui/Timeline.tsx
+```
+
+### TASK-025: Unificar tipografía de configuración manual y verificación OTP
+
+Alinear labels, instrucciones y ayudas de los pasos manual/OTP, reservando el tamaño mayor para el código de verificación y preservando la familia tipográfica actual de los valores y códigos.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Etiquetas e instrucciones principales usan 14 px/400–500; el texto auxiliar denso usa 12 px/400, según la jerarquía de Profile.
+- El OTP conserva la familia tipográfica actual y un tamaño de al menos 18 px; las claves de configuración manual mantienen su familia actual y un tamaño de al menos 14 px.
+- Los estados de error, reintento y entrada incompleta conservan la misma legibilidad y no alteran foco, validación ni el flujo de verificación.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx` — Títulos de opciones y texto secundario de selección.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx` — Instrucciones, datos copiables y avisos de configuración manual.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx` — Título, ayuda, error y entrada del código OTP.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx
+```
+
+### TASK-026: Alinear diálogo de configuración y confirmación de TwoFactor
+
+Unificar el título/descripción del diálogo y el encabezado del estado final con Profile, manteniendo el tamaño de claves y códigos copiables.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- El título del diálogo y el encabezado de éxito quedan en 18 px/600; sus descripciones quedan en 14 px/400.
+- Los códigos y claves técnicas conservan su familia tipográfica actual y un tamaño de al menos 14 px; no se reduce el texto que el usuario deba copiar.
+- El paso de éxito y el diálogo siguen legibles con texto largo y en móvil, sin alterar estados de cierre, foco o confirmación.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx` — Título y descripción de la configuración guiada.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx` — Jerarquía de éxito, confirmación y valores técnicos.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx
+```
+
+### TASK-027: Normalizar códigos, dispositivos y detalles de activación
+
+Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la lista de dispositivos y los detalles de activación.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de secciones de códigos/dispositivos/detalles usan 18 px/600 y las filas principales 14 px/500, con metadatos de 12 px/400–500.
+- Los códigos de respaldo conservan su familia tipográfica actual y usan al menos 14 px; los valores no se recortan ni pierden claridad.
+- Las listas vacías, cargando y completas conservan sus estados y acciones con texto legible, sin cambiar el comportamiento.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx` — Título, disponibilidad, explicaciones y códigos de respaldo.
+- `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Título, filas de dispositivos y metadatos.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx` — Etiquetas, valores y ayuda de los detalles de activación.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx
+```
+
+### TASK-028: Armonizar diálogos de desactivación y regeneración
+
+Normalizar títulos, descripciones y confirmación de las acciones sensibles con la jerarquía de los diálogos de Profile, conservando el énfasis de seguridad.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de desactivación y regeneración usan 18 px/600 y las descripciones/advertencias 14 px/400, con énfasis de 14 px/500 solo en la instrucción principal.
+- Los campos de confirmación y sus etiquetas usan al menos 14 px/500; se conservan colores, estados y copy de seguridad.
+- Errores, confirmación cancelada y nombres largos siguen legibles sin alterar el flujo destructivo ni el manejo del diálogo.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx` — Títulos, descripciones y confirmación de desactivación.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx` — Títulos, descripciones y advertencias de regeneración.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx
+```
+
+### TASK-029: Ajustar jerarquía de métricas y resumen de TrustedDevice
+
+Reducir la prominencia de las métricas para que las cifras no dominen tarjetas estrechas, y alinear el resumen de dispositivos con las tarjetas de AccountSettings.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- El valor de cada métrica baja de 24 px/500 a 20 px/600; los títulos de tarjeta usan 14 px/500 y su descripción compacta 12 px/400.
+- Los títulos de secciones y resumen usan 18 px/600; los datos primarios y etiquetas siguen el patrón Profile de 14 px y 12 px respectivamente.
+- Valores de varios dígitos, conteos cero y etiquetas truncables siguen identificables en móvil, sin desbordar las tarjetas.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx` — Valores, títulos y descripciones de las tarjetas de métricas.
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx` — Jerarquía del encabezado y valores del resumen.
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx` — Nombre del dispositivo y valores de metadatos del resumen.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx
+```
+
+### TASK-030: Alinear actividad, recomendaciones y avisos de TrustedDevice
+
+Armonizar títulos de tarjetas y texto de apoyo de los bloques de actividad, recomendaciones y avisos informativos.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los encabezados de actividad/recomendación usan 18 px/600 para sección y 14 px/500 para cada elemento; el texto explicativo compacto usa 12 px/400.
+- Los avisos que actúan como texto de lectura general conservan 14 px/400; no se reducen sus mensajes a tamaño de metadato.
+- Con recomendaciones largas o actividad vacía, títulos y descripciones siguen distinguibles en móvil, sin cambiar el contenido ni las acciones.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx` — Títulos de eventos y texto de actividad.
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx` — Títulos y explicaciones de recomendaciones.
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx` — Título y descripción del aviso informativo.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx
+```
+
+### TASK-031: Normalizar etiquetas y metadatos de dispositivos
+
+Aplicar escala uniforme a los rótulos, valores y descripciones cortas que se comparten entre las vistas de actividad y los dispositivos.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de metadatos usan 12 px/500 y sus valores 14 px/400; el detalle opcional usa 12 px/400.
+- Los títulos de eventos del timeline usan 14 px/500 y sus metadatos 12 px/400.
+- Valores largos, IP no disponible y metadatos opcionales conservan legibilidad sin alterar truncado, orden o semántica.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx` — Etiqueta, valor y descripción de un metadato.
+- `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx` — Título y metadato de cada evento del timeline.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx
+```
+
+### TASK-032: Alinear tabla de dispositivos y barra de herramientas
+
+Normalizar la tipografía de filas, encabezados, controles y filtros de la tabla, reduciendo énfasis 700/600 que no representa un dato principal.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los nombres principales de dispositivos usan 14 px/500; fechas, navegador/SO y datos secundarios usan 12–14 px/400 según densidad.
+- Los controles de la barra de herramientas y las etiquetas de columnas usan 14 px/500; se elimina cualquier énfasis 700/600 que no represente un estado o valor principal.
+- Filas vacías, valores largos y columnas ocultas siguen comunicando su estado sin desbordamiento ni cambios a la tabla o a su interacción.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx` — Nombres, valores, columnas y estado vacío de la tabla.
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx` — Etiquetas de filtros, botones y opciones de la barra.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx
+```
+
+### TASK-033: Ajustar filtros activos y paginación de dispositivos
+
+Hacer coincidir chips y paginación con los tamaños de labels y controles usados en Profile y el resto de TrustedDevice.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los chips y recuentos de filtros usan 12 px/400–500; la información y controles de paginación usan 14 px/400–500.
+- Los estados activos, nombres de filtro y etiquetas mantienen contraste visual por jerarquía tipográfica, sin modificar color, forma ni espaciado.
+- Con muchos filtros o en móvil, el texto puede envolverse o truncarse según el comportamiento actual sin ocultar su propósito.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx` — Etiquetas y recuentos de filtros activos.
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx` — Texto de estado y controles de paginación.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx
+```
+
+### TASK-034: Normalizar controles de filtros de actividad
+
+Alinear chips, etiquetas, opciones y controles de paginación del historial de actividad con la escala de controles de Profile.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Las etiquetas de filtros usan 12 px/500 y el texto de controles/opciones 14 px/400–500.
+- La paginación y los chips del diálogo aplican la misma escala que los controles de la página de dispositivos.
+- Opciones largas, combinación vacía de filtros y conteos de una sola página permanecen legibles y funcionales.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx` — Etiquetas compactas de filtros activos.
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx` — Etiquetas y opciones de filtros.
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx` — Texto y controles de paginación del historial.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx
+```
+
+### TASK-035: Alinear eventos y contenedor del diálogo de actividad
+
+Aplicar la jerarquía común a títulos y metadatos de eventos, al popover de filtros y al título del diálogo.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- El título del diálogo usa 18 px/600; cada evento usa 14 px/500 para el dato principal, 14 px/400 para la acción y 12 px/400 para metadatos.
+- Las etiquetas del popover de filtros usan 14 px/500 para su título y 12 px/500 para etiquetas compactas.
+- Actividad vacía, IP ausente y nombres de dispositivo largos conservan legibilidad sin alterar scroll, filtros, paginación o foco.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx` — Título del evento, acción y metadatos.
+- `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx` — Título y labels de filtros.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx` — Título y contenido auxiliar del diálogo de actividad.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx
+```
+
+### TASK-036: Normalizar diálogos de alta e identidad del dispositivo
+
+Alinear títulos, campos y ayudas de alta/renombrado con Profile y con los demás diálogos de TrustedDevice.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de los diálogos de alta, renombrado y dispositivo existente usan 18 px/600; los labels usan 14 px/500 y la ayuda 14 px/400.
+- Los nombres/valores de dispositivo usan 14 px/500 y el metadato auxiliar 12 px/400, acorde con Profile.
+- Errores de validación, listas vacías y texto de dispositivo largo siguen distinguibles sin cambiar el contrato o la acción.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` — Título, campos, opciones y texto de ayuda.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx` — Título, etiqueta, ayuda y errores del renombrado.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx` — Título y explicación del dispositivo ya registrado.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx
+```
+
+### TASK-037: Alinear diálogos de expiración, renovación y reactivación
+
+Unificar los títulos, datos de estado y copy explicativo de los tres diálogos de ciclo de confianza.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de expiración, renovación y reactivación usan 18 px/600; sus descripciones usan 14 px/400.
+- Los datos de confianza/expiración usan 14 px/400 y las etiquetas de contexto 12 px/500.
+- Estados expirados, reactivación fallida y textos largos siguen claros en móvil sin cambiar confirmaciones ni controles.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx` — Estado expirado, título y explicación.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx` — Título y datos auxiliares de renovación.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx` — Título, OTP y descripción de reactivación.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx
+```
+
+### TASK-038: Armonizar títulos y contenido de revocación
+
+Ajustar el peso/tamaño de los títulos, advertencias, lista de dispositivos y mensajes en las acciones de revocación y destrucción.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de revocación/destrucción usan 18 px/600 y el texto explicativo 14 px/400; los nombres de elementos listados usan 14 px/500.
+- Los metadatos de contexto usan 12 px/400 y el mensaje de advertencia no queda por debajo de 14 px/400.
+- Las variantes individual, masiva y de destrucción conservan su énfasis de seguridad y legibilidad sin tocar colores, copy o acciones.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx` — Título, warning y explicación de revocación.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx` — Advertencia, lista y estado vacío de revocación masiva.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx` — Confirmación y etiquetas de destrucción forzada.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx
+```
+
+### TASK-039: Ajustar el detalle y estado revocado
+
+Reducir el nombre sobredimensionado del dispositivo y hacer coherente la jerarquía de secciones, valores y estado final.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** S
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- El nombre principal en el detalle baja de 24 px/600 a 20 px/600; los encabezados internos usan 18 px/600 y los valores 14 px/400.
+- Las etiquetas del detalle usan 12 px/500 y los datos auxiliares 14 px/400.
+- Nombres extensos, valores faltantes y estado revocado conservan truncado/lectura y no desbordan el diálogo móvil.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx` — Nombre, secciones, metadatos y valores del detalle.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx` — Título y explicación del estado revocado.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx
+```
+
+### TASK-040: Alinear diálogos informativos
+
+Unificar títulos, texto explicativo y labels de resumen, recomendaciones y atajos de teclado.
+
+**Phase:** Alineación tipográfica
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P2
+**Depends on:** TASK-022
+**Acceptance Criteria:**
+- Los títulos de resumen/recomendaciones/atajos usan 18 px/600; los títulos de cada bloque usan 14 px/500 y el contenido general 14 px/400.
+- Las etiquetas compactas, atajos de teclado y porcentajes usan 12 px/400–500, sin reducir el texto descriptivo de lectura a menos de 12 px.
+- Los estados vacíos, recomendaciones extensas y diálogos de altura limitada mantienen lectura y scroll, sin alterar foco o comportamiento.
+
+**writeScope:**
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Títulos de diálogo y jerarquía de métricas.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx` — Títulos, cuerpos y valores de las recomendaciones.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx` — Título, instrucciones y etiquetas de atajos.
+
+**validateCommand:**
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx
+```
+
+### TASK-041: QA visual final de la jerarquía tipográfica
+
+Repetir los gates frontend y revisar en navegador Profile como referencia, además de todos los componentes de texto de TrustedDevice y TwoFactor en desktop y móvil.
+
+**Phase:** Verificación tipográfica
+**Type:** test
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P0
+**Depends on:** TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040
+**Acceptance Criteria:**
+- Pasan format:check, lint:check, types, build y build:ssr después de todos los slices tipográficos.
+- La comparación en navegador a 1440×834 y 390×844 confirma la jerarquía acordada en Profile, las páginas, tablas y diálogos; no aparecen textos ilegibles, desbordados o menores de 12 px.
+- Se recorren los componentes visibles incluidos en TASK-023 a TASK-040; los archivos sin texto visible — `resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx` y los tres skeletons de `resources/js/modules/setting/modules/trustedDevice/components/skeleton/overview/` — quedan auditados y fuera de edición. No cambian color, copy, spacing, line-height, tracking, semántica o comportamiento.
+
+**writeScope:**
+- Sin archivos editables; integración y QA.
+
+**validateCommand:**
+```sh
+rtk npm run format:check
+rtk npm run lint:check
+rtk npm run types
+rtk npm run build
+rtk npm run build:ssr
+Revisión manual de tipografía en navegador: Profile, TwoFactor y TrustedDevice a 1440×834 y 390×844.
 ```
 
 ## Failure Modes
@@ -590,26 +1083,32 @@ rtk npm run build:ssr
 - Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos.
 - Cuadrículas con columnas fijas o diálogos sin límite de altura pueden desbordar el viewport móvil; comprobar ancho y scroll interno.
 - Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado.
+- Reducir todos los textos auxiliares por igual puede esconder información importante; reservar 12 px a ayuda compacta/metadatos y conservar 14 px para lectura general.
+- Métricas y nombres largos pueden perder legibilidad al reducirlos; revisar valores de varios dígitos, truncado y wrapping en móvil.
+- Cambiar la familia tipográfica actual o reducir demasiado OTP, códigos de respaldo y claves copiables puede dificultar su lectura; conservar la fuente existente y los mínimos de tamaño.
+- Clases tipográficas de shadcn heredadas pueden sobrescribirse localmente; cambiar solo el call site necesario y no la primitiva compartida.
 
 ## Ship Cut
 
-SOC-36 se considera completo después de implementar TASK-001 a TASK-015 y TASK-018 a TASK-021, y completar TASK-022. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. PreferredLocale es trabajo adyacente y no bloquea el cierre.
+SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.
 
 ## Test Coverage Map
 
 - **Cada slice de implementación:** Prettier --check y ESLint limitados a los archivos de writeScope.
 - **Integración frontend:** npm run format:check, lint:check, types, build y build:ssr.
-- **Accesibilidad/regresión manual:** Recorrer por teclado páginas, opciones, tablas, búsquedas, filtros y diálogos; revisar foco, nombres, errores y vacíos en desktop y móvil. Revalidar específicamente overflow móvil y restauración de foco en TASK-022.
+- **Accesibilidad/regresión manual:** Recorrer por teclado páginas, opciones, tablas, búsquedas, filtros y diálogos; revisar foco, nombres, errores y vacíos en desktop y móvil.
 - **Trabajo adyacente PreferredLocale:** Prueba del módulo AccountSettings para el casteo del DTO y locales inválidos; Pint, PHPStan, Rector y prueba feature del slice.
+- **Alineación tipográfica:** Prettier --check y ESLint por writeScope; comparación manual con Profile en páginas, tablas, estados, tarjetas y todos los diálogos a 1440×834 y 390×844.
+- **Excepciones legibles:** Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px.
 
 ## Execution Summary
 
 - Modo: **EXPANSION**
 - Ejecución: **Por fases**
 - Revisión por defecto: **codex**
-- Tareas SOC-36: **21** (19 implementación, auditoría TASK-016 y QA final TASK-022); trabajo adyacente: **1**.
-- Fases: **6**.
-- Critical path: TASK-004 → TASK-018 → TASK-016 → TASK-019 → TASK-022.
+- Tareas SOC-36: **40** (37 implementación y auditoría/QA); trabajo adyacente: **1**.
+- Fases: **8**.
+- Critical path: TASK-004 → TASK-018 → TASK-016 → TASK-019 → TASK-022 → TASK-029 → TASK-041.
 
 ## Task Dependencies
 
@@ -637,10 +1136,25 @@ Layouts móviles sin desbordamiento y diálogos TrustedDevice que restauran el f
 
 Gates frontend y QA manual repetidos con los hallazgos corregidos. Tarea: TASK-022.
 
-Las tareas iniciales de implementación editan archivos disjuntos. TASK-018 depende de TASK-004; TASK-016 audita el alcance original y desbloquea las correcciones TASK-019 a TASK-021. TASK-022 cierra después de las tres correcciones.
+### PHASE-7: Alineación tipográfica
+
+Ajustar tamaño y peso de todos los textos visibles de TwoFactor y TrustedDevice con Profile como referencia. Tareas: TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040.
+
+### PHASE-8: Verificación tipográfica
+
+Confirmar en navegador la jerarquía tipográfica en desktop/móvil y repetir los gates frontend. Tarea: TASK-041.
+
+Las tareas TASK-023 a TASK-040 parten después de TASK-022 y editan hasta tres archivos por slice; sus writeScope son disjuntos y pueden avanzar en paralelo. TASK-041 depende de todos los slices tipográficos y cierra con QA visual en desktop/móvil.
 
 ```mermaid
 flowchart TD
+  TASK-004 --> TASK-018
+  TASK-016 --> TASK-019
+  TASK-016 --> TASK-020
+  TASK-016 --> TASK-021
+  TASK-019 --> TASK-022
+  TASK-020 --> TASK-022
+  TASK-021 --> TASK-022
   TASK-001 --> TASK-016
   TASK-002 --> TASK-016
   TASK-003 --> TASK-016
@@ -656,13 +1170,43 @@ flowchart TD
   TASK-013 --> TASK-016
   TASK-014 --> TASK-016
   TASK-015 --> TASK-016
-  TASK-004 --> TASK-018 --> TASK-016
-  TASK-016 --> TASK-019
-  TASK-016 --> TASK-020
-  TASK-016 --> TASK-021
-  TASK-019 --> TASK-022
-  TASK-020 --> TASK-022
-  TASK-021 --> TASK-022
+  TASK-018 --> TASK-016
+  TASK-022 --> TASK-023
+  TASK-022 --> TASK-024
+  TASK-022 --> TASK-025
+  TASK-022 --> TASK-026
+  TASK-022 --> TASK-027
+  TASK-022 --> TASK-028
+  TASK-022 --> TASK-029
+  TASK-022 --> TASK-030
+  TASK-022 --> TASK-031
+  TASK-022 --> TASK-032
+  TASK-022 --> TASK-033
+  TASK-022 --> TASK-034
+  TASK-022 --> TASK-035
+  TASK-022 --> TASK-036
+  TASK-022 --> TASK-037
+  TASK-022 --> TASK-038
+  TASK-022 --> TASK-039
+  TASK-022 --> TASK-040
+  TASK-023 --> TASK-041
+  TASK-024 --> TASK-041
+  TASK-025 --> TASK-041
+  TASK-026 --> TASK-041
+  TASK-027 --> TASK-041
+  TASK-028 --> TASK-041
+  TASK-029 --> TASK-041
+  TASK-030 --> TASK-041
+  TASK-031 --> TASK-041
+  TASK-032 --> TASK-041
+  TASK-033 --> TASK-041
+  TASK-034 --> TASK-041
+  TASK-035 --> TASK-041
+  TASK-036 --> TASK-041
+  TASK-037 --> TASK-041
+  TASK-038 --> TASK-041
+  TASK-039 --> TASK-041
+  TASK-040 --> TASK-041
   TASK-017["TASK-017: trabajo adyacente e independiente"]
 ```
 
@@ -682,13 +1226,13 @@ Reflejar el enum de dominio en el DTO y mantener una conversión explícita a su
 
 **Acceptance Criteria:**
 
-- `AccountSettingsUpdateData` declara `PreferredLocale` para `preferredLocale` y laravel-data convierte los valores respaldados recibidos desde datos ya validados.
-- `toUserAttributes` devuelve el valor escalar del enum para `preferred_locale` y conserva su PHPDoc de array de atributos escalares.
-- La prueba del módulo verifica el casteo de `en`/`es` y el endpoint sigue rechazando un locale no soportado sin persistir cambios.
+- AccountSettingsUpdateData declara PreferredLocale para preferredLocale y laravel-data convierte los valores respaldados recibidos desde datos ya validados.
+- toUserAttributes devuelve el valor escalar del enum para preferred_locale y conserva su PHPDoc de array de atributos escalares.
+- La prueba del módulo verifica el casteo de es/en y el endpoint sigue rechazando un locale no soportado sin persistir cambios.
 
 **writeScope:**
 
-- `app/User/Modules/AccountSettings/Data/AccountSettingsUpdateData.php` — Tipado de `PreferredLocale` y mapeo explícito al valor almacenado.
+- `app/User/Modules/AccountSettings/Data/AccountSettingsUpdateData.php` — Tipado de PreferredLocale y mapeo explícito al valor almacenado.
 - `app/User/Modules/AccountSettings/Tests/Crud/AccountSettingsTest.php` — Regresión del casteo del Data DTO y el rechazo de valores no soportados.
 
 **validateCommand:**
