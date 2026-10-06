@@ -189,10 +189,10 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Códigos disponibles</span>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">Códigos disponibles</span>
 
-        <span className="font-medium">{recoveryCodesList.length} de 8</span>
+        <span className="text-sm font-medium">{recoveryCodesList.length} de 8</span>
       </div>
 
       <div className="flex items-center justify-between gap-4">
@@ -229,7 +229,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
         <ItemContent>
           <ItemTitle>Última regeneración</ItemTitle>
 
-          <ItemDescription>{regeneratedAtLabel}</ItemDescription>
+          <ItemDescription className="text-xs">{regeneratedAtLabel}</ItemDescription>
         </ItemContent>
 
         <ItemActions>

@@ -177,7 +177,7 @@ function TwoFactorActivationDetailsDialog({
                       )}
                     </div>
 
-                    <span className="text-sm text-muted-foreground">{detail.label}</span>
+                    <span className="text-xs text-muted-foreground">{detail.label}</span>
                   </div>
 
                   <p className={cn("text-sm font-medium", detail.valueClassName)}>{detail.value}</p>
