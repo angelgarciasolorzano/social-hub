@@ -5,9 +5,23 @@ declare(strict_types=1);
 use App\Comment\Enums\CommentType;
 use App\Like\Models\Like;
 use App\Modules\Post\Models\Post;
+use App\User\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+
+/**
+ * Create a persisted Post owned by the given user, same #[UseFactory]
+ * workaround as createUser() in tests/Pest.php.
+ */
+function createPostFor(User $user): Post
+{
+    /** @var Factory<Post> $factory */
+    $factory = Post::factory();
+
+    return $factory->for($user)->createOne();
+}
 
 it('belongs to the user who created it', function (): void {
     $user = createUser();
