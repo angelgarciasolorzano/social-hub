@@ -456,7 +456,7 @@ function TwoFactorSafetyTips(): JSX.Element {
           Consejos de seguridad
         </h2>
       </CardHeader>
-      <CardContent className="flex flex-1 gap-6">
+      <CardContent className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {twoFactorSafetyTips.map((tip) => {
           const Icon = tip.icon;
 

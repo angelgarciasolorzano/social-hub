@@ -84,7 +84,7 @@ function TrustedDeviceSummaryDialog({
           if (!next) onClose();
         }}
       >
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle asChild>
               <h2 className="flex items-center gap-2">
@@ -99,11 +99,11 @@ function TrustedDeviceSummaryDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <ul className="grid list-none grid-cols-4 gap-3" role="list">
+          <ul className="grid list-none grid-cols-2 gap-3 md:grid-cols-4" role="list">
             <StatCard trustedDeviceStats={stats} />
           </ul>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <StateDistributionBreakdown trustedDeviceStats={stats} />
 
             <DeviceTypeBreakdown trustedDeviceStats={stats} />
@@ -112,7 +112,7 @@ function TrustedDeviceSummaryDialog({
           <Alert className={alertVariants.preview}>
             <CircleAlert />
             <AlertTitle>Mantén tus dispositivos seguros</AlertTitle>
-            <AlertDescription className="flex items-center gap-4">
+            <AlertDescription className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               Revisa periódicamente los dispositivos que ya no utilizas y elimina aquellos que no
               reconozcas. Esto ayuda a proteger tu cuenta y evitar accesos no autorizados.
               <Button
@@ -198,7 +198,7 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
 
         return (
           <li
-            className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm dark:bg-muted/20"
+            className="flex min-w-0 items-center gap-3 rounded-xl border bg-card p-3 shadow-sm dark:bg-muted/20"
             key={item.label}
           >
             <div
@@ -211,7 +211,7 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
               <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
             </div>
 
-            <dl className="flex flex-col">
+            <dl className="flex min-w-0 flex-col">
               <dt className="text-xs text-muted-foreground">{item.label}</dt>
               <dd className="text-xl font-semibold">{item.value}</dd>
               <dd className="text-xs text-muted-foreground">{percentage}% del total</dd>
@@ -393,7 +393,7 @@ function StateDistributionBreakdown({
         <CardDescription>Porcentaje del total de dispositivos</CardDescription>
       </CardHeader>
 
-      <CardContent className="flex items-center gap-4">
+      <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
         <ChartContainer config={chartConfig} className="aspect-square max-h-44 w-44 shrink-0">
           <RadialBarChart
             data={chartData}
@@ -422,7 +422,7 @@ function StateDistributionBreakdown({
 
         <ul
           aria-labelledby="device-state-distribution-title"
-          className="flex-1 space-y-2"
+          className="flex min-w-0 flex-1 flex-col gap-2"
           role="list"
         >
           {chartData.map((item) => {

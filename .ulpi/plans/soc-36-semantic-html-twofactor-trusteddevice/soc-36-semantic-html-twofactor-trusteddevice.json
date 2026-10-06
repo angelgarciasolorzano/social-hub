@@ -101,11 +101,29 @@
     },
     {
       "id": "PHASE-4",
-      "title": "QA de cierre",
+      "title": "Auditoría QA",
       "taskIds": [
         "TASK-016"
       ],
-      "outcome": "Gates frontend y revisión manual de teclado, estados y móvil."
+      "outcome": "Gates frontend y revisión manual que registra hallazgos de teclado y móvil."
+    },
+    {
+      "id": "PHASE-5",
+      "title": "Correcciones de QA",
+      "taskIds": [
+        "TASK-019",
+        "TASK-020",
+        "TASK-021"
+      ],
+      "outcome": "Layouts móviles sin desbordamiento y diálogos TrustedDevice que restauran el foco."
+    },
+    {
+      "id": "PHASE-6",
+      "title": "Verificación final",
+      "taskIds": [
+        "TASK-022"
+      ],
+      "outcome": "Gates frontend y QA manual repetidos con los hallazgos corregidos."
     }
   ],
   "tasks": [
@@ -710,10 +728,145 @@
       "review": "codex"
     },
     {
+      "id": "TASK-019",
+      "title": "Corregir desbordamientos móviles en seguridad y resumen de dispositivos",
+      "phase": "Correcciones de QA",
+      "description": "Ajustar los consejos de TwoFactor y el diálogo de resumen de TrustedDevice para que sus tarjetas y gráficos fluyan en pantallas estrechas y el diálogo se mantenga dentro del viewport.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-016"
+      ],
+      "acceptanceCriteria": [
+        "La página activa de TwoFactor no causa desbordamiento horizontal a 390 px y las recomendaciones conservan orden y legibilidad.",
+        "El diálogo de resumen de TrustedDevice reorganiza tarjetas y distribuciones para móvil, y su contenido puede desplazarse verticalmente sin salir del viewport.",
+        "En escritorio se conserva la composición existente y, si hay textos largos o muchas tarjetas, ningún contenido queda recortado ni impide cerrar el diálogo."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+          "role": "Apilar consejos en pantallas estrechas sin cambiar el orden semántico."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+          "role": "Adaptar las cuadrículas y limitar el diálogo al viewport con desplazamiento vertical."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nQA manual en navegador a 390 px y escritorio: confirmar ausencia de desbordamiento, acceso al cierre y scroll vertical del diálogo.",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Restaurar el foco en diálogos informativos de TrustedDevice",
+      "phase": "Correcciones de QA",
+      "description": "Añadir restauración local del foco al cerrar los diálogos de atajos y resumen, siguiendo el patrón controlado existente de TwoFactor sin modificar la primitiva global.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-016"
+      ],
+      "acceptanceCriteria": [
+        "Al cerrar los diálogos de atajos y resumen con Escape o su botón Cerrar, el foco regresa al control que los abrió cuando sigue montado.",
+        "La apertura con teclado conserva el foco inicial útil y el cierre no deja el foco en body ni deshabilita la contención de Radix.",
+        "Si el elemento que abrió el diálogo dejó de existir, el cierre no intenta enfocar un nodo desconectado ni produce errores."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+          "role": "Capturar y restaurar el foco en el ciclo de vida del diálogo controlado."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+          "role": "Restaurar foco al invocador sin interferir con el diálogo anidado de recomendaciones."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nQA manual con teclado: abrir cada diálogo, cerrar con Escape y con Cerrar, y comprobar foco restaurado.",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Restaurar el foco en detalle y renombrado de dispositivos",
+      "phase": "Correcciones de QA",
+      "description": "Conservar un destino de foco estable desde la acción de fila hasta los diálogos de detalle/renombrado y devolver el foco al cerrar, incluso cuando el elemento de menú que inició la acción se desmonta.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-016"
+      ],
+      "acceptanceCriteria": [
+        "Cerrar detalle o renombrado con Escape, Cancelar o Cerrar devuelve el foco al botón de acciones de la fila que inició la operación.",
+        "Al abrir Renombrar desde el diálogo de detalle, cerrar el formulario devuelve el foco al control Renombrar dispositivo si permanece disponible; luego el detalle conserva su propio ciclo de foco.",
+        "Si cambia la página o desaparece la fila, no se enfoca un elemento desconectado, no se ejecuta una acción y los cierres bloqueados mientras se guarda siguen respetándose."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+          "role": "Retener y propagar el control estable de la fila iniciadora a sus diálogos."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+          "role": "Restaurar foco al origen válido y propagar el destino estable a acciones anidadas."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+          "role": "Capturar/restaurar foco para aperturas desde tabla y desde el diálogo de detalle."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx\nQA manual con teclado: abrir detalle desde acciones de fila, abrir renombrado desde tabla y desde detalle, y comprobar retorno de foco tras cada cierre.",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Repetir QA de integración después de las correcciones",
+      "phase": "Verificación final",
+      "description": "Ejecutar de nuevo los gates frontend y la revisión manual de teclado, semántica y responsive para confirmar el cierre de SOC-36 tras corregir los hallazgos del primer QA.",
+      "priority": "P0",
+      "type": "test",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-019",
+        "TASK-020",
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "Pasan format:check, lint:check, types, build y build:ssr; advertencias no fatales se registran sin confundirlas con fallos.",
+        "En escritorio y a 390 px, TwoFactor y resumen de TrustedDevice no desbordan y el resumen permanece operable dentro del viewport.",
+        "Los diálogos de atajos, resumen, detalle y renombrado cierran con teclado y restauran el foco al origen válido sin alterar datos ni contratos."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr\nQA manual en navegador: páginas móviles y diálogos TrustedDevice con teclado y retorno de foco.",
+      "review": "codex"
+    },
+    {
       "id": "TASK-016",
-      "title": "Cerrar QA semántico, visual y de teclado de SOC-36",
-      "phase": "QA de cierre",
-      "description": "Correr los gates frontend existentes y validar manualmente rutas/estados de ambos módulos con teclado, estructura y viewport móvil. Confirmar que el refactor no cambió contratos ni comportamiento.",
+      "title": "Auditar QA semántico, visual y de teclado de SOC-36",
+      "phase": "Auditoría QA",
+      "description": "Auditoría inicial de integración: ejecutar los gates frontend y validar ambos módulos. Los gates pasaron; la QA manual detectó desbordamiento horizontal en TwoFactor, desbordamiento del resumen móvil y falta de restauración de foco en diálogos TrustedDevice, que se corrigen en TASK-019 a TASK-021.",
       "priority": "P0",
       "type": "test",
       "effort": "M",
@@ -733,12 +886,13 @@
         "TASK-012",
         "TASK-013",
         "TASK-014",
-        "TASK-015"
+        "TASK-015",
+        "TASK-018"
       ],
       "acceptanceCriteria": [
-        "Pasan format:check, lint:check, types, build y build:ssr después de integrar todas las tareas.",
-        "QA manual confirma tabulación, activación con Enter/Espacio, foco al abrir/cerrar diálogos, etiquetas/nombres y encabezados en ambos módulos.",
-        "Estados de error, vacío, filtros sin resultados y controles deshabilitados no muestran acciones/datos engañosos y se conservan rutas/contratos."
+        "Pasan format:check, lint:check, types, build y build:ssr; los errores de compilación bloquean el avance.",
+        "La QA manual verifica encabezados, etiquetas, estados vacíos, filtros, acciones deshabilitadas y comportamiento por teclado en ambos módulos.",
+        "Los hallazgos reproducibles de viewport móvil y restauración de foco quedan especificados como trabajo dependiente antes del cierre final."
       ],
       "filesToModify": [],
       "filesToCreate": [],
@@ -783,15 +937,31 @@
     ],
     "TASK-018": [
       "TASK-004"
+    ],
+    "TASK-019": [
+      "TASK-016"
+    ],
+    "TASK-020": [
+      "TASK-016"
+    ],
+    "TASK-021": [
+      "TASK-016"
+    ],
+    "TASK-022": [
+      "TASK-019",
+      "TASK-020",
+      "TASK-021"
     ]
   },
   "criticalPath": {
     "tasks": [
       "TASK-004",
       "TASK-018",
-      "TASK-016"
+      "TASK-016",
+      "TASK-019",
+      "TASK-022"
     ],
-    "rationale": "TASK-004 alimenta el ajuste visual y accesible de TASK-018, que debe completarse antes del QA de integración TASK-016."
+    "rationale": "TASK-004 alimenta el ajuste OTP TASK-018; después, TASK-016 descubre regresiones responsive y de foco, que llevan a TASK-019 y al QA final TASK-022."
   },
   "failureModes": [
     "DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.",
@@ -799,9 +969,11 @@
     "Etiquetas sin asociación o búsquedas nombradas solo por placeholder fallan en lector de pantalla.",
     "Reemplazar tabla por elementos genéricos/role=grid puede perder asociaciones y comportamiento existentes.",
     "Ajustes tipográficos amplios pueden alterar densidad responsive; mantenerlos locales y revisar móvil, vacío y error.",
-    "Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos."
+    "Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos.",
+    "Cuadrículas con columnas fijas o diálogos sin límite de altura pueden desbordar el viewport móvil; comprobar ancho y scroll interno.",
+    "Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado."
   ],
-  "shipCut": "SOC-36 se considera completo después de las 16 tareas de implementación y TASK-016. La tarea adyacente de PreferredLocale no bloquea el cierre del issue. Si se pausa, cada slice puede revisarse por separado; cerrar SOC-36 requiere ambos módulos, diálogos relevantes, gates frontend y QA de teclado/estados.",
+  "shipCut": "SOC-36 se considera completo después de las tareas de implementación TASK-001 a TASK-015, TASK-018 a TASK-021 y la verificación final TASK-022; TASK-016 es la auditoría inicial que registró los hallazgos corregidos. La tarea adyacente de PreferredLocale no bloquea el cierre del issue.",
   "testCoverageMap": [
     {
       "scope": "Cada slice de implementación",
@@ -821,9 +993,9 @@
     }
   ],
   "executionSummary": {
-    "taskCount": 17,
-    "implementationTaskCount": 16,
-    "phaseCount": 4,
+    "taskCount": 21,
+    "implementationTaskCount": 19,
+    "phaseCount": 6,
     "dagLayers": [
       {
         "layer": 1,
@@ -856,10 +1028,24 @@
         "taskIds": [
           "TASK-016"
         ]
+      },
+      {
+        "layer": 4,
+        "taskIds": [
+          "TASK-019",
+          "TASK-020",
+          "TASK-021"
+        ]
+      },
+      {
+        "layer": 5,
+        "taskIds": [
+          "TASK-022"
+        ]
       }
     ],
     "reviewDefault": "codex",
-    "linearTaskCount": 17,
+    "linearTaskCount": 21,
     "adjacentTaskCount": 1
   },
   "adjacentWork": {
