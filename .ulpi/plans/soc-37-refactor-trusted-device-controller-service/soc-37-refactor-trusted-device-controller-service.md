@@ -194,7 +194,7 @@ Ampliar TrustedDeviceServiceTest con casos unitarios/feature de revokeAll, react
 
 ### TASK-007: Policy de ownership para TrustedDevice (opcional)
 
-Crear TrustedDevicePolicy con update, delete, restore y forceDelete (ownership por user_id), registrarla con el atributo #[UsePolicy] en el modelo TrustedDevice (la convención de descubrimiento de Laravel no la encuentra en Modules/TrustedDevice/Policies) y reemplazar los abort_unless(... user_id ...) del controlador por Gate::authorize (el Controller base no usa AuthorizesRequests). Los abort_if(deleted_at === null, 404) y el estrechamiento de tipo del usuario se conservan en el controlador. Es un patrón nuevo en el proyecto (no existen Policies).
+Crear TrustedDevicePolicy con update, delete, restore y forceDelete (ownership por user_id), registrarla con el atributo #[UsePolicy] en el modelo TrustedDevice (la convención de descubrimiento de Laravel no la encuentra en Modules/TrustedDevice/Policies) y reemplazar los abort_unless(... user_id ...) del controlador por el atributo #[Authorize(<habilidad>, trustedDevice)] de Laravel 13 (middleware que corre tras SubstituteBindings y antes del método, por lo que la autorización precede a la validación del FormRequest). Los abort_if(deleted_at === null, 404) y el estrechamiento de tipo del usuario se conservan en el controlador. Es un patrón nuevo en el proyecto (no existen Policies).
 
 **Type:** refactor
 **Effort:** M
@@ -289,7 +289,7 @@ Ejecutar los gates de calidad sobre todo el cambio: Pint, PHPStan (level max), R
 - Condición de carrera en store: hoy, si el chequeo con lockForUpdate encuentra un dispositivo activo, se retorna el existente pero el controlador igual encola una cookie con un token que no quedó persistido y muestra éxito. Se corrigió en TASK-005 a petición del usuario: ahora devuelve AlreadyActive (error, sin cookie). Es el único cambio de comportamiento del plan.
 - DB::afterCommit dentro del Service reemplaza la invalidación posterior a la transacción del controlador; es equivalente externamente y ya la usa PasswordTrustedDeviceRevoker con tests, pero conviene confirmarlo en TASK-001.
 - destroyAll gana lockForUpdate al unificarse con el revoker; reduce condiciones de carrera y no cambia el resultado observable.
-- La Policy es un patrón nuevo y el Controller base no usa AuthorizesRequests; mitigado usando Gate::authorize y manteniendo 404 en el controlador.
+- La Policy es un patrón nuevo; con #[Authorize] la autorización corre antes de la validación del FormRequest (un usuario ajeno recibe 403 en vez de errores de validación). Mitigado manteniendo los 404 en el controlador y cubriendo los 403 con los tests existentes.
 - Los tests del Service dependen de createUser()/createTrustedDevice() de tests/Pest.php; si cambian, los tests nuevos deben adaptarse.
 
 ## Ship Cut

@@ -18,7 +18,7 @@ use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Routing\Attributes\Controllers\Authorize;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -28,12 +28,12 @@ class TrustedDeviceController extends Controller
 
     public function __construct(private readonly TrustedDeviceService $trustedDeviceService) {}
 
+    #[Authorize('update', 'trustedDevice')]
     public function update(TrustedDeviceUpdateRequest $trustedDeviceUpdateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         $user = $trustedDeviceUpdateRequest->user();
 
         abort_unless($user instanceof User, 401);
-        Gate::authorize('update', $trustedDevice);
 
         $this->trustedDeviceService->rename(
             $user,
@@ -45,12 +45,12 @@ class TrustedDeviceController extends Controller
         return Inertia::flash(TrustedDeviceRegistrationResult::Renamed->payload())->back();
     }
 
+    #[Authorize('update', 'trustedDevice')]
     public function renew(Request $request, TrustedDevice $trustedDevice): RedirectResponse
     {
         $user = $request->user();
 
         abort_unless($user instanceof User, 401);
-        Gate::authorize('update', $trustedDevice);
 
         $this->trustedDeviceService->renew($user, $trustedDevice, $request);
 
@@ -83,12 +83,12 @@ class TrustedDeviceController extends Controller
         return Inertia::flash($trustedDeviceRegistrationResult->payload())->back();
     }
 
+    #[Authorize('delete', 'trustedDevice')]
     public function destroy(TrustedDeviceDestroyRequest $trustedDeviceDestroyRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         $user = $trustedDeviceDestroyRequest->user();
 
         abort_unless($user instanceof User, 401);
-        Gate::authorize('delete', $trustedDevice);
 
         $this->trustedDeviceService->revoke($user, $trustedDevice, $trustedDeviceDestroyRequest);
 
@@ -106,12 +106,12 @@ class TrustedDeviceController extends Controller
         return Inertia::flash(TrustedDeviceRegistrationResult::RevokedAll->payload())->back();
     }
 
+    #[Authorize('restore', 'trustedDevice')]
     public function reactivate(TrustedDeviceReactivateRequest $trustedDeviceReactivateRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         $user = $trustedDeviceReactivateRequest->user();
 
         abort_unless($user instanceof User, 401);
-        Gate::authorize('restore', $trustedDevice);
         abort_if($trustedDevice->deleted_at === null, 404);
 
         $newToken = $this->trustedDeviceService->reactivate($user, $trustedDevice, $trustedDeviceReactivateRequest);
@@ -121,12 +121,12 @@ class TrustedDeviceController extends Controller
         return Inertia::flash(TrustedDeviceRegistrationResult::Reactivated->payload())->back();
     }
 
+    #[Authorize('forceDelete', 'trustedDevice')]
     public function forceDestroy(TrustedDeviceDestroyForceRequest $trustedDeviceDestroyForceRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
         $user = $trustedDeviceDestroyForceRequest->user();
 
         abort_unless($user instanceof User, 401);
-        Gate::authorize('forceDelete', $trustedDevice);
         abort_if($trustedDevice->deleted_at === null, 404);
 
         $this->trustedDeviceService->forceDelete($user, $trustedDevice, $trustedDeviceDestroyForceRequest);
