@@ -23,6 +23,7 @@ Modo HOLD: se mantiene el alcance de la issue (mover Post backend+frontend/Wayfi
 - Mover Auth, Comment, Friendship, Home, Like, MediaLibrary o User a app/Modules (tareas separadas; Auth pasará a app/Modules/Auth/ en su momento).
 - Cambiar comportamiento, rutas, nombres de rutas o UI; el frontend solo cambia imports/Wayfinder.
 - Reorganizar el interior de Post (Controllers/Factories/Models/Providers/Requests/Resources/Seeders/routes se conservan).
+- Cambiar comportamiento: la única excepción deliberada es la migración de PostRequest a FluentValidation (mismas reglas y mensajes; corrige el espacio en 'mimes:png,jpg, webp').
 - Agregar tests a módulos distintos de Post.
 - Corregir la discrepancia image/image_file de PostRequest vs PostController ni la regla 'mimes:png,jpg, webp' (se documenta, se cubre con tests de comportamiento actual y queda como seguimiento).
 
@@ -70,9 +71,9 @@ Crear copias de Post, PostFactory y PostSeeder bajo el namespace App\Modules\Pos
 
 **Notas:** Archivos nuevos: no se registran todavía. El registro (providers/morph map/seeder) lo posee TASK-004.
 
-### TASK-002: Crear capa HTTP de Post en app/Modules/Post (Request, Resource, Controller)
+### TASK-002: Crear capa HTTP de Post en app/Modules/Post (Request con FluentValidation, Resource, Controller)
 
-Crear copias de PostRequest, PostResource y PostController bajo App\Modules\Post\{Requests,Resources,Controllers}. PostResource y PostController importan el Post nuevo y PostRequest nuevo. Sin cambios de lógica: reglas de validación, mensajes, flash y colección de media se copian tal cual (incluida la rareza actual de validar 'image' pero leer 'image_file'; ver Failure Modes).
+Crear copias de PostRequest, PostResource y PostController bajo App\Modules\Post\{Requests,Resources,Controllers}. PostResource y PostController importan el Post nuevo y PostRequest nuevo. PostController y PostResource se copian sin cambios de lógica (incluida la rareza actual de validar 'image' pero leer 'image_file'; ver Failure Modes). PostRequest se migra a FluentValidation (HasFluentRules + FluentRule::*, mensajes inline, sin messages()) con las mismas reglas y mensajes en español; el typo 'mimes:png,jpg, webp' pasa a mimes('png','jpg','webp').
 
 **Type:** refactor
 **Priority:** P0
@@ -83,8 +84,8 @@ Crear copias de PostRequest, PostResource y PostController bajo App\Modules\Post
 
 **Acceptance Criteria:**
 
+- PostRequest nuevo usa HasFluentRules y FluentRule::string()->required()->min(10) para content y FluentRule::file()->nullable()->mimes('png','jpg','webp')->max(5120) para image, con los 4 mensajes en español inline y sin messages().
 - PostController nuevo usa App\Modules\Post\Requests\PostRequest y mantiene idénticos los mensajes de notificación y el flash con action 'Ver publicación' → route('profile.index').
-- PostResource nuevo devuelve exactamente las llaves id, content, image, createdAt (diff manual contra el original sin cambios de contenido salvo namespace/imports).
 - Caso límite: PHPStan nivel max pasa sobre los 3 archivos y no queda ningún import a App\Post\ dentro de app/Modules/Post/.
 
 **writeScope:**
@@ -415,9 +416,9 @@ Crear Tests/Models/PostModelTest.php (relaciones user/comments/likes; morph map 
 
 **validateCommand:** `vendor/bin/pest app/Modules/Post/Tests/Models/PostModelTest.php app/Modules/Post/Tests/Factories/PostFactoryTest.php && vendor/bin/pint --dirty --format agent`
 
-### TASK-016: Tests del PostResource y del PostSeeder
+### TASK-016: Tests del PostRequest (FluentRulesTester), PostResource y PostSeeder
 
-Crear Tests/Resources/PostResourceTest.php (llaves exactas id, content, image, createdAt; createdAt en ISO-8601; image vacía sin media y con URL cuando hay media en posts_images) y Tests/Seeders/PostSeederTest.php (con 2 usuarios, cada uno recibe entre 5 y 20 posts propios).
+Crear Tests/Requests/PostRequestTest.php con FluentRulesTester::for(PostRequest::class) (content requerido y min:10; image nullable, mimes png/jpg/webp, max 5120 KB; mensajes en español exactos; autorización falla para guest), Tests/Resources/PostResourceTest.php (llaves exactas id, content, image, createdAt; createdAt en ISO-8601; image vacía sin media y con URL cuando hay media en posts_images) y Tests/Seeders/PostSeederTest.php (con 2 usuarios, cada uno recibe entre 5 y 20 posts propios).
 
 **Type:** test
 **Priority:** P2
@@ -428,16 +429,17 @@ Crear Tests/Resources/PostResourceTest.php (llaves exactas id, content, image, c
 
 **Acceptance Criteria:**
 
-- PostResourceTest verifica las llaves exactas ['id','content','image','createdAt'] y que createdAt es una cadena ISO-8601 igual a created_at->toIso8601String().
-- Caso límite: sin media la clave image es cadena vacía; con una imagen en posts_images es una URL no vacía.
+- PostResourceTest verifica las llaves exactas ['id','content','image','createdAt'], createdAt en ISO-8601 e image vacía sin media (con URL no vacía cuando hay imagen en posts_images).
 - PostSeederTest verifica que cada usuario tiene entre 5 y 20 posts y que ningún post queda sin usuario.
+- Caso de falla (PostRequestTest, con FluentRulesTester): content vacío y < 10 caracteres fallan con sus mensajes; image PDF falla en mimes, image de más de 5120 KB falla en max; content válido sin image pasa.
 
 **writeScope:**
 
 - `app/Modules/Post/Tests/Resources/PostResourceTest.php` (crea)
 - `app/Modules/Post/Tests/Seeders/PostSeederTest.php` (crea)
+- `app/Modules/Post/Tests/Requests/PostRequestTest.php` (crea)
 
-**validateCommand:** `vendor/bin/pest app/Modules/Post/Tests/Resources/PostResourceTest.php app/Modules/Post/Tests/Seeders/PostSeederTest.php && vendor/bin/pint --dirty --format agent`
+**validateCommand:** `vendor/bin/pest app/Modules/Post/Tests/Resources/PostResourceTest.php app/Modules/Post/Tests/Seeders/PostSeederTest.php app/Modules/Post/Tests/Requests/PostRequestTest.php && vendor/bin/pint --dirty --format agent`
 
 ### TASK-017: Actualizar CLAUDE.md con la nueva arquitectura app/Modules
 
