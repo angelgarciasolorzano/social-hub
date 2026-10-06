@@ -234,6 +234,10 @@ final readonly class TrustedDeviceService
         }
     }
 
+    /**
+     * Forget the user's dashboard cache once the surrounding transaction
+     * commits, so a rolled-back change never clears a still-valid cache.
+     */
     private function invalidateDashboardAfterCommit(User $user): void
     {
         DB::afterCommit(function () use ($user): void {
@@ -241,6 +245,10 @@ final readonly class TrustedDeviceService
         });
     }
 
+    /**
+     * Read how many minutes a trusted device (and its cookie) stays valid
+     * from `module.auth.trusted_devices.cookie_lifetime_minutes`.
+     */
     private function cookieLifetimeMinutes(): int
     {
         /** @var int $cookieLifetimeMinutes */

@@ -240,6 +240,9 @@ function trustedDeviceFingerprint(): array
     ];
 }
 
+/**
+ * Count the audit events of one action recorded for the given user.
+ */
 function countTrustedDeviceEvents(User $user, TrustedDeviceAction $trustedDeviceAction): int
 {
     return TrustedDeviceEvent::query()
