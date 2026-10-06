@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { type JSX, useRef } from "react";
 
 import { usePage } from "@inertiajs/react";
 
@@ -71,6 +71,7 @@ function TrustedDeviceSummaryDialog({
   open,
   onClose,
 }: TrustedDeviceSummaryDialogProps): JSX.Element {
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
   const recommendationsDialog = useDialog<DialogClosingState | null>(null);
@@ -84,7 +85,27 @@ function TrustedDeviceSummaryDialog({
           if (!next) onClose();
         }}
       >
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl">
+        <DialogContent
+          className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
+          onOpenAutoFocus={() => {
+            const activeElement = document.activeElement;
+
+            returnFocusRef.current =
+              activeElement instanceof HTMLElement && activeElement !== document.body
+                ? activeElement
+                : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            const focusTarget = returnFocusRef.current;
+
+            if (focusTarget?.isConnected) {
+              event.preventDefault();
+              focusTarget.focus();
+            }
+
+            returnFocusRef.current = null;
+          }}
+        >
           <DialogHeader>
             <DialogTitle asChild>
               <h2 className="flex items-center gap-2">

@@ -473,7 +473,7 @@ rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/views/TwoF
 
 ### TASK-020: Restaurar el foco en diálogos informativos de TrustedDevice
 
-Añadir restauración local del foco al cerrar los diálogos de atajos y resumen, siguiendo el patrón controlado existente de TwoFactor sin modificar la primitiva global.
+Añadir restauración local del foco al cerrar los diálogos de atajos, resumen y recomendaciones, siguiendo el patrón controlado existente de TwoFactor sin modificar la primitiva global.
 
 **Phase:** Correcciones de QA
 **Type:** fix
@@ -483,19 +483,21 @@ Añadir restauración local del foco al cerrar los diálogos de atajos y resumen
 **Depends on:** TASK-016
 **Acceptance Criteria:**
 - Al cerrar los diálogos de atajos y resumen con Escape o su botón Cerrar, el foco regresa al control que los abrió cuando sigue montado.
+- Al cerrar recomendaciones anidadas con Escape o Cerrar, el foco vuelve al botón que las abrió dentro del resumen, que permanece abierto.
 - La apertura con teclado conserva el foco inicial útil y el cierre no deja el foco en body ni deshabilita la contención de Radix.
 - Si el elemento que abrió el diálogo dejó de existir, el cierre no intenta enfocar un nodo desconectado ni produce errores.
 
 **writeScope:**
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx` — Capturar y restaurar el foco en el ciclo de vida del diálogo controlado.
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Restaurar foco al invocador sin interferir con recomendaciones anidadas.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx` — Devolver el foco al botón que abre recomendaciones dentro del resumen.
 
 **validateCommand:**
 ```sh
-rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx
-rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx
 ```
-**QA manual:** Abrir cada diálogo, cerrar con Escape y con Cerrar, y comprobar foco restaurado.
+**QA manual:** Abrir atajos, resumen y recomendaciones; cerrar cada diálogo con Escape y con Cerrar y comprobar que el foco vuelve al control que lo abrió.
 
 ### TASK-021: Restaurar el foco en detalle y renombrado de dispositivos
 

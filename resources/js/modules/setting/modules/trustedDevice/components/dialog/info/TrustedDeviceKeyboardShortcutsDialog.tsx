@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useSyncExternalStore } from "react";
+import { Fragment, useRef, useSyncExternalStore } from "react";
 
 import { detectPlatform, formatForDisplay } from "@tanstack/react-hotkeys";
 import { Keyboard } from "lucide-react";
@@ -40,6 +40,8 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
   onClose,
   open,
 }: TrustedDeviceKeyboardShortcutsDialogProps): JSX.Element {
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   const platform = useSyncExternalStore(
     subscribeToPlatformChanges,
     detectPlatform,
@@ -98,7 +100,28 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-2xl" showCloseButton={false}>
+      <DialogContent
+        className="sm:max-w-2xl"
+        onOpenAutoFocus={() => {
+          const activeElement = document.activeElement;
+
+          returnFocusRef.current =
+            activeElement instanceof HTMLElement && activeElement !== document.body
+              ? activeElement
+              : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          const focusTarget = returnFocusRef.current;
+
+          if (focusTarget?.isConnected) {
+            event.preventDefault();
+            focusTarget.focus();
+          }
+
+          returnFocusRef.current = null;
+        }}
+        showCloseButton={false}
+      >
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { type JSX, useRef } from "react";
 
 import { ChevronRight, CircleAlert, Lightbulb, type LucideIcon } from "lucide-react";
 
@@ -35,6 +35,8 @@ function TrustedDeviceRecommendationsDialog({
   open,
   onClose,
 }: TrustedDeviceRecommendationsDialogProps): JSX.Element {
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
   return (
     <Dialog
       open={open}
@@ -42,7 +44,27 @@ function TrustedDeviceRecommendationsDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent
+        className="sm:max-w-4xl"
+        onOpenAutoFocus={() => {
+          const activeElement = document.activeElement;
+
+          returnFocusRef.current =
+            activeElement instanceof HTMLElement && activeElement !== document.body
+              ? activeElement
+              : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          const focusTarget = returnFocusRef.current;
+
+          if (focusTarget?.isConnected) {
+            event.preventDefault();
+            focusTarget.focus();
+          }
+
+          returnFocusRef.current = null;
+        }}
+      >
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">

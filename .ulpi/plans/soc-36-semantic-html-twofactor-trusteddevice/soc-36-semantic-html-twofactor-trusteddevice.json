@@ -766,7 +766,7 @@
       "id": "TASK-020",
       "title": "Restaurar el foco en diálogos informativos de TrustedDevice",
       "phase": "Correcciones de QA",
-      "description": "Añadir restauración local del foco al cerrar los diálogos de atajos y resumen, siguiendo el patrón controlado existente de TwoFactor sin modificar la primitiva global.",
+      "description": "Añadir restauración local del foco al cerrar los diálogos de atajos, resumen y recomendaciones, siguiendo el patrón controlado existente de TwoFactor sin modificar la primitiva global.",
       "priority": "P1",
       "type": "fix",
       "effort": "S",
@@ -776,12 +776,14 @@
       ],
       "acceptanceCriteria": [
         "Al cerrar los diálogos de atajos y resumen con Escape o su botón Cerrar, el foco regresa al control que los abrió cuando sigue montado.",
+        "Al cerrar recomendaciones anidadas con Escape o Cerrar, el foco vuelve al botón que las abrió dentro del resumen, que permanece abierto.",
         "La apertura con teclado conserva el foco inicial útil y el cierre no deja el foco en body ni deshabilita la contención de Radix.",
         "Si el elemento que abrió el diálogo dejó de existir, el cierre no intenta enfocar un nodo desconectado ni produce errores."
       ],
       "filesToModify": [
         "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
-        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx"
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx"
       ],
       "filesToCreate": [],
       "writeScope": [
@@ -792,9 +794,13 @@
         {
           "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
           "role": "Restaurar foco al invocador sin interferir con el diálogo anidado de recomendaciones."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx",
+          "role": "Devolver el foco al botón que abre recomendaciones dentro del resumen."
         }
       ],
-      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx\nQA manual con teclado: abrir cada diálogo, cerrar con Escape y con Cerrar, y comprobar foco restaurado.",
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx\nQA manual con teclado: abrir atajos, resumen y recomendaciones; cerrar cada diálogo con Escape y con Cerrar y comprobar el foco restaurado al control que lo abrió.",
       "review": "codex"
     },
     {
