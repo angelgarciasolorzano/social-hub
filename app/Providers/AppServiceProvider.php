@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Console\Commands\MediaLibraryCleanFoldersCommand;
 use App\Like\Models\Like;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
@@ -37,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
             Like::MORPH_NAME => Like::class,
             Comment::MORPH_NAME => Comment::class,
         ]);
+
+        MediaLibraryCleanFoldersCommand::prohibit($this->app->isProduction());
     }
 
     /**
