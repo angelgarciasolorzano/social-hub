@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Auth\Database\Seeders\TrustedDeviceSeeder;
-use App\Comment\Seeders\CommentSeeder;
+use App\Modules\Comment\Database\Seeders\CommentSeeder;
 use App\Modules\Post\Database\Seeders\PostSeeder;
 use App\User\Database\Seeders\UserSeeder;
 use Illuminate\Database\Seeder;
