@@ -104,7 +104,7 @@ function TrustedDeviceActiveFilterChips({
 
   return (
     <div aria-label="Filtros activos" className="flex flex-wrap items-center gap-2" role="group">
-      <span className="text-sm text-muted-foreground">Filtros activos:</span>
+      <span className="text-sm font-normal text-muted-foreground">Filtros activos:</span>
 
       {activeFilterChips.map((filterChip) => (
         <TrustedDeviceActiveFilterChip
@@ -126,7 +126,7 @@ function TrustedDeviceActiveFilterChip({
   onRemove,
 }: TrustedDeviceActiveFilterChipProps): JSX.Element {
   return (
-    <Badge className="gap-1.5 pr-1" variant="secondary">
+    <Badge className="gap-1.5 pr-1 text-xs font-medium" variant="secondary">
       <span>{label}</span>
       <Button
         aria-label={`Quitar filtro: ${label}`}

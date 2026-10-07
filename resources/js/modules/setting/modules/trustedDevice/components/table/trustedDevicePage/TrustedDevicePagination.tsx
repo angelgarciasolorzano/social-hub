@@ -43,7 +43,7 @@ function TrustedDevicePagination({
 
   return (
     <div className="grid min-w-0 grid-cols-1 items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-      <span className="text-sm text-muted-foreground">
+      <span className="text-sm font-normal text-muted-foreground">
         Página {pagination.current_page} de {pagination.last_page}
       </span>
 
@@ -72,7 +72,7 @@ function TrustedDevicePagination({
       </Pagination>
 
       <div className="flex items-center justify-between gap-3 sm:justify-self-end">
-        <Label className="text-sm whitespace-nowrap" htmlFor="trusted-devices-per-page">
+        <Label className="text-sm font-medium whitespace-nowrap" htmlFor="trusted-devices-per-page">
           Filas por página
         </Label>
 
@@ -82,13 +82,13 @@ function TrustedDevicePagination({
             onPerPageChange(Number.parseInt(value, 10));
           }}
         >
-          <SelectTrigger className="w-20" id="trusted-devices-per-page">
+          <SelectTrigger className="w-20 text-sm font-normal" id="trusted-devices-per-page">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
               {trustedDevicePerPageOptions.map((option) => (
-                <SelectItem key={option} value={String(option)}>
+                <SelectItem className="text-sm font-normal" key={option} value={String(option)}>
                   {String(option)}
                 </SelectItem>
               ))}
