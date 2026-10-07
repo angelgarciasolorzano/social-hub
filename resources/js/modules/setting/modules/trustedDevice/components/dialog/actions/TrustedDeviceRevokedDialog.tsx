@@ -61,12 +61,12 @@ function TrustedDeviceRevokedDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <ShieldOff aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Dispositivo revocado
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en él,
             reactivarlo desde la lista de dispositivos revocados.
           </DialogDescription>
@@ -105,8 +105,10 @@ function RevokedActionsAlert({ onGoToRevokedList }: RevokedActionsAlertProps): J
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
-      <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
-      <AlertDescription className="flex items-center gap-4">
+      <AlertTitle className="text-sm font-medium">
+        ¿Quieres volver a confiar en este dispositivo?
+      </AlertTitle>
+      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
         Reactivarlo desde la lista de revocados restaura la fila con un token nuevo por seguridad.
         <Button onClick={onGoToRevokedList} size="sm" variant="outline">
           Ir a la lista de revocados

@@ -200,7 +200,7 @@ function TrustedDeviceDetailsDialog({
       >
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Eye aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
               {isRevoked ? (
@@ -217,7 +217,7 @@ function TrustedDeviceDetailsDialog({
               )}
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             {isRevoked
               ? "Consulta la informacion del dispositivo que fue revocado de tu cuenta."
               : isExpired
@@ -291,7 +291,7 @@ function DeviceOverviewCard({
 
           <div className="flex flex-col items-start gap-3">
             <div className="flex items-center justify-center gap-2">
-              <h3 className="max-w-90 truncate text-2xl font-semibold">
+              <h3 className="max-w-90 truncate text-xl font-semibold">
                 {valueOrFallback(device.name, "Dispositivo sin nombre")}
               </h3>
 
@@ -358,11 +358,11 @@ function DeviceOverviewCard({
               <CalendarClock />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Fecha de expiración</ItemTitle>
+              <ItemTitle className="text-xs font-medium">Fecha de expiración</ItemTitle>
               <ItemDescription>
-                <span className="text-sm">{formatLongDate(device.expiresAt)}</span>
+                <span className="text-sm font-normal">{formatLongDate(device.expiresAt)}</span>
 
-                <Badge className={cn(badgeVariants.warning, "mt-1.5 block")}>
+                <Badge className={cn(badgeVariants.warning, "mt-1.5 block text-sm font-normal")}>
                   {formatTimeUntil(device.expiresAt)}
                 </Badge>
               </ItemDescription>
@@ -395,23 +395,23 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
       title: "Último acceso",
       meta: (
         <>
-          <span className="block text-xs font-normal">{fromNow(device.lastUsedAt)}</span>
-          <span className="block text-xs font-normal">{formatLongDate(device.lastUsedAt)}</span>
+          <span className="block text-sm font-normal">{fromNow(device.lastUsedAt)}</span>
+          <span className="block text-sm font-normal">{formatLongDate(device.lastUsedAt)}</span>
         </>
       ),
     },
     {
       icon: CalendarPlus,
       title: "Fecha de registro",
-      meta: formatLongDate(device.createdAt),
+      meta: <span className="text-sm font-normal">{formatLongDate(device.createdAt)}</span>,
     },
     {
       icon: CalendarClock,
       title: "Fecha de expiración",
       meta: (
         <>
-          <span className="block text-xs font-normal">{formatLongDate(device.expiresAt)}</span>
-          <Badge className={cn(badgeVariants.warning, "mt-1.5 text-xs font-normal")}>
+          <span className="block text-sm font-normal">{formatLongDate(device.expiresAt)}</span>
+          <Badge className={cn(badgeVariants.warning, "mt-1.5 text-sm font-normal")}>
             {formatTimeUntil(device.expiresAt)}
           </Badge>
         </>
@@ -422,9 +422,9 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   return (
     <Card className="dark:bg-input/20">
       <CardHeader>
-        <h3 className="leading-none font-semibold">Actividad del dispositivo</h3>
+        <h3 className="text-lg leading-none font-semibold">Actividad del dispositivo</h3>
       </CardHeader>
-      <CardContent>
+      <CardContent className="[&_li_h3]:text-xs [&_li_h3]:font-medium">
         <TrustedDeviceActivityTimeline steps={activitySteps} variant="violet" />
       </CardContent>
     </Card>
@@ -480,7 +480,7 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   return (
     <Card className="dark:bg-input/20">
       <CardHeader>
-        <h3 className="leading-none font-semibold">Informacion del dispositivo</h3>
+        <h3 className="text-lg leading-none font-semibold">Informacion del dispositivo</h3>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {items.map((item) => (
