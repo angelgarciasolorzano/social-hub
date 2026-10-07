@@ -45,7 +45,7 @@ The project also ships its own skill at `.claude/skills/social-hub-conventions/S
 
 ## Common commands
 
-All commands run from the repo root.
+All commands run from the repo root. For first-time setup (prerequisites, `composer run setup`, environment variables), see [README.md](README.md); keep it in sync when the setup scripts or required environment variables change.
 
 ### Development
 
