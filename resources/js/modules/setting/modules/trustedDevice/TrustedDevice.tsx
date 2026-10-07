@@ -482,11 +482,13 @@ function TrustedDevicesStatCards(): JSX.Element {
           </div>
 
           <div className="flex w-full min-w-0 flex-col gap-2">
-            <h4 className="truncate text-2xl font-medium">{card.value}</h4>
+            <h4 className="truncate text-xl font-semibold">{card.value}</h4>
 
             <div className="flex flex-col gap-1">
-              <span className="truncate text-sm font-semibold">{card.title}</span>
-              <p className="line-clamp-2 text-sm text-muted-foreground">{card.description}</p>
+              <span className="truncate text-sm font-medium">{card.title}</span>
+              <p className="line-clamp-2 text-xs font-normal text-muted-foreground">
+                {card.description}
+              </p>
             </div>
           </div>
         </div>

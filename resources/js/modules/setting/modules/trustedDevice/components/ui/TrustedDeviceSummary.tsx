@@ -107,8 +107,12 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <h2 className="leading-none font-semibold tracking-tight">Resumen de dispositivos</h2>
-        <CardDescription>Asi esta la seguridad de tus dispositivos</CardDescription>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">
+          Resumen de dispositivos
+        </h2>
+        <CardDescription className="text-xs font-normal">
+          Asi esta la seguridad de tus dispositivos
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 items-center gap-4 pb-0">
         <ChartContainer config={chartConfig} className="aspect-square max-h-45 w-45 shrink-0">
@@ -129,7 +133,7 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
                 position="insideStart"
                 dataKey="label"
                 className="fill-white capitalize mix-blend-luminosity"
-                fontSize={11}
+                fontSize={12}
               />
             </RadialBar>
           </RadialBarChart>
@@ -157,8 +161,8 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
                 </div>
 
                 <div className="flex flex-col leading-tight">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className="text-sm text-muted-foreground">{item.cantidad}</span>
+                  <span className="text-xs">{item.label}</span>
+                  <span className="text-sm font-medium text-muted-foreground">{item.cantidad}</span>
                 </div>
               </li>
             );

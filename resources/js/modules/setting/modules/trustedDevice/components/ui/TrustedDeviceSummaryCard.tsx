@@ -44,13 +44,13 @@ function TrustedDeviceSummaryCard({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-        <h3 className="block truncate font-medium" title={deviceName}>
+        <h3 className="block truncate text-sm font-medium" title={deviceName}>
           {deviceName}
         </h3>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {hasBrowser && (
-            <dl className="flex min-w-0 items-center truncate text-sm text-muted-foreground">
+            <dl className="flex min-w-0 items-center truncate text-xs text-muted-foreground">
               <dt className="sr-only">Sistema operativo y navegador</dt>
               <dd className="m-0 truncate">{browserDetails}</dd>
             </dl>
@@ -61,17 +61,17 @@ function TrustedDeviceSummaryCard({
           )}
 
           {hasLastUsedAt && (
-            <dl className="flex min-w-0 items-center gap-1 truncate text-sm text-muted-foreground">
-              <dt className="shrink-0">Último uso:</dt>
-              <dd className="m-0 truncate">{lastUsedAt}</dd>
+            <dl className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+              <dt className="shrink-0 font-medium">Último uso:</dt>
+              <dd className="m-0 truncate text-sm">{lastUsedAt}</dd>
             </dl>
           )}
         </div>
 
         {hasExpiration && (
-          <dl className="flex items-center gap-1 text-sm text-muted-foreground">
-            <dt>Fecha de expiración:</dt>
-            <dd className="m-0">{expiration}</dd>
+          <dl className="flex items-center gap-1 text-xs text-muted-foreground">
+            <dt className="font-medium">Fecha de expiración:</dt>
+            <dd className="m-0 text-sm">{expiration}</dd>
           </dl>
         )}
       </div>
