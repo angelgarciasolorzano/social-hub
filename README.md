@@ -99,3 +99,52 @@ Todas se definen en `.env`, que se crea a partir de `.env.example`. Las más rel
 - **Base de datos, sesión, cola y caché:** por defecto usan SQLite (`DB_CONNECTION=sqlite`) y el driver `database` para `SESSION_DRIVER`, `QUEUE_CONNECTION` y `CACHE_STORE`, así que no necesitas servicios extra para desarrollo. Los tests usan MySQL (ver `.env.testing`).
 - **Broadcasting:** `BROADCAST_CONNECTION=log` por defecto, por lo que los eventos en tiempo real solo se registran en el log. Para transmitirlos por Reverb cambia a `BROADCAST_CONNECTION=reverb`; las variables `REVERB_*` (servidor) y `VITE_REVERB_*` (cliente) de `.env.example` ya apuntan a `localhost:8080`. Los valores de `REVERB_APP_ID`, `REVERB_APP_KEY` y `REVERB_APP_SECRET` son de ejemplo para desarrollo local: cámbialos si expones el servidor fuera de tu máquina.
 - **Dispositivos de confianza (opcionales):** `SOCIALHUB_AUTH_TRUSTED_DEVICE_COOKIE_LIFETIME_MINUTES` define cuánto dura la cookie de un dispositivo de confianza (por defecto `43200`, es decir 30 días) y `SOCIALHUB_AUTH_TRUSTED_DEVICE_PURGE_AFTER_DAYS` cuántos días se conservan los dispositivos revocados antes de borrarse definitivamente (por defecto `90`). Están vacías en `.env.example`, así que se aplican esos valores por defecto.
+
+## Calidad de código
+
+Antes de abrir un PR, ejecuta los mismos checks que corre el CI (`.github/workflows/backend-code-quality.yml` y `.github/workflows/frontend-code-quality.yml`).
+
+**Backend**
+
+```bash
+vendor/bin/pint --dirty --format agent   # formatea solo los archivos PHP modificados
+composer rector-dry                      # previsualiza las transformaciones de Rector
+composer phpstan                         # análisis estático (nivel máximo)
+composer test                            # suite de Pest
+```
+
+Si `composer rector-dry` propone cambios, aplícalos con `composer rector`.
+
+**Frontend**
+
+```bash
+npm run lint:check     # ESLint (usa `npm run lint` para autocorregir)
+npm run format:check   # Prettier (usa `npm run format` para formatear)
+npm run types          # TypeScript sin emitir archivos
+```
+
+En [docs/development/](docs/development) hay una referencia más completa de comandos para backend y frontend.
+
+## Estructura del proyecto
+
+```text
+app/
+├── Modules/          # módulos migrados a la nueva arquitectura (hoy solo Post)
+├── Auth/ User/ ...   # dominios que siguen en la arquitectura anterior
+├── Providers/        # providers globales de la aplicación
+└── Http/ Events/ ... # archivos globales (middleware, eventos, comandos)
+resources/js/
+├── modules/          # páginas y componentes por dominio (auth, home, post, setting, ...)
+└── shared/           # componentes, hooks y utilidades reutilizables
+docs/
+├── architecture/     # guías de arquitectura de backend y frontend
+├── development/      # referencia de comandos de desarrollo
+└── github/           # plantillas de PR y de revisión
+```
+
+## Convenciones
+
+- **Tests por módulo:** las pruebas específicas de un módulo viven en su carpeta `Tests/` (por ejemplo `app/Modules/Post/Tests/`); `tests/` se reserva para pruebas transversales.
+- **Commits:** siguen [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
+- **Pull requests:** usan la plantilla de [.github/PULL_REQUEST_TEMPLATE/](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md).
+- **Documentación:** si cambias la estructura de módulos o las convenciones, actualiza `CLAUDE.md` en el mismo PR.
