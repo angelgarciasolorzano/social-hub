@@ -9,7 +9,7 @@ import { Eye, Pencil } from "lucide-react";
 import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -116,7 +116,11 @@ function TrustedDeviceRenameDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <TrustedDeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
+          <TrustedDeviceSummaryCard
+            device={device}
+            lastUsedAt={fromNow(device.lastUsedAt)}
+            expiration={formatLongDate(device.expiresAt)}
+          />
 
           <RenameDeviceForm handleSubmit={handleSubmit} errors={errors} setData={setData} />
 

@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { type JSX, useRef } from "react";
 
 import { FaCircle } from "react-icons/fa";
 
@@ -99,6 +99,7 @@ function TrustedDeviceDetailsDialog({
 }: TrustedDeviceDetailsDialogProps): JSX.Element {
   const dialogDevice = useDialog<DialogActionState | null>(null);
   const { appearance } = useAppearance();
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   const isRevoked = device.deletedAt !== null;
   const isExpired = !isRevoked && !device.isActive;
@@ -190,7 +191,11 @@ function TrustedDeviceDetailsDialog({
       }}
     >
       <DialogContent
-        className="max-w-6xl min-w-5xl"
+        className="grid max-h-[calc(100dvh-2rem)] min-h-0 w-[calc(100vw-2rem)] max-w-6xl min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-6xl"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          titleRef.current?.focus();
+        }}
         onCloseAutoFocus={(event) => {
           if (returnFocusTarget?.isConnected) {
             event.preventDefault();
@@ -200,7 +205,11 @@ function TrustedDeviceDetailsDialog({
       >
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <h2
+              className="flex flex-wrap items-center gap-2 pr-8 text-lg font-semibold outline-none"
+              ref={titleRef}
+              tabIndex={-1}
+            >
               <Eye aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
               {isRevoked ? (
@@ -226,30 +235,39 @@ function TrustedDeviceDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <DeviceOverviewCard
-            device={device}
-            isExpired={isExpired}
-            isRevoked={isRevoked}
-            appearance={appearance}
-          />
-
-          <div className="grid grid-cols-[1.8fr_1.7fr_2fr] gap-4">
-            <DeviceActivityCard device={device} />
-
-            <DeviceMetadataCard device={device} />
-
-            <DeviceStatusCallouts
+        <div
+          aria-label="Información del dispositivo"
+          className="min-h-0 overflow-y-auto overscroll-contain pr-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+          role="region"
+          tabIndex={0}
+        >
+          <div className="flex min-w-0 flex-col gap-4 pb-1">
+            <DeviceOverviewCard
+              device={device}
               isExpired={isExpired}
               isRevoked={isRevoked}
-              onReactivate={() => {
-                handleDeviceAction("reactivate", device);
-              }}
+              appearance={appearance}
             />
+
+            <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1.7fr)_minmax(0,2fr)]">
+              <DeviceActivityCard device={device} />
+
+              <DeviceMetadataCard device={device} />
+
+              <div className="md:col-span-2 xl:col-span-1">
+                <DeviceStatusCallouts
+                  isExpired={isExpired}
+                  isRevoked={isRevoked}
+                  onReactivate={() => {
+                    handleDeviceAction("reactivate", device);
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="flex items-center sm:justify-between">
+        <DialogFooter className="flex flex-col gap-2 border-t pt-4 md:flex-row md:items-center md:justify-between">
           {isRevoked ? (
             <RevokedFooterActions device={device} onAction={handleDeviceAction} onClose={onClose} />
           ) : (
@@ -277,21 +295,21 @@ function DeviceOverviewCard({
   appearance,
 }: DeviceOverviewCardProps): JSX.Element {
   return (
-    <Card className="dark:bg-input/20">
-      <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
-        <div className="flex gap-4">
+    <Card className="min-w-0 dark:bg-input/20">
+      <CardContent className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.3fr)_auto_minmax(0,1fr)] md:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
           <div
             className={cn(
               iconColorVariants.violet.iconBgClass,
-              "flex h-20 w-20 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
+              "flex h-20 w-20 shrink-0 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
             )}
           >
             {getDeviceIcon(device, cn("h-12 w-12", iconColorVariants.violet.iconFgClass))}
           </div>
 
-          <div className="flex flex-col items-start gap-3">
-            <div className="flex items-center justify-center gap-2">
-              <h3 className="max-w-90 truncate text-xl font-semibold">
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="max-w-full min-w-0 text-xl font-semibold break-words">
                 {valueOrFallback(device.name, "Dispositivo sin nombre")}
               </h3>
 
@@ -319,7 +337,7 @@ function DeviceOverviewCard({
               )}
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 {getDeviceIcon(device, "h-4 w-4")}
                 <span>{valueOrFallback(device.osName, "Desconocido")}</span>
@@ -350,9 +368,9 @@ function DeviceOverviewCard({
           </div>
         </div>
 
-        <Separator orientation="vertical" />
+        <Separator className="hidden md:block" orientation="vertical" />
 
-        <div>
+        <div className="min-w-0">
           <Item>
             <ItemMedia>
               <CalendarClock />
@@ -420,7 +438,7 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="min-w-0 dark:bg-input/20">
       <CardHeader>
         <h3 className="text-lg leading-none font-semibold">Actividad del dispositivo</h3>
       </CardHeader>
@@ -478,14 +496,14 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="min-w-0 dark:bg-input/20">
       <CardHeader>
         <h3 className="text-lg leading-none font-semibold">Informacion del dispositivo</h3>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex min-w-0 flex-col gap-3">
         {items.map((item) => (
           <div
-            className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/30"
+            className="flex min-w-0 gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/30 [&_dd]:break-words [&_dl]:min-w-0 [&_dl]:flex-1"
             key={item.key}
           >
             <TrustedDeviceMetadataItem
@@ -614,9 +632,9 @@ interface FooterActionsProps {
 function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps): JSX.Element {
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("renameDevice", device);
           }}
@@ -628,7 +646,7 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
         </Button>
 
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("renewTrust", device);
           }}
@@ -640,13 +658,18 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button className="cursor-pointer" onClick={onClose} type="button" variant="outline">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+        <Button
+          className="w-full cursor-pointer md:w-auto"
+          onClick={onClose}
+          type="button"
+          variant="outline"
+        >
           Cerrar
         </Button>
 
         <Button
-          className={buttonVariants.destructive}
+          className={cn(buttonVariants.destructive, "w-full md:w-auto")}
           onClick={() => {
             onAction("revokeDevice", device);
           }}
@@ -663,9 +686,9 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
 function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps): JSX.Element {
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("reactivate", device);
           }}
@@ -677,7 +700,7 @@ function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps)
         </Button>
 
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("forceDestroy", device);
           }}
@@ -689,8 +712,13 @@ function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps)
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button className="cursor-pointer" onClick={onClose} type="button" variant="outline">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+        <Button
+          className="w-full cursor-pointer md:w-auto"
+          onClick={onClose}
+          type="button"
+          variant="outline"
+        >
           Cerrar
         </Button>
       </div>

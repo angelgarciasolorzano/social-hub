@@ -71,7 +71,7 @@ function TrustedDeviceSummaryCard({
         {hasExpiration && (
           <dl className="flex items-center gap-1 text-xs text-muted-foreground">
             <dt className="font-medium">Fecha de expiración:</dt>
-            <dd className="m-0 text-sm">{expiration}</dd>
+            <dd className="m-0">{expiration}</dd>
           </dl>
         )}
       </div>

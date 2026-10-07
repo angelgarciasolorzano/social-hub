@@ -2,11 +2,11 @@
 
 ## Overview
 
-Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. Solo se cambian tamaño y peso de fuente.
+Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. También incluye una corrección responsive para que el diálogo de detalles de TrustedDevice mantenga visibles el header y footer mientras desplaza su body.
 
 ## Scope Challenge
 
-Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.
+Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. El diálogo de detalles de TrustedDevice requiere un ajuste responsive local adicional: ancho dentro del viewport, tarjetas apiladas en móvil y desplazamiento solo en el body. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.
 
 ## Prerequisites
 
@@ -16,6 +16,7 @@ Los módulos ya existen y la necesidad es completar el trabajo semántico/respon
 - La ampliación solo cambia utilities de tamaño y peso de fuente; conservar spacing, line-height, tracking, colores, copy, semántica, responsive behavior y contratos.
 - Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend y QA visual en desktop y móvil.
 - El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios.
+- El body del diálogo de detalles de TrustedDevice es la única región desplazable; header y acciones del footer permanecen visibles en móvil.
 
 ## Non-Goals
 
@@ -37,6 +38,7 @@ Los módulos ya existen y la necesidad es completar el trabajo semántico/respon
 - Escala de referencia: página 20/24 px con peso 600; sección 18 px/600; tarjeta 14 px/500; cuerpo 14 px/400; auxiliar compacto 12 px/400–500; métrica 20 px/600.
 - No reducir texto visible de apoyo o metadatos por debajo de 12 px; conservar OTP y códigos en su familia actual con tamaño mínimo de 18 px y 14 px respectivamente.
 - El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking.
+- El ajuste responsive queda limitado a TrustedDeviceDetailsDialog; no requiere cambiar la primitiva compartida Dialog ni otros diálogos.
 
 ## Existing Code Leverage
 
@@ -1055,10 +1057,10 @@ Repetir los gates frontend y revisar en navegador Profile como referencia, adem�
 **Effort:** M
 **Agent:** react-vite-tailwind-engineer
 **Priority:** P0
-**Depends on:** TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040
+**Depends on:** TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-042
 **Acceptance Criteria:**
 - Pasan format:check, lint:check, types, build y build:ssr después de todos los slices tipográficos.
-- La comparación en navegador a 1440×834 y 390×844 confirma la jerarquía acordada en Profile, las páginas, tablas y diálogos; no aparecen textos ilegibles, desbordados o menores de 12 px.
+- La comparación en navegador a 1440×834 y 390×844 confirma la jerarquía acordada en Profile, páginas, tablas y diálogos; el detalle de TrustedDevice mantiene header/footer visibles, desplaza solo el body y no desborda horizontalmente.
 - Se recorren los componentes visibles incluidos en TASK-023 a TASK-040; los archivos sin texto visible — `resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx` y los tres skeletons de `resources/js/modules/setting/modules/trustedDevice/components/skeleton/overview/` — quedan auditados y fuera de edición. No cambian color, copy, spacing, line-height, tracking, semántica o comportamiento.
 
 **writeScope:**
@@ -1074,6 +1076,35 @@ rtk npm run build:ssr
 Revisión manual de tipografía en navegador: Profile, TwoFactor y TrustedDevice a 1440×834 y 390×844.
 ```
 
+### TASK-042: Hacer desplazable el body del diálogo de detalles móvil
+
+Hacer que TrustedDeviceDetailsDialog quepa en el viewport estrecho, apilar sus tarjetas y limitar el scroll al body para mantener header y footer disponibles, sin estirar el diálogo cuando el contenido cabe.
+
+**Phase:** Correcciones de QA
+**Type:** refactor
+**Effort:** M
+**Agent:** react-vite-tailwind-engineer
+**Priority:** P1
+**Depends on:** TASK-021
+
+**Acceptance Criteria:**
+
+- A 390 px el diálogo cabe dentro del viewport y sus tarjetas se apilan sin scroll horizontal.
+- Cuando el contenido supera la altura disponible, el scroll queda limitado al body mientras el encabezado y las acciones del footer permanecen visibles.
+- Cuando el contenido cabe en el viewport, el diálogo usa su altura natural y mantiene el footer cerca de las tarjetas.
+- El body no muestra el contorno nativo al abrir el diálogo y mantiene un indicador de foco visible al navegarlo con teclado.
+- En escritorio conserva su distribución de tres columnas; el cierre, las acciones y el ciclo de foco siguen funcionando.
+
+**writeScope:**
+
+- resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx — Ajustar ancho y altura máxima del diálogo, las cuadrículas y el scroll vertical independiente del body.
+
+**validateCommand:**
+
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx
+QA navegador a 1440×834 y 390×844: confirmar ausencia de desbordamiento horizontal y scroll solo en el body con header/footer visibles.
+
 ## Failure Modes
 
 - DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.
@@ -1084,6 +1115,7 @@ Revisión manual de tipografía en navegador: Profile, TwoFactor y TrustedDevice
 - Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos.
 - Cuadrículas con columnas fijas o diálogos sin límite de altura pueden desbordar el viewport móvil; comprobar ancho y scroll interno.
 - Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado.
+- Un header o footer persistente puede consumir toda la altura de un viewport bajo; limitar el scroll al body sin recortar controles y comprobar el cierre por teclado.
 - Reducir todos los textos auxiliares por igual puede esconder información importante; reservar 12 px a ayuda compacta/metadatos y conservar 14 px para lectura general.
 - Métricas y nombres largos pueden perder legibilidad al reducirlos; revisar valores de varios dígitos, truncado y wrapping en móvil.
 - Cambiar la familia tipográfica actual o reducir demasiado OTP, códigos de respaldo y claves copiables puede dificultar su lectura; conservar la fuente existente y los mínimos de tamaño.
@@ -1091,7 +1123,7 @@ Revisión manual de tipografía en navegador: Profile, TwoFactor y TrustedDevice
 
 ## Ship Cut
 
-SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.
+SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021, TASK-042 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.
 
 ## Test Coverage Map
 
@@ -1101,13 +1133,14 @@ SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-0
 - **Trabajo adyacente PreferredLocale:** Prueba del módulo AccountSettings para el casteo del DTO y locales inválidos; Pint, PHPStan, Rector y prueba feature del slice.
 - **Alineación tipográfica:** Prettier --check y ESLint por writeScope; comparación manual con Profile en páginas, tablas, estados, tarjetas y todos los diálogos a 1440×834 y 390×844.
 - **Excepciones legibles:** Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px.
+- **Desbordamiento móvil del diálogo de detalles:** En 390×844, confirmar que el diálogo cabe en el viewport, las tarjetas se apilan y el scroll se limita al body sin ocultar header/footer; en escritorio mantener las tres columnas.
 
 ## Execution Summary
 
 - Modo: **EXPANSION**
 - Ejecución: **Por fases**
 - Revisión por defecto: **codex**
-- Tareas SOC-36: **40** (37 implementación y auditoría/QA); trabajo adyacente: **1**.
+- Tareas SOC-36: **41** (38 implementación y auditoría/QA); trabajo adyacente: **1**.
 - Fases: **8**.
 - Critical path: TASK-004 → TASK-018 → TASK-016 → TASK-019 → TASK-022 → TASK-029 → TASK-041.
 
@@ -1131,7 +1164,7 @@ Gates frontend y revisión manual que registra hallazgos de teclado y móvil. Ta
 
 ### PHASE-5: Correcciones de QA
 
-Layouts móviles sin desbordamiento y diálogos TrustedDevice que restauran el foco. Tareas: TASK-019, TASK-020, TASK-021.
+Layouts móviles sin desbordamiento, diálogos TrustedDevice con foco restaurado y body desplazable. Tareas: TASK-019, TASK-020, TASK-021, TASK-042.
 
 ### PHASE-6: Verificación final
 
@@ -1145,7 +1178,7 @@ Ajustar tamaño y peso de todos los textos visibles de TwoFactor y TrustedDevice
 
 Confirmar en navegador la jerarquía tipográfica en desktop/móvil y repetir los gates frontend. Tarea: TASK-041.
 
-Las tareas TASK-023 a TASK-040 parten después de TASK-022 y editan hasta tres archivos por slice; sus writeScope son disjuntos y pueden avanzar en paralelo. TASK-041 depende de todos los slices tipográficos y cierra con QA visual en desktop/móvil.
+Las tareas TASK-023 a TASK-040 parten después de TASK-022 y editan hasta tres archivos por slice; sus writeScope son disjuntos y pueden avanzar en paralelo. TASK-042 depende de TASK-021; TASK-041 integra todos los slices tipográficos y TASK-042 antes de cerrar con QA visual en desktop/móvil.
 
 ```mermaid
 flowchart TD
@@ -1156,6 +1189,7 @@ flowchart TD
   TASK-019 --> TASK-022
   TASK-020 --> TASK-022
   TASK-021 --> TASK-022
+  TASK-021 --> TASK-042
   TASK-001 --> TASK-016
   TASK-002 --> TASK-016
   TASK-003 --> TASK-016
@@ -1208,6 +1242,7 @@ flowchart TD
   TASK-038 --> TASK-041
   TASK-039 --> TASK-041
   TASK-040 --> TASK-041
+  TASK-042 --> TASK-041
   TASK-017["TASK-017: trabajo adyacente e independiente"]
 ```
 

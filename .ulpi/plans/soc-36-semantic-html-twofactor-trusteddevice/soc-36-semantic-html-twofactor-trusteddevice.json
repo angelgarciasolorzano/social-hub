@@ -19,7 +19,8 @@
     "Las métricas destacadas pueden usar 20 px/600; los datos y metadatos usan 14 px y 12 px según su función. OTP y códigos conservan su familia tipográfica actual y no bajan de 14 px (18 px para OTP).",
     "La ampliación solo cambia utilities de tamaño y peso de fuente; conservar spacing, line-height, tracking, colores, copy, semántica, responsive behavior y contratos.",
     "Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend y QA visual en desktop y móvil.",
-    "El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios."
+    "El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios.",
+    "El diálogo de detalles de TrustedDevice debe adaptarse al viewport móvil: ancho fluido, columnas apiladas y scroll limitado al body para conservar visibles el encabezado y las acciones."
   ],
   "nonGoals": [
     "Cambiar rutas, métodos HTTP, autorización, persistencia, validación backend o contratos Inertia.",
@@ -38,7 +39,8 @@
     "Limitar la afinación visual a los componentes de alcance; no alterar estilos globales ni estructura funcional.",
     "Escala de referencia: página 20/24 px con peso 600; sección 18 px/600; tarjeta 14 px/500; cuerpo 14 px/400; auxiliar compacto 12 px/400–500; métrica 20 px/600.",
     "No reducir texto visible de apoyo o metadatos por debajo de 12 px; conservar OTP y códigos en su familia actual con tamaño mínimo de 18 px y 14 px respectivamente.",
-    "El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking."
+    "El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking.",
+    "En TrustedDeviceDetailsDialog, el header y footer permanecen fuera del área desplazable; solo el body desplaza verticalmente y su contenido no causa desbordamiento horizontal a 390 px."
   ],
   "existingCodeLeverage": [
     {
@@ -118,9 +120,10 @@
       "taskIds": [
         "TASK-019",
         "TASK-020",
-        "TASK-021"
+        "TASK-021",
+        "TASK-042"
       ],
-      "outcome": "Layouts móviles sin desbordamiento y diálogos TrustedDevice que restauran el foco."
+      "outcome": "Layouts móviles sin desbordamiento, diálogos TrustedDevice con foco restaurado y body desplazable."
     },
     {
       "id": "PHASE-6",
@@ -1660,17 +1663,50 @@
         "TASK-037",
         "TASK-038",
         "TASK-039",
-        "TASK-040"
+        "TASK-040",
+        "TASK-042"
       ],
       "acceptanceCriteria": [
         "Pasan format:check, lint:check, types, build y build:ssr después de todos los slices tipográficos.",
-        "La comparación en navegador a 1440×834 y 390×844 confirma la jerarquía acordada en Profile, las páginas, tablas y diálogos; no aparecen textos ilegibles, desbordados o menores de 12 px.",
+        "La comparación en navegador a 1440×834 y 390×844 confirma la jerarquía acordada en Profile, páginas, tablas y diálogos; el detalle de TrustedDevice mantiene header/footer visibles, desplaza solo el body y no desborda horizontalmente.",
         "Se recorren los componentes visibles incluidos en TASK-023 a TASK-040; los archivos sin texto visible — `resources/js/modules/setting/modules/twoFactor/TwoFactor.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx`, `resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx` y los tres skeletons de `resources/js/modules/setting/modules/trustedDevice/components/skeleton/overview/` — quedan auditados y fuera de edición. No cambian color, copy, spacing, line-height, tracking, semántica o comportamiento."
       ],
       "filesToModify": [],
       "filesToCreate": [],
       "writeScope": [],
       "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr\nRevisión manual de tipografía en navegador: Profile, TwoFactor y TrustedDevice a 1440×834 y 390×844.",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-042",
+      "title": "Hacer desplazable el body del diálogo de detalles móvil",
+      "phase": "Correcciones de QA",
+  "description": "Hacer que TrustedDeviceDetailsDialog quepa en el viewport estrecho, apilar sus tarjetas y limitar el scroll a su body para mantener header y footer disponibles, sin estirar el diálogo cuando el contenido cabe.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+    "A 390 px el diálogo cabe dentro del viewport y sus tarjetas se apilan sin scroll horizontal.",
+    "Cuando el contenido supera la altura disponible, el scroll queda limitado al body mientras el encabezado y las acciones del footer permanecen visibles.",
+    "Cuando el contenido cabe en el viewport, el diálogo usa su altura natural y mantiene el footer cerca de las tarjetas.",
+    "El body no muestra el contorno nativo al abrir el diálogo y mantiene un indicador de foco visible al navegarlo con teclado.",
+    "En escritorio conserva su distribución de tres columnas; el cierre, las acciones y el ciclo de foco siguen funcionando."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+      "role": "Ajustar el ancho y la altura máxima del diálogo, hacer responsivas las cuadrículas y dar scroll vertical independiente al body."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx\nQA navegador a 1440×834 y 390×844: confirmar ausencia de desbordamiento horizontal y scroll solo en el body con header/footer visibles.",
       "review": "codex"
     }
   ],
@@ -1797,7 +1833,11 @@
       "TASK-037",
       "TASK-038",
       "TASK-039",
-      "TASK-040"
+      "TASK-040",
+      "TASK-042"
+    ],
+    "TASK-042": [
+      "TASK-021"
     ]
   },
   "criticalPath": {
@@ -1821,12 +1861,13 @@
     "Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos.",
     "Cuadrículas con columnas fijas o diálogos sin límite de altura pueden desbordar el viewport móvil; comprobar ancho y scroll interno.",
     "Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado.",
+    "Un header o footer persistente puede consumir toda la altura en un viewport bajo; limitar el scroll al body sin recortar controles y comprobar el cierre por teclado.",
     "Reducir todos los textos auxiliares por igual puede esconder información importante; reservar 12 px a ayuda compacta/metadatos y conservar 14 px para lectura general.",
     "Métricas y nombres largos pueden perder legibilidad al reducirlos; revisar valores de varios dígitos, truncado y wrapping en móvil.",
     "Cambiar la familia tipográfica actual o reducir demasiado OTP, códigos de respaldo y claves copiables puede dificultar su lectura; conservar la fuente existente y los mínimos de tamaño.",
     "Clases tipográficas de shadcn heredadas pueden sobrescribirse localmente; cambiar solo el call site necesario y no la primitiva compartida."
   ],
-  "shipCut": "SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.",
+  "shipCut": "SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021, TASK-042 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.",
   "testCoverageMap": [
     {
       "scope": "Cada slice de implementación",
@@ -1851,11 +1892,15 @@
     {
       "scope": "Excepciones legibles",
       "coverage": "Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px."
+    },
+    {
+      "scope": "Desbordamiento móvil del diálogo de detalles",
+      "coverage": "En 390×844, confirmar que el diálogo cabe en el viewport, las tarjetas se apilan y el scroll se limita al body sin ocultar header/footer; en escritorio mantener las tres columnas."
     }
   ],
   "executionSummary": {
-    "taskCount": 40,
-    "implementationTaskCount": 37,
+    "taskCount": 41,
+    "implementationTaskCount": 38,
     "phaseCount": 8,
     "dagLayers": [
       {
@@ -1901,7 +1946,8 @@
       {
         "layer": 5,
         "taskIds": [
-          "TASK-022"
+          "TASK-022",
+          "TASK-042"
         ]
       },
       {
@@ -1935,7 +1981,7 @@
       }
     ],
     "reviewDefault": "codex",
-    "linearTaskCount": 40,
+    "linearTaskCount": 41,
     "adjacentTaskCount": 1
   },
   "adjacentWork": {
