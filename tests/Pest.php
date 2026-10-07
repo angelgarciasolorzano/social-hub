@@ -6,6 +6,7 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -31,6 +32,7 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in(
         'Feature',
+        __DIR__.'/../app/Modules/Comment/Tests',
         __DIR__.'/../app/Modules/Post/Tests',
         __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests',
         __DIR__.'/../app/Auth/Modules/Password/Tests',
@@ -100,6 +102,25 @@ function createPost(?User $user = null, array $attributes = []): Post
 {
     /** @var Factory<Post> $factory */
     $factory = Post::factory();
+
+    if ($user instanceof User) {
+        $factory = $factory->for($user);
+    }
+
+    return $factory->createOne($attributes);
+}
+
+/**
+ * Create a persisted Comment, same #[UseFactory] workaround as createUser().
+ * Pass `$user` to attach it to an existing author, or omit it to let the
+ * factory create its own. By default it comments on a new Post.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createComment(?User $user = null, array $attributes = []): Comment
+{
+    /** @var Factory<Comment> $factory */
+    $factory = Comment::factory();
 
     if ($user instanceof User) {
         $factory = $factory->for($user);
