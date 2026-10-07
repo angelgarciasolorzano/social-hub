@@ -1252,7 +1252,7 @@
       "id": "TASK-031",
       "title": "Normalizar etiquetas y metadatos de dispositivos",
       "phase": "Alineación tipográfica",
-      "description": "Aplicar escala uniforme a los rótulos, valores y descripciones cortas que se comparten entre las vistas de actividad y los dispositivos.",
+      "description": "Aplicar escala uniforme a los rótulos, valores y descripciones cortas de metadatos de dispositivos y a los valores secundarios compuestos del timeline.",
       "priority": "P2",
       "type": "refactor",
       "effort": "S",
@@ -1267,7 +1267,8 @@
       ],
       "filesToModify": [
         "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx",
-        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx"
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx"
       ],
       "filesToCreate": [],
       "writeScope": [
@@ -1278,9 +1279,13 @@
         {
           "path": "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
           "role": "Título y metadato de cada evento del timeline."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+          "role": "Valores secundarios inline que alimentan los metadatos del timeline."
         }
       ],
-      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx",
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
       "review": "codex"
     },
     {

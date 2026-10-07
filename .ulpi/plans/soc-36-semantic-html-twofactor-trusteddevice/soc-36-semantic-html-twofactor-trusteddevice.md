@@ -791,7 +791,7 @@ rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/compon
 
 ### TASK-031: Normalizar etiquetas y metadatos de dispositivos
 
-Aplicar escala uniforme a los rótulos, valores y descripciones cortas que se comparten entre las vistas de actividad y los dispositivos.
+Aplicar escala uniforme a los rótulos, valores y descripciones cortas de metadatos de dispositivos y a los valores secundarios compuestos del timeline.
 
 **Phase:** Alineación tipográfica
 **Type:** refactor
@@ -807,11 +807,12 @@ Aplicar escala uniforme a los rótulos, valores y descripciones cortas que se co
 **writeScope:**
 - `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx` — Etiqueta, valor y descripción de un metadato.
 - `resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx` — Título y metadato de cada evento del timeline.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx` — Valores secundarios inline que alimentan los metadatos del timeline.
 
 **validateCommand:**
 ```sh
-rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx
-rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceActivityTimeline.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx
 ```
 
 ### TASK-032: Alinear tabla de dispositivos y barra de herramientas

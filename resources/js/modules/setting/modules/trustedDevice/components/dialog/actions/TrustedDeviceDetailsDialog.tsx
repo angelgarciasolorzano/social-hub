@@ -395,8 +395,8 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
       title: "Último acceso",
       meta: (
         <>
-          <span className="block text-sm">{fromNow(device.lastUsedAt)}</span>
-          <span className="block text-sm">{formatLongDate(device.lastUsedAt)}</span>
+          <span className="block text-xs font-normal">{fromNow(device.lastUsedAt)}</span>
+          <span className="block text-xs font-normal">{formatLongDate(device.lastUsedAt)}</span>
         </>
       ),
     },
@@ -410,8 +410,8 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
       title: "Fecha de expiración",
       meta: (
         <>
-          <span className="block text-sm">{formatLongDate(device.expiresAt)}</span>
-          <Badge className={cn(badgeVariants.warning, "mt-1.5")}>
+          <span className="block text-xs font-normal">{formatLongDate(device.expiresAt)}</span>
+          <Badge className={cn(badgeVariants.warning, "mt-1.5 text-xs font-normal")}>
             {formatTimeUntil(device.expiresAt)}
           </Badge>
         </>

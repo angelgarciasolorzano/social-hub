@@ -40,19 +40,25 @@ function TrustedDeviceMetadataItem({
       </div>
 
       <dl className="flex flex-col gap-1">
-        <dt className="text-sm font-medium">{title}</dt>
+        <dt className="text-xs font-medium">{title}</dt>
 
         {showBadge && badgePosition === "before" && (
           <dd className="m-0">
-            <Badge className={cn(badgeVariants.success, "mt-1.5 block")}>{badge}</Badge>
+            <Badge className={cn(badgeVariants.success, "mt-1.5 block text-xs font-normal")}>
+              {badge}
+            </Badge>
           </dd>
         )}
 
-        {hasDescription && <dd className="m-0 text-sm text-muted-foreground">{description}</dd>}
+        {hasDescription && (
+          <dd className="m-0 text-sm font-normal text-muted-foreground">{description}</dd>
+        )}
 
         {showBadge && badgePosition === "after" && (
           <dd className="m-0">
-            <Badge className={cn(badgeVariants.success, "mt-1.5 block")}>{badge}</Badge>
+            <Badge className={cn(badgeVariants.success, "mt-1.5 block text-xs font-normal")}>
+              {badge}
+            </Badge>
           </dd>
         )}
       </dl>

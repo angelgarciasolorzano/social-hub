@@ -67,7 +67,7 @@ function TrustedDeviceActivityTimeline({
               <h3 className="text-sm font-medium">{step.title}</h3>
 
               {step.meta !== undefined && (
-                <div className="text-sm text-muted-foreground">{step.meta}</div>
+                <div className="text-xs font-normal text-muted-foreground">{step.meta}</div>
               )}
             </div>
           </li>
