@@ -91,13 +91,13 @@ export default function TrustedDeviceActivityDialog({
     >
       <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-lg font-semibold">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
               Actividad reciente de dispositivos
             </div>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Historial de eventos relacionados con tus dispositivos de confianza.
           </DialogDescription>
         </DialogHeader>
@@ -278,7 +278,7 @@ function TrustedDeviceActivityDialogBody({
           <div className="flex min-w-0 items-center gap-2">
             <Info className="h-5 w-5 shrink-0 text-muted-foreground" />
 
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground">
               {initialActivity.total === 0
                 ? "Sin eventos"
                 : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}

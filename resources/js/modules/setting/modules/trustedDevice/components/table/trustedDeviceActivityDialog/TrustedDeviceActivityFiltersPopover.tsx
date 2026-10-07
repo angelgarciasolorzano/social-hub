@@ -84,7 +84,7 @@ export default function TrustedDeviceActivityFiltersPopover(
       <PopoverContent align="end" className="w-72 p-3">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Filtros</h4>
+            <h4 className="text-sm font-medium">Filtros</h4>
 
             <Button
               className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"

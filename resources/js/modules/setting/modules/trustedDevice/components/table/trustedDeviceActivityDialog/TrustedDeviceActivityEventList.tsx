@@ -92,14 +92,16 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
         </div>
 
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold">{event.deviceLabel ?? "Un dispositivo"}</h3>
+          <h3 className="text-sm font-medium">{event.deviceLabel ?? "Un dispositivo"}</h3>
 
-          <p className="text-sm text-muted-foreground">{event.actionLabel}</p>
+          <p className="text-sm font-normal text-muted-foreground">{event.actionLabel}</p>
 
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
               <MapPin aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">IP: {event.ip ?? "No disponible"}</p>
+              <p className="text-xs font-normal text-muted-foreground">
+                IP: {event.ip ?? "No disponible"}
+              </p>
             </div>
 
             <FaCircle aria-hidden="true" className="h-1 w-1" />
@@ -110,7 +112,7 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
                 "h-3 w-3 text-muted-foreground",
               )}
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-normal text-muted-foreground">
                 {event.deviceOsName ?? "Sistema operativo desconocido"}
               </p>
             </div>
@@ -120,14 +122,14 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
 
       <div className="flex flex-col gap-2 text-end">
         <time
-          className="shrink-0 text-sm font-medium text-muted-foreground"
+          className="shrink-0 text-xs font-normal text-muted-foreground"
           dateTime={event.createdAt ?? undefined}
         >
           {fromNow(event.createdAt)}
         </time>
 
         <time
-          className="shrink-0 text-sm text-muted-foreground"
+          className="shrink-0 text-xs font-normal text-muted-foreground"
           dateTime={event.createdAt ?? undefined}
         >
           {formatLongDate(event.createdAt)}
