@@ -1,4 +1,4 @@
-import { type JSX, useRef } from "react";
+import { type JSX } from "react";
 
 import { usePage } from "@inertiajs/react";
 
@@ -17,6 +17,7 @@ import {
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -71,7 +72,7 @@ function TrustedDeviceSummaryDialog({
   open,
   onClose,
 }: TrustedDeviceSummaryDialogProps): JSX.Element {
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogFocusRestoration = useDialogFocusRestoration();
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
   const recommendationsDialog = useDialog<DialogClosingState | null>(null);
@@ -87,24 +88,7 @@ function TrustedDeviceSummaryDialog({
       >
         <DialogContent
           className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
-          onOpenAutoFocus={() => {
-            const activeElement = document.activeElement;
-
-            returnFocusRef.current =
-              activeElement instanceof HTMLElement && activeElement !== document.body
-                ? activeElement
-                : null;
-          }}
-          onCloseAutoFocus={(event) => {
-            const focusTarget = returnFocusRef.current;
-
-            if (focusTarget?.isConnected) {
-              event.preventDefault();
-              focusTarget.focus();
-            }
-
-            returnFocusRef.current = null;
-          }}
+          {...dialogFocusRestoration}
         >
           <DialogHeader>
             <DialogTitle asChild>

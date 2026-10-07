@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useRef, useSyncExternalStore } from "react";
+import { Fragment, useSyncExternalStore } from "react";
 
 import { detectPlatform, formatForDisplay } from "@tanstack/react-hotkeys";
 import { Keyboard } from "lucide-react";
@@ -8,6 +8,7 @@ import {
   trustedDeviceGlobalShortcuts,
   trustedDeviceRowActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -40,7 +41,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
   onClose,
   open,
 }: TrustedDeviceKeyboardShortcutsDialogProps): JSX.Element {
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogFocusRestoration = useDialogFocusRestoration();
 
   const platform = useSyncExternalStore(
     subscribeToPlatformChanges,
@@ -100,28 +101,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent
-        className="sm:max-w-2xl"
-        onOpenAutoFocus={() => {
-          const activeElement = document.activeElement;
-
-          returnFocusRef.current =
-            activeElement instanceof HTMLElement && activeElement !== document.body
-              ? activeElement
-              : null;
-        }}
-        onCloseAutoFocus={(event) => {
-          const focusTarget = returnFocusRef.current;
-
-          if (focusTarget?.isConnected) {
-            event.preventDefault();
-            focusTarget.focus();
-          }
-
-          returnFocusRef.current = null;
-        }}
-        showCloseButton={false}
-      >
+      <DialogContent className="sm:max-w-2xl" showCloseButton={false} {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
