@@ -2,7 +2,7 @@ import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
-import { store } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
+import { store } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
 
 import { InputError } from "@/shared/components/form";
 import { Input } from "@/shared/components/shadcn/ui/input";

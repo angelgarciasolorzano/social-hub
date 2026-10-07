@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { index as commentIndex } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
+import { index as commentIndex } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
 
 import { hasPaginatedKey } from "@/shared/lib";
 
