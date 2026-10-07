@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import { index as commentIndex } from "@/shared/wayfinder/actions/App/Comment/Controllers/CommentController";
+import { index as commentIndex } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
 
 import { hasPaginatedKey } from "@/shared/lib";
 
@@ -41,7 +41,7 @@ export function usePaginatedComments(
 
     setTimeout(() => {
       router.get(
-        commentIndex.url({ commentableType, commentableId }),
+        commentIndex.url({ commentType: commentableType, commentableId }),
         {},
         {
           only: ["flash"],

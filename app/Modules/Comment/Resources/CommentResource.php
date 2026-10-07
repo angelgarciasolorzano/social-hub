@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Comment\Resources;
+namespace App\Modules\Comment\Resources;
 
-use App\Comment\Models\Comment;
+use App\Modules\Comment\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Override;

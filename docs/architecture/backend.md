@@ -13,7 +13,7 @@ Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\
 | Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/` |
 | Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                             |
 
-**Estado de la migración:** la arquitectura es incremental. Hoy solo **Post** vive en `app/Modules/Post/`. Los demás dominios (`Auth`, `Comment`, `Friendship`, `Home`, `Like`, `MediaLibrary`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+**Estado de la migración:** la arquitectura es incremental. Hoy **Post** y **Comment** viven en `app/Modules/Post/` y `app/Modules/Comment/`. Los demás dominios (`Auth`, `Friendship`, `Home`, `Like`, `MediaLibrary`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
 
 **Frontend y Wayfinder:** el namespace del controller determina la ruta de las acciones generadas. Un módulo migrado se importa desde `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; los de la arquitectura vieja, desde `@/shared/wayfinder/actions/App/<Domain>/…`. El directorio está en `.gitignore`: tras mover un módulo, regenera con `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` y actualiza los imports.
 
@@ -31,7 +31,7 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 | Data                   | `{Module}{Concept}Data`        | `TrustedDeviceFiltersData`              |
 | Collection             | `{Module}Collection`           | `CommentCollection`                     |
 | Seeder                 | `{Module}Seeder`               | `PostSeeder`                            |
-| Enum                   | `{Module}{Concept}`            | `CommentableType`, `FriendshipStatus`   |
+| Enum                   | `{Module}{Concept}`            | `CommentType`, `FriendshipStatus`       |
 | Service Provider       | `{Module}ServiceProvider`      | `PostServiceProvider`                   |
 | Route Service Provider | `{Module}RouteServiceProvider` | `PostRouteServiceProvider`              |
 | Policy                 | `{Module}Policy`               | `PostPolicy`                            |
@@ -183,7 +183,7 @@ app/<Module>/Modules/<Feature>/
 
 Las pruebas nuevas se guardan junto al módulo dueño de la funcionalidad:
 
-- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (hoy Post).
+- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (hoy Post y Comment).
 - Módulo de dominio en la arquitectura vieja: `app/<Domain>/Tests/`.
 - Funcionalidad de un submódulo (arquitectura vieja): `app/<Domain>/Modules/<Feature>/Tests/`.
 - Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes que aún no se hayan migrado; no agregues allí nuevas pruebas específicas de un módulo.
@@ -198,9 +198,10 @@ Dentro de cada `Tests/`, agrupa por responsabilidad:
 - `Queries/` para índices, listados y filtros.
 - `Requests/` para reglas y mensajes de validación de FormRequests.
 - `Resources/` para la serialización de los Resources.
+- `Security/` para regresiones de seguridad y robustez: rate limiting, normalización de entrada, límites de anidación y conteo de consultas.
 
 Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
-Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente ya están registrados `app/Modules/Post/Tests/` y los de Auth/User (`app/Auth/Modules/*/Tests/`, `app/User/Modules/*/Tests/`).
+Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente ya están registrados `app/Modules/Post/Tests/`, `app/Modules/Comment/Tests/` y los de Auth/User (`app/Auth/Modules/*/Tests/`, `app/User/Modules/*/Tests/`).
 
 ## 5. Cómo crear un módulo nuevo
 
@@ -241,6 +242,10 @@ Sigue esta checklist en orden:
 - Models con `HasFactory` declaran el genérico: `/** @use HasFactory<{Module}Factory> */`
 - Constantes del modelo (MORPH_NAME, MORPH_COLUMN) llevan docblock descriptivo
 - Si el módulo es polimórfico, registra el morph en `App\Providers\AppServiceProvider::boot()` (`Relation::enforceMorphMap`)
+- El nombre del placeholder de una ruta debe coincidir con el parámetro tipado del controller cuando se usa binding implícito de enum o modelo (`{commentType}` ↔ `CommentType $commentType`); si no coinciden, Laravel resuelve la clase desde el contenedor y la ruta responde 500. Rector renombra los parámetros según su tipo, así que corrige la ruta y no el parámetro.
+- Las rutas que escriben datos llevan `throttle`. Cuando un módulo tiene varias rutas con throttle, usa el tercer argumento como prefijo (`throttle:6,1,comments.store`): Laravel firma los throttles sin nombre solo por usuario, y sin prefijo todas las rutas compartirían el mismo cupo.
+- Normaliza la entrada de texto libre en `prepareForValidation()` del FormRequest (por ejemplo, quitar caracteres de control conservando tabulaciones y saltos de línea, y recortar) para que las reglas se evalúen sobre el valor que realmente se guarda.
+- Los listados que serializan contadores de relaciones los precargan con `withCount()` en el query; el accesor del modelo reutiliza `{relation}_count` cuando existe y consulta solo si no está precargado, para que el costo de una página sea constante.
 
 ## Ejemplo canónico: módulo `Post`
 
@@ -265,4 +270,4 @@ app/Modules/Post/
 └── routes/routes.php
 ```
 
-Usa este módulo como referencia al crear nuevos.
+Usa este módulo como referencia al crear nuevos. `app/Modules/Comment/` es el segundo ejemplo: agrega `Enums/` y `Tests/Security/`.

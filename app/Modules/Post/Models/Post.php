@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Post\Models;
 
-use App\Comment\Models\Comment;
 use App\Like\Models\Like;
+use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Database\Factories\PostFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;

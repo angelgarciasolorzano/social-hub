@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Comment\Enums\CommentType;
 use App\Like\Models\Like;
+use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Post\Models\Post;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\UploadedFile;

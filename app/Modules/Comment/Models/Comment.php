@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Comment\Models;
+namespace App\Modules\Comment\Models;
 
-use App\Comment\Enums\CommentType;
-use App\Comment\Factories\CommentFactory;
 use App\Like\Models\Like;
+use App\Modules\Comment\Database\Factories\CommentFactory;
+use App\Modules\Comment\Enums\CommentType;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -91,15 +91,17 @@ class Comment extends Model
      */
     public function hasReplies(): bool
     {
-        return $this->comments()->exists();
+        return $this->repliesCount() > 0;
     }
 
     /**
-     * Get the total number of replies for this comment.
+     * Get the total number of replies, reusing a preloaded `comments_count` when present.
      */
     public function repliesCount(): int
     {
-        return $this->comments()->count();
+        $loadedCount = $this->getAttributes()['comments_count'] ?? null;
+
+        return is_numeric($loadedCount) ? (int) $loadedCount : $this->comments()->count();
     }
 
     /**

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Comment\Enums;
+namespace App\Modules\Comment\Enums;
 
-use App\Comment\Models\Comment;
+use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 
 enum CommentType: string

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Comment\Resources;
+namespace App\Modules\Comment\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;

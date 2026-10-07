@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Comment\Providers;
+namespace App\Modules\Comment\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Override;

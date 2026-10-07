@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use App\Auth\Providers\AuthServiceProvider;
-use App\Comment\Providers\CommentServiceProvider;
 use App\Friendship\Providers\FriendshipServiceProvider;
 use App\Home\Providers\HomeServiceProvider;
 use App\MediaLibrary\Providers\MediaLibraryServiceProvider;
+use App\Modules\Comment\Providers\CommentServiceProvider;
 use App\Modules\Post\Providers\PostServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;

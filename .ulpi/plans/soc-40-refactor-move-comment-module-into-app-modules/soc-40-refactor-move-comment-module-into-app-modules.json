@@ -1,0 +1,1125 @@
+{
+  "title": "SOC-40: Mover el módulo Comment a app/Modules, agregar tests y corregir hallazgos de seguridad",
+  "issue": {
+    "id": "SOC-40",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-40/refactor-move-comment-module-into-appmodules-add-module-tests-and-fix",
+    "title": "Refactor: Move Comment module into app/Modules, add module tests and fix security findings"
+  },
+  "planningMode": "HOLD",
+  "executionStyle": "Paso a paso: se implementa una tarea y se pausa para revisión (regla .ai/rules/linear.md). La auditoría de seguridad (TASK-018) se detiene para que el usuario apruebe cada corrección una a una.",
+  "reviewDefault": "claude,codex,user",
+  "overview": "SOC-38 migró Post a app/Modules/Post y fijó el patrón. SOC-40 repite el patrón con Comment (11 archivos hoy en app/Comment/): crear el módulo nuevo en paralelo, cambiar consumidores, flipear el registro, borrar lo viejo, regenerar Wayfinder y actualizar los 2 imports del frontend. Comment no tiene tests, así que se crea la suite del módulo, se migra CommentStoreRequest a FluentValidation y se audita el módulo en busca de vulnerabilidades: primero un paso de auditoría con tests que confirman o descartan cada hipótesis, y después correcciones separadas que se aprueban una a una.",
+  "scopeChallenge": "Modo HOLD: alcance de la issue (mover Comment backend+frontend/Wayfinder, tests, auditoría de seguridad con correcciones y docs/skill/reglas) sin ampliar ni recortar. Ya existe el patrón de SOC-38 (plan en .ulpi/plans/soc-38-*), la nomenclatura Database/{Factories,Seeders} y el tooling (Wayfinder con --path, ide-helper + Pint, FluentRulesTester). Decisión del usuario sobre seguridad: auditar primero, corregir después con aprobación individual. Hallazgos de la exploración: el módulo tiene 2 rutas (comments.index/comments.store) bajo auth+verified, solo 2 consumidores frontend (CommentForm.tsx, usePaginatedComments.ts), ningún uso de dangerouslySetInnerHTML en resources/js/modules/comments, y CommentFactory deja user_id/commentable_* en null.",
+  "prerequisites": [
+    "SOC-38 está mergeada en main (Post ya vive en app/Modules/Post) y la rama de SOC-40 parte de main actualizado.",
+    "Se leyeron .ai/rules/{app,backend,linear}.md: sin variables de una letra, docblocks con máximo 3 líneas de prosa, factories completas con los campos persistidos, FluentRule en FormRequests, Pint/PHPStan/Rector como gates.",
+    "composer.json autocarga App\\ => app/, por lo que App\\Modules\\Comment no requiere cambios de autoload; no se modifican dependencias.",
+    "Estrategia del proyecto: crear lo nuevo y luego borrar lo viejo, no un rename directo.",
+    "Working tree sin cambios ajenos a SOC-40 (hoy hay modificaciones sin commitear en TrustedDevice*Dialog.tsx que no deben mezclarse)."
+  ],
+  "nonGoals": [
+    "Mover Auth, Friendship, Home, Like, MediaLibrary o User a app/Modules.",
+    "Cambiar nombres de rutas (comments.index, comments.store) o la UI de comentarios; el frontend solo cambia imports/Wayfinder.",
+    "Agregar funcionalidad nueva (editar/borrar comentarios, notificaciones) salvo que un hallazgo de seguridad confirmado lo exija.",
+    "Tests de módulos distintos de Comment."
+  ],
+  "contracts": [
+    "Namespace final: App\\Modules\\Comment\\{Controllers,Database\\Factories,Database\\Seeders,Enums,Models,Providers,Requests,Resources}; rutas comments.index y comments.store idénticas (middleware auth+verified); morph key 'comment' idéntica; CommentType sigue mapeando 'post'→Post y 'comment'→Comment.",
+    "Regla de arquitectura heredada de SOC-38: dentro de app/Modules/ = módulos de dominio; fuera = archivos globales. Tras SOC-40 los módulos migrados son Post y Comment.",
+    "Propiedad del registro: TASK-006 (bootstrap/providers.php, morph map, DatabaseSeeder). TASK-014 posee el registro de la carpeta de tests y el helper createComment(). TASK-011 posee la regeneración de Wayfinder (siempre con --path=resources/js/shared/wayfinder). TASK-013 posee ide-helper.",
+    "Cambios de comportamiento permitidos únicamente: (a) FluentValidation en CommentStoreRequest con las mismas reglas y mensajes, (b) completar CommentFactory, (c) las correcciones de seguridad TASK-019..022 que el usuario apruebe tras TASK-018.",
+    "Seguridad: TASK-018 solo escribe tests y reporta; no modifica código de producción. Cada corrección quita el ->todo() de su hallazgo y agrega un test de regresión."
+  ],
+  "existingCodeLeverage": [
+    "app/Comment/ (11 archivos) es el origen exacto de la copia.",
+    "Patrón completo de SOC-38: .ulpi/plans/soc-38-refactor-move-post-module-into-app-modules/ y app/Modules/Post/ como módulo de referencia (estructura, tests, PostRequest con FluentRule).",
+    "Helpers de tests en tests/Pest.php (createUser, createPost, createTrustedDevice) como modelo para createComment().",
+    "password.update con throttle:6,1 como patrón de rate limiting existente en app/Auth/routes/password.php.",
+    "FluentRulesTester (sandermuller/laravel-fluent-validation) para tests del request."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Crear Model, Enum y Factory de Comment en app/Modules/Comment",
+      "description": "Crear copias de Comment, CommentType y CommentFactory bajo App\\Modules\\Comment\\{Models,Enums,Database\\Factories} sin tocar los originales (crear-nuevo-luego-borrar-viejo). Comment conserva #[UseFactory], MORPH_NAME='comment', MORPH_COLUMN='commentable', el cast de commentable_type a CommentType y las relaciones user/commentable/comments/likes. Única desviación de comportamiento: la factory se completa según .ai/rules/backend.md (hoy user_id/commentable_id/commentable_type son null): user_id => User::factory() y, por defecto, un comentario sobre un Post (commentable_id => Post::factory(), commentable_type => Post::MORPH_NAME); los consumidores existentes (CommentSeeder) siempre pasan estos tres campos explícitos.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los 3 archivos declaran namespace App\\Modules\\Comment\\... y apuntan al Post de App\\Modules\\Post; Comment usa #[UseFactory] con la factory nueva y CommentType::modelClass() sigue devolviendo Post::class/Comment::class.",
+        "CommentFactory::new()->create() crea un comentario válido por sí sola (user y Post reales) y create([...]) con los tres campos explícitos sigue sobrescribiendo los defaults.",
+        "Caso límite: los originales de app/Comment/ siguen intactos y la app arranca (php artisan route:list no falla por clases duplicadas). PHPStan solo puede mostrar el error conocido @mixin IdeHelperComment hasta TASK-013."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Models/Comment.php",
+        "app/Modules/Comment/Enums/CommentType.php",
+        "app/Modules/Comment/Database/Factories/CommentFactory.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Models/Comment.php",
+        "app/Modules/Comment/Enums/CommentType.php",
+        "app/Modules/Comment/Database/Factories/CommentFactory.php"
+      ],
+      "validateCommand": "php -l app/Modules/Comment/Models/Comment.php && php -l app/Modules/Comment/Enums/CommentType.php && php -l app/Modules/Comment/Database/Factories/CommentFactory.php && php artisan route:list --name=comments && vendor/bin/pint --dirty --format agent",
+      "notes": "No se registra todavía: el registro (providers/morph map/seeder) lo posee TASK-006. PHPStan se valida completo en TASK-013 y TASK-026 porque @mixin IdeHelperComment resuelve tras regenerar _ide_helper_models.php.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Crear Resources y Seeder de Comment en app/Modules/Comment",
+      "description": "Crear copias de CommentResource, CommentCollection y CommentSeeder bajo App\\Modules\\Comment\\{Resources,Database\\Seeders}. Sin cambios de lógica; CommentSeeder importa Post y Comment nuevos.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "CommentResource conserva las llaves id, content, createdAt, user{id,name}, repliesInfo{hasReplies,repliesCount}; CommentCollection conserva data/meta/links con el cursor.",
+        "CommentSeeder usa App\\Modules\\Comment\\Models\\Comment y App\\Modules\\Post\\Models\\Post y mantiene 5-10 comentarios raíz por post con 5-8 respuestas cada uno.",
+        "Caso límite: PHPStan nivel max pasa sobre los 3 archivos y no queda 'App\\Comment\\' dentro de app/Modules/Comment/."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Resources/CommentResource.php",
+        "app/Modules/Comment/Resources/CommentCollection.php",
+        "app/Modules/Comment/Database/Seeders/CommentSeeder.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Resources/CommentResource.php",
+        "app/Modules/Comment/Resources/CommentCollection.php",
+        "app/Modules/Comment/Database/Seeders/CommentSeeder.php"
+      ],
+      "validateCommand": "vendor/bin/phpstan analyse app/Modules/Comment/Resources/CommentResource.php app/Modules/Comment/Resources/CommentCollection.php app/Modules/Comment/Database/Seeders/CommentSeeder.php --memory-limit=1G && ! grep -rn 'App\\\\Comment\\\\' app/Modules/Comment && vendor/bin/pint --dirty --format agent",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Crear Request (FluentValidation) y Controller de Comment en app/Modules/Comment",
+      "description": "CommentStoreRequest nuevo usa HasFluentRules + FluentRule::* con mensajes inline y sin messages(): content string requerido máx. 1000, commentable_type requerido en post/comment (CommentType), commentable_id entero requerido; mismos mensajes (content.required = 'El comentario es obligatorio'). CommentController se copia sin cambios de lógica (index y store); los cambios de comportamiento de seguridad quedan para las tareas de la fase de auditoría.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "CommentStoreRequest nuevo no declara messages(), usa HasFluentRules y FluentRule::* y mantiene reglas y mensajes equivalentes a los originales.",
+        "CommentController nuevo mantiene firma y respuestas de index (CommentType + int, cursorPaginate(10), orderByDesc id, flash 'comments') y store (flash 'Comentario publicado correctamente').",
+        "Caso límite: PHPStan nivel max pasa sobre ambos archivos y no queda 'App\\Comment\\' en app/Modules/Comment/."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Requests/CommentStoreRequest.php",
+        "app/Modules/Comment/Controllers/CommentController.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Requests/CommentStoreRequest.php",
+        "app/Modules/Comment/Controllers/CommentController.php"
+      ],
+      "validateCommand": "vendor/bin/phpstan analyse app/Modules/Comment/Requests/CommentStoreRequest.php app/Modules/Comment/Controllers/CommentController.php --memory-limit=1G && ! grep -rn 'App\\\\Comment\\\\' app/Modules/Comment && vendor/bin/pint --dirty --format agent",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Crear providers y rutas de Comment en app/Modules/Comment",
+      "description": "Crear CommentServiceProvider, CommentRouteServiceProvider y routes/routes.php bajo App\\Modules\\Comment\\Providers. routes.php importa el CommentController nuevo y mantiene comments.index (GET comments/{commentableType}/{commentableId}) y comments.store (POST comments) bajo auth+verified. Aún no se registran.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "routes.php define exactamente comments.index y comments.store con el controller de App\\Modules\\Comment y el middleware ['auth','verified'].",
+        "CommentRouteServiceProvider carga ../routes/routes.php dentro del grupo 'web' y CommentServiceProvider lo registra.",
+        "Caso límite: mientras no se registre, route:list --name=comments sigue mostrando solo 2 rutas (las del módulo viejo), sin duplicados."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Providers/CommentServiceProvider.php",
+        "app/Modules/Comment/Providers/CommentRouteServiceProvider.php",
+        "app/Modules/Comment/routes/routes.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Providers/CommentServiceProvider.php",
+        "app/Modules/Comment/Providers/CommentRouteServiceProvider.php",
+        "app/Modules/Comment/routes/routes.php"
+      ],
+      "validateCommand": "vendor/bin/phpstan analyse app/Modules/Comment/Providers/CommentServiceProvider.php app/Modules/Comment/Providers/CommentRouteServiceProvider.php app/Modules/Comment/routes/routes.php --memory-limit=1G && php artisan route:list --name=comments && vendor/bin/pint --dirty --format agent",
+      "notes": "Registro en bootstrap/providers.php: TASK-006.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Apuntar User, Post y PostModelTest al namespace nuevo de Comment",
+      "description": "Reemplazar imports App\\Comment\\Models\\Comment y App\\Comment\\Enums\\CommentType por App\\Modules\\Comment\\... en User, Post y PostModelTest. Sin cambios de lógica.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Los 3 archivos importan solo App\\Modules\\Comment\\...; User::comments() y Post::comments() siguen tipados con el Comment nuevo y PHPStan pasa.",
+        "Caso límite: grep 'App\\\\Comment\\\\' sobre estos 3 archivos no devuelve coincidencias."
+      ],
+      "filesToModify": [
+        "app/User/Models/User.php",
+        "app/Modules/Post/Models/Post.php",
+        "app/Modules/Post/Tests/Models/PostModelTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/User/Models/User.php",
+        "app/Modules/Post/Models/Post.php",
+        "app/Modules/Post/Tests/Models/PostModelTest.php"
+      ],
+      "validateCommand": "! grep -n 'App\\\\Comment\\\\' app/User/Models/User.php app/Modules/Post/Models/Post.php app/Modules/Post/Tests/Models/PostModelTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "PHPStan queda para TASK-013/026 por @mixin IdeHelperComment. Hasta TASK-006 el morph map sigue en estado mixto (previsto).",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Flip de registro: providers, morph map y DatabaseSeeder al módulo Comment nuevo",
+      "description": "Reemplazar CommentServiceProvider (viejo) por App\\Modules\\Comment\\Providers\\CommentServiceProvider en bootstrap/providers.php, el import de Comment en el morph map de AppServiceProvider (clave 'comment') y CommentSeeder en DatabaseSeeder. Aquí el módulo nuevo pasa a estar activo.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "php artisan route:list --name=comments muestra exactamente 2 rutas cuyo controller es App\\Modules\\Comment\\Controllers\\CommentController.",
+        "Relation::getMorphedModel('comment') devuelve App\\Modules\\Comment\\Models\\Comment y el morph map conserva user/post/like/comment.",
+        "Caso límite: la app bootea sin errores (php artisan about) y ningún archivo fuera de app/Comment/ importa ya App\\Comment\\."
+      ],
+      "filesToModify": [
+        "bootstrap/providers.php",
+        "app/Providers/AppServiceProvider.php",
+        "database/seeders/DatabaseSeeder.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "bootstrap/providers.php",
+        "app/Providers/AppServiceProvider.php",
+        "database/seeders/DatabaseSeeder.php"
+      ],
+      "validateCommand": "php artisan route:list --name=comments && php artisan about --only=environment && ! grep -rn 'App\\\\Comment\\\\' app bootstrap database routes config --include='*.php' --exclude-dir=Comment && vendor/bin/pint --dirty --format agent",
+      "notes": "El grep excluye app/Comment hasta que TASK-007..010 lo eliminen (--exclude-dir=Comment excluye también app/Modules/Comment, ya verificado en TASK-002/003).",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Eliminar providers y rutas del módulo viejo app/Comment",
+      "description": "Borrar app/Comment/Providers/* y app/Comment/routes/routes.php (ya no están registrados tras TASK-006) y sus directorios vacíos. Solo eliminación.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Los 3 archivos ya no existen y route:list --name=comments sigue mostrando solo 2 rutas.",
+        "Caso límite: ningún archivo restante referencia App\\Comment\\Providers\\."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [
+        "app/Comment/Providers/CommentServiceProvider.php",
+        "app/Comment/Providers/CommentRouteServiceProvider.php",
+        "app/Comment/routes/routes.php"
+      ],
+      "writeScope": [
+        "app/Comment/Providers/CommentServiceProvider.php",
+        "app/Comment/Providers/CommentRouteServiceProvider.php",
+        "app/Comment/routes/routes.php"
+      ],
+      "validateCommand": "! ls app/Comment/Providers/CommentServiceProvider.php app/Comment/Providers/CommentRouteServiceProvider.php app/Comment/routes/routes.php 2>/dev/null && php artisan route:list --name=comments",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Eliminar Controller, Request y CommentResource del módulo viejo",
+      "description": "Borrar CommentController, CommentStoreRequest y CommentResource viejos y los directorios vacíos. Solo eliminación.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Los 3 archivos ya no existen y route:list --name=comments sigue funcionando.",
+        "Caso límite: grep de 'App\\\\Comment\\\\(Controllers|Requests|Resources)' sobre app/, bootstrap/, routes/, database/ y tests/ no devuelve coincidencias."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [
+        "app/Comment/Controllers/CommentController.php",
+        "app/Comment/Requests/CommentStoreRequest.php",
+        "app/Comment/Resources/CommentResource.php"
+      ],
+      "writeScope": [
+        "app/Comment/Controllers/CommentController.php",
+        "app/Comment/Requests/CommentStoreRequest.php",
+        "app/Comment/Resources/CommentResource.php"
+      ],
+      "validateCommand": "! ls app/Comment/Controllers/CommentController.php app/Comment/Requests/CommentStoreRequest.php app/Comment/Resources/CommentResource.php 2>/dev/null && php artisan route:list --name=comments",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Eliminar CommentCollection, CommentType y CommentSeeder del módulo viejo",
+      "description": "Borrar CommentCollection, CommentType y CommentSeeder viejos y los directorios vacíos. Solo eliminación.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Los 3 archivos ya no existen y php artisan about arranca sin errores.",
+        "Caso límite: ninguna clase del módulo nuevo ni del resto de la app referencia App\\Comment\\Enums\\ ni App\\Comment\\Seeders\\."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [
+        "app/Comment/Resources/CommentCollection.php",
+        "app/Comment/Enums/CommentType.php",
+        "app/Comment/Seeders/CommentSeeder.php"
+      ],
+      "writeScope": [
+        "app/Comment/Resources/CommentCollection.php",
+        "app/Comment/Enums/CommentType.php",
+        "app/Comment/Seeders/CommentSeeder.php"
+      ],
+      "validateCommand": "! ls app/Comment/Resources/CommentCollection.php app/Comment/Enums/CommentType.php app/Comment/Seeders/CommentSeeder.php 2>/dev/null && php artisan about --only=environment",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Eliminar Model y Factory del módulo viejo y el directorio app/Comment",
+      "description": "Borrar Comment y CommentFactory viejos y los directorios vacíos restantes, de modo que app/Comment/ deje de existir. Solo eliminación.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "app/Comment/ ya no existe en disco.",
+        "Caso límite: grep 'App\\\\Comment\\\\' sobre app/, bootstrap/, database/, routes/, config/ y tests/ no devuelve coincidencias."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [
+        "app/Comment/Models/Comment.php",
+        "app/Comment/Factories/CommentFactory.php"
+      ],
+      "writeScope": [
+        "app/Comment/Models/Comment.php",
+        "app/Comment/Factories/CommentFactory.php"
+      ],
+      "validateCommand": "! test -d app/Comment && ! grep -rn 'App\\\\Comment\\\\' app bootstrap database routes config tests --include='*.php'",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Regenerar Wayfinder para el namespace App/Modules/Comment",
+      "description": "Ejecutar php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder (sin --path escribe en resources/js/actions y resources/js/routes). Salida autogenerada y gitignoreada: no se edita a mano ni aparece en el diff; el writeScope es el directorio generado (excepción documentada al tope de 3 archivos). resources/js/shared/wayfinder/routes/comments/ no cambia (depende del nombre de ruta).",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Existe resources/js/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController.ts con index y store apuntando a las rutas comments.index/comments.store.",
+        "Caso límite: ya no existe resources/js/shared/wayfinder/actions/App/Comment/ y no aparecen carpetas nuevas en resources/js/ (actions/, routes/, wayfinder/) fuera de shared/wayfinder."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder && test -f resources/js/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController.ts && ! test -d resources/js/shared/wayfinder/actions/App/Comment && ! test -d resources/js/actions",
+      "notes": "writeScope real: resources/js/shared/wayfinder/actions/App/** (generado, gitignoreado).",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Actualizar imports de CommentController en el frontend",
+      "description": "Cambiar '@/shared/wayfinder/actions/App/Comment/Controllers/CommentController' por '@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController' en CommentForm.tsx y usePaginatedComments.ts (únicos consumidores detectados). Sin cambios de UI.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Ambos archivos importan desde actions/App/Modules/Comment/Controllers/CommentController y npm run types pasa sin errores.",
+        "Caso límite: grep 'App/Comment' sobre resources/js (incluido wayfinder) no devuelve coincidencias; ESLint y Prettier pasan sobre ambos archivos."
+      ],
+      "filesToModify": [
+        "resources/js/modules/comments/components/forms/CommentForm.tsx",
+        "resources/js/modules/comments/hooks/usePaginatedComments.ts"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "resources/js/modules/comments/components/forms/CommentForm.tsx",
+        "resources/js/modules/comments/hooks/usePaginatedComments.ts"
+      ],
+      "validateCommand": "npx eslint resources/js/modules/comments/components/forms/CommentForm.tsx resources/js/modules/comments/hooks/usePaginatedComments.ts && npx prettier --check resources/js/modules/comments/components/forms/CommentForm.tsx resources/js/modules/comments/hooks/usePaginatedComments.ts && npm run types && ! grep -rn 'App/Comment' resources/js",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Regenerar _ide_helper_models.php y cerrar el gate de PHPStan",
+      "description": "Ejecutar composer ide-helper para que _ide_helper_models.php declare App\\Modules\\Comment\\Models\\Comment / IdeHelperComment. Archivo autogenerado y gitignoreado; ide-helper reescribe docblocks de otros modelos (quita una línea ' *' antes de @mixin), así que se corre Pint después para restaurarlos y se confirma que no queda diff fuera del módulo.",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "_ide_helper_models.php contiene el namespace App\\Modules\\Comment\\Models y el @method de CommentFactory apunta a App\\Modules\\Comment\\Database\\Factories\\CommentFactory.",
+        "Caso límite: tras Pint, git status no muestra cambios en otros modelos (Post, User, Like, Friendship, TrustedDevice*) y composer phpstan pasa con 0 errores."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "composer ide-helper && vendor/bin/pint --dirty --format agent && ! grep -n 'App\\\\Comment\\\\' _ide_helper_models.php && composer phpstan",
+      "notes": "Archivo gitignoreado: la tarea regenera el archivo local; el diff versionado debe quedar vacío.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Registrar tests de Comment, helper createComment() y cubrir comments.store",
+      "description": "Agregar __DIR__.'/../app/Modules/Comment/Tests' al ->in() de tests/Pest.php y un <testsuite name=\"Comment\"> en phpunit.xml; agregar el helper global createComment(?User $user = null, array $attributes = []): Comment (mismo patrón que createPost()/createTrustedDevice(), con el workaround #[UseFactory]). Crear Tests/Crud/CommentStoreTest.php (Pest): guest redirige a login; validación (content vacío, > 1000 caracteres, commentable_type fuera de post/comment, commentable_id no entero); comentario sobre un Post persiste con el usuario autenticado como autor y flash 'Comentario publicado correctamente'; respuesta a otro Comment; comentable inexistente devuelve 404.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "vendor/bin/pest app/Modules/Comment/Tests/Crud/CommentStoreTest.php pasa y cubre guest, las 4 validaciones, comentario sobre Post, respuesta a Comment y autoría del usuario autenticado.",
+        "Caso de falla: commentable_id de un Post inexistente devuelve 404 y no se crea ningún comentario; commentable_type inválido no crea nada y devuelve error de validación.",
+        "tests/Pest.php y phpunit.xml registran app/Modules/Comment/Tests (suite 'Comment' ejecutable con vendor/bin/pest --testsuite=Comment)."
+      ],
+      "filesToModify": [
+        "tests/Pest.php",
+        "phpunit.xml"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Crud/CommentStoreTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "tests/Pest.php",
+        "phpunit.xml",
+        "app/Modules/Comment/Tests/Crud/CommentStoreTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Crud/CommentStoreTest.php && vendor/bin/pest --testsuite=Comment && vendor/bin/pint --dirty --format agent",
+      "notes": "Dueño del registro de la carpeta de tests y del helper createComment(). GitButler puede bloquear los hunks de tests/Pest.php si otra rama aplicada modificó líneas adyacentes (ver SOC-38); en ese caso se commitean tras el merge de esa rama.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Tests de comments.index y de CommentStoreRequest",
+      "description": "Crear Tests/Crud/CommentIndexTest.php (guest redirige a login; devuelve comentarios del Post paginados con cursor de 10 en orden descendente por id; respuestas de un Comment; incluye el usuario; commentable inexistente → 404; commentableType inválido → 404) y Tests/Requests/CommentStoreRequestTest.php con FluentRulesTester (content requerido y máx. 1000, commentable_type solo post|comment, commentable_id entero, mensaje 'El comentario es obligatorio', no autorizado para guest).",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "CommentIndexTest verifica el límite de 10, el orden descendente por id, has_more/next_cursor y que otro Post no contamina el listado.",
+        "Caso de falla: commentableType fuera del enum y commentableId inexistente responden 404 sin tocar la base de datos.",
+        "CommentStoreRequestTest pasa con datos válidos (content de 1000 caracteres exactos) y falla solo en la regla correcta para cada entrada inválida."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Crud/CommentIndexTest.php",
+        "app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Crud/CommentIndexTest.php",
+        "app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Crud/CommentIndexTest.php app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Tests del modelo Comment y del enum CommentType",
+      "description": "Crear Tests/Models/CommentModelTest.php (relaciones user, commentable, comments con user cargado, likes; hasReplies()/repliesCount() con y sin respuestas; cast de commentable_type a CommentType; morph map 'comment') y Tests/Enums/CommentTypeTest.php (valores 'post'/'comment' y modelClass() de cada caso; tryFrom de un valor inválido devuelve null).",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "CommentModelTest verifica cada relación con registros reales, repliesCount() exacto y que las respuestas llegan con user cargado (sin lazy loading).",
+        "Caso límite: un comentario sin respuestas devuelve hasReplies() false y repliesCount() 0; Relation::getMorphedModel('comment') === Comment::class.",
+        "CommentTypeTest cubre ambos casos del enum y el valor inválido."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Models/CommentModelTest.php",
+        "app/Modules/Comment/Tests/Enums/CommentTypeTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Models/CommentModelTest.php",
+        "app/Modules/Comment/Tests/Enums/CommentTypeTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Models/CommentModelTest.php app/Modules/Comment/Tests/Enums/CommentTypeTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Tests de CommentResource/CommentCollection, factory y seeder",
+      "description": "Crear Tests/Resources/CommentResourceTest.php (llaves exactas de CommentResource incluyendo user{id,name} y repliesInfo; CommentCollection con data/meta/links y cursor), Tests/Database/CommentFactoryTest.php (crea un comentario válido por defecto y respeta los atributos explícitos) y Tests/Database/CommentSeederTest.php (con 1 Post y 2 usuarios: entre 5 y 10 comentarios raíz y entre 5 y 8 respuestas por comentario raíz; sin posts no crea nada).",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "CommentResourceTest verifica las llaves exactas ['id','content','createdAt','user','repliesInfo'] y que user solo contiene id y name (sin email ni otros campos).",
+        "Caso límite: CommentCollection devuelve next_cursor null y has_more false cuando hay menos de 10 comentarios.",
+        "CommentSeederTest verifica los rangos 5-10 / 5-8 y que sin Post no se crea ningún comentario."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Resources/CommentResourceTest.php",
+        "app/Modules/Comment/Tests/Database/CommentFactoryTest.php",
+        "app/Modules/Comment/Tests/Database/CommentSeederTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Resources/CommentResourceTest.php",
+        "app/Modules/Comment/Tests/Database/CommentFactoryTest.php",
+        "app/Modules/Comment/Tests/Database/CommentSeederTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Resources/CommentResourceTest.php app/Modules/Comment/Tests/Database/CommentFactoryTest.php app/Modules/Comment/Tests/Database/CommentSeederTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Auditoría de seguridad de Comment: tests que confirman o descartan cada hipótesis",
+      "description": "Crear Tests/Security/CommentSecurityAuditTest.php con un test por hipótesis de SOC-40 que describe el comportamiento SEGURO esperado: (1) comments.store con throttle (N+1 solicitudes seguidas terminan en 429); (2) commentable_id inexistente se rechaza en validación y no filtra información; (3) content con HTML/espacios/caracteres de control se normaliza o se devuelve tal cual de forma inocua (confirmar además por búsqueda que ningún componente de resources/js/modules/comments usa dangerouslySetInnerHTML); (4) las respuestas anidadas tienen un límite de profundidad; (5) store usa un único canal de flash coherente; (6) CommentResource no ejecuta consultas por comentario (conteo de queries constante); (7) CommentResource no expone email ni otros campos del usuario; (8) no existen rutas de update/delete y commentable_type solo admite post|comment. Se ejecuta la suite y se presenta al usuario una tabla hallazgo → confirmado/descartado. Los tests de hipótesis confirmadas como vulnerabilidad se marcan ->todo('SOC-40 hallazgo N') para mantener la suite en verde; cada tarea de corrección posterior quita su ->todo(). Los descartados quedan como tests de regresión activos.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014",
+        "TASK-017"
+      ],
+      "acceptanceCriteria": [
+        "Hay un test por hipótesis (8) y la ejecución produce una tabla confirmado/descartado que se entrega al usuario antes de seguir; no se corrige nada en esta tarea.",
+        "Caso de falla: cada hipótesis confirmada aparece como test fallando contra el código actual (evidencia) y queda marcada ->todo() solo después de registrar la evidencia en la tabla.",
+        "La suite completa sigue en verde (php artisan test --compact) con los hallazgos marcados como todo."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "PAUSA OBLIGATORIA: el plan se detiene aquí para que el usuario revise los hallazgos y apruebe cada tarea de corrección (TASK-019..022). Una tarea de corrección cuya hipótesis fue descartada se marca como no aplicable en el plan, con la razón, y se omite.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Corrección: rate limiting en comments.store y comments.index (si TASK-018 lo confirma)",
+      "description": "Agregar throttle a comments.store (y a comments.index si la auditoría lo justifica) siguiendo el patrón de password.update (middleware 'throttle:N,M'), con límites definidos tras la auditoría. Quitar el ->todo() del test correspondiente de TASK-018 y agregar CommentThrottleTest.php como regresión.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "Superado el límite configurado, comments.store responde 429 y no se crean comentarios adicionales; dentro del límite sigue respondiendo con el flash de éxito.",
+        "Caso límite: el límite es por usuario autenticado/IP y no afecta a otro usuario; el test del límite no depende del reloj real (usa tiempo congelado o limpia RateLimiter)."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/routes/routes.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Security/CommentThrottleTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/routes/routes.php",
+        "app/Modules/Comment/Tests/Security/CommentThrottleTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Security/CommentThrottleTest.php app/Modules/Comment/Tests/Crud && vendor/bin/pint --dirty --format agent",
+      "notes": "Condicional a TASK-018: si el hallazgo se descarta, la tarea se marca no aplicable y no se ejecuta.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Corrección: endurecer la validación de CommentStoreRequest (si TASK-018 lo confirma)",
+      "description": "Endurecer CommentStoreRequest según lo confirmado: existencia de commentable_id según commentable_type (exists contra posts/comments), normalización del content (trim, sin caracteres de control) y mínimo razonable de contenido no vacío tras normalizar. Mensajes en español inline. Quitar el ->todo() de los tests correspondientes y cubrir con CommentValidationHardeningTest.php.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "commentable_id inexistente para el commentable_type indicado falla en validación (422/errors) y no depende de findOrFail; con datos válidos todo sigue funcionando.",
+        "Caso límite: content compuesto solo por espacios o caracteres de control falla con 'El comentario es obligatorio'; content de 1000 caracteres válidos sigue pasando."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Requests/CommentStoreRequest.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Requests/CommentStoreRequest.php",
+        "app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php app/Modules/Comment/Tests/Requests app/Modules/Comment/Tests/Crud/CommentStoreTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Condicional a TASK-018.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Corrección: coherencia del controller y límite de profundidad de respuestas (si TASK-018 lo confirma)",
+      "description": "Eliminar la rama inalcanzable de store que usa back()->with([...]) y unificar la respuesta con Inertia::flash; definir y aplicar un límite de profundidad de respuestas (valor configurable, documentado en el plan de ejecución tras la auditoría). Quitar los ->todo() correspondientes y cubrir con CommentControllerHardeningTest.php.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "Responder a un comentario más allá de la profundidad máxima falla con un error de validación claro y no crea el comentario; dentro del límite sigue funcionando.",
+        "Caso límite: store ya no contiene la rama back()->with(['type','message']) y toda respuesta de éxito/error usa Inertia::flash con la forma {type, message}."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Controllers/CommentController.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Controllers/CommentController.php",
+        "app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php app/Modules/Comment/Tests/Crud && vendor/bin/pint --dirty --format agent",
+      "notes": "Condicional a TASK-018. Si la profundidad requiere un helper/config, se acuerda con el usuario antes de crearlo (no se crean carpetas base nuevas sin aprobación).",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Corrección: eliminar el N+1 de CommentResource (si TASK-018 lo confirma)",
+      "description": "Reemplazar hasReplies()/repliesCount() por withCount('comments') cargado en el query de index (y en cualquier otra carga del Resource) para que el costo sea constante por página; ajustar CommentResource para leer comments_count sin consultas adicionales. Quitar el ->todo() correspondiente y cubrir con CommentQueryCountTest.php. Nota: el controller ya cambia en TASK-021, por lo que esta tarea depende de ella para no pisar el mismo archivo.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-018",
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "El listado de 10 comentarios ejecuta un número constante de consultas (no crece con la cantidad de comentarios ni de respuestas); repliesInfo conserva exactamente los mismos valores.",
+        "Caso límite: un comentario sin respuestas devuelve hasReplies false y repliesCount 0 sin consultas extra."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Resources/CommentResource.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Tests/Security/CommentQueryCountTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Resources/CommentResource.php",
+        "app/Modules/Comment/Tests/Security/CommentQueryCountTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Security/CommentQueryCountTest.php app/Modules/Comment/Tests/Resources app/Modules/Comment/Tests/Crud/CommentIndexTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Si el withCount debe agregarse en CommentController::index, esa edición pertenece a esta tarea y su writeScope se amplía a 3 archivos (CommentController incluido) tras TASK-021.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Actualizar CLAUDE.md: Post y Comment migrados a app/Modules",
+      "description": "En CLAUDE.md: Project Overview (migrados: Post y Comment), lista de dominios (Comment → app/Modules/Comment/ con su estructura), 'hoy solo Post' en la sección de tests, modelos (App\\Modules\\Comment\\Models\\Comment, CommentType) y un párrafo con los cambios de seguridad aplicados en SOC-40 (solo los que se confirmaron y corrigieron).",
+      "priority": "P2",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md declara que Post y Comment son los módulos migrados y describe la estructura de Comment; las menciones a 'only Post' se actualizan.",
+        "Caso límite: grep 'app/Comment' y 'App\\\\Comment' sobre CLAUDE.md no devuelve coincidencias y los cambios de seguridad documentados coinciden con los realmente aplicados."
+      ],
+      "filesToModify": [
+        "CLAUDE.md"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "CLAUDE.md"
+      ],
+      "validateCommand": "! grep -nE 'app/Comment|App\\\\Comment' CLAUDE.md && grep -n 'app/Modules/Comment' CLAUDE.md",
+      "notes": "GitButler puede bloquear hunks de CLAUDE.md pegados a líneas modificadas por otras ramas aplicadas; evitar insertar texto adyacente a líneas ajenas.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Actualizar AGENTS.md y docs/architecture/backend.md",
+      "description": "AGENTS.md (regla de ubicación de tests) y docs/architecture/backend.md (sección 0: estado de la migración con Post y Comment migrados; ejemplo canónico; mención de las convenciones de seguridad del módulo si aplica) reflejan app/Modules/Comment/.",
+      "priority": "P2",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "backend.md y AGENTS.md dicen que Post y Comment están en app/Modules y que el resto sigue en la arquitectura vieja.",
+        "Caso límite: ni AGENTS.md ni backend.md contienen 'app/Comment/' ni 'App\\\\Comment'; Prettier pasa sobre backend.md."
+      ],
+      "filesToModify": [
+        "AGENTS.md",
+        "docs/architecture/backend.md"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "AGENTS.md",
+        "docs/architecture/backend.md"
+      ],
+      "validateCommand": "! grep -nE 'app/Comment|App\\\\Comment' AGENTS.md docs/architecture/backend.md && npx prettier --check docs/architecture/backend.md",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Actualizar el skill social-hub-conventions y revisar .ai/rules",
+      "description": "SKILL.md (fuente canónica): migrados = Post y Comment. .ai/rules/app.md y backend.md solo se editan si contienen texto que asuma app/<Domain>/. Verificar que los symlinks de .agents/, .windsurf/ y .codex/ siguen apuntando a .claude/skills/social-hub-conventions.",
+      "priority": "P2",
+      "type": "docs",
+      "effort": "XS",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "SKILL.md indica que Post y Comment están migrados y usa App\\Modules\\Comment como ejemplo donde corresponda.",
+        "Caso límite: los 3 symlinks siguen siendo symlinks (ls -la muestra '->') y .ai/rules/* no queda con texto que contradiga la nueva ubicación."
+      ],
+      "filesToModify": [
+        ".claude/skills/social-hub-conventions/SKILL.md",
+        ".ai/rules/app.md",
+        ".ai/rules/backend.md"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        ".claude/skills/social-hub-conventions/SKILL.md",
+        ".ai/rules/app.md",
+        ".ai/rules/backend.md"
+      ],
+      "validateCommand": "! grep -n 'app/Comment' .claude/skills/social-hub-conventions/SKILL.md && ls -la .agents/skills/social-hub-conventions .windsurf/skills/social-hub-conventions .codex/skills/social-hub-conventions | grep -c -- '->'",
+      "notes": "No se usa record-rule: solo se edita texto existente.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-026",
+      "title": "QA backend: Pint, PHPStan, Rector y suites",
+      "description": "Gate backend completo: vendor/bin/pint --dirty --format agent, composer phpstan, composer rector-dry (y composer rector tras revisar el diff; solo correcciones mecánicas), vendor/bin/pest --testsuite=Comment y la suite completa (php artisan test --compact, varias corridas por posibles tests con datos aleatorios).",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010",
+        "TASK-013",
+        "TASK-017",
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Pint, PHPStan (nivel max) y Rector (dry-run sin cambios pendientes) pasan.",
+        "Caso límite: la suite Comment y la suite completa pasan en al menos 3 corridas seguidas; ningún test marcado ->todo() sin una tarea de corrección asociada."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "vendor/bin/pint --dirty --format agent && composer phpstan && composer rector-dry && vendor/bin/pest --testsuite=Comment && php artisan test --compact",
+      "notes": "writeScope vacío: solo correcciones mecánicas que los gates exijan.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-027",
+      "title": "QA frontend: lint, format, types y build",
+      "description": "Gates frontend: npm run lint:check, npm run format:check, npm run types y npm run build para confirmar que el bundle compila contra las rutas de Wayfinder nuevas.",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "XS",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-011",
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "lint:check, format:check y types terminan sin errores (los warnings preexistentes no cuentan).",
+        "Caso límite: npm run build completa sin 'Could not resolve' y 'App/Comment/' no aparece en public/build."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "npm run lint:check && npm run format:check && npm run types && npm run build && ! grep -rl 'App/Comment/' public/build",
+      "notes": "",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Barrido final de referencias viejas y symlinks",
+      "description": "Verificación solo lectura: no quedan referencias a App\\Comment\\, app/Comment ni actions/App/Comment en código, config, frontend, docs, skill ni reglas; los symlinks del skill siguen siendo symlinks.",
+      "priority": "P3",
+      "type": "chore",
+      "effort": "XS",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027"
+      ],
+      "acceptanceCriteria": [
+        "grep -rnE 'App\\\\Comment\\\\|app/Comment|App/Comment' sobre app, bootstrap/providers.php, config, database, routes, tests, resources/js, docs, CLAUDE.md, AGENTS.md, .claude, .ai y .github devuelve vacío (bootstrap/ssr es artefacto gitignoreado).",
+        "Caso límite: git status/but status no muestra archivos huérfanos de app/Comment ni copias físicas del skill."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "! grep -rnE 'App\\\\Comment\\\\|app/Comment|App/Comment' app bootstrap/providers.php config database routes tests resources/js docs CLAUDE.md AGENTS.md .claude .ai .github",
+      "notes": "No incluir .ulpi/plans/soc-40-* en el barrido: el plan menciona las rutas viejas por diseño.",
+      "review": "claude,codex,user"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Cierre: PR con template y comentario resumen en SOC-40",
+      "description": "Definition of Done: abrir el PR con .github/PULL_REQUEST_TEMPLATE y dejar en SOC-40 el comentario resumen, incluyendo la tabla de hallazgos de seguridad (confirmados y corregidos / descartados con su razón). Requiere pedido explícito del usuario; no se hace automáticamente.",
+      "priority": "P3",
+      "type": "chore",
+      "effort": "XS",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-028"
+      ],
+      "acceptanceCriteria": [
+        "El PR existe con el template completo y enlaza SOC-40; SOC-40 tiene un comentario resumen con cambios, hallazgos de seguridad y gates ejecutados.",
+        "Caso límite: si algún gate se omitió o falló se declara explícitamente; no se mergea ni activa auto-merge sin pedido."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "gh pr view --json url,title",
+      "notes": "Acción de salida (publica contenido): solo con confirmación explícita del usuario.",
+      "review": "claude,codex,user"
+    }
+  ],
+  "failureModes": [
+    "Estado mixto durante el cutover (dos clases Comment/CommentType): se mitiga ordenando los consumidores (TASK-005) antes del flip de registro (TASK-006).",
+    "Morph map y enum: si 'comment' o CommentType::modelClass() apuntan a la clase equivocada se rompen respuestas anidadas y likes polimórficos; TASK-006 y TASK-016 lo verifican.",
+    "PHPStan: Comment declara @mixin IdeHelperComment, que resuelve solo tras TASK-013 (ide-helper); hasta entonces el único error permitido es class.notFound de IdeHelperComment.",
+    "Wayfinder sin --path escribe en resources/js/actions|routes|wayfinder (carpetas basura); TASK-011 lo verifica.",
+    "CommentFactory hoy no es utilizable sola (user_id/commentable_* null); TASK-001 la completa y el seeder sigue pasando los 3 campos explícitos.",
+    "GitButler puede bloquear hunks de tests/Pest.php y CLAUDE.md si otra rama aplicada modificó líneas adyacentes (visto en SOC-38); si ocurre, commitear tras el merge de esa rama.",
+    "Correcciones de seguridad que cambian comportamiento (throttle, validación más estricta, límite de profundidad) pueden romper tests o flujos del frontend; por eso se aprueban una a una y se prueban contra el frontend (CommentForm).",
+    "ide-helper reescribe docblocks de otros modelos (línea ' *' antes de @mixin); TASK-013 corre Pint después y verifica que no queda diff."
+  ],
+  "shipCut": "Si la ejecución se detiene a mitad de camino: tras TASK-001..010 el módulo ya vive en app/Modules/Comment y app/Comment/ no existe (backend consistente), pero el frontend aún importa la ruta vieja de Wayfinder, así que TASK-011 y TASK-012 deben ir juntos con ese corte. TASK-014..017 (tests) pueden entregarse antes de la auditoría; TASK-018 (auditoría) es el punto de decisión: las correcciones TASK-019..022 son opcionales por hallazgo y se aprueban individualmente. La Definition of Done exige docs, QA y PR (TASK-023..029) antes de cerrar SOC-40.",
+  "testCoverageMap": [
+    {
+      "surface": "POST comments (comments.store): auth, validación, post/respuesta, autoría, 404",
+      "task": "TASK-014"
+    },
+    {
+      "surface": "GET comments/{type}/{id} (comments.index): cursor de 10, orden, 404",
+      "task": "TASK-015"
+    },
+    {
+      "surface": "CommentStoreRequest (FluentValidation)",
+      "task": "TASK-015"
+    },
+    {
+      "surface": "Comment model, relaciones, cast y morph map",
+      "task": "TASK-016"
+    },
+    {
+      "surface": "CommentType enum",
+      "task": "TASK-016"
+    },
+    {
+      "surface": "CommentResource / CommentCollection",
+      "task": "TASK-017"
+    },
+    {
+      "surface": "CommentFactory y CommentSeeder",
+      "task": "TASK-017"
+    },
+    {
+      "surface": "Auditoría de seguridad (8 hipótesis)",
+      "task": "TASK-018"
+    },
+    {
+      "surface": "Correcciones de seguridad con regresión",
+      "task": "TASK-019, TASK-020, TASK-021, TASK-022"
+    },
+    {
+      "surface": "Frontend compila contra Wayfinder nuevo",
+      "task": "TASK-027"
+    }
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [
+      "TASK-002"
+    ],
+    "TASK-004": [
+      "TASK-003"
+    ],
+    "TASK-005": [
+      "TASK-001"
+    ],
+    "TASK-006": [
+      "TASK-004",
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-010"
+    ],
+    "TASK-012": [
+      "TASK-011"
+    ],
+    "TASK-013": [
+      "TASK-010"
+    ],
+    "TASK-014": [
+      "TASK-006"
+    ],
+    "TASK-015": [
+      "TASK-014"
+    ],
+    "TASK-016": [
+      "TASK-014"
+    ],
+    "TASK-017": [
+      "TASK-014"
+    ],
+    "TASK-018": [
+      "TASK-014",
+      "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-018"
+    ],
+    "TASK-021": [
+      "TASK-018"
+    ],
+    "TASK-022": [
+      "TASK-018",
+      "TASK-021"
+    ],
+    "TASK-023": [
+      "TASK-006",
+      "TASK-022"
+    ],
+    "TASK-024": [
+      "TASK-006",
+      "TASK-022"
+    ],
+    "TASK-025": [
+      "TASK-006",
+      "TASK-022"
+    ],
+    "TASK-026": [
+      "TASK-010",
+      "TASK-013",
+      "TASK-017",
+      "TASK-022"
+    ],
+    "TASK-027": [
+      "TASK-011",
+      "TASK-012"
+    ],
+    "TASK-028": [
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027"
+    ],
+    "TASK-029": [
+      "TASK-028"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 29,
+    "layers": {
+      "0": [
+        "TASK-001"
+      ],
+      "1": [
+        "TASK-002",
+        "TASK-005"
+      ],
+      "2": [
+        "TASK-003"
+      ],
+      "3": [
+        "TASK-004"
+      ],
+      "4": [
+        "TASK-006"
+      ],
+      "5": [
+        "TASK-007",
+        "TASK-014"
+      ],
+      "6": [
+        "TASK-008",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017"
+      ],
+      "7": [
+        "TASK-009",
+        "TASK-018"
+      ],
+      "8": [
+        "TASK-010",
+        "TASK-019",
+        "TASK-020",
+        "TASK-021"
+      ],
+      "9": [
+        "TASK-011",
+        "TASK-013",
+        "TASK-022"
+      ],
+      "10": [
+        "TASK-012",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026"
+      ],
+      "11": [
+        "TASK-027"
+      ],
+      "12": [
+        "TASK-028"
+      ],
+      "13": [
+        "TASK-029"
+      ]
+    },
+    "criticalPath": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029"
+    ],
+    "criticalPathLength": 14
+  }
+}

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Comment\Seeders;
+namespace App\Modules\Comment\Database\Seeders;
 
-use App\Comment\Models\Comment;
+use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
