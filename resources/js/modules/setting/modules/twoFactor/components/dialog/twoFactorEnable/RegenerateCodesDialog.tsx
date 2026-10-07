@@ -1,8 +1,10 @@
-import { type JSX, type SubmitEvent, useId, useRef } from "react";
+import { type JSX, type SubmitEvent, useId } from "react";
 
 import { useForm } from "@inertiajs/react";
 
 import { AlertTriangleIcon, RefreshCcwDot } from "lucide-react";
+
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { storeRecoveryCodes } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
@@ -42,7 +44,7 @@ function RegenerateCodesDialog({
   const formId = `${idPrefix}-regenerate-codes-form`;
   const passwordInputId = `${idPrefix}-password`;
   const passwordErrorId = `${idPrefix}-password-error`;
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogFocusRestoration = useDialogFocusRestoration();
 
   const { setData, errors, submit, processing, reset, data } = useForm<RegenerateCodesFormData>({
     password: "",
@@ -72,26 +74,7 @@ function RegenerateCodesDialog({
         setOpen(nextOpen);
       }}
     >
-      <DialogContent
-        onOpenAutoFocus={() => {
-          const activeElement = document.activeElement;
-
-          returnFocusRef.current =
-            activeElement instanceof HTMLElement && activeElement !== document.body
-              ? activeElement
-              : null;
-        }}
-        onCloseAutoFocus={(event) => {
-          const focusTarget = returnFocusRef.current;
-
-          if (focusTarget?.isConnected) {
-            event.preventDefault();
-            focusTarget.focus();
-          }
-
-          returnFocusRef.current = null;
-        }}
-      >
+      <DialogContent {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">

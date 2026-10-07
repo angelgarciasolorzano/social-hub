@@ -1,9 +1,11 @@
-import { type JSX, type SubmitEvent, useId, useRef } from "react";
+import { type JSX, type SubmitEvent, useId } from "react";
 
 import { useForm } from "@inertiajs/react";
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ShieldBan, ShieldQuestionMark } from "lucide-react";
+
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { destroy } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
@@ -48,7 +50,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
   const passwordErrorId = `${idPrefix}-password-error`;
   const otpInputId = `${idPrefix}-otp`;
   const otpErrorId = `${idPrefix}-otp-error`;
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogFocusRestoration = useDialogFocusRestoration();
 
   const { data, setData, processing, errors, reset, submit } = useForm<DisableTwoFactorFormData>({
     password: "",
@@ -78,26 +80,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
         setOpen(nextOpen);
       }}
     >
-      <DialogContent
-        onOpenAutoFocus={() => {
-          const activeElement = document.activeElement;
-
-          returnFocusRef.current =
-            activeElement instanceof HTMLElement && activeElement !== document.body
-              ? activeElement
-              : null;
-        }}
-        onCloseAutoFocus={(event) => {
-          const focusTarget = returnFocusRef.current;
-
-          if (focusTarget?.isConnected) {
-            event.preventDefault();
-            focusTarget.focus();
-          }
-
-          returnFocusRef.current = null;
-        }}
-      >
+      <DialogContent {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">

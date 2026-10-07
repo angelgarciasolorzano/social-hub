@@ -2,11 +2,11 @@
 
 ## Overview
 
-Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. También incluye una corrección responsive para que el diálogo de detalles de TrustedDevice mantenga visibles el header y footer mientras desplaza su body.
+Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. También incluye una corrección responsive para que el diálogo de detalles de TrustedDevice mantenga visibles el header y footer mientras desplaza su body, y una extracción del patrón común para restaurar el foco en los diálogos.
 
 ## Scope Challenge
 
-Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. El diálogo de detalles de TrustedDevice requiere un ajuste responsive local adicional: ancho dentro del viewport, tarjetas apiladas en móvil y desplazamiento solo en el body. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.
+Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. El diálogo de detalles de TrustedDevice requiere un ajuste responsive local adicional: ancho dentro del viewport, tarjetas apiladas en móvil y desplazamiento solo en el body. La limpieza posterior extrae a `setting/shared` la restauración de foco repetida en siete diálogos; los focos iniciales especiales y los diálogos con destino alternativo quedan bajo control de cada componente. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.
 
 ## Prerequisites
 
@@ -39,6 +39,8 @@ Los módulos ya existen y la necesidad es completar el trabajo semántico/respon
 - No reducir texto visible de apoyo o metadatos por debajo de 12 px; conservar OTP y códigos en su familia actual con tamaño mínimo de 18 px y 14 px respectivamente.
 - El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking.
 - El ajuste responsive queda limitado a TrustedDeviceDetailsDialog; no requiere cambiar la primitiva compartida Dialog ni otros diálogos.
+- La restauración estándar del foco se comparte mediante un hook de setting con una referencia independiente por diálogo; el hook no cancela el autofocus cuando el destino es `document.body` o ya no está conectado.
+- Los focos iniciales específicos, el foco de título por paso, el fallback de TrustedDeviceRenameDialog y el destino explícito de TrustedDeviceDetailsDialog permanecen bajo control de cada componente.
 
 ## Existing Code Leverage
 
@@ -46,6 +48,7 @@ Los módulos ya existen y la necesidad es completar el trabajo semántico/respon
 - `resources/js/modules/setting/modules/accountSettings/AccountSettingsProfileForm.tsx` — Referencia de etiquetas asociadas, errores y ayuda.
 - `resources/js/modules/setting/modules/accountSettings/AccountActionsPanel.tsx` — Referencia de ritmo, padding y tipografía de tarjetas.
 - `resources/js/shared/components/shadcn/ui/dialog.tsx` — Primitiva existente de diálogo; conservar foco y etiquetado.
+- `resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts` — Hook compartido para la captura y restauración estándar del foco en diálogos de Settings.
 - `resources/js/shared/components/shadcn/ui/card.tsx` — Agregar títulos semánticos en call sites sin cambiar CardTitle global.
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx` — Referencia existente de DialogTitle con h2.
 
@@ -1105,6 +1108,125 @@ rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDev
 rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx
 QA navegador a 1440×834 y 390×844: confirmar ausencia de desbordamiento horizontal y scroll solo en el body con header/footer visibles.
 
+
+### TASK-043: Centralizar la restauración de foco en TwoFactor
+
+Crear un hook compartido para capturar el elemento enfocado al abrir un diálogo y restaurarlo al cerrar. Integrarlo primero en los diálogos para desactivar TwoFactor y regenerar códigos.
+
+- **Phase:** Refactor de foco compartido
+- **Type:** refactor
+- **Effort:** S
+- **Agent:** react-vite-tailwind-engineer
+- **Priority:** P1
+- **Depends on:** TASK-041
+
+**Acceptance Criteria:**
+
+- El hook expone handlers tipados para los eventos de Radix y conserva el foco inicial predeterminado de cada diálogo.
+- DisabledTwoFactorDialog y RegenerateCodesDialog usan el hook sin cambiar su control de cierre ni sus flujos de formulario.
+- Si el elemento capturado es `document.body` o deja de estar conectado, el cierre no enfoca un nodo obsoleto, no cancela el autofocus predeterminado y limpia la referencia.
+
+**writeScope:**
+
+- `resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts` — Crear el hook compartido con una referencia por instancia.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx` — Aplicar los handlers compartidos al diálogo de desactivación.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx` — Aplicar los handlers compartidos al diálogo de regeneración.
+
+**validateCommand:**
+
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx
+```
+
+### TASK-044: Aplicar el hook a los diálogos restantes de TwoFactor
+
+Sustituir los handlers repetidos en el diálogo de configuración y en el diálogo de detalles de activación, conservando los comportamientos de foco inicial específicos.
+
+- **Phase:** Refactor de foco compartido
+- **Type:** refactor
+- **Effort:** S
+- **Agent:** react-vite-tailwind-engineer
+- **Priority:** P1
+- **Depends on:** TASK-043
+
+**Acceptance Criteria:**
+
+- Ambos diálogos usan el hook y eliminan las referencias y callbacks de restauración duplicados.
+- TwoFactorSetupDialog conserva el foco de título y los cambios de foco al avanzar entre pasos.
+- Al cerrar con un destino desconectado, el diálogo mantiene el comportamiento predeterminado de foco sin intentar enfocar el nodo retirado.
+
+**writeScope:**
+
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx` — Reutilizar el hook sin alterar el enfoque del título ni la navegación entre pasos.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx` — Reutilizar el hook en el diálogo de detalles de activación.
+
+**validateCommand:**
+
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx
+```
+
+### TASK-045: Aplicar el hook a los diálogos informativos de TrustedDevice
+
+Sustituir la restauración repetida en recomendaciones, resumen y atajos de teclado por el hook compartido, manteniendo la gestión de cada diálogo independiente.
+
+- **Phase:** Refactor de foco compartido
+- **Type:** refactor
+- **Effort:** S
+- **Agent:** react-vite-tailwind-engineer
+- **Priority:** P1
+- **Depends on:** TASK-043
+
+**Acceptance Criteria:**
+
+- Los tres diálogos usan los handlers compartidos y eliminan el código repetido de captura, restauración y limpieza.
+- Abrir recomendaciones desde el resumen conserva ciclos de foco independientes para el diálogo hijo y su padre.
+- Al cerrar un diálogo cuyo activador fue retirado, no se enfoca un elemento desconectado ni se bloquea el comportamiento predeterminado.
+
+**writeScope:**
+
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx` — Reutilizar el hook en recomendaciones.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx` — Reutilizarlo sin compartir la referencia con el diálogo anidado.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx` — Reutilizar el hook en los atajos.
+
+**validateCommand:**
+
+```sh
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx
+rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx
+```
+
+### TASK-046: Validar la restauración de foco compartida
+
+Ejecutar los gates frontend integrados y recorrer con teclado los diálogos modificados, incluidos el diálogo anidado de recomendaciones y el flujo de pasos de TwoFactor.
+
+- **Phase:** Verificación del foco compartido
+- **Type:** test
+- **Effort:** S
+- **Agent:** react-vite-tailwind-engineer
+- **Priority:** P1
+- **Depends on:** TASK-044, TASK-045
+
+**Acceptance Criteria:**
+
+- Pasan format:check, lint:check, types, build y build:ssr.
+- El teclado permite abrir y cerrar los diálogos y devuelve el foco al activador conectado en ambos módulos.
+- Los pasos de TwoFactor y el diálogo anidado de TrustedDevice conservan sus focos iniciales y retornos de foco propios.
+
+**validateCommand:**
+
+```sh
+rtk npm run format:check
+rtk npm run lint:check
+rtk npm run types
+rtk npm run build
+rtk npm run build:ssr
+QA de teclado en TwoFactor y TrustedDevice: apertura, cierre, destino desconectado, navegación entre pasos y diálogo anidado.
+```
+
+
 ## Failure Modes
 
 - DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.
@@ -1114,7 +1236,9 @@ QA navegador a 1440×834 y 390×844: confirmar ausencia de desbordamiento horizo
 - Ajustes tipográficos amplios pueden alterar densidad responsive; mantenerlos locales y revisar móvil, vacío y error.
 - Cambiar campos, rutas o confirmaciones puede alterar flujos de seguridad; conservar contratos explícitos.
 - Cuadrículas con columnas fijas o diálogos sin límite de altura pueden desbordar el viewport móvil; comprobar ancho y scroll interno.
-- Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo localmente y validar que el destino siga conectado.
+- Un diálogo controlado sin DialogTrigger puede cerrar dejando el foco en body; restaurarlo con el hook compartido y validar que el destino siga conectado. Cada instancia mantiene su propia referencia y no previene el autofocus predeterminado si el destino desapareció.
+- Un hook de foco que comparta su referencia entre instancias puede mezclar el activador del diálogo padre con el del hijo; cada instancia conserva su propio estado.
+- Prevenir siempre el autofocus de cierre deja el foco sin destino cuando el activador fue eliminado; solo cancelar el comportamiento predeterminado cuando el destino capturado sigue conectado.
 - Un header o footer persistente puede consumir toda la altura de un viewport bajo; limitar el scroll al body sin recortar controles y comprobar el cierre por teclado.
 - Reducir todos los textos auxiliares por igual puede esconder información importante; reservar 12 px a ayuda compacta/metadatos y conservar 14 px para lectura general.
 - Métricas y nombres largos pueden perder legibilidad al reducirlos; revisar valores de varios dígitos, truncado y wrapping en móvil.
@@ -1123,7 +1247,7 @@ QA navegador a 1440×834 y 390×844: confirmar ausencia de desbordamiento horizo
 
 ## Ship Cut
 
-SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021, TASK-042 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre.
+SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021, TASK-042 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre. La limpieza posterior de foco se completa al implementar TASK-043 a TASK-045 y validar TASK-046.
 
 ## Test Coverage Map
 
@@ -1134,15 +1258,16 @@ SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-0
 - **Alineación tipográfica:** Prettier --check y ESLint por writeScope; comparación manual con Profile en páginas, tablas, estados, tarjetas y todos los diálogos a 1440×834 y 390×844.
 - **Excepciones legibles:** Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px.
 - **Desbordamiento móvil del diálogo de detalles:** En 390×844, confirmar que el diálogo cabe en el viewport, las tarjetas se apilan y el scroll se limita al body sin ocultar header/footer; en escritorio mantener las tres columnas.
+- **Restauración de foco compartida:** Prettier y ESLint por slice; gates frontend integrados; recorrido de teclado en TwoFactor y TrustedDevice, incluida la apertura/cierre anidado y la eliminación del activador.
 
 ## Execution Summary
 
 - Modo: **EXPANSION**
 - Ejecución: **Por fases**
 - Revisión por defecto: **codex**
-- Tareas SOC-36: **41** (38 implementación y auditoría/QA); trabajo adyacente: **1**.
-- Fases: **8**.
-- Critical path: TASK-004 → TASK-018 → TASK-016 → TASK-019 → TASK-022 → TASK-029 → TASK-041.
+- Tareas del plan: **45** (41 de implementación y 4 de auditoría/QA); trabajo adyacente: **1**.
+- Fases: **10**.
+- Critical path: TASK-004 → TASK-018 → TASK-016 → TASK-019 → TASK-022 → TASK-029 → TASK-041 → TASK-043 → TASK-044 → TASK-046.
 
 ## Task Dependencies
 
@@ -1178,7 +1303,15 @@ Ajustar tamaño y peso de todos los textos visibles de TwoFactor y TrustedDevice
 
 Confirmar en navegador la jerarquía tipográfica en desktop/móvil y repetir los gates frontend. Tarea: TASK-041.
 
-Las tareas TASK-023 a TASK-040 parten después de TASK-022 y editan hasta tres archivos por slice; sus writeScope son disjuntos y pueden avanzar en paralelo. TASK-042 depende de TASK-021; TASK-041 integra todos los slices tipográficos y TASK-042 antes de cerrar con QA visual en desktop/móvil.
+### PHASE-9: Refactor de foco compartido
+
+Centralizar la restauración de foco usada por los diálogos de TwoFactor y TrustedDevice sin perder sus comportamientos específicos. Tareas: TASK-043, TASK-044, TASK-045.
+
+### PHASE-10: Verificación del foco compartido
+
+Validar los gates frontend y los ciclos de foco, incluidos los casos anidados y de activadores desconectados. Tarea: TASK-046.
+
+Las tareas TASK-023 a TASK-040 parten después de TASK-022 y editan hasta tres archivos por slice; sus writeScope son disjuntos y pueden avanzar en paralelo. TASK-042 depende de TASK-021; TASK-041 integra todos los slices tipográficos y TASK-042 antes de cerrar con QA visual en desktop/móvil. La expansión de foco comienza después de TASK-041: TASK-043 integra el hook en TwoFactor, TASK-044 y TASK-045 completan las integraciones de TwoFactor y TrustedDevice en paralelo, y TASK-046 valida el resultado.
 
 ```mermaid
 flowchart TD
@@ -1243,6 +1376,11 @@ flowchart TD
   TASK-039 --> TASK-041
   TASK-040 --> TASK-041
   TASK-042 --> TASK-041
+  TASK-041 --> TASK-043
+  TASK-043 --> TASK-044
+  TASK-043 --> TASK-045
+  TASK-044 --> TASK-046
+  TASK-045 --> TASK-046
   TASK-017["TASK-017: trabajo adyacente e independiente"]
 ```
 
