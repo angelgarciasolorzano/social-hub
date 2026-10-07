@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Post\Providers;
+namespace App\Modules\Post\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
 use Illuminate\Support\Facades\Route;

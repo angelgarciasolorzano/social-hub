@@ -7,7 +7,7 @@ use App\Comment\Providers\CommentServiceProvider;
 use App\Friendship\Providers\FriendshipServiceProvider;
 use App\Home\Providers\HomeServiceProvider;
 use App\MediaLibrary\Providers\MediaLibraryServiceProvider;
-use App\Post\Providers\PostServiceProvider;
+use App\Modules\Post\Providers\PostServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\User\Providers\UserServiceProvider;

@@ -178,7 +178,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Testing
 
-- Place new module-specific tests under the owning module's `Tests/` directory (`app/{Domain}/Tests/` or `app/{Domain}/Modules/{Feature}/Tests/`); reserve root `tests/` for cross-module, infrastructure, and existing tests.
+- Place new module-specific tests under the owning module's `Tests/` directory (`app/Modules/{Domain}/Tests/` for modules migrated to the new architecture; `app/{Domain}/Tests/` or `app/{Domain}/Modules/{Feature}/Tests/` in the old architecture); reserve root `tests/` for cross-module, infrastructure, and existing tests.
 - Register new module test directories in `phpunit.xml` and configure their Pest base case/shared traits in `tests/Pest.php` as needed.
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.

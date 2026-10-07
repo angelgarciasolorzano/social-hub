@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Comment\Seeders;
 
 use App\Comment\Models\Comment;
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Seeder;

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Post\Factories;
+namespace App\Modules\Post\Database\Factories;
 
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;

@@ -16,7 +16,8 @@ When you read this skill, the project conventions are already in effect. Treat t
 
 ### Backend
 
-- Modular layout under `app/<Domain>/` (e.g. `app/Auth/`, `app/Post/`, `app/Comment/`). Each domain owns its controllers, models, requests, resources, routes, providers, factories, seeders, enums, listeners.
+- **Module architecture (SOC-38).** Domain modules live under `app/Modules/<Domain>/` (namespace `App\Modules\<Domain>\…`). Everything **outside** `app/Modules/` (`app/Providers/`, `app/Http/`, `app/Events/`, `app/Console/`, global listeners, policies, middleware) is a global application file. The migration is incremental: **only `Post` has moved** (`app/Modules/Post/`); `Auth`, `Comment`, `Friendship`, `Home`, `Like`, `MediaLibrary` and `User` still live at `app/<Domain>/` (the *old architecture*) until their own task moves them (e.g. Auth → `app/Modules/Auth/`). New domains go under `app/Modules/`.
+- Each domain owns its controllers, models, requests, resources, routes, providers, factories, seeders, enums, listeners. Paths below written as `app/<Domain>/` apply to the old architecture; a migrated module uses the same layout under `app/Modules/<Domain>/`.
 - Each domain registers two providers in `bootstrap/providers.php`:
   - `<Domain>ServiceProvider` — registers the route + event providers.
   - `<Domain>RouteServiceProvider` — extends `Illuminate\Foundation\Support\Providers\RouteServiceProvider`, loads routes from `app/<Domain>/routes/routes.php` under the `web` middleware group.
@@ -24,24 +25,25 @@ When you read this skill, the project conventions are already in effect. Treat t
 - File naming inside a domain:
   - Controllers → `XxxController.php`
   - Form Requests → `XxxRequest.php` (with `HasFluentRules` + `FluentRule::*`)
-  - Models in singular under `Models/` (e.g. `app/Post/Models/Post.php`)
+  - Models in singular under `Models/` (e.g. `app/Modules/Post/Models/Post.php`)
   - Enums under `Enums/`
   - Listeners under any of: `<Domain>/Modules/<Feature>/Listeners/`, `<Domain>/<Feature>/Listeners/`, or `<Domain>/Listeners/`. Confirm via `grep -r "extends Listener" app/` when uncertain.
-  - Migrations and factories under `Database/Migrations/` and `Database/Factories/`
+  - Migrations, factories and seeders under `Database/Migrations/`, `Database/Factories/` and `Database/Seeders/` (Post follows this: `app/Modules/Post/Database/{Factories,Seeders}/`)
+  - Module tests under `Tests/` inside the module (`app/Modules/Post/Tests/` for migrated modules), grouped by responsibility (`Crud/`, `Models/`, `Requests/`, `Resources/`, `Database/`, …) and registered in `phpunit.xml` + `tests/Pest.php`
 - PSR-4 namespace must match the path. Every PHP file starts with `declare(strict_types=1);`.
 - Typed class constants: `private const string NAME = '...';` (see `FortifyServiceProvider`).
 - **No single-letter variable names** in PHP or TypeScript. Use a full descriptive word (`$candidate`, `$device`, `$browserFilter`, `deviceTypeFilter`). Single-letter closure parameters like `$v`, `$i`, `$e` are forbidden — they force the reader to decode intent from context. The only acceptable exception is a numeric `for` loop counter. Mirrors the Laravel Boost foundation rule but is enforced more strictly because the rule was being violated in practice.
 - Create files with the appropriate `php artisan make:*` command (`--no-interaction`). Don't hand-author migrations, models, requests, controllers, or tests when a generator exists.
-- **Submodule convention** (`app/<Domain>/Modules/<Feature>/`) — established in SOC-14. Use when a feature grows beyond a per-concern folder and earns its own namespace (canonical example: `app/Auth/Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap. Extraction rule of thumb: the feature owns its own event listeners, or has 3+ controllers/requests of its own.
+- **Submodule convention — old architecture** (`app/<Domain>/Modules/<Feature>/`) — established in SOC-14. Don't confuse it with the top-level `app/Modules/` folder; Auth/User submodules will be relocated when those domains migrate. Use when a feature grows beyond a per-concern folder and earns its own namespace (canonical example: `app/Auth/Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap. Extraction rule of thumb: the feature owns its own event listeners, or has 3+ controllers/requests of its own.
 - See [`CLAUDE.md`](../../CLAUDE.md) "Modular service-provider pattern" and "Models and relations" sections for the canonical references.
 
 ### Frontend
 
-- `resources/js/modules/<domain>/` mirrors the PHP domains. The shape varies per domain but the common pattern is: a barrel `index.ts` re-exporting the domain's page components, types, hooks, and assets; plus per-domain folders like `components/`, `types/`, `hooks/`, `assets/`, `enums/`. Some domains split by feature into subfolders (e.g. `modules/auth/{login,password,register,layouts}/`, plus top-level page files like `TwoFactorChallenge.tsx` and `VerifyEmail.tsx`). Example: `app/Post/` ↔ `resources/js/modules/post/`.
+- `resources/js/modules/<domain>/` mirrors the PHP domains. The shape varies per domain but the common pattern is: a barrel `index.ts` re-exporting the domain's page components, types, hooks, and assets; plus per-domain folders like `components/`, `types/`, `hooks/`, `assets/`, `enums/`. Some domains split by feature into subfolders (e.g. `modules/auth/{login,password,register,layouts}/`, plus top-level page files like `TwoFactorChallenge.tsx` and `VerifyEmail.tsx`). Example: `app/Modules/Post/` ↔ `resources/js/modules/post/`.
 - Shared code under `resources/js/shared/`:
   - `components/shadcn/ui/` — shadcn primitives (style `new-york`, base `neutral`, see `components.json`)
   - `components/`, `hooks/`, `lib/`, `types/`, `assets/`, `enums/`, `utils/`, `pages/`
-  - `wayfinder/` — **auto-generated** by the Vite plugin (`@laravel/vite-plugin-wayfinder`, output path in `vite.config.ts`). Never edit by hand; only exists after the first `npm run dev` / `npm run build`.
+  - `wayfinder/` — **auto-generated** by the Vite plugin (`@laravel/vite-plugin-wayfinder`, output path in `vite.config.ts`). Never edit by hand; gitignored, so it only exists after the first `npm run dev` / `npm run build` or `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder`. Generated paths mirror the PHP namespace: migrated modules appear under `actions/App/Modules/<Domain>/…`, old-architecture domains under `actions/App/<Domain>/…`; after moving a module, regenerate and update the imports.
 - Naming:
   - Components & pages `.tsx` → `PascalCase.tsx`
   - Types, hooks, utils `.ts` → `camelCase.ts`

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Post\Controllers\PostController;
+use App\Modules\Post\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {

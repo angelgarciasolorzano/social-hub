@@ -4,6 +4,19 @@ Documento de referencia para crear y mantener módulos del backend en este proye
 
 > ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines una convención (o cualquier otro cambio de arquitectura del backend), actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de las convenciones del proyecto y no debe quedar desincronizada con el código.
 
+## 0. Ubicación de los módulos: `app/Modules/` (SOC-38)
+
+Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\Modules\<Module>\…`). Todo lo que quede **fuera** de `app/Modules/` es global a la aplicación:
+
+| Dentro de `app/Modules/`                                                                | Fuera de `app/Modules/` (global)                                                           |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/` |
+| Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                             |
+
+**Estado de la migración:** la arquitectura es incremental. Hoy solo **Post** vive en `app/Modules/Post/`. Los demás dominios (`Auth`, `Comment`, `Friendship`, `Home`, `Like`, `MediaLibrary`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+
+**Frontend y Wayfinder:** el namespace del controller determina la ruta de las acciones generadas. Un módulo migrado se importa desde `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; los de la arquitectura vieja, desde `@/shared/wayfinder/actions/App/<Domain>/…`. El directorio está en `.gitignore`: tras mover un módulo, regenera con `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` y actualiza los imports.
+
 ## 1. Convención de nomenclatura
 
 Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del módulo.
@@ -30,7 +43,7 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 ## 2. Estructura de un módulo
 
 ```
-app/<Module>/
+app/Modules/<Module>/
 ├── Controllers/
 │   └── {Module}Controller.php
 ├── Models/
@@ -63,7 +76,9 @@ app/<Module>/
 - `Providers/` (ambos providers)
 - `routes/`
 
-## 3. Submódulos
+## 3. Submódulos (arquitectura vieja)
+
+> Esta sección describe el layout `app/<Domain>/Modules/<Feature>/` de la arquitectura vieja (Auth y User). Cuando esos dominios se migren, vivirán en `app/Modules/<Domain>/` (p. ej. `app/Modules/Auth/`).
 
 Cuando un módulo tiene **varias áreas independientes** que ameritan su propio espacio, se subdivide. Ejemplos del proyecto:
 
@@ -168,21 +183,24 @@ app/<Module>/Modules/<Feature>/
 
 Las pruebas nuevas se guardan junto al módulo dueño de la funcionalidad:
 
-- Módulo de dominio: `app/<Domain>/Tests/`.
-- Funcionalidad de un submódulo: `app/<Domain>/Modules/<Feature>/Tests/`.
+- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (hoy Post).
+- Módulo de dominio en la arquitectura vieja: `app/<Domain>/Tests/`.
+- Funcionalidad de un submódulo (arquitectura vieja): `app/<Domain>/Modules/<Feature>/Tests/`.
 - Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes que aún no se hayan migrado; no agregues allí nuevas pruebas específicas de un módulo.
 
 Dentro de cada `Tests/`, agrupa por responsabilidad:
 
 - `Crud/` para crear, actualizar y eliminar recursos.
-- `Factories/` para verificar factories cuando corresponda.
+- `Database/` para verificar factories y seeders cuando corresponda.
+- `Models/` para relaciones, morph map y colecciones de media del modelo.
 - `Lifecycle/` para renovaciones, reactivaciones y otros cambios de ciclo de vida.
 - `Listeners/` para comportamiento disparado por listeners.
 - `Queries/` para índices, listados y filtros.
-- `Seeders/` para datos iniciales.
+- `Requests/` para reglas y mensajes de validación de FormRequests.
+- `Resources/` para la serialización de los Resources.
 
 Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
-Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente `app/Auth/Modules/TrustedDevice/Tests/` ya está registrado.
+Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente ya están registrados `app/Modules/Post/Tests/` y los de Auth/User (`app/Auth/Modules/*/Tests/`, `app/User/Modules/*/Tests/`).
 
 ## 5. Cómo crear un módulo nuevo
 
@@ -191,33 +209,33 @@ Sigue esta checklist en orden:
 1. **Crear la estructura de carpetas:**
 
    ```bash
-   mkdir -p app/{Module}/{Models,Providers,routes,Controllers,Requests,Resources,Database/{Migrations,Factories,Seeders}}
+   mkdir -p app/Modules/{Module}/{Models,Providers,routes,Controllers,Requests,Resources,Database/{Migrations,Factories,Seeders}}
    ```
 
-2. **Crear el modelo** en `app/{Module}/Models/{Module}.php`
+2. **Crear el modelo** en `app/Modules/{Module}/Models/{Module}.php`
 
-3. **Crear la factory** en `app/{Module}/Database/Factories/{Module}Factory.php`. Su estado predeterminado debe cubrir los campos persistidos del modelo y su migración con valores realistas o `null` explícito; deja que Eloquent gestione la clave primaria y los timestamps.
+3. **Crear la factory** en `app/Modules/{Module}/Database/Factories/{Module}Factory.php`. Su estado predeterminado debe cubrir los campos persistidos del modelo y su migración con valores realistas o `null` explícito; deja que Eloquent gestione la clave primaria y los timestamps.
 
 4. **Crear los dos providers:**
-   - `app/{Module}/Providers/{Module}ServiceProvider.php` — su `boot()` registra el `RouteServiceProvider`
-   - `app/{Module}/Providers/{Module}RouteServiceProvider.php` — extiende `Illuminate\Foundation\Support\Providers\RouteServiceProvider`, carga `app/{Module}/routes/routes.php` con middleware `web`
+   - `app/Modules/{Module}/Providers/{Module}ServiceProvider.php` — su `boot()` registra el `RouteServiceProvider`
+   - `app/Modules/{Module}/Providers/{Module}RouteServiceProvider.php` — extiende `Illuminate\Foundation\Support\Providers\RouteServiceProvider`, carga `app/Modules/{Module}/routes/routes.php` con middleware `web`
 
 5. **Registrar el `{Module}ServiceProvider`** en `bootstrap/providers.php`
 
-6. **Crear el controller** en `app/{Module}/Controllers/{Module}Controller.php`
+6. **Crear el controller** en `app/Modules/{Module}/Controllers/{Module}Controller.php`
 
 7. **Crear las Requests** según las acciones (Store, Update, u otras específicas)
 
 8. **Crear la Resource** (y Collection si hay listado)
 
-9. **Definir las rutas** en `app/{Module}/routes/routes.php`
+9. **Definir las rutas** en `app/Modules/{Module}/routes/routes.php`
 
-10. **Crear las pruebas junto al código que cubren:** `app/{Module}/Tests/` para pruebas del módulo o `app/{Module}/Modules/{Feature}/Tests/` para un submódulo. Registra la carpeta en `phpunit.xml` y `tests/Pest.php` para que Pest la descubra y aplique la configuración correcta.
+10. **Crear las pruebas junto al código que cubren:** `app/Modules/{Module}/Tests/` para pruebas del módulo (en la arquitectura vieja: `app/{Module}/Tests/` o `app/{Module}/Modules/{Feature}/Tests/` para un submódulo). Registra la carpeta en `phpunit.xml` y `tests/Pest.php` para que Pest la descubra y aplique la configuración correcta.
 
 ## 6. Convenciones adicionales
 
 - Todo archivo PHP empieza con `declare(strict_types=1);`
-- Namespaces PSR-4: `App\{Module}\{Type}`
+- Namespaces PSR-4: `App\Modules\{Module}\{Type}` (arquitectura vieja: `App\{Module}\{Type}`)
 - Al cambiar un modelo o su esquema, revisa y actualiza su factory para cubrir sus campos persistidos con datos realistas o `null` explícito; omite solo los campos que Eloquent administra automáticamente, como la clave primaria y los timestamps.
 - Relaciones Eloquent declaran genéricos en PHPDoc: `@return HasMany<Post, $this>`
 - Models con `HasFactory` declaran el genérico: `/** @use HasFactory<{Module}Factory> */`
@@ -227,7 +245,7 @@ Sigue esta checklist en orden:
 ## Ejemplo canónico: módulo `Post`
 
 ```
-app/Post/
+app/Modules/Post/
 ├── Controllers/PostController.php
 ├── Database/
 │   ├── Factories/PostFactory.php
@@ -239,7 +257,11 @@ app/Post/
 ├── Requests/PostRequest.php
 ├── Resources/PostResource.php
 ├── Tests/
-│   └── Crud/
+│   ├── Crud/
+│   ├── Database/
+│   ├── Models/
+│   ├── Requests/
+│   └── Resources/
 └── routes/routes.php
 ```
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Post\Resources;
+namespace App\Modules\Post\Resources;
 
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Override;

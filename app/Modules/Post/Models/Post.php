@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Post\Models;
+namespace App\Modules\Post\Models;
 
 use App\Comment\Models\Comment;
 use App\Like\Models\Like;
-use App\Post\Factories\PostFactory;
+use App\Modules\Post\Database\Factories\PostFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -53,7 +53,7 @@ class Post extends Model implements HasMedia
     /**
      * Glob pattern for test images used in seeding.
      */
-    public const string TEST_IMAGES_GLOB_PATH = 'Post/Seeders/Images/*.{jpg,jpeg,png}';
+    public const string TEST_IMAGES_GLOB_PATH = 'Modules/Post/Database/Seeders/Images/*.{jpg,jpeg,png}';
 
     /**
      * Register the media collections for the post images.

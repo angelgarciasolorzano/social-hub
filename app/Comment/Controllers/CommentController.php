@@ -9,7 +9,7 @@ use App\Comment\Models\Comment;
 use App\Comment\Requests\CommentStoreRequest;
 use App\Comment\Resources\CommentCollection;
 use App\Http\Controllers\Controller;
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Home\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Post\Models\Post;
-use App\Post\Resources\PostResource;
+use App\Modules\Post\Models\Post;
+use App\Modules\Post\Resources\PostResource;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;

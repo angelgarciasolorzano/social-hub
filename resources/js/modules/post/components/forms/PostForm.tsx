@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
-import PostController from "@/shared/wayfinder/actions/App/Post/Controllers/PostController";
+import PostController from "@/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController";
 
 import { LabelForm } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";

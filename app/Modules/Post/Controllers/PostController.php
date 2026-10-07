@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Post\Controllers;
+namespace App\Modules\Post\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Post\Requests\PostRequest;
+use App\Modules\Post\Requests\PostRequest;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;

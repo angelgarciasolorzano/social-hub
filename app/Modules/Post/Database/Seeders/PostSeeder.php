@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Post\Seeders;
+namespace App\Modules\Post\Database\Seeders;
 
-use App\Post\Models\Post;
+use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Seeder;
