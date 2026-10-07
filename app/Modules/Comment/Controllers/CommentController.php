@@ -26,6 +26,7 @@ class CommentController extends Controller
 
         $cursorPaginator = $commentable->comments()
             ->with('user')
+            ->withCount('comments')
             ->orderByDesc('id')
             ->cursorPaginate(10);
 

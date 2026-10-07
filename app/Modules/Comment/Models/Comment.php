@@ -91,15 +91,17 @@ class Comment extends Model
      */
     public function hasReplies(): bool
     {
-        return $this->comments()->exists();
+        return $this->repliesCount() > 0;
     }
 
     /**
-     * Get the total number of replies for this comment.
+     * Get the total number of replies, reusing a preloaded `comments_count` when present.
      */
     public function repliesCount(): int
     {
-        return $this->comments()->count();
+        $loadedCount = $this->getAttributes()['comments_count'] ?? null;
+
+        return is_numeric($loadedCount) ? (int) $loadedCount : $this->comments()->count();
     }
 
     /**
