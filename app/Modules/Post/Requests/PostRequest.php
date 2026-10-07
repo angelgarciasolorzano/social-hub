@@ -14,7 +14,7 @@ use SanderMuller\FluentValidation\HasFluentRules;
  * Summary of PostRequest
  *
  * @property-read string $content
- * @property-read UploadedFile|null $image
+ * @property-read UploadedFile|null $image_file
  */
 class PostRequest extends FormRequest
 {
@@ -39,7 +39,7 @@ class PostRequest extends FormRequest
             'content' => FluentRule::string()
                 ->required(message: 'El contenido de la publicación es obligatorio')
                 ->min(10, message: 'El contenido de la publicación no debe ser menor a 10 caracteres'),
-            'image' => FluentRule::file()
+            'image_file' => FluentRule::file()
                 ->nullable()
                 ->mimes('png', 'jpg', 'webp')->message('El archivo debe ser de tipo png, jpg o webp')
                 ->max(5120, message: 'El archivo no debe ser mayor a 5MB'),

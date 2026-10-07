@@ -42,7 +42,7 @@ it('accepts png, jpg and webp images', function (string $fileName): void {
         ->actingAs(createUser())
         ->with([
             'content' => 'Contenido de la publicación',
-            'image' => UploadedFile::fake()->image($fileName),
+            'image_file' => UploadedFile::fake()->image($fileName),
         ])
         ->passes();
 })->with(['photo.png', 'photo.jpg', 'photo.webp']);
@@ -52,11 +52,11 @@ it('rejects files that are not png, jpg or webp images', function (): void {
         ->actingAs(createUser())
         ->with([
             'content' => 'Contenido de la publicación',
-            'image' => UploadedFile::fake()->create('document.pdf', 10, 'application/pdf'),
+            'image_file' => UploadedFile::fake()->create('document.pdf', 10, 'application/pdf'),
         ])
-        ->failsOnly('image', 'mimes');
+        ->failsOnly('image_file', 'mimes');
 
-    expect($fluentRulesTester->errors()->first('image'))->toBe('El archivo debe ser de tipo png, jpg o webp');
+    expect($fluentRulesTester->errors()->first('image_file'))->toBe('El archivo debe ser de tipo png, jpg o webp');
 });
 
 it('rejects images larger than 5MB with a custom message', function (): void {
@@ -64,9 +64,9 @@ it('rejects images larger than 5MB with a custom message', function (): void {
         ->actingAs(createUser())
         ->with([
             'content' => 'Contenido de la publicación',
-            'image' => UploadedFile::fake()->image('photo.jpg')->size(5121),
+            'image_file' => UploadedFile::fake()->image('photo.jpg')->size(5121),
         ])
-        ->failsOnly('image', 'max');
+        ->failsOnly('image_file', 'max');
 
-    expect($fluentRulesTester->errors()->first('image'))->toBe('El archivo no debe ser mayor a 5MB');
+    expect($fluentRulesTester->errors()->first('image_file'))->toBe('El archivo no debe ser mayor a 5MB');
 });

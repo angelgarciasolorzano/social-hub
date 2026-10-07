@@ -82,7 +82,7 @@ it('flashes an error but keeps the post when the image is too big', function ():
     $this->actingAs($user)
         ->post(route('post.store'), [
             'content' => 'Publicación con imagen enorme',
-            'image_file' => UploadedFile::fake()->createWithContent('big.jpg', str_repeat('a', 2048)),
+            'image_file' => UploadedFile::fake()->image('big.jpg', 600, 600),
         ])
         ->assertRedirect()
         ->assertSessionHas('notification.type', 'error')
@@ -93,4 +93,34 @@ it('flashes an error but keeps the post when the image is too big', function ():
     expect($post->user_id)->toBe($user->id)
         ->and($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))
         ->toBeEmpty();
+});
+
+it('rejects an uploaded file that is not a png, jpg or webp image', function (): void {
+    Storage::fake('public');
+
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->post(route('post.store'), [
+            'content' => 'Publicación con un archivo inválido',
+            'image_file' => UploadedFile::fake()->create('document.pdf', 10, 'application/pdf'),
+        ])
+        ->assertSessionHasErrors(['image_file' => 'El archivo debe ser de tipo png, jpg o webp']);
+
+    expect(Post::query()->count())->toBe(0);
+});
+
+it('rejects an uploaded image larger than 5MB', function (): void {
+    Storage::fake('public');
+
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->post(route('post.store'), [
+            'content' => 'Publicación con una imagen pesada',
+            'image_file' => UploadedFile::fake()->image('photo.jpg')->size(5121),
+        ])
+        ->assertSessionHasErrors(['image_file' => 'El archivo no debe ser mayor a 5MB']);
+
+    expect(Post::query()->count())->toBe(0);
 });

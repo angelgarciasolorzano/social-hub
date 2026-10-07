@@ -22,7 +22,7 @@
     "Reorganizar el interior de Post (Controllers/Database/Models/Providers/Requests/Resources/routes se conservan; Factories y Seeders pasan a Database/, como en User).",
     "Cambiar comportamiento: la única excepción deliberada es la migración de PostRequest a FluentValidation (mismas reglas y mensajes; corrige el espacio en 'mimes:png,jpg, webp').",
     "Agregar tests a módulos distintos de Post.",
-    "Corregir la discrepancia image/image_file de PostRequest vs PostController ni la regla 'mimes:png,jpg, webp' (se documenta, se cubre con tests de comportamiento actual y queda como seguimiento)."
+    "Nada pendiente sobre la discrepancia image/image_file: tras la revisión de Pullfrog en el PR #37 se corrigió dentro de SOC-38 (la regla de PostRequest ahora valida image_file, con tests de store que rechazan archivos inválidos y pesados)."
   ],
   "contracts": [
     "Namespace final: App\\Modules\\Post\\{Controllers,Database\\Factories,Database\\Seeders,Models,Providers,Requests,Resources}; ruta post.store (POST /post, middleware auth+verified) idéntica; morph key 'post' idéntica.",
@@ -719,7 +719,7 @@
     "Morph map apuntando a la clase equivocada: TASK-007 verifica Relation::getMorphedModel('post'); un desfase rompe polimórficos de Comment/Like.",
     "Rutas de media: si TEST_IMAGES_GLOB_PATH o Post::PATH cambian por error, las imágenes de seed o subidas quedarían en otra ruta; TASK-001/006 lo cubren con criterios explícitos.",
     "Wayfinder deja restos de actions/App/Post/ o el frontend importa la ruta vieja: TASK-011/012/021/022 lo detectan (types, build y grep).",
-    "Discrepancia existente: PostRequest valida 'image' pero PostController lee 'image_file', por lo que la validación de la imagen no se aplica al upload real. No se corrige aquí; los tests documentan el comportamiento actual y debe abrirse una issue de seguimiento.",
+    "Discrepancia detectada y corregida: PostRequest validaba 'image' pero PostController y el frontend usan 'image_file', por lo que tipo y tamaño no se validaban en uploads reales. La regla ahora es 'image_file'; efecto: uploads inválidos (no png/jpg/webp o > 5MB) devuelven error de validación en lugar de llegar a la media library.",
     "Directorio app/Post/Seeders/Images/ no existe en el repo: la factory ya es tolerante (glob vacío); no se debe 'arreglar' creando imágenes dentro de esta tarea.",
     "bootstrap/ssr/ contiene artefactos compilados con rutas viejas; se regenera con npm run build:ssr y no se edita a mano."
   ],
