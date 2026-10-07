@@ -381,7 +381,7 @@ function TrustedDeviceTable({
 
                     return (
                       <TableHead
-                        className="group relative overflow-hidden"
+                        className="group relative overflow-hidden text-sm font-medium"
                         key={header.id}
                         scope="col"
                         style={{ width: header.getSize() }}
@@ -420,7 +420,7 @@ function TrustedDeviceTable({
                   <TableCell className="p-0" colSpan={table.getVisibleLeafColumns().length + 1}>
                     <div
                       className={cn(
-                        "flex flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground",
+                        "flex flex-col items-center justify-center gap-2 py-8 text-center text-sm font-normal text-muted-foreground",
                         isCompactPageSize ? "min-h-48" : "min-h-128",
                       )}
                     >
@@ -456,7 +456,7 @@ function TrustedDeviceTable({
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         className={cn(
-                          "overflow-hidden",
+                          "overflow-hidden text-sm font-normal",
                           getTrustedDeviceTableCellClassName(cell.column.id),
                         )}
                         key={cell.id}
@@ -528,7 +528,7 @@ function TrustedDeviceIpCell({ device }: TrustedDeviceIpCellProps): JSX.Element 
   const ipAddress = device.ip ?? "No disponible";
 
   return (
-    <span className="block truncate font-mono text-xs" title={device.ip ?? undefined}>
+    <span className="block truncate font-mono text-xs font-normal" title={device.ip ?? undefined}>
       {ipAddress}
     </span>
   );

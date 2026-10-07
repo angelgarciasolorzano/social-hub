@@ -204,7 +204,7 @@ function TrustedDeviceColumnVisibilityMenu({
 
       <PopoverContent align="end" className="w-60 p-3">
         <FieldSet className="gap-2">
-          <FieldLegend className="mb-0 font-bold" variant="label">
+          <FieldLegend className="mb-0 text-sm font-medium" variant="label">
             Columnas visibles
           </FieldLegend>
 
@@ -224,7 +224,7 @@ function TrustedDeviceColumnVisibilityMenu({
                       }));
                     }}
                   />
-                  <FieldLabel className="cursor-pointer font-normal" htmlFor={checkboxId}>
+                  <FieldLabel className="cursor-pointer text-sm font-medium" htmlFor={checkboxId}>
                     {columnOption.label}
                   </FieldLabel>
                 </Field>
@@ -361,7 +361,7 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
       <PopoverContent align="end" className="w-72 p-3">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Filtros</h4>
+            <h4 className="text-sm font-medium">Filtros</h4>
 
             <Button
               type="button"
@@ -417,7 +417,7 @@ function FilterCombobox({
 
     return (
       <div className="flex flex-col gap-1.5">
-        <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+        <FieldLabel className="text-sm font-medium text-muted-foreground" htmlFor={filterControlId}>
           {label}
         </FieldLabel>
 
@@ -465,7 +465,7 @@ function FilterCombobox({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+      <FieldLabel className="text-sm font-medium text-muted-foreground" htmlFor={filterControlId}>
         {label}
       </FieldLabel>
 
@@ -477,7 +477,7 @@ function FilterCombobox({
       >
         <ComboboxTrigger
           className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm font-medium shadow-xs",
             "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
           )}
           id={filterControlId}
@@ -523,7 +523,7 @@ function TrustedDeviceSortPopover({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-3">
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold">Ordenar por</h4>
+          <h4 className="text-sm font-medium">Ordenar por</h4>
 
           <RadioGroup
             value={sortOrder}
@@ -546,7 +546,9 @@ function TrustedDeviceSortPopover({
 
                 <div className="flex flex-1 flex-col gap-0.5 leading-tight">
                   <span className="text-sm font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {option.description}
+                  </span>
                 </div>
               </label>
             ))}
@@ -557,7 +559,7 @@ function TrustedDeviceSortPopover({
           <div className="flex items-center justify-between">
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-medium">Predeterminado</span>
-              <span className="text-xs text-muted-foreground">{selectedSortLabel}</span>
+              <span className="text-xs font-normal text-muted-foreground">{selectedSortLabel}</span>
             </div>
 
             <Button
