@@ -3,6 +3,8 @@ import { type JSX, type ReactNode, useEffect, useRef } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft, CircleCheck, Hash, ScanLine, Smartphone } from "lucide-react";
 
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
+
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
@@ -40,7 +42,7 @@ interface TwoFactorSetupDialogProps {
 
 export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): JSX.Element {
   const dialogTitleRef = useRef<HTMLHeadingElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogFocusRestoration = useDialogFocusRestoration();
 
   const {
     clearSetupData,
@@ -132,27 +134,7 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
       }}
       open={isOpen}
     >
-      <DialogContent
-        className="sm:max-w-md"
-        onOpenAutoFocus={() => {
-          const activeElement = document.activeElement;
-
-          returnFocusRef.current =
-            activeElement instanceof HTMLElement && activeElement !== document.body
-              ? activeElement
-              : null;
-        }}
-        onCloseAutoFocus={(event) => {
-          const focusTarget = returnFocusRef.current;
-
-          if (focusTarget?.isConnected) {
-            event.preventDefault();
-            focusTarget.focus();
-          }
-
-          returnFocusRef.current = null;
-        }}
-      >
+      <DialogContent className="sm:max-w-md" {...dialogFocusRestoration}>
         {step === twoFactorActivationStepKey.manualSetup ? (
           <Button
             type="button"

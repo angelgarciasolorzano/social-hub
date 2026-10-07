@@ -1,10 +1,11 @@
-import { type JSX, useEffect, useRef } from "react";
+import { type JSX, useEffect } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
 import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import {
   formatActivationDate,
   formatActivationTime,
@@ -66,7 +67,7 @@ function TwoFactorActivationDetailsDialog({
   setOpen,
   confirmedAt,
 }: TwoFactorActivationDetailsDialogProps): JSX.Element {
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogFocusRestoration = useDialogFocusRestoration();
   const { firstTrustedDevice = null } = usePage<TwoFactorEnablePageProps>().props;
 
   const activationDate = formatActivationDate(confirmedAt);
@@ -120,26 +121,7 @@ function TwoFactorActivationDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent
-        onOpenAutoFocus={() => {
-          const activeElement = document.activeElement;
-
-          returnFocusRef.current =
-            activeElement instanceof HTMLElement && activeElement !== document.body
-              ? activeElement
-              : null;
-        }}
-        onCloseAutoFocus={(event) => {
-          const focusTarget = returnFocusRef.current;
-
-          if (focusTarget?.isConnected) {
-            event.preventDefault();
-            focusTarget.focus();
-          }
-
-          returnFocusRef.current = null;
-        }}
-      >
+      <DialogContent {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">
