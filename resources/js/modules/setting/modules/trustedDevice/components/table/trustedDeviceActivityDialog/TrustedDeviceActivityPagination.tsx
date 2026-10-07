@@ -80,6 +80,7 @@ function ActivityPaginationNumberButton({
     <Button
       aria-label={isActive ? `Página actual ${page}` : `Ir a la página ${page}`}
       aria-current={isActive ? "page" : undefined}
+      className="text-sm font-medium"
       onClick={() => {
         onPageChange(page);
       }}
