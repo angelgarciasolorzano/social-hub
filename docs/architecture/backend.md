@@ -8,12 +8,14 @@ Documento de referencia para crear y mantener módulos del backend en este proye
 
 Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\Modules\<Module>\…`). Todo lo que quede **fuera** de `app/Modules/` es global a la aplicación:
 
-| Dentro de `app/Modules/`                                                                | Fuera de `app/Modules/` (global)                                                           |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/` |
-| Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                             |
+| Dentro de `app/Modules/`                                                                | Fuera de `app/Modules/` (global)                                                                                    |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/Commands/`, `app/Support/` |
+| Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                                                      |
 
-**Estado de la migración:** la arquitectura es incremental. Hoy **Post** y **Comment** viven en `app/Modules/Post/` y `app/Modules/Comment/`. Los demás dominios (`Auth`, `Friendship`, `Home`, `Like`, `MediaLibrary`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+**Estado de la migración:** la arquitectura es incremental. Hoy **Post** y **Comment** viven en `app/Modules/Post/` y `app/Modules/Comment/`. Los demás dominios (`Auth`, `Friendship`, `Home`, `Like`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+
+**Código global (SOC-42):** no todo lo que vive hoy en la raíz de `app/` es un dominio pendiente de migrar. Va fuera de `app/Modules/` lo que sirve a varios dominios o al framework y no tiene modelos, rutas ni lógica de negocio propia: comandos de Artisan en `app/Console/Commands/` (se descubren solos; no necesitan provider), providers y middleware globales, y clases compartidas sin dominio en `app/Support/`. `MediaLibrary` es el ejemplo: es una integración con `spatie/laravel-medialibrary` que usan Post y User, así que su path generator vive en `app/Support/MediaLibrary/`, su comando en `app/Console/Commands/MediaLibraryCleanFoldersCommand.php` y sus tests en `tests/Feature/MediaLibrary/` (código global, no en `app/Modules/`). `app/Support/` es una carpeta base aprobada explícitamente en SOC-42; crear otra carpeta base requiere aprobación, como indica `AGENTS.md`. Los comandos destructivos se protegen con `Prohibitable` y se prohíben en producción desde `AppServiceProvider::boot()`.
 
 **Frontend y Wayfinder:** el namespace del controller determina la ruta de las acciones generadas. Un módulo migrado se importa desde `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; los de la arquitectura vieja, desde `@/shared/wayfinder/actions/App/<Domain>/…`. El directorio está en `.gitignore`: tras mover un módulo, regenera con `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` y actualiza los imports.
 
@@ -156,20 +158,20 @@ app/<Module>/Modules/<Feature>/
 
 ## 4. Responsabilidad de cada archivo
 
-| Tipo                       | Qué hace                                                           |
-| -------------------------- | ------------------------------------------------------------------ |
-| **Controller**             | Orquesta HTTP: recibe Request → llama al modelo → retorna Response |
-| **Model**                  | Entidad del dominio + relaciones Eloquent                          |
-| **Request**                | Valida input del usuario (FormRequest con FluentRule)              |
-| **Resource**               | Transforma un modelo al JSON que verá el cliente                   |
-| **Data**                   | Representa y normaliza input, filtros o estructuras no modeladas   |
-| **Factory**                | Genera instancias falsas para tests/seeders                        |
-| **Seeder**                 | Puebla la BD con datos iniciales                                   |
-| **Policy**                 | Reglas de autorización (quién puede hacer qué)                     |
-| **Service**                | Lógica de negocio compleja que no encaja en un controller          |
-| **Console Command**        | Operaciones Artisan: batch, mantenimiento, sincronización          |
-| **Service Provider**       | Registra bindings en el contenedor de Laravel                      |
-| **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                   |
+| Tipo                       | Qué hace                                                                    |
+| -------------------------- | --------------------------------------------------------------------------- |
+| **Controller**             | Orquesta HTTP: recibe Request → llama al modelo → retorna Response          |
+| **Model**                  | Entidad del dominio + relaciones Eloquent                                   |
+| **Request**                | Valida input del usuario (FormRequest con FluentRule)                       |
+| **Resource**               | Transforma un modelo al JSON que verá el cliente                            |
+| **Data**                   | Representa y normaliza input, filtros o estructuras no modeladas            |
+| **Factory**                | Genera instancias falsas para tests/seeders                                 |
+| **Seeder**                 | Puebla la BD con datos iniciales                                            |
+| **Policy**                 | Reglas de autorización (quién puede hacer qué)                              |
+| **Service**                | Lógica de negocio compleja que no encaja en un controller                   |
+| **Console Command**        | Operaciones Artisan: batch, mantenimiento (global: `app/Console/Commands/`) |
+| **Service Provider**       | Registra bindings en el contenedor de Laravel                               |
+| **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                            |
 
 > 💡 Si una acción no cabe en un controller (muchos casos, reglas complejas, transacciones múltiples) → crea un **Service**. Si una autorización es reutilizable → crea una **Policy**.
 
