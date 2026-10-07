@@ -78,12 +78,12 @@ function TrustedDeviceReactivationDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <RotateCw aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Reactivar dispositivo
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Para volver a confiar en este dispositivo, ingresa el código de verificación de tu
             aplicación autenticadora.
           </DialogDescription>

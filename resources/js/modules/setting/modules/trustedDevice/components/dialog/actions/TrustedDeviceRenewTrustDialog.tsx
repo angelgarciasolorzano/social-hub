@@ -79,12 +79,12 @@ function TrustedDeviceRenewTrustDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <RefreshCcw aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Renovar confianza
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Extiende el periodo de confianza para evitar que se te solicite el codigo de
             verificacion en este dispositivo.
           </DialogDescription>
@@ -136,8 +136,10 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
           <CalendarClock />
         </ItemMedia>
         <ItemContent>
-          <ItemTitle>Expiracion actual</ItemTitle>
-          <ItemDescription>{formatLongDate(device.expiresAt)}</ItemDescription>
+          <ItemTitle className="text-xs font-medium">Expiracion actual</ItemTitle>
+          <ItemDescription className="text-sm font-normal">
+            {formatLongDate(device.expiresAt)}
+          </ItemDescription>
         </ItemContent>
       </Item>
 
@@ -153,8 +155,8 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
           <CalendarRange />
         </ItemMedia>
         <ItemContent>
-          <ItemTitle>Nueva expiración</ItemTitle>
-          <ItemDescription>{newExpiresAtFormatted}</ItemDescription>
+          <ItemTitle className="text-xs font-medium">Nueva expiración</ItemTitle>
+          <ItemDescription className="text-sm font-normal">{newExpiresAtFormatted}</ItemDescription>
         </ItemContent>
         <ItemActions>
           <Badge className={badgeVariants.success}>+ {TRUST_RENEWAL_LABEL}</Badge>
