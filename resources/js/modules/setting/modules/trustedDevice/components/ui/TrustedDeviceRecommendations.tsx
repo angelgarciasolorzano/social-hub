@@ -21,7 +21,7 @@ function TrustedDeviceRecommendations({
   return (
     <Card>
       <CardHeader>
-        <h2 className="leading-none font-semibold tracking-tight">Recomendaciones</h2>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">Recomendaciones</h2>
       </CardHeader>
       <CardContent className="space-y-6">
         {trustedDeviceRecommendationsPreview.length === 0 ? (
@@ -54,9 +54,9 @@ function TrustedDeviceRecommendations({
                     </div>
 
                     <div className="space-y-1.5">
-                      <h3 className="text-sm font-semibold">{recommendation.title}</h3>
+                      <h3 className="text-sm font-medium">{recommendation.title}</h3>
 
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                      <p className="line-clamp-2 text-xs font-normal text-muted-foreground">
                         {recommendation.description}
                       </p>
                     </div>

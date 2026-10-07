@@ -59,7 +59,7 @@ function TrustedDeviceRecentActivity({
   return (
     <Card>
       <CardHeader>
-        <h2 className="leading-none font-semibold tracking-tight">Actividad reciente</h2>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">Actividad reciente</h2>
       </CardHeader>
       <CardContent className="space-y-4">
         {recentActivity.length === 0 ? (
@@ -88,17 +88,19 @@ function TrustedDeviceRecentActivity({
 
                       <div className="flex w-full items-center justify-between gap-4">
                         <div className="space-y-1">
-                          <h3 className="max-w-40 truncate text-sm font-semibold">
+                          <h3 className="max-w-40 truncate text-sm font-medium">
                             {item.deviceLabel ?? "Un dispositivo"}
                           </h3>
 
-                          <p className="text-sm text-muted-foreground">{item.actionLabel}</p>
+                          <p className="text-xs font-normal text-muted-foreground">
+                            {item.actionLabel}
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     <time
-                      className="text-sm text-muted-foreground"
+                      className="text-xs font-normal text-muted-foreground"
                       dateTime={item.createdAt ?? undefined}
                     >
                       {fromNow(item.createdAt)}

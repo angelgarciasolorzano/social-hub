@@ -27,9 +27,9 @@ export function TrustedDeviceDetailsHeader({
 }: TrustedDeviceDetailsHeaderProps): JSX.Element {
   return (
     <div className="flex flex-col gap-1">
-      {title.trim() !== "" && <h3 className="font-semibold">{title}</h3>}
+      {title.trim() !== "" && <h3 className="text-lg font-semibold">{title}</h3>}
 
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="text-sm font-normal text-muted-foreground">{description}</p>
     </div>
   );
 }
