@@ -6,6 +6,7 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -86,6 +87,25 @@ function createUser(): User
     $factory = User::factory();
 
     return $factory->createOne();
+}
+
+/**
+ * Create a persisted Post, same #[UseFactory] workaround as createUser().
+ * Pass `$user` to attach it to an existing owner, or omit it to let the
+ * factory create its own.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createPost(?User $user = null, array $attributes = []): Post
+{
+    /** @var Factory<Post> $factory */
+    $factory = Post::factory();
+
+    if ($user instanceof User) {
+        $factory = $factory->for($user);
+    }
+
+    return $factory->createOne($attributes);
 }
 
 /**

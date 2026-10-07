@@ -4,24 +4,11 @@ declare(strict_types=1);
 
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Resources\PostResource;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-/**
- * Create a persisted Post, same #[UseFactory] workaround as createUser()
- * in tests/Pest.php.
- */
-function createPostForResource(): Post
-{
-    /** @var Factory<Post> $factory */
-    $factory = Post::factory();
-
-    return $factory->createOne();
-}
-
 it('serializes only the public post fields', function (): void {
-    $post = createPostForResource();
+    $post = createPost();
 
     $payload = new PostResource($post)->toArray(request());
 
@@ -32,7 +19,7 @@ it('serializes only the public post fields', function (): void {
 });
 
 it('returns an empty image when the post has no media', function (): void {
-    $post = createPostForResource();
+    $post = createPost();
 
     expect(new PostResource($post)->toArray(request())['image'])->toBe('');
 });
@@ -40,7 +27,7 @@ it('returns an empty image when the post has no media', function (): void {
 it('returns the image url when the post has an image in posts_images', function (): void {
     Storage::fake('public');
 
-    $post = createPostForResource();
+    $post = createPost();
     $post->addMedia(UploadedFile::fake()->image('photo.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 

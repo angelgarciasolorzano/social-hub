@@ -5,27 +5,13 @@ declare(strict_types=1);
 use App\Comment\Enums\CommentType;
 use App\Like\Models\Like;
 use App\Modules\Post\Models\Post;
-use App\User\Models\User;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-/**
- * Create a persisted Post owned by the given user, same #[UseFactory]
- * workaround as createUser() in tests/Pest.php.
- */
-function createPostFor(User $user): Post
-{
-    /** @var Factory<Post> $factory */
-    $factory = Post::factory();
-
-    return $factory->for($user)->createOne();
-}
-
 it('belongs to the user who created it', function (): void {
     $user = createUser();
-    $post = createPostFor($user);
+    $post = createPost($user);
 
     expect($post->user?->id)->toBe($user->id)
         ->and($user->posts()->pluck('id')->all())->toBe([$post->id]);
@@ -33,8 +19,8 @@ it('belongs to the user who created it', function (): void {
 
 it('owns the comments and likes attached to it', function (): void {
     $user = createUser();
-    $post = createPostFor($user);
-    $otherPost = createPostFor($user);
+    $post = createPost($user);
+    $otherPost = createPost($user);
 
     $comment = $post->comments()->create(['user_id' => $user->id, 'content' => 'Un comentario']);
     $like = new Like;
@@ -57,7 +43,7 @@ it('is registered in the morph map under the post key', function (): void {
 it('keeps a single image in the posts_images collection', function (): void {
     Storage::fake('public');
 
-    $post = createPostFor(createUser());
+    $post = createPost(createUser());
 
     $post->addMedia(UploadedFile::fake()->image('first.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
