@@ -125,12 +125,12 @@ function TrustedDeviceRevokeAllDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Revocar todos los dispositivos
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Revocarás todos los dispositivos de confianza vinculados a tu cuenta. La próxima vez que
             inicies sesión desde cualquiera de ellos, se te volverá a solicitar el código de
             verificación.
@@ -251,10 +251,13 @@ function RevokeConsequencesAlert(): JSX.Element {
   return (
     <Alert aria-labelledby="revoke-all-warning-title" className={alertVariants.destructive}>
       <AlertTriangleIcon aria-hidden="true" />
-      <h3 className="col-start-2 min-h-4 font-medium tracking-tight" id="revoke-all-warning-title">
+      <h3
+        className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
+        id="revoke-all-warning-title"
+      >
         Consecuencias de revocar todos los dispositivos
       </h3>
-      <AlertDescription>
+      <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
           <li>Se eliminarán todos los dispositivos de confianza vinculados a tu cuenta.</li>
           <li>Se te volverá a solicitar el código de verificación (2FA) en esos dispositivos.</li>
@@ -292,8 +295,8 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-          <h3 className="font-semibold">{headline}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <h3 className="text-base font-semibold">{headline}</h3>
+          <p className="text-sm font-normal text-muted-foreground">{description}</p>
         </div>
       </div>
 
@@ -308,7 +311,7 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
 
                 <FaCircle aria-hidden="true" className="h-1 w-1 text-muted-foreground" />
 
-                <span className="text-muted-foreground">
+                <span className="text-xs font-normal text-muted-foreground">
                   {device.browser}
                   {device.browserVersion !== null && device.browserVersion !== "" && (
                     <> {device.browserVersion}</>
@@ -317,7 +320,7 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
 
                 <FaCircle aria-hidden="true" className="h-1 w-1 text-muted-foreground" />
 
-                <span className="truncate text-muted-foreground">
+                <span className="truncate text-xs font-normal text-muted-foreground">
                   Expira el {formatLongDate(device.expiresAt)}
                 </span>
               </li>

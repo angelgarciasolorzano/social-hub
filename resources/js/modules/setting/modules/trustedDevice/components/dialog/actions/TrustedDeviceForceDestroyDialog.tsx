@@ -72,15 +72,15 @@ function TrustedDeviceForceDestroyDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="[&_dt]:font-normal">
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Eliminar permanentemente
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Eliminarás permanentemente {device.name ?? "este dispositivo"} de tu cuenta. Esta acción
             es definitiva y no podrás volver a confiar en él.
           </DialogDescription>
@@ -136,12 +136,12 @@ function ForceDestroyConsequencesAlert(): JSX.Element {
     <Alert aria-labelledby="force-destroy-warning-title" className={alertVariants.destructive}>
       <AlertTriangleIcon aria-hidden="true" />
       <h3
-        className="col-start-2 min-h-4 font-medium tracking-tight"
+        className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
         id="force-destroy-warning-title"
       >
         Consecuencias de la eliminación permanente
       </h3>
-      <AlertDescription>
+      <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
           <li>Este dispositivo se eliminará permanentemente de la base de datos.</li>
           <li>Ya no podrás reactivarlo desde la sección &quot;Revocados&quot;.</li>

@@ -86,15 +86,15 @@ function TrustedDeviceRevokeDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="[&_dt]:font-normal">
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Revocar dispositivo
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Revocarás {device.name ?? "este dispositivo"}. Dejará de ser de confianza y se te
             volverá a solicitar el código de verificación la próxima vez que inicies sesión desde
             él.
@@ -149,12 +149,12 @@ function RevokeConsequencesAlert(): JSX.Element {
     >
       <AlertTriangleIcon aria-hidden="true" />
       <h3
-        className="col-start-2 min-h-4 font-medium tracking-tight"
+        className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
         id="revoke-device-warning-title"
       >
         Consecuencias de la revocación
       </h3>
-      <AlertDescription>
+      <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
           <li>Este dispositivo ya no estara registrado como de confianza.</li>
           <li>
