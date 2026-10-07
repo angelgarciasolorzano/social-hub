@@ -41,7 +41,7 @@ export function usePaginatedComments(
 
     setTimeout(() => {
       router.get(
-        commentIndex.url({ commentableType, commentableId }),
+        commentIndex.url({ commentType: commentableType, commentableId }),
         {},
         {
           only: ["flash"],
