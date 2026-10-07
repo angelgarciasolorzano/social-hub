@@ -105,12 +105,12 @@ function TrustedDeviceRenameDialog({
       >
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Pencil aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Renombrar Dispositivo
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Asigna un nombre personalizado para identificar este dispositivo facilmente.
           </DialogDescription>
         </DialogHeader>
@@ -177,7 +177,7 @@ function RenameDeviceForm({ handleSubmit, errors, setData }: RenameDeviceFormPro
       )}
 
       {!errors.name && (
-        <p className="text-sm text-muted-foreground" id="rename-device-description">
+        <p className="text-sm font-normal text-muted-foreground" id="rename-device-description">
           Este sera el nombre con el que identificaras este dispositivo.
         </p>
       )}
@@ -195,10 +195,15 @@ function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
       <Eye />
 
       <AlertTitle>Vista previa</AlertTitle>
-      <AlertDescription>
+      <AlertDescription className="text-sm font-normal">
         Este dispositivo se mostrara como:
         {data.name?.trim() ? (
-          <Badge className={cn(badgeVariants.preview, "mt-1 block max-w-full truncate")}>
+          <Badge
+            className={cn(
+              badgeVariants.preview,
+              "mt-1 block max-w-full truncate text-sm font-medium",
+            )}
+          >
             {data.name.trim()}
           </Badge>
         ) : null}
