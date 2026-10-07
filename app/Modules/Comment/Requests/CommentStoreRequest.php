@@ -6,6 +6,7 @@ namespace App\Modules\Comment\Requests;
 
 use App\Modules\Comment\Enums\CommentType;
 use Illuminate\Foundation\Http\FormRequest;
+use Override;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
 use SanderMuller\FluentValidation\HasFluentRules;
@@ -20,6 +21,21 @@ class CommentStoreRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user() !== null;
+    }
+
+    /**
+     * Strip control characters (keeping tabs and line breaks) and trim the content.
+     */
+    #[Override]
+    protected function prepareForValidation(): void
+    {
+        $content = $this->input('content');
+
+        if (is_string($content)) {
+            $this->merge([
+                'content' => trim((string) preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $content)),
+            ]);
+        }
     }
 
     /**

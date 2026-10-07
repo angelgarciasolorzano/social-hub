@@ -10,8 +10,8 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Requests\CommentStoreRequest;
 use App\Modules\Comment\Resources\CommentCollection;
 use App\Modules\Post\Models\Post;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -34,23 +34,22 @@ class CommentController extends Controller
 
     public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
     {
-        /** @var class-string<Post | Comment> $commentType */
-        $commentType = $commentStoreRequest->input('commentable_type');
+        /** @var string $commentableType */
+        $commentableType = $commentStoreRequest->input('commentable_type');
 
-        /** @var class-string<Post | Comment> | null $modelType */
-        $modelType = Relation::getMorphedModel($commentType);
+        /** @var class-string<Post | Comment> $modelType */
+        $modelType = CommentType::from($commentableType)->modelClass();
 
         /** @var int $commentableId */
         $commentableId = $commentStoreRequest->input('commentable_id');
 
-        if ($modelType === null) {
-            return back()->with([
-                'type' => 'error',
-                'message' => 'El tipo de comentario es invalido.',
+        $commentable = $modelType::query()->findOrFail($commentableId);
+
+        if ($commentable instanceof Comment && $commentable->commentable_type === CommentType::COMMENT) {
+            throw ValidationException::withMessages([
+                'commentable_id' => 'No se puede responder a una respuesta.',
             ]);
         }
-
-        $commentable = $modelType::query()->findOrFail($commentableId);
 
         $commentable->comments()->create([
             'user_id' => Auth::id(),
