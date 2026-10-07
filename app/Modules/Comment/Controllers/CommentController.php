@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Comment\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Modules\Comment\Enums\CommentType;
+use App\Modules\Comment\Models\Comment;
+use App\Modules\Comment\Requests\CommentStoreRequest;
+use App\Modules\Comment\Resources\CommentCollection;
+use App\Modules\Post\Models\Post;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+class CommentController extends Controller
+{
+    public function index(CommentType $commentType, int $commentableId): RedirectResponse
+    {
+        /** @var class-string<Post | Comment> $modelType */
+        $modelType = $commentType->modelClass();
+
+        $commentable = $modelType::query()->findOrFail($commentableId);
+
+        $cursorPaginator = $commentable->comments()
+            ->with('user')
+            ->orderByDesc('id')
+            ->cursorPaginate(10);
+
+        return Inertia::flash(['comments' => new CommentCollection($cursorPaginator)])->back();
+    }
+
+    public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
+    {
+        /** @var class-string<Post | Comment> $commentType */
+        $commentType = $commentStoreRequest->input('commentable_type');
+
+        /** @var class-string<Post | Comment> | null $modelType */
+        $modelType = Relation::getMorphedModel($commentType);
+
+        /** @var int $commentableId */
+        $commentableId = $commentStoreRequest->input('commentable_id');
+
+        if ($modelType === null) {
+            return back()->with([
+                'type' => 'error',
+                'message' => 'El tipo de comentario es invalido.',
+            ]);
+        }
+
+        $commentable = $modelType::query()->findOrFail($commentableId);
+
+        $commentable->comments()->create([
+            'user_id' => Auth::id(),
+            'content' => $commentStoreRequest->input('content'),
+        ]);
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => 'Comentario publicado correctamente',
+        ])->back();
+    }
+}
