@@ -1,0 +1,147 @@
+# Plan: SOC-39: Agregar README con descripción del proyecto y guía de instalación local
+
+## Overview
+El repositorio no tiene README. El plan crea README.md en la raíz en secciones incrementales (descripción y requisitos, instalación y entorno, calidad y estructura), lo referencia desde CLAUDE.md y valida los pasos en un clon limpio. Solo documentación, sin cambios de código.
+
+## Scope Challenge
+Modo HOLD: se mantiene el alcance de la issue (el antiguo paso 4 de Wayfinder se quitó porque lo regenera el plugin de Vite). Hallazgos: no existe README, .nvmrc ni engines en package.json; no hay Docker/compose; composer run setup exige MySQL por db:create-testing; composer run dev también arranca Reverb y .env.example no trae las variables REVERB_* (se agregan en TASK-006). Review por defecto: claude, codex y usuario.
+
+**Modo:** HOLD · **Review por defecto:** claude,codex,user
+
+## Prerequisites
+- Se leyeron .ai/rules/index.md y linear.md; el título del issue está en inglés y el cuerpo en español.
+- Scripts verificados en composer.json (setup, dev, test, doctor) y package.json (lint:check, format:check, types).
+- Defaults verificados en app/Auth/config/trusted-devices.php (30 días de cookie, 90 de purga).
+
+## Non-Goals
+- Documentar o configurar Docker/Sail.
+- Crear .nvmrc (mejora aparte).
+- Cambios de código: solo README.md, la referencia en CLAUDE.md y las variables de Reverb en .env.example (TASK-006). Nada más.
+
+## Contracts
+- README.md en la raíz, en español; no duplica CLAUDE.md ni AGENTS.md, los enlaza.
+- Todo comando documentado debe existir y haberse ejecutado (TASK-005).
+- TASK-001 crea README.md; TASK-002, TASK-003 y TASK-005 lo editan en serie (mismo archivo, por eso las dependencias); TASK-004 posee la edición de CLAUDE.md; TASK-006 posee la edición de .env.example.
+
+## Existing Code Leverage
+- composer.json scripts setup/dev/test/doctor; php artisan dev:list para los procesos de dev.
+- CLAUDE.md y AGENTS.md como fuente de la arquitectura y convenciones.
+- docs/{architecture,development,github} y .github/workflows para comandos de CI.
+
+## Tasks
+
+### TASK-001: Crear README.md con descripción del proyecto, stack, arquitectura y requisitos previos
+Crear README.md en la raíz, en español. Secciones: (1) descripción: social-hub es una red social hecha solo para practicar Laravel, Inertia y React (no es un producto); stack (Laravel 13, PHP 8.5, Inertia v3, React 19, TypeScript, Tailwind, shadcn/ui, Fortify, Wayfinder, Reverb, Spatie Media Library y Data, Pest, PHPStan, Pint, Rector); resumen de la arquitectura modular (dominios Auth, User, Home, Post, Comment, Like, Friendship, MediaLibrary; app/Modules/ con solo Post migrado; resources/js/modules/ espejo del backend); enlaces a CLAUDE.md, AGENTS.md y docs/. (2) requisitos previos: PHP ^8.5, Composer 2, Node 22 (versión del CI), MySQL local solo para los tests (dev usa SQLite).
+
+**Type:** documentation
+**Effort:** S
+**Agent:** general-purpose
+**Priority:** P0
+**Acceptance Criteria:**
+- README.md existe en la raíz, está en español y declara explícitamente que el proyecto es de práctica (Laravel, Inertia y React).
+- Las versiones mencionadas coinciden con composer.json (php ^8.5, laravel/framework ^13) y con .github/workflows (node 22); los enlaces a CLAUDE.md, AGENTS.md y docs/ resuelven a archivos existentes.
+- Caso límite: se indica que MySQL es necesario para composer run setup y los tests aunque DB_CONNECTION de desarrollo sea sqlite.
+**writeScope:** `README.md`
+**validateCommand:** `test -s README.md && grep -q 'práctica' README.md && grep -q 'MySQL' README.md && for f in CLAUDE.md AGENTS.md docs; do test -e $f || exit 1; done`
+**Review:** claude,codex,user
+
+### TASK-002: Documentar instalación paso a paso y variables de entorno en el README
+Añadir al README la sección de instalación: 1) clonar; 2) composer run setup (lista de lo que hace: composer install, copia .env y .env.testing, key:generate de ambos, db:create-testing, migrate, npm install, npm run build); 3) alternativa manual con cada comando individual; 4) composer run dev (arranca reverb, server, queue, logs y vite según php artisan dev:list); 5) verificar con composer test y composer doctor. Añadir sección de variables de entorno: SQLite/database por defecto para DB, sesión, cola y caché; BROADCAST_CONNECTION=log por defecto y qué cambiar para usar Reverb (las REVERB_* y VITE_REVERB_* se agregan a .env.example en TASK-006; documentar para qué sirven y cómo cambiarlas); SOCIALHUB_AUTH_TRUSTED_DEVICE_COOKIE_LIFETIME_MINUTES (default 43200 = 30 días) y SOCIALHUB_AUTH_TRUSTED_DEVICE_PURGE_AFTER_DAYS (default 90), de app/Auth/config/trusted-devices.php. No se documenta Wayfinder como paso manual (lo regenera el plugin de Vite).
+
+**Type:** documentation
+**Effort:** M
+**Agent:** general-purpose
+**Priority:** P1
+**Depends on:** TASK-001, TASK-006
+**Acceptance Criteria:**
+- Cada comando del README existe: los scripts de composer (setup, dev, test, doctor) están en composer.json y los artisan (db:create-testing, dev, doctor) aparecen en php artisan list.
+- Los defaults documentados de SOCIALHUB_AUTH_TRUSTED_DEVICE_* coinciden con app/Auth/config/trusted-devices.php.
+- Caso límite: el README explica qué hacer si falta MySQL o si composer run dev falla por Reverb, y no promete un flujo con Docker/Sail.
+**writeScope:** `README.md`
+**validateCommand:** `grep -q 'composer run setup' README.md && grep -q 'composer run dev' README.md && grep -q 'SOCIALHUB_AUTH_TRUSTED_DEVICE' README.md && ! grep -qi 'docker' README.md && php artisan list | grep -q 'db:create-testing'`
+**Review:** claude,codex,user
+
+### TASK-003: Documentar comandos de calidad, estructura de carpetas y convenciones en el README
+Añadir al README: comandos de calidad backend (vendor/bin/pint --dirty, composer phpstan, composer rector-dry, composer test) y frontend (npm run lint:check, npm run format:check, npm run types), indicando que el CI corre los mismos checks (.github/workflows/backend-code-quality.yml y frontend-code-quality.yml); árbol breve de app/, resources/js/ y docs/; convenciones básicas (tests en la carpeta Tests/ de cada módulo, conventional commits, plantilla de PR de .github/PULL_REQUEST_TEMPLATE).
+
+**Type:** documentation
+**Effort:** S
+**Agent:** general-purpose
+**Priority:** P2
+**Depends on:** TASK-002
+**Acceptance Criteria:**
+- Todos los comandos listados existen como script en composer.json/package.json o como binario en vendor/bin.
+- Las rutas del árbol de carpetas existen en el repo (app/Modules, resources/js/modules, docs/architecture, docs/development, docs/github).
+- Caso límite: no se documentan carpetas ni plantillas inexistentes; el enlace a la plantilla de PR apunta a un archivo real.
+**writeScope:** `README.md`
+**validateCommand:** `grep -q 'composer phpstan' README.md && grep -q 'npm run lint:check' README.md && for p in app/Modules resources/js/modules docs/architecture docs/development docs/github .github/PULL_REQUEST_TEMPLATE; do test -e $p || exit 1; done`
+**Review:** claude,codex,user
+
+### TASK-004: Referenciar el README en CLAUDE.md
+Actualizar CLAUDE.md (regla de mantenimiento de la doc y Definition of Done) para que referencie README.md como punto de entrada de onboarding, sin duplicar su contenido. Un solo párrafo breve cerca de la sección Project Overview o Common commands.
+
+**Type:** documentation
+**Effort:** XS
+**Agent:** general-purpose
+**Priority:** P2
+**Depends on:** TASK-001
+**Acceptance Criteria:**
+- CLAUDE.md contiene un enlace a README.md y el archivo existe.
+- Caso límite: ningún comando ni sección del README se duplica en CLAUDE.md y el resto de CLAUDE.md queda intacto (git diff solo muestra líneas añadidas en un bloque).
+**writeScope:** `CLAUDE.md`
+**validateCommand:** `grep -q 'README.md' CLAUDE.md && test -s README.md`
+**Review:** claude,codex,user
+
+### TASK-005: Validar el README en un clon limpio y registrar el resumen en SOC-39
+Ejecutar los pasos del README en un clon limpio (o directorio temporal): composer run setup, composer run dev (arranque) y composer test, y corregir en README.md cualquier paso que falle. Al terminar, dejar el resumen en el issue SOC-39 (Definition of Done) y abrir el PR con la plantilla.
+
+**Type:** documentation
+**Effort:** M
+**Agent:** general-purpose
+**Priority:** P1
+**Depends on:** TASK-002, TASK-003, TASK-004, TASK-006
+**Acceptance Criteria:**
+- composer run setup termina sin errores en un clon limpio siguiendo solo el README.
+- composer run dev levanta server, queue y vite; Reverb arranca con la configuración de .env.example.
+- Caso límite: sin MySQL disponible, el README indica claramente el fallo esperado de db:create-testing y cómo resolverlo.
+**writeScope:** `README.md`
+**validateCommand:** `composer run setup && composer test`
+**Review:** claude,codex,user
+
+### TASK-006: Agregar las variables REVERB_* y VITE_REVERB_* a .env.example
+Agregar a .env.example una sección 'Reverb' con REVERB_APP_ID, REVERB_APP_KEY, REVERB_APP_SECRET, REVERB_HOST, REVERB_PORT y REVERB_SCHEME, y las VITE_REVERB_APP_KEY, VITE_REVERB_HOST, VITE_REVERB_PORT y VITE_REVERB_SCHEME que las reflejan (mismos nombres que usa el .env local). Valores de ejemplo para desarrollo local (host localhost, puerto 8080, scheme http) y claves de ejemplo no reales, nunca los valores del .env local. Mantener el estilo de bloques comentados del archivo y dejar BROADCAST_CONNECTION=log por defecto.
+
+**Type:** chore
+**Effort:** XS
+**Agent:** laravel-senior-engineer
+**Priority:** P1
+**Acceptance Criteria:**
+- Todas las variables REVERB_* y VITE_REVERB_* que existen en .env (nombres) están en .env.example, con valores de ejemplo que no son los secretos del .env local.
+- Con .env.example copiado a .env limpio, php artisan config:show reverb y php artisan dev:list no fallan por variables faltantes.
+- Caso límite: BROADCAST_CONNECTION sigue en log y el resto del archivo queda intacto (git diff solo agrega líneas).
+**writeScope:** `.env.example`
+**validateCommand:** `for key in REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET REVERB_HOST REVERB_PORT REVERB_SCHEME VITE_REVERB_APP_KEY VITE_REVERB_HOST VITE_REVERB_PORT VITE_REVERB_SCHEME; do grep -q "^$key=" .env.example || exit 1; done && grep -q '^BROADCAST_CONNECTION=log' .env.example`
+**Review:** claude,codex,user
+
+## Failure Modes
+- composer run setup falla sin MySQL (db:create-testing): TASK-002 y TASK-005 lo documentan.
+- composer run dev dejaba Reverb sin configurar porque .env.example no traía REVERB_*: TASK-006 agrega las variables y el README las documenta.
+
+## Ship Cut
+TASK-001 y TASK-002 ya dan un README suficiente para arrancar el proyecto; TASK-003, TASK-004 y TASK-005 pueden ir en un segundo PR.
+
+## Test Coverage Map
+Tarea solo de documentación: cada tarea se valida con comandos de verificación (grep/test sobre README.md y existencia de comandos y rutas); la validación end-to-end es TASK-005 (composer run setup y composer test en clon limpio).
+
+## Execution Summary
+- 6 tareas, ejecución paso a paso con pausa para revisión.
+- Capa 1: TASK-001 · Capa 2: TASK-002, TASK-004 · Capa 3: TASK-003 · Capa 4: TASK-005
+- Ruta crítica: TASK-001 → TASK-002 → TASK-003 → TASK-005
+
+## Task Dependencies
+- TASK-001: —
+- TASK-002: TASK-001, TASK-006
+- TASK-003: TASK-002
+- TASK-004: TASK-001
+- TASK-005: TASK-002, TASK-003, TASK-004, TASK-006
+- TASK-006: —
