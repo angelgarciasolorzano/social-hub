@@ -16,7 +16,7 @@ Modo HOLD: se mantiene el alcance de la issue (el antiguo paso 4 de Wayfinder se
 ## Non-Goals
 - Documentar o configurar Docker/Sail.
 - Crear .nvmrc (mejora aparte).
-- Cambios de código: solo README.md, la referencia en CLAUDE.md y las variables de Reverb en .env.example (TASK-006). Nada más.
+- Cambios de código: solo README.md, la referencia en CLAUDE.md y las variables de Reverb en .env.example (TASK-006) y tests/Unit/.gitkeep (hallazgo de TASK-005). Nada más.
 
 ## Contracts
 - README.md en la raíz, en español; no duplica CLAUDE.md ni AGENTS.md, los enlaza.
@@ -104,7 +104,7 @@ Ejecutar los pasos del README en un clon limpio (o directorio temporal): compose
 - composer run setup termina sin errores en un clon limpio siguiendo solo el README.
 - composer run dev levanta server, queue y vite; Reverb arranca con la configuración de .env.example.
 - Caso límite: sin MySQL disponible, el README indica claramente el fallo esperado de db:create-testing y cómo resolverlo.
-**writeScope:** `README.md`
+**writeScope:** `README.md`, `tests/Unit/.gitkeep`
 **validateCommand:** `composer run setup && composer test`
 **Review:** claude,codex,user
 
@@ -125,6 +125,7 @@ Agregar a .env.example una sección 'Reverb' con REVERB_APP_ID, REVERB_APP_KEY, 
 
 ## Failure Modes
 - composer run setup falla sin MySQL (db:create-testing): TASK-002 y TASK-005 lo documentan.
+- tests/Unit existía solo como carpeta vacía (Git no la versiona) y composer test fallaba en un clon limpio: se agrega tests/Unit/.gitkeep, ya que la suite Unit de phpunit.xml puede tener tests en el futuro.
 - composer run dev dejaba Reverb sin configurar porque .env.example no traía REVERB_*: TASK-006 agrega las variables y el README las documenta.
 
 ## Ship Cut

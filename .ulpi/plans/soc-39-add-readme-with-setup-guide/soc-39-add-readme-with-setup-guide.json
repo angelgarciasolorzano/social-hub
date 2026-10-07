@@ -18,7 +18,7 @@
   "nonGoals": [
     "Documentar o configurar Docker/Sail.",
     "Crear .nvmrc (mejora aparte).",
-    "Cambios de código: solo README.md, la referencia en CLAUDE.md y las variables de Reverb en .env.example (TASK-006). Nada más."
+    "Cambios de código: solo README.md, la referencia en CLAUDE.md y las variables de Reverb en .env.example (TASK-006) y tests/Unit/.gitkeep (hallazgo de TASK-005). Nada más."
   ],
   "contracts": [
     "README.md en la raíz, en español; no duplica CLAUDE.md ni AGENTS.md, los enlaza.",
@@ -155,9 +155,12 @@
       "filesToModify": [
         "README.md"
       ],
-      "filesToCreate": [],
+      "filesToCreate": [
+        "tests/Unit/.gitkeep"
+      ],
       "writeScope": [
-        "README.md"
+        "README.md",
+        "tests/Unit/.gitkeep"
       ],
       "validateCommand": "composer run setup && composer test",
       "review": "claude,codex,user"
@@ -189,6 +192,7 @@
   ],
   "failureModes": [
     "composer run setup falla sin MySQL (db:create-testing): TASK-002 y TASK-005 lo documentan.",
+    "tests/Unit existía solo como carpeta vacía (Git no la versiona) y composer test fallaba en un clon limpio: se agrega tests/Unit/.gitkeep, ya que la suite Unit de phpunit.xml puede tener tests en el futuro.",
     "composer run dev dejaba Reverb sin configurar porque .env.example no traía REVERB_*: TASK-006 agrega las variables y el README las documenta."
   ],
   "shipCut": "TASK-001 y TASK-002 ya dan un README suficiente para arrancar el proyecto; TASK-003, TASK-004 y TASK-005 pueden ir en un segundo PR.",
