@@ -112,14 +112,8 @@ it('forbids reactivating a device that belongs to another user', function (): vo
 it('drops an active duplicate with the same fingerprint and records it as Revoked', function (): void {
     $user = createUserWithTwoFactor();
 
-    $fingerprint = [
-        'user_agent' => chromeWindowsUserAgent(),
-        'os_name' => 'Windows',
-        'ip' => '203.0.113.5',
-    ];
-
-    $duplicate = createTrustedDevice($user, [...$fingerprint, 'name' => 'Duplicate device']);
-    $trustedDevice = createTrustedDevice($user, $fingerprint);
+    $duplicate = createTrustedDevice($user, [...trustedDeviceFingerprint(), 'name' => 'Duplicate device']);
+    $trustedDevice = createTrustedDevice($user, trustedDeviceFingerprint());
     $trustedDevice->delete();
 
     $testResponse = $this->actingAs($user)
@@ -136,4 +130,22 @@ it('drops an active duplicate with the same fingerprint and records it as Revoke
             ->where('action', TrustedDeviceAction::Revoked)
             ->exists())->toBeTrue()
         ->and($trustedDevice->refresh()->deleted_at)->toBeNull();
+});
+
+it('queues a cookie whose hash matches the regenerated token_hash', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, ['token_hash' => hash('sha256', 'old-token')]);
+    $trustedDevice->delete();
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
+            'otp_code' => validOtpFor($user),
+        ]);
+
+    $cookie = $testResponse->getCookie('trusted_device');
+
+    expect($cookie)->not->toBeNull()
+        ->and($trustedDevice->refresh()->token_hash)
+        ->toBe(hash('sha256', (string) $cookie?->getValue()))
+        ->not->toBe(hash('sha256', 'old-token'));
 });

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Auth\Models;
 
 use App\Auth\Database\Factories\TrustedDeviceFactory;
+use App\Auth\Modules\TrustedDevice\Policies\TrustedDevicePolicy;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,6 +40,7 @@ use Override;
  * @mixin IdeHelperTrustedDevice
  */
 #[UseFactory(TrustedDeviceFactory::class)]
+#[UsePolicy(TrustedDevicePolicy::class)]
 #[Fillable([
     'user_id',
     'token_hash',

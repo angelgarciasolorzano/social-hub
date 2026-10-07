@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use Illuminate\Support\Facades\Cache;
 
 it('redirects guests to the login page', function (): void {
     $this->delete(route('user.trusted-devices.destroy-all'), [
@@ -99,4 +100,35 @@ it('requires the terms to be accepted', function (): void {
     $testResponse->assertSessionHasErrors('terms');
 
     expect($trustedDevice->fresh()?->deleted_at)->toBeNull();
+});
+
+it('invalidates the dashboard cache after revoking every device', function (): void {
+    $user = createUser();
+    createTrustedDevice($user);
+    warmTrustedDeviceStatsCache($user);
+
+    $this->actingAs($user)
+        ->delete(route('user.trusted-devices.destroy-all'), [
+            'password' => 'password',
+            'terms' => true,
+        ]);
+
+    expect(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
+});
+
+it('succeeds without events or cache invalidation when the user has no devices', function (): void {
+    $user = createUser();
+    warmTrustedDeviceStatsCache($user);
+
+    $testResponse = $this->actingAs($user)
+        ->delete(route('user.trusted-devices.destroy-all'), [
+            'password' => 'password',
+            'terms' => true,
+        ]);
+
+    $testResponse->assertRedirect()
+        ->assertInertiaFlash('type', 'success');
+
+    expect(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
 });

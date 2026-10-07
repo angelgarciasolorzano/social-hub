@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
@@ -191,4 +195,58 @@ function paginatedPropTotal(TestResponse $testResponse, string $prop): int
     $paginated = $testResponse->inertiaProps($prop);
 
     return $paginated['total'];
+}
+
+/**
+ * Cache key under which TrustedDeviceDashboardCache stores a user's stats.
+ */
+function trustedDeviceStatsCacheKey(User $user): string
+{
+    return \sprintf('trusted-device:dashboard:%s:stats', $user->id);
+}
+
+/**
+ * Populate the user's dashboard stats cache and assert it is warm.
+ */
+function warmTrustedDeviceStatsCache(User $user): void
+{
+    resolve(TrustedDeviceDashboardCache::class)->stats($user);
+
+    expect(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
+}
+
+/**
+ * A request carrying the IP and User-Agent that TrustedDeviceEvent::record() snapshots.
+ */
+function trustedDeviceAuditRequest(): Request
+{
+    return Request::create('/', 'POST', server: [
+        'REMOTE_ADDR' => trustedDeviceFingerprint()['ip'],
+        'HTTP_USER_AGENT' => trustedDeviceFingerprint()['user_agent'],
+    ]);
+}
+
+/**
+ * Fingerprint attributes (user agent, OS and IP) that identify the same device.
+ *
+ * @return array{user_agent: string, os_name: string, ip: string}
+ */
+function trustedDeviceFingerprint(): array
+{
+    return [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '203.0.113.10',
+    ];
+}
+
+/**
+ * Count the audit events of one action recorded for the given user.
+ */
+function countTrustedDeviceEvents(User $user, TrustedDeviceAction $trustedDeviceAction): int
+{
+    return TrustedDeviceEvent::query()
+        ->where('user_id', $user->id)
+        ->where('action', $trustedDeviceAction)
+        ->count();
 }

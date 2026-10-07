@@ -1,0 +1,488 @@
+{
+  "title": "SOC-37: Mover la lógica de negocio de TrustedDeviceController al TrustedDeviceService",
+  "issue": {
+    "key": "SOC-37",
+    "title": "Refactor: Move TrustedDeviceController business logic into TrustedDeviceService",
+    "status": "Backlog",
+    "priority": "Low",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-37/refactor-move-trusteddevicecontroller-business-logic-into",
+    "context": "Refactor de claridad y escritura de código (clean code). Sin cambios de comportamiento. Su integración es opcional."
+  },
+  "planningMode": "HOLD",
+  "executionStyle": "Paso a paso: se implementa una tarea y se pausa para revisión (regla .ai/rules/linear.md).",
+  "reviewDefault": "claude,codex",
+  "overview": "TrustedDeviceController (359 líneas) mezcla HTTP con lógica de negocio: cada método repite guard de ownership, transacción, TrustedDeviceEvent::record e invalidación del TrustedDeviceDashboardCache. El plan amplía TrustedDeviceService con un método por caso de uso, unifica revokeAll con PasswordTrustedDeviceRevoker, devuelve un enum de resultado en store y, como paso final opcional, mueve la ownership a una Policy. El controlador queda solo con responsabilidades HTTP (~120 líneas). Es un refactor de legibilidad: rutas, mensajes flash, eventos de auditoría e invalidación de caché se mantienen idénticos.",
+  "scopeChallenge": "Modo HOLD: se mantienen los 5 pasos acordados (Service, revokeAll unificado, reactivate, store con enum, Policy) sin recortar ni ampliar. Ya existen TrustedDeviceService (solo create), TrustedDeviceDashboardCache y PasswordTrustedDeviceRevoker, y hay tests por flujo que sirven de red de seguridad. Se descartó un Observer de modelo (Renamed/Renewed son ambos updated y ->delete() masivo no dispara eventos). La integración de todo el issue es opcional; el corte de envío está tras TASK-006.",
+  "prerequisites": [
+    "Los tests actuales de app/Auth/Modules/TrustedDevice/Tests y app/Auth/Modules/Password/Tests están en verde antes de empezar.",
+    "Se leyeron .ai/rules/{app,backend,linear}.md; aplican: sin variables de una letra, docblocks con máximo 3 líneas de prosa, Pint/Rector/PHPStan como gates.",
+    "phpunit.xml registra el directorio completo app/Auth/Modules/TrustedDevice/Tests y tests/Pest.php lo enlaza con TestCase; las subcarpetas nuevas de tests (Services/, Policies/) quedan cubiertas sin registro adicional."
+  ],
+  "nonGoals": [
+    "Observer de modelo sobre TrustedDevice.",
+    "Cambios de frontend/UI, rutas o mensajes flash.",
+    "Tocar PasswordTrustedDeviceRevoker más allá de delegar en el Service (TASK-003).",
+    "TrustedDeviceTokenIssuer y que TrustedDeviceEvent::record() reciba ip/userAgent en vez del Request (ítems de EXPANSION, fuera de HOLD)."
+  ],
+  "contracts": [
+    "Rutas, nombres de ruta, FormRequests y mensajes flash de TrustedDeviceController permanecen idénticos (routes en app/Auth/routes/trustedDevice.php), con una única excepción deliberada: la rama de carrera de store (AlreadyActive).",
+    "Cada método del Service que cambia estado: ejecuta la transacción, graba exactamente el mismo TrustedDeviceEvent (Renamed, Renewed, Revoked, RevokedAll, Reactivated, Created) y programa la invalidación del TrustedDeviceDashboardCache con DB::afterCommit.",
+    "La invalidación del caché solo ocurre cuando hubo cambio real (store: solo si wasRecentlyCreated; revokeAll: solo si había dispositivos), igual que hoy.",
+    "Service::reactivate devuelve el token crudo; el controlador es el único que encola la cookie (queueTrustedDeviceCookie) tras la transacción.",
+    "La lectura de config module.auth.trusted_devices.cookie_lifetime_minutes para renew/reactivate vive solo en el Service.",
+    "Los guards 403 (ownership), 404 (reactivate/forceDestroy sobre dispositivo no revocado) y 401 se conservan con el mismo código HTTP; la Policy (TASK-007) solo reemplaza el 403.",
+    "Capability provider de persistencia/eventos/caché: TrustedDevice (Eloquent), TrustedDeviceEvent::record() y TrustedDeviceDashboardCache::invalidate(), todos existentes.",
+    "Wiring: el enum TrustedDeviceOperationResult (TASK-005) y la Policy (TASK-007) se autocargan por PSR-4; la Policy se registra con el atributo #[UsePolicy] en el modelo TrustedDevice, igual que #[UseFactory] (TASK-007)."
+  ],
+  "existingCodeLeverage": [
+    "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php: solo tiene create(); se amplía y se reutiliza InfersDeviceMetadata.",
+    "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceDashboardCache.php: invalidate(User) ya existe; se inyecta en el Service.",
+    "app/Auth/Modules/Password/Services/PasswordTrustedDeviceRevoker.php: contiene la implementación correcta de revokeAll (lockForUpdate + afterCommit) que se traslada al Service.",
+    "app/Auth/Modules/TrustedDevice/Concerns/MintsTrustedDeviceToken.php: mintToken()/queueTrustedDeviceCookie() se siguen usando (el Service usa el trait para reactivate).",
+    "app/Auth/Models/TrustedDevice.php: findActiveMatch, findAnyMatchForFingerprint y pruneOlder se reutilizan sin cambios.",
+    "app/Auth/Modules/TrustedDevice/Tests/{Crud,Lifecycle,Queries}: red de seguridad existente para update, destroy, forceDestroy, destroyAll, store, reactivate, renew y caché; tests/Pest.php aporta createUser() y createTrustedDevice()."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Mover rename/renew/revoke/forceDelete al Service",
+      "description": "Inyectar TrustedDeviceDashboardCache en TrustedDeviceService y agregar rename(), renew(), revoke() y forceDelete(). Cada método encapsula la transacción, el cambio de estado, el TrustedDeviceEvent y la invalidación vía DB::afterCommit mediante un único método privado. La lectura de cookie_lifetime_minutes para renew queda en el Service. update, renew, destroy y forceDestroy del controlador pasan a: guard, llamada al Service, flash. Se crea TrustedDeviceServiceTest con cobertura de estos cuatro métodos.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "update, renew, destroy y forceDestroy del controlador no contienen DB::transaction, TrustedDeviceEvent::record ni invalidate(); los tests Crud/Update, Crud/Destroy, Crud/ForceDestroy y Lifecycle/Renew pasan sin modificar sus aserciones.",
+        "Cada método del Service graba el evento correcto (Renamed, Renewed, Revoked, Revoked) y deja invalidado el caché de dashboard del usuario (verificado en TrustedDeviceServiceTest).",
+        "Caso de falla: si la operación lanza dentro de la transacción no se persiste el evento ni se invalida el caché; un dispositivo de otro usuario sigue devolviendo 403 desde el controlador."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php"
+      ],
+      "filesToCreate": [
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceUpdateTest.php app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyTest.php app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceForceDestroyTest.php app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "serviceTest es un archivo nuevo: no requiere registro en phpunit.xml ni Pest.php (directorio padre ya registrado/enlazado). Los roles: service = lógica, controller = delegación HTTP, serviceTest = cobertura del Service.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Agregar Service::revokeAll y usarlo en destroyAll",
+      "description": "Agregar revokeAll(User, Request): int al Service con la implementación del PasswordTrustedDeviceRevoker (lockForUpdate, un RevokedAll por dispositivo, delete masivo, invalidación con DB::afterCommit solo si había dispositivos). destroyAll del controlador delega y conserva el flash de éxito incluso sin dispositivos. Se añaden casos de borde al test existente de destroyAll.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "destroyAll del controlador solo valida, llama a revokeAll y devuelve el flash; Crud/TrustedDeviceDestroyAllTest pasa con sus aserciones originales.",
+        "revokeAll devuelve el número de dispositivos revocados y graba un evento RevokedAll por cada uno.",
+        "Caso límite: usuario sin dispositivos no graba eventos, no invalida el caché y el flash sigue siendo de éxito; los dispositivos de otro usuario no se tocan."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyAllTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyAllTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyAllTest.php app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Dependencia por solapamiento de archivos con TASK-001 (service y controller). El revoker de Password no se toca aquí.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-003",
+      "title": "PasswordTrustedDeviceRevoker delega en el Service",
+      "description": "Reemplazar el cuerpo de PasswordTrustedDeviceRevoker::revokeAll por una delegación a TrustedDeviceService::revokeAll, cambiando su dependencia del caché por el Service. Firma pública (User, PasswordRequest|PasswordNewRequest): int sin cambios, de modo que PasswordController y PasswordNewController no se modifican.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "PasswordTrustedDeviceRevoker no contiene DB::transaction, TrustedDeviceEvent ni referencia al caché; delega en el Service y retorna el mismo int.",
+        "Password/Tests/PasswordTrustedDeviceRevocationTest, PasswordUpdateTest y PasswordResetTest pasan sin modificar sus aserciones.",
+        "Caso de falla: sin dispositivos retorna 0 y no invalida el caché (mismo comportamiento previo)."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/Password/Services/PasswordTrustedDeviceRevoker.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Auth/Modules/Password/Services/PasswordTrustedDeviceRevoker.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/Password/Tests/PasswordTrustedDeviceRevocationTest.php app/Auth/Modules/Password/Tests/PasswordUpdateTest.php app/Auth/Modules/Password/Tests/PasswordResetTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Paralelo a TASK-004: archivos disjuntos. Cumple el no-goal \"no tocar el revoker más allá de delegar\".",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Mover reactivate (con dropDuplicate y token) al Service",
+      "description": "Agregar reactivate(User, TrustedDevice, Request): string al Service (usa MintsTrustedDeviceToken para mintToken). Incluye dropDuplicateActiveDevice como método privado, forceFill de token_hash/expires_at/last_used_at, restore(), evento Reactivated e invalidación; devuelve el token crudo. El controlador conserva los guards 401/403/404, llama al Service, encola la cookie con queueTrustedDeviceCookie y devuelve el flash. Se eliminan config() y dropDuplicateActiveDevice del controlador.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "reactivate del controlador no contiene DB::transaction, config(), mintToken ni dropDuplicateActiveDevice; Lifecycle/TrustedDeviceReactivateTest pasa con sus aserciones originales.",
+        "El token_hash persistido corresponde al token devuelto por el Service y la cookie encolada contiene ese mismo token.",
+        "Caso límite: si existe un dispositivo activo hermano con el mismo fingerprint se hace forceDelete con evento Revoked antes de restaurar; dispositivo no revocado sigue devolviendo 404 y de otro usuario 403."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Tanto el Service como el controlador usan el trait MintsTrustedDeviceToken (el controlador sigue necesitando queueTrustedDeviceCookie). Extraerlo a TrustedDeviceTokenIssuer queda fuera de HOLD.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Mover store al Service con enum de resultado",
+      "description": "Crear el enum TrustedDeviceOperationResult (Created, AlreadyActive, AlreadyRevoked), con message() e isSuccessful() para mapear flash y cookie, y agregar register(User, DeviceDetector, TrustedDeviceStoreRequest, string $tokenHash, string $name) al Service, preservando el doble chequeo de fingerprint (previo a la transacción y con lockForUpdate dentro), pruneOlder, el evento Created y la invalidación solo cuando se creó. El controlador mintea el token, resuelve DeviceDetector, mapea el enum a flash/cookie y deja de usar InfersDeviceMetadata. Corrección deliberada de comportamiento: si el chequeo con lock detecta un dispositivo activo (carrera), devuelve AlreadyActive (error, sin cookie) en lugar de éxito con una cookie no persistida.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "store del controlador solo valida, mintea el token, llama a register y mapea el enum; ya no usa InfersDeviceMetadata ni TrustedDevice::findActiveMatch/pruneOlder; Crud/TrustedDeviceStoreTest pasa con sus aserciones originales.",
+        "Mensajes flash idénticos: AlreadyActive y AlreadyRevoked devuelven sus errores actuales sin crear dispositivo ni encolar cookie; Created devuelve éxito y encola cookie.",
+        "Caso límite (carrera): si otro request registra el dispositivo entre el chequeo previo y el bloqueado, devuelve AlreadyActive, no crea evento, no invalida el caché ni encola cookie (test determinista con DB::beforeExecuting); con ip o userAgent nulos se omiten los chequeos de fingerprint como hoy."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php"
+      ],
+      "filesToCreate": [
+        "app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceOperationResult.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceOperationResult.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Wiring del enum nuevo: autoload PSR-4, sin registro. Es la tarea más delicada por concurrencia; revisar con claude y codex.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Cobertura del Service para revokeAll, reactivate y register",
+      "description": "Ampliar TrustedDeviceServiceTest con casos unitarios/feature de revokeAll, reactivate y register: evento grabado, invalidación del caché solo con cambio real, resultado del enum por cada rama y token devuelto por reactivate. Solo agrega tests; no modifica código de producción.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "register devuelve Created, AlreadyActive y AlreadyRevoked según el estado previo del fingerprint, y solo Created crea evento e invalida el caché.",
+        "reactivate devuelve un token cuyo hash coincide con el token_hash persistido y deja el dispositivo restaurado con evento Reactivated.",
+        "Caso de falla: revokeAll sin dispositivos devuelve 0 sin eventos; revokeAll de un usuario no afecta a otro."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Test-only para mantener cada tarea de código ≤3 archivos. Corte de envío: tras esta tarea y TASK-003 se cumple el objetivo de clean code.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Policy de ownership para TrustedDevice (opcional)",
+      "description": "Crear TrustedDevicePolicy con update, delete, restore y forceDelete (ownership por user_id), registrarla con el atributo #[UsePolicy] en el modelo TrustedDevice (la convención de descubrimiento de Laravel no la encuentra en Modules/TrustedDevice/Policies) y reemplazar los abort_unless(... user_id ...) del controlador por el atributo #[Authorize(<habilidad>, trustedDevice)] de Laravel 13 (middleware que corre tras SubstituteBindings y antes del método, por lo que la autorización precede a la validación del FormRequest). Los abort_if(deleted_at === null, 404) y el estrechamiento de tipo del usuario se conservan en el controlador. Es un patrón nuevo en el proyecto (no existen Policies).",
+      "priority": "P3",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "El controlador no contiene comparaciones user_id === getKey(); los accesos de dueño siguen funcionando y los tests Crud y Lifecycle existentes pasan sin modificar sus aserciones.",
+        "Un dispositivo de otro usuario devuelve 403 en update, renew, destroy, reactivate y forceDestroy.",
+        "Caso límite: reactivate/forceDestroy sobre un dispositivo no revocado siguen devolviendo 404 (no 403) y el binding withTrashed de las rutas no cambia."
+      ],
+      "filesToModify": [
+        "app/Auth/Models/TrustedDevice.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php"
+      ],
+      "filesToCreate": [
+        "app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php"
+      ],
+      "writeScope": [
+        "app/Auth/Models/TrustedDevice.php",
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php",
+        "app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Crud app/Auth/Modules/TrustedDevice/Tests/Lifecycle && vendor/bin/pint --dirty --format agent",
+      "notes": "Registro ownership: atributo #[UsePolicy] en app/Auth/Models/TrustedDevice.php. Si se decide no introducir Policies, esta tarea y TASK-008 se descartan sin afectar al resto.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Tests de TrustedDevicePolicy",
+      "description": "Crear TrustedDevicePolicyTest con casos por cada habilidad (update, delete, restore, forceDelete) para dueño y no dueño, incluyendo dispositivos con soft delete.",
+      "priority": "P3",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Cada habilidad devuelve true para el dueño y false para otro usuario.",
+        "Caso límite: un dispositivo con soft delete sigue autorizando restore y forceDelete solo a su dueño."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Auth/Modules/TrustedDevice/Tests/Policies/TrustedDevicePolicyTest.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Policies/TrustedDevicePolicyTest.php"
+      ],
+      "validateCommand": "vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Policies/TrustedDevicePolicyTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Carpeta nueva de tests cubierta por el directorio ya registrado en phpunit.xml y tests/Pest.php.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Actualizar CLAUDE.md con la nueva estructura",
+      "description": "Actualizar CLAUDE.md (módulo Auth/TrustedDevice) para reflejar el Service ampliado, la unificación de revokeAll con el revoker de Password, el enum TrustedDeviceOperationResult y, si se implementó, la Policy. La regla del proyecto exige sincronizar la doc en el mismo cambio.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-006",
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md describe los métodos del Service, el enum de resultado y que PasswordTrustedDeviceRevoker delega en el Service.",
+        "Caso límite: si TASK-007/008 se descartan, el documento no menciona la Policy y no queda ninguna referencia a abort_unless de ownership."
+      ],
+      "filesToModify": [
+        "CLAUDE.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "CLAUDE.md"
+      ],
+      "validateCommand": "grep -n 'TrustedDeviceService' CLAUDE.md",
+      "notes": "Ajustar dependsOn si TASK-007/008 se descartan.",
+      "review": "claude,codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Gate final de calidad backend",
+      "description": "Ejecutar los gates de calidad sobre todo el cambio: Pint, PHPStan (level max), Rector (dry-run y aplicar, obligatorio) y los suites completos TrustedDevice y Password. Corregir solo lo que reporten las herramientas sobre los archivos de este plan.",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "composer phpstan y vendor/bin/pint --dirty --format agent terminan sin errores.",
+        "composer rector-dry no propone cambios o se aplican con composer rector y se vuelven a pasar los tests.",
+        "Caso de falla: los suites TrustedDevice y Password completos pasan; cualquier regresión bloquea el cierre de SOC-37."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "composer phpstan && composer rector-dry && vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests app/Auth/Modules/Password/Tests && vendor/bin/pint --dirty --format agent",
+      "notes": "writeScope vacío: solo se corrigen hallazgos de herramientas en archivos ya modificados por tareas previas. Tras pasar, pedir al usuario el suite completo (php artisan test --compact) según la regla de Pest.",
+      "review": "claude,codex"
+    }
+  ],
+  "failureModes": [
+    "Condición de carrera en store: hoy, si el chequeo con lockForUpdate encuentra un dispositivo activo, se retorna el existente pero el controlador igual encola una cookie con un token que no quedó persistido y muestra éxito. Se corrigió en TASK-005 a petición del usuario: ahora devuelve AlreadyActive (error, sin cookie). Es el único cambio de comportamiento del plan.",
+    "DB::afterCommit dentro del Service reemplaza la invalidación posterior a la transacción del controlador; es equivalente externamente y ya la usa PasswordTrustedDeviceRevoker con tests, pero conviene confirmarlo en TASK-001.",
+    "destroyAll gana lockForUpdate al unificarse con el revoker; reduce condiciones de carrera y no cambia el resultado observable.",
+    "La Policy es un patrón nuevo; con #[Authorize] la autorización corre antes de la validación del FormRequest (un usuario ajeno recibe 403 en vez de errores de validación). Mitigado manteniendo los 404 en el controlador y cubriendo los 403 con los tests existentes.",
+    "Los tests del Service dependen de createUser()/createTrustedDevice() de tests/Pest.php; si cambian, los tests nuevos deben adaptarse."
+  ],
+  "shipCut": "Si la ejecución se detiene a mitad de camino: con TASK-001 a TASK-006 (más TASK-003 en paralelo) el controlador ya queda con solo responsabilidades HTTP y el objetivo de clean code está cumplido. TASK-007 y TASK-008 (Policy) son opcionales y pueden descartarse; TASK-009 y TASK-010 cierran documentación y calidad.",
+  "testCoverageMap": [
+    [
+      "rename / update",
+      "Tests/Crud/TrustedDeviceUpdateTest.php + Tests/Services/TrustedDeviceServiceTest.php",
+      "TASK-001"
+    ],
+    [
+      "renew",
+      "Tests/Lifecycle/TrustedDeviceRenewTest.php + ServiceTest",
+      "TASK-001"
+    ],
+    [
+      "revoke / forceDelete",
+      "Tests/Crud/TrustedDeviceDestroyTest.php, TrustedDeviceForceDestroyTest.php + ServiceTest",
+      "TASK-001"
+    ],
+    [
+      "revokeAll (controlador)",
+      "Tests/Crud/TrustedDeviceDestroyAllTest.php",
+      "TASK-002"
+    ],
+    [
+      "revokeAll (Password)",
+      "Password/Tests/PasswordTrustedDeviceRevocationTest.php, PasswordUpdateTest.php, PasswordResetTest.php",
+      "TASK-003"
+    ],
+    [
+      "reactivate",
+      "Tests/Lifecycle/TrustedDeviceReactivateTest.php",
+      "TASK-004"
+    ],
+    [
+      "register / store",
+      "Tests/Crud/TrustedDeviceStoreTest.php + ServiceTest",
+      "TASK-005, TASK-006"
+    ],
+    [
+      "invalidación de caché",
+      "Tests/Queries/TrustedDeviceDashboardCacheTest.php + ServiceTest",
+      "TASK-001, TASK-005"
+    ],
+    [
+      "Policy",
+      "Tests/Policies/TrustedDevicePolicyTest.php + Tests/Crud y Tests/Lifecycle (403/404)",
+      "TASK-007, TASK-008"
+    ]
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [
+      "TASK-002"
+    ],
+    "TASK-004": [
+      "TASK-002"
+    ],
+    "TASK-005": [
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-004",
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-005"
+    ],
+    "TASK-008": [
+      "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-003",
+      "TASK-006",
+      "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-009"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 10,
+    "layers": [
+      {
+        "layer": 0,
+        "tasks": [
+          "TASK-001"
+        ]
+      },
+      {
+        "layer": 1,
+        "tasks": [
+          "TASK-002"
+        ]
+      },
+      {
+        "layer": 2,
+        "tasks": [
+          "TASK-003",
+          "TASK-004"
+        ]
+      },
+      {
+        "layer": 3,
+        "tasks": [
+          "TASK-005"
+        ]
+      },
+      {
+        "layer": 4,
+        "tasks": [
+          "TASK-006",
+          "TASK-007"
+        ]
+      },
+      {
+        "layer": 5,
+        "tasks": [
+          "TASK-008"
+        ]
+      },
+      {
+        "layer": 6,
+        "tasks": [
+          "TASK-009"
+        ]
+      },
+      {
+        "layer": 7,
+        "tasks": [
+          "TASK-010"
+        ]
+      }
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-004",
+      "TASK-005",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010"
+    ]
+  }
+}
