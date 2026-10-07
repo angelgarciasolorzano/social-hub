@@ -9,7 +9,7 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Concerns\InfersDeviceMetadata;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
-use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceOperationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -59,7 +59,7 @@ final readonly class TrustedDeviceService
         TrustedDeviceStoreRequest $trustedDeviceStoreRequest,
         string $tokenHash,
         string $name,
-    ): TrustedDeviceRegistrationResult {
+    ): TrustedDeviceOperationResult {
         $userAgent = $trustedDeviceStoreRequest->userAgent();
         $ip = $trustedDeviceStoreRequest->ip();
         $osName = $this->inferOsInfo($deviceDetector)['name'];
@@ -69,8 +69,8 @@ final readonly class TrustedDeviceService
 
             if ($existingMatch instanceof TrustedDevice) {
                 return $existingMatch->deleted_at !== null
-                    ? TrustedDeviceRegistrationResult::AlreadyRevoked
-                    : TrustedDeviceRegistrationResult::AlreadyActive;
+                    ? TrustedDeviceOperationResult::AlreadyRevoked
+                    : TrustedDeviceOperationResult::AlreadyActive;
             }
         }
 
@@ -83,12 +83,12 @@ final readonly class TrustedDeviceService
             $userAgent,
             $ip,
             $osName,
-        ): TrustedDeviceRegistrationResult {
+        ): TrustedDeviceOperationResult {
             if ($userAgent !== null && $ip !== null) {
                 $concurrentMatch = TrustedDevice::findActiveMatch($user, $userAgent, $osName, $ip, lockForUpdate: true);
 
                 if ($concurrentMatch instanceof TrustedDevice) {
-                    return TrustedDeviceRegistrationResult::AlreadyActive;
+                    return TrustedDeviceOperationResult::AlreadyActive;
                 }
             }
 
@@ -100,7 +100,7 @@ final readonly class TrustedDeviceService
 
             $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Created, $trustedDeviceStoreRequest);
 
-            return TrustedDeviceRegistrationResult::Created;
+            return TrustedDeviceOperationResult::Created;
         });
     }
 

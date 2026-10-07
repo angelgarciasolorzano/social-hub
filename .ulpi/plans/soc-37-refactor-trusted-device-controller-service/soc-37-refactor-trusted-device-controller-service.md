@@ -33,7 +33,7 @@ Modo HOLD: se mantienen los 5 pasos acordados (Service, revokeAll unificado, rea
 - La lectura de config module.auth.trusted_devices.cookie_lifetime_minutes para renew/reactivate vive solo en el Service.
 - Los guards 403 (ownership), 404 (reactivate/forceDestroy sobre dispositivo no revocado) y 401 se conservan con el mismo código HTTP; la Policy (TASK-007) solo reemplaza el 403.
 - Capability provider de persistencia/eventos/caché: TrustedDevice (Eloquent), TrustedDeviceEvent::record() y TrustedDeviceDashboardCache::invalidate(), todos existentes.
-- Wiring: el enum TrustedDeviceRegistrationResult (TASK-005) y la Policy (TASK-007) se autocargan por PSR-4; la Policy se registra con el atributo #[UsePolicy] en el modelo TrustedDevice, igual que #[UseFactory] (TASK-007).
+- Wiring: el enum TrustedDeviceOperationResult (TASK-005) y la Policy (TASK-007) se autocargan por PSR-4; la Policy se registra con el atributo #[UsePolicy] en el modelo TrustedDevice, igual que #[UseFactory] (TASK-007).
 
 ## Existing Code Leverage
 
@@ -146,7 +146,7 @@ Agregar reactivate(User, TrustedDevice, Request): string al Service (usa MintsTr
 
 ### TASK-005: Mover store al Service con enum de resultado
 
-Crear el enum TrustedDeviceRegistrationResult (Created, AlreadyActive, AlreadyRevoked), con message() e isSuccessful() para mapear flash y cookie, y agregar register(User, DeviceDetector, TrustedDeviceStoreRequest, string $tokenHash, string $name) al Service, preservando el doble chequeo de fingerprint (previo a la transacción y con lockForUpdate dentro), pruneOlder, el evento Created y la invalidación solo cuando se creó. El controlador mintea el token, resuelve DeviceDetector, mapea el enum a flash/cookie y deja de usar InfersDeviceMetadata. Corrección deliberada de comportamiento: si el chequeo con lock detecta un dispositivo activo (carrera), devuelve AlreadyActive (error, sin cookie) en lugar de éxito con una cookie no persistida.
+Crear el enum TrustedDeviceOperationResult (Created, AlreadyActive, AlreadyRevoked), con message() e isSuccessful() para mapear flash y cookie, y agregar register(User, DeviceDetector, TrustedDeviceStoreRequest, string $tokenHash, string $name) al Service, preservando el doble chequeo de fingerprint (previo a la transacción y con lockForUpdate dentro), pruneOlder, el evento Created y la invalidación solo cuando se creó. El controlador mintea el token, resuelve DeviceDetector, mapea el enum a flash/cookie y deja de usar InfersDeviceMetadata. Corrección deliberada de comportamiento: si el chequeo con lock detecta un dispositivo activo (carrera), devuelve AlreadyActive (error, sin cookie) en lugar de éxito con una cookie no persistida.
 
 **Type:** refactor
 **Effort:** L
@@ -163,7 +163,7 @@ Crear el enum TrustedDeviceRegistrationResult (Created, AlreadyActive, AlreadyRe
 **writeScope:**
 - `app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php`
 - `app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php`
-- `app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceRegistrationResult.php`
+- `app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceOperationResult.php`
 
 **validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php && vendor/bin/pint --dirty --format agent`
 
@@ -241,7 +241,7 @@ Crear TrustedDevicePolicyTest con casos por cada habilidad (update, delete, rest
 
 ### TASK-009: Actualizar CLAUDE.md con la nueva estructura
 
-Actualizar CLAUDE.md (módulo Auth/TrustedDevice) para reflejar el Service ampliado, la unificación de revokeAll con el revoker de Password, el enum TrustedDeviceRegistrationResult y, si se implementó, la Policy. La regla del proyecto exige sincronizar la doc en el mismo cambio.
+Actualizar CLAUDE.md (módulo Auth/TrustedDevice) para reflejar el Service ampliado, la unificación de revokeAll con el revoker de Password, el enum TrustedDeviceOperationResult y, si se implementó, la Policy. La regla del proyecto exige sincronizar la doc en el mismo cambio.
 
 **Type:** docs
 **Effort:** S

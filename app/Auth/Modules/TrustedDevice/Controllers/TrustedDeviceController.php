@@ -6,7 +6,7 @@ namespace App\Auth\Modules\TrustedDevice\Controllers;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
-use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceOperationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyForceRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
@@ -42,7 +42,7 @@ class TrustedDeviceController extends Controller
             $trustedDeviceUpdateRequest,
         );
 
-        return Inertia::flash(TrustedDeviceRegistrationResult::Renamed->payload())->back();
+        return Inertia::flash(TrustedDeviceOperationResult::Renamed->payload())->back();
     }
 
     #[Authorize('update', 'trustedDevice')]
@@ -54,7 +54,7 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->renew($user, $trustedDevice, $request);
 
-        return Inertia::flash(TrustedDeviceRegistrationResult::Renewed->payload())->back();
+        return Inertia::flash(TrustedDeviceOperationResult::Renewed->payload())->back();
     }
 
     public function store(TrustedDeviceStoreRequest $trustedDeviceStoreRequest): RedirectResponse
@@ -68,7 +68,7 @@ class TrustedDeviceController extends Controller
 
         $token = $this->mintToken();
 
-        $trustedDeviceRegistrationResult = $this->trustedDeviceService->register(
+        $trustedDeviceOperationResult = $this->trustedDeviceService->register(
             $user,
             $deviceDetector,
             $trustedDeviceStoreRequest,
@@ -76,11 +76,11 @@ class TrustedDeviceController extends Controller
             $trustedDeviceStoreRequest->string('name')->toString(),
         );
 
-        if ($trustedDeviceRegistrationResult->isSuccessful()) {
+        if ($trustedDeviceOperationResult->isSuccessful()) {
             $this->queueTrustedDeviceCookie($token['token']);
         }
 
-        return Inertia::flash($trustedDeviceRegistrationResult->payload())->back();
+        return Inertia::flash($trustedDeviceOperationResult->payload())->back();
     }
 
     #[Authorize('delete', 'trustedDevice')]
@@ -92,7 +92,7 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->revoke($user, $trustedDevice, $trustedDeviceDestroyRequest);
 
-        return Inertia::flash(TrustedDeviceRegistrationResult::Revoked->payload())->back();
+        return Inertia::flash(TrustedDeviceOperationResult::Revoked->payload())->back();
     }
 
     public function destroyAll(TrustedDeviceDestroyAllRequest $trustedDeviceDestroyAllRequest): RedirectResponse
@@ -103,7 +103,7 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->revokeAll($user, $trustedDeviceDestroyAllRequest);
 
-        return Inertia::flash(TrustedDeviceRegistrationResult::RevokedAll->payload())->back();
+        return Inertia::flash(TrustedDeviceOperationResult::RevokedAll->payload())->back();
     }
 
     #[Authorize('restore', 'trustedDevice')]
@@ -118,7 +118,7 @@ class TrustedDeviceController extends Controller
 
         $this->queueTrustedDeviceCookie($newToken);
 
-        return Inertia::flash(TrustedDeviceRegistrationResult::Reactivated->payload())->back();
+        return Inertia::flash(TrustedDeviceOperationResult::Reactivated->payload())->back();
     }
 
     #[Authorize('forceDelete', 'trustedDevice')]
@@ -131,6 +131,6 @@ class TrustedDeviceController extends Controller
 
         $this->trustedDeviceService->forceDelete($user, $trustedDevice, $trustedDeviceDestroyForceRequest);
 
-        return Inertia::flash(TrustedDeviceRegistrationResult::ForceDeleted->payload())->back();
+        return Inertia::flash(TrustedDeviceOperationResult::ForceDeleted->payload())->back();
     }
 }

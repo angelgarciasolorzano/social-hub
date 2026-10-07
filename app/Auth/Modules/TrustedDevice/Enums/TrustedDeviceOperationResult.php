@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Enums;
 
-enum TrustedDeviceRegistrationResult
+enum TrustedDeviceOperationResult
 {
     case Created;
 

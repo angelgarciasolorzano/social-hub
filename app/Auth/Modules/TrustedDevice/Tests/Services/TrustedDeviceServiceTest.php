@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
-use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceRegistrationResult;
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceOperationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use DeviceDetector\DeviceDetector;
@@ -129,7 +129,7 @@ it('reports AlreadyActive without creating anything when another request registe
         createTrustedDevice($user, $fingerprint);
     });
 
-    $trustedDeviceRegistrationResult = resolve(TrustedDeviceService::class)->register(
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
         $user,
         $deviceDetector,
         $trustedDeviceStoreRequest,
@@ -138,8 +138,8 @@ it('reports AlreadyActive without creating anything when another request registe
     );
 
     expect($competingRequestRan)->toBeTrue()
-        ->and($trustedDeviceRegistrationResult)->toBe(TrustedDeviceRegistrationResult::AlreadyActive)
-        ->and($trustedDeviceRegistrationResult->isSuccessful())->toBeFalse()
+        ->and($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::AlreadyActive)
+        ->and($trustedDeviceOperationResult->isSuccessful())->toBeFalse()
         ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(1)
         ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(0);
 });
@@ -148,7 +148,7 @@ it('registers a new device, records a Created event and invalidates the dashboar
     $user = createUser();
     warmTrustedDeviceStatsCache($user);
 
-    $trustedDeviceRegistrationResult = resolve(TrustedDeviceService::class)->register(
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
         $user,
         parsedChromeWindowsDetector(),
         trustedDeviceStoreRequest(),
@@ -158,7 +158,7 @@ it('registers a new device, records a Created event and invalidates the dashboar
 
     $trustedDevice = TrustedDevice::query()->where('user_id', $user->id)->sole();
 
-    expect($trustedDeviceRegistrationResult)->toBe(TrustedDeviceRegistrationResult::Created)
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::Created)
         ->and($trustedDevice->name)->toBe('Work laptop')
         ->and($trustedDevice->token_hash)->toBe(hash('sha256', 'new-token'))
         ->and($trustedDevice->os_name)->toBe('Windows')
@@ -188,7 +188,7 @@ it('reports AlreadyActive without creating anything when the fingerprint is alre
     createTrustedDevice($user, trustedDeviceFingerprint());
     warmTrustedDeviceStatsCache($user);
 
-    $trustedDeviceRegistrationResult = resolve(TrustedDeviceService::class)->register(
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
         $user,
         parsedChromeWindowsDetector(),
         trustedDeviceStoreRequest(),
@@ -196,7 +196,7 @@ it('reports AlreadyActive without creating anything when the fingerprint is alre
         '',
     );
 
-    expect($trustedDeviceRegistrationResult)->toBe(TrustedDeviceRegistrationResult::AlreadyActive)
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::AlreadyActive)
         ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(1)
         ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
@@ -207,7 +207,7 @@ it('reports AlreadyRevoked without creating anything when the fingerprint was re
     createTrustedDevice($user, trustedDeviceFingerprint())->delete();
     warmTrustedDeviceStatsCache($user);
 
-    $trustedDeviceRegistrationResult = resolve(TrustedDeviceService::class)->register(
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
         $user,
         parsedChromeWindowsDetector(),
         trustedDeviceStoreRequest(),
@@ -215,7 +215,7 @@ it('reports AlreadyRevoked without creating anything when the fingerprint was re
         '',
     );
 
-    expect($trustedDeviceRegistrationResult)->toBe(TrustedDeviceRegistrationResult::AlreadyRevoked)
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::AlreadyRevoked)
         ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
         ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
@@ -264,17 +264,17 @@ it('revokes nothing and leaves other users untouched when revoking all', functio
 });
 
 it('exposes a success payload for every completed action and an error payload for known devices', function (): void {
-    foreach (TrustedDeviceRegistrationResult::cases() as $registrationResult) {
-        $isError = \in_array($registrationResult, [
-            TrustedDeviceRegistrationResult::AlreadyActive,
-            TrustedDeviceRegistrationResult::AlreadyRevoked,
+    foreach (TrustedDeviceOperationResult::cases() as $operationResult) {
+        $isError = \in_array($operationResult, [
+            TrustedDeviceOperationResult::AlreadyActive,
+            TrustedDeviceOperationResult::AlreadyRevoked,
         ], true);
 
-        expect($registrationResult->payload())->toBe([
+        expect($operationResult->payload())->toBe([
             'type' => $isError ? 'error' : 'success',
-            'message' => $registrationResult->message(),
+            'message' => $operationResult->message(),
         ])
-            ->and($registrationResult->message())->not->toBeEmpty()
-            ->and($registrationResult->isSuccessful())->toBe(! $isError);
+            ->and($operationResult->message())->not->toBeEmpty()
+            ->and($operationResult->isSuccessful())->toBe(! $isError);
     }
 });
