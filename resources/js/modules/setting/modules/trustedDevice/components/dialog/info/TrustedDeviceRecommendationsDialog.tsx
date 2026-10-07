@@ -67,12 +67,12 @@ function TrustedDeviceRecommendationsDialog({
       >
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Lightbulb aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Recomendaciones de seguridad
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Sigue estas recomendaciones para mantener tu cuenta y dispositivos de confianza seguros.
           </DialogDescription>
         </DialogHeader>
@@ -100,8 +100,10 @@ function TrustedDeviceRecommendationsDialog({
 
         <Alert className={alertVariants.info}>
           <CircleAlert aria-hidden="true" />
-          <AlertTitle>Estas recomendaciones te ayudan a mantener tu cuenta segura</AlertTitle>
-          <AlertDescription>
+          <AlertTitle className="text-sm font-medium">
+            Estas recomendaciones te ayudan a mantener tu cuenta segura
+          </AlertTitle>
+          <AlertDescription className="text-sm font-normal">
             Los dispositivos de confianza te permiten iniciar sesion mas rapido, pero es importante
             revisarlos y mantener solo los que utilizas.
           </AlertDescription>
@@ -143,8 +145,8 @@ function RecommendationCard({
       </div>
 
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <h3 className="text-sm font-medium">{title}</h3>
+        <p className="text-sm font-normal text-muted-foreground">{description}</p>
       </div>
     </li>
   );
@@ -169,13 +171,15 @@ function DevicesPreviewSidebar({ copy, previews }: DevicesPreviewSidebarProps): 
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-base leading-tight font-semibold">{copy.title}</h3>
-        <p className="text-sm text-muted-foreground">{copy.body}</p>
+        <h3 className="text-sm leading-tight font-medium">{copy.title}</h3>
+        <p className="text-sm font-normal text-muted-foreground">{copy.body}</p>
 
         <Alert className={alertVariants.success}>
           <CircleAlert aria-hidden="true" />
-          <AlertTitle>{trustedDevicePreviewAlert.title}</AlertTitle>
-          <AlertDescription>{trustedDevicePreviewAlert.body}</AlertDescription>
+          <AlertTitle className="text-sm font-medium">{trustedDevicePreviewAlert.title}</AlertTitle>
+          <AlertDescription className="text-sm font-normal">
+            {trustedDevicePreviewAlert.body}
+          </AlertDescription>
         </Alert>
       </div>
     </div>
@@ -207,7 +211,9 @@ function DevicePreviewCard({ preview }: DevicePreviewCardProps): JSX.Element {
 
         <div className="min-w-0 space-y-0.5">
           <p className="truncate text-sm font-medium">{preview.device.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{preview.device.subtitle}</p>
+          <p className="truncate text-xs font-normal text-muted-foreground">
+            {preview.device.subtitle}
+          </p>
         </div>
       </div>
 

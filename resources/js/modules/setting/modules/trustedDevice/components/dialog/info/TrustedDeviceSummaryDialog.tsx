@@ -108,13 +108,13 @@ function TrustedDeviceSummaryDialog({
         >
           <DialogHeader>
             <DialogTitle asChild>
-              <h2 className="flex items-center gap-2">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
                 <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                 Resumen de dispositivos
               </h2>
             </DialogTitle>
 
-            <DialogDescription>
+            <DialogDescription className="text-sm font-normal">
               Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de
               confianza.
             </DialogDescription>
@@ -132,8 +132,8 @@ function TrustedDeviceSummaryDialog({
 
           <Alert className={alertVariants.preview}>
             <CircleAlert />
-            <AlertTitle>Mantén tus dispositivos seguros</AlertTitle>
-            <AlertDescription className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <AlertTitle className="text-sm font-medium">Mantén tus dispositivos seguros</AlertTitle>
+            <AlertDescription className="flex flex-col items-start gap-4 text-sm font-normal sm:flex-row sm:items-center">
               Revisa periódicamente los dispositivos que ya no utilizas y elimina aquellos que no
               reconozcas. Esto ayuda a proteger tu cuenta y evitar accesos no autorizados.
               <Button
@@ -233,9 +233,9 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
             </div>
 
             <dl className="flex min-w-0 flex-col">
-              <dt className="text-xs text-muted-foreground">{item.label}</dt>
-              <dd className="text-xl font-semibold">{item.value}</dd>
-              <dd className="text-xs text-muted-foreground">{percentage}% del total</dd>
+              <dt className="text-xs font-medium text-muted-foreground">{item.label}</dt>
+              <dd className="text-lg font-semibold">{item.value}</dd>
+              <dd className="text-xs font-normal text-muted-foreground">{percentage}% del total</dd>
             </dl>
           </li>
         );
@@ -274,10 +274,12 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
   return (
     <Card className="dark:bg-muted/20">
       <CardHeader>
-        <h3 className="leading-none font-semibold" id="device-type-breakdown-title">
+        <h3 className="text-sm leading-none font-medium" id="device-type-breakdown-title">
           Dispositivo por tipo
         </h3>
-        <CardDescription>Cantidad de dispositivos por categoría</CardDescription>
+        <CardDescription className="text-sm font-normal">
+          Cantidad de dispositivos por categoría
+        </CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -304,9 +306,11 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
                   </div>
 
                   <dl className="flex flex-1 items-center gap-3">
-                    <dt className="flex-1 text-sm font-medium">{item.label}</dt>
-                    <dd className="text-sm font-semibold">{item.count}</dd>
-                    <dd className="w-10 text-right text-xs text-muted-foreground">{percentage}%</dd>
+                    <dt className="flex-1 text-sm font-normal">{item.label}</dt>
+                    <dd className="text-sm font-medium">{item.count}</dd>
+                    <dd className="w-10 text-right text-xs font-normal text-muted-foreground">
+                      {percentage}%
+                    </dd>
                   </dl>
                 </div>
 
@@ -319,7 +323,9 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
           })}
 
           {totalByType === 0 && (
-            <li className="text-sm text-muted-foreground">Aún no tienes dispositivos activos.</li>
+            <li className="text-sm font-normal text-muted-foreground">
+              Aún no tienes dispositivos activos.
+            </li>
           )}
         </ul>
       </CardContent>
@@ -408,10 +414,12 @@ function StateDistributionBreakdown({
   return (
     <Card className="dark:bg-muted/20">
       <CardHeader>
-        <h3 className="leading-none font-semibold" id="device-state-distribution-title">
+        <h3 className="text-sm leading-none font-medium" id="device-state-distribution-title">
           Distribución por estado
         </h3>
-        <CardDescription>Porcentaje del total de dispositivos</CardDescription>
+        <CardDescription className="text-sm font-normal">
+          Porcentaje del total de dispositivos
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
@@ -432,9 +440,8 @@ function StateDistributionBreakdown({
 
             <RadialBar background dataKey="cantidad">
               <LabelList
-                className="fill-white capitalize mix-blend-luminosity"
+                className="fill-white text-xs font-medium capitalize mix-blend-luminosity"
                 dataKey="label"
-                fontSize={11}
                 position="insideStart"
               />
             </RadialBar>
@@ -458,13 +465,13 @@ function StateDistributionBreakdown({
                     fill="currentColor"
                   />
 
-                  <span className="truncate text-sm">{item.label}</span>
+                  <span className="truncate text-sm font-normal">{item.label}</span>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold">{item.cantidad}</span>
+                  <span className="text-sm font-medium">{item.cantidad}</span>
 
-                  <span className="text-xs text-muted-foreground">{percentage}%</span>
+                  <span className="text-xs font-normal text-muted-foreground">{percentage}%</span>
                 </div>
               </li>
             );

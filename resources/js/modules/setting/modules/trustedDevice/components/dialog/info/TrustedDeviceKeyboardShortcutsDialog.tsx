@@ -124,12 +124,12 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
       >
         <DialogHeader>
           <DialogTitle asChild>
-            <h2 className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Keyboard aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Atajos de teclado
             </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Los atajos globales empiezan con G. Para las acciones por dispositivo, selecciona una
             fila haciendo clic en ella o enfocando su botón de acciones (⋯); luego usa los atajos
             que empiezan con F.
@@ -143,7 +143,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
             {keyboardShortcutGroups.map((group) => (
               <section aria-labelledby={`keyboard-shortcuts-${group.label}`} key={group.label}>
                 <h3
-                  className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground"
+                  className="mb-2 text-xs font-medium tracking-wide text-muted-foreground"
                   id={`keyboard-shortcuts-${group.label}`}
                 >
                   {group.label}
@@ -155,13 +155,16 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
                       className="flex min-h-9 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1"
                       key={shortcut.description}
                     >
-                      <span className="text-sm font-medium">{shortcut.description}</span>
+                      <span className="text-sm font-normal">{shortcut.description}</span>
 
                       <KbdGroup aria-label={shortcut.accessibleKeys} role="group">
                         {shortcut.keys.map((keyLabel, keyIndex) => (
                           <Fragment key={`${keyLabel}-${keyIndex}`}>
                             {keyIndex > 0 && (
-                              <span aria-hidden="true" className="text-muted-foreground">
+                              <span
+                                aria-hidden="true"
+                                className="text-xs font-normal text-muted-foreground"
+                              >
                                 →
                               </span>
                             )}
