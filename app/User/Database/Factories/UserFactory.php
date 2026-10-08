@@ -50,7 +50,7 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => null,
             'recovery_codes_regenerated_at' => null,
             'phone' => null,
-            'preferred_locale' => fake()->randomElement(PreferredLocale::cases()),
+            'preferred_locale' => PreferredLocale::ENGLISH->value,
             'biography' => null,
             'last_login_at' => null,
             'remember_token' => Str::random(10),
