@@ -1,17 +1,13 @@
 import {
   ChartNoAxesGantt,
   CircleX,
-  Eye,
   LockKeyhole,
   MonitorSmartphone,
-  Pencil,
   RefreshCw,
   Repeat,
   RotateCcw,
-  RotateCw,
   ShieldOff,
   TableOfContents,
-  Trash2,
 } from "lucide-react";
 
 import type { OptionCardItem } from "../components/ui/OptionCard";
@@ -81,65 +77,6 @@ export const twoFactorDeviceSectionActionKey = {
 
 export type TwoFactorDeviceSectionActionKey =
   (typeof twoFactorDeviceSectionActionKey)[keyof typeof twoFactorDeviceSectionActionKey];
-
-export const twoFactorDeviceActionKey = {
-  viewDevice: "view-device",
-  renameDevice: "rename-device",
-  renewTrust: "renew-trust",
-  revokeDevice: "revoke-device",
-} as const;
-
-export type TwoFactorDeviceActionKey =
-  (typeof twoFactorDeviceActionKey)[keyof typeof twoFactorDeviceActionKey];
-
-export type TwoFactorDeviceAction = Pick<
-  OptionCardItem<TwoFactorDeviceActionKey>,
-  "key" | "icon"
-> & {
-  label: string;
-  className?: string;
-  iconClassName?: string;
-};
-
-export interface DeviceActionGroup {
-  label?: string;
-  actions: TwoFactorDeviceAction[];
-}
-
-export const twoFactorDeviceActions: DeviceActionGroup[] = [
-  {
-    label: "Acciones del dispositivo",
-    actions: [
-      {
-        key: twoFactorDeviceActionKey.viewDevice,
-        icon: Eye,
-        label: "Ver dispositivo",
-      },
-      {
-        key: twoFactorDeviceActionKey.renameDevice,
-        icon: Pencil,
-        label: "Renombrar dispositivo",
-      },
-      {
-        key: twoFactorDeviceActionKey.renewTrust,
-        icon: RotateCw,
-        label: "Renovar confianza",
-      },
-    ],
-  },
-  {
-    actions: [
-      {
-        key: twoFactorDeviceActionKey.revokeDevice,
-        icon: Trash2,
-        label: "Revocar dispositivo",
-        className:
-          "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
-        iconClassName: "text-red-600 dark:text-red-500",
-      },
-    ],
-  },
-];
 
 export const twoFactorManageActionKey = {
   viewCodes: "view-codes",

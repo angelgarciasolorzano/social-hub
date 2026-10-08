@@ -18,6 +18,8 @@ import {
   TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceDetailsDialog,
   TrustedDeviceExpiredDialog,
+  TrustedDeviceForceDestroyDialog,
+  TrustedDeviceReactivationDialog,
   TrustedDeviceRenameDialog,
   TrustedDeviceRenewTrustDialog,
   TrustedDeviceRevokeAllDialog,
@@ -27,6 +29,8 @@ import {
 import {
   type TrustedDeviceAddDeviceDialogKind,
   trustedDeviceDialogKind,
+  trustedDeviceRowActionKey,
+  trustedDeviceRowActions,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
@@ -60,21 +64,17 @@ import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
-import type {
-  TwoFactorDeviceActionKey,
-  TwoFactorDeviceSectionActionKey,
-} from "../../../data/twoFactorEnable";
-import {
-  twoFactorDeviceActionKey,
-  twoFactorDeviceActions,
-  twoFactorDeviceSectionActionKey,
-} from "../../../data/twoFactorEnable";
+import type { TwoFactorDeviceSectionActionKey } from "../../../data/twoFactorEnable";
+import { twoFactorDeviceSectionActionKey } from "../../../data/twoFactorEnable";
 
 type TwoFactorDevicesPageProps = SharedData & {
   currentDevicePreview?: TrustedDevicePreview | null;
   currentDeviceMatch?: TrustedDevice | null;
   trustedDevices?: TrustedDevice[];
 };
+
+type TwoFactorDeviceActionKey =
+  (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
 interface SectionDialogState extends DialogClosingState {
   kind: TwoFactorDeviceSectionActionKey | TrustedDeviceAddDeviceDialogKind;
@@ -435,7 +435,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
     }
 
     switch (dialogDevice.state.kind) {
-      case twoFactorDeviceActionKey.viewDevice:
+      case trustedDeviceRowActionKey.viewDevice:
         return (
           <TrustedDeviceDetailsDialog
             device={selectedDevice}
@@ -444,7 +444,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
           />
         );
 
-      case twoFactorDeviceActionKey.renameDevice:
+      case trustedDeviceRowActionKey.renameDevice:
         return (
           <TrustedDeviceRenameDialog
             device={selectedDevice}
@@ -453,7 +453,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
           />
         );
 
-      case twoFactorDeviceActionKey.renewTrust:
+      case trustedDeviceRowActionKey.renewTrust:
         return (
           <TrustedDeviceRenewTrustDialog
             device={selectedDevice}
@@ -462,9 +462,27 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
           />
         );
 
-      case twoFactorDeviceActionKey.revokeDevice:
+      case trustedDeviceRowActionKey.revokeDevice:
         return (
           <TrustedDeviceRevokeDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case trustedDeviceRowActionKey.reactivate:
+        return (
+          <TrustedDeviceReactivationDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case trustedDeviceRowActionKey.forceDestroy:
+        return (
+          <TrustedDeviceForceDestroyDialog
             device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
@@ -540,30 +558,45 @@ function DeviceActionsDropdown({ device, onActionClick }: DeviceActionsDropdownP
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-60" align="end">
-        {twoFactorDeviceActions.map((group, groupIndex) => (
+        {trustedDeviceRowActions.map((group, groupIndex) => (
           <Fragment key={groupIndex}>
             <DropdownMenuGroup>
               {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
 
               {group.actions.map((action) => {
                 const Icon = action.icon;
+                const isActionEnabled = action.isEnabled(device);
 
                 return (
                   <DropdownMenuItem
                     key={action.key}
-                    onClick={() => {
+                    disabled={!isActionEnabled}
+                    onClick={(event) => {
+                      if (!isActionEnabled) {
+                        event.preventDefault();
+                        return;
+                      }
+
                       handleClick(action.key);
                     }}
-                    className={action.className}
+                    className={cn(
+                      action.className,
+                      !isActionEnabled && "cursor-not-allowed opacity-50",
+                    )}
                   >
-                    <Icon className={action.iconClassName} />
+                    <Icon
+                      className={cn(
+                        action.iconClassName ?? "text-muted-foreground",
+                        !isActionEnabled && "opacity-70",
+                      )}
+                    />
                     {action.label}
                   </DropdownMenuItem>
                 );
               })}
             </DropdownMenuGroup>
 
-            {groupIndex < twoFactorDeviceActions.length - 1 && <DropdownMenuSeparator />}
+            {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
           </Fragment>
         ))}
       </DropdownMenuContent>
