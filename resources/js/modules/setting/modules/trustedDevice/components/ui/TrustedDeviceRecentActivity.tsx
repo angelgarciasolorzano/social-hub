@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 
 import { usePage } from "@inertiajs/react";
 
@@ -22,13 +22,7 @@ import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/shadcn/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
@@ -65,47 +59,59 @@ function TrustedDeviceRecentActivity({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Actividad reciente</CardTitle>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">Actividad reciente</h2>
       </CardHeader>
       <CardContent className="space-y-4">
         {recentActivity.length === 0 ? (
           <EmptyState
-            description="Las acciones que realizes sobre tus dispositivos apareceran aqui."
+            description="Las acciones que realices sobre tus dispositivos aparecerán aquí."
             icon={ShieldQuestionMark}
             title="Sin actividad reciente registrada."
           />
         ) : (
-          recentActivity.map((item) => {
-            const visual = actionVisuals[item.action];
-            const Icon = visual.icon;
-            const colors = iconColorVariants[visual.color];
+          <ul className="space-y-4" role="list">
+            {recentActivity.map((item) => {
+              const visual = actionVisuals[item.action];
+              const Icon = visual.icon;
+              const colors = iconColorVariants[visual.color];
 
-            return (
-              <Fragment key={item.id}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className={cn("flex h-10 w-10 rounded-full p-2", colors.iconBgClass)}>
-                      <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
-                    </div>
+              return (
+                <li className="space-y-4" key={item.id}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div
+                        aria-hidden="true"
+                        className={cn("flex h-10 w-10 rounded-full p-2", colors.iconBgClass)}
+                      >
+                        <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
+                      </div>
 
-                    <div className="flex w-full items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <h4 className="max-w-40 truncate text-sm font-semibold">
-                          {item.deviceLabel ?? "Un dispositivo"}
-                        </h4>
+                      <div className="flex w-full items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <h3 className="max-w-40 truncate text-sm font-medium">
+                            {item.deviceLabel ?? "Un dispositivo"}
+                          </h3>
 
-                        <p className="text-sm text-muted-foreground">{item.actionLabel}</p>
+                          <p className="text-xs font-normal text-muted-foreground">
+                            {item.actionLabel}
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    <time
+                      className="text-xs font-normal text-muted-foreground"
+                      dateTime={item.createdAt ?? undefined}
+                    >
+                      {fromNow(item.createdAt)}
+                    </time>
                   </div>
 
-                  <p className="text-sm text-muted-foreground">{fromNow(item.createdAt)}</p>
-                </div>
-
-                <Separator />
-              </Fragment>
-            );
-          })
+                  <Separator />
+                </li>
+              );
+            })}
+          </ul>
         )}
       </CardContent>
 

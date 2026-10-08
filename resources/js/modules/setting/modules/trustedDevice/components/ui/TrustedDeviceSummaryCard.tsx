@@ -19,6 +19,19 @@ function TrustedDeviceSummaryCard({
   lastUsedAt,
   expiration,
 }: TrustedDeviceSummaryCardProps): JSX.Element {
+  const deviceName = deviceLabel(device).trim() || "Dispositivo desconocido";
+  const hasLastUsedAt = lastUsedAt.trim() !== "";
+  const hasBrowser = device.browser !== null && device.browser.trim() !== "";
+  const hasExpiration = expiration !== undefined && expiration.trim() !== "";
+  const browserDetails = [
+    device.osName,
+    [device.browser, device.browserVersion]
+      .filter((value) => value !== null && value.trim() !== "")
+      .join(" "),
+  ]
+    .filter((value) => value !== null && value.trim() !== "")
+    .join(" - ");
+
   return (
     <div className="flex min-w-0 items-start gap-2.5 rounded-xl border p-4 shadow-xs dark:bg-input/20">
       <div
@@ -31,27 +44,35 @@ function TrustedDeviceSummaryCard({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-        <span className="block truncate font-medium" title={deviceLabel(device)}>
-          {deviceLabel(device)}
-        </span>
+        <h3 className="block truncate text-sm font-medium" title={deviceName}>
+          {deviceName}
+        </h3>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {device.browser !== null && device.browser !== "" && (
-            <span className="truncate text-sm text-muted-foreground">
-              {device.osName} - {device.browser}
-              {device.browserVersion !== null && device.browserVersion !== "" && (
-                <> {device.browserVersion}</>
-              )}
-            </span>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {hasBrowser && (
+            <dl className="flex min-w-0 items-center truncate text-xs text-muted-foreground">
+              <dt className="sr-only">Sistema operativo y navegador</dt>
+              <dd className="m-0 truncate">{browserDetails}</dd>
+            </dl>
           )}
 
-          <FaCircle className="h-1 w-1 shrink-0" />
+          {hasBrowser && hasLastUsedAt && (
+            <FaCircle aria-hidden="true" className="h-1 w-1 shrink-0" />
+          )}
 
-          <span className="truncate text-sm text-muted-foreground">Último uso: {lastUsedAt}</span>
+          {hasLastUsedAt && (
+            <dl className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+              <dt className="shrink-0 font-medium">Último uso:</dt>
+              <dd className="m-0 truncate text-sm">{lastUsedAt}</dd>
+            </dl>
+          )}
         </div>
 
-        {expiration !== undefined && (
-          <span className="text-sm text-muted-foreground">Fecha de expiración: {expiration}</span>
+        {hasExpiration && (
+          <dl className="flex items-center gap-1 text-xs text-muted-foreground">
+            <dt className="font-medium">Fecha de expiración:</dt>
+            <dd className="m-0">{expiration}</dd>
+          </dl>
         )}
       </div>
     </div>

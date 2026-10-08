@@ -90,12 +90,12 @@ function TrustedDeviceAddDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldPlus className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <ShieldPlus aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Agregar dispositivo de confianza
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Este navegador aún no está registrado como dispositivo de confianza. Al agregarlo, no se
             te solicitara el codigo de verificacion desde este navegador hasta su fecha de
             expiracion.
@@ -108,7 +108,7 @@ function TrustedDeviceAddDialog({
 
             <AlertTitle className="line-clamp-4">Consejo</AlertTitle>
 
-            <AlertDescription>
+            <AlertDescription className="text-sm font-normal">
               Te recomendamos usar un nombre que te ayude a reconocer este dispositivo facilmente.
               Este nombre solo lo veras tu.
             </AlertDescription>
@@ -191,7 +191,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
   return (
     <Card className="dark:bg-input/10">
       <CardHeader>
-        <CardTitle>Dispositivo detectado</CardTitle>
+        <CardTitle className="text-sm font-medium">Dispositivo detectado</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-4">
         {items.map((item, index) => {
@@ -206,7 +206,9 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
 
                 <div className="flex flex-col items-center gap-1">
                   <span className="text-sm font-medium">{item.title}</span>
-                  <span className="text-sm text-muted-foreground">{item.description}</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {item.description}
+                  </span>
                 </div>
               </div>
 
@@ -232,7 +234,7 @@ function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): J
         Dale un nombre a este dispositivo (opcional)
       </LabelForm>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground" id="add-device-name-description">
         Asi podras identificarlo facilmente si tienes varios dispositivos registrados.
       </p>
 
@@ -240,13 +242,18 @@ function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): J
         id="add-device-name"
         name="name"
         placeholder="Mi dispositivo"
+        aria-describedby={
+          errors.name
+            ? "add-device-name-description add-device-name-error"
+            : "add-device-name-description"
+        }
         onChange={(e) => {
           setData("name", e.target.value);
         }}
         aria-invalid={errors.name !== undefined ? "true" : "false"}
       />
 
-      <InputError message={errors.name} />
+      <InputError aria-live="polite" id="add-device-name-error" message={errors.name} />
     </form>
   );
 }

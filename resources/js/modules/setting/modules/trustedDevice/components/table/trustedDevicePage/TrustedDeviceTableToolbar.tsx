@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useId } from "react";
 
 import { router } from "@inertiajs/react";
 
@@ -96,15 +97,20 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
     onSortOrderChange,
     onResetFilters,
   } = props;
+  const searchInputId = useId();
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <InputGroup className="w-full max-w-xs xl:min-w-0 xl:flex-1">
+          <FieldLabel className="sr-only" htmlFor={searchInputId}>
+            Buscar dispositivo
+          </FieldLabel>
           <InputGroupAddon>
             <Search className="size-4" />
           </InputGroupAddon>
           <InputGroupInput
+            id={searchInputId}
             placeholder="Buscar dispositivo..."
             value={filters.search}
             onChange={(event) => {
@@ -198,7 +204,7 @@ function TrustedDeviceColumnVisibilityMenu({
 
       <PopoverContent align="end" className="w-60 p-3">
         <FieldSet className="gap-2">
-          <FieldLegend className="mb-0 font-bold" variant="label">
+          <FieldLegend className="mb-0 text-sm font-medium" variant="label">
             Columnas visibles
           </FieldLegend>
 
@@ -218,7 +224,7 @@ function TrustedDeviceColumnVisibilityMenu({
                       }));
                     }}
                   />
-                  <FieldLabel className="cursor-pointer font-normal" htmlFor={checkboxId}>
+                  <FieldLabel className="cursor-pointer text-sm font-medium" htmlFor={checkboxId}>
                     {columnOption.label}
                   </FieldLabel>
                 </Field>
@@ -355,7 +361,7 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
       <PopoverContent align="end" className="w-72 p-3">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold">Filtros</h4>
+            <h4 className="text-sm font-medium">Filtros</h4>
 
             <Button
               type="button"
@@ -396,6 +402,7 @@ function FilterCombobox({
   onChange,
 }: FilterComboboxConfig): JSX.Element {
   const anchor = useComboboxAnchor();
+  const filterControlId = useId();
 
   const findLabel = (value: string, options: readonly FilterOption[]): string => {
     return options.find((opt) => opt.value === value)?.label ?? value;
@@ -410,7 +417,9 @@ function FilterCombobox({
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+        <FieldLabel className="text-sm font-medium text-muted-foreground" htmlFor={filterControlId}>
+          {label}
+        </FieldLabel>
 
         <Combobox
           items={options}
@@ -427,7 +436,10 @@ function FilterCombobox({
                   {values.map((selected) => (
                     <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
                   ))}
-                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
+                  <ComboboxChipsInput
+                    id={filterControlId}
+                    placeholder={arr.length > 0 ? "" : label}
+                  />
                 </>
               )}
             </ComboboxValue>
@@ -453,7 +465,9 @@ function FilterCombobox({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <FieldLabel className="text-sm font-medium text-muted-foreground" htmlFor={filterControlId}>
+        {label}
+      </FieldLabel>
 
       <Combobox
         value={single}
@@ -463,9 +477,10 @@ function FilterCombobox({
       >
         <ComboboxTrigger
           className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm font-medium shadow-xs",
             "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
           )}
+          id={filterControlId}
         >
           <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
             {singleLabel ?? label}
@@ -508,7 +523,7 @@ function TrustedDeviceSortPopover({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-3">
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold">Ordenar por</h4>
+          <h4 className="text-sm font-medium">Ordenar por</h4>
 
           <RadioGroup
             value={sortOrder}
@@ -531,7 +546,9 @@ function TrustedDeviceSortPopover({
 
                 <div className="flex flex-1 flex-col gap-0.5 leading-tight">
                   <span className="text-sm font-medium">{option.label}</span>
-                  <span className="text-xs text-muted-foreground">{option.description}</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {option.description}
+                  </span>
                 </div>
               </label>
             ))}
@@ -542,7 +559,7 @@ function TrustedDeviceSortPopover({
           <div className="flex items-center justify-between">
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-medium">Predeterminado</span>
-              <span className="text-xs text-muted-foreground">{selectedSortLabel}</span>
+              <span className="text-xs font-normal text-muted-foreground">{selectedSortLabel}</span>
             </div>
 
             <Button

@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useId } from "react";
 
 import {
   Combobox,
@@ -13,6 +14,7 @@ import {
   ComboboxValue,
   useComboboxAnchor,
 } from "@/shared/components/shadcn/ui/combobox";
+import { FieldLabel } from "@/shared/components/shadcn/ui/field";
 
 import { cn } from "@/shared/lib";
 
@@ -35,6 +37,7 @@ export default function TrustedDeviceActivityFilterCombobox(
   const { label, multiple, options, value, onChange } = props;
 
   const anchor = useComboboxAnchor();
+  const filterControlId = useId();
 
   const findLabel = (candidate: string, candidates: readonly FilterOption[]): string => {
     return candidates.find((opt) => opt.value === candidate)?.label ?? candidate;
@@ -48,7 +51,9 @@ export default function TrustedDeviceActivityFilterCombobox(
 
     return (
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">{label}</label>
+        <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+          {label}
+        </FieldLabel>
 
         <Combobox
           items={options}
@@ -58,24 +63,30 @@ export default function TrustedDeviceActivityFilterCombobox(
           }}
           value={arr}
         >
-          <ComboboxChips className="min-h-9 w-full" ref={anchor}>
+          <ComboboxChips className="min-h-9 w-full text-sm font-normal" ref={anchor}>
             <ComboboxValue>
               {(values: string[]) => (
                 <>
                   {values.map((selected) => (
-                    <ComboboxChip key={selected}>{findLabel(selected, options)}</ComboboxChip>
+                    <ComboboxChip className="text-xs font-medium" key={selected}>
+                      {findLabel(selected, options)}
+                    </ComboboxChip>
                   ))}
-                  <ComboboxChipsInput placeholder={arr.length > 0 ? "" : label} />
+                  <ComboboxChipsInput
+                    className="text-sm font-normal"
+                    id={filterControlId}
+                    placeholder={arr.length > 0 ? "" : label}
+                  />
                 </>
               )}
             </ComboboxValue>
           </ComboboxChips>
 
           <ComboboxContent anchor={anchor} className="pointer-events-auto">
-            <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+            <ComboboxEmpty className="font-normal">Sin resultados</ComboboxEmpty>
             <ComboboxList>
               {(item: { label: string; value: string }) => (
-                <ComboboxItem key={item.value} value={item.value}>
+                <ComboboxItem className="text-sm font-normal" key={item.value} value={item.value}>
                   {item.label}
                 </ComboboxItem>
               )}
@@ -91,7 +102,9 @@ export default function TrustedDeviceActivityFilterCombobox(
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <FieldLabel className="text-xs font-medium text-muted-foreground" htmlFor={filterControlId}>
+        {label}
+      </FieldLabel>
 
       <Combobox
         value={single}
@@ -101,10 +114,11 @@ export default function TrustedDeviceActivityFilterCombobox(
       >
         <ComboboxTrigger
           className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs",
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm font-normal shadow-xs",
             "data-popup-open:border-ring data-popup-open:ring-[3px] data-popup-open:ring-ring/50",
             singleLabel === null && "text-muted-foreground",
           )}
+          id={filterControlId}
         >
           <span className={cn("truncate", singleLabel === null && "text-muted-foreground")}>
             {singleLabel ?? label}
@@ -114,7 +128,7 @@ export default function TrustedDeviceActivityFilterCombobox(
         <ComboboxContent className="pointer-events-auto">
           <ComboboxList>
             {options.map((opt) => (
-              <ComboboxItem key={opt.value} value={opt.value}>
+              <ComboboxItem className="text-sm font-normal" key={opt.value} value={opt.value}>
                 {opt.label}
               </ComboboxItem>
             ))}

@@ -5,6 +5,7 @@ import { router, usePage } from "@inertiajs/react";
 import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import {
   formatActivationDate,
   formatActivationTime,
@@ -66,6 +67,7 @@ function TwoFactorActivationDetailsDialog({
   setOpen,
   confirmedAt,
 }: TwoFactorActivationDetailsDialogProps): JSX.Element {
+  const dialogFocusRestoration = useDialogFocusRestoration();
   const { firstTrustedDevice = null } = usePage<TwoFactorEnablePageProps>().props;
 
   const activationDate = formatActivationDate(confirmedAt);
@@ -119,13 +121,13 @@ function TwoFactorActivationDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
               Fecha de activación
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Aquí puedes ver cuándo activaste la autenticación de dos factores (2FA) en tu cuenta.
@@ -157,7 +159,7 @@ function TwoFactorActivationDetailsDialog({
                       )}
                     </div>
 
-                    <span className="text-sm text-muted-foreground">{detail.label}</span>
+                    <span className="text-xs text-muted-foreground">{detail.label}</span>
                   </div>
 
                   <p className={cn("text-sm font-medium", detail.valueClassName)}>{detail.value}</p>

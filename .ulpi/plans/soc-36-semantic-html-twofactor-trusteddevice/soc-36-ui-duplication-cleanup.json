@@ -1,0 +1,185 @@
+{
+  "title": "SOC-36 follow-up: reducir duplicación en componentes de TwoFactor y TrustedDevice",
+  "overview": "Plan de limpieza adyacente a SOC-36 para compartir la alerta de error de dos pasos de configuración de TwoFactor, la presentación/helpers de filtros activos de TrustedDevice y las transiciones comunes de acciones en TwoFactorEnable. Conserva copy, estilos, accesibilidad, callbacks y comportamiento actuales.",
+  "planningMode": "EXPANSION",
+  "executionStyle": "Por fases, con pausa de revisión después de cada paso atómico.",
+  "reviewDefault": "codex",
+  "scopeChallenge": "La revisión previa identificó tres grupos concretos de duplicación. El código real confirma que StepErrorAlert es idéntico salvo aria-hidden en el icono de reintento; ambos componentes usan los mismos textos, Alert variants y callback. Los dos listados de filtros activos duplican el grupo visual, la búsqueda de etiquetas y la eliminación de valores, aunque sus arrays de filtros y aria-labels son propios. TwoFactorEnable despacha desde dos orígenes y repite las transiciones para mostrar códigos, regenerar y desactivar 2FA; ver dispositivos es exclusiva del menú de administración. Se limita el cambio a esos tres grupos y su verificación. Se reutiliza EXPANSION y revisión Codex, opciones ya confirmadas para el plan padre.",
+  "prerequisites": [
+    "Los módulos TwoFactor y TrustedDevice y los archivos citados existen en el workspace.",
+    "La limpieza compartida de foco de TASK-048 de SOC-36 ya está implementada y validada.",
+    "Los cambios son refactors de UI: no alteran requests, filtros enviados al servidor, textos, estilos ni navegación."
+  ],
+  "nonGoals": [
+    "Cambiar copy, variantes visuales, nombres accesibles o callbacks de las alertas y chips.",
+    "Modificar el estado, los parámetros de URL, las consultas o la semántica de filtros.",
+    "Cambiar acciones exclusivas de una fuente, como ver dispositivos desde el menú de administración.",
+    "Añadir dependencias, pruebas de navegador o nuevas capacidades de producto."
+  ],
+  "contracts": [
+    "La alerta compartida conserva el título, la descripción, el botón Reintentar, la variante destructiva y el callback recibido.",
+    "El grupo de chips conserva el aria-label específico del llamador, las etiquetas visibles y accesibles, Limpiar filtros, el fallback a value para opciones desconocidas y null cuando se elimina el último valor.",
+    "Las acciones compartidas de TwoFactor continúan mostrando códigos, abriendo los mismos diálogos y dejando las acciones exclusivas en su adaptador actual."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Compartir la alerta de error entre los pasos de configuración TwoFactor",
+      "description": "Extraer StepErrorAlert a TwoFactorStepErrorAlert en el directorio steps existente y usarlo desde ChooseMethodStep y ManualSetupStep. Mantener exactamente la presentación y el callback de reintento, ocultando los iconos decorativos a tecnologías de asistencia en ambos usos.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los dos pasos usan el mismo componente y conservan el título, descripción, variante destructiva, botón y callback de reintento actuales.",
+        "Ambos iconos decorativos quedan ocultos para tecnologías de asistencia y la rama de error conserva su layout actual.",
+        "Los archivos modificados pasan Prettier y ESLint dirigidos."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx"
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Compartir el grupo visual y los helpers de filtros activos TrustedDevice",
+      "description": "Extraer el grupo accesible de chips y sus helpers de etiqueta/eliminación a TrustedDeviceActiveFilterChipGroup bajo components/table. Reutilizarlo en los filtros de la página de dispositivos y del diálogo de actividad; cada llamador conserva la construcción de sus filtros y su aria-label específico.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Ambos consumidores reutilizan un solo grupo de chips, un solo renderer de chip y los mismos helpers tipados de etiqueta y eliminación.",
+        "Se conservan los aria-labels distintos, el texto visible, los nombres de botones, las acciones de limpiar y la lógica específica de cada filtro.",
+        "Una opción desconocida mantiene su value visible y quitar el último valor devuelve null; los archivos pasan Prettier y ESLint dirigidos."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx"
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Unificar transiciones comunes de TwoFactorEnable",
+      "description": "Extraer las transiciones compartidas para mostrar códigos de respaldo, abrir regeneración y desactivar 2FA, y llamarlas desde los adaptadores de acciones de seguridad y del menú de administración. Mantener viewDevices y cualquier acción desconocida dentro de su manejo actual.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Ambos manejadores delegan las tres transiciones comunes al mismo conjunto de callbacks tipados.",
+        "Ver dispositivos sigue siendo exclusivo del menú de administración y las claves desconocidas continúan sin efecto.",
+        "El archivo pasa Prettier, ESLint y la comprobación TypeScript."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx"
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx\nrtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx\nrtk npm run types",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Ejecutar QA frontend integrado de las refactorizaciones",
+      "description": "Ejecutar los gates frontend del proyecto después de integrar las tres refactorizaciones. No se requiere QA visual porque el alcance conserva copy, estilos y comportamiento; revisar el diff para confirmar que los call sites mantienen los mismos props y callbacks.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "format:check, lint:check, types, build y build:ssr pasan con los tres refactors integrados.",
+        "La revisión confirma que se conservan los textos, etiquetas accesibles, callbacks, transiciones y lógica propia de cada módulo.",
+        "La verificación no introduce cambios funcionales ni archivos generados inesperados."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [],
+      "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr\nrtk git diff --check",
+      "review": "codex"
+    }
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [],
+    "TASK-004": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003"
+    ]
+  },
+  "shipCut": "Cada implementación es un corte revisable independiente. TASK-004 solo se ejecuta cuando los tres refactors estén integrados; ninguno cambia contratos funcionales y cada paso puede revertirse sin afectar los otros módulos.",
+  "testCoverageMap": [
+    "TASK-001 y TASK-002 validan Prettier y ESLint por writeScope; TASK-003 añade TypeScript porque centraliza handlers tipados.",
+    "TASK-004 repite todos los gates frontend configurados y revisa el diff integrado.",
+    "No se agregan pruebas automatizadas nuevas: los cambios solo extraen presentación y callbacks existentes sin alterar lógica de negocio."
+  ],
+  "executionSummary": {
+    "taskCount": 4,
+    "implementationTaskCount": 3,
+    "phaseCount": 2,
+    "dagLayers": [
+      {
+        "layer": 1,
+        "taskIds": [
+          "TASK-001",
+          "TASK-002",
+          "TASK-003"
+        ]
+      },
+      {
+        "layer": 2,
+        "taskIds": [
+          "TASK-004"
+        ]
+      }
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-004"
+    ],
+    "criticalPathLength": 2,
+    "reviewDefault": "codex"
+  },
+  "failureModes": [
+    "Extraer la alerta con copy o aria distintos cambia el mensaje anunciado; conservar el mismo contenido, rol proporcionado por shadcn Alert y botón de reintento.",
+    "Generalizar los filtros puede mezclar sus labels, callbacks o aria-labels; mantener la construcción de filtros específica en cada consumidor.",
+    "Un helper de eliminación que devuelve [] en vez de null cambia la semántica de filtros vacíos; cubrir ese borde en la implementación y revisar el tipo.",
+    "Unificar acciones puede alterar el origen de una transición o disparar viewDevices desde otra opción; mantener adaptadores y claves específicas."
+  ]
+}

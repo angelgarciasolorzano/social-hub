@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Database\Factories;
 
+use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Carbon\CarbonInterface;
@@ -49,7 +50,7 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => null,
             'recovery_codes_regenerated_at' => null,
             'phone' => null,
-            'preferred_locale' => 'en',
+            'preferred_locale' => PreferredLocale::ENGLISH->value,
             'biography' => null,
             'last_login_at' => null,
             'remember_token' => Str::random(10),
@@ -74,7 +75,7 @@ class UserFactory extends Factory
                 $imagesProfile = glob(app_path(User::TEST_PROFILE_IMAGES_GLOB_PATH), GLOB_BRACE);
                 $imagesCover = glob(app_path(User::TEST_COVER_IMAGES_GLOB_PATH), GLOB_BRACE);
 
-                if (is_array($imagesProfile) && is_array($imagesCover) && $imagesProfile !== [] && $imagesCover !== []) {
+                if (\is_array($imagesProfile) && \is_array($imagesCover) && $imagesProfile !== [] && $imagesCover !== []) {
                     $randomImageProfile = $imagesProfile[array_rand($imagesProfile)];
                     $randomImageCover = $imagesCover[array_rand($imagesCover)];
 

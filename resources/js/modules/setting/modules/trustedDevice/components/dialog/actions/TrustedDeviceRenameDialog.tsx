@@ -1,4 +1,4 @@
-import type { JSX, SubmitEvent } from "react";
+import { type JSX, type SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
 import { useForm, usePage } from "@inertiajs/react";
@@ -9,7 +9,8 @@ import { Eye, Pencil } from "lucide-react";
 import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
+import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -36,6 +37,7 @@ interface TrustedDeviceRenameDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
+  returnFocusTarget?: HTMLElement | null;
 }
 
 interface RenameDeviceFormData {
@@ -46,7 +48,12 @@ function TrustedDeviceRenameDialog({
   device,
   open,
   onClose,
+  returnFocusTarget,
 }: TrustedDeviceRenameDialogProps): JSX.Element {
+  const { onOpenAutoFocus, onCloseAutoFocus } = useDialogFocusRestoration({
+    getFallbackFocusTarget: () => returnFocusTarget,
+  });
+
   const { setData, submit, processing, reset, errors, data } = useForm<RenameDeviceFormData>({
     name: device.name,
   });
@@ -78,21 +85,25 @@ function TrustedDeviceRenameDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={onOpenAutoFocus} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Pencil className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Pencil aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Renombrar Dispositivo
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Asigna un nombre personalizado para identificar este dispositivo facilmente.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <TrustedDeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
+          <TrustedDeviceSummaryCard
+            device={device}
+            lastUsedAt={fromNow(device.lastUsedAt)}
+            expiration={formatLongDate(device.expiresAt)}
+          />
 
           <RenameDeviceForm handleSubmit={handleSubmit} errors={errors} setData={setData} />
 
@@ -144,13 +155,16 @@ function RenameDeviceForm({ handleSubmit, errors, setData }: RenameDeviceFormPro
         onChange={(e) => {
           setData("name", e.target.value);
         }}
+        aria-describedby={errors.name ? "rename-trusted-device-error" : "rename-device-description"}
         aria-invalid={errors.name ? "true" : "false"}
       />
 
-      {errors.name && <InputError message={errors.name} />}
+      {errors.name && (
+        <InputError aria-live="polite" id="rename-trusted-device-error" message={errors.name} />
+      )}
 
       {!errors.name && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-normal text-muted-foreground" id="rename-device-description">
           Este sera el nombre con el que identificaras este dispositivo.
         </p>
       )}
@@ -168,10 +182,15 @@ function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
       <Eye />
 
       <AlertTitle>Vista previa</AlertTitle>
-      <AlertDescription>
+      <AlertDescription className="text-sm font-normal">
         Este dispositivo se mostrara como:
         {data.name?.trim() ? (
-          <Badge className={cn(badgeVariants.preview, "mt-1 block max-w-full truncate")}>
+          <Badge
+            className={cn(
+              badgeVariants.preview,
+              "mt-1 block max-w-full truncate text-sm font-medium",
+            )}
+          >
             {data.name.trim()}
           </Badge>
         ) : null}

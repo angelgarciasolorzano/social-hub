@@ -62,12 +62,12 @@ function TrustedDeviceExpiredDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Confianza expirada
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Este dispositivo ya fue registrado pero su confianza expiro. Para volver a confiar en
             él, renueva su confianza desde la lista de dispositivos expirados.
           </DialogDescription>
@@ -107,7 +107,7 @@ function ExpiredActionsAlert({ onGoToExpiredList }: ExpiredActionsAlertProps): J
     <Alert className={alertVariants.warning}>
       <CircleAlert />
       <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
-      <AlertDescription className="flex items-center gap-4">
+      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
         Renueva la confianza para extender la fecha de expiracion sin volver a registrarlo.
         <Button onClick={onGoToExpiredList} size="sm" variant="outline">
           Ir a la lista de expirados

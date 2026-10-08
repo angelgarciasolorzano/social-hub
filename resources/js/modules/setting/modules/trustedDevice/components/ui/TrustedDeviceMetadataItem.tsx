@@ -8,7 +8,7 @@ import { cn } from "@/shared/lib/utils";
 export interface TrustedDeviceMetadataItemProps {
   icon: ReactNode;
   title: string;
-  description: string;
+  description?: string | null;
   iconColor?: IconColorVariant;
   badge?: string;
   badgePosition?: "before" | "after";
@@ -21,28 +21,47 @@ function TrustedDeviceMetadataItem({
   iconColor = "violet",
   badge,
   badgePosition = "before",
-}: TrustedDeviceMetadataItemProps): JSX.Element {
-  const showBadge = badge !== undefined && badge !== "";
+}: TrustedDeviceMetadataItemProps): JSX.Element | null {
+  const showBadge = badge !== undefined && badge.trim() !== "";
+  const hasTitle = title.trim() !== "";
+  const hasDescription =
+    description !== undefined && description !== null && description.trim() !== "";
 
   const colors = iconColorVariants[iconColor];
 
+  if (!hasTitle || (!hasDescription && !showBadge)) {
+    return null;
+  }
+
   return (
     <div className="flex gap-4">
-      <div className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>{icon}</div>
+      <div aria-hidden="true" className={cn("flex h-10 w-10 rounded-md p-2", colors.iconBgClass)}>
+        {icon}
+      </div>
 
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{title}</span>
+      <dl className="flex flex-col gap-1">
+        <dt className="text-xs font-medium">{title}</dt>
 
         {showBadge && badgePosition === "before" && (
-          <Badge className={cn(badgeVariants.success, "mt-1.5 block")}>{badge}</Badge>
+          <dd className="m-0">
+            <Badge className={cn(badgeVariants.success, "mt-1.5 block text-xs font-normal")}>
+              {badge}
+            </Badge>
+          </dd>
         )}
 
-        <span className="text-sm text-muted-foreground">{description}</span>
+        {hasDescription && (
+          <dd className="m-0 text-sm font-normal text-muted-foreground">{description}</dd>
+        )}
 
         {showBadge && badgePosition === "after" && (
-          <Badge className={cn(badgeVariants.success, "mt-1.5 block")}>{badge}</Badge>
+          <dd className="m-0">
+            <Badge className={cn(badgeVariants.success, "mt-1.5 block text-xs font-normal")}>
+              {badge}
+            </Badge>
+          </dd>
         )}
-      </div>
+      </dl>
     </div>
   );
 }

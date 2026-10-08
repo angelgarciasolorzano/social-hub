@@ -38,7 +38,7 @@ export default function TwoFactor({
       <Head title="Two Factor Authentication" />
 
       {canManageTwoFactor && (
-        <>
+        <main className="max-w-8xl mx-auto flex w-full flex-1 flex-col gap-6">
           {twoFactorEnabled ? (
             <TwoFactorEnable />
           ) : (
@@ -65,7 +65,7 @@ export default function TwoFactor({
             requiresConfirmation={requiresConfirmation}
             twoFactorEnabled={twoFactorEnabled}
           />
-        </>
+        </main>
       )}
     </>
   );

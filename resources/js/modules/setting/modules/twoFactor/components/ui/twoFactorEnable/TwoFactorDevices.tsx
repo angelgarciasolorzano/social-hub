@@ -163,7 +163,7 @@ function TwoFactorDevices(): JSX.Element {
       </Alert>
 
       <div className="flex items-center justify-between gap-4 font-semibold">
-        <span className="text-sm">Dispositivos registrados</span>
+        <span className="text-lg">Dispositivos registrados</span>
 
         <Button variant="outline" onClick={handleAddDevice} type="button">
           <Plus data-icon="inline-end" />

@@ -11,7 +11,7 @@ import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime
 import { forceDestroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
 import { InputError, LabelForm, PasswordInput } from "@/shared/components/form";
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
+import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Checkbox } from "@/shared/components/shadcn/ui/checkbox";
 import {
@@ -72,17 +72,17 @@ function TrustedDeviceForceDestroyDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="[&_dt]:font-normal">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Eliminar permanentemente
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
-            Esta acción es definitiva. El dispositivo se eliminara por completo de tu cuenta y no
-            podras volver a confiar en el.
+          <DialogDescription className="text-sm font-normal">
+            Eliminarás permanentemente {device.name ?? "este dispositivo"} de tu cuenta. Esta acción
+            es definitiva y no podrás volver a confiar en él.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,10 +133,15 @@ function TrustedDeviceForceDestroyDialog({
 
 function ForceDestroyConsequencesAlert(): JSX.Element {
   return (
-    <Alert className={alertVariants.destructive}>
-      <AlertTriangleIcon />
-      <AlertTitle>¿Qué pasará?</AlertTitle>
-      <AlertDescription>
+    <Alert aria-labelledby="force-destroy-warning-title" className={alertVariants.destructive}>
+      <AlertTriangleIcon aria-hidden="true" />
+      <h3
+        className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
+        id="force-destroy-warning-title"
+      >
+        Consecuencias de la eliminación permanente
+      </h3>
+      <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
           <li>Este dispositivo se eliminará permanentemente de la base de datos.</li>
           <li>Ya no podrás reactivarlo desde la sección &quot;Revocados&quot;.</li>
@@ -176,17 +181,25 @@ function ForceDestroyForm({
           required
           autoFocus
           placeholder="Ingresa tu contraseña"
+          aria-describedby={errors.password ? "force-destroy-password-error" : undefined}
           onChange={(event) => {
             setData("password", event.target.value);
           }}
           aria-invalid={errors.password ? "true" : "false"}
         />
 
-        {errors.password && <InputError message={errors.password} />}
+        {errors.password && (
+          <InputError
+            aria-live="polite"
+            id="force-destroy-password-error"
+            message={errors.password}
+          />
+        )}
       </div>
 
       <div className="flex gap-2">
         <Checkbox
+          aria-describedby={errors.terms ? "force-destroy-terms-error" : undefined}
           id="force-destroy-trusted-device-terms"
           name="terms"
           checked={data.terms}
@@ -201,7 +214,9 @@ function ForceDestroyForm({
         </LabelForm>
       </div>
 
-      {errors.terms && <InputError message={errors.terms} />}
+      {errors.terms && (
+        <InputError aria-live="polite" id="force-destroy-terms-error" message={errors.terms} />
+      )}
     </form>
   );
 }

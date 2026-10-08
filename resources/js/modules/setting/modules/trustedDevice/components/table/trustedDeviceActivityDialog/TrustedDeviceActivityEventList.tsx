@@ -49,7 +49,7 @@ export default function TrustedDeviceActivityEventList({
         <div className="gap-2 p-6">
           {hasActiveFilters ? (
             <EmptyState
-              description="Prueba cambiar el rango temporal, el tipo de acción o el termino de busqueda."
+              description="Prueba cambiar el rango temporal, el tipo de acción o el término de búsqueda."
               icon={SearchX}
               title="Sin actividad para los filtros seleccionados."
             />
@@ -62,7 +62,7 @@ export default function TrustedDeviceActivityEventList({
           )}
         </div>
       ) : (
-        <ul className="divide-y">
+        <ul className="divide-y" role="list">
           {events.map((event) => (
             <ActivityEventRow event={event} key={event.id} />
           ))}
@@ -84,22 +84,27 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
   return (
     <li className="flex items-start justify-between gap-4 p-4">
       <div className="flex items-start gap-4">
-        <div className={cn("flex h-10 w-10 shrink-0 rounded-full p-2", colors.iconBgClass)}>
+        <div
+          aria-hidden="true"
+          className={cn("flex h-10 w-10 shrink-0 rounded-full p-2", colors.iconBgClass)}
+        >
           <Icon className={cn("h-6 w-6", colors.iconFgClass)} />
         </div>
 
         <div className="space-y-1">
-          <h4 className="text-sm font-semibold">{event.deviceLabel ?? "Un dispositivo"}</h4>
+          <h3 className="text-sm font-medium">{event.deviceLabel ?? "Un dispositivo"}</h3>
 
-          <p className="text-sm text-muted-foreground">{event.actionLabel}</p>
+          <p className="text-sm font-normal text-muted-foreground">{event.actionLabel}</p>
 
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">IP: {event.ip ?? "No disponible"}</p>
+              <MapPin aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
+              <p className="text-xs font-normal text-muted-foreground">
+                IP: {event.ip ?? "No disponible"}
+              </p>
             </div>
 
-            <FaCircle className="h-1 w-1" />
+            <FaCircle aria-hidden="true" className="h-1 w-1" />
 
             <div className="flex items-center gap-1">
               {getDeviceIcon(
@@ -107,7 +112,7 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
                 "h-3 w-3 text-muted-foreground",
               )}
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs font-normal text-muted-foreground">
                 {event.deviceOsName ?? "Sistema operativo desconocido"}
               </p>
             </div>
@@ -116,11 +121,19 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
       </div>
 
       <div className="flex flex-col gap-2 text-end">
-        <p className="shrink-0 text-sm font-medium text-muted-foreground">
+        <time
+          className="shrink-0 text-xs font-normal text-muted-foreground"
+          dateTime={event.createdAt ?? undefined}
+        >
           {fromNow(event.createdAt)}
-        </p>
+        </time>
 
-        <p className="shrink-0 text-sm text-muted-foreground">{formatLongDate(event.createdAt)}</p>
+        <time
+          className="shrink-0 text-xs font-normal text-muted-foreground"
+          dateTime={event.createdAt ?? undefined}
+        >
+          {formatLongDate(event.createdAt)}
+        </time>
       </div>
     </li>
   );

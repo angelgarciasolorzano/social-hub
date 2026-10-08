@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment } from "react";
+import { Fragment, useRef } from "react";
 
 import { useHotkeySequences } from "@tanstack/react-hotkeys";
 import {
@@ -67,6 +67,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -82,12 +83,17 @@ type TrustedDeviceRowDialogActionKey =
   (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
 
 interface TrustedDeviceTableMeta {
-  onDeviceAction: (action: TrustedDeviceRowDialogActionKey, device: TrustedDevice) => void;
+  onDeviceAction: (
+    action: TrustedDeviceRowDialogActionKey,
+    device: TrustedDevice,
+    returnFocusTarget?: HTMLElement | null,
+  ) => void;
 }
 
 interface RowDialogActionState extends DialogClosingState {
   deviceId: TrustedDevice["id"];
   kind: TrustedDeviceRowDialogActionKey;
+  returnFocusTarget: HTMLElement | null;
 }
 
 const trustedDeviceTableFeatures = tableFeatures({
@@ -199,8 +205,21 @@ function TrustedDeviceTable({
   const handleDeviceAction = (
     action: TrustedDeviceRowDialogActionKey,
     device: TrustedDevice,
+    returnFocusTarget?: HTMLElement | null,
   ): void => {
-    deviceDialog.show({ kind: action, deviceId: device.id, closing: false });
+    const activeElement = document.activeElement;
+    const focusTarget =
+      returnFocusTarget ??
+      (activeElement instanceof HTMLElement && activeElement !== document.body
+        ? activeElement
+        : null);
+
+    deviceDialog.show({
+      kind: action,
+      deviceId: device.id,
+      returnFocusTarget: focusTarget,
+      closing: false,
+    });
   };
 
   const handleDialogClose = createDialogCloseHandler(deviceDialog);
@@ -280,6 +299,7 @@ function TrustedDeviceTable({
             device={dialogDevice}
             onClose={handleDialogClose}
             open={!isClosing}
+            returnFocusTarget={currentDialog.returnFocusTarget}
           />
         );
 
@@ -289,6 +309,7 @@ function TrustedDeviceTable({
             device={dialogDevice}
             onClose={handleDialogClose}
             open={!isClosing}
+            returnFocusTarget={currentDialog.returnFocusTarget}
           />
         );
 
@@ -345,6 +366,7 @@ function TrustedDeviceTable({
           )}
         >
           <Table className="table-fixed" style={{ width: `max(100%, ${table.getTotalSize()}px)` }}>
+            <TableCaption className="sr-only">Dispositivos de confianza registrados</TableCaption>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
@@ -359,8 +381,9 @@ function TrustedDeviceTable({
 
                     return (
                       <TableHead
-                        className="group relative overflow-hidden"
+                        className="group relative overflow-hidden text-sm font-medium"
                         key={header.id}
+                        scope="col"
                         style={{ width: header.getSize() }}
                       >
                         {header.isPlaceholder ? null : <table.FlexRender header={header} />}
@@ -397,7 +420,7 @@ function TrustedDeviceTable({
                   <TableCell className="p-0" colSpan={table.getVisibleLeafColumns().length + 1}>
                     <div
                       className={cn(
-                        "flex flex-col items-center justify-center gap-2 py-8 text-center text-sm text-muted-foreground",
+                        "flex flex-col items-center justify-center gap-2 py-8 text-center text-sm font-normal text-muted-foreground",
                         isCompactPageSize ? "min-h-48" : "min-h-128",
                       )}
                     >
@@ -433,7 +456,7 @@ function TrustedDeviceTable({
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         className={cn(
-                          "overflow-hidden",
+                          "overflow-hidden text-sm font-normal",
                           getTrustedDeviceTableCellClassName(cell.column.id),
                         )}
                         key={cell.id}
@@ -505,7 +528,7 @@ function TrustedDeviceIpCell({ device }: TrustedDeviceIpCellProps): JSX.Element 
   const ipAddress = device.ip ?? "No disponible";
 
   return (
-    <span className="block truncate font-mono text-xs" title={device.ip ?? undefined}>
+    <span className="block truncate font-mono text-xs font-normal" title={device.ip ?? undefined}>
       {ipAddress}
     </span>
   );
@@ -541,13 +564,19 @@ function getTrustedDeviceTableCellClassName(columnId: string): string | undefine
 
 interface TrustedDeviceRowActionsProps {
   device: TrustedDevice;
-  onDeviceAction: (action: TrustedDeviceRowDialogActionKey, device: TrustedDevice) => void;
+  onDeviceAction: (
+    action: TrustedDeviceRowDialogActionKey,
+    device: TrustedDevice,
+    returnFocusTarget?: HTMLElement | null,
+  ) => void;
 }
 
 function TrustedDeviceRowActions({
   device,
   onDeviceAction,
 }: TrustedDeviceRowActionsProps): JSX.Element {
+  const actionTriggerRef = useRef<HTMLButtonElement | null>(null);
+
   return (
     <>
       <DropdownMenu>
@@ -557,6 +586,7 @@ function TrustedDeviceRowActions({
             size="icon"
             variant="ghost"
             className="size-8"
+            ref={actionTriggerRef}
           >
             <MoreHorizontalIcon />
           </Button>
@@ -583,7 +613,7 @@ function TrustedDeviceRowActions({
                           return;
                         }
 
-                        onDeviceAction(action.key, device);
+                        onDeviceAction(action.key, device, actionTriggerRef.current);
                       }}
                     >
                       <Icon

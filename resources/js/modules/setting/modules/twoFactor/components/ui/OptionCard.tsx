@@ -3,6 +3,8 @@ import type { JSX } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
 
+import { Button } from "@/shared/components/shadcn/ui/button";
+
 import {
   type HoverBorderVariant,
   hoverBorderVariants,
@@ -30,59 +32,76 @@ export function OptionCard<TKey extends string = string>({
   title = "Beneficios de activar 2FA",
   onOptionClick,
 }: OptionCardProps<TKey>): JSX.Element {
-  const hasAction = !!onOptionClick;
+  const hasAction = onOptionClick !== undefined;
 
   return (
     <div className="flex flex-col gap-5">
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
 
-      <div className="flex items-stretch gap-4">
+      <ul className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" role="list">
         {options.map((option) => {
           const Icon = option.icon;
           const colors = iconColorVariants[option.iconColor];
-
-          return (
-            <div
-              key={option.key}
-              onClick={() => {
-                if (hasAction) onOptionClick(option.key);
-              }}
-              className={cn(
-                "group flex flex-1 gap-4 rounded-xl border p-4 shadow-sm transition-all",
-                hasAction && "cursor-pointer hover:shadow-lg",
-                hasAction && hoverBorderVariants[option.iconColor as HoverBorderVariant],
-              )}
-            >
-              <div
+          const cardClassName = cn(
+            "group flex w-full min-w-0 gap-4 rounded-xl border p-4 text-left shadow-sm transition-all",
+            hasAction && "cursor-pointer hover:shadow-lg",
+            hasAction && hoverBorderVariants[option.iconColor as HoverBorderVariant],
+          );
+          const cardContent = (
+            <>
+              <span
+                aria-hidden="true"
                 className={cn(
                   "flex h-12 w-12 shrink-0 rounded-md p-2 transition-transform",
                   colors.iconBgClass,
                   hasAction && "group-hover:scale-110",
                 )}
               >
-                <Icon className={cn("h-8 w-8", colors.iconFgClass)} />
-              </div>
+                <Icon className={cn("size-8", colors.iconFgClass)} />
+              </span>
 
-              <div className="flex flex-1 flex-col gap-0.5">
-                <h4 className="text-sm font-medium">{option.title}</h4>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-sm font-medium">{option.title}</span>
 
-                <p className="text-sm text-muted-foreground">{option.description}</p>
-              </div>
+                <span className="text-xs text-muted-foreground">{option.description}</span>
+              </span>
 
               {hasAction && (
-                <div className="flex items-center">
+                <span aria-hidden="true" className="flex items-center">
                   <ChevronRight
                     className={cn(
-                      "h-5 w-5 transition-all group-hover:translate-x-1",
+                      "size-5 transition-all group-hover:translate-x-1",
                       colors.iconFgClass,
                     )}
                   />
-                </div>
+                </span>
               )}
-            </div>
+            </>
+          );
+
+          return (
+            <li className="flex min-w-0" key={option.key}>
+              {hasAction ? (
+                <Button
+                  className={cn(
+                    cardClassName,
+                    "h-auto items-start justify-start font-normal whitespace-normal hover:bg-transparent hover:text-current",
+                  )}
+                  onClick={() => {
+                    onOptionClick(option.key);
+                  }}
+                  type="button"
+                  variant="ghost"
+                >
+                  {cardContent}
+                </Button>
+              ) : (
+                <div className={cardClassName}>{cardContent}</div>
+              )}
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

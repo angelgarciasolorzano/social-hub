@@ -1,7 +1,11 @@
 import type { JSX } from "react";
 
-import { X } from "lucide-react";
-
+import {
+  findTrustedDeviceFilterOptionLabel,
+  removeTrustedDeviceFilterValue,
+  type TrustedDeviceActiveFilterChip,
+  TrustedDeviceActiveFilterChipGroup,
+} from "@/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup";
 import {
   activityActionOptions,
   activitySinceDaysOptions,
@@ -9,9 +13,6 @@ import {
   type TrustedDeviceActivitySinceDaysFilter,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters";
 import type { TrustedDeviceActivityFilterState } from "@/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceActivityFilters";
-
-import { Badge } from "@/shared/components/shadcn/ui/badge";
-import { Button } from "@/shared/components/shadcn/ui/button";
 
 interface TrustedDeviceActivityActiveFilterChipsProps {
   filters: TrustedDeviceActivityFilterState;
@@ -21,22 +22,6 @@ interface TrustedDeviceActivityActiveFilterChipsProps {
   onResetFilters: () => void;
 }
 
-interface TrustedDeviceActivityActiveFilterChipData {
-  key: string;
-  label: string;
-  onRemove: () => void;
-}
-
-interface TrustedDeviceActivityActiveFilterChipProps {
-  label: string;
-  onRemove: () => void;
-}
-
-interface FilterOption {
-  readonly label: string;
-  readonly value: string;
-}
-
 export default function TrustedDeviceActivityActiveFilterChips({
   filters,
   onSearchChange,
@@ -44,7 +29,7 @@ export default function TrustedDeviceActivityActiveFilterChips({
   onSinceDaysFilterChange,
   onResetFilters,
 }: TrustedDeviceActivityActiveFilterChipsProps): JSX.Element | null {
-  const activeFilterChips: readonly TrustedDeviceActivityActiveFilterChipData[] = [
+  const activeFilterChips: readonly TrustedDeviceActiveFilterChip[] = [
     ...(filters.search === ""
       ? []
       : [
@@ -58,77 +43,25 @@ export default function TrustedDeviceActivityActiveFilterChips({
         ]),
     ...(filters.action ?? []).map((action) => ({
       key: `action-${action}`,
-      label: `Acción: ${findFilterOptionLabel(action, activityActionOptions)}`,
+      label: `Acción: ${findTrustedDeviceFilterOptionLabel(action, activityActionOptions)}`,
       onRemove: () => {
-        onActionFilterChange(removeFilterValue(filters.action, action));
+        onActionFilterChange(removeTrustedDeviceFilterValue(filters.action, action));
       },
     })),
     ...(filters.sinceDays ?? []).map((sinceDays) => ({
       key: `since-days-${sinceDays}`,
-      label: `Rango: ${findFilterOptionLabel(sinceDays, activitySinceDaysOptions)}`,
+      label: `Rango: ${findTrustedDeviceFilterOptionLabel(sinceDays, activitySinceDaysOptions)}`,
       onRemove: () => {
-        onSinceDaysFilterChange(removeFilterValue(filters.sinceDays, sinceDays));
+        onSinceDaysFilterChange(removeTrustedDeviceFilterValue(filters.sinceDays, sinceDays));
       },
     })),
   ];
 
-  if (activeFilterChips.length === 0) {
-    return null;
-  }
-
   return (
-    <div
-      aria-label="Filtros activos de actividad"
-      className="flex flex-wrap items-center gap-2"
-      role="group"
-    >
-      <span className="text-sm text-muted-foreground">Filtros activos:</span>
-
-      {activeFilterChips.map((filterChip) => (
-        <TrustedDeviceActivityActiveFilterChip
-          key={filterChip.key}
-          label={filterChip.label}
-          onRemove={filterChip.onRemove}
-        />
-      ))}
-
-      <Button onClick={onResetFilters} size="sm" type="button" variant="ghost">
-        Limpiar filtros
-      </Button>
-    </div>
+    <TrustedDeviceActiveFilterChipGroup
+      ariaLabel="Filtros activos de actividad"
+      filterChips={activeFilterChips}
+      onResetFilters={onResetFilters}
+    />
   );
-}
-
-function TrustedDeviceActivityActiveFilterChip({
-  label,
-  onRemove,
-}: TrustedDeviceActivityActiveFilterChipProps): JSX.Element {
-  return (
-    <Badge className="gap-1.5 pr-1" variant="secondary">
-      <span>{label}</span>
-      <Button
-        aria-label={`Quitar filtro: ${label}`}
-        className="-mr-0.5"
-        onClick={onRemove}
-        size="icon-xs"
-        type="button"
-        variant="ghost"
-      >
-        <X data-icon="inline-start" />
-      </Button>
-    </Badge>
-  );
-}
-
-function findFilterOptionLabel(value: string, options: readonly FilterOption[]): string {
-  return options.find((option) => option.value === value)?.label ?? value;
-}
-
-function removeFilterValue<TValue>(
-  values: readonly TValue[] | null,
-  valueToRemove: TValue,
-): TValue[] | null {
-  const remainingValues = (values ?? []).filter((value) => value !== valueToRemove);
-
-  return remainingValues.length > 0 ? remainingValues : null;
 }

@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { type JSX } from "react";
 
 import { usePage } from "@inertiajs/react";
 
@@ -17,6 +17,7 @@ import {
 import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -24,13 +25,7 @@ import {
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/shadcn/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -77,6 +72,7 @@ function TrustedDeviceSummaryDialog({
   open,
   onClose,
 }: TrustedDeviceSummaryDialogProps): JSX.Element {
+  const dialogFocusRestoration = useDialogFocusRestoration();
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
   const recommendationsDialog = useDialog<DialogClosingState | null>(null);
@@ -90,26 +86,29 @@ function TrustedDeviceSummaryDialog({
           if (!next) onClose();
         }}
       >
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent
+          className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
+          {...dialogFocusRestoration}
+        >
           <DialogHeader>
             <DialogTitle asChild>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
                 Resumen de dispositivos
-              </div>
+              </h2>
             </DialogTitle>
 
-            <DialogDescription>
+            <DialogDescription className="text-sm font-normal">
               Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de
               confianza.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-4 gap-3">
+          <ul className="grid list-none grid-cols-2 gap-3 md:grid-cols-4" role="list">
             <StatCard trustedDeviceStats={stats} />
-          </div>
+          </ul>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <StateDistributionBreakdown trustedDeviceStats={stats} />
 
             <DeviceTypeBreakdown trustedDeviceStats={stats} />
@@ -117,8 +116,8 @@ function TrustedDeviceSummaryDialog({
 
           <Alert className={alertVariants.preview}>
             <CircleAlert />
-            <AlertTitle>Mantén tus dispositivos seguros</AlertTitle>
-            <AlertDescription className="flex items-center gap-4">
+            <AlertTitle className="text-sm font-medium">Mantén tus dispositivos seguros</AlertTitle>
+            <AlertDescription className="flex flex-col items-start gap-4 text-sm font-normal sm:flex-row sm:items-center">
               Revisa periódicamente los dispositivos que ya no utilizas y elimina aquellos que no
               reconozcas. Esto ayuda a proteger tu cuenta y evitar accesos no autorizados.
               <Button
@@ -203,11 +202,12 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
         const percentage = percentageOf(item.value, item.total);
 
         return (
-          <div
-            className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm dark:bg-muted/20"
+          <li
+            className="flex min-w-0 items-center gap-3 rounded-xl border bg-card p-3 shadow-sm dark:bg-muted/20"
             key={item.label}
           >
             <div
+              aria-hidden="true"
               className={cn(
                 "flex h-10 w-10 shrink-0 rounded-full p-2",
                 iconColorVariants[item.variant].iconBgClass,
@@ -216,12 +216,12 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
               <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">{item.label}</span>
-              <span className="text-xl font-semibold">{item.value}</span>
-              <span className="text-xs text-muted-foreground">{percentage}% del total</span>
-            </div>
-          </div>
+            <dl className="flex min-w-0 flex-col">
+              <dt className="text-xs font-medium text-muted-foreground">{item.label}</dt>
+              <dd className="text-lg font-semibold">{item.value}</dd>
+              <dd className="text-xs font-normal text-muted-foreground">{percentage}% del total</dd>
+            </dl>
+          </li>
         );
       })}
     </>
@@ -258,45 +258,60 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
   return (
     <Card className="dark:bg-muted/20">
       <CardHeader>
-        <CardTitle>Dispositivo por tipo</CardTitle>
-        <CardDescription>Cantidad de dispositivos por categoría</CardDescription>
+        <h3 className="text-sm leading-none font-medium" id="device-type-breakdown-title">
+          Dispositivo por tipo
+        </h3>
+        <CardDescription className="text-sm font-normal">
+          Cantidad de dispositivos por categoría
+        </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {deviceTypeRows.map((item) => {
-          const percentage = percentageOf(item.count, totalByType);
-          const Icon = item.icon;
+      <CardContent>
+        <ul
+          aria-labelledby="device-type-breakdown-title"
+          className="flex-1 list-none space-y-4"
+          role="list"
+        >
+          {deviceTypeRows.map((item) => {
+            const percentage = percentageOf(item.count, totalByType);
+            const Icon = item.icon;
 
-          return (
-            <div className="space-y-1.5" key={item.label}>
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "flex h-10 w-10 shrink-0 rounded-md p-2",
-                    iconColorVariants[item.variant].iconBgClass,
-                  )}
-                >
-                  <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
+            return (
+              <li className="space-y-1.5" key={item.label}>
+                <div className="flex items-center gap-3">
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      "flex h-10 w-10 shrink-0 rounded-md p-2",
+                      iconColorVariants[item.variant].iconBgClass,
+                    )}
+                  >
+                    <Icon className={cn("h-6 w-6", iconColorVariants[item.variant].iconFgClass)} />
+                  </div>
+
+                  <dl className="flex flex-1 items-center gap-3">
+                    <dt className="flex-1 text-sm font-normal">{item.label}</dt>
+                    <dd className="text-sm font-medium">{item.count}</dd>
+                    <dd className="w-10 text-right text-xs font-normal text-muted-foreground">
+                      {percentage}%
+                    </dd>
+                  </dl>
                 </div>
 
-                <span className="flex-1 text-sm font-medium">{item.label}</span>
+                <Progress
+                  className={cn("h-1.5", progressBarClassesByVariant[item.variant])}
+                  value={percentage}
+                />
+              </li>
+            );
+          })}
 
-                <span className="text-sm font-semibold">{item.count}</span>
-
-                <span className="w-10 text-right text-xs text-muted-foreground">{percentage}%</span>
-              </div>
-
-              <Progress
-                className={cn("h-1.5", progressBarClassesByVariant[item.variant])}
-                value={percentage}
-              />
-            </div>
-          );
-        })}
-
-        {totalByType === 0 && (
-          <p className="text-sm text-muted-foreground">Aún no tienes dispositivos activos.</p>
-        )}
+          {totalByType === 0 && (
+            <li className="text-sm font-normal text-muted-foreground">
+              Aún no tienes dispositivos activos.
+            </li>
+          )}
+        </ul>
       </CardContent>
     </Card>
   );
@@ -383,11 +398,15 @@ function StateDistributionBreakdown({
   return (
     <Card className="dark:bg-muted/20">
       <CardHeader>
-        <CardTitle>Distribución por estado</CardTitle>
-        <CardDescription>Porcentaje del total de dispositivos</CardDescription>
+        <h3 className="text-sm leading-none font-medium" id="device-state-distribution-title">
+          Distribución por estado
+        </h3>
+        <CardDescription className="text-sm font-normal">
+          Porcentaje del total de dispositivos
+        </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex items-center gap-4">
+      <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
         <ChartContainer config={chartConfig} className="aspect-square max-h-44 w-44 shrink-0">
           <RadialBarChart
             data={chartData}
@@ -405,16 +424,19 @@ function StateDistributionBreakdown({
 
             <RadialBar background dataKey="cantidad">
               <LabelList
-                className="fill-white capitalize mix-blend-luminosity"
+                className="fill-white text-xs font-medium capitalize mix-blend-luminosity"
                 dataKey="label"
-                fontSize={11}
                 position="insideStart"
               />
             </RadialBar>
           </RadialBarChart>
         </ChartContainer>
 
-        <ul className="flex-1 space-y-2">
+        <ul
+          aria-labelledby="device-state-distribution-title"
+          className="flex min-w-0 flex-1 flex-col gap-2"
+          role="list"
+        >
           {chartData.map((item) => {
             const percentage = percentageOf(item.cantidad, trustedDeviceStats.total);
 
@@ -422,17 +444,18 @@ function StateDistributionBreakdown({
               <li className="flex items-center justify-between gap-2" key={item.estado}>
                 <div className="flex min-w-0 items-center gap-2">
                   <Circle
+                    aria-hidden="true"
                     className={cn("h-2 w-2 shrink-0", iconColorVariants[item.variant].iconFgClass)}
                     fill="currentColor"
                   />
 
-                  <span className="truncate text-sm">{item.label}</span>
+                  <span className="truncate text-sm font-normal">{item.label}</span>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold">{item.cantidad}</span>
+                  <span className="text-sm font-medium">{item.cantidad}</span>
 
-                  <span className="text-xs text-muted-foreground">{percentage}%</span>
+                  <span className="text-xs font-normal text-muted-foreground">{percentage}%</span>
                 </div>
               </li>
             );

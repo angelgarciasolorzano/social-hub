@@ -27,9 +27,9 @@ export function TrustedDeviceDetailsHeader({
 }: TrustedDeviceDetailsHeaderProps): JSX.Element {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-semibold">{title}</span>
+      {title.trim() !== "" && <h3 className="text-lg font-semibold">{title}</h3>}
 
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className="text-sm font-normal text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -53,7 +53,7 @@ export function TrustedDeviceInfoCard({
   const osName = valueOrFallback(device.osName, "Desconocido");
   const ip = valueOrFallback(device.ip, "No disponible");
 
-  const primaryRow: Omit<TrustedDeviceMetadataItemProps, "badge" | "badgePosition">[] = [
+  const primaryMetadata: Omit<TrustedDeviceMetadataItemProps, "badge" | "badgePosition">[] = [
     {
       icon: <Globe className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />,
       iconColor: "blue",
@@ -74,7 +74,7 @@ export function TrustedDeviceInfoCard({
     },
   ];
 
-  const secondaryRow: TrustedDeviceMetadataItemProps[] = [
+  const secondaryMetadata: TrustedDeviceMetadataItemProps[] = [
     {
       icon: <Clock4 className={cn("h-6 w-6", iconColorVariants.cyan.iconFgClass)} />,
       iconColor: "cyan",
@@ -94,30 +94,42 @@ export function TrustedDeviceInfoCard({
 
   return (
     <div className="flex flex-col gap-8 rounded-xl border bg-card p-6 shadow-sm dark:bg-input/20">
-      <DeviceInfoRow items={primaryRow} />
+      <DeviceMetadataRow metadataItems={primaryMetadata} />
 
       <Separator />
 
-      <DeviceInfoRow columns={2} items={secondaryRow} />
+      <DeviceMetadataRow columns={2} metadataItems={secondaryMetadata} />
     </div>
   );
 }
 
-interface DeviceInfoRowProps {
-  items: TrustedDeviceMetadataItemProps[];
+interface DeviceMetadataRowProps {
+  metadataItems: TrustedDeviceMetadataItemProps[];
   columns?: 2 | 3;
 }
 
-function DeviceInfoRow({ items, columns = 3 }: DeviceInfoRowProps): JSX.Element {
+function DeviceMetadataRow({ metadataItems, columns = 3 }: DeviceMetadataRowProps): JSX.Element {
   const gridCols = columns === 2 ? "grid-cols-[2fr_auto_2fr]" : "grid-cols-[2fr_auto_2fr_auto_2fr]";
+  const visibleMetadataItems = metadataItems.filter((metadataItem) => {
+    const hasTitle = metadataItem.title.trim() !== "";
+    const hasDescription =
+      metadataItem.description !== undefined &&
+      metadataItem.description !== null &&
+      metadataItem.description.trim() !== "";
+    const hasBadge = metadataItem.badge !== undefined && metadataItem.badge.trim() !== "";
+
+    return hasTitle && (hasDescription || hasBadge);
+  });
 
   return (
     <div className={`grid items-stretch gap-8 ${gridCols}`}>
-      {items.map((item, index) => (
-        <Fragment key={item.title}>
-          <TrustedDeviceMetadataItem {...item} />
+      {visibleMetadataItems.map((metadataItem, index) => (
+        <Fragment key={metadataItem.title}>
+          <TrustedDeviceMetadataItem {...metadataItem} />
 
-          {index < items.length - 1 && <Separator orientation="vertical" />}
+          {index < visibleMetadataItems.length - 1 && (
+            <Separator aria-hidden="true" orientation="vertical" />
+          )}
         </Fragment>
       ))}
     </div>

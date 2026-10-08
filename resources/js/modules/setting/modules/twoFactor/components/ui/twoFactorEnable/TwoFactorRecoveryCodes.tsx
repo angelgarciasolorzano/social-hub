@@ -1,9 +1,9 @@
 import type { JSX } from "react";
-import { Fragment, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { usePage } from "@inertiajs/react";
 
-import { AlertTriangleIcon, ArrowDown, Check, Clock4, Copy } from "lucide-react";
+import { AlertTriangleIcon, ArrowDown, Check, Clock4, Copy, RotateCcw } from "lucide-react";
 
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
@@ -53,6 +53,10 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
 
   const [bulkCopiedText, copyBulk] = useClipboard({ resetTimeout: 2000 });
   const [rowCopiedText, copyRow] = useClipboard({ resetTimeout: 2000 });
+  const [isLoadingRecoveryCodes, setIsLoadingRecoveryCodes] = useState(
+    recoveryCodesList.length === 0,
+  );
+  const hasStartedInitialRecoveryCodesFetch = useRef(false);
 
   const handleCopy = useCallback((): void => {
     if (!recoveryCodesList.length) {
@@ -66,19 +70,42 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
     downloadRecoveryCodes(recoveryCodesList, { accountEmail });
   }, [recoveryCodesList, accountEmail]);
 
-  useEffect(() => {
-    if (!recoveryCodesList.length) {
-      void fetchRecoveryCodes();
+  const loadRecoveryCodes = useCallback(async (): Promise<void> => {
+    setIsLoadingRecoveryCodes(true);
+
+    try {
+      await fetchRecoveryCodes();
+    } finally {
+      setIsLoadingRecoveryCodes(false);
     }
-  }, [recoveryCodesList.length, fetchRecoveryCodes]);
+  }, [fetchRecoveryCodes]);
+
+  const handleRetry = useCallback((): void => {
+    void loadRecoveryCodes();
+  }, [loadRecoveryCodes]);
+
+  useEffect(() => {
+    if (recoveryCodesList.length > 0) {
+      hasStartedInitialRecoveryCodesFetch.current = false;
+
+      return;
+    }
+
+    if (hasStartedInitialRecoveryCodesFetch.current) {
+      return;
+    }
+
+    hasStartedInitialRecoveryCodesFetch.current = true;
+    void loadRecoveryCodes();
+  }, [loadRecoveryCodes, recoveryCodesList.length]);
 
   return (
     <>
       {errors.length > 0 ? (
         <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
-      ) : (
-        <Alert className={cn(alertVariants.info, "max-w-md")}>
-          <AlertTriangleIcon />
+      ) : recoveryCodesList.length > 0 ? (
+        <Alert className={cn(alertVariants.info, "max-w-md")} role="note">
+          <AlertTriangleIcon aria-hidden="true" />
 
           <AlertTitle>Guarda estos códigos en un lugar seguro.</AlertTitle>
 
@@ -86,52 +113,86 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
             Te permitirán acceder a tu cuenta si pierdes el acceso a tu aplicación autenticadora.
           </AlertDescription>
         </Alert>
-      )}
+      ) : null}
 
       <div className="flex flex-col gap-3 rounded-md border p-5">
-        {recoveryCodesList.length ? (
-          <>
-            {recoveryCodesList.map((code, index) => {
+        {recoveryCodesList.length > 0 ? (
+          <ul aria-label="Códigos de respaldo" className="flex flex-col" role="list">
+            {recoveryCodesList.map((code, codeIndex) => {
               const isCopied = rowCopiedText === code;
 
               return (
-                <Fragment key={index}>
+                <li key={code}>
                   <Button
                     type="button"
                     variant="ghost"
                     onClick={() => {
                       void copyRow(code);
                     }}
-                    aria-label={isCopied ? `Código ${code} copiado` : `Copiar código ${code}`}
-                    className="-mx-2 -my-1.5 h-auto w-full justify-between rounded-md px-2 py-1.5 text-sm"
+                    aria-label={
+                      isCopied
+                        ? `Código de respaldo ${code} copiado`
+                        : `Copiar código de respaldo ${code}`
+                    }
+                    className="h-auto w-full justify-between rounded-md px-0 py-3 text-sm hover:bg-accent/50 focus-visible:bg-accent/50"
                   >
                     <span className="font-medium">{code}</span>
 
                     {isCopied ? (
-                      <Check size={16} className="text-xs text-green-600 dark:text-green-500" />
+                      <Check
+                        aria-hidden="true"
+                        size={16}
+                        className="text-xs text-green-600 dark:text-green-500"
+                      />
                     ) : (
-                      <Copy size={16} className="text-xs text-muted-foreground" />
+                      <Copy
+                        aria-hidden="true"
+                        size={16}
+                        className="text-xs text-muted-foreground"
+                      />
                     )}
                   </Button>
 
-                  {index < recoveryCodesList.length - 1 && <Separator />}
-                </Fragment>
+                  {codeIndex < recoveryCodesList.length - 1 && <Separator aria-hidden="true" />}
+                </li>
               );
             })}
-          </>
+          </ul>
+        ) : isLoadingRecoveryCodes ? (
+          <div className="space-y-2">
+            <p className="sr-only" role="status">
+              Cargando códigos de respaldo.
+            </p>
+
+            <div aria-hidden="true" className="space-y-2">
+              {Array.from({ length: 8 }, (_, skeletonIndex) => (
+                <Skeleton key={skeletonIndex} className="h-5 w-full" />
+              ))}
+            </div>
+          </div>
         ) : (
-          <div aria-label="Cargando códigos de respaldo" className="space-y-2">
-            {Array.from({ length: 8 }, (_, index) => (
-              <Skeleton key={index} className="h-5 w-full" />
-            ))}
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p
+              className="text-sm text-muted-foreground"
+              role={errors.length === 0 ? "status" : undefined}
+            >
+              {errors.length > 0
+                ? "Intenta cargar los códigos de respaldo otra vez."
+                : "No hay códigos de respaldo disponibles."}
+            </p>
+
+            <Button onClick={handleRetry} type="button" variant="outline">
+              <RotateCcw aria-hidden="true" />
+              {errors.length > 0 ? "Reintentar" : "Cargar códigos"}
+            </Button>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Códigos disponibles</span>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">Códigos disponibles</span>
 
-        <span className="font-medium">{recoveryCodesList.length} de 8</span>
+        <span className="text-sm font-medium">{recoveryCodesList.length} de 8</span>
       </div>
 
       <div className="flex items-center justify-between gap-4">
@@ -143,12 +204,12 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
         >
           {bulkCopiedText !== null ? (
             <>
-              <Check className="h-4 w-4 text-green-600 dark:text-green-500" />
+              <Check aria-hidden="true" className="h-4 w-4 text-green-600 dark:text-green-500" />
               Copiado
             </>
           ) : (
             <>
-              <Copy className="h-4 w-4" />
+              <Copy aria-hidden="true" className="h-4 w-4" />
               Copiar Códigos
             </>
           )}
@@ -159,7 +220,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
           disabled={!recoveryCodesList.length}
           onClick={handleDownload}
         >
-          <ArrowDown />
+          <ArrowDown aria-hidden="true" />
           Descargar .txt
         </Button>
       </div>
@@ -168,11 +229,11 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
         <ItemContent>
           <ItemTitle>Última regeneración</ItemTitle>
 
-          <ItemDescription>{regeneratedAtLabel}</ItemDescription>
+          <ItemDescription className="text-xs">{regeneratedAtLabel}</ItemDescription>
         </ItemContent>
 
         <ItemActions>
-          <Clock4 size={20} className="text-muted-foreground" />
+          <Clock4 aria-hidden="true" size={20} className="text-muted-foreground" />
         </ItemActions>
       </Item>
     </>

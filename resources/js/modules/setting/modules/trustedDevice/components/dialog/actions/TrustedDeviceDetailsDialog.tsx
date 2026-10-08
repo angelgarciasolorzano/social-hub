@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { type JSX, useRef } from "react";
 
 import { FaCircle } from "react-icons/fa";
 
@@ -30,6 +30,7 @@ import TrustedDeviceMetadataItem, {
 } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
@@ -40,7 +41,7 @@ import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,7 @@ interface TrustedDeviceDetailsDialogProps {
   device: TrustedDevice;
   open: boolean;
   onClose: () => void;
+  returnFocusTarget?: HTMLElement | null;
 }
 
 type TrustedDeviceDetailsDialogAction =
@@ -87,15 +89,26 @@ type TrustedDeviceDetailsDialogAction =
 type DialogActionState = Pick<TrustedDeviceDetailsDialogProps, "device"> &
   DialogClosingState & {
     kind: TrustedDeviceDetailsDialogAction;
+    returnFocusTarget: HTMLElement | null;
   };
 
 function TrustedDeviceDetailsDialog({
   device,
   open,
   onClose,
+  returnFocusTarget,
 }: TrustedDeviceDetailsDialogProps): JSX.Element {
   const dialogDevice = useDialog<DialogActionState | null>(null);
   const { appearance } = useAppearance();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const { onOpenAutoFocus, onCloseAutoFocus } = useDialogFocusRestoration({
+    captureActiveElement: false,
+    getFallbackFocusTarget: () => returnFocusTarget,
+    onOpenAutoFocus: (event) => {
+      event.preventDefault();
+      titleRef.current?.focus();
+    },
+  });
 
   const isRevoked = device.deletedAt !== null;
   const isExpired = !isRevoked && !device.isActive;
@@ -104,7 +117,17 @@ function TrustedDeviceDetailsDialog({
     action: TrustedDeviceDetailsDialogAction,
     device: TrustedDevice,
   ): void => {
-    dialogDevice.show({ kind: action, device, closing: false });
+    const activeElement = document.activeElement;
+
+    dialogDevice.show({
+      kind: action,
+      device,
+      returnFocusTarget:
+        activeElement instanceof HTMLElement && activeElement !== document.body
+          ? activeElement
+          : null,
+      closing: false,
+    });
   };
 
   const handleDialogClose = createDialogCloseHandler(dialogDevice);
@@ -124,6 +147,7 @@ function TrustedDeviceDetailsDialog({
             device={actionDevice}
             open={!isClosing}
             onClose={handleDialogClose}
+            returnFocusTarget={dialogDevice.state.returnFocusTarget}
           />
         );
 
@@ -175,11 +199,19 @@ function TrustedDeviceDetailsDialog({
         if (!nextOpen) onClose();
       }}
     >
-      <DialogContent className="max-w-6xl min-w-5xl">
+      <DialogContent
+        className="grid max-h-[calc(100dvh-2rem)] min-h-0 w-[calc(100vw-2rem)] max-w-6xl min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-6xl"
+        onOpenAutoFocus={onOpenAutoFocus}
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-muted-foreground" />
+            <h2
+              className="flex flex-wrap items-center gap-2 pr-8 text-lg font-semibold outline-none"
+              ref={titleRef}
+              tabIndex={-1}
+            >
+              <Eye aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Detalles del dispositivo
               {isRevoked ? (
                 <Badge
@@ -193,9 +225,9 @@ function TrustedDeviceDetailsDialog({
               ) : (
                 <Badge className={badgeVariants.success}>Activo</Badge>
               )}
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             {isRevoked
               ? "Consulta la informacion del dispositivo que fue revocado de tu cuenta."
               : isExpired
@@ -204,30 +236,39 @@ function TrustedDeviceDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <DeviceOverviewCard
-            device={device}
-            isExpired={isExpired}
-            isRevoked={isRevoked}
-            appearance={appearance}
-          />
-
-          <div className="grid grid-cols-[1.8fr_1.7fr_2fr] gap-4">
-            <DeviceActivityCard device={device} />
-
-            <DeviceMetadataCard device={device} />
-
-            <DeviceStatusCallouts
+        <div
+          aria-label="Información del dispositivo"
+          className="min-h-0 overflow-y-auto overscroll-contain pr-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+          role="region"
+          tabIndex={0}
+        >
+          <div className="flex min-w-0 flex-col gap-4 pb-1">
+            <DeviceOverviewCard
+              device={device}
               isExpired={isExpired}
               isRevoked={isRevoked}
-              onReactivate={() => {
-                handleDeviceAction("reactivate", device);
-              }}
+              appearance={appearance}
             />
+
+            <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1.7fr)_minmax(0,2fr)]">
+              <DeviceActivityCard device={device} />
+
+              <DeviceMetadataCard device={device} />
+
+              <div className="md:col-span-2 xl:col-span-1">
+                <DeviceStatusCallouts
+                  isExpired={isExpired}
+                  isRevoked={isRevoked}
+                  onReactivate={() => {
+                    handleDeviceAction("reactivate", device);
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="flex items-center sm:justify-between">
+        <DialogFooter className="flex flex-col gap-2 border-t pt-4 md:flex-row md:items-center md:justify-between">
           {isRevoked ? (
             <RevokedFooterActions device={device} onAction={handleDeviceAction} onClose={onClose} />
           ) : (
@@ -255,21 +296,23 @@ function DeviceOverviewCard({
   appearance,
 }: DeviceOverviewCardProps): JSX.Element {
   return (
-    <Card className="dark:bg-input/20">
-      <CardContent className="grid grid-cols-[1.3fr_auto_1fr] gap-6">
-        <div className="flex gap-4">
+    <Card className="min-w-0 dark:bg-input/20">
+      <CardContent className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,1.3fr)_auto_minmax(0,1fr)] md:gap-6">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
           <div
             className={cn(
               iconColorVariants.violet.iconBgClass,
-              "flex h-20 w-20 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
+              "flex h-20 w-20 shrink-0 rounded-md border border-violet-100 p-4 dark:border-violet-200/10",
             )}
           >
             {getDeviceIcon(device, cn("h-12 w-12", iconColorVariants.violet.iconFgClass))}
           </div>
 
-          <div className="flex flex-col items-start gap-3">
-            <div className="flex items-center justify-center gap-2">
-              <span className="max-w-90 truncate text-2xl font-semibold">{device.name}</span>
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="max-w-full min-w-0 text-xl font-semibold break-words">
+                {valueOrFallback(device.name, "Dispositivo sin nombre")}
+              </h3>
 
               {isRevoked ? (
                 <Badge
@@ -295,15 +338,15 @@ function DeviceOverviewCard({
               )}
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 {getDeviceIcon(device, "h-4 w-4")}
-                <span>{device.osName}</span>
+                <span>{valueOrFallback(device.osName, "Desconocido")}</span>
               </div>
 
               <FaCircle className="h-1 w-1" />
 
-              <span>{device.browser}</span>
+              <span>{valueOrFallback(device.browser, "Desconocido")}</span>
 
               <FaCircle className="h-1 w-1" />
 
@@ -326,19 +369,19 @@ function DeviceOverviewCard({
           </div>
         </div>
 
-        <Separator orientation="vertical" />
+        <Separator className="hidden md:block" orientation="vertical" />
 
-        <div>
+        <div className="min-w-0">
           <Item>
             <ItemMedia>
               <CalendarClock />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Fecha de expiración</ItemTitle>
+              <ItemTitle className="text-xs font-medium">Fecha de expiración</ItemTitle>
               <ItemDescription>
-                <span className="text-sm">{formatLongDate(device.expiresAt)}</span>
+                <span className="text-sm font-normal">{formatLongDate(device.expiresAt)}</span>
 
-                <Badge className={cn(badgeVariants.warning, "mt-1.5 block")}>
+                <Badge className={cn(badgeVariants.warning, "mt-1.5 block text-sm font-normal")}>
                   {formatTimeUntil(device.expiresAt)}
                 </Badge>
               </ItemDescription>
@@ -371,23 +414,23 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
       title: "Último acceso",
       meta: (
         <>
-          <span className="block text-sm">{fromNow(device.lastUsedAt)}</span>
-          <span className="block text-sm">{formatLongDate(device.lastUsedAt)}</span>
+          <span className="block text-sm font-normal">{fromNow(device.lastUsedAt)}</span>
+          <span className="block text-sm font-normal">{formatLongDate(device.lastUsedAt)}</span>
         </>
       ),
     },
     {
       icon: CalendarPlus,
       title: "Fecha de registro",
-      meta: formatLongDate(device.createdAt),
+      meta: <span className="text-sm font-normal">{formatLongDate(device.createdAt)}</span>,
     },
     {
       icon: CalendarClock,
       title: "Fecha de expiración",
       meta: (
         <>
-          <span className="block text-sm">{formatLongDate(device.expiresAt)}</span>
-          <Badge className={cn(badgeVariants.warning, "mt-1.5")}>
+          <span className="block text-sm font-normal">{formatLongDate(device.expiresAt)}</span>
+          <Badge className={cn(badgeVariants.warning, "mt-1.5 text-sm font-normal")}>
             {formatTimeUntil(device.expiresAt)}
           </Badge>
         </>
@@ -396,11 +439,11 @@ function DeviceActivityCard({ device }: DeviceActivityCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="min-w-0 dark:bg-input/20">
       <CardHeader>
-        <CardTitle>Actividad del dispositivo</CardTitle>
+        <h3 className="text-lg leading-none font-semibold">Actividad del dispositivo</h3>
       </CardHeader>
-      <CardContent>
+      <CardContent className="[&_li_h3]:text-xs [&_li_h3]:font-medium">
         <TrustedDeviceActivityTimeline steps={activitySteps} variant="violet" />
       </CardContent>
     </Card>
@@ -454,14 +497,14 @@ function DeviceMetadataCard({ device }: DeviceMetadataCardProps): JSX.Element {
   ];
 
   return (
-    <Card className="dark:bg-input/20">
+    <Card className="min-w-0 dark:bg-input/20">
       <CardHeader>
-        <CardTitle>Informacion del dispositivo</CardTitle>
+        <h3 className="text-lg leading-none font-semibold">Informacion del dispositivo</h3>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex min-w-0 flex-col gap-3">
         {items.map((item) => (
           <div
-            className="flex gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/30"
+            className="flex min-w-0 gap-4 rounded-xl border p-3 shadow-xs dark:bg-input/30 [&_dd]:break-words [&_dl]:min-w-0 [&_dl]:flex-1"
             key={item.key}
           >
             <TrustedDeviceMetadataItem
@@ -590,9 +633,9 @@ interface FooterActionsProps {
 function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps): JSX.Element {
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("renameDevice", device);
           }}
@@ -604,7 +647,7 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
         </Button>
 
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("renewTrust", device);
           }}
@@ -616,13 +659,18 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button className="cursor-pointer" onClick={onClose} type="button" variant="outline">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+        <Button
+          className="w-full cursor-pointer md:w-auto"
+          onClick={onClose}
+          type="button"
+          variant="outline"
+        >
           Cerrar
         </Button>
 
         <Button
-          className={buttonVariants.destructive}
+          className={cn(buttonVariants.destructive, "w-full md:w-auto")}
           onClick={() => {
             onAction("revokeDevice", device);
           }}
@@ -639,9 +687,9 @@ function ActiveFooterActions({ device, onAction, onClose }: FooterActionsProps):
 function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps): JSX.Element {
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("reactivate", device);
           }}
@@ -653,7 +701,7 @@ function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps)
         </Button>
 
         <Button
-          className="cursor-pointer"
+          className="w-full cursor-pointer md:w-auto"
           onClick={() => {
             onAction("forceDestroy", device);
           }}
@@ -665,8 +713,13 @@ function RevokedFooterActions({ device, onAction, onClose }: FooterActionsProps)
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button className="cursor-pointer" onClick={onClose} type="button" variant="outline">
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center">
+        <Button
+          className="w-full cursor-pointer md:w-auto"
+          onClick={onClose}
+          type="button"
+          variant="outline"
+        >
           Cerrar
         </Button>
       </div>

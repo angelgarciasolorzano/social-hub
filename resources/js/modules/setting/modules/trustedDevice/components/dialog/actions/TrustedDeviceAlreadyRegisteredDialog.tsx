@@ -59,12 +59,12 @@ function TrustedDeviceAlreadyRegisteredDialog({
       <DialogContent className="max-w-3xl min-w-2xl">
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Dispositivo ya registrado
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Este dispositivo ya esta registrado como de confianza en tu cuenta. No es necesario
             agregarlo nuevamente.
           </DialogDescription>
@@ -102,7 +102,7 @@ function AlreadyRegisteredActionsAlert({
     <Alert className={alertVariants.info}>
       <CircleAlert />
       <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
-      <AlertDescription className="flex items-center gap-4">
+      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
         Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
         <Button onClick={onGoToList} size="sm" variant="outline">
           Ir a dispositivos de confianza

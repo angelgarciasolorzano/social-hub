@@ -16,7 +16,7 @@ import { enable } from "@/shared/wayfinder/routes/two-factor";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/shadcn/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 
 import { useAppearance } from "@/shared/hooks";
 
@@ -42,15 +42,15 @@ interface TwoFactorDisabledProps {
 function TwoFactorDisabled({ hasSetupData, onActivate }: TwoFactorDisabledProps): JSX.Element {
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-6">
-        <div className="flex flex-col gap-8">
+      <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 xl:gap-8">
           <TwoFactorTitle hasSetupData={hasSetupData} onActivate={onActivate} />
           <TwoFactorInfoBanner />
           <OptionCard options={twoFactorBenefits} />
           <SummaryCard title="Detalles importantes" data={twoFactorImportantDetails} />
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0">
           <TwoFactorOperations />
           <TwoFactorRequirements />
           <TwoFactorRecommendedApps />
@@ -68,17 +68,19 @@ interface TwoFactorTitleProps {
 }
 
 function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.Element {
-  const { appearance } = useAppearance();
+  const { resolvedAppearance } = useAppearance();
 
   return (
-    <div className="flex items-center gap-24 rounded-xl border bg-card p-6 shadow-sm">
-      <div className="flex items-start gap-4">
+    <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+      <div className="flex min-w-0 items-start gap-4">
         <div className={cn(iconColorVariants.violet.iconBgClass, "rounded-3xl p-2")}>
           <ShieldCheck className={cn("h-12 w-12", iconColorVariants.violet.iconFgClass)} />
         </div>
 
         <div className="flex flex-col gap-2">
-          <h2 className="text-xl font-semibold">Autenticación de dos factores (2FA)</h2>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            Autenticación de dos factores (2FA)
+          </h1>
 
           <p className="text-sm text-muted-foreground">
             Añade una capa adicional de seguridad a tu cuenta. Con 2FA, además de tu contraseña, se
@@ -86,7 +88,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
           </p>
 
           <Badge
-            variant={appearance === "light" ? "destructive" : null}
+            variant={resolvedAppearance === "light" ? "destructive" : null}
             className="inline-flex dark:bg-red-700 dark:text-white"
           >
             <ShieldAlert />
@@ -95,16 +97,24 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
         </div>
       </div>
 
-      <div>
+      <div className="w-full sm:w-auto">
         {hasSetupData ? (
-          <Button onClick={onActivate} className="cursor-pointer">
+          <Button onClick={onActivate} className="w-full cursor-pointer sm:w-auto">
             <ShieldCheck />
             Continuar configuración
           </Button>
         ) : (
-          <Form {...enable.form()} onSuccess={onActivate} className="cursor-pointer">
+          <Form
+            {...enable.form()}
+            onSuccess={onActivate}
+            className="w-full cursor-pointer sm:w-auto"
+          >
             {({ processing }) => (
-              <Button type="submit" className="cursor-pointer" disabled={processing}>
+              <Button
+                type="submit"
+                className="w-full cursor-pointer sm:w-auto"
+                disabled={processing}
+              >
                 Activar 2FA
               </Button>
             )}
@@ -129,8 +139,8 @@ function TwoFactorInfoBanner() {
 
 function TwoFactorActivationForm() {
   return (
-    <div className="flex items-center justify-between rounded-xl border p-6 shadow-sm">
-      <div className="flex items-center gap-2 text-sm">
+    <div className="flex flex-col items-start gap-4 rounded-xl border p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <ShieldAlert className="h-4 w-4 text-muted-foreground" />
         <span className="text-muted-foreground">¿Tienes dudas?</span>
 
@@ -149,7 +159,7 @@ function TwoFactorOperations() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cómo funciona</CardTitle>
+        <h2 className="text-lg leading-none font-semibold">Cómo funciona</h2>
       </CardHeader>
       <CardContent>
         <Timeline steps={twoFactorOperationSteps} />
@@ -162,7 +172,7 @@ function TwoFactorRequirements() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Requesitos</CardTitle>
+        <h2 className="text-lg leading-none font-semibold">Requesitos</h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 text-sm">
@@ -182,7 +192,7 @@ function TwoFactorRecommendedApps() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Aplicaciones recomendadas</CardTitle>
+        <h2 className="text-lg leading-none font-semibold">Aplicaciones recomendadas</h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-5 text-sm font-medium">

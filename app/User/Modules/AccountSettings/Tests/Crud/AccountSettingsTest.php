@@ -5,6 +5,10 @@ declare(strict_types=1);
 use App\User\Enums\PreferredLocale;
 use Inertia\Testing\AssertableInertia as Assert;
 
+it('defaults users to English as their preferred locale', function (): void {
+    expect(createUser()->preferred_locale)->toBe(PreferredLocale::ENGLISH);
+});
+
 it('renders the authenticated user account settings', function (): void {
     $user = createUser();
     config(['inertia.testing.ensure_pages_exist' => false]);

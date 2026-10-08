@@ -45,27 +45,35 @@ function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
         <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
       ) : (
         <>
-          <div className="grid w-full grid-cols-2 gap-2">
+          <ul
+            aria-busy={!recoveryCodesList.length}
+            aria-label="Códigos de respaldo"
+            className="grid w-full grid-cols-2 gap-2"
+          >
             {recoveryCodesList.length
               ? recoveryCodesList.map((code) => (
-                  <div
+                  <li
                     key={code}
                     className="rounded-md border border-border bg-muted/40 px-3 py-2 text-center font-mono text-sm text-foreground"
                   >
                     {code}
-                  </div>
+                  </li>
                 ))
               : Array.from({ length: 8 }, (_, index) => (
-                  <Skeleton
-                    key={`skeleton-${index}`}
-                    aria-label="Cargando códigos de respaldo"
-                    className="h-9 border border-border"
-                  />
+                  <li aria-hidden="true" key={`skeleton-${index}`}>
+                    <Skeleton className="h-9 border border-border" />
+                  </li>
                 ))}
-          </div>
+          </ul>
+
+          <span className="sr-only" role="status">
+            {recoveryCodesList.length
+              ? "Códigos de respaldo listos."
+              : "Cargando códigos de respaldo."}
+          </span>
 
           <Alert className={cn(alertVariants.warning, "w-full")}>
-            <Info />
+            <Info aria-hidden="true" />
             <AlertTitle>Importante</AlertTitle>
             <AlertDescription>
               Cada código solo se puede usar una vez. Guarda o descarga estos códigos ahora.
@@ -80,7 +88,7 @@ function TwoFactorSuccessStep(props: TwoFactorSuccessStepProps): JSX.Element {
               onClick={handleDownload}
               disabled={!recoveryCodesList.length}
             >
-              <ArrowDown />
+              <ArrowDown aria-hidden="true" />
               Descargar .txt
             </Button>
 

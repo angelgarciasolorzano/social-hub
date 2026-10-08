@@ -1,9 +1,11 @@
-import type { JSX, SubmitEvent } from "react";
+import { type JSX, type SubmitEvent, useId } from "react";
 
 import { useForm } from "@inertiajs/react";
 
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ShieldBan, ShieldQuestionMark } from "lucide-react";
+
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { destroy } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
@@ -42,6 +44,14 @@ interface DisableTwoFactorDialogProps {
 }
 
 function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps): JSX.Element {
+  const idPrefix = useId();
+  const formId = `${idPrefix}-disable-two-factor-form`;
+  const passwordInputId = `${idPrefix}-password`;
+  const passwordErrorId = `${idPrefix}-password-error`;
+  const otpInputId = `${idPrefix}-otp`;
+  const otpErrorId = `${idPrefix}-otp-error`;
+  const dialogFocusRestoration = useDialogFocusRestoration();
+
   const { data, setData, processing, errors, reset, submit } = useForm<DisableTwoFactorFormData>({
     password: "",
     code: "",
@@ -70,13 +80,13 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
         setOpen(nextOpen);
       }}
     >
-      <DialogContent>
+      <DialogContent {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2">
               <ShieldBan className="h-5 w-5 text-muted-foreground" />
               Desactivar Two-Factor Authentication
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             Por seguridad, necesitamos verificar tu identidad antes de desactivar la autenticación
@@ -87,7 +97,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
         <Alert className={alertVariants.info}>
           <ShieldQuestionMark />
 
-          <AlertTitle className="line-clamp-4">
+          <AlertTitle className="line-clamp-4 font-normal">
             ¿Estás seguro de que quieres desactivar la autenticación de dos factores?
           </AlertTitle>
 
@@ -97,36 +107,37 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           </AlertDescription>
         </Alert>
 
-        <form id="regenerate-codes-form" className="mt-2 grid gap-6" onSubmit={handleSubmit}>
+        <form id={formId} className="mt-2 grid gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
-            <LabelForm error={errors.password} htmlFor="regenerate-codes-password">
+            <LabelForm error={errors.password} htmlFor={passwordInputId}>
               Contraseña
             </LabelForm>
 
             <PasswordInput
-              id="regenerate-codes-password"
+              id={passwordInputId}
               name="password"
               autoComplete="current-password"
               onChange={(e) => {
                 setData("password", e.target.value);
               }}
               aria-invalid={!!errors.password}
+              aria-describedby={errors.password ? passwordErrorId : undefined}
               required
-              autoFocus
               placeholder="Contraseña"
               value={data.password}
             />
 
-            <InputError message={errors.password} />
+            <InputError id={passwordErrorId} message={errors.password} />
           </div>
 
           <div className="flex flex-col items-center justify-center space-y-3 text-center">
-            <LabelForm error={errors.code} htmlFor="code-otp">
+            <LabelForm error={errors.code} htmlFor={otpInputId}>
               Código de tu aplicación autenticadora
             </LabelForm>
 
             <div className="flex w-full items-center justify-center">
               <InputOTP
+                id={otpInputId}
                 name="code-otp"
                 required
                 onChange={(e) => {
@@ -136,6 +147,8 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
                 maxLength={OTP_MAX_LENGTH}
                 pattern={REGEXP_ONLY_DIGITS}
                 value={data.code}
+                aria-invalid={!!errors.code}
+                aria-describedby={errors.code ? otpErrorId : undefined}
               >
                 <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
                   {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
@@ -152,7 +165,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
                 </InputOTPGroup>
               </InputOTP>
             </div>
-            <InputError message={errors.code} />
+            <InputError id={otpErrorId} message={errors.code} />
           </div>
         </form>
 
@@ -163,7 +176,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
             </Button>
           </DialogClose>
 
-          <Button type="submit" form="regenerate-codes-form" disabled={processing}>
+          <Button type="submit" form={formId} disabled={processing}>
             {processing ? (
               <>
                 <Spinner />

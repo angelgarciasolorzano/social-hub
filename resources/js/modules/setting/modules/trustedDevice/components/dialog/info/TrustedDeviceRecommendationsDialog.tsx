@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { type JSX } from "react";
 
 import { ChevronRight, CircleAlert, Lightbulb, type LucideIcon } from "lucide-react";
 
@@ -9,6 +9,7 @@ import {
   trustedDevicePreviewRows,
   trustedDeviceRecommendations,
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceRecommendations";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -35,6 +36,8 @@ function TrustedDeviceRecommendationsDialog({
   open,
   onClose,
 }: TrustedDeviceRecommendationsDialogProps): JSX.Element {
+  const dialogFocusRestoration = useDialogFocusRestoration();
+
   return (
     <Dialog
       open={open}
@@ -42,21 +45,21 @@ function TrustedDeviceRecommendationsDialog({
         if (!next) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-4xl">
+      <DialogContent className="sm:max-w-4xl" {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-muted-foreground" />
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <Lightbulb aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
               Recomendaciones de seguridad
-            </div>
+            </h2>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm font-normal">
             Sigue estas recomendaciones para mantener tu cuenta y dispositivos de confianza seguros.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-          <div className="space-y-4 lg:col-span-3">
+          <ul className="list-none space-y-4 lg:col-span-3" role="list">
             {trustedDeviceRecommendations.map((recommendation) => (
               <RecommendationCard
                 description={recommendation.description}
@@ -66,7 +69,7 @@ function TrustedDeviceRecommendationsDialog({
                 title={recommendation.title}
               />
             ))}
-          </div>
+          </ul>
 
           <div className="lg:col-span-2">
             <DevicesPreviewSidebar
@@ -77,9 +80,11 @@ function TrustedDeviceRecommendationsDialog({
         </div>
 
         <Alert className={alertVariants.info}>
-          <CircleAlert />
-          <AlertTitle>Estas recomendaciones te ayudan a mantener tu cuenta segura</AlertTitle>
-          <AlertDescription>
+          <CircleAlert aria-hidden="true" />
+          <AlertTitle className="text-sm font-medium">
+            Estas recomendaciones te ayudan a mantener tu cuenta segura
+          </AlertTitle>
+          <AlertDescription className="text-sm font-normal">
             Los dispositivos de confianza te permiten iniciar sesion mas rapido, pero es importante
             revisarlos y mantener solo los que utilizas.
           </AlertDescription>
@@ -109,8 +114,9 @@ function RecommendationCard({
   title,
 }: RecommendationCardProps): JSX.Element {
   return (
-    <div className="flex items-start gap-4 rounded-xl border bg-card p-4 shadow-sm dark:bg-input/20">
+    <li className="flex items-start gap-4 rounded-xl border bg-card p-4 shadow-sm dark:bg-input/20">
       <div
+        aria-hidden="true"
         className={cn(
           "flex h-10 w-10 shrink-0 rounded-full p-2",
           iconColorVariants[iconColor].iconBgClass,
@@ -120,10 +126,10 @@ function RecommendationCard({
       </div>
 
       <div className="space-y-1">
-        <h4 className="text-sm font-semibold">{title}</h4>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <h3 className="text-sm font-medium">{title}</h3>
+        <p className="text-sm font-normal text-muted-foreground">{description}</p>
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -146,13 +152,15 @@ function DevicesPreviewSidebar({ copy, previews }: DevicesPreviewSidebarProps): 
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-base leading-tight font-semibold">{copy.title}</h4>
-        <p className="text-sm text-muted-foreground">{copy.body}</p>
+        <h3 className="text-sm leading-tight font-medium">{copy.title}</h3>
+        <p className="text-sm font-normal text-muted-foreground">{copy.body}</p>
 
         <Alert className={alertVariants.success}>
-          <CircleAlert />
-          <AlertTitle>{trustedDevicePreviewAlert.title}</AlertTitle>
-          <AlertDescription>{trustedDevicePreviewAlert.body}</AlertDescription>
+          <CircleAlert aria-hidden="true" />
+          <AlertTitle className="text-sm font-medium">{trustedDevicePreviewAlert.title}</AlertTitle>
+          <AlertDescription className="text-sm font-normal">
+            {trustedDevicePreviewAlert.body}
+          </AlertDescription>
         </Alert>
       </div>
     </div>
@@ -171,6 +179,7 @@ function DevicePreviewCard({ preview }: DevicePreviewCardProps): JSX.Element {
     <div className="flex items-center justify-between gap-2">
       <div className="flex min-w-0 items-center gap-2">
         <div
+          aria-hidden="true"
           className={cn(
             "flex h-9 w-9 shrink-0 rounded-md p-2",
             iconColorVariants[preview.device.iconVariant].iconBgClass,
@@ -183,7 +192,9 @@ function DevicePreviewCard({ preview }: DevicePreviewCardProps): JSX.Element {
 
         <div className="min-w-0 space-y-0.5">
           <p className="truncate text-sm font-medium">{preview.device.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{preview.device.subtitle}</p>
+          <p className="truncate text-xs font-normal text-muted-foreground">
+            {preview.device.subtitle}
+          </p>
         </div>
       </div>
 
@@ -195,7 +206,7 @@ function DevicePreviewCard({ preview }: DevicePreviewCardProps): JSX.Element {
         )}
       >
         {preview.badge.label}
-        <BadgeIcon className="h-3 w-3" />
+        <BadgeIcon aria-hidden="true" className="h-3 w-3" />
       </div>
     </div>
   );

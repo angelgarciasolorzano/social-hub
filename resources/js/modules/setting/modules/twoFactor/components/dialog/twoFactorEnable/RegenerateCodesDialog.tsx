@@ -1,8 +1,10 @@
-import type { JSX, SubmitEvent } from "react";
+import { type JSX, type SubmitEvent, useId } from "react";
 
 import { useForm } from "@inertiajs/react";
 
 import { AlertTriangleIcon, RefreshCcwDot } from "lucide-react";
+
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { storeRecoveryCodes } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
 
@@ -38,6 +40,12 @@ function RegenerateCodesDialog({
   setOpen,
   fetchRecoveryCodes,
 }: RegenerateCodesDialogProps): JSX.Element {
+  const idPrefix = useId();
+  const formId = `${idPrefix}-regenerate-codes-form`;
+  const passwordInputId = `${idPrefix}-password`;
+  const passwordErrorId = `${idPrefix}-password-error`;
+  const dialogFocusRestoration = useDialogFocusRestoration();
+
   const { setData, errors, submit, processing, reset, data } = useForm<RegenerateCodesFormData>({
     password: "",
   });
@@ -66,13 +74,13 @@ function RegenerateCodesDialog({
         setOpen(nextOpen);
       }}
     >
-      <DialogContent>
+      <DialogContent {...dialogFocusRestoration}>
         <DialogHeader>
           <DialogTitle asChild>
-            <div className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2">
               <RefreshCcwDot className="h-5 w-5 text-muted-foreground" />
               Regenerar códigos de respaldo
-            </div>
+            </h2>
           </DialogTitle>
           <DialogDescription>
             ¿Estás seguro de que quieres regenerar tus códigos de respaldo? Esta acción no se puede
@@ -82,32 +90,34 @@ function RegenerateCodesDialog({
 
         <Alert className={cn(alertVariants.destructive, "my-2")}>
           <AlertTriangleIcon />
-          <AlertTitle>Los códigos actuales dejarán de funcionar.</AlertTitle>
+          <AlertTitle className="font-normal">
+            Los códigos actuales dejarán de funcionar.
+          </AlertTitle>
           <AlertDescription>
             Una vez que generes nuevos códigos, los anteriores no pódran usarse.
           </AlertDescription>
         </Alert>
 
-        <form id="regenerate-codes-form" onSubmit={handleSubmit} className="mt-2 grid gap-2">
-          <LabelForm error={errors.password} htmlFor="regenerate-codes-password">
+        <form id={formId} onSubmit={handleSubmit} className="mt-2 grid gap-2">
+          <LabelForm error={errors.password} htmlFor={passwordInputId}>
             Para continuar, escribe tu contraseña
           </LabelForm>
 
           <PasswordInput
-            id="regenerate-codes-password"
+            id={passwordInputId}
             name="password"
             autoComplete="current-password"
             onChange={(e) => {
               setData("password", e.target.value);
             }}
             aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? passwordErrorId : undefined}
             required
-            autoFocus
             placeholder="Contraseña"
             value={data.password}
           />
 
-          <InputError message={errors.password} />
+          <InputError id={passwordErrorId} message={errors.password} />
         </form>
 
         <DialogFooter>
@@ -117,7 +127,7 @@ function RegenerateCodesDialog({
             </Button>
           </DialogClose>
 
-          <Button type="submit" form="regenerate-codes-form" disabled={processing}>
+          <Button type="submit" form={formId} disabled={processing}>
             {processing ? (
               <>
                 <Spinner />
