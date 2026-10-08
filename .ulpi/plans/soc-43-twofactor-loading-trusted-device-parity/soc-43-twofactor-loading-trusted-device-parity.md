@@ -244,7 +244,7 @@ rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/
 
 ### TASK-008: Rediseñar el diálogo Fecha de activación con la referencia del usuario
 
-Esperar a que el usuario comparta el diseño al llegar a este paso. Implementar la referencia en el diálogo existente sin inventar la composición visual antes de recibirla. Preservar el contrato de datos, la carga bajo demanda, el cierre accesible y el comportamiento de error/reintento.
+Esperar a que el usuario comparta el diseño al llegar a este paso. Implementar la referencia en el diálogo existente sin inventar la composición visual antes de recibirla. Preservar el contrato de datos, la carga bajo demanda, el cierre accesible y el comportamiento de error/reintento. La flecha del alert navega a dispositivos de confianza con Wayfinder y comunica el destino mediante Tooltip.
 
 **Phase:** Rediseños pendientes de referencia
 **Type:** feature
@@ -256,7 +256,7 @@ Esperar a que el usuario comparta el diseño al llegar a este paso. Implementar 
 
 - La referencia visual del usuario está disponible antes de cambiar el JSX y la implementación corresponde a sus elementos y estados indicados.
 - La fecha y los datos mostrados siguen correspondiendo al dispositivo de activación, con estados de carga/error y cierre por teclado operativos.
-- El rediseño no añade una petición al montar la pantalla ni cambia props/endpoints.
+- El rediseño no añade una petición al montar la pantalla ni cambia props/endpoints; la flecha navega a dispositivos de confianza y el Tooltip informa su destino al pasar el cursor o enfocar con teclado.
 
 **writeScope:**
 

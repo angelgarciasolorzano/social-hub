@@ -1,16 +1,16 @@
-import { type JSX, useEffect, useRef, useState } from "react";
+import { type JSX } from "react";
 
-import { router, usePage } from "@inertiajs/react";
+import { Link } from "@inertiajs/react";
 
-import { ArrowRight, Calendar, Clock, Info, ShieldCheck, Smartphone } from "lucide-react";
+import { ArrowRight, Clock, ShieldCheck } from "lucide-react";
 
-import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import {
   formatActivationDate,
   formatActivationTime,
 } from "@/modules/setting/shared/utils/dateTime";
-import { deviceLabel, getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
+
+import TrustedDeviceIndexController from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController";
 
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -24,12 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/shadcn/ui/tooltip";
 
-import { cn } from "@/shared/lib";
-import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
-
-import type { SharedData } from "@/shared/types";
+import { alertVariants } from "@/shared/lib/styling";
 
 interface TwoFactorActivationDetailsDialogProps {
   isOpen: boolean;
@@ -37,31 +34,7 @@ interface TwoFactorActivationDetailsDialogProps {
   confirmedAt: string | null;
 }
 
-type TwoFactorEnablePageProps = SharedData & {
-  firstTrustedDevice?: TrustedDevice | null;
-};
-
 const TWO_FACTOR_METHOD_LABEL = "TOTP (Aplicación)";
-const NO_TRUSTED_DEVICES_LABEL = "No hay dispositivos registrados";
-
-const twoFactorActivationDetailKey = {
-  activationDate: "activation-date",
-  activationTime: "activation-time",
-  verificationMethod: "verification-method",
-  firstTrustedDevice: "first-trusted-device",
-} as const;
-
-type TwoFactorActivationDetailKey =
-  (typeof twoFactorActivationDetailKey)[keyof typeof twoFactorActivationDetailKey];
-
-interface TwoFactorActivationDetail {
-  key: TwoFactorActivationDetailKey;
-  renderIcon: (className: string) => JSX.Element;
-  iconVariant: IconColorVariant;
-  label: string;
-  value: string;
-  valueClassName?: string;
-}
 
 function TwoFactorActivationDetailsDialog({
   isOpen,
@@ -70,95 +43,8 @@ function TwoFactorActivationDetailsDialog({
 }: TwoFactorActivationDetailsDialogProps): JSX.Element {
   const dialogFocusRestoration = useDialogFocusRestoration();
 
-  const { firstTrustedDevice } = usePage<TwoFactorEnablePageProps>().props;
-
-  const [hasFirstTrustedDeviceLoadError, setHasFirstTrustedDeviceLoadError] =
-    useState<boolean>(false);
-
-  const hasRequestedFirstTrustedDevice = useRef<boolean>(false);
-
   const activationDate = formatActivationDate(confirmedAt);
   const activationTime = formatActivationTime(confirmedAt);
-
-  const firstDeviceLabel =
-    firstTrustedDevice === undefined
-      ? ""
-      : firstTrustedDevice !== null
-        ? deviceLabel(firstTrustedDevice)
-        : NO_TRUSTED_DEVICES_LABEL;
-
-  const isLoadingFirstTrustedDevice =
-    isOpen && firstTrustedDevice === undefined && !hasFirstTrustedDeviceLoadError;
-
-  useEffect(() => {
-    if (!isOpen || firstTrustedDevice !== undefined || hasRequestedFirstTrustedDevice.current) {
-      return;
-    }
-
-    hasRequestedFirstTrustedDevice.current = true;
-
-    router.reload({
-      only: ["firstTrustedDevice"],
-      onSuccess: (page) => {
-        if (page.props["firstTrustedDevice"] === undefined) {
-          setHasFirstTrustedDeviceLoadError(true);
-        }
-      },
-      onError: () => {
-        setHasFirstTrustedDeviceLoadError(true);
-      },
-      onHttpException: () => {
-        setHasFirstTrustedDeviceLoadError(true);
-
-        return false;
-      },
-      onNetworkError: () => {
-        setHasFirstTrustedDeviceLoadError(true);
-
-        return false;
-      },
-      onCancel: () => {
-        setHasFirstTrustedDeviceLoadError(true);
-      },
-    });
-  }, [firstTrustedDevice, hasFirstTrustedDeviceLoadError, isOpen]);
-
-  const details: TwoFactorActivationDetail[] = [
-    {
-      key: twoFactorActivationDetailKey.activationDate,
-      renderIcon: (className) => <Calendar className={className} />,
-      iconVariant: "blue",
-      label: "Fecha de activación",
-      value: activationDate,
-    },
-    {
-      key: twoFactorActivationDetailKey.activationTime,
-      renderIcon: (className) => <Clock className={className} />,
-      iconVariant: "yellow",
-      label: "Hora de activación",
-      value: activationTime,
-    },
-    {
-      key: twoFactorActivationDetailKey.verificationMethod,
-      renderIcon: (className) => <ShieldCheck className={className} />,
-      iconVariant: "green",
-      label: "Método de verificación",
-      value: TWO_FACTOR_METHOD_LABEL,
-    },
-    {
-      key: twoFactorActivationDetailKey.firstTrustedDevice,
-      renderIcon: (className) =>
-        firstTrustedDevice !== undefined && firstTrustedDevice !== null ? (
-          getDeviceIcon(firstTrustedDevice, className)
-        ) : (
-          <Smartphone className={className} />
-        ),
-      iconVariant: "orange",
-      label: "Primer dispositivo utilizado",
-      value: firstDeviceLabel,
-      valueClassName: "max-w-40 truncate",
-    },
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -175,71 +61,33 @@ function TwoFactorActivationDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className={alertVariants.info}>
-          <Info />
-          <AlertTitle>Desde esta fecha, tu cuenta está protegida con 2FA.</AlertTitle>
-          <AlertDescription>
-            Es recomendable mantener esta protección activa en todo momento.
-          </AlertDescription>
-        </Alert>
+        <Card className="gap-0 rounded-2xl py-0 shadow-none dark:bg-input/20">
+          <CardContent className="px-0">
+            <dl className="grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+              <div
+                className="flex flex-col gap-1 border-b border-border px-6 py-6"
+                style={{ borderRight: "1px solid var(--border)" }}
+              >
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                  Hora
+                </dt>
+                <dd className="font-semibold">{activationTime}</dd>
+              </div>
 
-        <Card className="dark:bg-input/20">
-          <CardContent className="space-y-4">
-            {details.map((detail) => {
-              const isFirstTrustedDeviceDetail =
-                detail.key === twoFactorActivationDetailKey.firstTrustedDevice;
+              <div className="flex flex-col gap-1 border-b border-border px-6 py-6">
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                  Método
+                </dt>
+                <dd className="font-semibold">{TWO_FACTOR_METHOD_LABEL}</dd>
+              </div>
 
-              return (
-                <div key={detail.key} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div
-                      className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-md",
-                        iconColorVariants[detail.iconVariant].iconBgClass,
-                      )}
-                    >
-                      {detail.renderIcon(
-                        cn("h-4 w-4", iconColorVariants[detail.iconVariant].iconFgClass),
-                      )}
-                    </div>
-
-                    <span className="text-xs text-muted-foreground">{detail.label}</span>
-                  </div>
-
-                  {isFirstTrustedDeviceDetail && isLoadingFirstTrustedDevice ? (
-                    <div aria-busy="true" className="flex items-center gap-2">
-                      <span className="sr-only" role="status">
-                        Cargando el primer dispositivo utilizado.
-                      </span>
-
-                      <Skeleton aria-hidden="true" className="h-4 w-36" />
-                    </div>
-                  ) : isFirstTrustedDeviceDetail && firstTrustedDevice === undefined ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-destructive" role="alert">
-                        No se pudo cargar este dato.
-                      </span>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          hasRequestedFirstTrustedDevice.current = false;
-                          setHasFirstTrustedDeviceLoadError(false);
-                        }}
-                      >
-                        Reintentar
-                      </Button>
-                    </div>
-                  ) : (
-                    <p className={cn("text-sm font-medium", detail.valueClassName)}>
-                      {detail.value}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
+              <div className="flex flex-col gap-1 px-6 py-6" style={{ gridColumn: "1 / -1" }}>
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                  Fecha de activación
+                </dt>
+                <dd className="font-semibold">{activationDate}</dd>
+              </div>
+            </dl>
           </CardContent>
         </Card>
 
@@ -249,9 +97,21 @@ function TwoFactorActivationDetailsDialog({
           <AlertDescription className="flex items-start gap-2">
             Si no reconoces esta actividad, te recomendamos cambiar tu contraseña y revisar tus
             dispositivos de confianza.
-            <Button variant="outline" size="icon">
-              <ArrowRight />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="outline" size="icon">
+                  <Link
+                    aria-label="Ir a dispositivos de confianza"
+                    href={TrustedDeviceIndexController()}
+                  >
+                    <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={4}>
+                Te llevará a la sección de dispositivos de confianza.
+              </TooltipContent>
+            </Tooltip>
           </AlertDescription>
         </Alert>
 
