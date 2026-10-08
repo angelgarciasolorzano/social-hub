@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\MediaLibrary;
+namespace App\Support\MediaLibrary;
 
 use App\Modules\Post\Models\Post;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
