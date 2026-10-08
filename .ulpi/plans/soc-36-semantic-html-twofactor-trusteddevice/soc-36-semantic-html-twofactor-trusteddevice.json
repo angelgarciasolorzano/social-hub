@@ -11,8 +11,8 @@
   "planningMode": "EXPANSION",
   "executionStyle": "Por fases",
   "reviewDefault": "codex",
-  "overview": "Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. También incluye una corrección responsive para que el diálogo de detalles de TrustedDevice mantenga visibles el header y footer mientras desplaza su body, y una extracción del patrón común para restaurar el foco en los diálogos.",
-  "scopeChallenge": "Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. El diálogo de detalles de TrustedDevice requiere un ajuste responsive local adicional: ancho dentro del viewport, tarjetas apiladas en móvil y desplazamiento solo en el body. La limpieza posterior extrae a setting/shared la restauración de foco repetida en siete diálogos; los focos iniciales especiales y los diálogos con destino alternativo quedan bajo control de cada componente. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.",
+  "overview": "Refactor semántico y de accesibilidad de TwoFactor y TrustedDevice, ampliado con una alineación tipográfica basada en la vista Profile de AccountSettings. La comparación visual confirma que los títulos principales de los tres módulos comparten la escala de Profile; los ajustes se concentran en títulos de tarjeta, métricas, datos y metadatos dentro de los componentes de TwoFactor y TrustedDevice. También incluye una corrección responsive para que el diálogo de detalles de TrustedDevice mantenga visibles el header y footer mientras desplaza su body, y una extracción del patrón común para restaurar el foco en los diálogos, incluidos los casos especiales de detalle y renombrado.",
+  "scopeChallenge": "Los módulos ya existen y la necesidad es completar el trabajo semántico/responsive aprobado y pulir la jerarquía tipográfica sin rediseñarlos. EXPANSION agrega tareas acotadas para todos los componentes que presentan copy o valores legibles, agrupadas por módulo y zona con hasta tres archivos por tarea. El diálogo de detalles de TrustedDevice requiere un ajuste responsive local adicional: ancho dentro del viewport, tarjetas apiladas en móvil y desplazamiento solo en el body. La limpieza posterior extrae a setting/shared la restauración repetida de foco en los diálogos de ambos módulos. El hook permite conservar el foco inicial del título y los destinos explícitos o alternativos propios de TrustedDevice. Los títulos principales ya alineados se preservan; los componentes puramente estructurales/textless se auditan y quedan fuera de edición. El cambio de PreferredLocale permanece como trabajo adyacente y no bloquea SOC-36.",
   "prerequisites": [
     "SOC-36 se mantiene como follow-up separado de SOC-34; el alcance cubre solo TwoFactor y TrustedDevice.",
     "Profile/AccountSettings es la referencia visual verificada en navegador a 1440×834: h1 de 20 px en móvil/24 px desde sm con peso 600, descripción de 14 px, sección de 18 px/600, título de tarjeta de 14 px/500, texto de apoyo compacto de 12 px y cuerpo general de 14 px.",
@@ -20,7 +20,8 @@
     "La ampliación solo cambia utilities de tamaño y peso de fuente; conservar spacing, line-height, tracking, colores, copy, semántica, responsive behavior y contratos.",
     "Cada slice valida solo sus archivos con Prettier/ESLint; el cierre usa scripts frontend y QA visual en desktop y móvil.",
     "El cambio de PreferredLocale es un slice PHP separado de SOC-36, con validación y QA backend propios.",
-    "El diálogo de detalles de TrustedDevice debe adaptarse al viewport móvil: ancho fluido, columnas apiladas y scroll limitado al body para conservar visibles el encabezado y las acciones."
+    "El diálogo de detalles de TrustedDevice debe adaptarse al viewport móvil: ancho fluido, columnas apiladas y scroll limitado al body para conservar visibles el encabezado y las acciones.",
+    "La extensión TASK-047 integra los diálogos de detalle y renombrado de TrustedDevice sin cambiar el foco inicial del título ni la prioridad de sus destinos de retorno."
   ],
   "nonGoals": [
     "Cambiar rutas, métodos HTTP, autorización, persistencia, validación backend o contratos Inertia.",
@@ -42,7 +43,7 @@
     "El alcance tipográfico modifica exclusivamente tamaño y peso de fuente local; no sustituye los estilos por reglas globales ni cambia familias tipográficas, line-height, espaciado o tracking.",
     "El ajuste responsive queda limitado a TrustedDeviceDetailsDialog; no requiere cambiar la primitiva compartida Dialog ni otros diálogos.",
     "La restauración estándar del foco se comparte mediante un hook de setting con una referencia independiente por diálogo; el hook no cancela el autofocus cuando el destino es document.body o ya no está conectado.",
-    "Los focos iniciales específicos, el foco de título por paso, el fallback de TrustedDeviceRenameDialog y el destino explícito de TrustedDeviceDetailsDialog permanecen bajo control de cada componente."
+    "Los focos iniciales específicos, el foco de título por paso, el fallback de TrustedDeviceRenameDialog y el destino explícito de TrustedDeviceDetailsDialog se conservan al usar el hook compartido."
   ],
   "existingCodeLeverage": [
     {
@@ -186,6 +187,22 @@
         "TASK-046"
       ],
       "outcome": "Validar los gates frontend y los ciclos de foco, incluidos los casos anidados y de activadores desconectados."
+    },
+    {
+      "id": "PHASE-11",
+      "title": "Unificar variantes de foco en TrustedDevice",
+      "taskIds": [
+        "TASK-047"
+      ],
+      "outcome": "Reutilizar el hook en los diálogos de detalle y renombrado conservando sus destinos y focos iniciales específicos."
+    },
+    {
+      "id": "PHASE-12",
+      "title": "Verificación de las variantes de foco",
+      "taskIds": [
+        "TASK-048"
+      ],
+      "outcome": "Validar con teclado los destinos explícitos y de fallback, además de repetir los gates frontend."
     }
   ],
   "tasks": [
@@ -1870,6 +1887,69 @@
       "writeScope": [],
       "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr\nQA de teclado en TwoFactor y TrustedDevice: apertura, cierre, destino desconectado, navegación entre pasos y diálogo anidado.",
       "review": "codex"
+    },
+    {
+      "id": "TASK-047",
+      "title": "Unificar la restauración de foco en detalle y renombrado",
+      "phase": "Unificar variantes de foco en TrustedDevice",
+      "description": "Extender useDialogFocusRestoration para aceptar un destino alternativo y un handler de autofocus inicial, y aplicarlo a los diálogos de detalle y renombrado de TrustedDevice.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-046"
+      ],
+      "acceptanceCriteria": [
+      "TrustedDeviceDetailsDialog usa el hook, sigue enfocando inicialmente su título y prioriza su destino explícito conectado al cerrar; sin ese destino deja actuar el autofocus predeterminado de Radix.",
+            "TrustedDeviceRenameDialog usa el hook, prioriza el activador capturado conectado y recurre a returnFocusTarget si el foco inicial ya está dentro del diálogo o el activador fue retirado.",
+      "Si ningún destino es válido, incluido document.body o un nodo desconectado, ningún diálogo enfoca un elemento obsoleto, previene el autofocus predeterminado o conserva una referencia entre aperturas."
+      ],
+      "filesToModify": [
+        "resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        {
+          "path": "resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts",
+          "role": "Permitir fallback por instancia y un handler opcional de autofocus sin alterar los consumidores estándar."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+          "role": "Usar el hook preservando el foco inicial del título y el destino de retorno explícito."
+        },
+        {
+          "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+          "role": "Usar el hook preservando el activador capturado y returnFocusTarget como fallback."
+        }
+      ],
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx\nrtk npm exec -- eslint resources/js/modules/setting/shared/hooks/useDialogFocusRestoration.ts resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-048",
+      "title": "Validar los destinos de foco de TrustedDevice",
+      "phase": "Verificación de las variantes de foco",
+      "description": "Repetir los gates frontend y recorrer con teclado los diálogos de detalle y renombrado, cubriendo destinos explícitos conectados, fallback y destinos retirados.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-047"
+      ],
+      "acceptanceCriteria": [
+            "Pasan format:check, lint:check, types, build y build:ssr.",
+            "En TrustedDeviceDetailsDialog el título recibe el foco inicial y el cierre restaura al destino explícito conectado; si fue retirado, Radix conserva su comportamiento predeterminado.",
+            "En TrustedDeviceRenameDialog Escape y Cancelar restauran el foco al activador capturado o al fallback conectado y nunca enfocan un nodo retirado."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "rtk npm run format:check\nrtk npm run lint:check\nrtk npm run types\nrtk npm run build\nrtk npm run build:ssr\nQA de teclado en los diálogos de detalle y renombrado: foco inicial, destino explícito, fallback conectado y activadores retirados.",
+      "review": "codex"
     }
   ],
   "dependencyMap": {
@@ -2013,6 +2093,12 @@
     "TASK-046": [
       "TASK-044",
       "TASK-045"
+    ],
+    "TASK-047": [
+      "TASK-046"
+    ],
+    "TASK-048": [
+      "TASK-047"
     ]
   },
   "criticalPath": {
@@ -2026,9 +2112,11 @@
       "TASK-041",
       "TASK-043",
       "TASK-044",
-      "TASK-046"
+      "TASK-046",
+      "TASK-047",
+      "TASK-048"
     ],
-    "rationale": "La ruta del SOC-36 original conduce a TASK-041; la ampliación de foco parte de esa verificación, crea el hook compartido, lo integra en TwoFactor y TrustedDevice en paralelo y concluye en TASK-046."
+    "rationale": "La ruta del SOC-36 original conduce a TASK-041; la expansión de foco integra los diálogos estándar y cierra con QA de los casos especiales de TrustedDevice."
   },
   "failureModes": [
     "DialogTitle con div puede conservar texto visible y perder semántica de encabezado; verificar encabezado y nombre accesible.",
@@ -2045,9 +2133,10 @@
     "Cambiar la familia tipográfica actual o reducir demasiado OTP, códigos de respaldo y claves copiables puede dificultar su lectura; conservar la fuente existente y los mínimos de tamaño.",
     "Clases tipográficas de shadcn heredadas pueden sobrescribirse localmente; cambiar solo el call site necesario y no la primitiva compartida.",
     "Un hook de foco que comparta su referencia entre instancias puede mezclar el activador del diálogo padre con el del hijo; cada instancia conserva su propio estado.",
-    "Prevenir siempre el autofocus de cierre deja el foco sin destino cuando el activador fue eliminado; solo cancelar el comportamiento predeterminado cuando el destino capturado sigue conectado."
+    "Prevenir siempre el autofocus de cierre deja el foco sin destino cuando el activador fue eliminado; solo cancelar el comportamiento predeterminado cuando el destino capturado sigue conectado.",
+    "Un destino alternativo puede desplazar el destino explícito o el foco inicial del título; mantener prioridad y autofocus específicos por diálogo y dejar actuar Radix si ningún destino sigue conectado."
   ],
-  "shipCut": "SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021, TASK-042 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre. La refactorización posterior de foco compartido queda completa al implementar TASK-043 a TASK-045 y validar TASK-046.",
+  "shipCut": "SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-018 a TASK-021, TASK-042 y la ampliación tipográfica TASK-023 a TASK-040, y completar la verificación inicial TASK-022 y la QA final TASK-041. TASK-016 es la auditoría inicial que registró los hallazgos corregidos. TASK-017/PreferredLocale es trabajo adyacente y no bloquea el cierre. La refactorización posterior de foco compartido queda completa al implementar TASK-043 a TASK-045 y validar TASK-046. La ampliación de los casos especiales de foco termina con TASK-047 y su QA TASK-048.",
   "testCoverageMap": [
     {
       "scope": "Cada slice de implementación",
@@ -2080,12 +2169,16 @@
     {
       "scope": "Restauración de foco compartida",
       "coverage": "Prettier y ESLint por slice; gates frontend integrados; recorrido de teclado en TwoFactor y TrustedDevice, incluida la apertura/cierre anidado y la eliminación del activador."
+    },
+    {
+      "scope": "Foco explícito y fallback de TrustedDevice",
+      "coverage": "Recorrer con teclado los diálogos de detalle y renombrado; validar foco inicial del título, activador explícito, fallback conectado y retorno predeterminado ante destinos retirados."
     }
   ],
   "executionSummary": {
-    "taskCount": 45,
-    "implementationTaskCount": 41,
-    "phaseCount": 10,
+    "taskCount": 47,
+    "implementationTaskCount": 42,
+    "phaseCount": 12,
     "dagLayers": [
       {
         "layer": 1,
@@ -2181,10 +2274,22 @@
         "taskIds": [
           "TASK-046"
         ]
+      },
+      {
+        "layer": 11,
+        "taskIds": [
+          "TASK-047"
+        ]
+      },
+      {
+        "layer": 12,
+        "taskIds": [
+          "TASK-048"
+        ]
       }
     ],
     "reviewDefault": "codex",
-    "linearTaskCount": 45,
+    "linearTaskCount": 47,
     "adjacentTaskCount": 1
   },
   "adjacentWork": {

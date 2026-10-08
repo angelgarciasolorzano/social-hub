@@ -1,4 +1,4 @@
-import { type JSX, type SubmitEvent, useRef } from "react";
+import { type JSX, type SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
 import { useForm, usePage } from "@inertiajs/react";
@@ -9,6 +9,7 @@ import { Eye, Pencil } from "lucide-react";
 import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -49,7 +50,9 @@ function TrustedDeviceRenameDialog({
   onClose,
   returnFocusTarget,
 }: TrustedDeviceRenameDialogProps): JSX.Element {
-  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const { onOpenAutoFocus, onCloseAutoFocus } = useDialogFocusRestoration({
+    getFallbackFocusTarget: () => returnFocusTarget,
+  });
 
   const { setData, submit, processing, reset, errors, data } = useForm<RenameDeviceFormData>({
     name: device.name,
@@ -82,27 +85,7 @@ function TrustedDeviceRenameDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        onOpenAutoFocus={() => {
-          const activeElement = document.activeElement;
-
-          returnFocusRef.current =
-            activeElement instanceof HTMLElement && activeElement !== document.body
-              ? activeElement
-              : (returnFocusTarget ?? null);
-        }}
-        onCloseAutoFocus={(event) => {
-          const capturedTarget = returnFocusRef.current;
-          const focusTarget = capturedTarget?.isConnected ? capturedTarget : returnFocusTarget;
-
-          if (focusTarget?.isConnected) {
-            event.preventDefault();
-            focusTarget.focus();
-          }
-
-          returnFocusRef.current = null;
-        }}
-      >
+      <DialogContent onOpenAutoFocus={onOpenAutoFocus} onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">

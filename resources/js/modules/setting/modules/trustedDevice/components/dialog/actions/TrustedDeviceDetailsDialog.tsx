@@ -30,6 +30,7 @@ import TrustedDeviceMetadataItem, {
 } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
+import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
@@ -100,6 +101,14 @@ function TrustedDeviceDetailsDialog({
   const dialogDevice = useDialog<DialogActionState | null>(null);
   const { appearance } = useAppearance();
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const { onOpenAutoFocus, onCloseAutoFocus } = useDialogFocusRestoration({
+    captureActiveElement: false,
+    getFallbackFocusTarget: () => returnFocusTarget,
+    onOpenAutoFocus: (event) => {
+      event.preventDefault();
+      titleRef.current?.focus();
+    },
+  });
 
   const isRevoked = device.deletedAt !== null;
   const isExpired = !isRevoked && !device.isActive;
@@ -192,16 +201,8 @@ function TrustedDeviceDetailsDialog({
     >
       <DialogContent
         className="grid max-h-[calc(100dvh-2rem)] min-h-0 w-[calc(100vw-2rem)] max-w-6xl min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-6xl"
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-          titleRef.current?.focus();
-        }}
-        onCloseAutoFocus={(event) => {
-          if (returnFocusTarget?.isConnected) {
-            event.preventDefault();
-            returnFocusTarget.focus();
-          }
-        }}
+        onOpenAutoFocus={onOpenAutoFocus}
+        onCloseAutoFocus={onCloseAutoFocus}
       >
         <DialogHeader>
           <DialogTitle asChild>
