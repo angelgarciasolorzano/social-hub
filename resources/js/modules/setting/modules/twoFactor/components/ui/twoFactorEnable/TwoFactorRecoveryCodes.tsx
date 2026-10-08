@@ -134,7 +134,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
                         ? `Código de respaldo ${code} copiado`
                         : `Copiar código de respaldo ${code}`
                     }
-                    className="-mx-2 h-auto w-full justify-between rounded-md px-2 py-3 text-sm"
+                    className="h-auto w-full justify-between rounded-md px-0 py-3 text-sm hover:bg-accent/50 focus-visible:bg-accent/50"
                   >
                     <span className="font-medium">{code}</span>
 

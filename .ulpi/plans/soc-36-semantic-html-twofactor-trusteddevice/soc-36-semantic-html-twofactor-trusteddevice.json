@@ -1138,7 +1138,7 @@
       "id": "TASK-027",
       "title": "Normalizar códigos, dispositivos y detalles de activación",
       "phase": "Alineación tipográfica",
-      "description": "Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la lista de dispositivos y los detalles de activación.",
+      "description": "Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la lista de dispositivos y los detalles de activación; alinear el hover y el foco de las filas de códigos de respaldo con su contenedor.",
       "priority": "P2",
       "type": "refactor",
       "effort": "M",
@@ -1148,7 +1148,7 @@
       ],
       "acceptanceCriteria": [
         "Los títulos de secciones de códigos/dispositivos/detalles usan 18 px/600 y las filas principales 14 px/500, con metadatos de 12 px/400–500.",
-        "Los códigos de respaldo conservan su familia tipográfica actual y usan al menos 14 px; los valores no se recortan ni pierden claridad.",
+        "Los códigos de respaldo conservan su familia tipográfica actual y usan al menos 14 px; los valores no se recortan y el hover/foco tiene un fondo sutil alineado con el área interior de la lista.",
         "Las listas vacías, cargando y completas conservan sus estados y acciones con texto legible, sin cambiar el comportamiento."
       ],
       "filesToModify": [
@@ -1160,7 +1160,7 @@
       "writeScope": [
         {
           "path": "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
-          "role": "Título, disponibilidad, explicaciones y códigos de respaldo."
+          "role": "Título, disponibilidad, explicaciones, códigos de respaldo y estado hover/foco de sus filas."
         },
         {
           "path": "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx",
@@ -2161,6 +2161,10 @@
     {
       "scope": "Excepciones legibles",
       "coverage": "Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px."
+    },
+    {
+      "scope": "Hover de códigos de respaldo",
+      "coverage": "En navegador, comprobar que el fondo de hover/foco queda sutil y alineado con el área interior de la lista sin alterar la lectura ni la acción de copiar."
     },
     {
       "scope": "Desbordamiento móvil del diálogo de detalles",

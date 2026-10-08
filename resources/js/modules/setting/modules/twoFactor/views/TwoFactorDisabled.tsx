@@ -68,7 +68,7 @@ interface TwoFactorTitleProps {
 }
 
 function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.Element {
-  const { appearance } = useAppearance();
+  const { resolvedAppearance } = useAppearance();
 
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
@@ -88,7 +88,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
           </p>
 
           <Badge
-            variant={appearance === "light" ? "destructive" : null}
+            variant={resolvedAppearance === "light" ? "destructive" : null}
             className="inline-flex dark:bg-red-700 dark:text-white"
           >
             <ShieldAlert />

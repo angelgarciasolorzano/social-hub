@@ -693,7 +693,7 @@ rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components
 
 ### TASK-027: Normalizar códigos, dispositivos y detalles de activación
 
-Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la lista de dispositivos y los detalles de activación.
+Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la lista de dispositivos y los detalles de activación; alinear el hover y el foco de las filas de códigos de respaldo con su contenedor.
 
 **Phase:** Alineación tipográfica
 **Type:** refactor
@@ -703,11 +703,11 @@ Ajustar la jerarquía de títulos, filas y metadatos en la vista de códigos, la
 **Depends on:** TASK-022
 **Acceptance Criteria:**
 - Los títulos de secciones de códigos/dispositivos/detalles usan 18 px/600 y las filas principales 14 px/500, con metadatos de 12 px/400–500.
-- Los códigos de respaldo conservan su familia tipográfica actual y usan al menos 14 px; los valores no se recortan ni pierden claridad.
+- Los códigos de respaldo conservan su familia tipográfica actual y usan al menos 14 px; los valores no se recortan y el hover/foco tiene un fondo sutil alineado con el área interior de la lista.
 - Las listas vacías, cargando y completas conservan sus estados y acciones con texto legible, sin cambiar el comportamiento.
 
 **writeScope:**
-- `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx` — Título, disponibilidad, explicaciones y códigos de respaldo.
+- `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx` — Título, disponibilidad, explicaciones, códigos de respaldo y estado hover/foco de sus filas.
 - `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Título, filas de dispositivos y metadatos.
 - `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx` — Etiquetas, valores y ayuda de los detalles de activación.
 
@@ -1316,6 +1316,7 @@ SOC-36 se considera completo después de implementar TASK-001 a TASK-015, TASK-0
 - **Trabajo adyacente PreferredLocale:** Prueba del módulo AccountSettings para el casteo del DTO y locales inválidos; Pint, PHPStan, Rector y prueba feature del slice.
 - **Alineación tipográfica:** Prettier --check y ESLint por writeScope; comparación manual con Profile en páginas, tablas, estados, tarjetas y todos los diálogos a 1440×834 y 390×844.
 - **Excepciones legibles:** Confirmar familia y tamaños actuales de OTP/códigos, estados de error/vacío y textos largos; revisar que ningún texto visible de apoyo baje de 12 px.
+- **Hover de códigos de respaldo:** En navegador, comprobar que el fondo de hover/foco queda sutil y alineado con el área interior de la lista sin alterar la lectura ni la acción de copiar.
 - **Desbordamiento móvil del diálogo de detalles:** En 390×844, confirmar que el diálogo cabe en el viewport, las tarjetas se apilan y el scroll se limita al body sin ocultar header/footer; en escritorio mantener las tres columnas.
 - **Restauración de foco compartida:** Prettier y ESLint por slice; gates frontend integrados; recorrido de teclado en TwoFactor y TrustedDevice, incluida la apertura/cierre anidado y la eliminación del activador.
 - **Foco explícito y fallback de TrustedDevice:** Recorrer los diálogos de detalle y renombrado; validar foco inicial del título, activador explícito, fallback conectado y retorno predeterminado ante destinos retirados.
