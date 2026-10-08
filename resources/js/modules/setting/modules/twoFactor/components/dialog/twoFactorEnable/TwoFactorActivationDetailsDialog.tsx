@@ -71,19 +71,24 @@ function TwoFactorActivationDetailsDialog({
                 className="flex flex-col items-center gap-1 border-b border-border px-6 py-6"
                 style={{ borderRight: "1px solid var(--border)" }}
               >
-                <dt className="text-sm font-semibold tracking-wide text-muted-foreground">Hora</dt>
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                  Hora
+                </dt>
                 <dd className="text-sm font-semibold">{activationTime}</dd>
               </div>
 
               <div className="flex flex-col items-center gap-1 border-b border-border px-6 py-6">
-                <dt className="text-sm font-semibold tracking-wide text-muted-foreground">
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
                   Método
                 </dt>
                 <dd className="text-sm font-semibold">{TWO_FACTOR_METHOD_LABEL}</dd>
               </div>
 
-              <div className="flex justify-center gap-2 px-6 py-6" style={{ gridColumn: "1 / -1" }}>
-                <dt className="text-sm font-semibold tracking-wide text-muted-foreground">
+              <div
+                className="flex flex-col items-center gap-2 px-6 py-6"
+                style={{ gridColumn: "1 / -1" }}
+              >
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
                   Fecha de activación
                 </dt>
                 <dd className="text-sm font-semibold">{activationDate}</dd>

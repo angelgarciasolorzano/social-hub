@@ -2,17 +2,17 @@
 
 ## Overview
 
-Plan de SOC-43 para medir y optimizar la carga de TwoFactor y, por expansión confirmada, alinear la experiencia de alta y administración de dispositivos de confianza. Incluye la carga correcta de estados ya registrados, revocados y disponibles; las seis acciones con las validaciones ya existentes; y dos rediseños que esperan las referencias visuales que compartirá el usuario al llegar a cada tarea.
+Plan de SOC-43 para medir y optimizar la carga de TwoFactor y, por expansión confirmada, alinear la experiencia de alta y administración de dispositivos de confianza. Incluye la carga correcta de estados ya registrados, revocados y disponibles; las seis acciones con las validaciones ya existentes; y dos rediseños basados en las referencias visuales entregadas por el usuario.
 
 ## Scope Challenge
 
-EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conserva como base. Se agregan cambios puntuales en TwoFactor para recuperar dos solicitudes redundantes identificadas en el código, acceder a acciones de registros revocados y reusar los flujos de TrustedDevice. Los rediseños no se inventan en esta planificación: sus tareas quedan bloqueadas hasta recibir la referencia del usuario. TrustedDevice sigue siendo la referencia conductual; su tabla y reglas de seguridad no se rediseñan.
+EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conserva como base. Se agregan cambios puntuales en TwoFactor para recuperar dos solicitudes redundantes identificadas en el código, acceder a acciones de registros revocados y reusar los flujos de TrustedDevice. Los dos diseños fueron entregados: el de alta aplica al diálogo compartido desde TrustedDevice y TwoFactor. TrustedDevice sigue siendo la referencia conductual; su tabla y reglas de seguridad no se rediseñan.
 
 ## Prerequisites
 
 - SOC-43 permanece In Progress hasta que se completen las optimizaciones y la verificación final.
-- Las referencias visuales de Fecha de activación y Agregar dispositivo de confianza se recibirán antes de ejecutar TASK-008 y TASK-009; no implementar esos cambios con diseños supuestos.
-- El rediseño de TrustedDeviceAddDialog puede afectar ambas vistas porque el componente es compartido. Al ejecutar TASK-009 se debe fijar el alcance del diseño y mantener el aspecto actual de TrustedDevice si la referencia corresponde solo a TwoFactor.
+- Las referencias visuales de Fecha de activación y Agregar dispositivo de confianza ya fueron entregadas y definen sus respectivos rediseños.
+- La referencia de Agregar dispositivo de confianza aplica al componente compartido TrustedDeviceAddDialog y debe verse igual desde TrustedDevice y TwoFactor.
 - Las rutas y validaciones de dispositivos ya existen; se deben reutilizar los diálogos y endpoints actuales.
 - No existe un runner de pruebas frontend en package.json; los slices usan Prettier/ESLint por archivo, tipos y QA manual de Network/UI.
 - La optimización debe apoyarse en el baseline de Network de TASK-001, considerando React StrictMode en desarrollo.
@@ -20,7 +20,7 @@ EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conser
 ## Non-Goals
 
 - Cambiar rutas, autorización, reglas de seguridad 2FA/TOTP, endpoints, persistencia o payloads de formularios existentes.
-- Rediseñar la tabla o el módulo TrustedDevice; solo cambiar su diálogo compartido si la referencia recibida lo incluye explícitamente.
+- Rediseñar la tabla o el módulo TrustedDevice; TASK-009 actualiza únicamente el diálogo compartido según la referencia entregada.
 - Expandir la lista TwoFactor más allá de los tres dispositivos recientes que ya presenta.
 - Cambiar la semántica del conteo de dispositivos no revocados.
 - Agregar un runner JavaScript, dependencias, documentación adicional, instrumentación permanente o cambios de configuración.
@@ -33,7 +33,7 @@ EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conser
 - En el alta, undefined significa que la coincidencia aún carga, null significa que no hay coincidencia y un registro se clasifica como activo, revocado o expirado usando los mismos estados y diálogos de TrustedDevice.
 - El estado activo habilita Ver/Renombrar/Renovar/Revocar; el revocado habilita Ver/Reactivar/Eliminar definitivamente; el resto de las opciones permanece deshabilitado como en la tabla.
 - Reactivar conserva OTP/TOTP o código de recuperación; Revocar y Eliminar definitivamente conservan la confirmación de contraseña y aceptación de consecuencias.
-- Solo el diálogo de activación y la carga del alta cambian visualmente según las referencias entregadas; no se cambia la semántica de acciones ni de errores.
+- Solo el diálogo de activación y el diálogo compartido de alta cambian visualmente según las referencias entregadas; no se cambia la semántica de acciones ni de errores.
 - Los props opcionales se solicitan al abrir la interacción que los necesita; las cargas fallidas muestran recuperación explícita y no se confunden con datos ausentes válidos.
 - La consulta de coincidencia actual no retorna normalmente dispositivos expirados no revocados; no ampliar esa semántica sin una decisión respaldada por la prueba de servicio y el comportamiento de TrustedDevice.
 
@@ -45,7 +45,7 @@ EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conser
 - `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Lista, alta, menú de acciones y wiring de diálogos en TwoFactor.
 - `resources/js/modules/setting/modules/twoFactor/data/twoFactorEnable.ts` — Configuración actual de acciones de TwoFactor.
 - `resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceOverview.ts` — Acciones de fila compartidas y condiciones por estado.
-- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` — Diálogo compartido de alta; conservar su variante visual de TrustedDevice.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` — Diálogo compartido de alta; aplicar su nueva referencia en ambas vistas.
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx` — Diálogo existente para la coincidencia activa.
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx` — Diálogo existente para un dispositivo revocado.
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx` — Diálogo existente para un dispositivo expirado.
@@ -246,7 +246,7 @@ rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/
 
 Esperar a que el usuario comparta el diseño al llegar a este paso. Implementar la referencia en el diálogo existente sin inventar la composición visual antes de recibirla. Preservar el contrato de datos, la carga bajo demanda, el cierre accesible y el comportamiento de error/reintento. La flecha del alert navega a dispositivos de confianza con Wayfinder y comunica el destino mediante Tooltip.
 
-**Phase:** Rediseños pendientes de referencia
+**Phase:** Rediseños visuales
 **Type:** feature
 **Effort:** M
 **Agent:** react-vite-tailwind-engineer
@@ -270,9 +270,9 @@ rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/
 
 ### TASK-009: Rediseñar Agregar dispositivo de confianza con la referencia del usuario
 
-Esperar a que el usuario comparta el diseño al llegar a este paso. El diálogo TrustedDeviceAddDialog es compartido: aplicar el diseño a TwoFactor y preservar la apariencia actual de TrustedDevice mediante una variante contextual si la referencia es específica de TwoFactor. Si la referencia es expresamente común, actualizar el componente compartido y revisar ambos call sites.
+Aplicar la referencia al body del componente compartido TrustedDeviceAddDialog con el mismo diseño desde TrustedDevice y TwoFactor. Mantener la tarjeta detectada y su fecha Expira, el nombre del dispositivo, la alerta personal y el flujo existente. Omitir Confiar durante, sus días, su texto de expiración y las sugerencias bajo el input.
 
-**Phase:** Rediseños pendientes de referencia
+**Phase:** Rediseños visuales
 **Type:** feature
 **Effort:** M
 **Agent:** react-vite-tailwind-engineer
@@ -280,19 +280,19 @@ Esperar a que el usuario comparta el diseño al llegar a este paso. El diálogo 
 **Depends on:** TASK-004, TASK-007
 **Acceptance Criteria:**
 
-- El diseño del usuario está disponible antes de cambiar la interfaz y su alcance (TwoFactor o ambas pantallas) queda explícito en el cambio.
-- El alta conserva el flujo de nombre, validación y envío existentes; si el rediseño es exclusivo de TwoFactor, TrustedDevice mantiene su apariencia actual.
+- El mismo diseño aparece desde TrustedDevice y TwoFactor porque ambos usan el componente compartido, sin variantes por pantalla.
+- La tarjeta conserva sus datos detectados, incluida la fecha Expira en formato compacto y legible; el formulario mantiene el nombre opcional y elimina duración, opciones de días, texto de vencimiento de esa selección y sugerencias bajo el input.
 - Errores y cancelación no registran un dispositivo y el diálogo funciona con teclado y viewport móvil.
 
 **writeScope:**
 
-- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` — Implementar el diseño recibido y mantener el aspecto predeterminado actual si requiere variante.
-- `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Seleccionar la variante TwoFactor y conservar el wiring de estados de alta.
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` — Aplicar el mismo diseño compartido en TrustedDevice y TwoFactor, conservando el contrato y los estados del alta.
+- `resources/js/modules/setting/shared/utils/dateTime.ts` — Formatear la fecha de expiración en una variante corta para que se lea en la tarjeta responsiva.
 
 **validateCommand:**
 
 ```sh
-rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/shared/utils/dateTime.ts && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/shared/utils/dateTime.ts
 ```
 
 ### TASK-010: Verificar rendimiento, paridad de acciones y los dos rediseños
@@ -353,12 +353,12 @@ rtk git diff --check -- .ai/rules/frontend.md
 - Los registros soft-deleted quedan fuera de la relación por defecto; el payload los incluye en el límite reciente antes de habilitar Reactivar/Eliminar definitivamente.
 - El branch Expired existe en TrustedDevice, pero el matcher actual no devuelve expiraciones normales; la expansión de esa consulta queda fuera hasta contar con una prueba que confirme el contrato.
 - React StrictMode puede repetir efectos en desarrollo; Network QA distingue el entorno y los efectos se vuelven idempotentes según el estado de carga.
-- Un cambio visual al diálogo compartido puede alterar TrustedDevice; el alcance del diseño debe quedar decidido en TASK-009 y la variante actual debe conservarse.
+- El cambio visual de TASK-009 se aplica intencionalmente al diálogo compartido y debe revisarse desde ambas vistas.
 - Reimplementar acciones en lugar de reutilizar sus diálogos podría saltar validaciones; los seis casos usan configuración y validadores existentes.
 
 ## Ship Cut
 
-TASK-001 a TASK-007 forman el corte funcional de rendimiento y paridad. TASK-008 y TASK-009 requieren sus referencias antes de ejecución; SOC-43 no se considera terminado hasta que ambos rediseños, TASK-010 y la regla de proyecto de TASK-011 estén completos. No cerrar ni mover la tarea de Linear a Done antes del gate final.
+TASK-001 a TASK-007 forman el corte funcional de rendimiento y paridad. Las referencias de TASK-008 y TASK-009 ya fueron entregadas; SOC-43 no se considera terminado hasta que ambos rediseños, TASK-010 y la regla de proyecto de TASK-011 estén completos. No cerrar ni mover la tarea de Linear a Done antes del gate final.
 
 ## Test Coverage Map
 

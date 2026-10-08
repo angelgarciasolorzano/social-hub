@@ -6,24 +6,24 @@
     "status": "In Progress",
     "priority": "Medium",
     "url": "https://linear.app/social-hub-ang/issue/SOC-43/refactor-audit-and-optimize-twofactor-data-loading",
-    "context": "Auditar la carga Inertia de TwoFactor, clasificar props iniciales/opcionales y reducir consultas y solicitudes solo cuando la evidencia lo justifique. La expansión confirmada agrega dos rediseños pendientes de referencia y paridad de flujos/acciones de TrustedDevice en la vista TwoFactor."
+    "context": "Auditar la carga Inertia de TwoFactor, clasificar props iniciales/opcionales y reducir consultas y solicitudes solo cuando la evidencia lo justifique. La expansión confirmada agrega dos rediseños, paridad de flujos/acciones de TrustedDevice en la vista TwoFactor y un rediseño que aplica al diálogo compartido desde ambas vistas."
   },
   "planningMode": "EXPANSION",
   "executionStyle": "Por fases",
   "reviewDefault": "codex",
-  "overview": "Plan de SOC-43 para medir y optimizar la carga de TwoFactor y, por expansión confirmada, alinear la experiencia de alta y administración de dispositivos de confianza. Incluye la carga correcta de estados ya registrados, revocados y disponibles; las seis acciones con las validaciones ya existentes; y dos rediseños que esperan las referencias visuales que compartirá el usuario al llegar a cada tarea. Al cierre del plan se agregará una convención de tipado explícito para los hooks de React usados en TypeScript.",
-  "scopeChallenge": "EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conserva como base. Se agregan cambios puntuales en TwoFactor para recuperar dos solicitudes redundantes identificadas en el código, acceder a acciones de registros revocados y reusar los flujos de TrustedDevice. Los rediseños no se inventan en esta planificación: sus tareas quedan bloqueadas hasta recibir la referencia del usuario. TrustedDevice sigue siendo la referencia conductual; su tabla y reglas de seguridad no se rediseñan.",
+  "overview": "Plan de SOC-43 para medir y optimizar la carga de TwoFactor y, por expansión confirmada, alinear la experiencia de alta y administración de dispositivos de confianza. Incluye la carga correcta de estados ya registrados, revocados y disponibles; las seis acciones con las validaciones ya existentes; y dos rediseños basados en las referencias visuales entregadas por el usuario. Al cierre del plan se agregará una convención de tipado explícito para los hooks de React usados en TypeScript.",
+  "scopeChallenge": "EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conserva como base. Se agregan cambios puntuales en TwoFactor para recuperar dos solicitudes redundantes identificadas en el código, acceder a acciones de registros revocados y reusar los flujos de TrustedDevice. Los dos diseños fueron entregados: el de alta aplica al diálogo compartido desde TrustedDevice y TwoFactor. TrustedDevice sigue siendo la referencia conductual; su tabla y reglas de seguridad no se rediseñan.",
   "prerequisites": [
     "SOC-43 permanece In Progress hasta que se completen las optimizaciones y la verificación final.",
-    "Las referencias visuales de Fecha de activación y Agregar dispositivo de confianza se recibirán antes de ejecutar TASK-008 y TASK-009; no implementar esos cambios con diseños supuestos.",
-    "El rediseño de TrustedDeviceAddDialog puede afectar ambas vistas porque el componente es compartido. Al ejecutar TASK-009 se debe fijar el alcance del diseño y mantener el aspecto actual de TrustedDevice si la referencia corresponde solo a TwoFactor.",
+    "Las referencias visuales de Fecha de activación y Agregar dispositivo de confianza ya fueron entregadas y definen sus respectivos rediseños.",
+    "La referencia de Agregar dispositivo de confianza aplica al componente compartido TrustedDeviceAddDialog y debe verse igual desde TrustedDevice y TwoFactor.",
     "Las rutas y validaciones de dispositivos ya existen; se deben reutilizar los diálogos y endpoints actuales.",
     "No existe un runner de pruebas frontend en package.json; los slices usan Prettier/ESLint por archivo, tipos y QA manual de Network/UI.",
     "La optimización debe apoyarse en el baseline de Network de TASK-001, considerando React StrictMode en desarrollo."
   ],
   "nonGoals": [
     "Cambiar rutas, autorización, reglas de seguridad 2FA/TOTP, endpoints, persistencia o payloads de formularios existentes.",
-    "Rediseñar la tabla o el módulo TrustedDevice; solo cambiar su diálogo compartido si la referencia recibida lo incluye explícitamente.",
+    "Rediseñar la tabla o el módulo TrustedDevice; TASK-009 actualiza únicamente el diálogo compartido según la referencia entregada.",
     "Expandir la lista TwoFactor más allá de los tres dispositivos recientes que ya presenta.",
     "Cambiar la semántica del conteo de dispositivos no revocados.",
     "Agregar un runner JavaScript, dependencias, documentación adicional, instrumentación permanente o cambios de configuración.",
@@ -35,7 +35,7 @@
     "En el alta, undefined significa que la coincidencia aún carga, null significa que no hay coincidencia y un registro se clasifica como activo, revocado o expirado usando los mismos estados y diálogos de TrustedDevice.",
     "El estado activo habilita Ver/Renombrar/Renovar/Revocar; el revocado habilita Ver/Reactivar/Eliminar definitivamente; el resto de las opciones permanece deshabilitado como en la tabla.",
     "Reactivar conserva OTP/TOTP o código de recuperación; Revocar y Eliminar definitivamente conservan la confirmación de contraseña y aceptación de consecuencias.",
-    "Solo el diálogo de activación y la carga del alta cambian visualmente según las referencias entregadas; no se cambia la semántica de acciones ni de errores.",
+    "Solo el diálogo de activación y el diálogo compartido de alta cambian visualmente según las referencias entregadas; no se cambia la semántica de acciones ni de errores.",
     "Los props opcionales se solicitan al abrir la interacción que los necesita; las cargas fallidas muestran recuperación explícita y no se confunden con datos ausentes válidos.",
     "La consulta de coincidencia actual no retorna normalmente dispositivos expirados no revocados; no ampliar esa semántica sin una decisión respaldada por la prueba de servicio y el comportamiento de TrustedDevice."
   ],
@@ -66,7 +66,7 @@
     },
     {
       "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
-      "role": "Diálogo compartido de alta; conservar su variante visual de TrustedDevice."
+      "role": "Diálogo compartido de alta; aplicar su nueva referencia en ambas vistas."
     },
     {
       "path": "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
@@ -93,54 +93,37 @@
     {
       "id": "PHASE-1",
       "title": "Baseline de red y alcance",
-      "taskIds": [
-        "TASK-001"
-      ],
+      "taskIds": ["TASK-001"],
       "outcome": "Medir la carga inicial, las props parciales y las interacciones antes de tocar rendimiento."
     },
     {
       "id": "PHASE-2",
       "title": "Optimización y datos de dispositivos",
-      "taskIds": [
-        "TASK-002",
-        "TASK-003",
-        "TASK-004",
-        "TASK-005",
-        "TASK-006"
-      ],
+      "taskIds": ["TASK-002", "TASK-003", "TASK-004", "TASK-005", "TASK-006"],
       "outcome": "Reducir consultas/solicitudes duplicadas y alinear la resolución del flujo de alta."
     },
     {
       "id": "PHASE-3",
       "title": "Paridad de acciones",
-      "taskIds": [
-        "TASK-007"
-      ],
+      "taskIds": ["TASK-007"],
       "outcome": "Exponer y validar las seis acciones que ofrece TrustedDevice."
     },
     {
       "id": "PHASE-4",
-      "title": "Rediseños pendientes de referencia",
-      "taskIds": [
-        "TASK-008",
-        "TASK-009"
-      ],
-      "outcome": "Aplicar los dos diseños cuando el usuario los entregue, con variantes seguras para el diálogo compartido."
+      "title": "Rediseños visuales",
+      "taskIds": ["TASK-008", "TASK-009"],
+      "outcome": "Aplicar los dos diseños entregados y revisar el diálogo compartido desde TrustedDevice y TwoFactor."
     },
     {
       "id": "PHASE-5",
       "title": "Verificación final",
-      "taskIds": [
-        "TASK-010"
-      ],
+      "taskIds": ["TASK-010"],
       "outcome": "Cerrar con gates frontend/backend, comparación de Network y QA visual/funcional."
     },
     {
       "id": "PHASE-6",
       "title": "Convenciones del proyecto",
-      "taskIds": [
-        "TASK-011"
-      ],
+      "taskIds": ["TASK-011"],
       "outcome": "Registrar al cierre de SOC-43 la regla de tipado explícito para hooks de React."
     }
   ],
@@ -155,11 +138,7 @@
       "effort": "S",
       "agent": "general-purpose",
       "dependsOn": [],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "baseline"
-      ],
+      "labels": ["SOC-43", "TwoFactor", "baseline"],
       "acceptanceCriteria": [
         "La captura clasifica las props como iniciales, opcionales o diferidas y vincula cada prop opcional/diferida a la interacción que la necesita.",
         "La captura registra por interacción si se repiten el POST de configuración, la carga de códigos o las recargas de trustedDevices/currentDevice, incluidos sus iniciadores.",
@@ -180,14 +159,8 @@
       "type": "feature",
       "effort": "M",
       "agent": "laravel-senior-engineer",
-      "dependsOn": [
-        "TASK-001"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "TrustedDevice"
-      ],
+      "dependsOn": ["TASK-001"],
+      "labels": ["SOC-43", "TwoFactor", "TrustedDevice"],
       "acceptanceCriteria": [
         "Con 2FA desactivado, el payload conserva trustedDevicesCount con valor 0 y no ejecuta la consulta COUNT de dispositivos.",
         "Con 2FA activo, trustedDevicesCount sigue contando solo dispositivos no revocados y la lista devuelve hasta tres registros recientes incluyendo soft-deleted con deletedAt serializado.",
@@ -217,14 +190,8 @@
       "type": "refactor",
       "effort": "S",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-001"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "Inertia"
-      ],
+      "dependsOn": ["TASK-001"],
+      "labels": ["SOC-43", "TwoFactor", "Inertia"],
       "acceptanceCriteria": [
         "Visitar TwoFactor no solicita firstTrustedDevice mientras el diálogo Fecha de activación permanece cerrado.",
         "Abrir el diálogo solicita el prop una sola vez y reabrirlo con datos cargados no genera otra GET.",
@@ -252,14 +219,8 @@
       "type": "feature",
       "effort": "M",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-001"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "TrustedDevice"
-      ],
+      "dependsOn": ["TASK-001"],
+      "labels": ["SOC-43", "TwoFactor", "TrustedDevice"],
       "acceptanceCriteria": [
         "Abrir la lista produce una sola recarga parcial que incluye trustedDevices, currentDevicePreview y currentDeviceMatch.",
         "Mientras currentDeviceMatch sea undefined no se abre por error el diálogo de dispositivo ya registrado; null permite el diálogo de alta.",
@@ -289,14 +250,8 @@
       "type": "refactor",
       "effort": "S",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-001"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "recovery-codes"
-      ],
+      "dependsOn": ["TASK-001"],
+      "labels": ["SOC-43", "TwoFactor", "recovery-codes"],
       "acceptanceCriteria": [
         "Completar activación dispara una sola GET de códigos de recuperación.",
         "Una respuesta válida con lista vacía no dispara una segunda GET automática.",
@@ -329,14 +284,8 @@
       "type": "refactor",
       "effort": "M",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-001"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "Fortify"
-      ],
+      "dependsOn": ["TASK-001"],
+      "labels": ["SOC-43", "TwoFactor", "Fortify"],
       "acceptanceCriteria": [
         "Un envío válido genera una sola POST a /user/two-factor-authentication y obtiene los datos de configuración necesarios.",
         "Una respuesta de error no genera una segunda POST automática y deja disponible un reintento explícito.",
@@ -366,16 +315,8 @@
       "type": "feature",
       "effort": "M",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-002",
-        "TASK-004"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "TrustedDevice",
-        "actions"
-      ],
+      "dependsOn": ["TASK-002", "TASK-004"],
+      "labels": ["SOC-43", "TwoFactor", "TrustedDevice", "actions"],
       "acceptanceCriteria": [
         "Cada fila ofrece Ver, Renombrar, Renovar, Revocar, Reactivar y Eliminar definitivamente; el estado activo habilita las primeras cuatro y el revocado habilita Ver, Reactivar y Eliminar definitivamente.",
         "Las acciones incompatibles se muestran deshabilitadas y no abren diálogos ni ejecutan endpoints.",
@@ -398,21 +339,15 @@
     },
     {
       "id": "TASK-008",
-      "phase": "Rediseños pendientes de referencia",
+      "phase": "Rediseños visuales",
       "title": "Rediseñar el diálogo Fecha de activación con la referencia del usuario",
       "description": "Esperar a que el usuario comparta el diseño al llegar a este paso. Implementar la referencia en el diálogo existente sin inventar la composición visual antes de recibirla. Preservar el contrato de datos, la carga bajo demanda, el cierre accesible y el comportamiento de error/reintento. La flecha del alert navega a dispositivos de confianza con Wayfinder y comunica el destino mediante Tooltip.",
       "priority": "P2",
       "type": "feature",
       "effort": "M",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-003"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "design"
-      ],
+      "dependsOn": ["TASK-003"],
+      "labels": ["SOC-43", "TwoFactor", "design"],
       "acceptanceCriteria": [
         "La referencia visual del usuario está disponible antes de cambiar el JSX y la implementación corresponde a sus elementos y estados indicados.",
         "La fecha y los datos mostrados siguen correspondiendo al dispositivo de activación, con estados de carga/error y cierre por teclado operativos.",
@@ -432,42 +367,33 @@
     },
     {
       "id": "TASK-009",
-      "phase": "Rediseños pendientes de referencia",
+      "phase": "Rediseños visuales",
       "title": "Rediseñar Agregar dispositivo de confianza con la referencia del usuario",
-      "description": "Esperar a que el usuario comparta el diseño al llegar a este paso. El diálogo TrustedDeviceAddDialog es compartido: aplicar el diseño a TwoFactor y preservar la apariencia actual de TrustedDevice mediante una variante contextual si la referencia es específica de TwoFactor. Si la referencia es expresamente común, actualizar el componente compartido y revisar ambos call sites.",
+      "description": "Aplicar la referencia al body del componente compartido TrustedDeviceAddDialog con el mismo diseño desde TrustedDevice y TwoFactor. Mantener la tarjeta detectada y su fecha Expira, el nombre del dispositivo, la alerta personal y el flujo existente. Omitir Confiar durante, sus días, su texto de expiración y las sugerencias bajo el input.",
       "priority": "P2",
       "type": "feature",
       "effort": "M",
       "agent": "react-vite-tailwind-engineer",
-      "dependsOn": [
-        "TASK-004",
-        "TASK-007"
-      ],
-      "labels": [
-        "SOC-43",
-        "TwoFactor",
-        "TrustedDevice",
-        "design"
-      ],
+      "dependsOn": ["TASK-004", "TASK-007"],
+      "labels": ["SOC-43", "TwoFactor", "TrustedDevice", "design"],
       "acceptanceCriteria": [
-        "El diseño del usuario está disponible antes de cambiar la interfaz y su alcance (TwoFactor o ambas pantallas) queda explícito en el cambio.",
-        "El alta conserva el flujo de nombre, validación y envío existentes; si el rediseño es exclusivo de TwoFactor, TrustedDevice mantiene su apariencia actual.",
+        "El mismo diseño aparece desde TrustedDevice y TwoFactor porque ambos usan el componente compartido, sin variantes por pantalla.",
+        "La tarjeta conserva sus datos detectados, incluida la fecha Expira en formato compacto y legible; el formulario mantiene el nombre opcional y elimina duración, opciones de días, texto de vencimiento de esa selección y sugerencias bajo el input.",
         "Errores y cancelación no registran un dispositivo y el diálogo funciona con teclado y viewport móvil."
       ],
       "filesToModify": [
         "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
-        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx"
+        "resources/js/modules/setting/shared/utils/dateTime.ts"
       ],
       "filesToCreate": [],
       "writeScope": [
-        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
-        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx"
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx"
       ],
       "fileRoles": {
-        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx": "Implementar el diseño recibido y mantener el aspecto predeterminado actual si requiere variante.",
-        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx": "Seleccionar la variante TwoFactor y conservar el wiring de estados de alta."
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx": "Aplicar el mismo diseño compartido en TrustedDevice y TwoFactor, conservando el contrato y los estados del alta.",
+        "resources/js/modules/setting/shared/utils/dateTime.ts": "Formatear la fecha de expiración en una variante corta para que se lea en la tarjeta responsiva."
       },
-      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx"
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/shared/utils/dateTime.ts && rtk npm exec -- eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/shared/utils/dateTime.ts"
     },
     {
       "id": "TASK-010",
@@ -488,11 +414,7 @@
         "TASK-008",
         "TASK-009"
       ],
-      "labels": [
-        "SOC-43",
-        "QA",
-        "TwoFactor"
-      ],
+      "labels": ["SOC-43", "QA", "TwoFactor"],
       "acceptanceCriteria": [
         "La matriz final compara el baseline con el resultado y confirma que cada optimización eliminó la solicitud/consulta redundante identificada sin retrasar datos necesarios.",
         "La matriz de estados verifica dispositivo nuevo, activo, revocado, expirado recibido, lista vacía y carga fallida; los formularios conservan errores de OTP/contraseña/aceptación.",
@@ -513,26 +435,16 @@
       "type": "chore",
       "effort": "S",
       "agent": "general-purpose",
-      "dependsOn": [
-        "TASK-010"
-      ],
-      "labels": [
-        "SOC-43",
-        "conventions",
-        "React"
-      ],
+      "dependsOn": ["TASK-010"],
+      "labels": ["SOC-43", "conventions", "React"],
       "acceptanceCriteria": [
         ".ai/rules/frontend.md contiene una regla breve y aplicable sobre tipado explícito en hooks de React escritos en TypeScript.",
         "La regla incluye ejemplos de useState<T> y useRef<T> y aclara que aplica a los demás hooks con tipos genéricos o de callback disponibles.",
         "No se modifica ninguna lógica de producto al registrar la regla."
       ],
-      "filesToModify": [
-        ".ai/rules/frontend.md"
-      ],
+      "filesToModify": [".ai/rules/frontend.md"],
       "filesToCreate": [],
-      "writeScope": [
-        ".ai/rules/frontend.md"
-      ],
+      "writeScope": [".ai/rules/frontend.md"],
       "fileRoles": {
         ".ai/rules/frontend.md": "Agregar la convención autorizada de tipado explícito para hooks de React."
       },
@@ -541,32 +453,14 @@
   ],
   "dependencyMap": {
     "TASK-001": [],
-    "TASK-002": [
-      "TASK-001"
-    ],
-    "TASK-003": [
-      "TASK-001"
-    ],
-    "TASK-004": [
-      "TASK-001"
-    ],
-    "TASK-005": [
-      "TASK-001"
-    ],
-    "TASK-006": [
-      "TASK-001"
-    ],
-    "TASK-007": [
-      "TASK-002",
-      "TASK-004"
-    ],
-    "TASK-008": [
-      "TASK-003"
-    ],
-    "TASK-009": [
-      "TASK-004",
-      "TASK-007"
-    ],
+    "TASK-002": ["TASK-001"],
+    "TASK-003": ["TASK-001"],
+    "TASK-004": ["TASK-001"],
+    "TASK-005": ["TASK-001"],
+    "TASK-006": ["TASK-001"],
+    "TASK-007": ["TASK-002", "TASK-004"],
+    "TASK-008": ["TASK-003"],
+    "TASK-009": ["TASK-004", "TASK-007"],
     "TASK-010": [
       "TASK-002",
       "TASK-003",
@@ -577,45 +471,18 @@
       "TASK-008",
       "TASK-009"
     ],
-    "TASK-011": [
-      "TASK-010"
-    ]
+    "TASK-011": ["TASK-010"]
   },
-  "criticalPath": [
-    "TASK-001",
-    "TASK-004",
-    "TASK-007",
-    "TASK-009",
-    "TASK-010",
-    "TASK-011"
-  ],
+  "criticalPath": ["TASK-001", "TASK-004", "TASK-007", "TASK-009", "TASK-010", "TASK-011"],
   "executionSummary": {
     "taskCount": 11,
     "phaseCount": 6,
-    "criticalPath": [
-      "TASK-001",
-      "TASK-004",
-      "TASK-007",
-      "TASK-009",
-      "TASK-010",
-      "TASK-011"
-    ],
+    "criticalPath": ["TASK-001", "TASK-004", "TASK-007", "TASK-009", "TASK-010", "TASK-011"],
     "criticalPathLength": 6,
     "parallelism": {
-      "afterBaseline": [
-        "TASK-002",
-        "TASK-003",
-        "TASK-004",
-        "TASK-005",
-        "TASK-006"
-      ],
-      "designTasks": [
-        "TASK-008",
-        "TASK-009"
-      ],
-      "projectRuleTask": [
-        "TASK-011"
-      ]
+      "afterBaseline": ["TASK-002", "TASK-003", "TASK-004", "TASK-005", "TASK-006"],
+      "designTasks": ["TASK-008", "TASK-009"],
+      "projectRuleTask": ["TASK-011"]
     }
   }
 }
