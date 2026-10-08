@@ -61,31 +61,32 @@ function TwoFactorActivationDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Card className="gap-0 rounded-2xl py-0 shadow-none dark:bg-input/20">
+        <Card className="gap-0 py-0 shadow-xs dark:bg-input/20">
           <CardContent className="px-0">
-            <dl className="grid" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+            <dl
+              className="grid items-center justify-center"
+              style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
+            >
               <div
-                className="flex flex-col gap-1 border-b border-border px-6 py-6"
+                className="flex flex-col items-center gap-1 border-b border-border px-6 py-6"
                 style={{ borderRight: "1px solid var(--border)" }}
               >
-                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                  Hora
-                </dt>
-                <dd className="font-semibold">{activationTime}</dd>
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground">Hora</dt>
+                <dd className="text-sm font-semibold">{activationTime}</dd>
               </div>
 
-              <div className="flex flex-col gap-1 border-b border-border px-6 py-6">
-                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+              <div className="flex flex-col items-center gap-1 border-b border-border px-6 py-6">
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground">
                   Método
                 </dt>
-                <dd className="font-semibold">{TWO_FACTOR_METHOD_LABEL}</dd>
+                <dd className="text-sm font-semibold">{TWO_FACTOR_METHOD_LABEL}</dd>
               </div>
 
-              <div className="flex flex-col gap-1 px-6 py-6" style={{ gridColumn: "1 / -1" }}>
-                <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+              <div className="flex justify-center gap-2 px-6 py-6" style={{ gridColumn: "1 / -1" }}>
+                <dt className="text-sm font-semibold tracking-wide text-muted-foreground">
                   Fecha de activación
                 </dt>
-                <dd className="font-semibold">{activationDate}</dd>
+                <dd className="text-sm font-semibold">{activationDate}</dd>
               </div>
             </dl>
           </CardContent>
