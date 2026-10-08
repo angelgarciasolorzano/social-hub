@@ -55,6 +55,7 @@ import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDialog } from "@/shared/hooks";
 
+import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
@@ -125,30 +126,28 @@ function TwoFactorDevices(): JSX.Element {
 
     hasRequestedTrustedDeviceDataRef.current = true;
 
-    setTimeout(() => {
-      router.reload({
-        only: ["trustedDevices", "currentDevicePreview", "currentDeviceMatch"],
-        onError: () => {
-          setHasTrustedDeviceDataLoadError(true);
-        },
-        onHttpException: () => {
-          setHasTrustedDeviceDataLoadError(true);
+    router.reload({
+      only: ["trustedDevices", "currentDevicePreview", "currentDeviceMatch"],
+      onError: () => {
+        setHasTrustedDeviceDataLoadError(true);
+      },
+      onHttpException: () => {
+        setHasTrustedDeviceDataLoadError(true);
 
-          return false;
-        },
-        onNetworkError: () => {
-          setHasTrustedDeviceDataLoadError(true);
+        return false;
+      },
+      onNetworkError: () => {
+        setHasTrustedDeviceDataLoadError(true);
 
-          return false;
-        },
-        onCancel: () => {
-          setHasTrustedDeviceDataLoadError(true);
-        },
-        onFinish: () => {
-          setHasFreshTrustedDeviceData(true);
-        },
-      });
-    }, 10000);
+        return false;
+      },
+      onCancel: () => {
+        setHasTrustedDeviceDataLoadError(true);
+      },
+      onFinish: () => {
+        setHasFreshTrustedDeviceData(true);
+      },
+    });
   }, [hasLoadedTrustedDeviceData, hasTrustedDeviceDataLoadError]);
 
   const handleRetryTrustedDeviceDataLoad = (): void => {
@@ -332,7 +331,7 @@ interface TwoFactorDevicesLoadErrorProps {
 
 function TwoFactorDevicesLoadError({ onRetry }: TwoFactorDevicesLoadErrorProps): JSX.Element {
   return (
-    <Alert variant="destructive">
+    <Alert className={cn(alertVariants.destructive, "my-2")}>
       <AlertTriangleIcon aria-hidden="true" />
       <AlertTitle>No se pudieron cargar los dispositivos de confianza</AlertTitle>
 

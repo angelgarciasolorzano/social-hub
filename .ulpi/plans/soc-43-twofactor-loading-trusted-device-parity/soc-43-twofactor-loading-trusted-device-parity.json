@@ -304,18 +304,21 @@
       ],
       "filesToModify": [
         "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx",
         "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx"
       ],
       "filesToCreate": [],
       "writeScope": [
         "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx",
         "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx"
       ],
       "fileRoles": {
         "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts": "Mantener el único punto de carga y exponer resultado/error.",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx": "Pasar el estado de carga y la función centralizada al paso de éxito.",
         "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx": "Consumir el resultado sin iniciar un fetch duplicado y conservar reintento explícito."
       },
-      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx"
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx"
     },
     {
       "id": "TASK-006",

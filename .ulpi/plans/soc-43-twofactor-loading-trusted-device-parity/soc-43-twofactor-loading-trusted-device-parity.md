@@ -179,12 +179,13 @@ Dejar un único responsable de solicitar los códigos al completar la activació
 **writeScope:**
 
 - `resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts` — Mantener el único punto de carga y exponer resultado/error.
+- `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx` — Pasar el estado de carga y la función centralizada al paso de éxito.
 - `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx` — Consumir el resultado sin iniciar un fetch duplicado y conservar reintento explícito.
 
 **validateCommand:**
 
 ```sh
-rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/TwoFactorSetupDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx
 ```
 
 ### TASK-006: Eliminar la solicitud duplicada al iniciar la configuración 2FA

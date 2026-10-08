@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DEFAULT_TWO_FACTOR_ACTIVATION_STEP,
@@ -20,6 +20,9 @@ interface UseTwoFactorActivationFlowParams {
 interface UseTwoFactorActivationFlowReturn {
   step: TwoFactorActivationStep;
   modalConfig: { description: string; title: string };
+  hasFinishedRecoveryCodesRequest: boolean;
+  isLoadingRecoveryCodes: boolean;
+  loadRecoveryCodes: () => Promise<void>;
   handleChooseMethodContinue: () => void;
   handleClose: () => void;
   handleManualSetupBack: () => void;
@@ -46,6 +49,12 @@ export function useTwoFactorActivationFlow(
   const [step, setStep] = useState<TwoFactorActivationStep>(DEFAULT_TWO_FACTOR_ACTIVATION_STEP);
 
   const [previousStep, setPreviousStep] = useState<TwoFactorActivationStep | null>(null);
+  const [isLoadingRecoveryCodes, setIsLoadingRecoveryCodes] = useState<boolean>(false);
+
+  const [hasFinishedRecoveryCodesRequest, setHasFinishedRecoveryCodesRequest] =
+    useState<boolean>(false);
+
+  const recoveryCodesRequestRef = useRef<Promise<void> | null>(null);
 
   const modalConfig = useMemo<{ description: string; title: string }>(() => {
     switch (step) {
@@ -85,6 +94,24 @@ export function useTwoFactorActivationFlow(
     }
   }, [twoFactorEnabled, clearSetupData]);
 
+  const loadRecoveryCodes = useCallback((): Promise<void> => {
+    if (recoveryCodesRequestRef.current) {
+      return recoveryCodesRequestRef.current;
+    }
+
+    setIsLoadingRecoveryCodes(true);
+
+    const request = fetchRecoveryCodes().finally(() => {
+      recoveryCodesRequestRef.current = null;
+      setIsLoadingRecoveryCodes(false);
+      setHasFinishedRecoveryCodesRequest(true);
+    });
+
+    recoveryCodesRequestRef.current = request;
+
+    return request;
+  }, [fetchRecoveryCodes]);
+
   const goToStep = useCallback(
     (next: TwoFactorActivationStep): void => {
       setPreviousStep(step);
@@ -94,9 +121,9 @@ export function useTwoFactorActivationFlow(
   );
 
   const goToSuccess = useCallback((): void => {
-    void fetchRecoveryCodes();
+    void loadRecoveryCodes();
     setStep(twoFactorActivationStepKey.success);
-  }, [fetchRecoveryCodes]);
+  }, [loadRecoveryCodes]);
 
   const handleChooseMethodContinue = useCallback((): void => {
     if (requiresConfirmation) {
@@ -140,7 +167,7 @@ export function useTwoFactorActivationFlow(
     onClose();
   }, [resetModalState, onClose]);
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!isOpen) {
       const timeoutId = setTimeout(() => {
         resetModalState();
@@ -159,6 +186,7 @@ export function useTwoFactorActivationFlow(
   }, [isOpen, qrCodeSvg, fetchSetupData, resetModalState]);
 
   return {
+    hasFinishedRecoveryCodesRequest,
     handleChooseMethodContinue,
     handleClose,
     handleManualSetupBack,
@@ -166,6 +194,8 @@ export function useTwoFactorActivationFlow(
     handleOpenManualSetup,
     handleOtpBack,
     handleOtpSuccess,
+    isLoadingRecoveryCodes,
+    loadRecoveryCodes,
     modalConfig,
     step,
   };

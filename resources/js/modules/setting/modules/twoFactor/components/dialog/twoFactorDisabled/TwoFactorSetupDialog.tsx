@@ -66,6 +66,9 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
     handleOpenManualSetup,
     handleOtpBack,
     handleOtpSuccess,
+    hasFinishedRecoveryCodesRequest,
+    isLoadingRecoveryCodes,
+    loadRecoveryCodes,
     modalConfig,
     step,
   } = useTwoFactorActivationFlow({
@@ -79,7 +82,7 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
     twoFactorEnabled,
   });
 
-  useEffect(() => {
+  useEffect((): void => {
     if (isOpen) {
       dialogTitleRef.current?.focus();
     }
@@ -119,7 +122,9 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
         return (
           <TwoFactorSuccessStep
             errors={errors}
-            fetchRecoveryCodes={fetchRecoveryCodes}
+            fetchRecoveryCodes={loadRecoveryCodes}
+            hasFinishedRecoveryCodesRequest={hasFinishedRecoveryCodesRequest}
+            isLoadingRecoveryCodes={isLoadingRecoveryCodes}
             onClose={handleClose}
             recoveryCodesList={recoveryCodesList}
           />
