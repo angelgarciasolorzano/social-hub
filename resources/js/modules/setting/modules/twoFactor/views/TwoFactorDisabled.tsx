@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { enable } from "@/shared/wayfinder/routes/two-factor";
 
@@ -106,6 +107,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
         ) : (
           <Form
             {...enable.form()}
+            onError={() => toast.error("No se pudo activar 2FA. Inténtalo de nuevo.")}
             onSuccess={onActivate}
             className="w-full cursor-pointer sm:w-auto"
           >
@@ -115,7 +117,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
                 className="w-full cursor-pointer sm:w-auto"
                 disabled={processing}
               >
-                Activar 2FA
+                {processing ? "Activando..." : "Activar 2FA"}
               </Button>
             )}
           </Form>
