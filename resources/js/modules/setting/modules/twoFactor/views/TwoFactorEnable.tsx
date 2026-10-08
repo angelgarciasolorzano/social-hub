@@ -68,6 +68,9 @@ interface SecurityDialogState extends DialogClosingState {
   kind: SecurityDialogKind;
 }
 
+type TwoFactorSharedSecurityAction =
+  TwoFactorSecurityOptionKey | typeof twoFactorManageActionKey.viewCodes;
+
 type TwoFactorEnablePageProps = SharedData & {
   twoFactorConfirmedAt?: string | null;
 };
@@ -95,17 +98,10 @@ function TwoFactorEnable(): JSX.Element {
     activationDetailsDialog.setOpen(true);
   };
 
-  const handleSecurityDialogClose = createDialogCloseHandler(securityDialog);
-
-  const handleSecurityDialogOpenChange = (open: boolean): void => {
-    if (!open) {
-      handleSecurityDialogClose();
-    }
-  };
-
-  const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey) => {
-    switch (optionKey) {
+  const handleSharedSecurityAction = (action: TwoFactorSharedSecurityAction): void => {
+    switch (action) {
       case twoFactorSecurityOptionsKey.backupCodes:
+      case twoFactorManageActionKey.viewCodes:
         setSelectedContent("codes");
 
         break;
@@ -125,31 +121,26 @@ function TwoFactorEnable(): JSX.Element {
     }
   };
 
-  const handleManageAction = (action: TwoFactorManageActionKey): void => {
-    switch (action) {
-      case twoFactorManageActionKey.viewCodes:
-        setSelectedContent("codes");
+  const handleSecurityDialogClose = createDialogCloseHandler(securityDialog);
 
-        break;
-
-      case twoFactorManageActionKey.regenerateCodes:
-        securityDialog.show({ kind: "regenerateCodes", closing: false });
-
-        break;
-
-      case twoFactorManageActionKey.viewDevices:
-        handleViewTrustedDevices();
-
-        break;
-
-      case twoFactorManageActionKey.disable2FA:
-        securityDialog.show({ kind: "disableTwoFactor", closing: false });
-
-        break;
-
-      default:
-        break;
+  const handleSecurityDialogOpenChange = (open: boolean): void => {
+    if (!open) {
+      handleSecurityDialogClose();
     }
+  };
+
+  const handleSecurityOptionClick = (optionKey: TwoFactorSecurityOptionKey): void => {
+    handleSharedSecurityAction(optionKey);
+  };
+
+  const handleManageAction = (action: TwoFactorManageActionKey): void => {
+    if (action === twoFactorManageActionKey.viewDevices) {
+      handleViewTrustedDevices();
+
+      return;
+    }
+
+    handleSharedSecurityAction(action);
   };
 
   const renderSecurityDialog = (): JSX.Element | null => {
