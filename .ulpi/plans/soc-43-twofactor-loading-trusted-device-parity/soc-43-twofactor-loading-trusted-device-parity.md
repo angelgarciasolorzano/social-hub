@@ -64,11 +64,13 @@ Capturar en navegador los recorridos de TwoFactor activo e inactivo antes de opt
 **Agent:** general-purpose
 **Priority:** P0
 **Acceptance Criteria:**
+
 - La captura clasifica las props como iniciales, opcionales o diferidas y vincula cada prop opcional/diferida a la interacción que la necesita.
 - La captura registra por interacción si se repiten el POST de configuración, la carga de códigos o las recargas de trustedDevices/currentDevice, incluidos sus iniciadores.
 - Cada optimización posterior se vincula a una solicitud o consulta redundante observada; las interacciones fallidas o canceladas no deben disparar operaciones adicionales.
 
 **writeScope:**
+
 - Sin archivos de implementación.
 
 **validateCommand:**
@@ -88,11 +90,13 @@ Ajustar el payload de TwoFactor para no consultar el conteo de dispositivos cuan
 **Priority:** P1
 **Depends on:** TASK-001
 **Acceptance Criteria:**
+
 - Con 2FA desactivado, el payload conserva trustedDevicesCount con valor 0 y no ejecuta la consulta COUNT de dispositivos.
 - Con 2FA activo, trustedDevicesCount sigue contando solo dispositivos no revocados y la lista devuelve hasta tres registros recientes incluyendo soft-deleted con deletedAt serializado.
 - La prueba cubre una lista vacía y una combinación de dispositivos activos y revocados sin alterar el contrato de props existente.
 
 **writeScope:**
+
 - `app/User/Modules/TwoFactor/Controllers/TwoFactorController.php` — Condicionar el conteo por estado de 2FA e incluir soft-deleted solo en la lista limitada.
 - `app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php` — Probar el payload, el conteo y los casos vacío/activo/revocado.
 
@@ -113,17 +117,20 @@ Mover la recarga del prop opcional firstTrustedDevice desde el montaje del diál
 **Priority:** P1
 **Depends on:** TASK-001
 **Acceptance Criteria:**
+
 - Visitar TwoFactor no solicita firstTrustedDevice mientras el diálogo Fecha de activación permanece cerrado.
 - Abrir el diálogo solicita el prop una sola vez y reabrirlo con datos cargados no genera otra GET.
 - Si la carga falla, el diálogo no presenta datos vacíos como si fueran válidos y ofrece una ruta de reintento.
+- Los hooks de React usados por este diálogo declaran explícitamente el tipo de sus valores, por ejemplo `useState<boolean>` y `useRef<boolean>`.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx` — Controlar carga opcional según apertura y representar carga/error/reintento.
 
 **validateCommand:**
 
 ```sh
-rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx
+rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx && rtk npm run types
 ```
 
 ### TASK-004: Unificar la carga de la lista y resolver correctamente el alta
@@ -137,11 +144,13 @@ Cargar trustedDevices, currentDevicePreview y currentDeviceMatch en una sola rec
 **Priority:** P1
 **Depends on:** TASK-001
 **Acceptance Criteria:**
+
 - Abrir la lista produce una sola recarga parcial que incluye trustedDevices, currentDevicePreview y currentDeviceMatch.
 - Mientras currentDeviceMatch sea undefined no se abre por error el diálogo de dispositivo ya registrado; null permite el diálogo de alta.
 - Una coincidencia activa abre AlreadyRegistered, una revocada abre el diálogo Revoked y una coincidencia inactiva recibida abre Expired; cancelar o fallar la carga no registra el dispositivo.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx` — Solicitar en una sola recarga los props que necesita la lista.
 - `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Representar la carga pendiente y resolver los cuatro estados de alta con los diálogos compartidos.
 
@@ -162,11 +171,13 @@ Dejar un único responsable de solicitar los códigos al completar la activació
 **Priority:** P1
 **Depends on:** TASK-001
 **Acceptance Criteria:**
+
 - Completar activación dispara una sola GET de códigos de recuperación.
 - Una respuesta válida con lista vacía no dispara una segunda GET automática.
 - Ante una respuesta fallida el paso de éxito comunica el fallo y permite reintentar sin duplicar una solicitud ya en curso.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts` — Mantener el único punto de carga y exponer resultado/error.
 - `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx` — Consumir el resultado sin iniciar un fetch duplicado y conservar reintento explícito.
 
@@ -187,11 +198,13 @@ Conservar una única llamada al endpoint Fortify de configuración por envío de
 **Priority:** P1
 **Depends on:** TASK-001
 **Acceptance Criteria:**
+
 - Un envío válido genera una sola POST a /user/two-factor-authentication y obtiene los datos de configuración necesarios.
 - Una respuesta de error no genera una segunda POST automática y deja disponible un reintento explícito.
 - La verificación OTP, los mensajes de error y la navegación por los pasos existentes se conservan.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx` — Iniciar el flujo de configuración con un único submit.
 - `resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth.ts` — Mantener la petición y el estado de respuesta en un único responsable.
 
@@ -212,11 +225,13 @@ Reutilizar la configuración de acciones y sus condiciones de TrustedDevice en l
 **Priority:** P1
 **Depends on:** TASK-002, TASK-004
 **Acceptance Criteria:**
+
 - Cada fila ofrece Ver, Renombrar, Renovar, Revocar, Reactivar y Eliminar definitivamente; el estado activo habilita las primeras cuatro y el revocado habilita Ver, Reactivar y Eliminar definitivamente.
 - Las acciones incompatibles se muestran deshabilitadas y no abren diálogos ni ejecutan endpoints.
 - Reactivar reutiliza la validación OTP existente; Revocar y Eliminar definitivamente conservan contraseña y aceptación de consecuencias; fallos de autorización/validación permanecen visibles.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/twoFactor/data/twoFactorEnable.ts` — Usar la configuración compartida de las seis acciones y condiciones por estado.
 - `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Renderizar las opciones y conectar Reactivar/Eliminar definitivamente con los diálogos existentes.
 
@@ -237,11 +252,13 @@ Esperar a que el usuario comparta el diseño al llegar a este paso. Implementar 
 **Priority:** P2
 **Depends on:** TASK-003
 **Acceptance Criteria:**
+
 - La referencia visual del usuario está disponible antes de cambiar el JSX y la implementación corresponde a sus elementos y estados indicados.
 - La fecha y los datos mostrados siguen correspondiendo al dispositivo de activación, con estados de carga/error y cierre por teclado operativos.
 - El rediseño no añade una petición al montar la pantalla ni cambia props/endpoints.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx` — Aplicar el diseño recibido sobre el diálogo TwoFactor existente.
 
 **validateCommand:**
@@ -261,11 +278,13 @@ Esperar a que el usuario comparta el diseño al llegar a este paso. El diálogo 
 **Priority:** P2
 **Depends on:** TASK-004, TASK-007
 **Acceptance Criteria:**
+
 - El diseño del usuario está disponible antes de cambiar la interfaz y su alcance (TwoFactor o ambas pantallas) queda explícito en el cambio.
 - El alta conserva el flujo de nombre, validación y envío existentes; si el rediseño es exclusivo de TwoFactor, TrustedDevice mantiene su apariencia actual.
 - Errores y cancelación no registran un dispositivo y el diálogo funciona con teclado y viewport móvil.
 
 **writeScope:**
+
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` — Implementar el diseño recibido y mantener el aspecto predeterminado actual si requiere variante.
 - `resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx` — Seleccionar la variante TwoFactor y conservar el wiring de estados de alta.
 
@@ -286,17 +305,45 @@ Repetir Network QA en activo/inactivo y flujos de activación, códigos y dispos
 **Priority:** P1
 **Depends on:** TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009
 **Acceptance Criteria:**
+
 - La matriz final compara el baseline con el resultado y confirma que cada optimización eliminó la solicitud/consulta redundante identificada sin retrasar datos necesarios.
 - La matriz de estados verifica dispositivo nuevo, activo, revocado, expirado recibido, lista vacía y carga fallida; los formularios conservan errores de OTP/contraseña/aceptación.
 - Los dos diálogos coinciden con las referencias recibidas en desktop/móvil y funcionan con teclado; TrustedDevice conserva el alcance visual acordado.
 
 **writeScope:**
+
 - Sin archivos de implementación.
 
 **validateCommand:**
 
 ```sh
 rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk composer doctor
+```
+
+### TASK-011: Agregar la regla de tipado explícito para hooks de React
+
+Al cerrar SOC-43, registrar en las reglas frontend del proyecto que los hooks de React en TypeScript deben declarar explícitamente sus tipos cuando la API lo permita. Incluir estado y referencias (`useState<T>`, `useRef<T>`) y los tipos de valor o callback de otros hooks (`useMemo`, `useCallback`, etc.); no depender de inferencia para esos contratos.
+
+**Phase:** Convenciones del proyecto
+**Type:** chore
+**Effort:** S
+**Agent:** general-purpose
+**Priority:** P2
+**Depends on:** TASK-010
+**Acceptance Criteria:**
+
+- `.ai/rules/frontend.md` contiene una regla breve y aplicable sobre tipado explícito en hooks de React escritos en TypeScript.
+- La regla incluye ejemplos de `useState<T>` y `useRef<T>` y aclara que aplica a los demás hooks con tipos genéricos o de callback disponibles.
+- No se modifica ninguna lógica de producto al registrar la regla.
+
+**writeScope:**
+
+- `.ai/rules/frontend.md` — Agregar la convención autorizada de tipado explícito para hooks de React.
+
+**validateCommand:**
+
+```sh
+rtk git diff --check -- .ai/rules/frontend.md
 ```
 
 ## Failure Modes
@@ -310,7 +357,7 @@ rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk n
 
 ## Ship Cut
 
-TASK-001 a TASK-007 forman el corte funcional de rendimiento y paridad. TASK-008 y TASK-009 requieren sus referencias antes de ejecución; SOC-43 no se considera terminado hasta que ambos rediseños y TASK-010 estén completos. No cerrar ni mover la tarea de Linear a Done antes del gate final.
+TASK-001 a TASK-007 forman el corte funcional de rendimiento y paridad. TASK-008 y TASK-009 requieren sus referencias antes de ejecución; SOC-43 no se considera terminado hasta que ambos rediseños, TASK-010 y la regla de proyecto de TASK-011 estén completos. No cerrar ni mover la tarea de Linear a Done antes del gate final.
 
 ## Test Coverage Map
 
@@ -323,9 +370,10 @@ TASK-001 a TASK-007 forman el corte funcional de rendimiento y paridad. TASK-008
 ## Execution Summary
 
 - Modo: EXPANSION; revisión predeterminada: codex.
-- Tareas: 10 en 5 fases.
-- Ruta crítica (5): TASK-001 → TASK-004 → TASK-007 → TASK-009 → TASK-010.
+- Tareas: 11 en 6 fases.
+- Ruta crítica (6): TASK-001 → TASK-004 → TASK-007 → TASK-009 → TASK-010 → TASK-011.
 - Tras el baseline pueden avanzar en paralelo TASK-002 a TASK-006; los rediseños se desbloquean al recibir sus referencias.
+- La regla de tipado explícito de hooks se agrega al final, después de la verificación global de SOC-43.
 - Prerrequisitos principales: diseño del usuario en cada paso, endpoints/validaciones actuales y baseline Network.
 - No-goals principales: seguridad/rutas, rediseño de TrustedDevice fuera del diálogo compartido acordado, instrumentación permanente y nuevo runner.
 
@@ -341,7 +389,6 @@ TASK-001 a TASK-007 forman el corte funcional de rendimiento y paridad. TASK-008
 - TASK-008 ← TASK-003
 - TASK-009 ← TASK-004, TASK-007
 - TASK-010 ← TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009
+- TASK-011 ← TASK-010
 
-Ruta crítica: TASK-001 → TASK-004 → TASK-007 → TASK-009 → TASK-010.
-
-
+Ruta crítica: TASK-001 → TASK-004 → TASK-007 → TASK-009 → TASK-010 → TASK-011.

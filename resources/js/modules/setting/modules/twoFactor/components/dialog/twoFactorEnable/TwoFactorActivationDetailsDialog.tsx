@@ -1,4 +1,4 @@
-import { type JSX, useEffect } from "react";
+import { type JSX, useEffect, useRef, useState } from "react";
 
 import { router, usePage } from "@inertiajs/react";
 
@@ -24,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { cn } from "@/shared/lib";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -68,19 +69,59 @@ function TwoFactorActivationDetailsDialog({
   confirmedAt,
 }: TwoFactorActivationDetailsDialogProps): JSX.Element {
   const dialogFocusRestoration = useDialogFocusRestoration();
-  const { firstTrustedDevice = null } = usePage<TwoFactorEnablePageProps>().props;
+
+  const { firstTrustedDevice } = usePage<TwoFactorEnablePageProps>().props;
+
+  const [hasFirstTrustedDeviceLoadError, setHasFirstTrustedDeviceLoadError] =
+    useState<boolean>(false);
+
+  const hasRequestedFirstTrustedDevice = useRef<boolean>(false);
 
   const activationDate = formatActivationDate(confirmedAt);
   const activationTime = formatActivationTime(confirmedAt);
 
   const firstDeviceLabel =
-    firstTrustedDevice !== null ? deviceLabel(firstTrustedDevice) : NO_TRUSTED_DEVICES_LABEL;
+    firstTrustedDevice === undefined
+      ? ""
+      : firstTrustedDevice !== null
+        ? deviceLabel(firstTrustedDevice)
+        : NO_TRUSTED_DEVICES_LABEL;
+
+  const isLoadingFirstTrustedDevice =
+    isOpen && firstTrustedDevice === undefined && !hasFirstTrustedDeviceLoadError;
 
   useEffect(() => {
+    if (!isOpen || firstTrustedDevice !== undefined || hasRequestedFirstTrustedDevice.current) {
+      return;
+    }
+
+    hasRequestedFirstTrustedDevice.current = true;
+
     router.reload({
       only: ["firstTrustedDevice"],
+      onSuccess: (page) => {
+        if (page.props["firstTrustedDevice"] === undefined) {
+          setHasFirstTrustedDeviceLoadError(true);
+        }
+      },
+      onError: () => {
+        setHasFirstTrustedDeviceLoadError(true);
+      },
+      onHttpException: () => {
+        setHasFirstTrustedDeviceLoadError(true);
+
+        return false;
+      },
+      onNetworkError: () => {
+        setHasFirstTrustedDeviceLoadError(true);
+
+        return false;
+      },
+      onCancel: () => {
+        setHasFirstTrustedDeviceLoadError(true);
+      },
     });
-  }, []);
+  }, [firstTrustedDevice, hasFirstTrustedDeviceLoadError, isOpen]);
 
   const details: TwoFactorActivationDetail[] = [
     {
@@ -107,7 +148,7 @@ function TwoFactorActivationDetailsDialog({
     {
       key: twoFactorActivationDetailKey.firstTrustedDevice,
       renderIcon: (className) =>
-        firstTrustedDevice !== null ? (
+        firstTrustedDevice !== undefined && firstTrustedDevice !== null ? (
           getDeviceIcon(firstTrustedDevice, className)
         ) : (
           <Smartphone className={className} />
@@ -145,6 +186,9 @@ function TwoFactorActivationDetailsDialog({
         <Card className="dark:bg-input/20">
           <CardContent className="space-y-4">
             {details.map((detail) => {
+              const isFirstTrustedDeviceDetail =
+                detail.key === twoFactorActivationDetailKey.firstTrustedDevice;
+
               return (
                 <div key={detail.key} className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
@@ -162,7 +206,37 @@ function TwoFactorActivationDetailsDialog({
                     <span className="text-xs text-muted-foreground">{detail.label}</span>
                   </div>
 
-                  <p className={cn("text-sm font-medium", detail.valueClassName)}>{detail.value}</p>
+                  {isFirstTrustedDeviceDetail && isLoadingFirstTrustedDevice ? (
+                    <div aria-busy="true" className="flex items-center gap-2">
+                      <span className="sr-only" role="status">
+                        Cargando el primer dispositivo utilizado.
+                      </span>
+
+                      <Skeleton aria-hidden="true" className="h-4 w-36" />
+                    </div>
+                  ) : isFirstTrustedDeviceDetail && firstTrustedDevice === undefined ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-destructive" role="alert">
+                        No se pudo cargar este dato.
+                      </span>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          hasRequestedFirstTrustedDevice.current = false;
+                          setHasFirstTrustedDeviceLoadError(false);
+                        }}
+                      >
+                        Reintentar
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className={cn("text-sm font-medium", detail.valueClassName)}>
+                      {detail.value}
+                    </p>
+                  )}
                 </div>
               );
             })}

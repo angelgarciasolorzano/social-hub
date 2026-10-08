@@ -11,7 +11,7 @@
   "planningMode": "EXPANSION",
   "executionStyle": "Por fases",
   "reviewDefault": "codex",
-  "overview": "Plan de SOC-43 para medir y optimizar la carga de TwoFactor y, por expansión confirmada, alinear la experiencia de alta y administración de dispositivos de confianza. Incluye la carga correcta de estados ya registrados, revocados y disponibles; las seis acciones con las validaciones ya existentes; y dos rediseños que esperan las referencias visuales que compartirá el usuario al llegar a cada tarea.",
+  "overview": "Plan de SOC-43 para medir y optimizar la carga de TwoFactor y, por expansión confirmada, alinear la experiencia de alta y administración de dispositivos de confianza. Incluye la carga correcta de estados ya registrados, revocados y disponibles; las seis acciones con las validaciones ya existentes; y dos rediseños que esperan las referencias visuales que compartirá el usuario al llegar a cada tarea. Al cierre del plan se agregará una convención de tipado explícito para los hooks de React usados en TypeScript.",
   "scopeChallenge": "EXPANSION confirmada. La auditoría inicial de Network y props Inertia se conserva como base. Se agregan cambios puntuales en TwoFactor para recuperar dos solicitudes redundantes identificadas en el código, acceder a acciones de registros revocados y reusar los flujos de TrustedDevice. Los rediseños no se inventan en esta planificación: sus tareas quedan bloqueadas hasta recibir la referencia del usuario. TrustedDevice sigue siendo la referencia conductual; su tabla y reglas de seguridad no se rediseñan.",
   "prerequisites": [
     "SOC-43 permanece In Progress hasta que se completen las optimizaciones y la verificación final.",
@@ -134,6 +134,14 @@
         "TASK-010"
       ],
       "outcome": "Cerrar con gates frontend/backend, comparación de Network y QA visual/funcional."
+    },
+    {
+      "id": "PHASE-6",
+      "title": "Convenciones del proyecto",
+      "taskIds": [
+        "TASK-011"
+      ],
+      "outcome": "Registrar al cierre de SOC-43 la regla de tipado explícito para hooks de React."
     }
   ],
   "tasks": [
@@ -220,7 +228,8 @@
       "acceptanceCriteria": [
         "Visitar TwoFactor no solicita firstTrustedDevice mientras el diálogo Fecha de activación permanece cerrado.",
         "Abrir el diálogo solicita el prop una sola vez y reabrirlo con datos cargados no genera otra GET.",
-        "Si la carga falla, el diálogo no presenta datos vacíos como si fueran válidos y ofrece una ruta de reintento."
+        "Si la carga falla, el diálogo no presenta datos vacíos como si fueran válidos y ofrece una ruta de reintento.",
+        "Los hooks de React usados por este diálogo declaran explícitamente el tipo de sus valores, por ejemplo useState<boolean> y useRef<boolean>."
       ],
       "filesToModify": [
         "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx"
@@ -232,7 +241,7 @@
       "fileRoles": {
         "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx": "Controlar carga opcional según apertura y representar carga/error/reintento."
       },
-      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx"
+      "validateCommand": "rtk npm exec -- prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx && rtk npm exec -- eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx && rtk npm run types"
     },
     {
       "id": "TASK-004",
@@ -491,6 +500,40 @@
       "writeScope": [],
       "fileRoles": {},
       "validateCommand": "rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk composer doctor"
+    },
+    {
+      "id": "TASK-011",
+      "phase": "Convenciones del proyecto",
+      "title": "Agregar la regla de tipado explícito para hooks de React",
+      "description": "Al cerrar SOC-43, registrar en las reglas frontend del proyecto que los hooks de React en TypeScript deben declarar explícitamente sus tipos cuando la API lo permita. Incluir estado y referencias (useState<T>, useRef<T>) y los tipos de valor o callback de otros hooks (useMemo, useCallback, etc.); no depender de inferencia para esos contratos.",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "labels": [
+        "SOC-43",
+        "conventions",
+        "React"
+      ],
+      "acceptanceCriteria": [
+        ".ai/rules/frontend.md contiene una regla breve y aplicable sobre tipado explícito en hooks de React escritos en TypeScript.",
+        "La regla incluye ejemplos de useState<T> y useRef<T> y aclara que aplica a los demás hooks con tipos genéricos o de callback disponibles.",
+        "No se modifica ninguna lógica de producto al registrar la regla."
+      ],
+      "filesToModify": [
+        ".ai/rules/frontend.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        ".ai/rules/frontend.md"
+      ],
+      "fileRoles": {
+        ".ai/rules/frontend.md": "Agregar la convención autorizada de tipado explícito para hooks de React."
+      },
+      "validateCommand": "rtk git diff --check -- .ai/rules/frontend.md"
     }
   ],
   "dependencyMap": {
@@ -530,6 +573,9 @@
       "TASK-007",
       "TASK-008",
       "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-010"
     ]
   },
   "criticalPath": [
@@ -537,19 +583,21 @@
     "TASK-004",
     "TASK-007",
     "TASK-009",
-    "TASK-010"
+    "TASK-010",
+    "TASK-011"
   ],
   "executionSummary": {
-    "taskCount": 10,
-    "phaseCount": 5,
+    "taskCount": 11,
+    "phaseCount": 6,
     "criticalPath": [
       "TASK-001",
       "TASK-004",
       "TASK-007",
       "TASK-009",
-      "TASK-010"
+      "TASK-010",
+      "TASK-011"
     ],
-    "criticalPathLength": 5,
+    "criticalPathLength": 6,
     "parallelism": {
       "afterBaseline": [
         "TASK-002",
@@ -561,9 +609,10 @@
       "designTasks": [
         "TASK-008",
         "TASK-009"
+      ],
+      "projectRuleTask": [
+        "TASK-011"
       ]
     }
   }
 }
-
-
