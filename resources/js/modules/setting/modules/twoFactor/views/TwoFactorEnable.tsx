@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { Fragment, useState } from "react";
 
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 
 import {
   Bolt,
@@ -86,12 +86,7 @@ function TwoFactorEnable(): JSX.Element {
   const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
   const handleViewTrustedDevices = (): void => {
-    router.reload({
-      only: ["trustedDevices"],
-      onSuccess: () => {
-        setSelectedContent("devices");
-      },
-    });
+    setSelectedContent("devices");
   };
 
   const handleViewActivationDetails = (): void => {
