@@ -4,10 +4,7 @@ import { router } from "@inertiajs/react";
 
 import { ArrowRight, CircleAlert, ShieldCheck } from "lucide-react";
 
-import {
-  TrustedDeviceDetailsHeader,
-  TrustedDeviceInfoCard,
-} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
+import { TrustedDeviceInfoCard } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
 import TrustedDeviceIndexController from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController";
@@ -22,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -70,13 +66,6 @@ function TrustedDeviceAlreadyRegisteredDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Separator />
-
-        <TrustedDeviceDetailsHeader
-          description="Asi es como identificamos este dispositivo actualmente."
-          title="Detalles del dispositivo registrado"
-        />
-
         <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
 
         {showListLink && <AlreadyRegisteredActionsAlert onGoToList={handleGoToList} />}
@@ -102,7 +91,7 @@ function AlreadyRegisteredActionsAlert({
     <Alert className={alertVariants.info}>
       <CircleAlert />
       <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
-      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
+      <AlertDescription className="gap-2 text-sm font-normal">
         Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
         <Button onClick={onGoToList} size="sm" variant="outline">
           Ir a dispositivos de confianza

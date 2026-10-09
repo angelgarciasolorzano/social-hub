@@ -4,10 +4,7 @@ import { router } from "@inertiajs/react";
 
 import { ArrowRight, CircleAlert, ShieldOff } from "lucide-react";
 
-import {
-  TrustedDeviceDetailsHeader,
-  TrustedDeviceInfoCard,
-} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
+import { TrustedDeviceInfoCard } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
 import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
@@ -73,11 +70,6 @@ function TrustedDeviceRevokedDialog({
         </DialogHeader>
 
         <Separator />
-
-        <TrustedDeviceDetailsHeader
-          description="Asi es como identificamos este dispositivo antes de ser revocado."
-          title="Detalles del dispositivo revocado"
-        />
 
         <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
 

@@ -4,10 +4,7 @@ import { router } from "@inertiajs/react";
 
 import { ArrowRight, CircleAlert, ShieldAlert } from "lucide-react";
 
-import {
-  TrustedDeviceDetailsHeader,
-  TrustedDeviceInfoCard,
-} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
+import { TrustedDeviceInfoCard } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
 import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
@@ -23,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -73,14 +69,7 @@ function TrustedDeviceExpiredDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Separator />
-
-        <TrustedDeviceDetailsHeader
-          description="Asi es como identificamos este dispositivo antes de expirar."
-          title="Detalles del dispositivo expirado"
-        />
-
-        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expiro el" />
+        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expiró el" />
 
         <ExpiredActionsAlert onGoToExpiredList={handleGoToExpiredList} />
 
