@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { Fragment, useEffect } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import { Link, router, usePage } from "@inertiajs/react";
 
@@ -17,11 +17,21 @@ import {
   TrustedDeviceAddDialog,
   TrustedDeviceAlreadyRegisteredDialog,
   TrustedDeviceDetailsDialog,
+  TrustedDeviceExpiredDialog,
+  TrustedDeviceForceDestroyDialog,
+  TrustedDeviceReactivationDialog,
   TrustedDeviceRenameDialog,
   TrustedDeviceRenewTrustDialog,
   TrustedDeviceRevokeAllDialog,
+  TrustedDeviceRevokedDialog,
   TrustedDeviceRevokeDialog,
 } from "@/modules/setting/modules/trustedDevice/components/dialog";
+import {
+  type TrustedDeviceAddDeviceDialogKind,
+  trustedDeviceDialogKind,
+  trustedDeviceRowActionKey,
+  trustedDeviceRowActions,
+} from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { fromNow } from "@/modules/setting/shared/utils/dateTime";
@@ -45,22 +55,17 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDialog } from "@/shared/hooks";
 
+import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
-import type {
-  TwoFactorDeviceActionKey,
-  TwoFactorDeviceSectionActionKey,
-} from "../../../data/twoFactorEnable";
-import {
-  twoFactorDeviceActionKey,
-  twoFactorDeviceActions,
-  twoFactorDeviceSectionActionKey,
-} from "../../../data/twoFactorEnable";
+import type { TwoFactorDeviceSectionActionKey } from "../../../data/twoFactorEnable";
+import { twoFactorDeviceSectionActionKey } from "../../../data/twoFactorEnable";
 
 type TwoFactorDevicesPageProps = SharedData & {
   currentDevicePreview?: TrustedDevicePreview | null;
@@ -68,26 +73,94 @@ type TwoFactorDevicesPageProps = SharedData & {
   trustedDevices?: TrustedDevice[];
 };
 
+type TwoFactorDeviceActionKey =
+  (typeof trustedDeviceRowActionKey)[keyof typeof trustedDeviceRowActionKey];
+
 interface SectionDialogState extends DialogClosingState {
-  kind: TwoFactorDeviceSectionActionKey;
+  kind: TwoFactorDeviceSectionActionKey | TrustedDeviceAddDeviceDialogKind;
+}
+
+function resolveAddDeviceKind(
+  currentDeviceMatch: TrustedDevice | null,
+): TrustedDeviceAddDeviceDialogKind {
+  if (currentDeviceMatch === null) {
+    return trustedDeviceDialogKind.addDevice;
+  }
+
+  if (currentDeviceMatch.deletedAt !== null) {
+    return trustedDeviceDialogKind.deviceRevoked;
+  }
+
+  if (!currentDeviceMatch.isActive) {
+    return trustedDeviceDialogKind.deviceExpired;
+  }
+
+  return trustedDeviceDialogKind.deviceAlreadyRegistered;
 }
 
 function TwoFactorDevices(): JSX.Element {
-  const {
-    currentDevicePreview,
-    currentDeviceMatch,
-    trustedDevices = [],
-  } = usePage<TwoFactorDevicesPageProps>().props;
+  const { currentDevicePreview, currentDeviceMatch, trustedDevices } =
+    usePage<TwoFactorDevicesPageProps>().props;
 
-  const hasDevices = trustedDevices.length > 0;
+  const hasLoadedTrustedDeviceData =
+    trustedDevices !== undefined &&
+    currentDevicePreview !== undefined &&
+    currentDeviceMatch !== undefined;
 
-  const sectionDialog = useDialog<SectionDialogState | null>(null);
+  const [hasFreshTrustedDeviceData, setHasFreshTrustedDeviceData] = useState<boolean>(
+    hasLoadedTrustedDeviceData,
+  );
+  const [hasTrustedDeviceDataLoadError, setHasTrustedDeviceDataLoadError] =
+    useState<boolean>(false);
+
+  const hasRequestedTrustedDeviceDataRef = useRef<boolean>(false);
+
+  const isLoadingTrustedDeviceData = !hasFreshTrustedDeviceData || !hasLoadedTrustedDeviceData;
+  const isShowingTrustedDeviceDataLoadError =
+    hasTrustedDeviceDataLoadError && hasFreshTrustedDeviceData && !hasLoadedTrustedDeviceData;
 
   useEffect(() => {
+    if (hasLoadedTrustedDeviceData || hasRequestedTrustedDeviceDataRef.current) {
+      return;
+    }
+
+    hasRequestedTrustedDeviceDataRef.current = true;
+
     router.reload({
-      only: ["currentDevicePreview", "currentDeviceMatch"],
+      only: ["trustedDevices", "currentDevicePreview", "currentDeviceMatch"],
+      onError: () => {
+        setHasTrustedDeviceDataLoadError(true);
+      },
+      onHttpException: () => {
+        setHasTrustedDeviceDataLoadError(true);
+
+        return false;
+      },
+      onNetworkError: () => {
+        setHasTrustedDeviceDataLoadError(true);
+
+        return false;
+      },
+      onCancel: () => {
+        setHasTrustedDeviceDataLoadError(true);
+      },
+      onFinish: () => {
+        setHasFreshTrustedDeviceData(true);
+      },
     });
-  }, []);
+  }, [hasLoadedTrustedDeviceData, hasTrustedDeviceDataLoadError]);
+
+  const handleRetryTrustedDeviceDataLoad = (): void => {
+    hasRequestedTrustedDeviceDataRef.current = false;
+    setHasFreshTrustedDeviceData(false);
+    setHasTrustedDeviceDataLoadError(false);
+  };
+
+  const devices = trustedDevices ?? [];
+  const hasActiveDevices = devices.some((device) => device.deletedAt === null && device.isActive);
+  const hasRevocableDevices = devices.some((device) => device.deletedAt === null);
+
+  const sectionDialog = useDialog<SectionDialogState | null>(null);
 
   const handleRevokeAllDevices = (): void => {
     sectionDialog.show({
@@ -97,10 +170,11 @@ function TwoFactorDevices(): JSX.Element {
   };
 
   const handleAddDevice = (): void => {
-    const kind =
-      currentDeviceMatch !== null
-        ? twoFactorDeviceSectionActionKey.deviceAlreadyRegistered
-        : twoFactorDeviceSectionActionKey.addDevice;
+    if (currentDeviceMatch === undefined) {
+      return;
+    }
+
+    const kind = resolveAddDeviceKind(currentDeviceMatch);
 
     sectionDialog.show({ kind, closing: false });
   };
@@ -115,7 +189,7 @@ function TwoFactorDevices(): JSX.Element {
     const isClosing = sectionDialog.state.closing;
 
     switch (sectionDialog.state.kind) {
-      case twoFactorDeviceSectionActionKey.addDevice:
+      case trustedDeviceDialogKind.addDevice:
         return (
           <TrustedDeviceAddDialog
             preview={currentDevicePreview ?? null}
@@ -124,13 +198,39 @@ function TwoFactorDevices(): JSX.Element {
           />
         );
 
-      case twoFactorDeviceSectionActionKey.deviceAlreadyRegistered:
+      case trustedDeviceDialogKind.deviceAlreadyRegistered:
         if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
           return null;
         }
 
         return (
           <TrustedDeviceAlreadyRegisteredDialog
+            existingDevice={currentDeviceMatch}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case trustedDeviceDialogKind.deviceRevoked:
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+          return null;
+        }
+
+        return (
+          <TrustedDeviceRevokedDialog
+            existingDevice={currentDeviceMatch}
+            open={!isClosing}
+            onClose={handleSectionDialogClose}
+          />
+        );
+
+      case trustedDeviceDialogKind.deviceExpired:
+        if (currentDeviceMatch === null || currentDeviceMatch === undefined) {
+          return null;
+        }
+
+        return (
+          <TrustedDeviceExpiredDialog
             existingDevice={currentDeviceMatch}
             open={!isClosing}
             onClose={handleSectionDialogClose}
@@ -149,72 +249,157 @@ function TwoFactorDevices(): JSX.Element {
 
   return (
     <>
-      <Alert className={alertVariants.info}>
-        <AlertTriangleIcon />
+      {isShowingTrustedDeviceDataLoadError ? (
+        <TwoFactorDevicesLoadError onRetry={handleRetryTrustedDeviceDataLoad} />
+      ) : isLoadingTrustedDeviceData ? (
+        <TwoFactorDevicesSkeleton />
+      ) : (
+        <>
+          <Alert className={alertVariants.info}>
+            <AlertTriangleIcon />
 
-        <AlertTitle className="line-clamp-4">
-          Los dispositivos de confianza reducen la frecuencia con la que se te solicita el código de
-          verificación.
-        </AlertTitle>
+            <AlertTitle className="line-clamp-4">
+              Los dispositivos de confianza reducen la frecuencia con la que se te solicita el
+              código de verificación.
+            </AlertTitle>
 
-        <AlertDescription>
-          Revoca cualquier dispositivo que ya no utilices para mantener tu cuenta segura.
-        </AlertDescription>
-      </Alert>
+            <AlertDescription>
+              Revoca cualquier dispositivo que ya no utilices para mantener tu cuenta segura.
+            </AlertDescription>
+          </Alert>
 
-      <div className="flex items-center justify-between gap-4 font-semibold">
-        <span className="text-lg">Dispositivos registrados</span>
+          <div className="flex items-center justify-between gap-4 font-semibold">
+            <span className="text-lg">Dispositivos registrados</span>
 
-        <Button variant="outline" onClick={handleAddDevice} type="button">
-          <Plus data-icon="inline-end" />
-          Agregar dispositivo
+            <Button onClick={handleAddDevice} type="button" variant="outline">
+              <Plus data-icon="inline-end" />
+              Agregar dispositivo
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-md border p-5">
+            {!hasActiveDevices && (
+              <div className="mb-1 text-sm text-muted-foreground">
+                No tienes dispositivos de confianza activos.
+              </div>
+            )}
+
+            {devices.length > 0 && <TwoFactorDevicesItems devices={devices} />}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button asChild className="w-full py-6" variant="outline">
+              <Link href={devicesIndex.url()}>
+                Mostrar todos los dispositivos
+                <ChevronRight />
+              </Link>
+            </Button>
+
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
+              disabled={!hasRevocableDevices}
+              onClick={handleRevokeAllDevices}
+            >
+              <MonitorSmartphone className="mr-2 h-4 w-4" />
+              Revocar todos
+            </Button>
+          </div>
+
+          <Alert className={alertVariants.info}>
+            <AlertTitle>Consejos</AlertTitle>
+
+            <AlertDescription>
+              <ul className="list-inside list-disc space-y-2">
+                <li>Usa dispositivos que sean solo tuyos.</li>
+                <li>Cierra sesión en dispositivos que ya no uses.</li>
+                <li>Los cambios pueden tardar unos minutos en reflejarse.</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
+        </>
+      )}
+
+      {renderSectionDialog()}
+    </>
+  );
+}
+
+interface TwoFactorDevicesLoadErrorProps {
+  onRetry: () => void;
+}
+
+function TwoFactorDevicesLoadError({ onRetry }: TwoFactorDevicesLoadErrorProps): JSX.Element {
+  return (
+    <Alert className={cn(alertVariants.destructive, "my-2")}>
+      <AlertTriangleIcon aria-hidden="true" />
+      <AlertTitle>No se pudieron cargar los dispositivos de confianza</AlertTitle>
+
+      <AlertDescription className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <span>Comprueba tu conexión e inténtalo de nuevo.</span>
+
+        <Button onClick={onRetry} size="sm" type="button" variant="outline">
+          Reintentar
         </Button>
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+function TwoFactorDevicesSkeleton(): JSX.Element {
+  const deviceSkeletonKeys = ["first", "second", "third"];
+
+  return (
+    <div aria-busy="true" className="flex flex-col gap-6">
+      <span className="sr-only" role="status">
+        Cargando dispositivos de confianza.
+      </span>
+
+      <div className="flex flex-col gap-2 rounded-lg border p-4">
+        <div className="flex items-center gap-2">
+          <Skeleton aria-hidden="true" className="size-4 shrink-0 rounded-full" />
+          <Skeleton aria-hidden="true" className="h-4 w-full max-w-md" />
+        </div>
+        <Skeleton aria-hidden="true" className="ml-6 h-4 w-4/5 max-w-lg" />
+      </div>
+
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton aria-hidden="true" className="h-6 w-40 max-w-full" />
+        <Skeleton aria-hidden="true" className="h-10 w-44 max-w-full" />
       </div>
 
       <div className="flex flex-col gap-3 rounded-md border p-5">
-        {hasDevices ? (
-          <TwoFactorDevicesItems devices={trustedDevices} />
-        ) : (
-          <div className="text-sm text-muted-foreground">
-            No tienes dispositivos de confianza configurados.
+        {deviceSkeletonKeys.map((deviceSkeletonKey) => (
+          <div className="flex items-center justify-between gap-4" key={deviceSkeletonKey}>
+            <div className="flex min-w-0 flex-1 items-start gap-2.5">
+              <Skeleton aria-hidden="true" className="size-8 shrink-0 rounded-md" />
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Skeleton aria-hidden="true" className="h-4 w-36 max-w-full" />
+                <Skeleton aria-hidden="true" className="h-3 w-48 max-w-full" />
+                <Skeleton aria-hidden="true" className="h-3 w-32 max-w-full" />
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <Skeleton aria-hidden="true" className="size-3 shrink-0 rounded-full" />
+              <Skeleton aria-hidden="true" className="size-9 shrink-0 rounded-md" />
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
       <div className="flex flex-col gap-3">
-        <Button asChild className="w-full py-6" variant="outline">
-          <Link href={devicesIndex.url()}>
-            Mostrar todos los dispositivos
-            <ChevronRight />
-          </Link>
-        </Button>
-
-        <Button
-          type="button"
-          variant="destructive"
-          className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-          disabled={!hasDevices}
-          onClick={handleRevokeAllDevices}
-        >
-          <MonitorSmartphone className="mr-2 h-4 w-4" />
-          Revocar todos
-        </Button>
+        <Skeleton aria-hidden="true" className="h-12 w-full" />
+        <Skeleton aria-hidden="true" className="h-12 w-full" />
       </div>
 
-      {renderSectionDialog()}
-
-      <Alert className={alertVariants.info}>
-        <AlertTitle>Consejos</AlertTitle>
-
-        <AlertDescription>
-          <ul className="list-inside list-disc space-y-2">
-            <li>Usa dispositivos que sean solo tuyos.</li>
-            <li>Cierra sesión en dispositivos que ya no uses.</li>
-            <li>Los cambios pueden tardar unos minutos en reflejarse.</li>
-          </ul>
-        </AlertDescription>
-      </Alert>
-    </>
+      <div className="flex flex-col gap-3 rounded-lg border p-4">
+        <Skeleton aria-hidden="true" className="h-4 w-20" />
+        <Skeleton aria-hidden="true" className="h-4 w-full max-w-sm" />
+        <Skeleton aria-hidden="true" className="h-4 w-4/5 max-w-sm" />
+        <Skeleton aria-hidden="true" className="h-4 w-3/5 max-w-sm" />
+      </div>
+    </div>
   );
 }
 
@@ -251,7 +436,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
     }
 
     switch (dialogDevice.state.kind) {
-      case twoFactorDeviceActionKey.viewDevice:
+      case trustedDeviceRowActionKey.viewDevice:
         return (
           <TrustedDeviceDetailsDialog
             device={selectedDevice}
@@ -260,7 +445,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
           />
         );
 
-      case twoFactorDeviceActionKey.renameDevice:
+      case trustedDeviceRowActionKey.renameDevice:
         return (
           <TrustedDeviceRenameDialog
             device={selectedDevice}
@@ -269,7 +454,7 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
           />
         );
 
-      case twoFactorDeviceActionKey.renewTrust:
+      case trustedDeviceRowActionKey.renewTrust:
         return (
           <TrustedDeviceRenewTrustDialog
             device={selectedDevice}
@@ -278,9 +463,27 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
           />
         );
 
-      case twoFactorDeviceActionKey.revokeDevice:
+      case trustedDeviceRowActionKey.revokeDevice:
         return (
           <TrustedDeviceRevokeDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case trustedDeviceRowActionKey.reactivate:
+        return (
+          <TrustedDeviceReactivationDialog
+            device={selectedDevice}
+            open={!isClosing}
+            onClose={handleDialogClose}
+          />
+        );
+
+      case trustedDeviceRowActionKey.forceDestroy:
+        return (
+          <TrustedDeviceForceDestroyDialog
             device={selectedDevice}
             open={!isClosing}
             onClose={handleDialogClose}
@@ -356,30 +559,45 @@ function DeviceActionsDropdown({ device, onActionClick }: DeviceActionsDropdownP
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-60" align="end">
-        {twoFactorDeviceActions.map((group, groupIndex) => (
+        {trustedDeviceRowActions.map((group, groupIndex) => (
           <Fragment key={groupIndex}>
             <DropdownMenuGroup>
               {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
 
               {group.actions.map((action) => {
                 const Icon = action.icon;
+                const isActionEnabled = action.isEnabled(device);
 
                 return (
                   <DropdownMenuItem
                     key={action.key}
-                    onClick={() => {
+                    disabled={!isActionEnabled}
+                    onClick={(event) => {
+                      if (!isActionEnabled) {
+                        event.preventDefault();
+                        return;
+                      }
+
                       handleClick(action.key);
                     }}
-                    className={action.className}
+                    className={cn(
+                      action.className,
+                      !isActionEnabled && "cursor-not-allowed opacity-50",
+                    )}
                   >
-                    <Icon className={action.iconClassName} />
+                    <Icon
+                      className={cn(
+                        action.iconClassName ?? "text-muted-foreground",
+                        !isActionEnabled && "opacity-70",
+                      )}
+                    />
                     {action.label}
                   </DropdownMenuItem>
                 );
               })}
             </DropdownMenuGroup>
 
-            {groupIndex < twoFactorDeviceActions.length - 1 && <DropdownMenuSeparator />}
+            {groupIndex < trustedDeviceRowActions.length - 1 && <DropdownMenuSeparator />}
           </Fragment>
         ))}
       </DropdownMenuContent>

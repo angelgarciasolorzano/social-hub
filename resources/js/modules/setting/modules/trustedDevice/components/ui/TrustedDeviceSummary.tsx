@@ -105,7 +105,7 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
   ];
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col shadow-xs">
       <CardHeader className="items-center pb-0">
         <h2 className="text-lg leading-none font-semibold tracking-tight">
           Resumen de dispositivos

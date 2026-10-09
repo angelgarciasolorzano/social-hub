@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { enable } from "@/shared/wayfinder/routes/two-factor";
 
@@ -71,7 +72,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
   const { resolvedAppearance } = useAppearance();
 
   return (
-    <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+    <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-6">
       <div className="flex min-w-0 items-start gap-4">
         <div className={cn(iconColorVariants.violet.iconBgClass, "rounded-3xl p-2")}>
           <ShieldCheck className={cn("h-12 w-12", iconColorVariants.violet.iconFgClass)} />
@@ -106,6 +107,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
         ) : (
           <Form
             {...enable.form()}
+            onError={() => toast.error("No se pudo activar 2FA. Inténtalo de nuevo.")}
             onSuccess={onActivate}
             className="w-full cursor-pointer sm:w-auto"
           >
@@ -115,7 +117,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
                 className="w-full cursor-pointer sm:w-auto"
                 disabled={processing}
               >
-                Activar 2FA
+                {processing ? "Activando..." : "Activar 2FA"}
               </Button>
             )}
           </Form>
@@ -139,7 +141,7 @@ function TwoFactorInfoBanner() {
 
 function TwoFactorActivationForm() {
   return (
-    <div className="flex flex-col items-start gap-4 rounded-xl border p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div className="flex flex-col items-start gap-4 rounded-xl border p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <ShieldAlert className="h-4 w-4 text-muted-foreground" />
         <span className="text-muted-foreground">¿Tienes dudas?</span>
@@ -157,7 +159,7 @@ function TwoFactorActivationForm() {
 
 function TwoFactorOperations() {
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="text-lg leading-none font-semibold">Cómo funciona</h2>
       </CardHeader>
@@ -170,7 +172,7 @@ function TwoFactorOperations() {
 
 function TwoFactorRequirements() {
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="text-lg leading-none font-semibold">Requesitos</h2>
       </CardHeader>
@@ -190,7 +192,7 @@ function TwoFactorRequirements() {
 
 function TwoFactorRecommendedApps() {
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="text-lg leading-none font-semibold">Aplicaciones recomendadas</h2>
       </CardHeader>

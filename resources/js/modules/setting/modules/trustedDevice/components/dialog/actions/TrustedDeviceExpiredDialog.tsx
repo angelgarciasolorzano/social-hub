@@ -4,10 +4,7 @@ import { router } from "@inertiajs/react";
 
 import { ArrowRight, CircleAlert, ShieldAlert } from "lucide-react";
 
-import {
-  TrustedDeviceDetailsHeader,
-  TrustedDeviceInfoCard,
-} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
+import { TrustedDeviceInfoCard } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
 import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
@@ -23,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -73,16 +69,9 @@ function TrustedDeviceExpiredDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Separator />
+        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expiró el" />
 
-        <TrustedDeviceDetailsHeader
-          description="Asi es como identificamos este dispositivo antes de expirar."
-          title="Detalles del dispositivo expirado"
-        />
-
-        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expiro el" />
-
-        <ExpiredActionsAlert onGoToExpiredList={handleGoToExpiredList} />
+        <ExpiredActionsAlert />
 
         <DialogFooter>
           <Button onClick={onClose} type="button" variant="outline">
@@ -98,21 +87,13 @@ function TrustedDeviceExpiredDialog({
   );
 }
 
-interface ExpiredActionsAlertProps {
-  onGoToExpiredList: () => void;
-}
-
-function ExpiredActionsAlert({ onGoToExpiredList }: ExpiredActionsAlertProps): JSX.Element {
+function ExpiredActionsAlert(): JSX.Element {
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
       <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
-      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
+      <AlertDescription>
         Renueva la confianza para extender la fecha de expiracion sin volver a registrarlo.
-        <Button onClick={onGoToExpiredList} size="sm" variant="outline">
-          Ir a la lista de expirados
-          <ArrowRight />
-        </Button>
       </AlertDescription>
     </Alert>
   );

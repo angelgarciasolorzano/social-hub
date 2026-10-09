@@ -52,16 +52,22 @@ class TwoFactorController extends Controller implements HasMiddleware
         if (Features::canManageTwoFactorAuthentication()) {
             $twoFactorRequest->ensureStateIsValid();
 
-            $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
+            $twoFactorEnabled = $user->hasEnabledTwoFactorAuthentication();
+
+            $props['twoFactorEnabled'] = $twoFactorEnabled;
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
 
             $props['twoFactorConfirmedAt'] = $user->two_factor_confirmed_at?->toIso8601String();
             $props['recoveryCodesRegeneratedAt'] = $user->recovery_codes_regenerated_at?->toIso8601String();
 
-            $props['trustedDevicesCount'] = $user->trustedDevices()->count();
+            $props['trustedDevicesCount'] = $twoFactorEnabled
+                ? $user->trustedDevices()->count()
+                : 0;
 
             $props['trustedDevices'] = Inertia::optional(
                 fn (): array => $user->trustedDevices()
+                    ->withTrashed()
+                    ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                     ->latest('last_used_at')
                     ->limit(3)
                     ->get()
@@ -69,17 +75,6 @@ class TwoFactorController extends Controller implements HasMiddleware
                     ->all()
             );
 
-            $props['firstTrustedDevice'] = Inertia::optional(
-                function () use ($user): ?array {
-                    $device = $user->trustedDevices()->oldest('created_at')->first();
-
-                    if (! $device instanceof TrustedDevice) {
-                        return null;
-                    }
-
-                    return new TrustedDeviceResource($device)->resolve(request());
-                }
-            );
         }
 
         return Inertia::render('setting/modules/twoFactor/TwoFactor', [

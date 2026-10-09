@@ -74,7 +74,7 @@ import {
   TableRow,
 } from "@/shared/components/shadcn/ui/table";
 
-import { useAppearance, useDialog } from "@/shared/hooks";
+import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 import { badgeVariants } from "@/shared/lib/styling";
@@ -443,7 +443,6 @@ function TrustedDeviceTable({
                 tableRows.map((row) => (
                   <TableRow
                     aria-selected={row.getIsSelected()}
-                    className={cn(row.original.deletedAt !== null && "opacity-75")}
                     data-state={row.getIsSelected() ? "selected" : undefined}
                     key={row.id}
                     onClick={() => {
@@ -498,17 +497,8 @@ interface TrustedDeviceStatusCellProps {
 }
 
 function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.Element {
-  const { resolvedAppearance } = useAppearance();
-
   if (device.deletedAt !== null) {
-    return (
-      <Badge
-        variant={resolvedAppearance === "light" ? "destructive" : null}
-        className="rounded-md dark:bg-red-700 dark:text-white"
-      >
-        Revocado
-      </Badge>
-    );
+    return <Badge className={cn(badgeVariants.red)}>Revocado</Badge>;
   }
 
   return (

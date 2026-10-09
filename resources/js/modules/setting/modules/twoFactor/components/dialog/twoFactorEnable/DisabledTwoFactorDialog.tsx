@@ -107,7 +107,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           </AlertDescription>
         </Alert>
 
-        <form id={formId} className="mt-2 grid gap-6" onSubmit={handleSubmit}>
+        <form id={formId} className="grid gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
             <LabelForm error={errors.password} htmlFor={passwordInputId}>
               Contraseña

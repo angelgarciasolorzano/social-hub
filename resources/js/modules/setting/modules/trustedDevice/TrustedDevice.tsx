@@ -351,7 +351,7 @@ function TrustedDeviceTitle({
   onTitleAction,
 }: TrustedDeviceTitleProps): JSX.Element {
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
+    <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 shadow-xs sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
       <div className="flex min-w-0 items-start gap-4 sm:gap-6">
         <div className={cn(iconColorVariants.blue.iconBgClass, "rounded-3xl p-2")}>
           <ShieldCheck className={cn("h-12 w-12", iconColorVariants.blue.iconFgClass)} />
@@ -469,7 +469,7 @@ function TrustedDevicesStatCards(): JSX.Element {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {trustedDevicesStatCards.map(({ icon: Icon, ...card }) => (
         <div
-          className="flex h-full items-start gap-4 rounded-xl border bg-card p-4 shadow-sm"
+          className="flex h-full items-start gap-4 rounded-xl border bg-card p-4 shadow-xs"
           key={card.title}
         >
           <div
@@ -641,7 +641,7 @@ function TrustedDevicesTableSection(): JSX.Element {
 
 function TrustedDevicesSecurityCallout(): JSX.Element {
   return (
-    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-4">
         <div className={cn("flex h-10 w-10 rounded-md p-2", iconColorVariants.blue.iconBgClass)}>
           <ShieldQuestionMark className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />

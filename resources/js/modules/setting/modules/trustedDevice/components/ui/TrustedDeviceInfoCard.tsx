@@ -1,42 +1,27 @@
-import type { JSX } from "react";
-import { Fragment } from "react";
+import type { JSX, ReactNode } from "react";
 
 import { CalendarRange, Clock4, Globe, MapPin } from "lucide-react";
 
-import TrustedDeviceMetadataItem, {
-  type TrustedDeviceMetadataItemProps,
-} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceMetadataItem";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
-import { Separator } from "@/shared/components/shadcn/ui/separator";
-
-import { iconColorVariants } from "@/shared/lib/styling";
+import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
-
-interface TrustedDeviceDetailsHeaderProps {
-  description: string;
-  title: string;
-}
-
-export function TrustedDeviceDetailsHeader({
-  title,
-  description,
-}: TrustedDeviceDetailsHeaderProps): JSX.Element {
-  return (
-    <div className="flex flex-col gap-1">
-      {title.trim() !== "" && <h3 className="text-lg font-semibold">{title}</h3>}
-
-      <p className="text-sm font-normal text-muted-foreground">{description}</p>
-    </div>
-  );
-}
 
 interface TrustedDeviceInfoCardProps {
   device: TrustedDevice;
   expirationLabel?: string;
+}
+
+interface TrustedDeviceInfoItemProps {
+  detail?: string;
+  icon: ReactNode;
+  iconColor: IconColorVariant;
+  label: string;
+  value: string;
+  valueClassName?: string;
 }
 
 export function TrustedDeviceInfoCard({
@@ -53,85 +38,106 @@ export function TrustedDeviceInfoCard({
   const osName = valueOrFallback(device.osName, "Desconocido");
   const ip = valueOrFallback(device.ip, "No disponible");
 
-  const primaryMetadata: Omit<TrustedDeviceMetadataItemProps, "badge" | "badgePosition">[] = [
+  const primaryMetadata: TrustedDeviceInfoItemProps[] = [
     {
-      icon: <Globe className={cn("h-6 w-6", iconColorVariants.blue.iconFgClass)} />,
+      icon: <Globe className={cn("size-5", iconColorVariants.blue.iconFgClass)} />,
       iconColor: "blue",
-      title: "Navegador",
-      description: browser,
+      label: "Navegador",
+      value: browser,
     },
     {
-      icon: getDeviceIcon(device, cn("h-6 w-6", iconColorVariants.violet.iconFgClass)),
+      icon: getDeviceIcon(device, cn("size-5", iconColorVariants.violet.iconFgClass)),
       iconColor: "violet",
-      title: "Sistema operativo",
-      description: osName,
+      label: "Sistema",
+      value: osName,
     },
     {
-      icon: <MapPin className={cn("h-6 w-6", iconColorVariants.orange.iconFgClass)} />,
+      icon: <MapPin className={cn("size-5", iconColorVariants.orange.iconFgClass)} />,
       iconColor: "orange",
-      title: "Direccion IP",
-      description: ip,
+      label: "Dirección IP",
+      value: ip,
+      valueClassName: "break-all font-mono text-sm",
     },
   ];
 
-  const secondaryMetadata: TrustedDeviceMetadataItemProps[] = [
+  const secondaryMetadata: TrustedDeviceInfoItemProps[] = [
     {
-      icon: <Clock4 className={cn("h-6 w-6", iconColorVariants.cyan.iconFgClass)} />,
+      detail: formatLongDate(device.lastUsedAt),
+      icon: <Clock4 className={cn("size-5", iconColorVariants.cyan.iconFgClass)} />,
       iconColor: "cyan",
-      title: "Ultimo acceso",
-      description: formatLongDate(device.lastUsedAt),
-      badge: device.lastUsedAt !== null ? fromNow(device.lastUsedAt) : undefined,
+      label: "Último acceso",
+      value: fromNow(device.lastUsedAt),
     },
     {
-      icon: <CalendarRange className={cn("h-6 w-6", iconColorVariants.green.iconFgClass)} />,
+      detail: formatLongDate(device.expiresAt),
+      icon: <CalendarRange className={cn("size-5", iconColorVariants.green.iconFgClass)} />,
       iconColor: "green",
-      title: expirationLabel,
-      description: formatLongDate(device.expiresAt),
-      badge: formatTimeUntil(device.expiresAt),
-      badgePosition: "after",
+      label: expirationLabel,
+      value: formatTimeUntil(device.expiresAt),
     },
   ];
 
   return (
-    <div className="flex flex-col gap-8 rounded-xl border bg-card p-6 shadow-sm dark:bg-input/20">
-      <DeviceMetadataRow metadataItems={primaryMetadata} />
+    <section className="overflow-hidden rounded-xl border bg-card shadow-xs dark:bg-input/20">
+      <div className="border-b bg-muted/30 px-4 py-3 sm:px-5">
+        <h3 className="font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+          Así identificamos este dispositivo
+        </h3>
+      </div>
 
-      <Separator />
+      <div className="grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {primaryMetadata.map((metadataItem) => (
+          <TrustedDeviceInfoItem key={metadataItem.label} {...metadataItem} />
+        ))}
+      </div>
 
-      <DeviceMetadataRow columns={2} metadataItems={secondaryMetadata} />
-    </div>
+      <div className="grid grid-cols-1 divide-y border-t sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+        {secondaryMetadata.map((metadataItem) => (
+          <TrustedDeviceInfoItem key={metadataItem.label} {...metadataItem} />
+        ))}
+      </div>
+    </section>
   );
 }
 
-interface DeviceMetadataRowProps {
-  metadataItems: TrustedDeviceMetadataItemProps[];
-  columns?: 2 | 3;
-}
-
-function DeviceMetadataRow({ metadataItems, columns = 3 }: DeviceMetadataRowProps): JSX.Element {
-  const gridCols = columns === 2 ? "grid-cols-[2fr_auto_2fr]" : "grid-cols-[2fr_auto_2fr_auto_2fr]";
-  const visibleMetadataItems = metadataItems.filter((metadataItem) => {
-    const hasTitle = metadataItem.title.trim() !== "";
-    const hasDescription =
-      metadataItem.description !== undefined &&
-      metadataItem.description !== null &&
-      metadataItem.description.trim() !== "";
-    const hasBadge = metadataItem.badge !== undefined && metadataItem.badge.trim() !== "";
-
-    return hasTitle && (hasDescription || hasBadge);
-  });
+function TrustedDeviceInfoItem({
+  detail,
+  icon,
+  iconColor,
+  label,
+  value,
+  valueClassName,
+}: TrustedDeviceInfoItemProps): JSX.Element {
+  const colors = iconColorVariants[iconColor];
 
   return (
-    <div className={`grid items-stretch gap-8 ${gridCols}`}>
-      {visibleMetadataItems.map((metadataItem, index) => (
-        <Fragment key={metadataItem.title}>
-          <TrustedDeviceMetadataItem {...metadataItem} />
+    <div className="flex min-w-0 items-center gap-3 px-4 py-4 sm:px-5">
+      <div
+        aria-hidden="true"
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-md",
+          colors.iconBgClass,
+        )}
+      >
+        {icon}
+      </div>
 
-          {index < visibleMetadataItems.length - 1 && (
-            <Separator aria-hidden="true" orientation="vertical" />
+      <dl className="min-w-0 space-y-1">
+        <dt className="text-sm text-muted-foreground">{label}</dt>
+
+        <dd
+          className={cn(
+            "m-0 text-base leading-tight font-semibold wrap-break-word",
+            valueClassName,
           )}
-        </Fragment>
-      ))}
+        >
+          {value}
+        </dd>
+
+        {detail !== undefined && (
+          <dd className="m-0 text-sm wrap-break-word text-muted-foreground">{detail}</dd>
+        )}
+      </dl>
     </div>
   );
 }

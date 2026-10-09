@@ -131,7 +131,7 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
 
   return (
     <form id="renew-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <Item variant="outline">
+      <Item variant="outline" className="dark:bg-muted/20">
         <ItemMedia>
           <CalendarClock />
         </ItemMedia>
@@ -150,7 +150,7 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
         <ArrowBigDown />
       </div>
 
-      <Item variant="outline">
+      <Item variant="outline" className="dark:bg-muted/20">
         <ItemMedia>
           <CalendarRange />
         </ItemMedia>

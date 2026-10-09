@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 import { useHttp } from "@inertiajs/react";
 
-import { enable, qrCode, recoveryCodes, secretKey } from "@/shared/wayfinder/routes/two-factor";
+import { qrCode, recoveryCodes, secretKey } from "@/shared/wayfinder/routes/two-factor";
 
 interface UseTwoFactorAuthReturn {
   qrCodeSvg: string | null;
@@ -13,7 +13,6 @@ interface UseTwoFactorAuthReturn {
   clearErrors: () => void;
   clearSetupData: () => void;
   clearTwoFactorAuthData: () => void;
-  enableTwoFactorAuthentication: () => Promise<void>;
   fetchQrCode: () => Promise<void>;
   fetchSetupKey: () => Promise<void>;
   fetchSetupData: () => Promise<void>;
@@ -48,14 +47,6 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
     setErrors([]);
     setRecoveryCodesList([]);
   }, []);
-
-  const enableTwoFactorAuthentication = useCallback(async (): Promise<void> => {
-    try {
-      await submit(enable());
-    } catch {
-      setErrors((prev) => [...prev, "Failed to enable two factor authentication"]);
-    }
-  }, [submit]);
 
   const fetchQrCode = useCallback(async (): Promise<void> => {
     try {
@@ -96,15 +87,9 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
   }, [submit]);
 
   const fetchSetupData = useCallback(async (): Promise<void> => {
-    try {
-      setErrors([]);
-      await enableTwoFactorAuthentication();
-      await Promise.all([fetchQrCode(), fetchSetupKey()]);
-    } catch {
-      setQrCodeSvg(null);
-      setManualSetupKey(null);
-    }
-  }, [enableTwoFactorAuthentication, fetchQrCode, fetchSetupKey]);
+    setErrors([]);
+    await Promise.all([fetchQrCode(), fetchSetupKey()]);
+  }, [fetchQrCode, fetchSetupKey]);
 
   return {
     qrCodeSvg,
@@ -115,7 +100,6 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
     clearErrors,
     clearSetupData,
     clearTwoFactorAuthData,
-    enableTwoFactorAuthentication,
     fetchQrCode,
     fetchSetupKey,
     fetchSetupData,

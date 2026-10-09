@@ -57,7 +57,7 @@ function TrustedDeviceRecentActivity({
   );
 
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="text-lg leading-none font-semibold tracking-tight">Actividad reciente</h2>
       </CardHeader>

@@ -4,10 +4,7 @@ import { router } from "@inertiajs/react";
 
 import { ArrowRight, CircleAlert, ShieldOff } from "lucide-react";
 
-import {
-  TrustedDeviceDetailsHeader,
-  TrustedDeviceInfoCard,
-} from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
+import { TrustedDeviceInfoCard } from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard";
 import { trustedDeviceStatusFilterValue } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
@@ -74,14 +71,9 @@ function TrustedDeviceRevokedDialog({
 
         <Separator />
 
-        <TrustedDeviceDetailsHeader
-          description="Asi es como identificamos este dispositivo antes de ser revocado."
-          title="Detalles del dispositivo revocado"
-        />
-
         <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
 
-        <RevokedActionsAlert onGoToRevokedList={handleGoToRevokedList} />
+        <RevokedActionsAlert />
 
         <DialogFooter>
           <Button onClick={onClose} type="button" variant="outline">
@@ -97,23 +89,15 @@ function TrustedDeviceRevokedDialog({
   );
 }
 
-interface RevokedActionsAlertProps {
-  onGoToRevokedList: () => void;
-}
-
-function RevokedActionsAlert({ onGoToRevokedList }: RevokedActionsAlertProps): JSX.Element {
+function RevokedActionsAlert(): JSX.Element {
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
       <AlertTitle className="text-sm font-medium">
         ¿Quieres volver a confiar en este dispositivo?
       </AlertTitle>
-      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
+      <AlertDescription>
         Reactivarlo desde la lista de revocados restaura la fila con un token nuevo por seguridad.
-        <Button onClick={onGoToRevokedList} size="sm" variant="outline">
-          Ir a la lista de revocados
-          <ArrowRight />
-        </Button>
       </AlertDescription>
     </Alert>
   );

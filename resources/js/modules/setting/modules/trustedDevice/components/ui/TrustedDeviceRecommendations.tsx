@@ -19,7 +19,7 @@ function TrustedDeviceRecommendations({
   onOpenRecommendations,
 }: TrustedDeviceRecommendationsProps): JSX.Element {
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="text-lg leading-none font-semibold tracking-tight">Recomendaciones</h2>
       </CardHeader>

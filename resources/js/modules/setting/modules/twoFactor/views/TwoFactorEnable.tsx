@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { Fragment, useState } from "react";
 
-import { router, usePage } from "@inertiajs/react";
+import { usePage } from "@inertiajs/react";
 
 import {
   Bolt,
@@ -86,12 +86,7 @@ function TwoFactorEnable(): JSX.Element {
   const [selectedContent, setSelectedContent] = useState<SlotContent>("codes");
 
   const handleViewTrustedDevices = (): void => {
-    router.reload({
-      only: ["trustedDevices"],
-      onSuccess: () => {
-        setSelectedContent("devices");
-      },
-    });
+    setSelectedContent("devices");
   };
 
   const handleViewActivationDetails = (): void => {
@@ -191,7 +186,7 @@ function TwoFactorEnable(): JSX.Element {
         <TwoFactorSafetyTips />
       </div>
 
-      <Card className="w-full xl:max-w-sm xl:shrink-0 xl:self-start">
+      <Card className="w-full shadow-xs xl:max-w-sm xl:shrink-0 xl:self-start">
         <CardHeader>
           <h2 className="text-lg leading-none font-semibold">
             {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
@@ -228,7 +223,7 @@ interface TwoFactorTitleProps {
 
 function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
   return (
-    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-sm sm:flex-row sm:gap-6 sm:p-6">
+    <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-xs sm:flex-row sm:gap-6 sm:p-6">
       <div className={cn(iconColorVariants.green.iconBgClass, "rounded-3xl p-2")}>
         <ShieldCheck className={cn("h-12 w-12", iconColorVariants.green.iconFgClass)} />
       </div>
@@ -272,6 +267,8 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Gestión de acciones de 2FA</DropdownMenuLabel>
+
           {twoFactorManageActions.map((group, groupIndex) => (
             <Fragment key={groupIndex}>
               <DropdownMenuGroup>
@@ -440,7 +437,7 @@ function TwoFactorSecuritySummary({
 
 function TwoFactorSafetyTips(): JSX.Element {
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="flex items-center text-lg leading-none font-semibold">
           <Info className="mr-2 h-6 w-6 text-purple-700 dark:text-purple-500" />

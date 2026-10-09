@@ -98,7 +98,7 @@ function RegenerateCodesDialog({
           </AlertDescription>
         </Alert>
 
-        <form id={formId} onSubmit={handleSubmit} className="mt-2 grid gap-2">
+        <form id={formId} onSubmit={handleSubmit} className="grid gap-2">
           <LabelForm error={errors.password} htmlFor={passwordInputId}>
             Para continuar, escribe tu contraseña
           </LabelForm>

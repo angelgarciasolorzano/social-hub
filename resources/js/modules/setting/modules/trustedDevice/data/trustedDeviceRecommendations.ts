@@ -13,31 +13,31 @@ export interface TrustedDeviceRecommendation {
 export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
   {
     description:
-      "Manten solo dispositivos que realmente utilizas y reconoce. Elimina aquellos que ya no estes usando.",
+      "Mantén solo los dispositivos que realmente usas y reconoces. Elimina los que ya no utilices.",
     icon: Calendar,
     iconColor: "blue",
-    title: "Revisa tus dispositivos periodicamente",
+    title: "Revisa tus dispositivos periódicamente",
   },
   {
     description:
-      "Marca como confiables unicamente dispositivos que esten bajo tu control. Evita computadoras publicas o equipos de uso compartido.",
+      "Marca como confiables solo equipos bajo tu control. Evita computadoras públicas o de uso compartido.",
     icon: Users,
     iconColor: "green",
-    title: "No confies en dispositivos compartidos",
+    title: "No confíes en dispositivos compartidos",
   },
   {
     description:
-      "Si ves un dispositivo que te resulte extraño, revoca su acceso de inmediato. Asi evitaras que personas no autorizadas accedan a tu cuenta.",
+      "Si ves un dispositivo extraño, revoca su acceso de inmediato para evitar que personas no autorizadas entren a tu cuenta.",
     icon: Trash2,
     iconColor: "orange",
-    title: "Revoca accesos que no reconzcas",
+    title: "Revoca accesos que no reconozcas",
   },
   {
     description:
-      "Reduce el riesgo de vulnerabilidades conocidas manteniendo tu navegador y sistema operativo al dia. Las actualizaciones suelen incluir parches de seguridad importantes para proteger tu cuenta.",
+      "Las actualizaciones incluyen parches de seguridad que reducen el riesgo de vulnerabilidades conocidas.",
     icon: RefreshCw,
     iconColor: "purple",
-    title: "Mantén tu navegador y sistema actualizados",
+    title: "Mantén tu navegador y sistema al día",
   },
 ];
 
@@ -87,11 +87,6 @@ export const trustedDevicePreviewRows: readonly TrustedDevicePreviewRow[] = [
     },
   },
 ];
-
-export const trustedDevicePreviewCopy = {
-  body: "Revisa regularmente los dispositivos con acceso a tu cuenta y elimina aquellos que ya no utilices para evitar accesos no autorizados.",
-  title: "Mantén el control de tus dispositivos",
-} as const;
 
 export const trustedDevicePreviewAlert = {
   body: "Cada dispositivo que revisas fortalece la seguridad de tu cuenta.",
