@@ -13,5 +13,8 @@ This applies to any prop that carries domain meaning. Generic names (`rows`, `it
 
 Rule of thumb: if you cannot tell what the prop contains from its name alone, the name is wrong.
 
+## Explicitly type React hooks
+In TypeScript, explicitly declare the state, ref, value, and callback types of React hooks whenever the API allows it. For example, use `useState<SelectedContent>(...)` and `useRef<HTMLInputElement | null>(null)`; apply the same standard to `useMemo`, `useCallback`, and other hooks that support explicit typing.
+
 ## TypeScript closures follow the no-single-letter rule
 TypeScript closures (callbacks, `useState` selectors, `.map` / `.filter` / `.find` callbacks, etc.) inherit the **no single-letter variable names** rule from `.ai/rules/app.md`. Variables in closures (`value`, `index`, `candidate`, etc.) must be full descriptive words — never `v`, `i`, `e`, `x`. The numeric `for` loop counter (`for (let i = 0; ...)`) is the only exception, and `forEach`/`map` are preferred over indexed `for` whenever possible.

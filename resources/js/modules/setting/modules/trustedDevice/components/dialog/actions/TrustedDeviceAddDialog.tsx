@@ -76,6 +76,7 @@ function TrustedDeviceAddDialog({
     submit(store(), {
       only: pickReloadKeys(pageProps, [
         "trustedDevices",
+        "trustedDevicesCount",
         "stats",
         "currentDeviceMatch",
         "currentDevicePreview",
@@ -92,7 +93,7 @@ function TrustedDeviceAddDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="min-w-140">
+      <DialogContent className="sm:min-w-140">
         <DialogHeader>
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">

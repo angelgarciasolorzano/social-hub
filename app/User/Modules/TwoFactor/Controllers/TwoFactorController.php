@@ -74,17 +74,6 @@ class TwoFactorController extends Controller implements HasMiddleware
                     ->all()
             );
 
-            $props['firstTrustedDevice'] = Inertia::optional(
-                function () use ($user): ?array {
-                    $device = $user->trustedDevices()->oldest('created_at')->first();
-
-                    if (! $device instanceof TrustedDevice) {
-                        return null;
-                    }
-
-                    return new TrustedDeviceResource($device)->resolve(request());
-                }
-            );
         }
 
         return Inertia::render('setting/modules/twoFactor/TwoFactor', [

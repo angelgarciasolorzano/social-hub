@@ -96,6 +96,10 @@ it('counts active devices and includes revoked devices in the recent optional li
             ->where('twoFactorEnabled', true)
             ->where('trustedDevicesCount', 3)
             ->missing('trustedDevices')
+            ->reload(
+                callback: fn (Assert $assert): Assert => $assert->missing('firstTrustedDevice'),
+                only: 'firstTrustedDevice',
+            )
             ->reloadOnly('trustedDevices', fn (Assert $assert): Assert => $assert
                 ->has('trustedDevices', 3)
                 ->where('trustedDevices.0.name', 'Most recently used')

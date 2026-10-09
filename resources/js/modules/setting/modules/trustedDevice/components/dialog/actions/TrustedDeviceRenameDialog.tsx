@@ -73,7 +73,7 @@ function TrustedDeviceRenameDialog({
     event.preventDefault();
 
     submit(update({ trustedDevice: device.id }), {
-      only: pickReloadKeys(pageProps, ["trustedDevices", "firstTrustedDevice", "recentActivity"]),
+      only: pickReloadKeys(pageProps, ["trustedDevices", "recentActivity"]),
       onSuccess: () => {
         onClose();
         reset();
