@@ -44,7 +44,7 @@ export default function TrustedDeviceActivityEventList({
   hasActiveFilters,
 }: TrustedDeviceActivityEventListProps): JSX.Element {
   return (
-    <ScrollArea className="min-h-0 flex-1 rounded-xl border dark:bg-muted/20">
+    <ScrollArea className="min-h-0 flex-1 rounded-xl border shadow-xs dark:bg-muted/20">
       {events.length === 0 ? (
         <div className="gap-2 p-6">
           {hasActiveFilters ? (
