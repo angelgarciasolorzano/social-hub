@@ -267,6 +267,8 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Gestión de acciones de 2FA</DropdownMenuLabel>
+
           {twoFactorManageActions.map((group, groupIndex) => (
             <Fragment key={groupIndex}>
               <DropdownMenuGroup>
