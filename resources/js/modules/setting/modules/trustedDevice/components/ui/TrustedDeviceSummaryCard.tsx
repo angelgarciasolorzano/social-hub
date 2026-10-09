@@ -5,24 +5,31 @@ import { FaCircle } from "react-icons/fa";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { deviceLabel, getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
-import { iconColorVariants } from "@/shared/lib/styling";
+import { Badge } from "@/shared/components/shadcn/ui/badge";
+
+import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
+
+export type TrustedDeviceSummaryStatus = "active" | "inactive" | "revoked";
 
 interface TrustedDeviceSummaryCardProps {
   device: TrustedDevice;
   lastUsedAt: string;
   expiration?: string;
+  status?: TrustedDeviceSummaryStatus;
 }
 
 function TrustedDeviceSummaryCard({
   device,
   lastUsedAt,
   expiration,
+  status,
 }: TrustedDeviceSummaryCardProps): JSX.Element {
   const deviceName = deviceLabel(device).trim() || "Dispositivo desconocido";
   const hasLastUsedAt = lastUsedAt.trim() !== "";
   const hasBrowser = device.browser !== null && device.browser.trim() !== "";
   const hasExpiration = expiration !== undefined && expiration.trim() !== "";
+
   const browserDetails = [
     device.osName,
     [device.browser, device.browserVersion]
@@ -44,9 +51,13 @@ function TrustedDeviceSummaryCard({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-        <h3 className="block truncate text-sm font-medium" title={deviceName}>
-          {deviceName}
-        </h3>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h3 className="min-w-0 flex-1 truncate text-sm font-medium" title={deviceName}>
+            {deviceName}
+          </h3>
+
+          {status !== undefined && <TrustedDeviceSummaryStatusBadge status={status} />}
+        </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {hasBrowser && (
@@ -76,6 +87,28 @@ function TrustedDeviceSummaryCard({
         )}
       </div>
     </div>
+  );
+}
+
+type TrustedDeviceSummaryStatusBadgeProps = Pick<TrustedDeviceSummaryCardProps, "status">;
+
+function TrustedDeviceSummaryStatusBadge({
+  status,
+}: TrustedDeviceSummaryStatusBadgeProps): JSX.Element {
+  const label = status === "revoked" ? "Revocado" : status === "inactive" ? "Inactivo" : "Activo";
+
+  const className =
+    status === "revoked"
+      ? cn(badgeVariants.red, "border-red-200 dark:border-red-500")
+      : status === "inactive"
+        ? badgeVariants.warning
+        : badgeVariants.success;
+
+  return (
+    <Badge className={className}>
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
+      {label}
+    </Badge>
   );
 }
 
