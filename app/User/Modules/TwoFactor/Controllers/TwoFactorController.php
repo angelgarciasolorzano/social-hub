@@ -67,6 +67,7 @@ class TwoFactorController extends Controller implements HasMiddleware
             $props['trustedDevices'] = Inertia::optional(
                 fn (): array => $user->trustedDevices()
                     ->withTrashed()
+                    ->orderByRaw('CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END')
                     ->latest('last_used_at')
                     ->limit(3)
                     ->get()

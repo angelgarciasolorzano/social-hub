@@ -63,29 +63,36 @@ it('returns a zero trusted-device count without querying devices while two-facto
     'Two-factor authentication is not enabled.'
 );
 
-it('counts active devices and includes revoked devices in the recent optional list', function (): void {
+it('prioritizes non-revoked devices and includes revoked devices in the recent optional list', function (): void {
     Features::twoFactorAuthentication([
         'confirm' => true,
         'confirmPassword' => true,
     ]);
 
     $user = createUserWithTwoFactor();
-    createTrustedDevice($user, [
-        'name' => 'Most recently used',
+    $mostRecentlyRevokedTrustedDevice = createTrustedDevice($user, [
+        'name' => 'Most recently revoked',
         'last_used_at' => Date::now()->subMinutes(1),
     ]);
-    $revokedTrustedDevice = createTrustedDevice($user, [
-        'name' => 'Recently revoked',
+    $mostRecentlyRevokedTrustedDevice->delete();
+
+    createTrustedDevice($user, [
+        'name' => 'Second recently revoked',
         'last_used_at' => Date::now()->subMinutes(2),
-    ]);
-    $revokedTrustedDevice->delete();
+    ])->delete();
+
     createTrustedDevice($user, [
-        'name' => 'Older active device',
+        'name' => 'Third recently revoked',
         'last_used_at' => Date::now()->subMinutes(3),
-    ]);
-    createTrustedDevice($user, [
-        'name' => 'Oldest active device',
+    ])->delete();
+
+    $trustedDevice = createTrustedDevice($user, [
+        'name' => 'Most recently used active device',
         'last_used_at' => Date::now()->subMinutes(4),
+    ]);
+    $secondMostRecentlyUsedActiveDevice = createTrustedDevice($user, [
+        'name' => 'Second most recently used active device',
+        'last_used_at' => Date::now()->subMinutes(5),
     ]);
 
     $this->actingAs($user)
@@ -94,7 +101,7 @@ it('counts active devices and includes revoked devices in the recent optional li
         ->assertInertia(fn (Assert $assert): Assert => $assert
             ->component('setting/modules/twoFactor/TwoFactor')
             ->where('twoFactorEnabled', true)
-            ->where('trustedDevicesCount', 3)
+            ->where('trustedDevicesCount', 2)
             ->missing('trustedDevices')
             ->reload(
                 callback: fn (Assert $assert): Assert => $assert->missing('firstTrustedDevice'),
@@ -102,10 +109,13 @@ it('counts active devices and includes revoked devices in the recent optional li
             )
             ->reloadOnly('trustedDevices', fn (Assert $assert): Assert => $assert
                 ->has('trustedDevices', 3)
-                ->where('trustedDevices.0.name', 'Most recently used')
-                ->where('trustedDevices.1.id', $revokedTrustedDevice->id)
-                ->where('trustedDevices.1.name', 'Recently revoked')
-                ->where('trustedDevices.1.deletedAt', $revokedTrustedDevice->deleted_at?->toIso8601String())
+                ->where('trustedDevices.0.id', $trustedDevice->id)
+                ->where('trustedDevices.0.name', 'Most recently used active device')
+                ->where('trustedDevices.1.id', $secondMostRecentlyUsedActiveDevice->id)
+                ->where('trustedDevices.1.name', 'Second most recently used active device')
+                ->where('trustedDevices.2.id', $mostRecentlyRevokedTrustedDevice->id)
+                ->where('trustedDevices.2.name', 'Most recently revoked')
+                ->where('trustedDevices.2.deletedAt', $mostRecentlyRevokedTrustedDevice->deleted_at?->toIso8601String())
             )
         );
 })->skip(

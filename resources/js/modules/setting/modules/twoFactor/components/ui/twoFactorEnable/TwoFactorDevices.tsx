@@ -157,7 +157,8 @@ function TwoFactorDevices(): JSX.Element {
   };
 
   const devices = trustedDevices ?? [];
-  const hasDevices = devices.length > 0;
+  const hasActiveDevices = devices.some((device) => device.deletedAt === null && device.isActive);
+  const hasRevocableDevices = devices.some((device) => device.deletedAt === null);
 
   const sectionDialog = useDialog<SectionDialogState | null>(null);
 
@@ -277,13 +278,13 @@ function TwoFactorDevices(): JSX.Element {
           </div>
 
           <div className="flex flex-col gap-3 rounded-md border p-5">
-            {hasDevices ? (
-              <TwoFactorDevicesItems devices={devices} />
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No tienes dispositivos de confianza configurados.
+            {!hasActiveDevices && (
+              <div className="mb-1 text-sm text-muted-foreground">
+                No tienes dispositivos de confianza activos.
               </div>
             )}
+
+            {devices.length > 0 && <TwoFactorDevicesItems devices={devices} />}
           </div>
 
           <div className="flex flex-col gap-3">
@@ -298,7 +299,7 @@ function TwoFactorDevices(): JSX.Element {
               type="button"
               variant="destructive"
               className="w-full py-6 dark:bg-red-700 dark:text-white dark:hover:bg-red-800"
-              disabled={!hasDevices}
+              disabled={!hasRevocableDevices}
               onClick={handleRevokeAllDevices}
             >
               <MonitorSmartphone className="mr-2 h-4 w-4" />
