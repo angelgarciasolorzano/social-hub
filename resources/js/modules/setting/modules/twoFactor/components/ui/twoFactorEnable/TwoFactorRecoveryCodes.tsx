@@ -53,12 +53,12 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
 
   const [bulkCopiedText, copyBulk] = useClipboard({ resetTimeout: 2000 });
   const [rowCopiedText, copyRow] = useClipboard({ resetTimeout: 2000 });
-  const [isLoadingRecoveryCodes, setIsLoadingRecoveryCodes] = useState(
+  const [isLoadingRecoveryCodes, setIsLoadingRecoveryCodes] = useState<boolean>(
     recoveryCodesList.length === 0,
   );
-  const hasStartedInitialRecoveryCodesFetch = useRef(false);
+  const hasStartedInitialRecoveryCodesFetch = useRef<boolean>(false);
 
-  const handleCopy = useCallback((): void => {
+  const handleCopy = useCallback<() => void>(() => {
     if (!recoveryCodesList.length) {
       return;
     }
@@ -66,11 +66,11 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
     void copyBulk(recoveryCodesList.join("\n"));
   }, [recoveryCodesList, copyBulk]);
 
-  const handleDownload = useCallback((): void => {
+  const handleDownload = useCallback<() => void>(() => {
     downloadRecoveryCodes(recoveryCodesList, { accountEmail });
   }, [recoveryCodesList, accountEmail]);
 
-  const loadRecoveryCodes = useCallback(async (): Promise<void> => {
+  const loadRecoveryCodes = useCallback<() => Promise<void>>(async () => {
     setIsLoadingRecoveryCodes(true);
 
     try {
@@ -80,11 +80,11 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
     }
   }, [fetchRecoveryCodes]);
 
-  const handleRetry = useCallback((): void => {
+  const handleRetry = useCallback<() => void>(() => {
     void loadRecoveryCodes();
   }, [loadRecoveryCodes]);
 
-  useEffect(() => {
+  useEffect((): void => {
     if (recoveryCodesList.length > 0) {
       hasStartedInitialRecoveryCodesFetch.current = false;
 
@@ -98,6 +98,10 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
     hasStartedInitialRecoveryCodesFetch.current = true;
     void loadRecoveryCodes();
   }, [loadRecoveryCodes, recoveryCodesList.length]);
+
+  if (isLoadingRecoveryCodes) {
+    return <TwoFactorRecoveryCodesSkeleton />;
+  }
 
   return (
     <>
@@ -158,18 +162,6 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
               );
             })}
           </ul>
-        ) : isLoadingRecoveryCodes ? (
-          <div className="space-y-2">
-            <p className="sr-only" role="status">
-              Cargando códigos de respaldo.
-            </p>
-
-            <div aria-hidden="true" className="space-y-2">
-              {Array.from({ length: 8 }, (_, skeletonIndex) => (
-                <Skeleton key={skeletonIndex} className="h-5 w-full" />
-              ))}
-            </div>
-          </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <p
@@ -234,6 +226,80 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
 
         <ItemActions>
           <Clock4 aria-hidden="true" size={20} className="text-muted-foreground" />
+        </ItemActions>
+      </Item>
+    </>
+  );
+}
+
+function TwoFactorRecoveryCodesSkeleton(): JSX.Element {
+  const recoveryCodeSkeletonRows: string[] = [
+    "first",
+    "second",
+    "third",
+    "fourth",
+    "fifth",
+    "sixth",
+    "seventh",
+    "eighth",
+  ];
+
+  return (
+    <>
+      <p className="sr-only" role="status">
+        Cargando códigos de respaldo.
+      </p>
+
+      <Alert aria-hidden="true" className="max-w-md">
+        <Skeleton className="size-4 rounded-full" />
+
+        <AlertTitle>
+          <Skeleton className="h-4 w-4/5" />
+        </AlertTitle>
+
+        <AlertDescription className="flex flex-col gap-2">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+        </AlertDescription>
+      </Alert>
+
+      <div aria-hidden="true" className="flex flex-col gap-3 rounded-md border p-5">
+        <div className="flex flex-col">
+          {recoveryCodeSkeletonRows.map((recoveryCodeSkeletonRow, skeletonIndex) => (
+            <div key={recoveryCodeSkeletonRow}>
+              <div className="py-3">
+                <Skeleton className="h-5 w-full" />
+              </div>
+
+              {skeletonIndex < recoveryCodeSkeletonRows.length - 1 && <Separator />}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div aria-hidden="true" className="flex items-center justify-between">
+        <Skeleton className="h-3 w-24" />
+        <Skeleton className="h-4 w-12" />
+      </div>
+
+      <div aria-hidden="true" className="flex items-center justify-between gap-4">
+        <Skeleton className="h-12 flex-1" />
+        <Skeleton className="h-12 flex-1" />
+      </div>
+
+      <Item aria-hidden="true" variant="outline">
+        <ItemContent>
+          <ItemTitle>
+            <Skeleton className="h-4 w-36" />
+          </ItemTitle>
+
+          <ItemDescription className="text-xs">
+            <Skeleton className="h-3 w-20" />
+          </ItemDescription>
+        </ItemContent>
+
+        <ItemActions>
+          <Skeleton className="size-5 rounded-full" />
         </ItemActions>
       </Item>
     </>
