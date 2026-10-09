@@ -188,7 +188,7 @@ function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
           <Badge
             className={cn(
               badgeVariants.preview,
-              "mt-1 block max-w-full truncate text-sm font-medium",
+              "mt-1 block max-w-full truncate text-xs font-medium",
             )}
           >
             {data.name.trim()}

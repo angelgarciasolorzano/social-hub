@@ -63,7 +63,7 @@ function TrustedDeviceSummaryCard({
           {hasLastUsedAt && (
             <dl className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
               <dt className="shrink-0 font-medium">Último uso:</dt>
-              <dd className="m-0 truncate text-sm">{lastUsedAt}</dd>
+              <dd className="m-0 truncate">{lastUsedAt}</dd>
             </dl>
           )}
         </div>

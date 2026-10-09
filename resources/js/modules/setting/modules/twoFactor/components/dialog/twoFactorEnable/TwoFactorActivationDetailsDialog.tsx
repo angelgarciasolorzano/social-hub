@@ -91,7 +91,7 @@ function TwoFactorActivationDetailsDialog({
                 <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
                   Fecha de activación
                 </dt>
-                <dd className="text-sm font-semibold">{activationDate}</dd>
+                <dd className="text-sm font-semibold uppercase">{activationDate}</dd>
               </div>
             </dl>
           </CardContent>
