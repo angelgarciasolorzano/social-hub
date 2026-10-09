@@ -43,8 +43,8 @@ export function OptionCard<TKey extends string = string>({
           const Icon = option.icon;
           const colors = iconColorVariants[option.iconColor];
           const cardClassName = cn(
-            "group flex w-full min-w-0 gap-4 rounded-xl border p-4 text-left shadow-sm transition-all",
-            hasAction && "cursor-pointer hover:shadow-lg",
+            "group flex w-full min-w-0 gap-4 rounded-xl border p-4 text-left shadow-xs transition-all",
+            hasAction && "cursor-pointer hover:shadow-sm",
             hasAction && hoverBorderVariants[option.iconColor as HoverBorderVariant],
           );
           const cardContent = (

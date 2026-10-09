@@ -41,7 +41,7 @@ function SummaryCard({
   renderAction,
 }: SummaryCardProps): JSX.Element {
   return (
-    <Card>
+    <Card className="shadow-xs">
       <CardHeader>
         <h2 className="text-lg leading-none font-semibold tracking-tight">{title}</h2>
       </CardHeader>
