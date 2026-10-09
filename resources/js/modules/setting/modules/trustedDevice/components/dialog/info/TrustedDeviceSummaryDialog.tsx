@@ -3,9 +3,7 @@ import { type JSX } from "react";
 import { usePage } from "@inertiajs/react";
 
 import {
-  ArrowRight,
   Circle,
-  CircleAlert,
   Clock,
   Laptop,
   type LucideIcon,
@@ -18,12 +16,7 @@ import { LabelList, RadialBar, RadialBarChart } from "recharts";
 
 import type { TrustedDeviceStats } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
-import {
-  createDialogCloseHandler,
-  type DialogClosingState,
-} from "@/modules/setting/shared/utils/dialog";
 
-import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/shared/components/shadcn/ui/card";
 import {
@@ -43,17 +36,12 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
-import { useDialog } from "@/shared/hooks";
-
 import { cn } from "@/shared/lib";
 import {
-  alertVariants,
   type IconColorVariant,
   iconColorVariants,
   progressBarClassesByVariant,
 } from "@/shared/lib/styling";
-
-import TrustedDeviceRecommendationsDialog from "./TrustedDeviceRecommendationsDialog";
 
 function percentageOf(value: number, total: number): number {
   if (total <= 0) {
@@ -75,79 +63,47 @@ function TrustedDeviceSummaryDialog({
   const dialogFocusRestoration = useDialogFocusRestoration();
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
-  const recommendationsDialog = useDialog<DialogClosingState | null>(null);
-  const handleRecommendationsClose = createDialogCloseHandler(recommendationsDialog);
-
   return (
-    <>
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!next) onClose();
-        }}
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
+        {...dialogFocusRestoration}
       >
-        <DialogContent
-          className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-4xl"
-          {...dialogFocusRestoration}
-        >
-          <DialogHeader>
-            <DialogTitle asChild>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-                Resumen de dispositivos
-              </h2>
-            </DialogTitle>
+        <DialogHeader>
+          <DialogTitle asChild>
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
+              Resumen de dispositivos
+            </h2>
+          </DialogTitle>
 
-            <DialogDescription className="text-sm font-normal">
-              Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de
-              confianza.
-            </DialogDescription>
-          </DialogHeader>
+          <DialogDescription className="text-sm font-normal">
+            Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de confianza.
+          </DialogDescription>
+        </DialogHeader>
 
-          <ul className="grid list-none grid-cols-2 gap-3 md:grid-cols-4" role="list">
-            <StatCard trustedDeviceStats={stats} />
-          </ul>
+        <ul className="grid list-none grid-cols-2 gap-3 md:grid-cols-4" role="list">
+          <StatCard trustedDeviceStats={stats} />
+        </ul>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <StateDistributionBreakdown trustedDeviceStats={stats} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <StateDistributionBreakdown trustedDeviceStats={stats} />
 
-            <DeviceTypeBreakdown trustedDeviceStats={stats} />
-          </div>
+          <DeviceTypeBreakdown trustedDeviceStats={stats} />
+        </div>
 
-          <Alert className={alertVariants.preview}>
-            <CircleAlert />
-            <AlertTitle className="text-sm font-medium">Mantén tus dispositivos seguros</AlertTitle>
-            <AlertDescription className="flex flex-col items-start gap-4 text-sm font-normal sm:flex-row sm:items-center">
-              Revisa periódicamente los dispositivos que ya no utilizas y elimina aquellos que no
-              reconozcas. Esto ayuda a proteger tu cuenta y evitar accesos no autorizados.
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  recommendationsDialog.show({ closing: false });
-                }}
-              >
-                Ver recomendaciones
-                <ArrowRight />
-              </Button>
-            </AlertDescription>
-          </Alert>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cerrar</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {recommendationsDialog.state !== null && (
-        <TrustedDeviceRecommendationsDialog
-          open={!recommendationsDialog.state.closing}
-          onClose={handleRecommendationsClose}
-        />
-      )}
-    </>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cerrar</Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

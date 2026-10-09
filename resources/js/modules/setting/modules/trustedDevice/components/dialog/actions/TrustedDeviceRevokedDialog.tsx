@@ -73,7 +73,7 @@ function TrustedDeviceRevokedDialog({
 
         <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
 
-        <RevokedActionsAlert onGoToRevokedList={handleGoToRevokedList} />
+        <RevokedActionsAlert />
 
         <DialogFooter>
           <Button onClick={onClose} type="button" variant="outline">
@@ -89,23 +89,15 @@ function TrustedDeviceRevokedDialog({
   );
 }
 
-interface RevokedActionsAlertProps {
-  onGoToRevokedList: () => void;
-}
-
-function RevokedActionsAlert({ onGoToRevokedList }: RevokedActionsAlertProps): JSX.Element {
+function RevokedActionsAlert(): JSX.Element {
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
       <AlertTitle className="text-sm font-medium">
         ¿Quieres volver a confiar en este dispositivo?
       </AlertTitle>
-      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
+      <AlertDescription>
         Reactivarlo desde la lista de revocados restaura la fila con un token nuevo por seguridad.
-        <Button onClick={onGoToRevokedList} size="sm" variant="outline">
-          Ir a la lista de revocados
-          <ArrowRight />
-        </Button>
       </AlertDescription>
     </Alert>
   );

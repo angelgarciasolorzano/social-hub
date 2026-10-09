@@ -71,7 +71,7 @@ function TrustedDeviceExpiredDialog({
 
         <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expiró el" />
 
-        <ExpiredActionsAlert onGoToExpiredList={handleGoToExpiredList} />
+        <ExpiredActionsAlert />
 
         <DialogFooter>
           <Button onClick={onClose} type="button" variant="outline">
@@ -87,21 +87,13 @@ function TrustedDeviceExpiredDialog({
   );
 }
 
-interface ExpiredActionsAlertProps {
-  onGoToExpiredList: () => void;
-}
-
-function ExpiredActionsAlert({ onGoToExpiredList }: ExpiredActionsAlertProps): JSX.Element {
+function ExpiredActionsAlert(): JSX.Element {
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
       <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
-      <AlertDescription className="flex items-center gap-4 text-sm font-normal">
+      <AlertDescription>
         Renueva la confianza para extender la fecha de expiracion sin volver a registrarlo.
-        <Button onClick={onGoToExpiredList} size="sm" variant="outline">
-          Ir a la lista de expirados
-          <ArrowRight />
-        </Button>
       </AlertDescription>
     </Alert>
   );
