@@ -62,7 +62,7 @@ EXPANSION confirmada por el usuario: incluir Spatie desde el inicio, permisos gr
 
 ### TASK-001: Instalar Filament 5 y Spatie Permission v8
 
-Agregar las dependencias compatibles de Filament y Spatie Permission, conservar las restricciones de PHP/Laravel existentes y publicar config/permission.php con el guard web. Livewire llega como dependencia de Filament; no instalar ni modificar paquetes adicionales fuera de este conjunto.
+Agregar las dependencias compatibles de Filament y Spatie Permission, conservar las restricciones de PHP/Laravel existentes y publicar config/permission.php. Spatie resuelve el guard mediante auth.defaults.guard, que en este proyecto es web; mantener teams desactivado. Livewire llega como dependencia de Filament; no instalar ni modificar paquetes adicionales fuera de este conjunto.
 
 **Type:** infra · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -72,7 +72,7 @@ Agregar las dependencias compatibles de Filament y Spatie Permission, conservar 
 
 - composer.json y composer.lock resuelven Filament 5 y Spatie Laravel Permission 8 con PHP 8.5 y Laravel 13.
 - Filament, Livewire y Spatie Permission se resuelven desde Composer con las versiones instaladas, sin cambiar las restricciones actuales de Laravel o PHP.
-- config/permission.php usa web como guard inicial y no habilita teams.
+- Laravel auth.defaults.guard se mantiene en web y config/permission.php mantiene teams desactivado, que es el comportamiento compatible con la configuración de Spatie Permission v8.
 
 **writeScope:**
 
