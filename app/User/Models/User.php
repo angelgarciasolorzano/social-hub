@@ -7,6 +7,7 @@ namespace App\User\Models;
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Like\Models\Like;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
@@ -14,6 +15,8 @@ use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -57,7 +60,7 @@ use Spatie\Permission\Traits\HasRoles;
     'two_factor_secret',
     'two_factor_recovery_codes',
 ])]
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements FilamentUser, HasMedia
 {
     /**
      * @use HasFactory<UserFactory>
@@ -68,6 +71,13 @@ class User extends Authenticatable implements HasMedia
     use InteractsWithMedia;
     use Notifiable;
     use TwoFactorAuthenticatable;
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'admin'
+            && $this->hasVerifiedEmail()
+            && $this->can(AdminPermission::AdminAccess->value);
+    }
 
     /**
      * The morph name used for polymorphic relations.
