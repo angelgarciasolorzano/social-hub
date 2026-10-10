@@ -12,10 +12,12 @@ use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
 use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
+use App\User\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -40,6 +42,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @mixin IdeHelperUser
  */
 #[UseFactory(UserFactory::class)]
+#[UsePolicy(UserPolicy::class)]
 #[Fillable([
     'name',
     'email',
