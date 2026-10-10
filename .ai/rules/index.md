@@ -8,3 +8,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/**/*.php | .ai/rules/backend.md |
 | resources/js/**/*.tsx, resources/js/**/*.ts | .ai/rules/frontend.md |
 | **/* | .ai/rules/linear.md |
+| database/migrations/** | .ai/rules/backend.md |

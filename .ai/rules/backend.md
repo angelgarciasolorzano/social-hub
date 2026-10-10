@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/**/*.php'
+  - 'database/migrations/**'
 ---
 
 # Backend
@@ -19,3 +20,6 @@ When adding or changing a model factory, compare its default state with the mode
 
 ## Use Resources for model serialization
 Use Laravel JsonResource classes to serialize Eloquent models for Inertia or API output. Do not duplicate the same model transformation in a laravel-data class.
+
+## Keep published package migrations global
+When a third-party package migration must be published or copied into the application, keep it in the global database/migrations/ directory rather than inside a domain module. The package integration and feature code remain in their owning application module.

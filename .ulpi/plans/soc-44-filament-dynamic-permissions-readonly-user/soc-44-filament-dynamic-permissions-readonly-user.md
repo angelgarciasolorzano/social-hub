@@ -10,7 +10,7 @@ Instalar Filament 5 y Spatie Laravel Permission v8, integrar roles y permisos co
 
 ## Scope Challenge
 
-EXPANSION confirmada por el usuario: incluir Spatie desde el inicio, permisos granulares y bootstrap/operación por consola. No se añadirá una pantalla de administración de roles/permisos. Las operaciones de roles y permisos serán comandos exclusivos de Artisan. El recurso User seguirá siendo de consulta. La implementación se ubicará bajo app/Modules/Admin para respetar la base modular existente; Filament tendrá su propio PanelProvider y su ciclo de rutas, sin crear un app/Filament nuevo ni proveedores de rutas vacíos.
+EXPANSION confirmada por el usuario: incluir Spatie desde el inicio, permisos granulares y bootstrap/operación por consola. No se añadirá una pantalla de administración de roles/permisos. Las operaciones de roles y permisos serán comandos exclusivos de Artisan. El recurso User seguirá siendo de consulta. La lógica e integración propias se ubicarán bajo app/Modules/Admin para respetar la base modular existente; las migraciones publicadas de paquetes externos estarán en database/migrations. Filament tendrá su propio PanelProvider y su ciclo de rutas, sin crear un app/Filament nuevo ni proveedores de rutas vacíos.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ EXPANSION confirmada por el usuario: incluir Spatie desde el inicio, permisos gr
 - Stack inspeccionado: PHP ^8.5, Laravel ^13.32, Tailwind CSS ^4.3; la documentación de Filament 5 exige PHP 8.2+, Laravel 11.28+ y Tailwind 4.1+.
 - El modelo autenticable real es App\User\Models\User y el único guard actual es web.
 - Antes de implementar el recurso, confirmar en la revisión del plan la allowlist propuesta: name, email, email_verified_at, created_at y last_login_at; no mostrar phone, biography, imágenes ni filas relacionadas salvo justificación explícita.
-- Las migraciones del paquete deben vivir en app/Modules/Admin/Database/Migrations y cargarse desde el proveedor Admin registrado en bootstrap/providers.php.
+- La lógica propia de Admin vivirá en app/Modules/Admin; las migraciones publicadas de paquetes externos vivirán en la carpeta global database/migrations.
 - Las pruebas de Admin se ubicarán en app/Modules/Admin/Tests y se registrarán en phpunit.xml y tests/Pest.php.
 
 ## Non-Goals
@@ -82,9 +82,9 @@ Agregar las dependencias compatibles de Filament y Spatie Permission, conservar 
 
 **validateCommand:** `rtk composer validate && rtk composer show filament/filament && rtk composer show spatie/laravel-permission && rtk composer show livewire/livewire`
 
-### TASK-002: Registrar el módulo Admin y la migración de permisos
+### TASK-002: Crear la migración global de permisos
 
-Crear AdminServiceProvider en app/Modules/Admin, cargar sus migraciones, registrar el provider en bootstrap/providers.php y generar dentro del módulo la migración de Spatie Permission. Mantener la migración compatible con el id big integer de users y con el guard web.
+Generar la migración de Spatie Permission en database/migrations, compatible con el id unsigned big integer de users, el guard web y teams desactivado. El proveedor Admin se añadirá junto con los primeros comandos del módulo, cuando tenga una integración concreta que registrar.
 
 **Type:** infra · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -92,17 +92,14 @@ Crear AdminServiceProvider en app/Modules/Admin, cargar sus migraciones, registr
 
 **Acceptance Criteria:**
 
-- AdminServiceProvider queda registrado una sola vez y carga app/Modules/Admin/Database/Migrations.
-- La migración crea roles, permissions y tablas pivote de Spatie con tipos de clave compatibles con users.id.
-- El comando migrate --pretend limitado a la ruta del módulo descubre la migración; una configuración DB inválida no se oculta como éxito.
+- La migración global crea roles, permissions y tablas pivote de Spatie con tipos de clave compatibles con users.id.
+- El comando migrate --pretend limitado a database/migrations descubre la migración sin aplicarla; una configuración DB inválida no se oculta como éxito.
 
 **writeScope:**
 
-- `bootstrap/providers.php`
-- `app/Modules/Admin/Providers/AdminServiceProvider.php`
-- `app/Modules/Admin/Database/Migrations/2026_10_10_000000_create_permission_tables.php`
+- `database/migrations/2026_10_10_150651_create_permission_tables.php`
 
-**validateCommand:** `rtk php artisan migrate --pretend --path=app/Modules/Admin/Database/Migrations`
+**validateCommand:** `rtk php artisan migrate --pretend --path=database/migrations`
 
 ### TASK-003: Registrar la suite Pest de Admin
 
@@ -233,7 +230,7 @@ Implementar FilamentUser::canAccessPanel(Panel $panel) en User. Permitir únicam
 
 ### TASK-009: Crear el comando de bootstrap del primer administrador
 
-Crear admin:bootstrap-admin {email}. El comando solo promueve una cuenta existente y verificada cuando todavía no hay ningún usuario con admin.access; asigna admin y users-reader dentro de una transacción. Registrar el comando en AdminServiceProvider.
+Crear admin:bootstrap-admin {email}. El comando solo promueve una cuenta existente y verificada cuando todavía no hay ningún usuario con admin.access; asigna admin y users-reader dentro de una transacción. Crear y registrar AdminServiceProvider junto con el comando para alojar la integración de consola del módulo.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -247,6 +244,7 @@ Crear admin:bootstrap-admin {email}. El comando solo promueve una cuenta existen
 
 **writeScope:**
 
+- `bootstrap/providers.php`
 - `app/Modules/Admin/Providers/AdminServiceProvider.php`
 - `app/Modules/Admin/Console/Commands/AdminBootstrapCommand.php`
 - `app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php`
@@ -385,7 +383,7 @@ Añadir pruebas Livewire/Filament del recurso de usuarios para permisos viewAny/
 
 ### TASK-016: Documentar la integración Admin, Filament y Spatie
 
-Actualizar la arquitectura backend y las referencias del proyecto para reflejar el módulo Admin, la excepción de rutas provistas por Filament, los nombres de permisos, los comandos de bootstrap/operación, los datos visibles y la ubicación modular de migraciones y pruebas.
+Actualizar la arquitectura backend y las referencias del proyecto para reflejar el módulo Admin, la excepción de rutas provistas por Filament, los nombres de permisos, los comandos de bootstrap/operación, los datos visibles, la ubicación global de migraciones publicadas de paquetes y la ubicación modular de la implementación y las pruebas.
 
 **Type:** docs · **Effort:** M · **Agent:** general-purpose · **Priority:** P2
 
@@ -442,7 +440,7 @@ El único corte liberable es después de TASK-017 con pruebas y gates verdes. No
 ## Test Coverage Map
 
 - **TASK-001:** validación: `rtk composer validate && rtk composer show filament/filament && rtk composer show spatie/laravel-permission && rtk composer show livewire/livewire`
-- **TASK-002:** validación: `rtk php artisan migrate --pretend --path=app/Modules/Admin/Database/Migrations`
+- **TASK-002:** validación: `rtk php artisan migrate --pretend --path=database/migrations`
 - **TASK-003:** `tests/Pest.php`
 - **TASK-004:** validación: `rtk php -l app/Modules/Admin/Enums/AdminRole.php && rtk php -l app/Modules/Admin/Enums/AdminPermission.php && rtk php -l app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php`
 - **TASK-005:** `app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php`
