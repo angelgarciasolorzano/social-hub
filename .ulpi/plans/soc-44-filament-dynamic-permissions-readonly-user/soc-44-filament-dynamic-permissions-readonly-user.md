@@ -341,7 +341,7 @@ Crear la hoja del tema Filament, incorporarla como entrada Vite independiente y 
 
 ### TASK-014: Crear Users Resource de consulta con lista y detalle
 
-Crear UserResource, ListUsers y ViewUser bajo app/Modules/Admin/Filament/Resources. Implementar búsqueda por name/email, paginación y detalle con infolist de campos allowlisted. No generar páginas Create/Edit ni acciones de escritura.
+Crear UserResource, ListUsers y ViewUser bajo app/Modules/Admin/Filament/Resources/Users, conservando la estructura generada de Filament para recursos y sus páginas. Implementar búsqueda por name/email, paginación y detalle con infolist de campos allowlisted. No generar páginas Create/Edit ni acciones de escritura.
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -355,9 +355,9 @@ Crear UserResource, ListUsers y ViewUser bajo app/Modules/Admin/Filament/Resourc
 
 **writeScope:**
 
-- `app/Modules/Admin/Filament/Resources/UserResource.php`
-- `app/Modules/Admin/Filament/Resources/UserResource/Pages/ListUsers.php`
-- `app/Modules/Admin/Filament/Resources/UserResource/Pages/ViewUser.php`
+- `app/Modules/Admin/Filament/Resources/Users/UserResource.php`
+- `app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php`
+- `app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php`
 
 **validateCommand:** `rtk php artisan route:list --path=admin`
 

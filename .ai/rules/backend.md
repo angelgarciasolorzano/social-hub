@@ -29,3 +29,6 @@ When an input flow uses sandermuller/laravel-fluent-validation, define its Fluen
 
 ## Type backed enums in Data objects
 For finite domain values represented by a backed enum, type Laravel Data properties as that enum instead of string/int. Build from validated request data and keep request validation in the FormRequest; map the enum to its backing scalar with ->value at persistence or serialization boundaries that expect a primitive.
+
+## Preserve Filament resource directory conventions
+For code under app/Modules/Admin/Filament, keep Filament's generated resource layout beneath the module root: place each resource in a directory named for its plural model (for example, Resources/Users/UserResource.php) and keep resource pages under that directory's Pages folder. When using Filament generators with custom namespaces, preserve this per-resource hierarchy.

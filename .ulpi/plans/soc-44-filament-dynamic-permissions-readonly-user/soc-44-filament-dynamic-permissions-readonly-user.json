@@ -658,19 +658,19 @@
       ],
       "filesToModify": [],
       "filesToCreate": [
-        "app/Modules/Admin/Filament/Resources/UserResource.php",
-        "app/Modules/Admin/Filament/Resources/UserResource/Pages/ListUsers.php",
-        "app/Modules/Admin/Filament/Resources/UserResource/Pages/ViewUser.php"
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
       ],
       "writeScope": [
-        "app/Modules/Admin/Filament/Resources/UserResource.php",
-        "app/Modules/Admin/Filament/Resources/UserResource/Pages/ListUsers.php",
-        "app/Modules/Admin/Filament/Resources/UserResource/Pages/ViewUser.php"
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
       ],
       "fileRoles": {
-        "app/Modules/Admin/Filament/Resources/UserResource.php": "Definir modelo, columnas, búsqueda, políticas, infolist y páginas disponibles.",
-        "app/Modules/Admin/Filament/Resources/UserResource/Pages/ListUsers.php": "Renderizar listado y búsqueda de usuarios.",
-        "app/Modules/Admin/Filament/Resources/UserResource/Pages/ViewUser.php": "Renderizar el detalle de solo lectura."
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php": "Definir modelo, columnas, búsqueda, políticas, infolist y páginas disponibles.",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php": "Renderizar listado y búsqueda de usuarios.",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php": "Renderizar el detalle de solo lectura."
       },
       "validateCommand": "rtk php artisan route:list --path=admin",
       "review": "codex"
