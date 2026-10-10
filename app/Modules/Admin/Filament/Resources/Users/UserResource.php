@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users;
 
 use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
+use App\Modules\Admin\Filament\Resources\Users\Tables\UsersTable;
 use App\User\Models\User;
 use BackedEnum;
 use Filament\Infolists\Components\TextEntry;
@@ -13,7 +14,6 @@ use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Override;
 
@@ -42,14 +42,7 @@ class UserResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                TextColumn::make('name')->searchable()->sortable(),
-                TextColumn::make('email')->searchable()->sortable(),
-                TextColumn::make('email_verified_at')->dateTime()->sortable(),
-                TextColumn::make('created_at')->dateTime()->sortable(),
-                TextColumn::make('last_login_at')->dateTime()->sortable(),
-            ]);
+        return UsersTable::configure($table);
     }
 
     /**
