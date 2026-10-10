@@ -11,7 +11,11 @@ export default defineConfig({
     plugins: [
         devtools(),
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app/app.tsx'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app/app.tsx',
+                'resources/css/filament/admin/theme.css',
+            ],
             refresh: true,
         }),
         inertia(),
