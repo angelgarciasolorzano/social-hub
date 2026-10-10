@@ -9,14 +9,3 @@ paths:
 
 ## No single-letter variable names in PHP or TypeScript closures
 Variables, parameters, and closure-captured values must be full descriptive words (e.g. $candidate, $deviceFilter). Single-letter names like $v, $i, $e are forbidden. Only acceptable exception: numeric for-loop counter (for ($i = 0; ...)).
-
-## Dialogs never mutate the URL for their own filter state; use committedFilters for empty-state copy
-A dialog's internal filters/pagination are ephemeral UI state, not shareable page state — use `router.reload({ data, only: [...], preserveUrl: true, replace: true })`, never `router.get()`, so the browser URL stays untouched. Full-page toolbars are the opposite: their filters SHOULD live in the URL for shareability/bookmarking, so they legitimately use `router.get()` (see `useTrustedDeviceFilters.ts` vs. the dialog-scoped `useActivityFilters.ts`).
-
-Both filter hooks also expose a `committedFilters` snapshot (updated only inside `triggerReload`, i.e. the instant a request is actually sent) separate from the live `filters` state (updated on every keystroke). Any UI that must stay in sync with the currently-rendered data — e.g. an empty-state message driven by "are filters active?" — must read `committedFilters`, not `filters`. Reading the live `filters` causes a visible bug: clearing a debounced search field flips the local state to empty immediately, but the actual (still-filtered, still-empty) dataset doesn't arrive for ~500ms+, so the UI briefly (or confusingly) shows the wrong empty-state copy.
-
-## Keep FluentRule definitions in FormRequests
-When an input flow uses sandermuller/laravel-fluent-validation, define its FluentRule chains in the FormRequest rules() method with HasFluentRules. A Laravel Data class may provide typed properties and input-to-model mapping, but must not define or return FluentRule rules; it should be built from the already validated FormRequest data.
-
-## Type backed enums in Data objects
-For finite domain values represented by a backed enum, type Laravel Data properties as that enum instead of string/int. Build from validated request data and keep request validation in the FormRequest; map the enum to its backing scalar with ->value at persistence or serialization boundaries that expect a primitive.
