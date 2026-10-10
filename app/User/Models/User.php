@@ -26,6 +26,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Override;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property CarbonImmutable|null $created_at
@@ -50,6 +51,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 #[Hidden([
     'password',
     'remember_token',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
 ])]
 class User extends Authenticatable implements HasMedia
 {
@@ -58,6 +61,7 @@ class User extends Authenticatable implements HasMedia
      */
     use HasFactory;
 
+    use HasRoles;
     use InteractsWithMedia;
     use Notifiable;
     use TwoFactorAuthenticatable;
