@@ -17,6 +17,9 @@
         <testsuite name="Post">
             <directory>app/Modules/Post/Tests</directory>
         </testsuite>
+        <testsuite name="Admin">
+            <directory>app/Modules/Admin/Tests</directory>
+        </testsuite>
         <testsuite name="Login">
             <directory>app/Auth/Modules/Login/Tests</directory>
         </testsuite>
