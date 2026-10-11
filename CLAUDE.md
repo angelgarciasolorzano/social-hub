@@ -99,11 +99,11 @@ When adding a new domain: create it under `app/Modules/<Domain>/`, create both p
 
 ### Admin panel (Filament + Spatie Permission)
 
-`Admin` is a system module and exception to the standard two-provider/module-route pattern. `app/Modules/Admin/Providers/AdminPanelProvider.php` is registered in `bootstrap/providers.php`; it configures panel id `admin`, path `/admin`, guard `web`, and discovery under `app/Modules/Admin/Filament/`. Filament supplies the panel routes, so don't add duplicate routes in a module `routes/` directory.
+`Admin` is a system module and exception to the standard two-provider/module-route pattern. `app/Modules/Admin/Providers/AdminPanelProvider.php` is registered in `bootstrap/providers.php`; it configures panel id `admin`, path `/admin`, guard `admin`, and discovery under `app/Modules/Admin/Filament/`. The `admin` session guard uses the existing `users` provider; `web` remains the application's default guard. Filament supplies the panel routes, so don't add duplicate routes in a module `routes/` directory.
 
 Keep Filament resources in the generated per-resource hierarchy under `app/Modules/Admin/Filament/Resources/<PluralModel>/`: the resource class at the directory root, and its `Pages/`, `Schemas/`, and `Tables/` in their own subdirectories as needed. The current User resource is `Users/UserResource.php`, with list/detail pages in `Users/Pages/` and the table definition in `Users/Tables/UsersTable.php`. Follow the [Filament 5 resource documentation](https://filamentphp.com/docs/5.x/resources/overview) when extending this layout.
 
-Authorization identifiers are centralized in `AdminRole` (`admin`, `users-reader`) and `AdminPermission` (`admin.access`, `users.viewAny`, `users.view`); use those enums when adding or changing assignments. The panel requires a verified email and `admin.access`; `UserPolicy` controls read access to User records and denies mutations. User's table/detail view exposes only name, email, verification/creation timestamps, and last login; keep credentials and 2FA secrets out of Filament output.
+Authorization identifiers are centralized in `AdminRole` (`admin`, `users-reader`) and `AdminPermission` (`admin.access`, `users.viewAny`, `users.view`); use those enums and the `admin` guard when adding or changing Spatie assignments. `User` declares `guard_name = admin`; the panel requires a verified email and `admin.access`. `UserPolicy` controls read access to User records and denies mutations. User's table/detail view exposes only name, email, verification/creation timestamps, and last login; keep credentials and 2FA secrets out of Filament output.
 
 The authorization catalog is seeded explicitly because it is not included in `DatabaseSeeder`:
 

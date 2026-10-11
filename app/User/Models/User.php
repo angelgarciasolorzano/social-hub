@@ -84,13 +84,6 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
 
     protected string $guard_name = 'admin';
 
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return $panel->getId() === 'admin'
-            && $this->hasVerifiedEmail()
-            && $this->can(AdminPermission::AdminAccess->value);
-    }
-
     /**
      * The morph name used for polymorphic relations.
      */
@@ -142,6 +135,13 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'recovery_codes_regenerated_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'admin'
+            && $this->hasVerifiedEmail()
+            && $this->can(AdminPermission::AdminAccess->value);
     }
 
     /**
