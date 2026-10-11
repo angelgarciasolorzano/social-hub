@@ -15,6 +15,10 @@ use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -41,6 +45,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonImmutable|null $last_login_at
  * @property CarbonImmutable|null $two_factor_confirmed_at
  * @property CarbonImmutable|null $recovery_codes_regenerated_at
+ * @property string|null $app_authentication_secret
+ * @property array<string>|null $app_authentication_recovery_codes
  *
  * @mixin IdeHelperUser
  */
@@ -59,8 +65,10 @@ use Spatie\Permission\Traits\HasRoles;
     'remember_token',
     'two_factor_secret',
     'two_factor_recovery_codes',
+    'app_authentication_secret',
+    'app_authentication_recovery_codes',
 ])]
-class User extends Authenticatable implements FilamentUser, HasMedia
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasMedia
 {
     /**
      * @use HasFactory<UserFactory>
@@ -68,9 +76,13 @@ class User extends Authenticatable implements FilamentUser, HasMedia
     use HasFactory;
 
     use HasRoles;
+    use InteractsWithAppAuthentication;
+    use InteractsWithAppAuthenticationRecovery;
     use InteractsWithMedia;
     use Notifiable;
     use TwoFactorAuthenticatable;
+
+    protected string $guard_name = 'web';
 
     public function canAccessPanel(Panel $panel): bool
     {
