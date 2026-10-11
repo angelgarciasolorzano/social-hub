@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Posts;
 
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
+use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelationManager;
 use App\Modules\Admin\Filament\Resources\Posts\Tables\PostsTable;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
@@ -108,7 +109,9 @@ class PostResource extends Resource
     #[Override]
     public static function getRelations(): array
     {
-        return [];
+        return [
+            CommentsRelationManager::class,
+        ];
     }
 
     /**
