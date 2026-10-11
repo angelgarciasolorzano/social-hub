@@ -84,15 +84,19 @@ it('derives active expired and revoked states including the expiry boundary', fu
     $trustedDevice = createTrustedDevice($targetUser, [
         'expires_at' => $currentTime->addDay(),
     ]);
+
     $expiredDevice = createTrustedDevice($targetUser, [
         'expires_at' => $currentTime->subSecond(),
     ]);
+
     $boundaryDevice = createTrustedDevice($targetUser, [
         'expires_at' => $currentTime,
     ]);
+
     $revokedDevice = createTrustedDevice($targetUser, [
         'expires_at' => $currentTime->subDay(),
     ]);
+
     $revokedDevice->delete();
 
     $this->actingAs($authenticatedUser, 'admin');

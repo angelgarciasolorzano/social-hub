@@ -17,6 +17,7 @@ beforeEach(function (): void {
 
 it('renders the selected users post comment and active trusted device counts', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::UsersReader->value,
@@ -76,6 +77,7 @@ it('renders the selected users post comment and active trusted device counts', f
 
 it('shows zero counts when the selected user has no activity', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::UsersReader->value,
