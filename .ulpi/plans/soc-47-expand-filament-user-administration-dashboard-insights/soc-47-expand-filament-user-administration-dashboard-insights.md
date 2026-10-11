@@ -187,9 +187,9 @@ Add a Posts resource discovered by the existing Admin panel, with a paginated se
 **writeScope:**
 - `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
 - `app/Modules/Admin/Filament/Resources/Posts/Pages/ListPosts.php`
-- `app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
 
 **Review:** Codex
 
@@ -208,9 +208,9 @@ Add a full-page view for a selected post using Filament native resource routing 
 **writeScope:**
 - `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
 - `app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php`
-- `app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php`
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php`
 
 **Review:** Codex
 
@@ -229,9 +229,9 @@ Add a read-only Comments relation manager to the Post detail page. Show comments
 **writeScope:**
 - `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
 - `app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php`
-- `app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
 
 **Review:** Codex
 
@@ -335,9 +335,9 @@ El corte liberable es después de TASK-012, con todos los slices integrados, tes
 - **TASK-003:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/UserActivityOverviewTest.php`
 - **TASK-004:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/TrustedDevicesRelationManagerTest.php`
 - **TASK-005:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php`
-- **TASK-006:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
-- **TASK-007:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
-- **TASK-008:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- **TASK-006:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
+- **TASK-007:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php`
+- **TASK-008:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
 - **TASK-009:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php`
 - **TASK-010:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/RegistrationDashboardTest.php`
 - **TASK-011:** `rtk git diff --check -- docs/architecture/backend.md`

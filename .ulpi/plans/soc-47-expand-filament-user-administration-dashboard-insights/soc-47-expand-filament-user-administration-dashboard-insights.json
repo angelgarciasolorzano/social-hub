@@ -264,14 +264,14 @@
       "filesToCreate": [
         "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
         "app/Modules/Admin/Filament/Resources/Posts/Pages/ListPosts.php",
-        "app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php"
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php"
       ],
       "writeScope": [
         "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
         "app/Modules/Admin/Filament/Resources/Posts/Pages/ListPosts.php",
-        "app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php"
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php"
       ],
-      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php",
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php",
       "review": "codex"
     },
     {
@@ -290,18 +290,18 @@
         "Direct access is denied when the admin lacks users.view or the post has no authorized owner, and the detail page has no mutation actions."
       ],
       "filesToModify": [
-        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
-        "app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php"
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php"
       ],
       "filesToCreate": [
-        "app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php"
+        "app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php"
       ],
       "writeScope": [
         "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
         "app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php",
-        "app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php"
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php"
       ],
-      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php",
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
       "review": "codex"
     },
     {
@@ -320,18 +320,18 @@
         "Opening one comment shows its content and replies with authors, while unauthorized access and all mutation actions remain blocked."
       ],
       "filesToModify": [
-        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
-        "app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php"
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php"
       ],
       "filesToCreate": [
-        "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php"
+        "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php"
       ],
       "writeScope": [
         "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
         "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php",
-        "app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php"
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php"
       ],
-      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php",
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php",
       "review": "codex"
     },
     {
