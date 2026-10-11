@@ -32,3 +32,6 @@ For finite domain values represented by a backed enum, type Laravel Data propert
 
 ## Preserve Filament resource directory conventions
 For code under app/Modules/Admin/Filament, keep Filament's generated resource layout beneath the module root: place each resource in a directory named for its plural model (for example, Resources/Users/UserResource.php) and keep resource pages under that directory's Pages folder. When using Filament generators with custom namespaces, preserve this per-resource hierarchy.
+
+## Keep Filament component declarations in native methods
+Across all Filament classes, keep concise component declarations in the framework-provided method so Filament's native structure stays visible. For example, declare StatsOverviewWidget Stat::make() entries directly in getStats(). Extract substantial or reusable queries and calculations into private methods; avoid one wrapper method per individual component.
