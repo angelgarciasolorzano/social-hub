@@ -71,10 +71,10 @@ class CommentsRelationManager extends RelationManager
                         $data['user'] = ['name' => $comment->user->name];
 
                         $data['replies'] = $comment->comments
-                            ->map(static fn (Comment $reply): array => [
-                                'user' => ['name' => $reply->user->name],
-                                'created_at' => $reply->created_at?->toDateTimeString(),
-                                'content' => $reply->content,
+                            ->map(static fn (Comment $comment): array => [
+                                'user' => ['name' => $comment->user->name],
+                                'created_at' => $comment->created_at?->toDateTimeString(),
+                                'content' => $comment->content,
                             ])
                             ->all();
 

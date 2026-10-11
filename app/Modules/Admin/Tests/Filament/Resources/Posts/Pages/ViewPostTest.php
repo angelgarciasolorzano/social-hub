@@ -25,8 +25,8 @@ it('allows users with users view permission to view a post and its author', func
         AdminRole::UsersReader->value,
     ]);
 
-    $author = createUser();
-    $post = createPost($author, ['content' => 'Post detail content sentinel']);
+    $user = createUser();
+    $post = createPost($user, ['content' => 'Post detail content sentinel']);
     $createdAt = $post->created_at;
     $updatedAt = $post->updated_at;
 
@@ -44,17 +44,17 @@ it('allows users with users view permission to view a post and its author', func
     $testable = Livewire::test(ViewPost::class, ['record' => $post->getKey()])
         ->assertOk()
         ->assertSeeText('Post detail content sentinel')
-        ->assertSeeText($author->name)
+        ->assertSeeText($user->name)
         ->assertSeeText('Created at')
         ->assertSeeText('Updated at')
         ->assertSeeText($createdAt->format('M j, Y'))
         ->assertSeeText($updatedAt->format('M j, Y'));
 
-    $viewPage = $testable->instance();
+    $component = $testable->instance();
 
-    throw_unless($viewPage instanceof ViewPost, LogicException::class, 'The detail test must resolve the Filament ViewPost page.');
+    throw_unless($component instanceof ViewPost, LogicException::class, 'The detail test must resolve the Filament ViewPost page.');
 
-    expect($viewPage->getCachedHeaderActions())->toBeEmpty();
+    expect($component->getCachedHeaderActions())->toBeEmpty();
 });
 
 it('denies post detail without users view permission even when users view any is granted', function (): void {

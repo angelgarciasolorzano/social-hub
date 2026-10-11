@@ -32,11 +32,11 @@ it('lists only the selected posts comments with pagination without loading repli
         AdminRole::UsersReader->value,
     ]);
 
-    $postAuthor = createUser();
+    $user = createUser();
     $commentAuthor = createUser();
     $replyAuthor = createUser();
     $otherPostAuthor = createUser();
-    $post = createPost($postAuthor);
+    $post = createPost($user);
     $otherPost = createPost($otherPostAuthor);
     $targetComments = collect();
 
@@ -87,14 +87,14 @@ it('lists only the selected posts comments with pagination without loading repli
         ->assertDontSeeText('Reply loaded only from the view action sentinel')
         ->assertDontSeeText('Foreign post comment sentinel');
 
-    $relationManager = $testable->instance();
+    $component = $testable->instance();
 
-    throw_unless($relationManager instanceof HasTable, LogicException::class, 'The comments relation must expose a Filament table.');
+    throw_unless($component instanceof HasTable, LogicException::class, 'The comments relation must expose a Filament table.');
 
-    $firstPageComments = visibleCommentRecords($relationManager);
-    $firstPageCommentIds = array_map(static fn (Comment $comment): string => commentResourceKey($comment), $firstPageComments);
+    $firstPageComments = visibleCommentRecords($component);
+    $firstPageCommentIds = array_map(commentResourceKey(...), $firstPageComments);
 
-    expect($relationManager->getAllTableRecordsCount())
+    expect($component->getAllTableRecordsCount())
         ->toBe(11)
         ->and($firstPageComments)
         ->toHaveCount(10)
@@ -116,7 +116,7 @@ it('lists only the selected posts comments with pagination without loading repli
 
     $secondPageComments = visibleCommentRecords($secondPage);
 
-    expect(array_map(static fn (Comment $comment): string => commentResourceKey($comment), $secondPageComments))
+    expect(array_map(commentResourceKey(...), $secondPageComments))
         ->toBe([commentResourceKey($firstTargetComment)]);
 
     foreach ($secondPageComments as $secondPageComment) {
@@ -131,10 +131,10 @@ it('opens a comment with its replies and authors in a read only view action', fu
         AdminRole::UsersReader->value,
     ]);
 
-    $postAuthor = createUser();
+    $user = createUser();
     $commentAuthor = createUser();
     $replyAuthor = createUser();
-    $post = createPost($postAuthor);
+    $post = createPost($user);
 
     $selectedComment = createComment($commentAuthor, [
         'commentable_id' => $post->getKey(),
@@ -228,9 +228,9 @@ it('denies the comments relation without users view even when users view any is 
 /**
  * @return list<Comment>
  */
-function visibleCommentRecords(HasTable $tableComponent): array
+function visibleCommentRecords(HasTable $hasTable): array
 {
-    $records = $tableComponent->getTableRecords();
+    $records = $hasTable->getTableRecords();
 
     $pageRecords = match (true) {
         $records instanceof Paginator,

@@ -27,11 +27,11 @@ it('lists posts with pagination and content search', function (): void {
         AdminRole::UsersReader->value,
     ]);
 
-    $author = createUser();
-    $targetPosts = collect([createPost($author, ['content' => 'Target post 01'])]);
+    $user = createUser();
+    $targetPosts = collect([createPost($user, ['content' => 'Target post 01'])]);
 
     foreach (range(2, 11) as $sequence) {
-        $targetPosts->push(createPost($author, [
+        $targetPosts->push(createPost($user, [
             'content' => 'Target post '.str_pad((string) $sequence, 2, '0', STR_PAD_LEFT),
         ]));
     }
@@ -49,16 +49,16 @@ it('lists posts with pagination and content search', function (): void {
     $testable = Livewire::test(ListPosts::class)
         ->assertOk()
         ->assertSeeText('Target post 11')
-        ->assertSeeText($author->name)
+        ->assertSeeText($user->name)
         ->assertSeeText('Other author post sentinel');
 
-    $listPage = $testable->instance();
+    $component = $testable->instance();
 
-    throw_unless($listPage instanceof HasTable, LogicException::class, 'The Posts index must expose a Filament table.');
+    throw_unless($component instanceof HasTable, LogicException::class, 'The Posts index must expose a Filament table.');
 
-    expect($listPage->getAllTableRecordsCount())
+    expect($component->getAllTableRecordsCount())
         ->toBe(12)
-        ->and(visiblePostResourceIds($listPage))
+        ->and(visiblePostResourceIds($component))
         ->not->toContain(postResourceKey($firstTargetPost));
 
     $testable->call('setPage', 2);
@@ -119,9 +119,9 @@ it('keeps the Posts resource index read only', function (): void {
 /**
  * @return list<string>
  */
-function visiblePostResourceIds(HasTable $tableComponent): array
+function visiblePostResourceIds(HasTable $hasTable): array
 {
-    $records = $tableComponent->getTableRecords();
+    $records = $hasTable->getTableRecords();
 
     $pageRecords = match (true) {
         $records instanceof Paginator,
