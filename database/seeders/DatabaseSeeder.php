@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Auth\Database\Seeders\TrustedDeviceSeeder;
+use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
+use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
 use App\Modules\Post\Database\Seeders\PostSeeder;
 use App\User\Database\Seeders\UserSeeder;
@@ -19,6 +21,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
+            AdminAuthorizationSeeder::class,
+            AdminUserSeeder::class,
             TrustedDeviceSeeder::class,
             PostSeeder::class,
             CommentSeeder::class,

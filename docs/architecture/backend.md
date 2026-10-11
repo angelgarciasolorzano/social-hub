@@ -13,11 +13,32 @@ Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\
 | Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/Commands/`, `app/Support/` |
 | Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                                                      |
 
-**Estado de la migración:** la arquitectura es incremental. Hoy **Post** y **Comment** viven en `app/Modules/Post/` y `app/Modules/Comment/`. Los demás dominios (`Auth`, `Friendship`, `Home`, `Like`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+**Estado de la migración:** la arquitectura es incremental. **Post** y **Comment** viven en `app/Modules/Post/` y `app/Modules/Comment/`; **Admin** vive en `app/Modules/Admin/` como módulo del sistema, no como un dominio CRUD estándar. Los demás dominios (`Auth`, `Friendship`, `Home`, `Like`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
 
 **Código global (SOC-42):** no todo lo que vive hoy en la raíz de `app/` es un dominio pendiente de migrar. Va fuera de `app/Modules/` lo que sirve a varios dominios o al framework y no tiene modelos, rutas ni lógica de negocio propia: comandos de Artisan en `app/Console/Commands/` (se descubren solos; no necesitan provider), providers y middleware globales, y clases compartidas sin dominio en `app/Support/`. `MediaLibrary` es el ejemplo: es una integración con `spatie/laravel-medialibrary` que usan Post y User, así que su path generator vive en `app/Support/MediaLibrary/`, su comando en `app/Console/Commands/MediaLibraryCleanFoldersCommand.php` y sus tests en `tests/Feature/MediaLibrary/` (código global, no en `app/Modules/`). `app/Support/` es una carpeta base aprobada explícitamente en SOC-42; crear otra carpeta base requiere aprobación, como indica `AGENTS.md`. Los comandos destructivos se protegen con `Prohibitable` y se prohíben en producción desde `AppServiceProvider::boot()`.
 
 **Frontend y Wayfinder:** el namespace del controller determina la ruta de las acciones generadas. Un módulo migrado se importa desde `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; los de la arquitectura vieja, desde `@/shared/wayfinder/actions/App/<Domain>/…`. El directorio está en `.gitignore`: tras mover un módulo, regenera con `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` y actualiza los imports.
+
+### Panel administrativo: Filament y Spatie Permission (SOC-44)
+
+`app/Modules/Admin/` contiene la integración administrativa. Es una excepción al patrón de dos providers y rutas manuales: `AdminPanelProvider` se registra en `bootstrap/providers.php`, configura el panel Filament con id `admin`, URL `/admin` y guard `web`, y descubre sus recursos dentro de `app/Modules/Admin/Filament/`. `AdminServiceProvider` registra los comandos Artisan del módulo; Filament genera y registra las rutas del panel.
+
+Los recursos siguen la jerarquía de Filament por recurso, dentro del módulo: `Filament/Resources/<PluralModel>/<Model>Resource.php`, con `Pages/`, `Schemas/` y `Tables/` según se necesiten. Por ejemplo, `Users/UserResource.php` delega su tabla a `Users/Tables/UsersTable.php`, mientras que `Users/Pages/` contiene `ListUsers` y `ViewUser`. Consulta la [documentación de recursos de Filament 5](https://filamentphp.com/docs/5.x/resources/overview) para esta convención.
+
+La autorización de panel y recursos usa Spatie Permission con el guard `web`. `User::canAccessPanel()` exige el panel `admin`, correo verificado y `admin.access`. `AdminRole` y `AdminPermission` en `app/Modules/Admin/Enums/` son el catálogo de identificadores: los roles iniciales son `admin` y `users-reader`; los permisos son `admin.access`, `users.viewAny` y `users.view`. El seeder `AdminAuthorizationSeeder` crea el catálogo y asigna permisos predeterminados solo al crear cada rol, preservando los cambios operativos en ejecuciones posteriores. `App\User\Policies\UserPolicy`, asociada al modelo User con `#[UsePolicy]`, autoriza lectura con `users.viewAny` y `users.view`; las operaciones de escritura están denegadas.
+
+`UserResource` lista y muestra únicamente `name`, `email`, `email_verified_at`, `created_at` y `last_login_at`; no presenta contraseñas ni secretos/códigos de 2FA. Las pruebas viven en `app/Modules/Admin/Tests/{Commands,Database,Filament,Models,Policies}/` y cubren comandos, seeder, acceso al panel, lectura/escritura de User y autorización.
+
+La migración publicada por Spatie para sus tablas permanece en la carpeta global `database/migrations/`. Las migraciones publicadas por paquetes externos se mantienen allí; la implementación propia de Admin, sus seeders y pruebas viven en `app/Modules/Admin/`.
+
+`DatabaseSeeder` ejecuta `AdminAuthorizationSeeder` para crear el catálogo de roles y permisos. `AdminUserSeeder` asigna los roles iniciales a Angel y al grupo aleatorio de administradores de panel únicamente en los entornos `local` y `testing`; en otros entornos no modifica los roles de usuarios. Para preparar el primer administrador en producción, inicializa el catálogo y ejecuta el comando de bootstrap con la cuenta verificada que corresponda:
+
+```bash
+php artisan db:seed --class='App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder'
+php artisan admin:bootstrap-admin admin@example.com
+```
+
+`admin:bootstrap-admin` promueve a un usuario existente con correo verificado cuando todavía no existe ningún usuario con `admin.access`, asignándole los roles `admin` y `users-reader`. Para asignaciones posteriores se usan `admin:user-role grant|revoke <email> <admin|users-reader>` y `admin:role-permissions grant|revoke <admin|users-reader> <admin.access|users.viewAny|users.view>`; ambos comandos restringen entradas al catálogo de enums y protegen el último acceso al panel. La gestión de roles y permisos se realiza por consola; SOC-44 no agrega una pantalla administrativa para ello.
 
 ## 1. Convención de nomenclatura
 
@@ -96,7 +117,7 @@ El cambio de contraseña conserva su responsabilidad de backend en `app/Auth/Mod
 
 La infraestructura compartida de User se organiza en `app/User/Database/{Migrations,Factories,Seeders}/`. `UserServiceProvider` carga las migraciones modulares; la migración de AccountSettings se encuentra allí. Las migraciones iniciales de Laravel permanecen en la carpeta raíz `database/migrations/` y no se mueven a User.
 
-El estado de cuenta se difiere a SOC-35 y solo debe abordarse cuando exista un panel administrativo con roles y permisos. En ese contexto se definirá su fuente autoritativa; AccountSettings no lo infiere de la verificación del correo, el último acceso ni la sesión activa.
+El estado de cuenta sigue siendo alcance de SOC-35. SOC-44 agrega el panel y el catálogo de roles/permisos, pero no define ni modifica la fuente autoritativa del estado; AccountSettings no lo infiere de la verificación del correo, el último acceso ni la sesión activa.
 
 ### Cuándo subdividir
 
@@ -185,7 +206,7 @@ app/<Module>/Modules/<Feature>/
 
 Las pruebas nuevas se guardan junto al módulo dueño de la funcionalidad:
 
-- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (hoy Post y Comment).
+- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (Post y Comment), además del módulo del sistema `app/Modules/Admin/Tests/`.
 - Módulo de dominio en la arquitectura vieja: `app/<Domain>/Tests/`.
 - Funcionalidad de un submódulo (arquitectura vieja): `app/<Domain>/Modules/<Feature>/Tests/`.
 - Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes que aún no se hayan migrado; no agregues allí nuevas pruebas específicas de un módulo.

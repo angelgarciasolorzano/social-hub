@@ -34,6 +34,7 @@ pest()->extend(TestCase::class)
         'Feature',
         __DIR__.'/../app/Modules/Comment/Tests',
         __DIR__.'/../app/Modules/Post/Tests',
+        __DIR__.'/../app/Modules/Admin/Tests',
         __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests',
         __DIR__.'/../app/Auth/Modules/Password/Tests',
         __DIR__.'/../app/Auth/Modules/Login/Tests',

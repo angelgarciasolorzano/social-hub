@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/**/*.php'
+  - 'database/migrations/**'
 ---
 
 # Backend
@@ -19,3 +20,15 @@ When adding or changing a model factory, compare its default state with the mode
 
 ## Use Resources for model serialization
 Use Laravel JsonResource classes to serialize Eloquent models for Inertia or API output. Do not duplicate the same model transformation in a laravel-data class.
+
+## Keep published package migrations global
+When a third-party package migration must be published or copied into the application, keep it in the global database/migrations/ directory rather than inside a domain module. The package integration and feature code remain in their owning application module.
+
+## Keep FluentRule definitions in FormRequests
+When an input flow uses sandermuller/laravel-fluent-validation, define its FluentRule chains in the FormRequest rules() method with HasFluentRules. A Laravel Data class may provide typed properties and input-to-model mapping, but must not define or return FluentRule rules; it should be built from the already validated FormRequest data.
+
+## Type backed enums in Data objects
+For finite domain values represented by a backed enum, type Laravel Data properties as that enum instead of string/int. Build from validated request data and keep request validation in the FormRequest; map the enum to its backing scalar with ->value at persistence or serialization boundaries that expect a primitive.
+
+## Preserve Filament resource directory conventions
+For code under app/Modules/Admin/Filament, keep Filament's generated resource layout beneath the module root: place each resource in a directory named for its plural model (for example, Resources/Users/UserResource.php) and keep resource pages under that directory's Pages folder. When using Filament generators with custom namespaces, preserve this per-resource hierarchy.

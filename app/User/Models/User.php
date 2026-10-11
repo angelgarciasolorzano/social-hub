@@ -7,15 +7,24 @@ namespace App\User\Models;
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Like\Models\Like;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
 use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
+use App\User\Policies\UserPolicy;
 use Carbon\CarbonImmutable;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -26,6 +35,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Override;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property CarbonImmutable|null $created_at
@@ -35,10 +45,13 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property CarbonImmutable|null $last_login_at
  * @property CarbonImmutable|null $two_factor_confirmed_at
  * @property CarbonImmutable|null $recovery_codes_regenerated_at
+ * @property string|null $app_authentication_secret
+ * @property array<string>|null $app_authentication_recovery_codes
  *
  * @mixin IdeHelperUser
  */
 #[UseFactory(UserFactory::class)]
+#[UsePolicy(UserPolicy::class)]
 #[Fillable([
     'name',
     'email',
@@ -50,17 +63,33 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 #[Hidden([
     'password',
     'remember_token',
+    'two_factor_secret',
+    'two_factor_recovery_codes',
+    'app_authentication_secret',
+    'app_authentication_recovery_codes',
 ])]
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasMedia
 {
     /**
      * @use HasFactory<UserFactory>
      */
     use HasFactory;
 
+    use HasRoles;
+    use InteractsWithAppAuthentication;
+    use InteractsWithAppAuthenticationRecovery;
     use InteractsWithMedia;
     use Notifiable;
     use TwoFactorAuthenticatable;
+
+    protected string $guard_name = 'admin';
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'admin'
+            && $this->hasVerifiedEmail()
+            && $this->can(AdminPermission::AdminAccess->value);
+    }
 
     /**
      * The morph name used for polymorphic relations.

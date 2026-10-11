@@ -11,7 +11,9 @@
     "packages": [
         "sandermuller/laravel-fluent-validation",
         "spatie/laravel-medialibrary",
-        "fruitcake/laravel-debugbar"
+        "fruitcake/laravel-debugbar",
+        "filament/filament",
+        "spatie/laravel-permission"
     ],
     "sail": false,
     "skills": [
@@ -24,11 +26,13 @@
         "tailwindcss-development",
         "echo-react-development",
         "echo-development",
+        "filament-development",
         "fluent-validation",
         "fluent-validation-livewire",
         "fluent-validation-migrate-messages",
         "fluent-validation-optimize",
         "medialibrary-development",
+        "laravel-permission-development",
         "debug-using-debugbar",
         "social-hub-conventions"
     ]

@@ -102,6 +102,7 @@ export default defineConfig([
     "bootstrap/cache/**",
     "bootstrap/ssr/**",
     "public/build/**",
+    "public/js/filament/**",
     "storage/**",
     "resources/js/shared/wayfinder/**",
     "resources/js/shared/components/shadcn/ui/**",

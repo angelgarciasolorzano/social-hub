@@ -1,0 +1,953 @@
+{
+  "title": "SOC-44: Panel administrativo Filament con permisos dinámicos y consulta de usuarios",
+  "issue": {
+    "key": "SOC-44",
+    "title": "Feature: Implement Filament admin panel, roles, and user management",
+    "status": "Backlog",
+    "priority": "Medium",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-44/feature-implement-filament-admin-panel-roles-and-user-management",
+    "context": "Expandir SOC-44 para usar Spatie Laravel Permission y permitir perfiles administrativos de mínimo privilegio. SOC-35 seguirá separado y bloqueado hasta que este panel y su autorización estén completos."
+  },
+  "planningMode": "EXPANSION",
+  "executionStyle": "Por fases; implementar un TASK por vez y detenerse para revisión después de cada tarea.",
+  "reviewDefault": "codex",
+  "overview": "Instalar Filament 5 y Spatie Laravel Permission v8, integrar roles y permisos con el User personalizado del proyecto, provisionar y administrar asignaciones desde Artisan, proteger un panel Filament y añadir un único recurso User de solo lectura. El rol admin concede entrada al panel; permisos separados controlan cada recurso. La primera cuenta administrativa se promociona desde consola y no existe flujo web de autoasignación.",
+  "scopeChallenge": "EXPANSION confirmada por el usuario: incluir Spatie desde el inicio, permisos granulares y bootstrap/operación por consola. No se añadirá una pantalla de administración de roles/permisos. Las operaciones de roles y permisos serán comandos exclusivos de Artisan. El recurso User seguirá siendo de consulta. La lógica e integración propias se ubicarán bajo app/Modules/Admin para respetar la base modular existente; las migraciones publicadas de paquetes externos estarán en database/migrations. Filament tendrá su propio PanelProvider y su ciclo de rutas, sin crear un app/Filament nuevo ni proveedores de rutas vacíos.",
+  "prerequisites": [
+    "SOC-44 permanece en Backlog hasta que el usuario autorice comenzar la implementación; este plan no cambia el issue de Linear.",
+    "Stack inspeccionado: PHP ^8.5, Laravel ^13.32, Tailwind CSS ^4.3; la documentación de Filament 5 exige PHP 8.2+, Laravel 11.28+ y Tailwind 4.1+.",
+    "El modelo autenticable real es App\\User\\Models\\User y el único guard actual es web.",
+    "Antes de implementar el recurso, confirmar en la revisión del plan la allowlist propuesta: name, email, email_verified_at, created_at y last_login_at; no mostrar phone, biography, imágenes ni filas relacionadas salvo justificación explícita.",
+    "La lógica propia de Admin vivirá en app/Modules/Admin; las migraciones publicadas de paquetes externos vivirán en la carpeta global database/migrations.",
+    "Las pruebas de Admin se ubicarán en app/Modules/Admin/Tests y se registrarán en phpunit.xml y tests/Pest.php."
+  ],
+  "nonGoals": [
+    "Implementar suspensión/reactivación o cualquier estado persistido de cuenta: permanece en SOC-35.",
+    "Añadir otros recursos administrativos, ni edición, creación o eliminación de usuarios.",
+    "Crear una UI Filament para gestionar roles, permisos o asignaciones; esas operaciones quedan solo en comandos Artisan ejecutables por operadores con acceso al servidor.",
+    "Añadir una regla de Gate::before que otorgue permisos universales al rol admin; los permisos se evalúan por capacidad.",
+    "Hacer obligatorio 2FA para el personal administrativo; el alcance es no exponer secretos y comprobar los controles existentes.",
+    "Modificar pantallas React/Inertia o generar rutas Wayfinder para Filament."
+  ],
+  "contracts": [
+    "El panel usa el guard web y solo acepta el panel de id admin; FilamentUser::canAccessPanel verifica admin.access además de la política de cuenta acordada.",
+    "El catálogo inicial contiene las capacidades admin.access, users.viewAny y users.view. El rol admin recibe solo admin.access; users-reader recibe users.viewAny y users.view. Consultar Usuarios requiere ambos roles.",
+    "Los permisos se comprueban desde Laravel Policies/Gates y páginas Filament en el servidor; ocultar navegación no cuenta como autorización.",
+    "El UserPolicy permite viewAny/view según permisos y deniega create/update/delete/deleteAny y equivalentes; el recurso registra únicamente index y view.",
+    "La allowlist por defecto del panel es name, email, email_verified_at, created_at y last_login_at. Los secretos two_factor_secret y two_factor_recovery_codes se mantienen fuera de las respuestas de Livewire y de cualquier vista.",
+    "AdminAuthorizationSeeder crea roles/permisos de forma repetible sin restablecer asignaciones dinámicas que un operador haya cambiado.",
+    "admin:bootstrap-admin solo promociona una cuenta existente y verificada, solo cuando aún no existe una cuenta con admin.access, y asigna admin más users-reader. Los comandos de grant/revoke validan nombres contra el catálogo.",
+    "Los comandos de operación no se publican como rutas ni acciones web; las pruebas verifican también el rechazo de cambios que dejarían el panel sin administrador.",
+    "Cada cambio PHP se valida con la prueba del slice y, por las reglas del repositorio, ejecuta composer rector-dry seguido de composer rector. Las pruebas/gates completos y composer doctor quedan al cierre."
+  ],
+  "existingCodeLeverage": [
+    {
+      "path": "app/User/Models/User.php",
+      "role": "Modelo autenticable custom; agregar HasRoles, FilamentUser y ocultar secretos 2FA."
+    },
+    {
+      "path": "config/auth.php",
+      "role": "Define el guard web y el modelo App\\User\\Models\\User."
+    },
+    {
+      "path": "app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php",
+      "role": "Referencia de policy modular basada en permisos/propiedad."
+    },
+    {
+      "path": "app/Auth/Models/TrustedDevice.php",
+      "role": "Referencia para asociar una policy mediante #[UsePolicy]."
+    },
+    {
+      "path": "app/Modules/Comment/Providers/CommentServiceProvider.php",
+      "role": "Patrón real de provider de módulo."
+    },
+    {
+      "path": "app/Auth/Providers/AuthServiceProvider.php",
+      "role": "Patrón real para cargar migraciones modulares y registrar comandos Artisan."
+    },
+    {
+      "path": "phpunit.xml",
+      "role": "Registra suites de pruebas por módulo."
+    },
+    {
+      "path": "tests/Pest.php",
+      "role": "Registra directorios modulares con RefreshDatabase y TestCase."
+    },
+    {
+      "path": "app/User/Resources/UserResource.php",
+      "role": "Ejemplo local de serialización mediante allowlist."
+    },
+    {
+      "path": "app/User/Modules/AccountSettings/Resources/AccountSettingsResource.php",
+      "role": "Inventario de atributos personales disponibles; no debe reutilizarse como allowlist administrativa sin aprobación."
+    },
+    {
+      "path": "resources/css/app.css",
+      "role": "Estilos actuales de Inertia/Tailwind que deben mantenerse aislados del tema Filament."
+    },
+    {
+      "path": "vite.config.ts",
+      "role": "Entrada Vite actual; registrar el tema Filament sin reemplazar la entrada existente."
+    },
+    {
+      "path": "bootstrap/app.php",
+      "role": "Añade middleware Inertia al grupo web compartido; verificar que no interfiera con el panel."
+    }
+  ],
+  "failureModes": [
+    "Una cuenta regular o sin admin.access no puede abrir /admin aunque conozca la URL.",
+    "Una cuenta con admin.access pero sin users.viewAny/users.view no ve ni abre UserResource.",
+    "El comando de bootstrap rechaza email inexistente/no verificado y cualquier intento después de inicializar el primer administrador.",
+    "Los comandos rechazan roles/permisos desconocidos y no permiten retirar el acceso al último administrador.",
+    "Las rutas de creación/edición/eliminación de User no existen o responden con denegación; no se confía en botones ocultos.",
+    "Las vistas y datos serializados no contienen password, remember_token, two_factor_secret ni two_factor_recovery_codes.",
+    "La repetición del seeder no duplica registros ni revierte permisos personalizados.",
+    "El tema Filament compila sin eliminar ni alterar la hoja de estilos de Inertia."
+  ],
+  "shipCut": "El único corte liberable es después de TASK-017 con pruebas y gates verdes. No desplegar un estado parcial que exponga /admin antes de probar acceso al panel, policies y páginas User. Si el trabajo se pausa antes de TASK-012, el panel aún no se registra en bootstrap; si se pausa después, la suite de autorización del panel debe estar integrada antes de publicar el cambio.",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "phase": "Fundación de dependencias y módulo",
+      "title": "Instalar Filament 5 y Spatie Permission v8",
+      "description": "Agregar las dependencias compatibles de Filament y Spatie Permission, conservar las restricciones de PHP/Laravel existentes y publicar config/permission.php. Spatie resuelve el guard mediante auth.defaults.guard, que en este proyecto es web; mantener teams desactivado. Livewire llega como dependencia de Filament; no instalar ni modificar paquetes adicionales fuera de este conjunto.",
+      "priority": "P0",
+      "type": "infra",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "SOC-44",
+        "Filament",
+        "Spatie",
+        "dependencies"
+      ],
+      "acceptanceCriteria": [
+        "composer.json y composer.lock resuelven Filament 5 y Spatie Laravel Permission 8 con PHP 8.5 y Laravel 13.",
+        "Filament, Livewire y Spatie Permission se resuelven desde Composer con las versiones instaladas, sin cambiar las restricciones actuales de Laravel o PHP.",
+        "Laravel auth.defaults.guard se mantiene en web y config/permission.php mantiene teams desactivado, que es el comportamiento compatible con la configuración de Spatie Permission v8."
+      ],
+      "filesToModify": [
+        "composer.json",
+        "composer.lock"
+      ],
+      "filesToCreate": [
+        "config/permission.php"
+      ],
+      "writeScope": [
+        "composer.json",
+        "composer.lock",
+        "config/permission.php"
+      ],
+      "fileRoles": {
+        "composer.json": "Declarar Filament y Spatie Permission con majors compatibles.",
+        "composer.lock": "Fijar el árbol de dependencias resuelto.",
+        "config/permission.php": "Publicar la configuración base; el guard se deriva de auth.defaults.guard y teams queda desactivado."
+      },
+      "validateCommand": "rtk composer validate && rtk composer show filament/filament && rtk composer show spatie/laravel-permission && rtk composer show livewire/livewire",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-002",
+      "phase": "Fundación de dependencias y módulo",
+      "title": "Crear la migración global de permisos",
+      "description": "Generar la migración de Spatie Permission en database/migrations, compatible con el id unsigned big integer de users, el guard web y teams desactivado. El proveedor Admin se añadirá junto con los primeros comandos del módulo, cuando tenga una integración concreta que registrar.",
+      "priority": "P0",
+      "type": "infra",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "labels": [
+        "SOC-44",
+        "Admin",
+        "database"
+      ],
+      "acceptanceCriteria": [
+        "La migración global crea roles, permissions y tablas pivote de Spatie con tipos de clave compatibles con users.id.",
+        "El comando migrate --pretend limitado a database/migrations descubre la migración sin aplicarla; una configuración DB inválida no se oculta como éxito."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "database/migrations/2026_10_10_150651_create_permission_tables.php"
+      ],
+      "writeScope": [
+        "database/migrations/2026_10_10_150651_create_permission_tables.php"
+      ],
+      "fileRoles": {
+        "database/migrations/2026_10_10_150651_create_permission_tables.php": "Crear el esquema publicado por el paquete en la carpeta global de migraciones."
+      },
+      "validateCommand": "rtk php artisan migrate --pretend --path=database/migrations",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-003",
+      "phase": "Fundación de dependencias y módulo",
+      "title": "Registrar la suite Pest de Admin",
+      "description": "Añadir la suite Admin a phpunit.xml y registrar app/Modules/Admin/Tests en tests/Pest.php para heredar TestCase y RefreshDatabase igual que los otros módulos.",
+      "priority": "P1",
+      "type": "infra",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "labels": [
+        "SOC-44",
+        "Pest",
+        "tests"
+      ],
+      "acceptanceCriteria": [
+        "phpunit.xml ejecuta app/Modules/Admin/Tests bajo una suite Admin identificable.",
+        "Pest aplica TestCase y RefreshDatabase a los tests del módulo.",
+        "Las suites existentes Comment, Post, Auth y User conservan sus rutas y configuración."
+      ],
+      "filesToModify": [
+        "phpunit.xml",
+        "tests/Pest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "phpunit.xml",
+        "tests/Pest.php"
+      ],
+      "fileRoles": {
+        "phpunit.xml": "Registrar el directorio y nombre de suite Admin.",
+        "tests/Pest.php": "Aplicar el caso base y RefreshDatabase al nuevo directorio."
+      },
+      "validateCommand": "rtk git diff --check -- phpunit.xml tests/Pest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-004",
+      "phase": "Catálogo y autorización",
+      "title": "Definir roles, permisos y seeder idempotente",
+      "description": "Crear enums para los nombres estables de roles/permisos y un seeder AdminAuthorizationSeeder. Crear el rol admin con admin.access y users-reader con users.viewAny/users.view. Al crear por primera vez, asignar los permisos base; al volver a ejecutar el seeder, conservar cambios operativos existentes en los pivotes.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "labels": [
+        "SOC-44",
+        "Spatie",
+        "authorization"
+      ],
+      "acceptanceCriteria": [
+        "Los nombres de roles y permisos se centralizan en enums respaldados y se usan con sus valores string en Spatie.",
+        "El rol admin solo recibe admin.access; users-reader recibe users.viewAny y users.view.",
+        "Reejecutar el seeder no duplica filas ni vuelve a conceder un permiso que un operador hubiera revocado."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Admin/Enums/AdminRole.php",
+        "app/Modules/Admin/Enums/AdminPermission.php",
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Enums/AdminRole.php",
+        "app/Modules/Admin/Enums/AdminPermission.php",
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php"
+      ],
+      "fileRoles": {
+        "app/Modules/Admin/Enums/AdminRole.php": "Definir los nombres permitidos de roles.",
+        "app/Modules/Admin/Enums/AdminPermission.php": "Definir las capacidades comprobadas por policies y páginas.",
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php": "Crear catálogo inicial sin resetear mapeos dinámicos existentes."
+      },
+      "validateCommand": "rtk php -l app/Modules/Admin/Enums/AdminRole.php && rtk php -l app/Modules/Admin/Enums/AdminPermission.php && rtk php -l app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-005",
+      "phase": "Catálogo y autorización",
+      "title": "Probar catálogo e idempotencia de permisos",
+      "description": "Añadir pruebas Pest del seeder en SQLite de testing. Verificar la asignación inicial del catálogo y que una modificación operativa a un pivote se conserva tras una segunda ejecución.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-004"
+      ],
+      "labels": [
+        "SOC-44",
+        "Spatie",
+        "tests"
+      ],
+      "acceptanceCriteria": [
+        "El seeder crea una sola copia de cada rol y permiso y establece las capacidades iniciales previstas.",
+        "Una segunda ejecución conserva un permiso que el test revocó entre ejecuciones.",
+        "El test falla si admin recibe users.view sin estar asignado users-reader."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php"
+      ],
+      "fileRoles": {
+        "app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php": "Verificar catálogo, capacidades mínimas y repetición del seeder."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-006",
+      "phase": "Catálogo y autorización",
+      "title": "Integrar roles en User y ocultar secretos 2FA",
+      "description": "Añadir HasRoles al modelo App\\User\\Models\\User y sumar two_factor_secret y two_factor_recovery_codes a sus atributos ocultos. No exponer roles/permisos como fillable ni aceptar su asignación mediante formularios.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-004"
+      ],
+      "labels": [
+        "SOC-44",
+        "User",
+        "security"
+      ],
+      "acceptanceCriteria": [
+        "User puede recibir roles y resolver permisos usando el guard web.",
+        "toArray/JSON omite password, remember_token, two_factor_secret y two_factor_recovery_codes.",
+        "La asignación masiva de campos role/roles/permissions no concede ni cambia acceso."
+      ],
+      "filesToModify": [
+        "app/User/Models/User.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Models/UserRoleTest.php"
+      ],
+      "writeScope": [
+        "app/User/Models/User.php",
+        "app/Modules/Admin/Tests/Models/UserRoleTest.php"
+      ],
+      "fileRoles": {
+        "app/User/Models/User.php": "Incorporar HasRoles y excluir secretos de autenticación de serialización.",
+        "app/Modules/Admin/Tests/Models/UserRoleTest.php": "Probar rol/permisos y ausencia de campos sensibles."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Models/UserRoleTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-007",
+      "phase": "Catálogo y autorización",
+      "title": "Aplicar UserPolicy a lectura granular de usuarios",
+      "description": "Crear UserPolicy en el dominio User y asociarla explícitamente al modelo. viewAny/view exigen sus permisos granulares; todas las capacidades de escritura permanecen denegadas.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "labels": [
+        "SOC-44",
+        "policies",
+        "authorization"
+      ],
+      "acceptanceCriteria": [
+        "Un usuario con users.viewAny puede listar y solo users.view permite abrir un registro.",
+        "Un usuario sin permiso recibe denegación para ambas operaciones.",
+        "create/update/delete/deleteAny/restore/forceDelete están denegados aun cuando se invoquen mediante Gate directamente."
+      ],
+      "filesToModify": [
+        "app/User/Models/User.php"
+      ],
+      "filesToCreate": [
+        "app/User/Policies/UserPolicy.php",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "writeScope": [
+        "app/User/Models/User.php",
+        "app/User/Policies/UserPolicy.php",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "fileRoles": {
+        "app/User/Models/User.php": "Asociar UserPolicy mediante UsePolicy.",
+        "app/User/Policies/UserPolicy.php": "Aplicar capacidades para lectura y negar escrituras.",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php": "Cubrir autorización permitida, denegada y acciones de escritura."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Policies/UserPolicyTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-008",
+      "phase": "Catálogo y autorización",
+      "title": "Restringir el acceso al panel por permiso",
+      "description": "Implementar FilamentUser::canAccessPanel(Panel $panel) en User. Permitir únicamente el panel admin a usuarios verificados con admin.access; los demás paneles quedan denegados.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "labels": [
+        "SOC-44",
+        "Filament",
+        "security"
+      ],
+      "acceptanceCriteria": [
+        "Una cuenta verificada con admin.access pasa la autorización del panel admin.",
+        "Una cuenta regular, sin verificación o sin admin.access es rechazada.",
+        "Un panel con id distinto de admin no se habilita por accidente."
+      ],
+      "filesToModify": [
+        "app/User/Models/User.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php"
+      ],
+      "writeScope": [
+        "app/User/Models/User.php",
+        "app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php"
+      ],
+      "fileRoles": {
+        "app/User/Models/User.php": "Implementar el contrato FilamentUser y comprobar panel, permiso y verificación.",
+        "app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php": "Cubrir panel correcto y casos de acceso denegado."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-009",
+      "phase": "Operación por consola",
+      "title": "Crear el comando de bootstrap del primer administrador",
+      "description": "Crear admin:bootstrap-admin {email}. El comando solo promueve una cuenta existente y verificada cuando todavía no hay ningún usuario con admin.access; asigna admin y users-reader dentro de una transacción. Crear y registrar AdminServiceProvider junto con el comando para alojar la integración de consola del módulo.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006"
+      ],
+      "labels": [
+        "SOC-44",
+        "Artisan",
+        "security"
+      ],
+      "acceptanceCriteria": [
+        "El primer usuario verificado recibe exactamente los roles admin y users-reader sin crear credenciales ni una ruta web.",
+        "Una cuenta inexistente o sin email verificado no cambia roles.",
+        "El comando falla sin modificar datos si ya existe cualquier usuario con admin.access."
+      ],
+      "filesToModify": [
+        "bootstrap/providers.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Providers/AdminServiceProvider.php",
+        "app/Modules/Admin/Console/Commands/AdminBootstrapCommand.php",
+        "app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php"
+      ],
+      "writeScope": [
+        "bootstrap/providers.php",
+        "app/Modules/Admin/Providers/AdminServiceProvider.php",
+        "app/Modules/Admin/Console/Commands/AdminBootstrapCommand.php",
+        "app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php"
+      ],
+      "fileRoles": {
+        "bootstrap/providers.php": "Registrar el proveedor del módulo Admin.",
+        "app/Modules/Admin/Providers/AdminServiceProvider.php": "Registrar el comando de bootstrap para ejecución Artisan.",
+        "app/Modules/Admin/Console/Commands/AdminBootstrapCommand.php": "Promover la primera cuenta verificada con guardas de inicialización.",
+        "app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php": "Probar éxito, cuenta no elegible y repetición."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "phase": "Operación por consola",
+      "title": "Gestionar asignaciones de roles desde Artisan",
+      "description": "Crear un comando admin:user-role para conceder o revocar roles del catálogo a una cuenta identificada por email. No permitirá crear nombres arbitrarios, usar asignaciones masivas desde el modelo ni retirar admin.access al último administrador.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "labels": [
+        "SOC-44",
+        "Artisan",
+        "authorization"
+      ],
+      "acceptanceCriteria": [
+        "Un operador puede conceder y revocar roles predefinidos y los cambios se reflejan en las comprobaciones de permiso.",
+        "Un role desconocido o una cuenta inexistente se rechaza sin mutación.",
+        "Revocar el último rol que concede admin.access se rechaza para evitar dejar el panel sin operador."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Providers/AdminServiceProvider.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Console/Commands/AdminUserRoleCommand.php",
+        "app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Providers/AdminServiceProvider.php",
+        "app/Modules/Admin/Console/Commands/AdminUserRoleCommand.php",
+        "app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php"
+      ],
+      "fileRoles": {
+        "app/Modules/Admin/Providers/AdminServiceProvider.php": "Registrar el comando de grant/revoke de roles.",
+        "app/Modules/Admin/Console/Commands/AdminUserRoleCommand.php": "Cambiar asignaciones solo desde consola y solo con roles catalogados.",
+        "app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php": "Cubrir concesión, revocación y salvaguardas."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-011",
+      "phase": "Operación por consola",
+      "title": "Gestionar permisos de roles desde Artisan",
+      "description": "Crear admin:role-permissions para conceder/revocar capacidades catalogadas en roles existentes. Las operaciones de consola son el único mecanismo operativo en SOC-44; no se crea UI de roles. Proteger el último acceso al panel y mantener el catálogo de nombres en AdminPermission.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "labels": [
+        "SOC-44",
+        "Artisan",
+        "permissions"
+      ],
+      "acceptanceCriteria": [
+        "Un operador puede ajustar permisos de un rol usando solo nombres del enum AdminPermission.",
+        "Un permiso o rol desconocido se rechaza sin cambiar pivotes.",
+        "La revocación que dejaría sin admin.access a todas las cuentas se rechaza."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Providers/AdminServiceProvider.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Console/Commands/AdminRolePermissionsCommand.php",
+        "app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Providers/AdminServiceProvider.php",
+        "app/Modules/Admin/Console/Commands/AdminRolePermissionsCommand.php",
+        "app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php"
+      ],
+      "fileRoles": {
+        "app/Modules/Admin/Providers/AdminServiceProvider.php": "Registrar el comando para editar pivotes permiso-rol.",
+        "app/Modules/Admin/Console/Commands/AdminRolePermissionsCommand.php": "Conceder/revocar permisos desde consola con validación de catálogo y lockout.",
+        "app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php": "Probar ajustes correctos y rechazos de seguridad."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-012",
+      "phase": "Panel y recurso de usuarios",
+      "title": "Registrar el panel Filament protegido",
+      "description": "Crear AdminPanelProvider con id admin, path admin, guard web, login y descubrimiento de recursos dentro de app/Modules/Admin/Filament/Resources. Registrar el provider en bootstrap/providers.php y no habilitar registro público ni recursos de administración de roles.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-002"
+      ],
+      "labels": [
+        "SOC-44",
+        "Filament",
+        "panel"
+      ],
+      "acceptanceCriteria": [
+        "GET /admin redirige a autenticación para visitas anónimas y una cuenta autorizada puede entrar después de autenticarse.",
+        "Una cuenta autenticada sin admin.access recibe una denegación del servidor aun entrando directamente a /admin.",
+        "El panel no registra signup, recursos de roles ni acciones de escritura de usuarios."
+      ],
+      "filesToModify": [
+        "bootstrap/providers.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Providers/AdminPanelProvider.php",
+        "app/Modules/Admin/Tests/Filament/AdminPanelAccessTest.php"
+      ],
+      "writeScope": [
+        "bootstrap/providers.php",
+        "app/Modules/Admin/Providers/AdminPanelProvider.php",
+        "app/Modules/Admin/Tests/Filament/AdminPanelAccessTest.php"
+      ],
+      "fileRoles": {
+        "bootstrap/providers.php": "Registrar AdminPanelProvider junto al provider del módulo.",
+        "app/Modules/Admin/Providers/AdminPanelProvider.php": "Configurar panel, guard, path y descubrimiento modular.",
+        "app/Modules/Admin/Tests/Filament/AdminPanelAccessTest.php": "Verificar rutas anónimas, autorizadas y denegadas."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/AdminPanelAccessTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-013",
+      "phase": "Panel y recurso de usuarios",
+      "title": "Compilar un tema Filament aislado",
+      "description": "Crear la hoja del tema Filament, incorporarla como entrada Vite independiente y conectar viteTheme() en AdminPanelProvider. Mantener resources/css/app.css y la entrada React/Inertia intactas.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012"
+      ],
+      "labels": [
+        "SOC-44",
+        "Filament",
+        "Vite"
+      ],
+      "acceptanceCriteria": [
+        "El tema importa los estilos requeridos de Filament 5 y escanea las vistas/componentes Filament del módulo Admin.",
+        "Vite compila el tema Filament como entrada sin sustituir app.css ni app.tsx.",
+        "La build de producción incluye el CSS usado por /admin y mantiene operativa la build SSR."
+      ],
+      "filesToModify": [
+        "vite.config.ts",
+        "app/Modules/Admin/Providers/AdminPanelProvider.php"
+      ],
+      "filesToCreate": [
+        "resources/css/filament/admin/theme.css"
+      ],
+      "writeScope": [
+        "vite.config.ts",
+        "app/Modules/Admin/Providers/AdminPanelProvider.php",
+        "resources/css/filament/admin/theme.css"
+      ],
+      "fileRoles": {
+        "vite.config.ts": "Añadir la entrada CSS separada para el tema del panel.",
+        "app/Modules/Admin/Providers/AdminPanelProvider.php": "Registrar el tema compilado con viteTheme().",
+        "resources/css/filament/admin/theme.css": "Importar CSS Filament y fuentes de vistas del módulo."
+      },
+      "validateCommand": "rtk npm run build && rtk npm run build:ssr",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-014",
+      "phase": "Panel y recurso de usuarios",
+      "title": "Crear Users Resource de consulta con lista y detalle",
+      "description": "Crear UserResource, ListUsers y ViewUser bajo app/Modules/Admin/Filament/Resources. Implementar búsqueda por name/email, paginación y detalle con infolist de campos allowlisted. No generar páginas Create/Edit ni acciones de escritura.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012",
+        "TASK-007"
+      ],
+      "labels": [
+        "SOC-44",
+        "Filament",
+        "users"
+      ],
+      "acceptanceCriteria": [
+        "La lista permite buscar por name/email y navegar resultados paginados.",
+        "El detalle muestra solo la allowlist confirmada y no carga relaciones completas; cualquier conteo adicional requiere autorización del usuario en la revisión.",
+        "El registro de páginas contiene únicamente index y view, sin rutas Create/Edit/Delete ni acciones masivas de mutación."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
+      ],
+      "fileRoles": {
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php": "Definir modelo, columnas, búsqueda, políticas, infolist y páginas disponibles.",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php": "Renderizar listado y búsqueda de usuarios.",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php": "Renderizar el detalle de solo lectura."
+      },
+      "validateCommand": "rtk php artisan route:list --path=admin",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-015",
+      "phase": "Panel y recurso de usuarios",
+      "title": "Probar acceso, búsqueda, detalle y datos secretos del recurso",
+      "description": "Añadir pruebas Livewire/Filament del recurso de usuarios para permisos viewAny/view, búsqueda, detalle allowlisted, denegación de páginas de escritura y ausencia de valores TOTP/recovery codes en el HTML/respuestas serializadas.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014",
+        "TASK-006",
+        "TASK-008"
+      ],
+      "labels": [
+        "SOC-44",
+        "Filament",
+        "security",
+        "tests"
+      ],
+      "acceptanceCriteria": [
+        "Un usuario con admin y users-reader ve lista, busca y abre el detalle; un usuario sin users.viewAny o users.view no puede completar la operación correspondiente.",
+        "Las URLs directas de create/edit/delete se rechazan y no mutan User.",
+        "Una fixture con valores centinela en two_factor_secret y recovery codes no aparece en HTML ni en estado serializado devuelto al navegador."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/UserResourceTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/UserResourceTest.php"
+      ],
+      "fileRoles": {
+        "app/Modules/Admin/Tests/Filament/UserResourceTest.php": "Cubrir permisos, list/search/view, ausencia de escrituras y no exposición de secretos."
+      },
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/UserResourceTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-016",
+      "phase": "Documentación y cierre",
+      "title": "Documentar la integración Admin, Filament y Spatie",
+      "description": "Actualizar la arquitectura backend y las referencias del proyecto para reflejar el módulo Admin, la excepción de rutas provistas por Filament, los nombres de permisos, los comandos de bootstrap/operación, los datos visibles, la ubicación global de migraciones publicadas de paquetes y la ubicación modular de la implementación y las pruebas.",
+      "priority": "P2",
+      "type": "docs",
+      "effort": "M",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-011",
+        "TASK-013",
+        "TASK-015"
+      ],
+      "labels": [
+        "SOC-44",
+        "docs",
+        "architecture"
+      ],
+      "acceptanceCriteria": [
+        "docs/architecture/backend.md refleja panel, provider, policies, datos y pruebas observados en el código.",
+        "CLAUDE.md documenta la ubicación modular Filament y los comandos Artisan de operación.",
+        "AGENTS.md registra las dependencias y reglas específicas de Filament/Spatie sin duplicar ni contradecir las reglas existentes."
+      ],
+      "filesToModify": [
+        "docs/architecture/backend.md",
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "docs/architecture/backend.md",
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "fileRoles": {
+        "docs/architecture/backend.md": "Actualizar la fuente de verdad para arquitectura backend.",
+        "CLAUDE.md": "Registrar la ubicación y el patrón de integración Admin.",
+        "AGENTS.md": "Registrar instrucciones de uso/versiones para Filament y Spatie."
+      },
+      "validateCommand": "rtk git diff --check -- docs/architecture/backend.md CLAUDE.md AGENTS.md",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-017",
+      "phase": "Documentación y cierre",
+      "title": "Ejecutar las pruebas y gates finales de SOC-44",
+      "description": "Con todos los slices integrados, correr la suite completa, verificaciones backend/frontend requeridas y Doctor al final. Corregir fallos dentro de tareas nuevas con revisión del usuario antes de cerrar SOC-44; no mover SOC-35 a In Progress.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "L",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016"
+      ],
+      "labels": [
+        "SOC-44",
+        "QA",
+        "release"
+      ],
+      "acceptanceCriteria": [
+        "Pint, PHPStan, Rector dry-run y Rector apply completan en el orden requerido; las pruebas Pest completas pasan.",
+        "format:check, lint:check, types, build y build:ssr pasan; la matriz de autorización y la ausencia de secretos se conserva.",
+        "composer doctor es el último gate local y queda verde antes de solicitar cierre de SOC-44."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "fileRoles": {},
+      "validateCommand": "rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr && rtk composer doctor",
+      "review": "codex"
+    }
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [
+      "TASK-002"
+    ],
+    "TASK-004": [
+      "TASK-002"
+    ],
+    "TASK-005": [
+      "TASK-003",
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-001",
+      "TASK-003",
+      "TASK-004"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-005",
+      "TASK-006"
+    ],
+    "TASK-010": [
+      "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-010"
+    ],
+    "TASK-012": [
+      "TASK-008",
+      "TASK-002"
+    ],
+    "TASK-013": [
+      "TASK-012"
+    ],
+    "TASK-014": [
+      "TASK-012",
+      "TASK-007"
+    ],
+    "TASK-015": [
+      "TASK-014",
+      "TASK-006",
+      "TASK-008"
+    ],
+    "TASK-016": [
+      "TASK-011",
+      "TASK-013",
+      "TASK-015"
+    ],
+    "TASK-017": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016"
+    ]
+  },
+  "criticalPath": [
+    "TASK-001",
+    "TASK-002",
+    "TASK-003",
+    "TASK-006",
+    "TASK-007",
+    "TASK-008",
+    "TASK-012",
+    "TASK-014",
+    "TASK-015",
+    "TASK-016",
+    "TASK-017"
+  ],
+  "executionSummary": {
+    "taskCount": 17,
+    "phaseCount": 5,
+    "criticalPath": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-012",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017"
+    ],
+    "criticalPathLength": 11,
+    "parallelism": {
+      "layer-1": [
+        "TASK-001"
+      ],
+      "layer-2": [
+        "TASK-002"
+      ],
+      "layer-3": [
+        "TASK-003",
+        "TASK-004"
+      ],
+      "layer-4": [
+        "TASK-005",
+        "TASK-006"
+      ],
+      "layer-5": [
+        "TASK-007",
+        "TASK-009"
+      ],
+      "layer-6": [
+        "TASK-008",
+        "TASK-010"
+      ],
+      "layer-7": [
+        "TASK-011",
+        "TASK-012"
+      ],
+      "layer-8": [
+        "TASK-013",
+        "TASK-014"
+      ],
+      "layer-9": [
+        "TASK-015"
+      ],
+      "layer-10": [
+        "TASK-016"
+      ],
+      "layer-11": [
+        "TASK-017"
+      ]
+    }
+  }
+}
+

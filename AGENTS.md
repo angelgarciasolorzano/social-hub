@@ -43,6 +43,14 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
 
+### Admin: Filament and Spatie Permission
+
+- The current installed packages are `filament/filament` v5.10.1 and `spatie/laravel-permission` v8.3.0; both are direct Composer dependencies.
+- Admin panel code belongs under `app/Modules/Admin/`. The `AdminPanelProvider` is registered in `bootstrap/providers.php` and discovers Filament classes from `app/Modules/Admin/Filament/`; Filament owns the panel routes, so do not add duplicate module routes for them.
+- Follow Filament's per-resource hierarchy under `Filament/Resources/<PluralModel>/`, with resource `Pages/`, `Schemas/`, and `Tables/` in their own directories as needed. See `.ai/rules/backend.md` for the project's Filament-specific layout convention.
+- `AdminRole` and `AdminPermission` are the canonical RBAC catalog; use their enum values and the `web` guard when implementing authorization. Panel access also requires a verified email. Keep User resource access read-only unless a later task explicitly adds and tests mutation permissions.
+- Keep applying the package migration placement convention from `.ai/rules/backend.md`: published third-party package migrations stay in global `database/migrations/`; Admin's application code, seeders, and tests stay in the Admin module.
+
 ## Frontend Bundling
 
 - If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
