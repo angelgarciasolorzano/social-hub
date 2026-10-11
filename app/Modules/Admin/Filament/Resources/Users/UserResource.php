@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users;
 
 use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
+use App\Modules\Admin\Filament\Resources\Users\RelationManagers\PostsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\Tables\UsersTable;
 use App\User\Models\User;
@@ -57,6 +58,7 @@ class UserResource extends Resource
     {
         return [
             TrustedDevicesRelationManager::class,
+            PostsRelationManager::class,
         ];
     }
 

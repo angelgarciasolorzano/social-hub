@@ -126,6 +126,7 @@ it('derives active expired and revoked states including the expiry boundary', fu
 
 it('keeps the trusted device relation read-only and paginated', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::UsersReader->value,

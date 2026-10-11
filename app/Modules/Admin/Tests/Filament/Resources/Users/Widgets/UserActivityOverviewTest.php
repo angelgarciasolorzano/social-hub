@@ -94,6 +94,7 @@ it('shows zero counts when the selected user has no activity', function (): void
 
 it('forbids access when the admin lacks users view permission', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole(AdminRole::Admin->value);
 
     $this->actingAs($authenticatedUser, 'admin');
