@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implementar el alcance completo de SOC-47: filtros y fallback localizado en la tabla de usuarios, métricas y relaciones de solo lectura en el detalle de User, y un gráfico de nuevas cuentas más indicadores en el dashboard.
+Implementar SOC-47 y la ampliación aprobada: listados y relaciones de solo lectura en Users, Posts y comentarios, más los indicadores del dashboard.
 
 **Linear:** [SOC-47](https://linear.app/social-hub-ang/issue/SOC-47/feature-expand-filament-user-administration-and-dashboard-insights) · Backlog · Medium · asignada a Angel Garcia
 
@@ -10,7 +10,7 @@ Implementar el alcance completo de SOC-47: filtros y fallback localizado en la t
 
 ## Scope Challenge
 
-HOLD confirmado por el usuario: ejecutar el alcance completo de SOC-47, explicitar el cumplimiento de la arquitectura Filament ya establecida y conservar los no-objetivos de SOC-47. No se añaden gestión de roles, plugins ni cambios de estado de cuenta.
+HOLD confirmado por el usuario: ejecutar el alcance de SOC-47, explicitar el cumplimiento de la arquitectura Filament ya establecida y conservar sus no-objetivos. Se añade el recurso dedicado de Posts con navegación de comentarios y replies bajo el mismo contrato de solo lectura.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ HOLD confirmado por el usuario: ejecutar el alcance completo de SOC-47, explicit
 ## Contracts
 
 - Obligatorio seguir `.ai/rules/backend.md`: los recursos Filament permanecen dentro de `app/Modules/Admin/Filament/Resources/<PluralModel>/`; sus Pages, Tables, Schemas y RelationManagers se organizan bajo el recurso dueño. Los widgets de dashboard van en `app/Modules/Admin/Filament/Widgets/`.
-- Usar componentes y flujos nativos de Filament 5.10.1. Para el detalle de User, usar relation managers paginados y ViewAction de lectura; no añadir un recurso CRUD de Post separado.
+- Usar componentes y flujos nativos de Filament 5.10.1. Posts tendrá un recurso propio de solo lectura bajo Resources/Posts; Users conserva su relación paginada y enlaza al mismo detalle. El detalle de Post muestra comentarios paginados y carga replies al abrir un comentario.
 - Los datos relacionados solo se muestran bajo el detalle autorizado de User y el permiso existente `users.view`; no se amplía el catálogo de permisos ni se confía en ocultar botones como autorización.
 - Las vistas de TrustedDevice usan allowlist de campos y el estado se deriva como revocado, expirado o activo; quedan excluidos token_hash, IP, user_agent crudo y credenciales.
 - El chart valida el filtro contra valores permitidos antes de consultar y agrupa por granularidad apropiada al rango. El resumen usa agregados; los listados cargan relaciones necesarias sin N+1.
@@ -59,6 +59,7 @@ HOLD confirmado por el usuario: ejecutar el alcance completo de SOC-47, explicit
 
 - Filament 5 resource directory and viewing-record patterns: https://filamentphp.com/docs/5.x/resources/overview and https://filamentphp.com/docs/5.x/resources/viewing-records
 - Filament 5 relationship managers and read-only mode: https://filamentphp.com/docs/5.x/resources/managing-relationships
+- Filament 5 nested resources and full-page related records: https://filamentphp.com/docs/5.x/resources/nesting
 - Filament 5 chart filters and empty state: https://filamentphp.com/docs/5.x/widgets/charts
 
 ## Tasks
@@ -171,7 +172,90 @@ Create a paginated Posts relation manager under the Users resource and register 
 
 **Review:** Codex
 
-### TASK-006: Add registration chart and dashboard summary widgets
+### TASK-006: Add the read-only Posts resource index
+
+Add a Posts resource discovered by the existing Admin panel, with a paginated searchable list and no mutation actions. Gate listing with the existing users.viewAny permission and preserve the per-resource Filament directory hierarchy.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-005
+
+**Acceptance Criteria:**
+- Admins with users.viewAny can open the Posts sidebar item and see a paginated, searchable list with post content summary, author, and creation time.
+- An admin without users.viewAny is denied access, and the resource exposes no create, edit, delete, or bulk mutation actions.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
+- `app/Modules/Admin/Filament/Resources/Posts/Pages/ListPosts.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+
+**Review:** Codex
+
+### TASK-007: Add the read-only Post detail page
+
+Add a full-page view for a selected post using Filament native resource routing and an infolist for the post content, author, and timestamps. Authorize record access through the owning User view permission so direct URLs cannot bypass the existing Admin policy boundary.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+- Opening a post from the resource list renders its content, author, and timestamps on a dedicated view page.
+- Direct access is denied when the admin lacks users.view or the post has no authorized owner, and the detail page has no mutation actions.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
+- `app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+
+**Review:** Codex
+
+### TASK-008: Show comments and load replies on demand
+
+Add a read-only Comments relation manager to the Post detail page. Show comments in a paginated table and use a row ViewAction to display the selected comment with its replies, querying replies only when that action opens.
+
+**Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-007
+
+**Acceptance Criteria:**
+- The Post detail page shows only its comments in a paginated table with author and creation time; the list query does not load replies for every comment.
+- Opening one comment shows its content and replies with authors, while unauthorized access and all mutation actions remain blocked.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
+- `app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+
+**Review:** Codex
+
+### TASK-009: Link User posts to the dedicated Post detail
+
+Replace the nested post-and-thread modal in the User Posts relation manager with navigation to the Posts resource detail page. Keep the relation scoped to the selected user and remove comment and reply eager loading from this list.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-005, TASK-008
+
+**Acceptance Criteria:**
+- Opening a post from a User detail navigates to the same full-page Post resource view used by the Posts sidebar.
+- The User relation remains paginated and scoped, does not preload comment threads, and exposes no mutation actions.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php`
+
+**Review:** Codex
+
+### TASK-010: Add registration chart and dashboard summary widgets
 
 Add native Filament dashboard widgets under the already discovered Admin/Filament/Widgets directory. The chart offers 7-day, 30-day, 90-day, and 12-month ranges; use daily buckets for 7/30 days, weekly for 90 days, and monthly for 12 months. Add one or two useful summary metrics and an empty state.
 
@@ -193,16 +277,16 @@ Add native Filament dashboard widgets under the already discovered Admin/Filamen
 
 **Review:** Codex
 
-### TASK-007: Document the expanded Admin read surfaces
+### TASK-011: Document the expanded Admin read surfaces
 
-Update the backend architecture reference after the feature slices are integrated. Record the User relation-manager layout, allowlisted device data, read-only post/comment context, and dashboard widget discovery without duplicating the existing Filament hierarchy rule.
+Update the backend architecture reference after the feature slices are integrated. Record the User relation-manager layout, allowlisted device data, the dedicated Posts resource with on-demand replies, and dashboard widget discovery without duplicating the existing Filament hierarchy rule.
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
 
-**Depends on:** TASK-002, TASK-003, TASK-005, TASK-006
+**Depends on:** TASK-002, TASK-003, TASK-009, TASK-010
 
 **Acceptance Criteria:**
-- The architecture reference describes only paths and behaviors present in the integrated code, including the existing Admin resource/widget discovery points.
+- The architecture reference describes only paths and behaviors present in the integrated code, including Posts, the existing Admin resource/widget discovery points, and the authorization contract.
 - Documentation preserves the `admin` authorization guard contract and points to `.ai/rules/backend.md` for the per-resource Filament directory convention.
 
 **writeScope:**
@@ -212,13 +296,13 @@ Update the backend architecture reference after the feature slices are integrate
 
 **Review:** Codex
 
-### TASK-008: Run integrated backend gates
+### TASK-012: Run integrated backend gates
 
 After all implementation and documentation slices are reviewed and integrated, run the affected Filament tests, the complete Pest suite, and the required backend gates. Keep Laravel Doctor as the final local command.
 
 **Type:** test · **Effort:** L · **Agent:** general-purpose · **Priority:** P1
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011
 
 **Acceptance Criteria:**
 - All Admin Filament feature tests and the complete Pest suite pass.
@@ -236,13 +320,13 @@ After all implementation and documentation slices are reviewed and integrated, r
 - La relación de dispositivos podría serializar token_hash, IP o user_agent sin procesar; los tests usan valores centinela y exigen que estén ausentes.
 - Un dispositivo con soft delete podría aparecer como activo; el estado da precedencia a “revocado”.
 - Una ruta o componente Livewire podría revelar una relación sin permiso de lectura o permitir una mutación por request directo; las pruebas ejercitan autorización del servidor.
-- La vista de publicaciones podría consultar usuarios/comentarios por fila; las pruebas de relación controlan carga anticipada y consultas.
+- El listado de Posts podría consultar usuarios/comentarios por fila; las pruebas controlan eager loading y permisos. Los replies se cargan solo al abrir el comentario.
 - Un filtro de chart manipulado podría alterar la consulta o producir agrupaciones incorrectas; solo se acepta la lista de rangos permitidos.
 - Un rango sin registros podría dejar el chart en error o sin estado vacío; la prueba cubre ese caso.
 
 ## Ship Cut
 
-El corte liberable es después de TASK-008, con todos los slices integrados, tests Filament y Pest completos, y gates backend verdes. Las reglas del proyecto requieren implementar una tarea atómica por vez y detenerse para revisión después de cada tarea. Este plan no cambia el estado de Linear.
+El corte liberable es después de TASK-012, con todos los slices integrados, tests Filament y Pest completos, y gates backend verdes. Las reglas del proyecto requieren implementar una tarea atómica por vez y detenerse para revisión después de cada tarea. Este plan no cambia el estado de Linear.
 
 ## Test Coverage Map
 
@@ -251,15 +335,19 @@ El corte liberable es después de TASK-008, con todos los slices integrados, tes
 - **TASK-003:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/UserActivityOverviewTest.php`
 - **TASK-004:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/TrustedDevicesRelationManagerTest.php`
 - **TASK-005:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php`
-- **TASK-006:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/RegistrationDashboardTest.php`
-- **TASK-007:** `rtk git diff --check -- docs/architecture/backend.md`
-- **TASK-008:** `rtk git diff --check && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact app/Modules/Admin/Tests/Filament && rtk php artisan test --compact && rtk composer doctor`
+- **TASK-006:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- **TASK-007:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- **TASK-008:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/PostResourceTest.php`
+- **TASK-009:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php`
+- **TASK-010:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/RegistrationDashboardTest.php`
+- **TASK-011:** `rtk git diff --check -- docs/architecture/backend.md`
+- **TASK-012:** `rtk git diff --check && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact app/Modules/Admin/Tests/Filament && rtk php artisan test --compact && rtk composer doctor`
 
 ## Execution Summary
 
-- **Tareas:** 8
-- **Fases lógicas:** 5
-- **Caminos críticos:** TASK-001 → TASK-002 → TASK-007 → TASK-008; TASK-004 → TASK-005 → TASK-007 → TASK-008
+- **Tareas:** 12
+- **Fases lógicas:** 8
+- **Caminos críticos:** TASK-001 → TASK-002 → TASK-011 → TASK-012; TASK-004 → TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-009 → TASK-011 → TASK-012; TASK-010 → TASK-011 → TASK-012
 - **Revisión predeterminada:** Codex
 - **Salida:** SOC-47 se considera listo únicamente después de integrar todos los slices, ejecutar las pruebas/gates finales y completar el resumen de documentación. No se cambia el estado de Linear dentro de este plan.
 
@@ -270,7 +358,11 @@ El corte liberable es después de TASK-008, con todos los slices integrados, tes
 - **TASK-003** ← ninguna
 - **TASK-004** ← ninguna
 - **TASK-005** ← TASK-004
-- **TASK-006** ← ninguna
-- **TASK-007** ← TASK-002, TASK-003, TASK-005, TASK-006
-- **TASK-008** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007
+- **TASK-006** ← TASK-005
+- **TASK-007** ← TASK-006
+- **TASK-008** ← TASK-007
+- **TASK-009** ← TASK-005, TASK-008
+- **TASK-010** ← ninguna
+- **TASK-011** ← TASK-002, TASK-003, TASK-009, TASK-010
+- **TASK-012** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011
 
