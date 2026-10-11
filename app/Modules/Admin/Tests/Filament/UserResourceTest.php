@@ -140,9 +140,9 @@ it('filters users by verification status registration date and post presence alo
         ->assertDontSee([$authenticatedUser->name, $unverifiedWithPost->name]);
 
     $testable = Livewire::test(ListUsers::class);
-    $registrationDatePage = $testable->instance();
+    $component = $testable->instance();
 
-    throw_unless($registrationDatePage instanceof ListUsers, LogicException::class, 'The registration-date filter test must resolve the user list page.');
+    throw_unless($component instanceof ListUsers, LogicException::class, 'The registration-date filter test must resolve the user list page.');
 
     $filterTable = (new TestsFilters)->filterTable();
     $filterTable->call($testable, 'registration_date', $dateRange);
