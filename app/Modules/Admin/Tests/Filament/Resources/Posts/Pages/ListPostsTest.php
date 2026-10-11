@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
-use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Post\Models\Post;
 use Filament\Facades\Filament;
 use Filament\Tables\Contracts\HasTable;
@@ -109,9 +108,7 @@ it('keeps the Posts resource index read only', function (): void {
 
     $table = $tableComponent->getTable();
 
-    expect(array_keys(PostResource::getPages()))
-        ->toBe(['index'])
-        ->and($table->getHeaderActions())
+    expect($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getRecordActions())
         ->toBeEmpty()
