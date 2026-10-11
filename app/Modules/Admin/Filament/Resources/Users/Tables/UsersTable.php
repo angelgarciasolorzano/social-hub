@@ -17,7 +17,7 @@ class UsersTable
                 TextColumn::make('email')->searchable()->sortable(),
                 TextColumn::make('email_verified_at')->dateTime()->sortable(),
                 TextColumn::make('created_at')->dateTime()->sortable(),
-                TextColumn::make('last_login_at')->dateTime()->sortable(),
+                TextColumn::make('last_login_at')->dateTime()->placeholder(__('messages.Never'))->sortable(),
             ]);
     }
 }
