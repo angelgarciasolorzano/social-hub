@@ -17,6 +17,10 @@ class AdminUserSeeder extends Seeder
 
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
         $defaultAdmin = User::query()
             ->where('email', self::DEFAULT_ADMIN_EMAIL)
             ->firstOrFail();

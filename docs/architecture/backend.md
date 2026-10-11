@@ -31,7 +31,7 @@ La autorización de panel y recursos usa Spatie Permission con el guard `web`. `
 
 La migración publicada por Spatie para sus tablas permanece en la carpeta global `database/migrations/`. Las migraciones publicadas por paquetes externos se mantienen allí; la implementación propia de Admin, sus seeders y pruebas viven en `app/Modules/Admin/`.
 
-El catálogo se inicializa explícitamente porque `AdminAuthorizationSeeder` no forma parte de `DatabaseSeeder`:
+`DatabaseSeeder` ejecuta `AdminAuthorizationSeeder` para crear el catálogo de roles y permisos. `AdminUserSeeder` asigna los roles iniciales a Angel y al grupo aleatorio de administradores de panel únicamente en los entornos `local` y `testing`; en otros entornos no modifica los roles de usuarios. Para preparar el primer administrador en producción, inicializa el catálogo y ejecuta el comando de bootstrap con la cuenta verificada que corresponda:
 
 ```bash
 php artisan db:seed --class='App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder'
