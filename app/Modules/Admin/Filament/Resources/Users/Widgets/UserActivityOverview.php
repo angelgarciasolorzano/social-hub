@@ -45,37 +45,22 @@ class UserActivityOverview extends StatsOverviewWidget
         $endDate = $startDate->addDays(7);
 
         return [
-            $this->makePostsStat($record, $startDate, $endDate),
-            $this->makeCommentsStat($record, $startDate, $endDate),
-            $this->makeActiveTrustedDevicesStat($record),
+            Stat::make('Posts', $record->posts()->count())
+                ->description('New posts per day over the last 7 days')
+                ->chart($this->getDailyActivityChartData($record->posts(), $startDate, $endDate))
+                ->color('primary'),
+            Stat::make('Comments', $record->comments()->count())
+                ->description('New comments per day over the last 7 days')
+                ->chart($this->getDailyActivityChartData($record->comments(), $startDate, $endDate))
+                ->color('info'),
+            Stat::make(
+                'Active trusted devices',
+                $record->trustedDevices()
+                    ->whereNull('deleted_at')
+                    ->where('expires_at', '>', now())
+                    ->count(),
+            )->description('Not revoked and not expired'),
         ];
-    }
-
-    private function makePostsStat(User $user, CarbonImmutable $startDate, CarbonImmutable $endDate): Stat
-    {
-        return Stat::make('Posts', $user->posts()->count())
-            ->description('New posts per day over the last 7 days')
-            ->chart($this->getDailyActivityChartData($user->posts(), $startDate, $endDate))
-            ->color('primary');
-    }
-
-    private function makeCommentsStat(User $user, CarbonImmutable $startDate, CarbonImmutable $endDate): Stat
-    {
-        return Stat::make('Comments', $user->comments()->count())
-            ->description('New comments per day over the last 7 days')
-            ->chart($this->getDailyActivityChartData($user->comments(), $startDate, $endDate))
-            ->color('info');
-    }
-
-    private function makeActiveTrustedDevicesStat(User $user): Stat
-    {
-        return Stat::make(
-            'Active trusted devices',
-            $user->trustedDevices()
-                ->whereNull('deleted_at')
-                ->where('expires_at', '>', now())
-                ->count(),
-        )->description('Not revoked and not expired');
     }
 
     /**
