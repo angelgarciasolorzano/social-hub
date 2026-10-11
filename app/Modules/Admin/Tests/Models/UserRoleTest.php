@@ -8,15 +8,15 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\MassAssignmentException;
 
-it('assigns web guard roles and resolves their permissions', function (): void {
+it('assigns admin guard roles and resolves their permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
     $user->assignRole(AdminRole::UsersReader->value);
     $user->refresh();
 
-    expect($user->hasRole(AdminRole::UsersReader->value, 'web'))->toBeTrue()
-        ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'web'))->toBeTrue();
+    expect($user->hasRole(AdminRole::UsersReader->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'admin'))->toBeTrue();
 });
 
 it('omits authentication secrets from array and json serialization', function (): void {

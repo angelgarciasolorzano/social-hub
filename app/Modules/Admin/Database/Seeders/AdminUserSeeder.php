@@ -11,6 +11,8 @@ use Spatie\Permission\Models\Role;
 
 class AdminUserSeeder extends Seeder
 {
+    private const string GUARD = 'admin';
+
     private const string DEFAULT_ADMIN_EMAIL = 'angel@gmail.com';
 
     private const int PANEL_ADMIN_PERCENTAGE = 10;
@@ -25,18 +27,25 @@ class AdminUserSeeder extends Seeder
             ->where('email', self::DEFAULT_ADMIN_EMAIL)
             ->firstOrFail();
 
-        $defaultAdmin->syncRoles([
-            AdminRole::Admin->value,
-            AdminRole::UsersReader->value,
-        ]);
+        $adminRole = Role::query()
+            ->where('name', AdminRole::Admin->value)
+            ->where('guard_name', self::GUARD)
+            ->firstOrFail();
+
+        $usersReaderRole = Role::query()
+            ->where('name', AdminRole::UsersReader->value)
+            ->where('guard_name', self::GUARD)
+            ->firstOrFail();
+
+        $defaultAdmin->syncRoles([$adminRole, $usersReaderRole]);
 
         $builder = User::query()->where($defaultAdmin->getKeyName(), '!=', $defaultAdmin->getKey());
 
         (clone $builder)
-            ->role(AdminRole::Admin->value)
+            ->role(AdminRole::Admin->value, self::GUARD)
             ->get()
-            ->each(static function (User $user): void {
-                $user->removeRole(AdminRole::UsersReader->value);
+            ->each(static function (User $user) use ($usersReaderRole): void {
+                $user->removeRole($usersReaderRole);
             });
 
         $otherUsersCount = (clone $builder)->count('*');
@@ -48,7 +57,7 @@ class AdminUserSeeder extends Seeder
         $targetPanelAdminCount = (int) ceil($otherUsersCount * self::PANEL_ADMIN_PERCENTAGE / 100);
 
         $existingPanelAdminCount = (clone $builder)
-            ->role(AdminRole::Admin->value)
+            ->role(AdminRole::Admin->value, self::GUARD)
             ->count('*');
 
         $additionalPanelAdminCount = max(0, $targetPanelAdminCount - $existingPanelAdminCount);
@@ -56,11 +65,6 @@ class AdminUserSeeder extends Seeder
         if ($additionalPanelAdminCount === 0) {
             return;
         }
-
-        $adminRole = Role::query()
-            ->where('name', AdminRole::Admin->value)
-            ->where('guard_name', 'web')
-            ->firstOrFail();
 
         $builder
             ->whereDoesntHave('roles')

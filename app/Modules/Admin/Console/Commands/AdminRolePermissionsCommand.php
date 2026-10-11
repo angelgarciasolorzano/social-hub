@@ -23,7 +23,7 @@ class AdminRolePermissionsCommand extends Command
 
     private const string ACTION_REVOKE = 'revoke';
 
-    private const string GUARD = 'web';
+    private const string GUARD = 'admin';
 
     public function handle(): int
     {

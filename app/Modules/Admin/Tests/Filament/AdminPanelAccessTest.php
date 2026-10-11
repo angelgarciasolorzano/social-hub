@@ -16,7 +16,7 @@ it('allows authorized administrators to enter the admin panel', function (): voi
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value);
 
-    $this->actingAs($user, 'web')
+    $this->actingAs($user, 'admin')
         ->get('/admin')
         ->assertOk();
 });
@@ -26,7 +26,7 @@ it('denies authenticated users without admin access', function (): void {
 
     $user = createUser();
 
-    $this->actingAs($user, 'web')
+    $this->actingAs($user, 'admin')
         ->get('/admin')
         ->assertForbidden();
 });

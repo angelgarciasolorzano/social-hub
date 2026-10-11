@@ -150,7 +150,7 @@ it('allows revoking one role when the user retains admin.access through another 
 
     Role::query()
         ->where('name', AdminRole::UsersReader->value)
-        ->where('guard_name', 'web')
+        ->where('guard_name', 'admin')
         ->firstOrFail()
         ->givePermissionTo(AdminPermission::AdminAccess->value);
 

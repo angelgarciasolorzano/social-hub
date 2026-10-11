@@ -20,7 +20,7 @@ it('allows listing users only with users.viewAny', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
-    $listUsersRole = Role::findOrCreate('users-list-test', 'web');
+    $listUsersRole = Role::findOrCreate('users-list-test', 'admin');
     $listUsersRole->givePermissionTo(AdminPermission::UsersViewAny->value);
 
     $authenticatedUser->assignRole($listUsersRole);
@@ -34,7 +34,7 @@ it('allows viewing a user only with users.view', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
-    $viewUsersRole = Role::findOrCreate('users-view-test', 'web');
+    $viewUsersRole = Role::findOrCreate('users-view-test', 'admin');
     $viewUsersRole->givePermissionTo(AdminPermission::UsersView->value);
 
     $authenticatedUser->assignRole($viewUsersRole);

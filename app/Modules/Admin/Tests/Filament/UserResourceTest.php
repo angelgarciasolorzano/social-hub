@@ -46,7 +46,7 @@ it('allows admins with the users reader role to list and search users by name an
         'email' => 'unrelated@example.test',
     ])->save();
 
-    $this->actingAs($authenticatedUser, 'web');
+    $this->actingAs($authenticatedUser, 'admin');
 
     Livewire::test(ListUsers::class)
         ->assertSuccessful()
@@ -89,7 +89,7 @@ it('allows admins with users view permission to open an allowlisted detail witho
     $encryptedTotpSecret = $targetUser->getRawOriginal('two_factor_secret');
     $encryptedRecoveryCodes = $targetUser->getRawOriginal('two_factor_recovery_codes');
 
-    $this->actingAs($authenticatedUser, 'web');
+    $this->actingAs($authenticatedUser, 'admin');
 
     $testable = Livewire::test(ViewUser::class, ['record' => $targetUser->id])
         ->assertOk();
@@ -136,7 +136,7 @@ it('denies the users list when the admin lacks users view any permission', funct
     $authenticatedUser->assignRole(AdminRole::Admin->value);
     $authenticatedUser->givePermissionTo(AdminPermission::UsersView->value);
 
-    $this->actingAs($authenticatedUser, 'web');
+    $this->actingAs($authenticatedUser, 'admin');
 
     Livewire::test(ListUsers::class)
         ->assertForbidden();
@@ -149,7 +149,7 @@ it('denies a user detail when the admin lacks users view permission', function (
 
     $targetUser = createUser();
 
-    $this->actingAs($authenticatedUser, 'web');
+    $this->actingAs($authenticatedUser, 'admin');
 
     Livewire::test(ViewUser::class, ['record' => $targetUser->id])
         ->assertForbidden();
@@ -167,7 +167,7 @@ it('rejects direct user create edit and delete requests without mutating users',
     $originalEmail = $targetUser->email;
     $originalUserCount = User::query()->count('id');
 
-    $this->actingAs($authenticatedUser, 'web');
+    $this->actingAs($authenticatedUser, 'admin');
 
     $this->get('/admin/users/create')->assertNotFound();
     $this->get('/admin/users/'.$targetUser->id.'/edit')->assertNotFound();

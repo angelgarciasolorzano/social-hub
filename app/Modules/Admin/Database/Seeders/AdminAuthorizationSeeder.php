@@ -14,7 +14,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 class AdminAuthorizationSeeder extends Seeder
 {
-    private const string GUARD = 'web';
+    private const string GUARD = 'admin';
 
     public function run(PermissionRegistrar $permissionRegistrar): void
     {

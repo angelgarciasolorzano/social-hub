@@ -17,7 +17,7 @@ use Spatie\Permission\Models\Role;
 #[Description('Promote the first verified user to the administrator roles.')]
 class AdminBootstrapCommand extends Command
 {
-    private const string GUARD = 'web';
+    private const string GUARD = 'admin';
 
     public function handle(): int
     {

@@ -38,7 +38,7 @@ it('gives Angel every admin permission and a random ten percent panel-only acces
     ];
 
     $otherPanelAdmins = User::query()
-        ->role(AdminRole::Admin->value, 'web')
+        ->role(AdminRole::Admin->value, 'admin')
         ->where('email', '!=', 'angel@gmail.com')
         ->get();
 

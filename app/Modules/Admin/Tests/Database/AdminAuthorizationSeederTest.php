@@ -12,12 +12,12 @@ it('seeds each role with only its intended permissions', function (): void {
 
     $adminRole = Role::query()
         ->where('name', AdminRole::Admin->value)
-        ->where('guard_name', 'web')
+        ->where('guard_name', 'admin')
         ->firstOrFail();
 
     $usersReaderRole = Role::query()
         ->where('name', AdminRole::UsersReader->value)
-        ->where('guard_name', 'web')
+        ->where('guard_name', 'admin')
         ->firstOrFail();
 
     $this->assertDatabaseCount('roles', 2);
@@ -35,7 +35,7 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
 
     $usersReaderRole = Role::query()
         ->where('name', AdminRole::UsersReader->value)
-        ->where('guard_name', 'web')
+        ->where('guard_name', 'admin')
         ->firstOrFail();
 
     $usersReaderRole->revokePermissionTo(AdminPermission::UsersViewAny->value);
@@ -44,7 +44,7 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
 
     $remainingPermissions = Role::query()
         ->where('name', AdminRole::UsersReader->value)
-        ->where('guard_name', 'web')
+        ->where('guard_name', 'admin')
         ->firstOrFail()
         ->permissions
         ->pluck('name')

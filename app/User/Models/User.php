@@ -82,7 +82,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     use Notifiable;
     use TwoFactorAuthenticatable;
 
-    protected string $guard_name = 'web';
+    protected string $guard_name = 'admin';
 
     public function canAccessPanel(Panel $panel): bool
     {
