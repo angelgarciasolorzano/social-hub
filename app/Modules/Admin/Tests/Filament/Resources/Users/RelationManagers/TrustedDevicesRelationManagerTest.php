@@ -8,13 +8,19 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\User\Models\User;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
+use Livewire\Component;
 use Livewire\Livewire;
 use LogicException;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('shows only scoped trusted device details without exposing sensitive data', function (): void {
@@ -69,6 +75,7 @@ it('shows only scoped trusted device details without exposing sensitive data', f
 
 it('derives active expired and revoked states including the expiry boundary', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
@@ -76,6 +83,7 @@ it('derives active expired and revoked states including the expiry boundary', fu
 
     $targetUser = createUser();
     $currentTime = now()->toImmutable();
+
     $this->travelTo($currentTime);
 
     $trustedDevice = createTrustedDevice($targetUser, [
@@ -111,10 +119,12 @@ it('derives active expired and revoked states including the expiry boundary', fu
 
     throw_unless($relationManagerComponent instanceof HasTable, LogicException::class, 'The trusted devices component must expose a Filament table.');
 
+    /** @var HasTable&Component $relationManagerComponent */
     $statusColumn = $relationManagerComponent->getTable()->getColumn('status');
 
     throw_unless($statusColumn instanceof TextColumn, LogicException::class, 'The trusted devices table must expose its status column.');
 
+    /** @var TextColumn $statusColumn */
     expect($statusColumn->record($trustedDevice)->getState())
         ->toBe('Active')
         ->and($statusColumn->record($expiredDevice)->getState())
@@ -125,7 +135,12 @@ it('derives active expired and revoked states including the expiry boundary', fu
         ->toBe('Revoked');
 });
 
-it('keeps the trusted device relation read-only and paginated', function (): void {
+it('registers the trusted device relation on the user resource', function (): void {
+    expect(UserResource::getRelations())
+        ->toContain(TrustedDevicesRelationManager::class);
+});
+
+it('defines trusted device columns without mutation actions', function (): void {
     $authenticatedUser = createUser();
 
     $authenticatedUser->assignRole([
@@ -138,9 +153,6 @@ it('keeps the trusted device relation read-only and paginated', function (): voi
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    expect(UserResource::getRelations())
-        ->toContain(TrustedDevicesRelationManager::class);
-
     $testable = Livewire::test(TrustedDevicesRelationManager::class, [
         'ownerRecord' => $targetUser,
         'pageClass' => ViewUser::class,
@@ -150,6 +162,7 @@ it('keeps the trusted device relation read-only and paginated', function (): voi
 
     throw_unless($relationManagerComponent instanceof HasTable, LogicException::class, 'The trusted devices component must expose a Filament table.');
 
+    /** @var HasTable&Component $relationManagerComponent */
     $table = $relationManagerComponent->getTable();
 
     expect(array_keys($table->getColumns()))
@@ -159,15 +172,41 @@ it('keeps the trusted device relation read-only and paginated', function (): voi
         ->and($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getToolbarActions())
-        ->toBeEmpty()
-        ->and($table->isPaginated())
-        ->toBeTrue()
+        ->toBeEmpty();
+});
+
+it('uses ten rows as the trusted device pagination default', function (): void {
+    $authenticatedUser = createUser();
+
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $component = Livewire::test(TrustedDevicesRelationManager::class, [
+        'ownerRecord' => $targetUser,
+        'pageClass' => ViewUser::class,
+    ])
+        ->assertOk()
+        ->instance();
+
+    throw_unless($component instanceof HasTable, LogicException::class, 'The trusted devices component must expose a Filament table.');
+
+    /** @var HasTable&Component $component */
+    $table = $component->getTable();
+
+    expect($table->isPaginated())->toBeTrue()
         ->and($table->getDefaultPaginationPageOption())
         ->toBe(10);
 });
 
 it('paginates only the selected users trusted devices', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
@@ -203,9 +242,14 @@ it('forbids admins without users view permission from viewing the relation', fun
 
     $this->actingAs($authenticatedUser, 'admin');
 
+    assertTrustedDevicesRelationIsForbidden($targetUser);
+});
+
+function assertTrustedDevicesRelationIsForbidden(User $targetUser): void
+{
     Livewire::test(TrustedDevicesRelationManager::class, [
         'ownerRecord' => $targetUser,
         'pageClass' => ViewUser::class,
     ])
         ->assertForbidden();
-});
+}

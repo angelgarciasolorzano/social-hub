@@ -12,78 +12,24 @@ use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
+use Livewire\Component;
 use Livewire\Livewire;
 use LogicException;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
-it('lists only the selected users posts with pagination', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
-
-    $targetUser = createUser();
-    $otherUser = createUser();
-
-    $targetPosts = collect([createPost($targetUser, ['content' => 'Target post 01'])]);
-
-    foreach (range(2, 11) as $sequence) {
-        $targetPosts->push(createPost($targetUser, [
-            'content' => 'Target post '.str_pad((string) $sequence, 2, '0', STR_PAD_LEFT),
-        ]));
-    }
-
-    $firstTargetPost = $targetPosts->first();
-    $otherUsersPost = createPost($otherUser, ['content' => 'Foreign post sentinel']);
-    $lastTargetPost = $targetPosts->last();
-
-    throw_unless($firstTargetPost instanceof Post, LogicException::class, 'The selected user must have a post to paginate.');
-    throw_unless($lastTargetPost instanceof Post, LogicException::class, 'The selected user must have a post on the first page.');
-
-    $this->actingAs($authenticatedUser, 'admin');
-
+it('registers posts as a user resource relation', function (): void {
     expect(UserResource::getRelations())
         ->toContain(PostsRelationManager::class);
-
-    $testable = Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
-        ->assertOk()
-        ->assertSee(PostResource::getUrl('view', ['record' => $lastTargetPost]), false);
-
-    $relationManager = $testable->instance();
-
-    throw_unless($relationManager instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
-
-    $firstPagePostIds = FilamentTableRecords::visibleRecordKeys($relationManager, Post::class);
-
-    expect($relationManager->getAllTableRecordsCount())
-        ->toBe(11)
-        ->and($firstPagePostIds)
-        ->toHaveCount(10)
-        ->toContain(FilamentTableRecords::recordKey($lastTargetPost))
-        ->not->toContain(FilamentTableRecords::recordKey($firstTargetPost))
-        ->not->toContain(FilamentTableRecords::recordKey($otherUsersPost));
-
-    $testable->call('setPage', 2);
-    $testable->assertSee(PostResource::getUrl('view', ['record' => $firstTargetPost]), false);
-
-    $relationManager = $testable->instance();
-
-    throw_unless($relationManager instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
-
-    expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
-        ->toBe([FilamentTableRecords::recordKey($firstTargetPost)]);
 });
 
-it('links posts to the dedicated read-only detail without loading their comment threads', function (): void {
+it('lists only the selected users posts with detail links', function (): void {
     $authenticatedUser = createUser();
 
     $authenticatedUser->assignRole([
@@ -93,51 +39,107 @@ it('links posts to the dedicated read-only detail without loading their comment 
     ]);
 
     $targetUser = createUser();
-    $user = createUser();
-    $replyAuthor = createUser();
     $otherUser = createUser();
-
-    $targetPost = createPost($targetUser, ['content' => 'Selected post content sentinel']);
-    $otherUsersPost = createPost($otherUser, ['content' => 'Foreign post content sentinel']);
-
-    $comment = createComment($user, [
-        'commentable_id' => $targetPost->getKey(),
-        'commentable_type' => $targetPost->getMorphClass(),
-        'content' => 'Root comment sentinel',
-    ]);
-
-    createComment($replyAuthor, [
-        'commentable_id' => $comment->getKey(),
-        'commentable_type' => $comment->getMorphClass(),
-        'content' => 'Reply sentinel',
-    ]);
+    $targetPost = createPost($targetUser, ['content' => 'Selected user post sentinel']);
+    $foreignPost = createPost($otherUser, ['content' => 'Foreign user post sentinel']);
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    $testable = Livewire::test(PostsRelationManager::class, [
+    Livewire::test(PostsRelationManager::class, [
         'ownerRecord' => $targetUser,
         'pageClass' => ViewUser::class,
     ])
         ->assertOk()
         ->assertSee(PostResource::getUrl('view', ['record' => $targetPost]), false)
-        ->assertDontSeeText('Root comment sentinel')
-        ->assertDontSeeText('Reply sentinel');
+        ->assertSeeText('Selected user post sentinel')
+        ->assertDontSee(PostResource::getUrl('view', ['record' => $foreignPost]), false)
+        ->assertDontSeeText('Foreign user post sentinel');
+});
 
-    $relationManagerComponent = $testable->instance();
+it('paginates only the selected users posts', function (): void {
+    $authenticatedUser = createUser();
 
-    throw_unless($relationManagerComponent instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
+    ]);
 
-    $visiblePosts = FilamentTableRecords::visibleRecords($relationManagerComponent, Post::class);
+    $targetUser = createUser();
+    $firstTargetPost = createPost($targetUser, ['content' => 'Target post 01']);
+    $lastTargetPost = $firstTargetPost;
 
-    expect(array_map(FilamentTableRecords::recordKey(...), $visiblePosts))
-        ->toContain(FilamentTableRecords::recordKey($targetPost))
-        ->not->toContain(FilamentTableRecords::recordKey($otherUsersPost));
-
-    foreach ($visiblePosts as $visiblePost) {
-        expect($visiblePost->relationLoaded('comments'))->toBeFalse();
+    foreach (range(2, 11) as $sequence) {
+        $lastTargetPost = createPost($targetUser, [
+            'content' => 'Target post '.str_pad((string) $sequence, 2, '0', STR_PAD_LEFT),
+        ]);
     }
 
-    $table = $relationManagerComponent->getTable();
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $testable = Livewire::test(PostsRelationManager::class, [
+        'ownerRecord' => $targetUser,
+        'pageClass' => ViewUser::class,
+    ])
+        ->assertOk()
+        ->assertSeeText('Target post 11')
+        ->assertDontSeeText('Target post 01')
+        ->assertSeeText('Showing 1 to 10 of 11 results')
+        ->call('setPage', 2)
+        ->assertSeeText('Target post 01')
+        ->assertDontSeeText('Target post 11');
+});
+
+it('links user posts to their read-only detail and hides their comments', function (): void {
+    $authenticatedUser = createUser();
+
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
+    ]);
+
+    $targetUser = createUser();
+    $targetPost = createPost($targetUser, ['content' => 'Selected post content sentinel']);
+    createCommentOn($targetPost, attributes: ['content' => 'Root comment sentinel']);
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(PostsRelationManager::class, [
+        'ownerRecord' => $targetUser,
+        'pageClass' => ViewUser::class,
+    ])
+        ->assertOk()
+        ->assertSee(PostResource::getUrl('view', ['record' => $targetPost]), false)
+        ->assertDontSeeText('Root comment sentinel');
+});
+
+it('keeps the posts relation read only', function (): void {
+    $authenticatedUser = createUser();
+
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
+    ]);
+
+    $targetUser = createUser();
+    createPost($targetUser);
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $component = Livewire::test(PostsRelationManager::class, [
+        'ownerRecord' => $targetUser,
+        'pageClass' => ViewUser::class,
+    ])
+        ->assertOk()
+        ->instance();
+
+    throw_unless($component instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
+
+    /** @var HasTable&Component $component */
+    $table = $component->getTable();
+
     $recordActions = $table->getRecordActions();
 
     expect($recordActions)
@@ -190,7 +192,10 @@ it('does not load comment threads for posts with many comments and replies', fun
 
     throw_unless($component instanceof HasTable, LogicException::class, 'The posts relation must expose a Filament table.');
 
-    foreach (FilamentTableRecords::visibleRecords($component, Post::class) as $visiblePost) {
+    /** @var HasTable&Component $tableComponent */
+    $tableComponent = $component;
+
+    foreach (FilamentTableRecords::visibleRecords($tableComponent, Post::class) as $visiblePost) {
         expect($visiblePost->relationLoaded('comments'))->toBeFalse();
     }
 });
@@ -223,6 +228,7 @@ it('searches the selected users posts and sorts the content column', function ()
 
     throw_unless($component instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
 
+    /** @var HasTable&Component $component */
     expect($component->getAllTableRecordsCount())
         ->toBe(2)
         ->and(FilamentTableRecords::visibleRecordKeys($component, Post::class))
@@ -235,6 +241,7 @@ it('searches the selected users posts and sorts the content column', function ()
 
     throw_unless($sortedRelationManager instanceof HasTable, LogicException::class, 'The sorted posts component must expose a Filament table.');
 
+    /** @var HasTable&Component $sortedRelationManager */
     expect(FilamentTableRecords::visibleRecordKeys($sortedRelationManager, Post::class))
         ->toBe([
             FilamentTableRecords::recordKey($alphaPost),
@@ -289,6 +296,7 @@ it('filters the selected users posts by comment presence and creation date', fun
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The filtered posts component must expose a Filament table.');
 
+    /** @var HasTable&Component $relationManager */
     expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
         ->toBe([FilamentTableRecords::recordKey($post)]);
 
@@ -298,12 +306,14 @@ it('filters the selected users posts by comment presence and creation date', fun
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The filtered posts component must expose a Filament table.');
 
+    /** @var HasTable&Component $relationManager */
     expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
         ->toBe([FilamentTableRecords::recordKey($withinRangeWithoutComments)]);
 });
 
 it('forbids users without Posts permission from viewing the relation', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
@@ -322,6 +332,7 @@ it('forbids users without Posts permission from viewing the relation', function 
 
 it('forbids direct relation requests without User record access', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminPostsReader->value,
