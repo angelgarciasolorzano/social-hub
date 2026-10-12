@@ -26,7 +26,7 @@ class UserActivityOverview extends StatsOverviewWidget
         $authenticatedUser = auth('admin')->user();
 
         return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::UsersView->value);
+            && $authenticatedUser->can(AdminPermission::AdminUsersView->value);
     }
 
     /**

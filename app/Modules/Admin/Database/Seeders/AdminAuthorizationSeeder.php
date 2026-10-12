@@ -37,15 +37,15 @@ class AdminAuthorizationSeeder extends Seeder
             /** @var array<string, list<AdminPermission>> $permissionsByRole */
             $permissionsByRole = [
                 AdminRole::Admin->value => [AdminPermission::AdminAccess],
-                AdminRole::UsersReader->value => [
-                    AdminPermission::UsersViewAny,
-                    AdminPermission::UsersView,
+                AdminRole::AdminUsersReader->value => [
+                    AdminPermission::AdminUsersViewAny,
+                    AdminPermission::AdminUsersView,
                 ],
-                AdminRole::PostsReader->value => [
-                    AdminPermission::PostsViewAny,
-                    AdminPermission::PostsView,
+                AdminRole::AdminPostsReader->value => [
+                    AdminPermission::AdminPostsViewAny,
+                    AdminPermission::AdminPostsView,
                 ],
-                AdminRole::DashboardReader->value => [AdminPermission::DashboardView],
+                AdminRole::AdminDashboardReader->value => [AdminPermission::AdminDashboardView],
             ];
 
             foreach ($permissionsByRole as $roleName => $adminPermissions) {
@@ -74,8 +74,8 @@ class AdminAuthorizationSeeder extends Seeder
     private function renameLegacyPermissions(): void
     {
         foreach ([
-            'users.viewAny' => AdminPermission::UsersViewAny,
-            'users.view' => AdminPermission::UsersView,
+            'users.viewAny' => AdminPermission::AdminUsersViewAny,
+            'users.view' => AdminPermission::AdminUsersView,
         ] as $legacyName => $adminPermission) {
             Permission::query()
                 ->where('name', $legacyName)
@@ -89,6 +89,6 @@ class AdminAuthorizationSeeder extends Seeder
         Role::query()
             ->where('name', 'users-reader')
             ->where('guard_name', self::GUARD)
-            ->update(['name' => AdminRole::UsersReader->value]);
+            ->update(['name' => AdminRole::AdminUsersReader->value]);
     }
 }

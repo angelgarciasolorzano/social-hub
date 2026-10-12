@@ -33,7 +33,7 @@ class AdminUserSeeder extends Seeder
             ->firstOrFail();
 
         $usersReaderRole = Role::query()
-            ->where('name', AdminRole::UsersReader->value)
+            ->where('name', AdminRole::AdminUsersReader->value)
             ->where('guard_name', self::GUARD)
             ->firstOrFail();
 

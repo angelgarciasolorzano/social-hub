@@ -11,12 +11,12 @@ final class UserPolicy
 {
     public function viewAny(User $authenticatedUser): bool
     {
-        return $authenticatedUser->can(AdminPermission::UsersViewAny->value);
+        return $authenticatedUser->can(AdminPermission::AdminUsersViewAny->value);
     }
 
     public function view(User $authenticatedUser): bool
     {
-        return $authenticatedUser->can(AdminPermission::UsersView->value);
+        return $authenticatedUser->can(AdminPermission::AdminUsersView->value);
     }
 
     public function create(): bool

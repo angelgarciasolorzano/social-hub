@@ -8,13 +8,13 @@ enum AdminPermission: string
 {
     case AdminAccess = 'admin.access';
 
-    case DashboardView = 'admin.dashboard.view';
+    case AdminDashboardView = 'admin.dashboard.view';
 
-    case UsersViewAny = 'admin.users.viewAny';
+    case AdminUsersViewAny = 'admin.users.viewAny';
 
-    case UsersView = 'admin.users.view';
+    case AdminUsersView = 'admin.users.view';
 
-    case PostsViewAny = 'admin.posts.viewAny';
+    case AdminPostsViewAny = 'admin.posts.viewAny';
 
-    case PostsView = 'admin.posts.view';
+    case AdminPostsView = 'admin.posts.view';
 }

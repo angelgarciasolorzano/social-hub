@@ -37,7 +37,7 @@ class AdminBootstrapCommand extends Command
                 ->first();
 
             $usersReaderRole = Role::query()
-                ->where('name', AdminRole::UsersReader->value)
+                ->where('name', AdminRole::AdminUsersReader->value)
                 ->where('guard_name', self::GUARD)
                 ->first();
 
@@ -72,7 +72,7 @@ class AdminBootstrapCommand extends Command
 
             $user->assignRole($adminRole, $usersReaderRole);
 
-            $this->info("Promoted {$email} to the admin and users-reader roles.");
+            $this->info("Promoted {$email} to the admin and admin-users-reader roles.");
 
             return self::SUCCESS;
         });
