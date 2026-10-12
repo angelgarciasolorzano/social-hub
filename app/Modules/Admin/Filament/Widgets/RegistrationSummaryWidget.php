@@ -26,7 +26,10 @@ class RegistrationSummaryWidget extends StatsOverviewWidget
         $authenticatedUser = auth('admin')->user();
 
         return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::AdminDashboardView->value);
+            && (
+                $authenticatedUser->can(AdminPermission::AdminDashboardView->value)
+                || $authenticatedUser->can(AdminPermission::AdminUsersViewAny->value)
+            );
     }
 
     /**

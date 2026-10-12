@@ -9,6 +9,7 @@ use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelationManager;
 use App\Modules\Admin\Filament\Resources\Posts\Tables\PostsTable;
+use App\Modules\Admin\Filament\Resources\Posts\Widgets\PostsOverview;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use BackedEnum;
@@ -20,6 +21,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 
@@ -82,6 +84,17 @@ class PostResource extends Resource
     public static function table(Table $table): Table
     {
         return PostsTable::configure($table);
+    }
+
+    /**
+     * @return array<class-string<Widget>>
+     */
+    #[Override]
+    public static function getWidgets(): array
+    {
+        return [
+            PostsOverview::class,
+        ];
     }
 
     public static function infolist(Schema $schema): Schema
