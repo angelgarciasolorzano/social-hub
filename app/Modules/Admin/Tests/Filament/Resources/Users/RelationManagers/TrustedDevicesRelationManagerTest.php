@@ -25,7 +25,7 @@ it('shows only scoped trusted device details without exposing sensitive data', f
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -74,7 +74,7 @@ it('derives active expired and revoked states including the expiry boundary', fu
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -133,7 +133,7 @@ it('keeps the trusted device relation read-only and paginated', function (): voi
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -173,7 +173,7 @@ it('paginates only the selected users trusted devices', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -200,7 +200,7 @@ it('paginates only the selected users trusted devices', function (): void {
 it('forbids admins without users view permission from viewing the relation', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $targetUser = createUser();
 

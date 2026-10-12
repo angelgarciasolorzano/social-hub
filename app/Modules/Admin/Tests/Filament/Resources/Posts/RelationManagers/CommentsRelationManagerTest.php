@@ -29,7 +29,7 @@ it('lists only the selected posts comments with pagination without loading repli
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $user = createUser();
@@ -128,7 +128,7 @@ it('opens a comment with its replies and authors in a read only view action', fu
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $user = createUser();
@@ -212,7 +212,7 @@ it('opens a comment with its replies and authors in a read only view action', fu
 it('denies the comments relation without users view even when users view any is granted', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $post = createPost();
 

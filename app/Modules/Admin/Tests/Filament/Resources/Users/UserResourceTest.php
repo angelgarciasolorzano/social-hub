@@ -18,7 +18,7 @@ it('rejects direct user create edit and delete requests without mutating users',
     $authenticatedUser->saveAppAuthenticationSecret('JBSWY3DPEHPK3PXP');
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();

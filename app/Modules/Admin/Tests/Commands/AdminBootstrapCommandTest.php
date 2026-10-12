@@ -23,11 +23,11 @@ it('promotes a verified user to both bootstrap roles', function (): void {
         ->and($commandOutput)->toContain("Promoted {$user->email}")
         ->and($bootstrappedUser->hasAllRoles([
             AdminRole::Admin->value,
-            AdminRole::UsersReader->value,
+            AdminRole::AdminUsersReader->value,
         ]))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminAccess->value))->toBeTrue()
-        ->and($bootstrappedUser->can(AdminPermission::UsersViewAny->value))->toBeTrue()
-        ->and($bootstrappedUser->can(AdminPermission::UsersView->value))->toBeTrue();
+        ->and($bootstrappedUser->can(AdminPermission::AdminUsersViewAny->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminUsersView->value))->toBeTrue();
 });
 
 it('rejects an email that does not belong to an existing user', function (): void {

@@ -21,7 +21,7 @@ it('allows listing users only with users.viewAny', function (): void {
 
     $authenticatedUser = createUser();
     $listUsersRole = Role::findOrCreate('users-list-test', 'admin');
-    $listUsersRole->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $listUsersRole->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $authenticatedUser->assignRole($listUsersRole);
     $targetUser = createUser();
@@ -35,7 +35,7 @@ it('allows viewing a user only with users.view', function (): void {
 
     $authenticatedUser = createUser();
     $viewUsersRole = Role::findOrCreate('users-view-test', 'admin');
-    $viewUsersRole->givePermissionTo(AdminPermission::UsersView->value);
+    $viewUsersRole->givePermissionTo(AdminPermission::AdminUsersView->value);
 
     $authenticatedUser->assignRole($viewUsersRole);
     $targetUser = createUser();
@@ -60,7 +60,7 @@ it('denies every user mutation ability directly through the gate', function (): 
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
     $targetUser = createUser();
 

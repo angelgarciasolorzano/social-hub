@@ -19,36 +19,36 @@ it('grants a cataloged permission to a role and updates permission checks', func
     $exitCode = Artisan::call('admin:role-permissions', [
         'action' => 'grant',
         'role' => AdminRole::Admin->value,
-        'permission' => AdminPermission::UsersViewAny->value,
+        'permission' => AdminPermission::AdminUsersViewAny->value,
     ]);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
         ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue()
-        ->and($user->can(AdminPermission::UsersViewAny->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminUsersViewAny->value))->toBeTrue()
         ->and(Role::query()
             ->where('name', AdminRole::Admin->value)
             ->firstOrFail()
-            ->hasPermissionTo(AdminPermission::UsersViewAny->value))->toBeTrue();
+            ->hasPermissionTo(AdminPermission::AdminUsersViewAny->value))->toBeTrue();
 });
 
 it('revokes a cataloged permission without changing role assignments', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    $user->assignRole(AdminRole::UsersReader->value);
+    $user->assignRole(AdminRole::AdminUsersReader->value);
 
     $exitCode = Artisan::call('admin:role-permissions', [
         'action' => 'revoke',
-        'role' => AdminRole::UsersReader->value,
-        'permission' => AdminPermission::UsersViewAny->value,
+        'role' => AdminRole::AdminUsersReader->value,
+        'permission' => AdminPermission::AdminUsersViewAny->value,
     ]);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
-        ->and($user->hasRole(AdminRole::UsersReader->value))->toBeTrue()
-        ->and($user->can(AdminPermission::UsersViewAny->value))->toBeFalse()
-        ->and($user->can(AdminPermission::UsersView->value))->toBeTrue();
+        ->and($user->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminUsersViewAny->value))->toBeFalse()
+        ->and($user->can(AdminPermission::AdminUsersView->value))->toBeTrue();
 });
 
 it('rejects an unknown role without changing role permissions', function (): void {
@@ -57,7 +57,7 @@ it('rejects an unknown role without changing role permissions', function (): voi
     $exitCode = Artisan::call('admin:role-permissions', [
         'action' => 'grant',
         'role' => 'unlisted-role',
-        'permission' => AdminPermission::UsersViewAny->value,
+        'permission' => AdminPermission::AdminUsersViewAny->value,
     ]);
 
     expect($exitCode)->toBe(Command::INVALID)
@@ -70,7 +70,7 @@ it('rejects an unknown role without changing role permissions', function (): voi
         ->and(Role::query()
             ->where('name', AdminRole::Admin->value)
             ->firstOrFail()
-            ->hasPermissionTo(AdminPermission::UsersViewAny->value))->toBeFalse();
+            ->hasPermissionTo(AdminPermission::AdminUsersViewAny->value))->toBeFalse();
 });
 
 it('rejects an unknown permission without changing role permissions', function (): void {
@@ -87,7 +87,7 @@ it('rejects an unknown permission without changing role permissions', function (
         ->and(Role::query()
             ->where('name', AdminRole::Admin->value)
             ->firstOrFail()
-            ->hasPermissionTo(AdminPermission::UsersViewAny->value))->toBeFalse()
+            ->hasPermissionTo(AdminPermission::AdminUsersViewAny->value))->toBeFalse()
         ->and(Permission::query()->where('name', 'unlisted.permission')->exists())->toBeFalse();
 });
 
@@ -97,7 +97,7 @@ it('rejects actions other than grant or revoke without changing role permissions
     $exitCode = Artisan::call('admin:role-permissions', [
         'action' => 'replace',
         'role' => AdminRole::Admin->value,
-        'permission' => AdminPermission::UsersViewAny->value,
+        'permission' => AdminPermission::AdminUsersViewAny->value,
     ]);
 
     expect($exitCode)->toBe(Command::INVALID)
@@ -105,7 +105,7 @@ it('rejects actions other than grant or revoke without changing role permissions
         ->and(Role::query()
             ->where('name', AdminRole::Admin->value)
             ->firstOrFail()
-            ->hasPermissionTo(AdminPermission::UsersViewAny->value))->toBeFalse();
+            ->hasPermissionTo(AdminPermission::AdminUsersViewAny->value))->toBeFalse();
 });
 
 it('requires the Admin authorization catalog to be seeded', function (): void {
@@ -147,7 +147,7 @@ it('allows revoking admin.access when a user retains it through another role', f
     $this->seed(AdminAuthorizationSeeder::class);
 
     Role::query()
-        ->where('name', AdminRole::UsersReader->value)
+        ->where('name', AdminRole::AdminUsersReader->value)
         ->firstOrFail()
         ->givePermissionTo(AdminPermission::AdminAccess->value);
 
@@ -155,7 +155,7 @@ it('allows revoking admin.access when a user retains it through another role', f
     $targetUser->assignRole(AdminRole::Admin->value);
 
     $user = createUser();
-    $user->assignRole(AdminRole::UsersReader->value);
+    $user->assignRole(AdminRole::AdminUsersReader->value);
 
     $exitCode = Artisan::call('admin:role-permissions', [
         'action' => 'revoke',

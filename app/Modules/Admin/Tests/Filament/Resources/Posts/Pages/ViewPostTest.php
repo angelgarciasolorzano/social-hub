@@ -22,7 +22,7 @@ it('allows users with users view permission to view a post and its author', func
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $user = createUser();
@@ -60,7 +60,7 @@ it('allows users with users view permission to view a post and its author', func
 it('denies post detail without users view permission even when users view any is granted', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $post = createPost();
 
@@ -74,7 +74,7 @@ it('denies post detail when the post has no existing owner', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $post = createPost();

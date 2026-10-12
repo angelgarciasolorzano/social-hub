@@ -20,7 +20,7 @@ it('renders the selected users post comment and active trusted device counts', f
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -80,7 +80,7 @@ it('shows zero counts when the selected user has no activity', function (): void
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();

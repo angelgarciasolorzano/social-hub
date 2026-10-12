@@ -30,7 +30,7 @@ it('lists only the selected users posts with pagination', function (): void {
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -93,7 +93,7 @@ it('links posts to the dedicated read-only detail without loading their comment 
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -159,7 +159,7 @@ it('does not load comment threads for posts with many comments and replies', fun
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -203,7 +203,7 @@ it('searches the selected users posts and sorts the content column', function ()
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -246,7 +246,7 @@ it('filters the selected users posts by comment presence and creation date', fun
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -303,7 +303,7 @@ it('filters the selected users posts by comment presence and creation date', fun
 it('forbids admins without users view permission from viewing posts', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $targetUser = createUser();
 

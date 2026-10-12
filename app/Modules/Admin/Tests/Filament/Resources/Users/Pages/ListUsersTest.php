@@ -24,7 +24,7 @@ it('allows admins with the users reader role to list and search users by name an
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $user = createUser();
@@ -74,7 +74,7 @@ it('renders the last login fallback in the active application locale', function 
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -107,7 +107,7 @@ it('filters users by verification status registration date and post presence alo
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $user = createUser();
@@ -197,7 +197,7 @@ it('preserves search sorting and pagination when user filters are active', funct
     $authenticatedUser = UserFactory::new()->unverified()->createOne();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $users = collect([createUser()]);
@@ -252,7 +252,7 @@ it('preserves search sorting and pagination when user filters are active', funct
 it('denies the users list when the admin lacks users view any permission', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::UsersView->value);
+    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersView->value);
 
     $this->actingAs($authenticatedUser, 'admin');
 

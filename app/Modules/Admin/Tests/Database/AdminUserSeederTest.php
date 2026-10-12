@@ -21,8 +21,8 @@ it('gives Angel every admin permission and a random ten percent panel-only acces
     $userFactory->count(28)->create();
 
     $this->seed(AdminAuthorizationSeeder::class);
-    $limitedAdmin->assignRole(AdminRole::Admin->value, AdminRole::UsersReader->value);
-    $reader->assignRole(AdminRole::UsersReader->value);
+    $limitedAdmin->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
+    $reader->assignRole(AdminRole::AdminUsersReader->value);
 
     $this->seed(AdminUserSeeder::class);
     $this->seed(AdminUserSeeder::class);
@@ -33,8 +33,8 @@ it('gives Angel every admin permission and a random ten percent panel-only acces
 
     $expectedPermissionNames = [
         AdminPermission::AdminAccess->value,
-        AdminPermission::UsersView->value,
-        AdminPermission::UsersViewAny->value,
+        AdminPermission::AdminUsersView->value,
+        AdminPermission::AdminUsersViewAny->value,
     ];
 
     $otherPanelAdmins = User::query()
@@ -48,7 +48,7 @@ it('gives Angel every admin permission and a random ten percent panel-only acces
 
     expect($angel->hasAllRoles([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]))->toBeTrue()
         ->and($angel->getAllPermissions()->pluck('name')->sort()->values()->all())
         ->toBe(collect($expectedPermissionNames)->sort()->values()->all())
@@ -58,8 +58,8 @@ it('gives Angel every admin permission and a random ten percent panel-only acces
         ->toBeTrue()
         ->and($usersWithEveryAdminPermission)->toHaveCount(1)
         ->and($limitedAdmin->hasRole(AdminRole::Admin->value))->toBeTrue()
-        ->and($limitedAdmin->hasRole(AdminRole::UsersReader->value))->toBeFalse()
+        ->and($limitedAdmin->hasRole(AdminRole::AdminUsersReader->value))->toBeFalse()
         ->and($limitedAdmin->hasAllPermissions([AdminPermission::AdminAccess->value]))->toBeTrue()
-        ->and($reader->hasRole(AdminRole::UsersReader->value))->toBeTrue()
+        ->and($reader->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue()
         ->and($reader->hasRole(AdminRole::Admin->value))->toBeFalse();
 });

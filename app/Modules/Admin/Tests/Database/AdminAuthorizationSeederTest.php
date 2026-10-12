@@ -17,15 +17,15 @@ it('seeds each role with only its intended permissions', function (): void {
         ->firstOrFail();
 
     $usersReaderRole = Role::query()
-        ->where('name', AdminRole::UsersReader->value)
+        ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
     $postsReaderRole = Role::query()
-        ->where('name', AdminRole::PostsReader->value)
+        ->where('name', AdminRole::AdminPostsReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
     $dashboardReaderRole = Role::query()
-        ->where('name', AdminRole::DashboardReader->value)
+        ->where('name', AdminRole::AdminDashboardReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
 
@@ -58,31 +58,31 @@ it('seeds each role with only its intended permissions', function (): void {
         ->toBe([AdminPermission::AdminAccess->value])
         ->and($usersReaderRole->permissions->pluck('name')->sort()->values()
             ->all())
-        ->toBe([AdminPermission::UsersView->value, AdminPermission::UsersViewAny->value])
+        ->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
         ->and($postsReaderRole->permissions->pluck('name')->sort()->values()->all())
-        ->toBe([AdminPermission::PostsView->value, AdminPermission::PostsViewAny->value])
+        ->toBe([AdminPermission::AdminPostsView->value, AdminPermission::AdminPostsViewAny->value])
         ->and($dashboardReaderRole->permissions->pluck('name')->all())
-        ->toBe([AdminPermission::DashboardView->value]);
+        ->toBe([AdminPermission::AdminDashboardView->value]);
 });
 
 it('keeps a revoked permission revoked when the seeder runs again', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $usersReaderRole = Role::query()
-        ->where('name', AdminRole::UsersReader->value)
+        ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
     $user = createUser();
     $user->assignRole($usersReaderRole);
 
-    $usersReaderRole->revokePermissionTo(AdminPermission::UsersViewAny->value);
+    $usersReaderRole->revokePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user->refresh();
 
     $remainingPermissions = Role::query()
-        ->where('name', AdminRole::UsersReader->value)
+        ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail()
         ->permissions
@@ -99,19 +99,19 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
         'model_id' => $user->getKey(),
     ]);
 
-    expect($remainingPermissions)->toBe([AdminPermission::UsersView->value])
-        ->and($user->hasRole(AdminRole::UsersReader->value, 'admin'))->toBeTrue()
-        ->and($user->hasPermissionTo(AdminPermission::UsersView->value, 'admin'))->toBeTrue()
-        ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'admin'))->toBeFalse();
+    expect($remainingPermissions)->toBe([AdminPermission::AdminUsersView->value])
+        ->and($user->hasRole(AdminRole::AdminUsersReader->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersView->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse();
 });
 
 it('renames the legacy users reader role without losing users or role permissions', function (): void {
     $usersViewAnyPermission = Permission::query()->create([
-        'name' => AdminPermission::UsersViewAny->value,
+        'name' => AdminPermission::AdminUsersViewAny->value,
         'guard_name' => 'admin',
     ]);
     $usersViewPermission = Permission::query()->create([
-        'name' => AdminPermission::UsersView->value,
+        'name' => AdminPermission::AdminUsersView->value,
         'guard_name' => 'admin',
     ]);
     $legacyUsersReaderRole = Role::query()->create([
@@ -131,7 +131,7 @@ it('renames the legacy users reader role without losing users or role permission
     $this->seed(AdminAuthorizationSeeder::class);
 
     $renamedUsersReaderRole = Role::query()
-        ->where('name', AdminRole::UsersReader->value)
+        ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
     $remainingPermissions = $renamedUsersReaderRole->permissions
@@ -144,7 +144,7 @@ it('renames the legacy users reader role without losing users or role permission
     $this->assertDatabaseCount('roles', 4);
     $this->assertDatabaseHas('roles', [
         'id' => $legacyUsersReaderRole->getKey(),
-        'name' => AdminRole::UsersReader->value,
+        'name' => AdminRole::AdminUsersReader->value,
         'guard_name' => 'admin',
     ]);
     $this->assertDatabaseMissing('roles', [
@@ -165,10 +165,10 @@ it('renames the legacy users reader role without losing users or role permission
         'permission_id' => $usersViewAnyPermission->getKey(),
     ]);
 
-    expect($remainingPermissions)->toBe([AdminPermission::UsersView->value])
-        ->and($user->hasRole(AdminRole::UsersReader->value, 'admin'))->toBeTrue()
-        ->and($user->hasPermissionTo(AdminPermission::UsersView->value, 'admin'))->toBeTrue()
-        ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'admin'))->toBeFalse();
+    expect($remainingPermissions)->toBe([AdminPermission::AdminUsersView->value])
+        ->and($user->hasRole(AdminRole::AdminUsersReader->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersView->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse();
 });
 
 it('renames legacy permissions in place while preserving role grants and revocations', function (): void {
@@ -181,7 +181,7 @@ it('renames legacy permissions in place while preserving role grants and revocat
         'guard_name' => 'admin',
     ]);
     $usersReaderRole = Role::query()->create([
-        'name' => AdminRole::UsersReader->value,
+        'name' => AdminRole::AdminUsersReader->value,
         'guard_name' => 'admin',
     ]);
     $usersReaderRole->givePermissionTo([
@@ -194,7 +194,7 @@ it('renames legacy permissions in place while preserving role grants and revocat
     $this->seed(AdminAuthorizationSeeder::class);
 
     $renamedUsersReaderRole = Role::query()
-        ->where('name', AdminRole::UsersReader->value)
+        ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
     $remainingPermissions = $renamedUsersReaderRole->permissions
@@ -206,12 +206,12 @@ it('renames legacy permissions in place while preserving role grants and revocat
     $this->assertDatabaseCount('permissions', 6);
     $this->assertDatabaseHas('permissions', [
         'id' => $legacyUsersViewAnyPermission->getKey(),
-        'name' => AdminPermission::UsersViewAny->value,
+        'name' => AdminPermission::AdminUsersViewAny->value,
         'guard_name' => 'admin',
     ]);
     $this->assertDatabaseHas('permissions', [
         'id' => $legacyUsersViewPermission->getKey(),
-        'name' => AdminPermission::UsersView->value,
+        'name' => AdminPermission::AdminUsersView->value,
         'guard_name' => 'admin',
     ]);
     $this->assertDatabaseMissing('permissions', [
@@ -227,5 +227,5 @@ it('renames legacy permissions in place while preserving role grants and revocat
         'permission_id' => $legacyUsersViewAnyPermission->getKey(),
     ]);
 
-    expect($remainingPermissions)->toBe([AdminPermission::UsersView->value]);
+    expect($remainingPermissions)->toBe([AdminPermission::AdminUsersView->value]);
 });

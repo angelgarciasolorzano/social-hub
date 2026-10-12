@@ -24,7 +24,7 @@ it('lists posts with pagination and content search', function (): void {
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $user = createUser();
@@ -97,7 +97,7 @@ it('keeps the Posts resource index read only', function (): void {
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $this->actingAs($authenticatedUser, 'admin');

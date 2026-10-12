@@ -24,7 +24,7 @@ it('allows admins with users view permission to open an allowlisted detail witho
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
 
     $targetUser = createUser();
@@ -88,7 +88,7 @@ it('allows admins with users view permission to open an allowlisted detail witho
 it('denies a user detail when the admin lacks users view permission', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $targetUser = createUser();
 
