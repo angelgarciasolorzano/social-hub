@@ -236,7 +236,7 @@ Reemplazar la lectura de data.flash.comments por usePage().props.comments|replie
 
 **validateCommand:** `npx eslint resources/js/modules/comments/hooks/usePaginatedComments.ts resources/js/modules/comments/types/comment.ts`
 
-**Integration notes:** El contrato del hook cambia (error, retry); npm run types puede fallar en los consumidores hasta TASK-010, por eso esta tarea valida solo con eslint y TASK-010 corre types y build.
+**Integration notes:** El contrato del hook cambia (error, retry); npm run types puede fallar en los consumidores hasta TASK-010, por eso esta tarea valida solo con eslint y TASK-010 corre types y build. El hook asume un objetivo fijo por montaje (CommentList por postId, RepliesList por comentario); devuelve loadFailure ('refresh'|'more'|null), retryLoad e isRefreshing=true desde el primer render. Pendiente de verificar en navegador en TASK-010: que onFinish se ejecute cuando onHttpException devuelve false (404/429).
 
 ### TASK-009: Regenerar Wayfinder y adaptar CommentForm al controlador invocable
 
@@ -283,7 +283,7 @@ Consumir el nuevo contrato del hook: mostrar skeleton mientras la prop es undefi
 
 **validateCommand:** `npx eslint resources/js/modules/comments && npm run types && npm run build`
 
-**Integration notes:** Corte entregable: tras esta tarea el flujo completo funciona de punta a punta con el hook manual. Verificar manualmente en el navegador (Home y Profile) antes de pausar.
+**Integration notes:** Corte entregable: tras esta tarea el flujo completo funciona de punta a punta con el hook manual. Verificar manualmente en el navegador (Home y Profile) antes de pausar. Usar loadFailure y retryLoad del hook; el efecto de carga automatica de CommentList/RepliesList no debe disparar loadMoreComments mientras loadFailure no sea null (el hook ya lo bloquea, pero evitar re-render en bucle).
 
 ### TASK-011: Compuerta: probar <InfiniteScroll preserveUrl> en el dialogo (con reversion)
 
