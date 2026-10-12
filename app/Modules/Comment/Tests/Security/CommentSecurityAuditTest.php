@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
-use App\Modules\Comment\Resources\CommentCollection;
+use App\Modules\Comment\Props\CommentThreadProps;
+use App\Modules\Comment\Resources\CommentResource;
 use App\Modules\Post\Models\Post;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
-use Inertia\Support\SessionKey;
 use Tests\TestCase;
 
 /**
@@ -24,7 +24,7 @@ function commentRouteMiddleware(string $routeName): array
 }
 
 /**
- * Count the queries needed to list and serialize one page of comments with their replies info.
+ * Count the queries needed to load and serialize one page of comments with their replies info.
  */
 function commentListingQueryCount(TestCase $testCase, int $commentsCount): int
 {
@@ -35,15 +35,21 @@ function commentListingQueryCount(TestCase $testCase, int $commentsCount): int
         createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
     }
 
+    /** @var array{version: string} $page */
+    $page = $testCase->actingAs($user)->get(route('home'))->inertiaPage();
+
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $testCase->actingAs($user)
-        ->get(route('comments.index', ['commentType' => Post::MORPH_NAME, 'commentableId' => $post->id]));
-
-    /** @var array<string, mixed> $flash */
-    $flash = session()->get(SessionKey::FLASH_DATA, []);
-    json_encode($flash['comments']);
+    $testCase->actingAs($user)->get(
+        route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
+        [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $page['version'],
+            'X-Inertia-Partial-Component' => 'home/Home',
+            'X-Inertia-Partial-Data' => 'comments',
+        ],
+    )->assertOk();
 
     $queries = count(DB::getQueryLog());
     DB::disableQueryLog();
@@ -59,10 +65,11 @@ it('[H1] throttles comments.store to prevent comment flooding', function (): voi
     expect(array_filter($middleware, fn (string $name): bool => str_starts_with($name, 'throttle')))->not->toBeEmpty();
 });
 
-it('[H1] throttles comments.index', function (): void {
-    $middleware = commentRouteMiddleware('comments.index');
+it('[H1] throttles the reading of comments where the props are resolved', function (): void {
+    $source = (string) file_get_contents(app_path('Modules/Comment/Props/CommentThreadProps.php'));
 
-    expect(array_filter($middleware, fn (string $name): bool => str_starts_with($name, 'throttle')))->not->toBeEmpty();
+    expect($source)->toContain('RateLimiter::tooManyAttempts')
+        ->and($source)->toContain('RateLimiter::hit');
 });
 
 // Hypothesis 2: commentable_id existence --------------------------------------
@@ -142,7 +149,7 @@ it('[H4] refuses to reply to a reply so threads have a single level of nesting',
 // Hypothesis 5: unreachable / inconsistent flash branch -----------------------
 
 it('[H5] answers the store action through a single Inertia flash channel', function (): void {
-    $source = (string) file_get_contents(app_path('Modules/Comment/Controllers/CommentController.php'));
+    $source = (string) file_get_contents(app_path('Modules/Comment/Controllers/CommentStoreController.php'));
 
     expect($source)->not->toContain('back()->with(');
 });
@@ -160,8 +167,9 @@ it('[H7] does not expose private user data in the serialized comments', function
     $post = createPost();
     createComment($user, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
 
-    $cursorPaginator = $post->comments()->with('user')->cursorPaginate(10);
-    $payload = (string) json_encode(new CommentCollection($cursorPaginator));
+    $cursorPaginator = $post->comments()->with('user')->cursorPaginate(10)
+        ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
+    $payload = (string) json_encode($cursorPaginator);
 
     expect($payload)->toContain($user->name)
         ->and($payload)->not->toContain($user->email)
@@ -179,7 +187,7 @@ it('[H8] exposes no route to update or delete comments', function (): void {
         ->values()
         ->all();
 
-    expect($commentRoutes)->toBe(['comments.index', 'comments.store']);
+    expect($commentRoutes)->toBe(['comments.store']);
 });
 
 it('[H8] ignores a forged user_id and attributes the comment to the authenticated user', function (): void {

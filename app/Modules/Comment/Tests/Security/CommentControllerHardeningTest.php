@@ -60,7 +60,7 @@ it('still returns 404 when replying to a comment that does not exist', function 
 });
 
 it('does not keep an unreachable error branch that bypasses Inertia flash', function (): void {
-    $source = (string) file_get_contents(app_path('Modules/Comment/Controllers/CommentController.php'));
+    $source = (string) file_get_contents(app_path('Modules/Comment/Controllers/CommentStoreController.php'));
 
     expect($source)->not->toContain('back()->with(')
         ->and($source)->not->toContain('Relation::getMorphedModel');
