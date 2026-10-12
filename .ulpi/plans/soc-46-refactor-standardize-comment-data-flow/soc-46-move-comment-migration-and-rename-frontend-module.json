@@ -476,13 +476,14 @@
       "acceptanceCriteria": [
         "Pint, Rector (dry-run) y PHPStan sin hallazgos y las suites de Comment, Post y Admin/Filament pasan (salvo la falla conocida ajena de Admin).",
         "Ninguna funcion global de pruebas del modulo esta definida mas de una vez ni queda sin uso (grep de definiciones frente a usos).",
-        "El recuento de pruebas de Comment es ~102 y se reporta junto con el de aserciones."
+        "El recuento de pruebas de Comment es 103 (antes 115) con 1.964 aserciones; Comment + Post suman 133 y Admin/Filament 47, todas en verde."
       ],
       "filesToModify": [],
       "filesToCreate": [],
       "writeScope": [],
       "validateCommand": "vendor/bin/pint --dirty --format agent && composer rector-dry && composer phpstan && php artisan test --compact app/Modules/Comment/Tests app/Modules/Post/Tests",
-      "review": "none"
+      "review": "none",
+      "integrationNotes": "EJECUTADA (2026-10-12): Pint (solo rutas propias), Rector dry-run y PHPStan sin hallazgos. Inventario de helpers: 10 funciones globales en el modulo y en Pest.php, ninguna duplicada ni sin uso; 0 cabeceras X-Inertia-Partial escritas a mano fuera de tests/Pest.php; 0 usos del idioma viejo createComment(.., ['commentable_id' => ..])."
     }
   ],
   "dependencies": {
