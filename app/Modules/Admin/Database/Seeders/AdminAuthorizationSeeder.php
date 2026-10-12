@@ -21,20 +21,17 @@ class AdminAuthorizationSeeder extends Seeder
         $permissionRegistrar->forgetCachedPermissions();
 
         DB::transaction(function (): void {
-            $adminAccessPermission = Permission::query()->firstOrCreate([
-                'name' => AdminPermission::AdminAccess->value,
-                'guard_name' => self::GUARD,
-            ]);
+            $this->renameLegacyPermissions();
 
-            $usersViewAnyPermission = Permission::query()->firstOrCreate([
-                'name' => AdminPermission::UsersViewAny->value,
-                'guard_name' => self::GUARD,
-            ]);
+            /** @var array<string, Permission> $permissions */
+            $permissions = [];
 
-            $usersViewPermission = Permission::query()->firstOrCreate([
-                'name' => AdminPermission::UsersView->value,
-                'guard_name' => self::GUARD,
-            ]);
+            foreach (AdminPermission::cases() as $adminPermission) {
+                $permissions[$adminPermission->value] = Permission::query()->firstOrCreate([
+                    'name' => $adminPermission->value,
+                    'guard_name' => self::GUARD,
+                ]);
+            }
 
             $adminRole = Role::query()->firstOrCreate([
                 'name' => AdminRole::Admin->value,
@@ -42,7 +39,7 @@ class AdminAuthorizationSeeder extends Seeder
             ]);
 
             if ($adminRole->wasRecentlyCreated) {
-                $adminRole->givePermissionTo($adminAccessPermission);
+                $adminRole->givePermissionTo($permissions[AdminPermission::AdminAccess->value]);
             }
 
             $usersReaderRole = Role::query()->firstOrCreate([
@@ -52,12 +49,25 @@ class AdminAuthorizationSeeder extends Seeder
 
             if ($usersReaderRole->wasRecentlyCreated) {
                 $usersReaderRole->givePermissionTo([
-                    $usersViewAnyPermission,
-                    $usersViewPermission,
+                    $permissions[AdminPermission::UsersViewAny->value],
+                    $permissions[AdminPermission::UsersView->value],
                 ]);
             }
         });
 
         $permissionRegistrar->forgetCachedPermissions();
+    }
+
+    private function renameLegacyPermissions(): void
+    {
+        foreach ([
+            'users.viewAny' => AdminPermission::UsersViewAny,
+            'users.view' => AdminPermission::UsersView,
+        ] as $legacyName => $adminPermission) {
+            Permission::query()
+                ->where('name', $legacyName)
+                ->where('guard_name', self::GUARD)
+                ->update(['name' => $adminPermission->value]);
+        }
     }
 }
