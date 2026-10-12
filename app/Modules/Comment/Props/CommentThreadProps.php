@@ -11,11 +11,11 @@ use App\User\Models\User;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Cursor;
+use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Inertia;
 use Inertia\ProvidesInertiaProperties;
 use Inertia\RenderContext;
-use Inertia\ScrollProp;
 
 final readonly class CommentThreadProps implements ProvidesInertiaProperties
 {
@@ -45,12 +45,12 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
     public function toInertiaProperties(RenderContext $context): array
     {
         return [
-            'comments' => Inertia::optional(fn (): ScrollProp => $this->thread(
+            'comments' => Inertia::optional(fn (): CursorPaginator => $this->thread(
                 Post::class,
                 self::COMMENTS_PARAMETER,
                 self::COMMENTS_CURSOR,
             )),
-            'replies' => Inertia::optional(fn (): ScrollProp => $this->thread(
+            'replies' => Inertia::optional(fn (): CursorPaginator => $this->thread(
                 Comment::class,
                 self::REPLIES_PARAMETER,
                 self::REPLIES_CURSOR,
@@ -62,9 +62,9 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
      * Build the cursor-paginated comments of the commentable named by the request.
      *
      * @param  class-string<Post|Comment>  $commentableClass
-     * @return ScrollProp<mixed>
+     * @return CursorPaginator<int, array<array-key, mixed>>
      */
-    private function thread(string $commentableClass, string $parameter, string $cursorName): ScrollProp
+    private function thread(string $commentableClass, string $parameter, string $cursorName): CursorPaginator
     {
         $this->consumeThrottleBudget();
 
@@ -72,7 +72,7 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
 
         $encodedCursor = $this->request->query($cursorName);
 
-        $cursorPaginator = $commentable->comments()
+        return $commentable->comments()
             ->with('user')
             ->withCount('comments')
             ->orderByDesc('id')
@@ -82,8 +82,6 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
                 cursor: \is_string($encodedCursor) ? Cursor::fromEncoded($encodedCursor) : null,
             )
             ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve($this->request));
-
-        return Inertia::scroll($cursorPaginator);
     }
 
     /**

@@ -10,7 +10,7 @@ Dos limpiezas de organizacion. (1) La migracion de la tabla comments vive en dat
 
 ## Scope Challenge
 
-Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated. Ampliacion posterior (TASK-011 a TASK-015): revision de las pruebas del modulo a peticion del usuario; alcance aprobado 'helpers + duplicados exactos' (no se tocan los solapes entre pruebas de reglas y de HTTP ni se fusionan las de throttle).
+Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated. Ampliacion posterior (TASK-011 a TASK-015): revision de las pruebas del modulo a peticion del usuario; alcance aprobado 'helpers + duplicados exactos' (no se tocan los solapes entre pruebas de reglas y de HTTP ni se fusionan las de throttle). Ampliacion posterior (TASK-016 y TASK-017): sin <InfiniteScroll> en el frontend, las props de comentarios dejan de usar Inertia::scroll y devuelven el paginador.
 
 ## Prerequisites
 
@@ -392,6 +392,51 @@ Pint, Rector (dry-run), PHPStan y las suites de Comment, Post y Filament de Admi
 
 **Integration notes:** EJECUTADA (2026-10-12): Pint (solo rutas propias), Rector dry-run y PHPStan sin hallazgos. Inventario de helpers: 10 funciones globales en el modulo y en Pest.php, ninguna duplicada ni sin uso; 0 cabeceras X-Inertia-Partial escritas a mano fuera de tests/Pest.php; 0 usos del idioma viejo createComment(.., ['commentable_id' => ..]).
 
+### TASK-016: CommentThreadProps devuelve el paginador sin Inertia::scroll
+
+Tras descartar <InfiniteScroll> en el frontend, Inertia::scroll solo agregaba al page object mergeProps ['comments.data'] y un bloque scrollProps (pageName, previousPage, nextPage, currentPage, reset) que nada consume: el hook hace reload con reset y copia la pagina a su estado local. CommentThreadProps::thread() pasa a devolver el CursorPaginator (ya transformado con through()) y las props quedan como Inertia::optional(fn () => paginador). La forma de props.comments y props.replies no cambia (data, path, per_page, next_cursor, next_page_url, prev_cursor, prev_page_url). CommentThreadPropsTest deja de resolver un ScrollProp: se elimina resolveCommentThreadScrollProp y la prueba 'wraps the paginator in a scroll prop...' se reemplaza por una que fija la envoltura del paginador.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-015
+
+**Acceptance Criteria:**
+- [ ] Una recarga parcial de comments y de replies devuelve exactamente las mismas claves en props (data, path, per_page, next_cursor, next_page_url, prev_cursor, prev_page_url) y la respuesta ya no contiene scrollProps ni mergeProps; el cursor propio (comments_cursor / replies_cursor) sigue funcionando para paginar.
+- [ ] Los casos de falla no cambian: id ausente, no positivo o no entero responde 404, hilo inexistente lanza ModelNotFoundException, invitado 401 y el throttle de 60/min responde 429.
+- [ ] El numero de consultas sigue siendo constante y el payload no expone campos fuera de {id, content, createdAt, user, repliesInfo}.
+
+**writeScope:**
+- `app/Modules/Comment/Props/CommentThreadProps.php`
+- `app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php`
+
+**validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Props app/Modules/Comment/Tests/Security`
+
+**Integration notes:** Home y Profile siguen usando Inertia::scroll para 'posts' (alli si hay <InfiniteScroll>): solo cambia la lista de comentarios. EJECUTADA: medido con una prueba temporal, la respuesta de un partial reload pasa de [component,props,url,version,sharedProps,mergeProps,scrollProps] a [component,props,url,version,sharedProps], y props.comments conserva las mismas 7 claves. El tipo de retorno se documenta como CursorPaginator<int, array<array-key, mixed>> porque JsonResource::resolve() devuelve array sin forma. Verificado tambien en el navegador (carga, cursor, respuestas, publicar con refresco, error con reintento). La suite de Comment queda en 103 pruebas.
+
+### TASK-017: Actualizar CLAUDE.md y backend.md tras quitar Inertia::scroll de los comentarios y verificar en navegador
+
+CLAUDE.md (Comment data flow) deja de decir que las props son Inertia::scroll y que Inertia desenvuelve un ScrollProp dentro de optional; backend.md corrige la regla de serializacion de listados por cursor (la regla de through() sobre la Resource se mantiene, pero 'dentro de Inertia::scroll' solo aplica a listados que usan <InfiniteScroll>, como posts). Verificar en el navegador carga inicial, cursor, publicar con refresco, respuestas, y error con reintento.
+
+**Type:** docs  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-016
+
+**Acceptance Criteria:**
+- [ ] Ni CLAUDE.md ni docs/architecture/backend.md afirman que las props de comentarios usan Inertia::scroll, y la documentacion explica por que no (el hook usa reset y estado local).
+- [ ] En el navegador el dialogo carga 10 comentarios, pagina por cursor, publica y refresca, carga respuestas y muestra el error con reintento, con la URL sin cambios.
+
+**writeScope:**
+- `CLAUDE.md`
+- `docs/architecture/backend.md`
+
+**validateCommand:** `! grep -n 'optional(fn () => Inertia::scroll\|returned from an `optional` closure\|unwraps a `ScrollProp`' CLAUDE.md docs/architecture/backend.md`
+
 ## Failure Modes
 
 - Si el nombre de archivo de la migracion cambia, un entorno ya migrado intentaria recrear la tabla y fallaria (tabla existente): se conserva el nombre exacto.
@@ -413,8 +458,8 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 
 ## Execution Summary
 
-- Tareas: 15
-- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010 -> TASK-011 -> TASK-012 -> TASK-014 -> TASK-015
+- Tareas: 17
+- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010 -> TASK-011 -> TASK-012 -> TASK-014 -> TASK-015 -> TASK-016 -> TASK-017
 - Capas de ejecucion:
   1. TASK-001, TASK-002
   2. TASK-003
@@ -429,6 +474,8 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
   11. TASK-012, TASK-013
   12. TASK-014
   13. TASK-015
+  14. TASK-016
+  15. TASK-017
 
 ## Task Dependencies
 
@@ -449,3 +496,5 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 | TASK-013 | TASK-011 |
 | TASK-014 | TASK-013, TASK-011 |
 | TASK-015 | TASK-012, TASK-014 |
+| TASK-016 | TASK-015 |
+| TASK-017 | TASK-016 |

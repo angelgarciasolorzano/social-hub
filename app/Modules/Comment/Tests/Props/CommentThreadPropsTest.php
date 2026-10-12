@@ -13,7 +13,6 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
 use Inertia\OptionalProp;
 use Inertia\RenderContext;
-use Inertia\ScrollProp;
 use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -32,24 +31,6 @@ function commentThreadProps(array $query, ?User $user): array
 }
 
 /**
- * Resolve one of the optional props the way a partial reload does and return its scroll prop.
- *
- * @param  array<string, mixed>  $query
- * @return ScrollProp<mixed>
- */
-function resolveCommentThreadScrollProp(string $prop, array $query, ?User $user): ScrollProp
-{
-    /** @var OptionalProp $optionalProp */
-    $optionalProp = commentThreadProps($query, $user)[$prop];
-
-    $scrollProp = $optionalProp();
-
-    throw_unless($scrollProp instanceof ScrollProp, LogicException::class, 'The optional prop did not resolve to a scroll prop.');
-
-    return $scrollProp;
-}
-
-/**
  * Resolve one of the optional props the way a partial reload does and return its paginator.
  *
  * @param  array<string, mixed>  $query
@@ -57,9 +38,12 @@ function resolveCommentThreadScrollProp(string $prop, array $query, ?User $user)
  */
 function resolveCommentThread(string $prop, array $query, ?User $user): CursorPaginator
 {
-    $paginator = resolveCommentThreadScrollProp($prop, $query, $user)();
+    /** @var OptionalProp $optionalProp */
+    $optionalProp = commentThreadProps($query, $user)[$prop];
 
-    throw_unless($paginator instanceof CursorPaginator, LogicException::class, 'The scroll prop did not resolve to a cursor paginator.');
+    $paginator = $optionalProp();
+
+    throw_unless($paginator instanceof CursorPaginator, LogicException::class, 'The optional prop did not resolve to a cursor paginator.');
 
     /** @var CursorPaginator<int, array<string, mixed>> $paginator */
     return $paginator;
@@ -154,21 +138,18 @@ it('serializes each comment with the resource shape and nothing else', function 
         ->and($serializedComment['repliesInfo'])->toBe(['hasReplies' => true, 'repliesCount' => 1]);
 });
 
-it('wraps the paginator in a scroll prop that reports the comments cursor as its page name', function (): void {
+it('serializes each page as a plain cursor paginator envelope with its own cursor name', function (): void {
     $post = createPost();
     createCommentsOn($post, 11);
 
-    $user = createUser();
-    $query = [CommentThreadProps::COMMENTS_PARAMETER => $post->id];
+    $paginator = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
 
-    $metadata = resolveCommentThreadScrollProp('comments', $query, $user)->metadata();
-
-    expect(array_keys(resolveCommentThread('comments', $query, $user)->toArray()))->toBe([
+    expect(array_keys($paginator->toArray()))->toBe([
         'data', 'path', 'per_page', 'next_cursor', 'next_page_url', 'prev_cursor', 'prev_page_url',
     ])
-        ->and($metadata['pageName'])->toBe(CommentThreadProps::COMMENTS_CURSOR)
-        ->and($metadata['nextPage'])->toBeString()
-        ->and($metadata['previousPage'])->toBeNull();
+        ->and($paginator->getCursorName())->toBe(CommentThreadProps::COMMENTS_CURSOR)
+        ->and($paginator->nextCursor()?->encode())->toBeString()
+        ->and($paginator->previousCursor())->toBeNull();
 });
 
 it('answers 404 when the thread id is missing, not a positive integer or unknown', function (mixed $threadId): void {
