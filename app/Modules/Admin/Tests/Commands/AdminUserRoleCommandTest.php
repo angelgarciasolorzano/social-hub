@@ -6,6 +6,7 @@ use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
+use Filament\Panel;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
@@ -28,7 +29,48 @@ it('grants a catalog role and exposes its permissions', function (): void {
         ->and($user->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue()
         ->and($user->can(AdminPermission::AdminUsersViewAny->value))->toBeTrue()
         ->and($user->can(AdminPermission::AdminUsersView->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse();
+        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse()
+        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
+});
+
+it('grants Posts and Dashboard reader roles without panel entry', function (AdminRole $adminRole, AdminPermission $adminPermission): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+
+    $exitCode = Artisan::call('admin:user-role', [
+        'action' => 'grant',
+        'email' => $user->email,
+        'role' => $adminRole->value,
+    ]);
+    $user->refresh();
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($user->hasRole($adminRole->value))->toBeTrue()
+        ->and($user->can($adminPermission->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse()
+        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
+})->with([
+    'Posts reader' => [AdminRole::AdminPostsReader, AdminPermission::AdminPostsViewAny],
+    'Dashboard reader' => [AdminRole::AdminDashboardReader, AdminPermission::AdminDashboardView],
+]);
+
+it('grants panel entry through the admin role', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+
+    $exitCode = Artisan::call('admin:user-role', [
+        'action' => 'grant',
+        'email' => $user->email,
+        'role' => AdminRole::Admin->value,
+    ]);
+    $user->refresh();
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($user->hasRole(AdminRole::Admin->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue()
+        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeTrue();
 });
 
 it('revokes only the selected role and its permissions', function (): void {
@@ -50,6 +92,29 @@ it('revokes only the selected role and its permissions', function (): void {
         ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue()
         ->and($user->can(AdminPermission::AdminUsersViewAny->value))->toBeFalse();
 });
+
+it('revokes Posts and Dashboard reader roles without changing panel access', function (AdminRole $adminRole, AdminPermission $adminPermission): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::Admin->value, $adminRole->value);
+
+    $exitCode = Artisan::call('admin:user-role', [
+        'action' => 'revoke',
+        'email' => $user->email,
+        'role' => $adminRole->value,
+    ]);
+    $user->refresh();
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($user->hasRole(AdminRole::Admin->value))->toBeTrue()
+        ->and($user->hasRole($adminRole->value))->toBeFalse()
+        ->and($user->can($adminPermission->value))->toBeFalse()
+        ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue();
+})->with([
+    'Posts reader' => [AdminRole::AdminPostsReader, AdminPermission::AdminPostsView],
+    'Dashboard reader' => [AdminRole::AdminDashboardReader, AdminPermission::AdminDashboardView],
+]);
 
 it('rejects an unknown role without changing existing assignments', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
