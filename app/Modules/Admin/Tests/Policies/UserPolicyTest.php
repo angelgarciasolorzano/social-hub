@@ -16,7 +16,7 @@ it('resolves UserPolicy from the User model attribute', function (): void {
     expect(Gate::getPolicyFor($user))->toBeInstanceOf(UserPolicy::class);
 });
 
-it('allows listing users only with users.viewAny', function (): void {
+it('allows listing users only with admin.users.viewAny', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
@@ -30,7 +30,7 @@ it('allows listing users only with users.viewAny', function (): void {
         ->and(Gate::forUser($authenticatedUser)->allows('view', $targetUser))->toBeFalse();
 });
 
-it('allows viewing a user only with users.view', function (): void {
+it('allows viewing a user only with admin.users.view', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
@@ -52,6 +52,32 @@ it('denies both read abilities when the user has no admin permission', function 
 
     expect(Gate::forUser($authenticatedUser)->allows('viewAny', User::class))->toBeFalse()
         ->and(Gate::forUser($authenticatedUser)->allows('view', $targetUser))->toBeFalse();
+});
+
+it('does not grant user access through posts or dashboard permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $targetUser = createUser();
+    $unrelatedPermissions = [
+        AdminPermission::AdminPostsViewAny,
+        AdminPermission::AdminPostsView,
+        AdminPermission::AdminDashboardView,
+    ];
+
+    foreach ($unrelatedPermissions as $unrelatedPermission) {
+        $authenticatedUser = createUser();
+        $role = Role::findOrCreate(
+            "user-policy-{$unrelatedPermission->name}-test",
+            'admin',
+        );
+        $role->syncPermissions($unrelatedPermission->value);
+        $authenticatedUser->assignRole($role);
+
+        expect(Gate::forUser($authenticatedUser)->allows('viewAny', User::class))
+            ->toBeFalse()
+            ->and(Gate::forUser($authenticatedUser)->allows('view', $targetUser))
+            ->toBeFalse();
+    }
 });
 
 it('denies every user mutation ability directly through the gate', function (): void {
