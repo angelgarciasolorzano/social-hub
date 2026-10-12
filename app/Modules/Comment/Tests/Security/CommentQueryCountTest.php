@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Comment\Resources\CommentResource;
 use App\Modules\Post\Models\Post;
 use Illuminate\Support\Facades\DB;
-use Inertia\Support\SessionKey;
 use Tests\TestCase;
 
 /**
- * List the comments of a post and return the serialized page plus the number of queries used.
+ * Load the comments of a post the way the dialog does and return the serialized page plus the number of queries used.
  *
  * @return array{payload: array{data: list<array<string, mixed>>}, queries: int}
  */
@@ -18,20 +18,27 @@ function listCommentsCountingQueries(TestCase $testCase, Post $post): array
 {
     $user = createUser();
 
+    /** @var array{version: string} $page */
+    $page = $testCase->actingAs($user)->get(route('home'))->inertiaPage();
+
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $testCase->actingAs($user)
-        ->get(route('comments.index', ['commentType' => Post::MORPH_NAME, 'commentableId' => $post->id]));
-
-    /** @var array<string, mixed> $flash */
-    $flash = session()->get(SessionKey::FLASH_DATA, []);
-
-    /** @var array{data: list<array<string, mixed>>} $payload */
-    $payload = json_decode((string) json_encode($flash['comments']), true);
+    $testResponse = $testCase->actingAs($user)->get(
+        route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
+        [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $page['version'],
+            'X-Inertia-Partial-Component' => 'home/Home',
+            'X-Inertia-Partial-Data' => 'comments',
+        ],
+    );
 
     $queries = count(DB::getQueryLog());
     DB::disableQueryLog();
+
+    /** @var array{data: list<array<string, mixed>>} $payload */
+    $payload = $testResponse->assertOk()->json('props.comments');
 
     return ['payload' => $payload, 'queries' => $queries];
 }

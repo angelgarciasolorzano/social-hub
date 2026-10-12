@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Testing\TestResponse;
@@ -66,17 +67,49 @@ it('throttles each user independently', function (): void {
     storeCommentAs($this, $bystander, $post)->assertRedirect();
 });
 
+/**
+ * Ask the home page for the comments of the given post the way the dialog does, as the given user.
+ *
+ * @return TestResponse<Response>
+ */
+function loadCommentsAs(TestCase $testCase, User $user, Post $post): TestResponse
+{
+    /** @var array{version: string} $page */
+    $page = $testCase->actingAs($user)->get(route('home'))->inertiaPage();
+
+    return $testCase->actingAs($user)->get(
+        route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
+        [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $page['version'],
+            'X-Inertia-Partial-Component' => 'home/Home',
+            'X-Inertia-Partial-Data' => 'comments',
+        ],
+    );
+}
+
 it('does not let listing comments consume the comment publishing budget', function (): void {
     $user = createUser();
     $post = createPost();
 
     foreach (range(1, 20) as $attempt) {
-        $this->actingAs($user)
-            ->get(route('comments.index', ['commentType' => Post::MORPH_NAME, 'commentableId' => $post->id]))
-            ->assertRedirect();
+        loadCommentsAs($this, $user, $post)->assertOk();
     }
 
     storeCommentAs($this, $user, $post)->assertRedirect();
+});
+
+it('does not let publishing comments consume the comment reading budget', function (): void {
+    $user = createUser();
+    $post = createPost();
+
+    foreach (range(1, 6) as $attempt) {
+        storeCommentAs($this, $user, $post)->assertRedirect();
+    }
+
+    storeCommentAs($this, $user, $post)->assertTooManyRequests();
+
+    loadCommentsAs($this, $user, $post)->assertOk();
 });
 
 it('allows 60 listings per minute and then answers 429', function (): void {
@@ -84,12 +117,36 @@ it('allows 60 listings per minute and then answers 429', function (): void {
     $post = createPost();
 
     foreach (range(1, 60) as $attempt) {
-        $this->actingAs($user)
-            ->get(route('comments.index', ['commentType' => Post::MORPH_NAME, 'commentableId' => $post->id]))
-            ->assertRedirect();
+        loadCommentsAs($this, $user, $post)->assertOk();
     }
 
-    $this->actingAs($user)
-        ->get(route('comments.index', ['commentType' => Post::MORPH_NAME, 'commentableId' => $post->id]))
-        ->assertTooManyRequests();
+    loadCommentsAs($this, $user, $post)->assertTooManyRequests();
+});
+
+it('throttles the reading of comments per user', function (): void {
+    $user = createUser();
+    $bystander = createUser();
+    $post = createPost();
+
+    foreach (range(1, 61) as $attempt) {
+        loadCommentsAs($this, $user, $post);
+    }
+
+    loadCommentsAs($this, $user, $post)->assertTooManyRequests();
+    loadCommentsAs($this, $bystander, $post)->assertOk();
+});
+
+it('lets the user read comments again once the minute has passed', function (): void {
+    $user = createUser();
+    $post = createPost();
+
+    foreach (range(1, 61) as $attempt) {
+        loadCommentsAs($this, $user, $post);
+    }
+
+    loadCommentsAs($this, $user, $post)->assertTooManyRequests();
+
+    $this->travel(61)->seconds();
+
+    loadCommentsAs($this, $user, $post)->assertOk();
 });
