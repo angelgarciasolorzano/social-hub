@@ -14,15 +14,20 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 use Livewire\Livewire;
 use LogicException;
 use ReflectionMethod;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('shows scoped comment reply and like counts with seven day charts', function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-10-12 12:00:00'));
 
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminPostsReader->value,
@@ -42,6 +47,7 @@ it('shows scoped comment reply and like counts with seven day charts', function 
 
     $createLikeAt = static function (Post $post, CarbonImmutable $createdAt) use ($user): void {
         $like = new Like;
+
         $like->forceFill([
             'user_id' => $user->getKey(),
             'created_at' => $createdAt,
@@ -75,7 +81,9 @@ it('shows scoped comment reply and like counts with seven day charts', function 
 
     throw_unless($component instanceof PostActivityOverview, LogicException::class, 'The post activity widget must be mounted.');
 
+    /** @var PostActivityOverview $component */
     $statsMethod = new ReflectionMethod(StatsOverviewWidget::class, 'getCachedStats');
+
     $stats = $statsMethod->invoke($component);
 
     throw_unless(
@@ -88,6 +96,7 @@ it('shows scoped comment reply and like counts with seven day charts', function 
         'The post activity overview must return three stat cards.',
     );
 
+    /** @var array{0: Stat, 1: Stat, 2: Stat} $stats */
     expect($stats[0]->getChart())
         ->toBe([0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0])
         ->and($stats[1]->getChart())
@@ -122,10 +131,12 @@ it('forbids access when the admin cannot view posts', function (): void {
 
 it('hides metrics when the selected post no longer has a valid owner', function (): void {
     $authenticatedUser = createUser();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminPostsReader->value,
     ]);
+
     $post = createPost();
     $post->forceFill(['user_id' => PHP_INT_MAX])->save();
 
