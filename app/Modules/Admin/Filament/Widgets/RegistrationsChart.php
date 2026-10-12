@@ -53,7 +53,7 @@ class RegistrationsChart extends ChartWidget
             ->whereBetween('created_at', [$range['start'], $range['end']], 'and')
             ->selectRaw('DATE(created_at) as registration_date, COUNT(*) as total')
             ->groupBy('registration_date')
-            ->orderBy('registration_date')
+            ->oldest('registration_date')
             ->get();
 
         if ($registrationsByDate->isEmpty()) {

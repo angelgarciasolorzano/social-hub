@@ -15,6 +15,7 @@ it('allows authorized administrators to enter the admin panel', function (): voi
 
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value);
+    $user->saveAppAuthenticationSecret('filament-test-secret');
 
     $this->actingAs($user, 'admin')
         ->get('/admin')

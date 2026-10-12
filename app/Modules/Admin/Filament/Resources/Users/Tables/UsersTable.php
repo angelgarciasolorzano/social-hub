@@ -22,7 +22,14 @@ class UsersTable
                 TextColumn::make('email')->searchable()->sortable(),
                 TextColumn::make('email_verified_at')->dateTime()->sortable(),
                 TextColumn::make('created_at')->dateTime()->sortable(),
-                TextColumn::make('last_login_at')->dateTime()->placeholder(__('messages.Never'))->sortable(),
+                TextColumn::make('last_login_at')
+                    ->dateTime()
+                    ->placeholder(static function (): string {
+                        $neverLabel = __('messages.Never');
+
+                        return is_string($neverLabel) ? $neverLabel : 'Never';
+                    })
+                    ->sortable(),
             ])
             ->filters([
                 TernaryFilter::make('email_verified_at')
