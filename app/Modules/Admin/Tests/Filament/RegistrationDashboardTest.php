@@ -20,12 +20,6 @@ beforeEach(function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     Filament::setCurrentPanel('admin');
-
-    $user = createUser();
-    $user->assignRole(AdminRole::Admin->value);
-    $user->forceFill(['created_at' => '2020-01-01 00:00:00'])->save();
-
-    $this->actingAs($user, 'admin');
 });
 
 it('discovers the registration widgets through the existing admin panel discovery', function (): void {
@@ -33,7 +27,38 @@ it('discovers the registration widgets through the existing admin panel discover
         ->toContain(RegistrationsChart::class, RegistrationSummaryWidget::class);
 });
 
+it('renders both registration widgets for dashboard readers', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(RegistrationSummaryWidget::class)
+        ->assertSeeText('Total accounts');
+
+    Livewire::test(RegistrationsChart::class)
+        ->assertSeeText('New user registrations');
+});
+
+it('forbids panel users without dashboard permission from both registration widgets', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole(AdminRole::Admin->value);
+
+    expect($authenticatedUser->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(RegistrationSummaryWidget::class)
+        ->assertForbidden();
+
+    Livewire::test(RegistrationsChart::class)
+        ->assertForbidden();
+});
+
 it('groups registrations by day for the seven day range and includes its exact boundaries', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2026-06-09 00:00:00');
     createDashboardRegistration('2026-06-10 10:00:00');
     createDashboardRegistration('2026-06-10 18:00:00');
@@ -52,6 +77,10 @@ it('groups registrations by day for the seven day range and includes its exact b
 });
 
 it('groups registrations by day for the thirty day range', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2026-05-17 00:00:00');
     createDashboardRegistration('2026-06-15 23:59:59');
     createDashboardRegistration('2026-05-16 23:59:59');
@@ -72,6 +101,10 @@ it('groups registrations by day for the thirty day range', function (): void {
 });
 
 it('groups registrations by week for the ninety day range', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2026-03-18 00:00:00');
     createDashboardRegistration('2026-03-17 23:59:59');
     createDashboardRegistration('2026-06-10 10:00:00');
@@ -96,6 +129,10 @@ it('groups registrations by week for the ninety day range', function (): void {
 });
 
 it('groups registrations by month for the twelve month range', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2025-07-01 00:00:00');
     createDashboardRegistration('2025-06-30 23:59:59');
     createDashboardRegistration('2026-06-01 10:00:00');
@@ -120,6 +157,10 @@ it('groups registrations by month for the twelve month range', function (): void
 });
 
 it('falls back to the thirty day range for an unknown client supplied filter', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2026-05-17 00:00:00');
     createDashboardRegistration('2026-05-16 23:59:59');
 
@@ -135,12 +176,20 @@ it('falls back to the thirty day range for an unknown client supplied filter', f
 });
 
 it('renders filaments empty state when the selected period has no registrations', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     Livewire::test(RegistrationsChart::class)
         ->assertSeeText('No registrations yet')
         ->assertSeeText('There are no account registrations in this period.');
 });
 
 it('shows accurate total and verified account summaries', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2026-06-10 10:00:00');
     createDashboardRegistration('2026-06-11 10:00:00', verified: false);
 
@@ -154,6 +203,10 @@ it('shows accurate total and verified account summaries', function (): void {
 });
 
 it('shows seven day registration trends on the account summary cards', function (): void {
+    $authenticatedUser = createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
     createDashboardRegistration('2026-06-09 08:00:00');
     createDashboardRegistration('2026-06-10 08:00:00', verified: false);
     createDashboardRegistration('2026-06-10 09:00:00');
@@ -188,6 +241,18 @@ function createDashboardRegistration(string $createdAt, bool $verified = true): 
         'created_at' => $createdAt,
         'email_verified_at' => $verified ? now() : null,
     ])->save();
+
+    return $user;
+}
+
+function createDashboardReader(): User
+{
+    $user = createUser();
+    $user->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminDashboardReader->value,
+    ]);
+    $user->forceFill(['created_at' => '2020-01-01 00:00:00'])->save();
 
     return $user;
 }

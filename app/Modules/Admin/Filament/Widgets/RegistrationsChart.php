@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Widgets;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -40,6 +41,15 @@ class RegistrationsChart extends ChartWidget
 
     #[Override]
     protected ?string $pollingInterval = null;
+
+    #[Override]
+    public static function canView(): bool
+    {
+        $authenticatedUser = auth('admin')->user();
+
+        return $authenticatedUser instanceof User
+            && $authenticatedUser->can(AdminPermission::AdminDashboardView->value);
+    }
 
     /**
      * @return array{}|array{datasets: list<array{label: string, data: list<int>}>, labels: list<string>}

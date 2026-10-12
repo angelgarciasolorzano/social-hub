@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Widgets;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -18,6 +19,15 @@ class RegistrationSummaryWidget extends StatsOverviewWidget
 
     #[Override]
     protected ?string $pollingInterval = null;
+
+    #[Override]
+    public static function canView(): bool
+    {
+        $authenticatedUser = auth('admin')->user();
+
+        return $authenticatedUser instanceof User
+            && $authenticatedUser->can(AdminPermission::AdminDashboardView->value);
+    }
 
     /**
      * @return array<Stat>
