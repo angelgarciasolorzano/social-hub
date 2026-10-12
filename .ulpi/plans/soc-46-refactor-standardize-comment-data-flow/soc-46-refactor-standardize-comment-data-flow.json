@@ -341,18 +341,19 @@
       ],
       "filesToModify": [
         "resources/js/modules/comments/components/CommentList.tsx",
-        "resources/js/modules/comments/components/RepliesList.tsx",
-        "resources/js/modules/comments/components/CommentItem.tsx"
+        "resources/js/modules/comments/components/RepliesList.tsx"
       ],
-      "filesToCreate": [],
+      "filesToCreate": [
+        "resources/js/modules/comments/components/CommentLoadStates.tsx"
+      ],
       "writeScope": [
         "resources/js/modules/comments/components/CommentList.tsx",
         "resources/js/modules/comments/components/RepliesList.tsx",
-        "resources/js/modules/comments/components/CommentItem.tsx"
+        "resources/js/modules/comments/components/CommentLoadStates.tsx"
       ],
       "validateCommand": "npx eslint resources/js/modules/comments && npm run types && npm run build",
       "review": "claude",
-      "integrationNotes": "Corte entregable: tras esta tarea el flujo completo funciona de punta a punta con el hook manual. Verificar manualmente en el navegador (Home y Profile) antes de pausar. Usar loadFailure y retryLoad del hook; el efecto de carga automatica de CommentList/RepliesList no debe disparar loadMoreComments mientras loadFailure no sea null (el hook ya lo bloquea, pero evitar re-render en bucle)."
+      "integrationNotes": "Corte entregable: tras esta tarea el flujo completo funciona de punta a punta con el hook manual. Verificar manualmente en el navegador (Home y Profile) antes de pausar. Usar loadFailure y retryLoad del hook; el efecto de carga automatica de CommentList/RepliesList no debe disparar loadMoreComments mientras loadFailure no sea null (el hook ya lo bloquea, pero evitar re-render en bucle). Ejecutada: CommentItem no requirio cambios (RepliesList se monta por comentario y reinicia el hook); el skeleton y el error con reintento viven en el nuevo CommentLoadStates.tsx compartido. Verificado en navegador local (carga inicial, cursor, publicar+refresco, respuestas, 404 simulado + reintento, skeleton con retraso, URL intacta)."
     },
     {
       "id": "TASK-011",

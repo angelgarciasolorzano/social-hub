@@ -14,6 +14,7 @@ import { CommentableType } from "../enums/commentableType";
 import { usePaginatedComments } from "../hooks/usePaginatedComments";
 import type { CommentContextPreview } from "../types/comment";
 import CommentItem from "./CommentItem";
+import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 import CommentInputDialog from "./modal/CommentInputDialog";
 
 interface CommentListProps {
@@ -36,6 +37,8 @@ function CommentList({ postId, previewContext }: CommentListProps) {
     loadMoreComments,
     hasMoreComments,
     increaseRepliesCount,
+    loadFailure,
+    retryLoad,
     uploadedComments,
   } = usePaginatedComments(CommentableType.POST, postId);
 
@@ -46,7 +49,15 @@ function CommentList({ postId, previewContext }: CommentListProps) {
   });
 
   useEffect(() => {
-    if (!isIntersecting || isRefreshing || isLoadingMore || !hasMoreComments) return;
+    if (
+      !isIntersecting ||
+      isRefreshing ||
+      isLoadingMore ||
+      !hasMoreComments ||
+      loadFailure !== null
+    ) {
+      return;
+    }
     if (loadMoreTimer.current !== null) return;
 
     loadMoreTimer.current = window.setTimeout(() => {
@@ -60,11 +71,24 @@ function CommentList({ postId, previewContext }: CommentListProps) {
         loadMoreTimer.current = null;
       }
     };
-  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments]);
+  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments, loadFailure]);
 
   if (isRefreshing && !commentsPage) {
     return (
       <RenderLoadingState
+        openModalComment={openModalComment}
+        postId={postId}
+        previewContext={previewContext}
+        setOpenModalComment={setOpenModalComment}
+        uploadedComments={uploadedComments}
+      />
+    );
+  }
+
+  if (!commentsPage && loadFailure !== null) {
+    return (
+      <RenderErrorState
+        onRetry={retryLoad}
         openModalComment={openModalComment}
         postId={postId}
         previewContext={previewContext}
@@ -102,7 +126,18 @@ function CommentList({ postId, previewContext }: CommentListProps) {
 
         <div className="w-full" ref={sentinelRef} />
 
-        {hasMoreComments && (
+        {loadFailure !== null && (
+          <CommentLoadError
+            message={
+              loadFailure === "more"
+                ? "No se pudieron cargar más comentarios."
+                : "No se pudieron actualizar los comentarios."
+            }
+            onRetry={retryLoad}
+          />
+        )}
+
+        {hasMoreComments && loadFailure === null && (
           <div className="py-2 text-center text-sm text-gray-500">
             {isLoadingMore ? "Cargando más..." : "Desliza para cargar más..."}
           </div>
@@ -137,10 +172,37 @@ function RenderLoadingState({
 }: RenderLoadingStateProps) {
   return (
     <>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <CommentSkeletonList commentSkeletonCount={3} label="Cargando comentarios..." />
+      </div>
+
+      <RenderCommentInput
+        openModalComment={openModalComment}
+        postId={postId}
+        previewContext={previewContext}
+        setOpenModalComment={setOpenModalComment}
+        uploadedComments={uploadedComments}
+      />
+    </>
+  );
+}
+
+type RenderErrorStateProps = RenderCommentBaseProps & {
+  onRetry: () => void;
+};
+
+function RenderErrorState({
+  onRetry,
+  openModalComment,
+  setOpenModalComment,
+  uploadedComments,
+  postId,
+  previewContext,
+}: RenderErrorStateProps) {
+  return (
+    <>
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
-          Cargando comentarios...
-        </p>
+        <CommentLoadError message="No se pudieron cargar los comentarios." onRetry={onRetry} />
       </div>
 
       <RenderCommentInput

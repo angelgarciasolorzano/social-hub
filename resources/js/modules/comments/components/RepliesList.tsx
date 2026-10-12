@@ -6,6 +6,7 @@ import { useIntersectionObserver } from "usehooks-ts";
 import { CommentableType } from "../enums/commentableType";
 import { usePaginatedComments } from "../hooks/usePaginatedComments";
 import CommentItem from "./CommentItem";
+import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 
 interface RepliesListProps {
   commentId: number;
@@ -25,6 +26,8 @@ function RepliesList({ commentId, refreshCounter, showReplies, setShowReplies }:
     isRefreshing,
     loadMoreComments,
     hasMoreComments,
+    loadFailure,
+    retryLoad,
     uploadedComments,
   } = usePaginatedComments(CommentableType.COMMENT, commentId);
 
@@ -35,7 +38,15 @@ function RepliesList({ commentId, refreshCounter, showReplies, setShowReplies }:
   });
 
   useEffect(() => {
-    if (!isIntersecting || isRefreshing || isLoadingMore || !hasMoreComments) return;
+    if (
+      !isIntersecting ||
+      isRefreshing ||
+      isLoadingMore ||
+      !hasMoreComments ||
+      loadFailure !== null
+    ) {
+      return;
+    }
     if (loadMoreTimer.current !== null) return;
 
     loadMoreTimer.current = window.setTimeout(() => {
@@ -49,7 +60,7 @@ function RepliesList({ commentId, refreshCounter, showReplies, setShowReplies }:
         loadMoreTimer.current = null;
       }
     };
-  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments]);
+  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments, loadFailure]);
 
   useEffect(() => {
     if (refreshCounter === 0) return;
@@ -59,15 +70,24 @@ function RepliesList({ commentId, refreshCounter, showReplies, setShowReplies }:
 
   if (isRefreshing && !commentsPage) {
     return (
-      <div className="mt-4 flex flex-1 items-center justify-center">
-        <p className="text-center text-xs text-gray-500 dark:text-white/80">
-          Cargando respuestas...
-        </p>
-      </div>
+      <CommentSkeletonList
+        className="mt-4 ml-4"
+        commentSkeletonCount={2}
+        isReply
+        label="Cargando respuestas..."
+      />
     );
   }
 
-  if (!commentsPage) return null;
+  if (!commentsPage) {
+    return loadFailure === null ? null : (
+      <CommentLoadError
+        className="mt-4 ml-4"
+        message="No se pudieron cargar las respuestas."
+        onRetry={retryLoad}
+      />
+    );
+  }
 
   return (
     <div className="mt-4 ml-4 flex max-h-72 flex-col gap-4 overflow-auto" ref={setScrollRoot}>
@@ -84,7 +104,18 @@ function RepliesList({ commentId, refreshCounter, showReplies, setShowReplies }:
 
       <div className="w-full" ref={sentinelRef} />
 
-      {hasMoreComments && (
+      {loadFailure !== null && (
+        <CommentLoadError
+          message={
+            loadFailure === "more"
+              ? "No se pudieron cargar más respuestas."
+              : "No se pudieron actualizar las respuestas."
+          }
+          onRetry={retryLoad}
+        />
+      )}
+
+      {hasMoreComments && loadFailure === null && (
         <div className="py-1 text-center text-xs text-gray-500">
           {isLoadingMore ? "Cargando más respuestas..." : "Desliza para cargar más..."}
         </div>
