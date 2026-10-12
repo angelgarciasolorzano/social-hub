@@ -164,6 +164,7 @@ Mapear cada caso de CommentIndexTest (invitado a login, orden descendente y curs
 **writeScope:**
 - `app/Modules/Comment/Tests/Crud/CommentIndexTest.php`
 - `app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php`
+- `app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php`
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Props`
 

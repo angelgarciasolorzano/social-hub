@@ -197,12 +197,14 @@
         "No queda ninguna referencia a route('comments.index') en las pruebas de Comment y CommentIndexTest se borra (aprobado por el usuario) solo despues de migrar su cobertura."
       ],
       "filesToModify": [
-        "app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php"
+        "app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php",
+        "app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php"
       ],
       "filesToCreate": [],
       "writeScope": [
         "app/Modules/Comment/Tests/Crud/CommentIndexTest.php",
-        "app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php"
+        "app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php",
+        "app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php"
       ],
       "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Props",
       "review": "claude"

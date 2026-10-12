@@ -97,9 +97,10 @@ it('exposes comments and replies as optional props that run no query until they 
 
 it('lists the comments of a post ten at a time in descending id order with their own cursor', function (): void {
     $post = createPost();
+    $otherPost = createPost();
 
     commentsOnPost($post, 12);
-    commentsOnPost(createPost(), 3);
+    $otherPostCommentIds = array_map(static fn (Comment $comment): int => $comment->id, commentsOnPost($otherPost, 3));
 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
     $ids = array_column($firstPage->items(), 'id');
@@ -107,6 +108,7 @@ it('lists the comments of a post ten at a time in descending id order with their
     rsort($descendingIds);
 
     expect($ids)->toHaveCount(10)
+        ->and($ids)->not->toContain(...$otherPostCommentIds)
         ->and($ids)->toBe($descendingIds)
         ->and($firstPage->getCursorName())->toBe(CommentThreadProps::COMMENTS_CURSOR)
         ->and($firstPage->hasMorePages())->toBeTrue()

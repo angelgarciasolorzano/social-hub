@@ -104,6 +104,40 @@ it('delivers the replies of a comment on a partial reload', function (string $ro
         );
 })->with('comment host pages');
 
+it('lists the replies of a comment with their author', function (string $routeName, string $component): void {
+    $user = createUser();
+    $author = createUser();
+    $comment = createComment();
+    $reply = createComment($author, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+
+    $this->actingAs($user)
+        ->get(commentHostUrl($routeName, [CommentThreadProps::REPLIES_PARAMETER => $comment->id]))
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->component($component)
+            ->reloadOnly('replies', fn (Assert $assert): Assert => $assert
+                ->has('replies.data', 1)
+                ->where('replies.data.0.id', $reply->id)
+                ->where('replies.data.0.user', ['id' => $author->id, 'name' => $author->name])
+                ->where('replies.next_cursor', null)
+            )
+        );
+})->with('comment host pages');
+
+it('delivers an empty page for a post without comments', function (string $routeName, string $component): void {
+    $user = createUser();
+    $post = createPost($user);
+
+    $this->actingAs($user)
+        ->get(commentHostUrl($routeName, [CommentThreadProps::COMMENTS_PARAMETER => $post->id]))
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->component($component)
+            ->reloadOnly('comments', fn (Assert $assert): Assert => $assert
+                ->has('comments.data', 0)
+                ->where('comments.next_cursor', null)
+            )
+        );
+})->with('comment host pages');
+
 it('answers 404 to a partial reload of a thread that does not exist', function (string $routeName, string $component): void {
     $this->actingAs(createUser());
 
