@@ -23,11 +23,22 @@ Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\
 
 `app/Modules/Admin/` contiene la integración administrativa. Es una excepción al patrón de dos providers y rutas manuales: `AdminPanelProvider` se registra en `bootstrap/providers.php`, configura el panel Filament con id `admin`, URL `/admin` y guard de sesión `admin`, y descubre sus recursos dentro de `app/Modules/Admin/Filament/`. Ese guard usa el provider `users` existente; `web` permanece como guard predeterminado para la aplicación. `AdminServiceProvider` registra los comandos Artisan del módulo; Filament genera y registra las rutas del panel.
 
-Los recursos siguen la jerarquía de Filament por recurso, dentro del módulo: `Filament/Resources/<PluralModel>/<Model>Resource.php`, con `Pages/`, `Schemas/` y `Tables/` según se necesiten. Por ejemplo, `Users/UserResource.php` delega su tabla a `Users/Tables/UsersTable.php`, mientras que `Users/Pages/` contiene `ListUsers` y `ViewUser`. Consulta la [documentación de recursos de Filament 5](https://filamentphp.com/docs/5.x/resources/overview) para esta convención.
+La convención de directorios para las clases Filament del proyecto está documentada en [`.ai/rules/backend.md`](../../.ai/rules/backend.md); consulta también la [documentación de recursos de Filament 5](https://filamentphp.com/docs/5.x/resources/overview) para las APIs del framework.
 
 La autorización de panel y recursos usa Spatie Permission con el guard `admin`, que también está declarado en el modelo `User` para resolver roles y permisos. `User::canAccessPanel()` exige el panel `admin`, correo verificado y `admin.access`. `AdminRole` y `AdminPermission` en `app/Modules/Admin/Enums/` son el catálogo de identificadores: los roles iniciales son `admin` y `users-reader`; los permisos son `admin.access`, `users.viewAny` y `users.view`. El seeder `AdminAuthorizationSeeder` crea el catálogo bajo el guard `admin` y asigna permisos predeterminados solo al crear cada rol, preservando los cambios operativos en ejecuciones posteriores. `App\User\Policies\UserPolicy`, asociada al modelo User con `#[UsePolicy]`, autoriza lectura con `users.viewAny` y `users.view`; las operaciones de escritura están denegadas.
 
-`UserResource` lista y muestra únicamente `name`, `email`, `email_verified_at`, `created_at` y `last_login_at`; no presenta contraseñas ni secretos/códigos de 2FA. Las pruebas viven en `app/Modules/Admin/Tests/{Commands,Database,Filament,Models,Policies}/` y cubren comandos, seeder, acceso al panel, lectura/escritura de User y autorización.
+`UserResource` muestra `name`, `email`, `email_verified_at`, `created_at` y `last_login_at`; no presenta contraseñas ni secretos/códigos de 2FA. Su página `ViewUser` agrega `UserActivityOverview`, con conteos de publicaciones, comentarios y dispositivos confiables activos, además de tendencias diarias de publicaciones y comentarios de los últimos siete días.
+
+La página de usuario también muestra dos relaciones de solo lectura, limitadas al usuario autorizado mediante `UserPolicy`:
+
+- `PostsRelationManager` permite buscar y ordenar publicaciones, filtrar por presencia de comentarios y fecha, y abrir el detalle compartido del recurso Posts.
+- `TrustedDevicesRelationManager` muestra nombre del dispositivo, resumen de navegador/sistema operativo, último uso, vencimiento y estado derivado (activo, expirado o revocado). La consulta selecciona una lista permitida de campos; no expone `token_hash`, IP ni el `user_agent` sin procesar.
+
+`PostResource` es el recurso de solo lectura para consultar publicaciones. Su detalle presenta autor, fechas y contenido, y carga `CommentsRelationManager` con comentarios paginados. La acción de ver un comentario carga sus replies al abrir el detalle; estos datos también son de lectura y no se agregan acciones de mutación.
+
+`AdminPanelProvider` descubre los widgets del dashboard en `app/Modules/Admin/Filament/Widgets/`. `RegistrationSummaryWidget` presenta los totales de cuentas y cuentas verificadas, con tendencias de siete días; `RegistrationsChart` muestra altas de usuarios con rangos de 7, 30 y 90 días o 12 meses, y cambia la agrupación entre días, semanas y meses. Cuando el rango no contiene altas, el chart presenta su estado vacío.
+
+Las pruebas del módulo viven en `app/Modules/Admin/Tests/`; las pruebas de recursos Filament siguen la estructura de recurso, páginas y gestores de relaciones, y las pruebas del dashboard se agrupan bajo `Tests/Filament/`.
 
 La migración publicada por Spatie para sus tablas permanece en la carpeta global `database/migrations/`. Las migraciones publicadas por paquetes externos se mantienen allí; la implementación propia de Admin, sus seeders y pruebas viven en `app/Modules/Admin/`.
 
