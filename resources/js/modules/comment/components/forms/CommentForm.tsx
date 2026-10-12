@@ -1,0 +1,70 @@
+import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
+
+import type { InertiaFormProps } from "@inertiajs/react";
+
+import CommentStoreController from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentStoreController";
+
+import { InputError } from "@/shared/components/form";
+import { Input } from "@/shared/components/shadcn/ui/input";
+import { Textarea } from "@/shared/components/shadcn/ui/textarea";
+
+import type { CommentTypeValues } from "../../enums/commentType";
+import type { CommentFormData } from "../../types/comment";
+
+interface CommentFormProps {
+  formComment: InertiaFormProps<CommentFormData>;
+  commentableId: number;
+  commentableType: CommentTypeValues;
+  formId: string;
+  uploadedComments?: () => void;
+  setOpenModalComment: Dispatch<SetStateAction<boolean>>;
+}
+
+function CommentForm(props: CommentFormProps): JSX.Element {
+  const {
+    formComment,
+    commentableId,
+    commentableType,
+    formId,
+    uploadedComments,
+    setOpenModalComment,
+  } = props;
+
+  const { setData, errors, submit } = formComment;
+
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+
+    submit(CommentStoreController(), {
+      onSuccess: () => {
+        if (uploadedComments) uploadedComments();
+
+        setOpenModalComment(false);
+      },
+      reset: ["content"],
+    });
+  };
+
+  return (
+    <form id={formId} className="mt-2" onSubmit={handleSubmit}>
+      <div className="flex flex-col justify-center gap-2">
+        <Input name="commentable_type" type="hidden" value={commentableType} />
+
+        <Input name="commentable_id" type="hidden" value={commentableId} />
+
+        <Textarea
+          name="content"
+          className="min-h-72 resize-none"
+          onChange={(e) => {
+            setData("content", e.target.value);
+          }}
+          placeholder="Escribe tu comentario"
+        />
+
+        <InputError className="mt-1" message={errors.content} />
+      </div>
+    </form>
+  );
+}
+
+export default CommentForm;
