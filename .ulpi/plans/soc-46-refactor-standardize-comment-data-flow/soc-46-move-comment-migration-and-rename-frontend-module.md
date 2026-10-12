@@ -437,6 +437,8 @@ CLAUDE.md (Comment data flow) deja de decir que las props son Inertia::scroll y 
 
 **validateCommand:** `! grep -n 'optional(fn () => Inertia::scroll\|returned from an `optional` closure\|unwraps a `ScrollProp`' CLAUDE.md docs/architecture/backend.md`
 
+**Integration notes:** EJECUTADA: CLAUDE.md (Comment data flow) y docs/architecture/backend.md corregidos. La regla de backend.md ahora dice que el paginador se devuelve tal cual y que Inertia::scroll solo aplica a listados con <InfiniteScroll> (verificado en Home.tsx y Profile.tsx, que usan <InfiniteScroll data='posts'>). La verificacion en navegador se hizo en TASK-016, justo tras el cambio de payload; TASK-017 solo toca documentacion.
+
 ## Failure Modes
 
 - Si el nombre de archivo de la migracion cambia, un entorno ya migrado intentaria recrear la tabla y fallaria (tabla existente): se conserva el nombre exacto.
