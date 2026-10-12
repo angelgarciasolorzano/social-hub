@@ -13,7 +13,7 @@ Documento de referencia para crear y mantener módulos del frontend en este proy
 | Sub-componente de paso       | `PascalCaseStep.tsx`                             | `ChooseMethodStep`, `VerifyOtpStep`, `TwoFactorSuccessStep` |
 | Hook                         | `useCamelCase.ts`                                | `useTwoFactorAuth`, `useClipboard`, `useDialog`             |
 | Tipo / interface             | `PascalCase`                                     | `Comment`, `TwoFactorSetupDialogProps`                      |
-| Enum (const + tipo derivado) | `PascalCase` (const) / `PascalCaseValues` (tipo) | `CommentableType` → `CommentableTypeValues`                 |
+| Enum (const + tipo derivado) | `PascalCase` (const) / `PascalCaseValues` (tipo) | `CommentType` → `CommentTypeValues`                           |
 | Tipo unión con const-as-keys | `{concept}Key` (const) / `PascalCase` (tipo)     | `twoFactorActivationStepKey` → `TwoFactorActivationStep`    |
 | Utilidad                     | `camelCase.ts`                                   | `downloadRecoveryCodes`, `colorHoverMap`                    |
 | Datos estáticos / fixtures   | `camelCase.ts`                                   | `twoFactorDisabled`, `twoFactorEnable`                      |
@@ -26,7 +26,7 @@ resources/js/
 ├── app.tsx                                ← entrypoint Inertia + React
 ├── modules/                               ← features por dominio
 │   ├── auth/
-│   ├── comments/
+│   ├── comment/
 │   ├── home/
 │   ├── post/
 │   ├── profile/
@@ -146,13 +146,13 @@ resources/js/modules/<parent>/<submodule>/
 **Siempre** que necesites un set finito de valores identificados (estados, tipos, categorías), usá el patrón **const-as-keys**. Es la fuente única de verdad: el `const` declara los valores y el `type` se deriva automáticamente.
 
 ```ts
-// resources/js/modules/comments/enums/commentableType.ts
-export const CommentableType = {
+// resources/js/modules/comment/enums/commentType.ts
+export const CommentType = {
   COMMENT: "comment",
   POST: "post",
 } as const;
 
-export type CommentableTypeValues = (typeof CommentableType)[keyof typeof CommentableType];
+export type CommentTypeValues = (typeof CommentType)[keyof typeof CommentType];
 ```
 
 Uso en `switch`, `setState`, comparaciones:
@@ -160,21 +160,21 @@ Uso en `switch`, `setState`, comparaciones:
 ```tsx
 // switch con autocomplete y exhaustiveness implícita
 switch (kind) {
-  case CommentableType.COMMENT: ...
-  case CommentableType.POST: ...
+  case CommentType.COMMENT: ...
+  case CommentType.POST: ...
 }
 
 // setState seguro (no permite strings fuera del union)
-setKind(CommentableType.POST);
+setKind(CommentType.POST);
 
 // comparación sin typos
-if (kind === CommentableType.COMMENT) { ... }
+if (kind === CommentType.COMMENT) { ... }
 ```
 
 **Beneficios:**
 
 - **Refactor seguro**: renombrar un valor en el `const` se propaga a todos los call-sites.
-- **Autocomplete IDE**: `case CommentableType.` te sugiere los valores.
+- **Autocomplete IDE**: `case CommentType.` te sugiere los valores.
 - **Exhaustiveness implícita**: si la función no retorna `undefined` y agregás un valor al `const`, TS marca error en los `switch` que olviden un `case`.
 
 ### 5.2. Tipo unión con const-as-keys para state machines
@@ -230,7 +230,7 @@ Para tipos parciales (ej. "Comment pero solo content + id") preferí los utility
 ```ts
 export type CommentFormData = Pick<Comment, "content"> & {
   commentable_id: number;
-  commentable_type: CommentableTypeValues;
+  commentable_type: CommentTypeValues;
 };
 ```
 
