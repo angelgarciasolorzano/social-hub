@@ -7,9 +7,11 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
+use App\Modules\Admin\Filament\Resources\Posts\Widgets\PostActivityOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use Carbon\CarbonImmutable;
 use Livewire\Livewire;
+use ReflectionMethod;
 
 beforeEach(function (): void {
     AdminFilamentTestContext::configure($this);
@@ -59,7 +61,12 @@ it('allows Posts readers to view a post and its author', function (): void {
 
     throw_unless($component instanceof ViewPost, LogicException::class, 'The detail test must resolve the Filament ViewPost page.');
 
-    expect($component->getCachedHeaderActions())->toBeEmpty();
+    $headerWidgetsMethod = new ReflectionMethod(ViewPost::class, 'getHeaderWidgets');
+
+    expect($component->getCachedHeaderActions())
+        ->toBeEmpty()
+        ->and($headerWidgetsMethod->invoke($component))
+        ->toBe([PostActivityOverview::class]);
 });
 
 it('denies the direct post detail route to users with only Users read access', function (): void {

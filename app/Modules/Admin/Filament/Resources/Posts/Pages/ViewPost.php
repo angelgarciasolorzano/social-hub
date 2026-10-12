@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Posts\Pages;
 
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
+use App\Modules\Admin\Filament\Resources\Posts\Widgets\PostActivityOverview;
 use Filament\Resources\Pages\ViewRecord;
 use Override;
 
@@ -17,5 +18,13 @@ class ViewPost extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [];
+    }
+
+    #[Override]
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            PostActivityOverview::class,
+        ];
     }
 }
