@@ -146,6 +146,19 @@ function createCommentOn(Post|Comment $commentable, ?User $user = null, array $a
 }
 
 /**
+ * Create the given number of comments on a Post, or replies when given another Comment.
+ *
+ * @return list<Comment>
+ */
+function createCommentsOn(Post|Comment $commentable, int $total, ?User $user = null): array
+{
+    return array_map(
+        static fn (int $position): Comment => createCommentOn($commentable, $user),
+        range(1, $total),
+    );
+}
+
+/**
  * Headers of an Inertia partial reload that asks a page only for the given prop.
  * The caller must already be acting as a user, since the version is read from the home page.
  *

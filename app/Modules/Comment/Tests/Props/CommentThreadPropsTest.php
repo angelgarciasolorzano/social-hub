@@ -65,22 +65,6 @@ function resolveCommentThread(string $prop, array $query, ?User $user): CursorPa
     return $paginator;
 }
 
-/**
- * Create the given number of comments on a post.
- *
- * @return list<Comment>
- */
-function commentsOnPost(Post $post, int $total): array
-{
-    return array_map(
-        static fn (int $position): Comment => createComment(null, [
-            'commentable_id' => $post->id,
-            'commentable_type' => Post::MORPH_NAME,
-        ]),
-        range(1, $total),
-    );
-}
-
 it('exposes comments and replies as optional props that run no query until they are resolved', function (): void {
     $user = createUser();
 
@@ -99,8 +83,8 @@ it('lists the comments of a post ten at a time in descending id order with their
     $post = createPost();
     $otherPost = createPost();
 
-    commentsOnPost($post, 12);
-    $otherPostCommentIds = array_map(static fn (Comment $comment): int => $comment->id, commentsOnPost($otherPost, 3));
+    createCommentsOn($post, 12);
+    $otherPostCommentIds = array_map(static fn (Comment $comment): int => $comment->id, createCommentsOn($otherPost, 3));
 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
     $ids = array_column($firstPage->items(), 'id');
@@ -118,7 +102,7 @@ it('lists the comments of a post ten at a time in descending id order with their
 it('serves the next page from the comments cursor and ends without a further cursor', function (): void {
     $post = createPost();
 
-    commentsOnPost($post, 12);
+    createCommentsOn($post, 12);
     $user = createUser();
 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], $user);
@@ -141,13 +125,13 @@ it('serves the next page from the comments cursor and ends without a further cur
 it('lists the replies of a comment with the replies cursor and never mixes in other threads', function (): void {
     $post = createPost();
 
-    [$comment, $otherComment] = commentsOnPost($post, 2);
+    [$comment, $otherComment] = createCommentsOn($post, 2);
 
     foreach (range(1, 11) as $position) {
-        createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+        createCommentOn($comment);
     }
 
-    createComment(null, ['commentable_id' => $otherComment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    createCommentOn($otherComment);
 
     $replies = resolveCommentThread('replies', [CommentThreadProps::REPLIES_PARAMETER => $comment->id], createUser());
 
@@ -159,8 +143,8 @@ it('lists the replies of a comment with the replies cursor and never mixes in ot
 it('serializes each comment with the resource shape and nothing else', function (): void {
     $post = createPost();
 
-    [$comment] = commentsOnPost($post, 1);
-    createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    [$comment] = createCommentsOn($post, 1);
+    createCommentOn($comment);
 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
     $serializedComment = $firstPage->items()[0];
@@ -172,7 +156,7 @@ it('serializes each comment with the resource shape and nothing else', function 
 
 it('wraps the paginator in a scroll prop that reports the comments cursor as its page name', function (): void {
     $post = createPost();
-    commentsOnPost($post, 11);
+    createCommentsOn($post, 11);
 
     $user = createUser();
     $query = [CommentThreadProps::COMMENTS_PARAMETER => $post->id];
@@ -229,7 +213,7 @@ it('allows 60 loads per minute and then answers 429', function (): void {
 it('shares the read budget between comments and replies but keeps it per user', function (): void {
     $post = createPost();
 
-    [$comment] = commentsOnPost($post, 1);
+    [$comment] = createCommentsOn($post, 1);
 
     $user = createUser();
     $bystander = createUser();
@@ -264,12 +248,12 @@ it('does not let reading comments consume the comment publishing budget', functi
 
 it('uses the same number of queries whether the thread has one or many comments and replies', function (): void {
     $smallPost = createPost();
-    commentsOnPost($smallPost, 1);
+    createCommentsOn($smallPost, 1);
 
     $largePost = createPost();
 
-    foreach (commentsOnPost($largePost, 10) as $comment) {
-        createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    foreach (createCommentsOn($largePost, 10) as $comment) {
+        createCommentOn($comment);
     }
 
     $user = createUser();

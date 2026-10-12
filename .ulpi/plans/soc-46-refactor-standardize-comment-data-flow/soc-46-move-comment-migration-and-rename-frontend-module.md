@@ -296,7 +296,7 @@ En tests/Pest.php agregar createCommentOn(Post|Comment $commentable, ?User $auth
 
 ### TASK-012: Adoptar los helpers en QueryCount, Props y Model y quitar la prueba duplicada de QueryCount
 
-CommentQueryCountTest usa inertiaPartialHeaders en listCommentsCountingQueries y createCommentOn en sus 9 creaciones, y se borra su tercera prueba ('still counts replies when the resource is built without the preloaded count'), que es una copia de la tercera asercion de CommentResourceTest. CommentThreadPropsTest elimina su helper local commentsOnPost a favor de createCommentOn. CommentModelTest usa createCommentOn en sus 6 creaciones.
+CommentQueryCountTest usa inertiaPartialHeaders en listCommentsCountingQueries y createCommentOn en sus 9 creaciones, y se borra su tercera prueba ('still counts replies when the resource is built without the preloaded count'), que es una copia de la tercera asercion de CommentResourceTest. CommentThreadPropsTest elimina su helper local commentsOnPost, que se promueve a tests/Pest.php como createCommentsOn(Post|Comment, int $total, ?User = null) (crea varios comentarios o respuestas con createCommentOn) y tambien lo usa QueryCountTest. CommentModelTest usa createCommentOn en sus 6 creaciones.
 
 **Type:** test  
 **Effort:** S  
@@ -307,15 +307,18 @@ CommentQueryCountTest usa inertiaPartialHeaders en listCommentsCountingQueries y
 
 **Acceptance Criteria:**
 - [ ] QueryCountTest conserva 'reports the exact replies info...' y 'uses the same number of queries...' y deja de tener la prueba duplicada; el conteo de consultas sigue siendo el mismo para 1 y para muchos comentarios y respuestas.
-- [ ] PropsTest y ModelTest conservan todas sus pruebas y aserciones con createCommentOn; commentsOnPost ya no existe.
+- [ ] PropsTest y ModelTest conservan todas sus pruebas y aserciones con createCommentOn/createCommentsOn; commentsOnPost ya no existe como funcion local.
 - [ ] La cobertura del repliesCount sin conteo precargado sigue presente en CommentResourceTest (tercera prueba) y CommentModelTest.
 
 **writeScope:**
+- `tests/Pest.php`
 - `app/Modules/Comment/Tests/Security/CommentQueryCountTest.php`
 - `app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php`
 - `app/Modules/Comment/Tests/Models/CommentModelTest.php`
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Security/CommentQueryCountTest.php app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php app/Modules/Comment/Tests/Models/CommentModelTest.php`
+
+**Integration notes:** EJECUTADA. Desviacion: commentsOnPost creaba varios comentarios (9 usos) y createCommentOn solo uno, asi que en vez de esparcir bucles se promovio a createCommentsOn en tests/Pest.php (cuarto archivo del alcance). Las pruebas del modulo pasan de 115 a 114 (se borro la tercera de QueryCount).
 
 ### TASK-013: Mover a CommentStoreTest el unico caso de ControllerHardening y adoptar el helper en ResourceTest
 
