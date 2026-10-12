@@ -2,22 +2,19 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
-use Filament\Facades\Filament;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Livewire\Livewire;
 use LogicException;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('shows only scoped trusted device details without exposing sensitive data', function (): void {

@@ -2,26 +2,21 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\PostsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
 use Filament\Actions\ViewAction;
-use Filament\Facades\Filament;
 use Filament\Tables\Contracts\HasTable;
-use Illuminate\Contracts\Pagination\CursorPaginator;
-use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Support\Collection;
 use Livewire\Livewire;
 use LogicException;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('lists only the selected users posts with pagination', function (): void {
@@ -67,15 +62,15 @@ it('lists only the selected users posts with pagination', function (): void {
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
 
-    $firstPagePostIds = visiblePostIds($relationManager);
+    $firstPagePostIds = FilamentTableRecords::visibleRecordKeys($relationManager, Post::class);
 
     expect($relationManager->getAllTableRecordsCount())
         ->toBe(11)
         ->and($firstPagePostIds)
         ->toHaveCount(10)
-        ->toContain(postKey($lastTargetPost))
-        ->not->toContain(postKey($firstTargetPost))
-        ->not->toContain(postKey($otherUsersPost));
+        ->toContain(FilamentTableRecords::recordKey($lastTargetPost))
+        ->not->toContain(FilamentTableRecords::recordKey($firstTargetPost))
+        ->not->toContain(FilamentTableRecords::recordKey($otherUsersPost));
 
     $testable->call('setPage', 2);
     $testable->assertSee(PostResource::getUrl('view', ['record' => $firstTargetPost]), false);
@@ -84,8 +79,8 @@ it('lists only the selected users posts with pagination', function (): void {
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
 
-    expect(visiblePostIds($relationManager))
-        ->toBe([postKey($firstTargetPost)]);
+    expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
+        ->toBe([FilamentTableRecords::recordKey($firstTargetPost)]);
 });
 
 it('links posts to the dedicated read-only detail without loading their comment threads', function (): void {
@@ -132,11 +127,11 @@ it('links posts to the dedicated read-only detail without loading their comment 
 
     throw_unless($relationManagerComponent instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
 
-    $visiblePosts = visiblePostRecords($relationManagerComponent);
+    $visiblePosts = FilamentTableRecords::visibleRecords($relationManagerComponent, Post::class);
 
-    expect(array_map(postKey(...), $visiblePosts))
-        ->toContain(postKey($targetPost))
-        ->not->toContain(postKey($otherUsersPost));
+    expect(array_map(FilamentTableRecords::recordKey(...), $visiblePosts))
+        ->toContain(FilamentTableRecords::recordKey($targetPost))
+        ->not->toContain(FilamentTableRecords::recordKey($otherUsersPost));
 
     foreach ($visiblePosts as $visiblePost) {
         expect($visiblePost->relationLoaded('comments'))->toBeFalse();
@@ -195,7 +190,7 @@ it('does not load comment threads for posts with many comments and replies', fun
 
     throw_unless($component instanceof HasTable, LogicException::class, 'The posts relation must expose a Filament table.');
 
-    foreach (visiblePostRecords($component) as $visiblePost) {
+    foreach (FilamentTableRecords::visibleRecords($component, Post::class) as $visiblePost) {
         expect($visiblePost->relationLoaded('comments'))->toBeFalse();
     }
 });
@@ -230,9 +225,9 @@ it('searches the selected users posts and sorts the content column', function ()
 
     expect($component->getAllTableRecordsCount())
         ->toBe(2)
-        ->and(visiblePostIds($component))
-        ->toContain(postKey($alphaPost), postKey($zetaPost))
-        ->not->toContain(postKey($foreignPost));
+        ->and(FilamentTableRecords::visibleRecordKeys($component, Post::class))
+        ->toContain(FilamentTableRecords::recordKey($alphaPost), FilamentTableRecords::recordKey($zetaPost))
+        ->not->toContain(FilamentTableRecords::recordKey($foreignPost));
 
     $testable->call('sortTable', 'content', 'asc');
 
@@ -240,8 +235,11 @@ it('searches the selected users posts and sorts the content column', function ()
 
     throw_unless($sortedRelationManager instanceof HasTable, LogicException::class, 'The sorted posts component must expose a Filament table.');
 
-    expect(visiblePostIds($sortedRelationManager))
-        ->toBe([postKey($alphaPost), postKey($zetaPost)]);
+    expect(FilamentTableRecords::visibleRecordKeys($sortedRelationManager, Post::class))
+        ->toBe([
+            FilamentTableRecords::recordKey($alphaPost),
+            FilamentTableRecords::recordKey($zetaPost),
+        ]);
 });
 
 it('filters the selected users posts by comment presence and creation date', function (): void {
@@ -291,8 +289,8 @@ it('filters the selected users posts by comment presence and creation date', fun
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The filtered posts component must expose a Filament table.');
 
-    expect(visiblePostIds($relationManager))
-        ->toBe([postKey($post)]);
+    expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
+        ->toBe([FilamentTableRecords::recordKey($post)]);
 
     $testable->set('tableFilters.has_comments.value', false);
 
@@ -300,8 +298,8 @@ it('filters the selected users posts by comment presence and creation date', fun
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The filtered posts component must expose a Filament table.');
 
-    expect(visiblePostIds($relationManager))
-        ->toBe([postKey($withinRangeWithoutComments)]);
+    expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
+        ->toBe([FilamentTableRecords::recordKey($withinRangeWithoutComments)]);
 });
 
 it('forbids users without Posts permission from viewing the relation', function (): void {
@@ -339,40 +337,3 @@ it('forbids direct relation requests without User record access', function (): v
     ])
         ->assertForbidden();
 });
-
-/**
- * @return list<string>
- */
-function visiblePostIds(HasTable $hasTable): array
-{
-    return array_map(postKey(...), visiblePostRecords($hasTable));
-}
-
-/**
- * @return list<Post>
- */
-function visiblePostRecords(HasTable $hasTable): array
-{
-    $records = $hasTable->getTableRecords();
-
-    $pageRecords = match (true) {
-        $records instanceof Paginator,
-        $records instanceof CursorPaginator => $records->items(),
-        $records instanceof Collection => $records->all(),
-    };
-
-    return array_values(array_map(static function (mixed $record): Post {
-        throw_unless($record instanceof Post, LogicException::class, 'The posts relation must only return Post records.');
-
-        return $record;
-    }, $pageRecords));
-}
-
-function postKey(Post $post): string
-{
-    $key = $post->getKey();
-
-    throw_unless(is_int($key) || is_string($key), LogicException::class, 'Post records must use string or integer keys.');
-
-    return (string) $key;
-}

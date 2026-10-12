@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Widgets\RegistrationsChart;
 use App\Modules\Admin\Filament\Widgets\RegistrationSummaryWidget;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
@@ -17,9 +17,7 @@ use ReflectionMethod;
 
 beforeEach(function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('discovers the registration widgets through the existing admin panel discovery', function (): void {

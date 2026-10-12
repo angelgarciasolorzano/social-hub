@@ -2,17 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\Widgets\UserActivityOverview;
-use Filament\Facades\Filament;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('renders the selected users post comment and active trusted device counts', function (): void {

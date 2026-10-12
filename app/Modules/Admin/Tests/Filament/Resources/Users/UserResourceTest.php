@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Models\User;
-use Filament\Facades\Filament;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('rejects direct user create edit and delete requests without mutating users', function (): void {

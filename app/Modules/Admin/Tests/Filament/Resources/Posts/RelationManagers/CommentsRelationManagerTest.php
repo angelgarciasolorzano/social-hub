@@ -2,27 +2,22 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelationManager;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
 use Carbon\CarbonImmutable;
 use Filament\Actions\ViewAction;
-use Filament\Facades\Filament;
 use Filament\Tables\Contracts\HasTable;
-use Illuminate\Contracts\Pagination\CursorPaginator;
-use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Support\Collection;
 use Livewire\Livewire;
 use LogicException;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('lists only the selected posts comments with pagination without loading replies', function (): void {
@@ -96,16 +91,16 @@ it('lists only the selected posts comments with pagination without loading repli
 
     throw_unless($component instanceof HasTable, LogicException::class, 'The comments relation must expose a Filament table.');
 
-    $firstPageComments = visibleCommentRecords($component);
-    $firstPageCommentIds = array_map(commentResourceKey(...), $firstPageComments);
+    $firstPageComments = FilamentTableRecords::visibleRecords($component, Comment::class);
+    $firstPageCommentIds = array_map(FilamentTableRecords::recordKey(...), $firstPageComments);
 
     expect($component->getAllTableRecordsCount())
         ->toBe(11)
         ->and($firstPageComments)
         ->toHaveCount(10)
         ->and($firstPageCommentIds)
-        ->toContain(commentResourceKey($lastTargetComment))
-        ->not->toContain(commentResourceKey($firstTargetComment));
+        ->toContain(FilamentTableRecords::recordKey($lastTargetComment))
+        ->not->toContain(FilamentTableRecords::recordKey($firstTargetComment));
 
     foreach ($firstPageComments as $firstPageComment) {
         expect($firstPageComment->relationLoaded('comments'))->toBeFalse();
@@ -119,10 +114,10 @@ it('lists only the selected posts comments with pagination without loading repli
 
     throw_unless($secondPage instanceof HasTable, LogicException::class, 'The comments second page must expose a Filament table.');
 
-    $secondPageComments = visibleCommentRecords($secondPage);
+    $secondPageComments = FilamentTableRecords::visibleRecords($secondPage, Comment::class);
 
-    expect(array_map(commentResourceKey(...), $secondPageComments))
-        ->toBe([commentResourceKey($firstTargetComment)]);
+    expect(array_map(FilamentTableRecords::recordKey(...), $secondPageComments))
+        ->toBe([FilamentTableRecords::recordKey($firstTargetComment)]);
 
     foreach ($secondPageComments as $secondPageComment) {
         expect($secondPageComment->relationLoaded('comments'))->toBeFalse();
@@ -170,7 +165,7 @@ it('opens a comment with its replies and authors in a read only view action', fu
 
     throw_unless($relationManager instanceof HasTable, LogicException::class, 'The comments relation must expose a Filament table.');
 
-    foreach (visibleCommentRecords($relationManager) as $comment) {
+    foreach (FilamentTableRecords::visibleRecords($relationManager, Comment::class) as $comment) {
         expect($comment->relationLoaded('comments'))->toBeFalse();
     }
 
@@ -241,35 +236,6 @@ it('denies the comments relation to a user with only user permissions', function
     ])
         ->assertForbidden();
 });
-
-/**
- * @return list<Comment>
- */
-function visibleCommentRecords(HasTable $hasTable): array
-{
-    $records = $hasTable->getTableRecords();
-
-    $pageRecords = match (true) {
-        $records instanceof Paginator,
-        $records instanceof CursorPaginator => $records->items(),
-        $records instanceof Collection => $records->all(),
-    };
-
-    return array_values(array_map(static function (mixed $record): Comment {
-        throw_unless($record instanceof Comment, LogicException::class, 'The comments relation must only return Comment records.');
-
-        return $record;
-    }, $pageRecords));
-}
-
-function commentResourceKey(Comment $comment): string
-{
-    $key = $comment->getKey();
-
-    throw_unless(is_int($key) || is_string($key), LogicException::class, 'Comment records must use string or integer keys.');
-
-    return (string) $key;
-}
 
 /**
  * @return array<string, mixed>

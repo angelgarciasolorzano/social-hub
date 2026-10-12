@@ -2,21 +2,18 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
-use Filament\Facades\Filament;
 use Filament\Tables\Testing\TestsFilters;
 use Livewire\Livewire;
 use LogicException;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('allows admins with the users reader role to list and search users by name and email', function (): void {

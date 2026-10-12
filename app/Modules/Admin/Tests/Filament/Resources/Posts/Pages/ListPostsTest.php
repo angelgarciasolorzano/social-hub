@@ -2,21 +2,16 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
-use Filament\Facades\Filament;
 use Filament\Tables\Contracts\HasTable;
-use Illuminate\Contracts\Pagination\CursorPaginator;
-use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Support\Collection;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('lists posts with pagination and content search', function (): void {
@@ -58,8 +53,8 @@ it('lists posts with pagination and content search', function (): void {
 
     expect($component->getAllTableRecordsCount())
         ->toBe(12)
-        ->and(visiblePostResourceIds($component))
-        ->not->toContain(postResourceKey($firstTargetPost));
+        ->and(FilamentTableRecords::visibleRecordKeys($component, Post::class))
+        ->not->toContain(FilamentTableRecords::recordKey($firstTargetPost));
 
     $testable->call('setPage', 2);
 
@@ -67,8 +62,8 @@ it('lists posts with pagination and content search', function (): void {
 
     throw_unless($secondPage instanceof HasTable, LogicException::class, 'The Posts second page must expose a Filament table.');
 
-    expect(visiblePostResourceIds($secondPage))
-        ->toContain(postResourceKey($firstTargetPost));
+    expect(FilamentTableRecords::visibleRecordKeys($secondPage, Post::class))
+        ->toContain(FilamentTableRecords::recordKey($firstTargetPost));
 
     $searchTest = Livewire::test(ListPosts::class)
         ->set('tableSearch', 'Target post 01');
@@ -77,9 +72,12 @@ it('lists posts with pagination and content search', function (): void {
 
     throw_unless($searchPage instanceof HasTable, LogicException::class, 'The searched Posts page must expose a Filament table.');
 
-    expect(visiblePostResourceIds($searchPage))
-        ->toContain(postResourceKey($firstTargetPost))
-        ->not->toContain(postResourceKey($lastTargetPost), postResourceKey($otherAuthorsPost));
+    expect(FilamentTableRecords::visibleRecordKeys($searchPage, Post::class))
+        ->toContain(FilamentTableRecords::recordKey($firstTargetPost))
+        ->not->toContain(
+            FilamentTableRecords::recordKey($lastTargetPost),
+            FilamentTableRecords::recordKey($otherAuthorsPost),
+        );
 });
 
 it('denies the Posts index to users with only Users read access', function (): void {
@@ -118,32 +116,3 @@ it('keeps the Posts resource index read only', function (): void {
         ->and($table->getToolbarActions())
         ->toBeEmpty();
 });
-
-/**
- * @return list<string>
- */
-function visiblePostResourceIds(HasTable $hasTable): array
-{
-    $records = $hasTable->getTableRecords();
-
-    $pageRecords = match (true) {
-        $records instanceof Paginator,
-        $records instanceof CursorPaginator => $records->items(),
-        $records instanceof Collection => $records->all(),
-    };
-
-    return array_values(array_map(static function (mixed $record): string {
-        throw_unless($record instanceof Post, LogicException::class, 'The Posts resource must only return Post records.');
-
-        return postResourceKey($record);
-    }, $pageRecords));
-}
-
-function postResourceKey(Post $post): string
-{
-    $key = $post->getKey();
-
-    throw_unless(is_int($key) || is_string($key), LogicException::class, 'Post records must use string or integer keys.');
-
-    return (string) $key;
-}

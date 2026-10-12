@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
-use Filament\Facades\Filament;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Crypt;
@@ -14,9 +13,7 @@ use Livewire\Livewire;
 use LogicException;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('allows admins with users view permission to open an allowlisted detail without exposing two factor secrets', function (): void {

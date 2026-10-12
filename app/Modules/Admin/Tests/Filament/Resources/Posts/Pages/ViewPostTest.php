@@ -2,20 +2,17 @@
 
 declare(strict_types=1);
 
-use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use Carbon\CarbonImmutable;
-use Filament\Facades\Filament;
 use Livewire\Livewire;
 
 beforeEach(function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    Filament::setCurrentPanel('admin');
+    AdminFilamentTestContext::configure($this);
 });
 
 it('allows Posts readers to view a post and its author', function (): void {
