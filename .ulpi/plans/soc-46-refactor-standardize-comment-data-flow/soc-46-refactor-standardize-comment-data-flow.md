@@ -354,7 +354,9 @@ Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThre
 - `docs/architecture/backend.md`
 - `docs/architecture/frontend.md`
 
-**validateCommand:** `! grep -rnE 'CommentCollection|data\.flash\.comments|hasPaginatedKey|comments\.index|PaginatedResponse' CLAUDE.md docs/architecture/backend.md docs/architecture/frontend.md`
+**validateCommand:** `! grep -rnE 'CommentCollection|data\.flash\.comments|hasPaginatedKey|PaginatedResponse|GET comments/' CLAUDE.md docs/architecture/backend.md docs/architecture/frontend.md`
+
+**Integration notes:** EJECUTADA: CLAUDE.md (estructura de Comment con Props/, reglas del store invocable, nuevo parrafo 'Comment data flow (SOC-46)', parrafo frontend con el hook manual y el intento descartado de InfiniteScroll, y quitada la mencion a PaginatedResponse); backend.md (fila y arbol de Collection retirados, ejemplo de placeholder generico, 3 reglas nuevas: through() sobre Resource, props optional en Props/, controlador invocable, y Props/ en el modulo de referencia); frontend.md (LengthAwarePagination en lugar de PaginatedResponse). El nombre 'comments.index' sigue apareciendo en CLAUDE.md solo como clave del RateLimiter.
 
 ### TASK-014: Gates finales backend y frontend
 

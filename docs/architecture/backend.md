@@ -72,7 +72,6 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 | Request                | `{Module}{Action}Request`      | `PostStoreRequest`, `PostUpdateRequest` |
 | Resource               | `{Module}Resource`             | `PostResource`                          |
 | Data                   | `{Module}{Concept}Data`        | `TrustedDeviceFiltersData`              |
-| Collection             | `{Module}Collection`           | `CommentCollection`                     |
 | Seeder                 | `{Module}Seeder`               | `PostSeeder`                            |
 | Enum                   | `{Module}{Concept}`            | `CommentType`, `FriendshipStatus`       |
 | Service Provider       | `{Module}ServiceProvider`      | `PostServiceProvider`                   |
@@ -95,8 +94,7 @@ app/Modules/<Module>/
 │   ├── {Module}StoreRequest.php
 │   └── {Module}UpdateRequest.php
 ├── Resources/
-│   ├── {Module}Resource.php
-│   └── {Module}Collection.php        ← solo si hay listado
+│   └── {Module}Resource.php
 ├── Data/
 │   └── {Module}{Concept}Data.php      ← input, filtros y estructuras no modeladas
 ├── Database/
@@ -270,7 +268,7 @@ Sigue esta checklist en orden:
 
 7. **Crear las Requests** según las acciones (Store, Update, u otras específicas)
 
-8. **Crear la Resource** (y Collection si hay listado)
+8. **Crear la Resource** (los listados paginados se serializan con `->through()` sobre la Resource; no se crea una Collection)
 
 9. **Definir las rutas** en `app/Modules/{Module}/routes/routes.php`
 
@@ -285,9 +283,12 @@ Sigue esta checklist en orden:
 - Models con `HasFactory` declaran el genérico: `/** @use HasFactory<{Module}Factory> */`
 - Constantes del modelo (MORPH_NAME, MORPH_COLUMN) llevan docblock descriptivo
 - Si el módulo es polimórfico, registra el morph en `App\Providers\AppServiceProvider::boot()` (`Relation::enforceMorphMap`)
-- El nombre del placeholder de una ruta debe coincidir con el parámetro tipado del controller cuando se usa binding implícito de enum o modelo (`{commentType}` ↔ `CommentType $commentType`); si no coinciden, Laravel resuelve la clase desde el contenedor y la ruta responde 500. Rector renombra los parámetros según su tipo, así que corrige la ruta y no el parámetro.
+- El nombre del placeholder de una ruta debe coincidir con el parámetro tipado del controller cuando se usa binding implícito de enum o modelo (por ejemplo `{post}` ↔ `Post $post`); si no coinciden, Laravel resuelve la clase desde el contenedor y la ruta responde 500. Rector renombra los parámetros según su tipo, así que corrige la ruta y no el parámetro.
 - Las rutas que escriben datos llevan `throttle`. Cuando un módulo tiene varias rutas con throttle, usa el tercer argumento como prefijo (`throttle:6,1,comments.store`): Laravel firma los throttles sin nombre solo por usuario, y sin prefijo todas las rutas compartirían el mismo cupo.
 - Normaliza la entrada de texto libre en `prepareForValidation()` del FormRequest (por ejemplo, quitar caracteres de control conservando tabulaciones y saltos de línea, y recortar) para que las reglas se evalúen sobre el valor que realmente se guarda.
+- Los listados paginados por cursor se serializan con `cursorPaginate()->through(fn (Model $model): array => new {Module}Resource($model)->resolve($request))` dentro de `Inertia::scroll(...)`; no se envuelven en una Collection manual que reconstruya `data`, `meta` y `links`.
+- Los datos de un diálogo o lista que solo se necesitan al abrirlos salen como props `Inertia::optional` de una clase `ProvidesInertiaProperties` en `Props/` (ver `app/Modules/Comment/Props/CommentThreadProps.php`), que el controlador de la página anfitriona incluye en `Inertia::render`. No llevan ruta propia: el cliente hace un partial reload con `only`. El límite de tasa de esa lectura se aplica con `RateLimiter` dentro de la clase, ya que no hay middleware de ruta.
+- Un controlador con una sola acción es invocable (`__invoke`), por ejemplo `CommentStoreController`.
 - Los listados que serializan contadores de relaciones los precargan con `withCount()` en el query; el accesor del modelo reutiliza `{relation}_count` cuando existe y consulta solo si no está precargado, para que el costo de una página sea constante.
 
 ## Ejemplo canónico: módulo `Post`
@@ -313,4 +314,4 @@ app/Modules/Post/
 └── routes/routes.php
 ```
 
-Usa este módulo como referencia al crear nuevos. `app/Modules/Comment/` es el segundo ejemplo: agrega `Enums/` y `Tests/Security/`.
+Usa este módulo como referencia al crear nuevos. `app/Modules/Comment/` es el segundo ejemplo: agrega `Enums/`, `Props/` y `Tests/Security/`.

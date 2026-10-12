@@ -43,7 +43,7 @@ resources/js/
     │   └── shadcn/ui/                     ← primitivas shadcn (no editar a mano)
     ├── hooks/                             ← hooks genéricos (useDialog, useClipboard, …)
     ├── lib/                               ← utilidades (cn, validImage, …)
-    ├── types/                             ← tipos compartidos (User, PaginatedResponse, …)
+    ├── types/                             ← tipos compartidos (User, LengthAwarePagination, …)
     └── wayfinder/                         ← autogenerado por Vite (no editar)
 ```
 
