@@ -3,88 +3,10 @@
 declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
-use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Comment\Resources\CommentResource;
 use App\Modules\Post\Models\Post;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
-use Tests\TestCase;
-
-/**
- * Names of the middleware gathered for a named route.
- *
- * @return list<string>
- */
-function commentRouteMiddleware(string $routeName): array
-{
-    $route = Route::getRoutes()->getByName($routeName);
-
-    return $route === null ? [] : array_values(array_filter($route->gatherMiddleware(), is_string(...)));
-}
-
-/**
- * Count the queries needed to load and serialize one page of comments with their replies info.
- */
-function commentListingQueryCount(TestCase $testCase, int $commentsCount): int
-{
-    $post = createPost();
-    $user = createUser();
-
-    foreach (range(1, $commentsCount) as $index) {
-        createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
-    }
-
-    /** @var array{version: string} $page */
-    $page = $testCase->actingAs($user)->get(route('home'))->inertiaPage();
-
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-
-    $testCase->actingAs($user)->get(
-        route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
-        [
-            'X-Inertia' => 'true',
-            'X-Inertia-Version' => $page['version'],
-            'X-Inertia-Partial-Component' => 'home/Home',
-            'X-Inertia-Partial-Data' => 'comments',
-        ],
-    )->assertOk();
-
-    $queries = count(DB::getQueryLog());
-    DB::disableQueryLog();
-
-    return $queries;
-}
-
-// Hypothesis 1: rate limiting -------------------------------------------------
-
-it('[H1] throttles comments.store to prevent comment flooding', function (): void {
-    $middleware = commentRouteMiddleware('comments.store');
-
-    expect(array_filter($middleware, fn (string $name): bool => str_starts_with($name, 'throttle')))->not->toBeEmpty();
-});
-
-it('[H1] throttles the reading of comments where the props are resolved', function (): void {
-    $source = (string) file_get_contents(app_path('Modules/Comment/Props/CommentThreadProps.php'));
-
-    expect($source)->toContain('RateLimiter::tooManyAttempts')
-        ->and($source)->toContain('RateLimiter::hit');
-});
-
-// Hypothesis 2: commentable_id existence --------------------------------------
-
-it('[H2] rejects a non-existent commentable without creating anything or failing with a server error', function (): void {
-    $testResponse = $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => 'Un comentario',
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => 999999,
-        ]);
-
-    expect($testResponse->status())->toBeIn([302, 404, 422])
-        ->and(Comment::query()->count())->toBe(0);
-});
 
 // Hypothesis 3: content handling ----------------------------------------------
 
@@ -94,20 +16,6 @@ it('[H3] rejects whitespace-only content', function (): void {
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
             'content' => "   \n\t  ",
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasErrors('content');
-
-    expect(Comment::query()->count())->toBe(0);
-});
-
-it('[H3] rejects content made only of control characters', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => "\0\x01\x02",
             'commentable_type' => Post::MORPH_NAME,
             'commentable_id' => $post->id,
         ])
@@ -129,45 +37,12 @@ it('[H3] never renders comments as raw HTML in the frontend', function (): void 
         ->and($offenders)->toBeEmpty();
 });
 
-// Hypothesis 4: reply nesting depth -------------------------------------------
-
-it('[H4] refuses to reply to a reply so threads have a single level of nesting', function (): void {
-    $comment = createComment();
-    $reply = createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
-
-    $countBefore = Comment::query()->count();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => 'Una respuesta a una respuesta',
-            'commentable_type' => Comment::MORPH_NAME,
-            'commentable_id' => $reply->id,
-        ])
-        ->assertSessionHasErrors(['commentable_id' => 'No se puede responder a una respuesta.']);
-
-    expect(Comment::query()->count())->toBe($countBefore);
-});
-
-// Hypothesis 5: unreachable / inconsistent flash branch -----------------------
-
-it('[H5] answers the store action through a single Inertia flash channel', function (): void {
-    $source = (string) file_get_contents(app_path('Modules/Comment/Controllers/CommentStoreController.php'));
-
-    expect($source)->not->toContain('back()->with(');
-});
-
-// Hypothesis 6: per-comment queries -------------------------------------------
-
-it('[H6] serializes a page of comments with a constant number of queries', function (): void {
-    expect(commentListingQueryCount($this, 8))->toBe(commentListingQueryCount($this, 2));
-});
-
 // Hypothesis 7: user data exposure --------------------------------------------
 
 it('[H7] does not expose private user data in the serialized comments', function (): void {
     $user = createUser();
     $post = createPost();
-    createComment($user, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
+    createCommentOn($post, $user);
 
     $cursorPaginator = $post->comments()->with('user')->cursorPaginate(10)
         ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
@@ -206,18 +81,4 @@ it('[H8] ignores a forged user_id and attributes the comment to the authenticate
         ]);
 
     expect(Comment::query()->sole()->user_id)->toBe($user->id);
-});
-
-it('[H8] refuses to comment on resources other than posts and comments', function (): void {
-    $user = createUser();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => 'Un comentario',
-            'commentable_type' => 'user',
-            'commentable_id' => $user->id,
-        ])
-        ->assertSessionHasErrors('commentable_type');
-
-    expect(Comment::query()->count())->toBe(0);
 });

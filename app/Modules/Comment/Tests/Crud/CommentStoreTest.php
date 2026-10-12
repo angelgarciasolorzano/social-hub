@@ -59,6 +59,22 @@ it('replies to another comment', function (): void {
         ->and($comment->comments()->count())->toBe(1);
 });
 
+it('rejects a reply to a reply with a validation error on commentable_id', function (): void {
+    $comment = createComment();
+    $reply = createCommentOn($comment);
+
+    $this->actingAs(createUser())
+        ->post(route('comments.store'), [
+            'content' => 'Una respuesta a una respuesta',
+            'commentable_type' => Comment::MORPH_NAME,
+            'commentable_id' => $reply->id,
+        ])
+        ->assertSessionHasErrors(['commentable_id' => 'No se puede responder a una respuesta.']);
+
+    expect($reply->repliesCount())->toBe(0)
+        ->and($comment->repliesCount())->toBe(1);
+});
+
 it('requires the content of the comment', function (): void {
     $post = createPost();
 

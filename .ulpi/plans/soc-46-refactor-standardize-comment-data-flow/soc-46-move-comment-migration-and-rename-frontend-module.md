@@ -346,7 +346,7 @@ En CommentStoreTest, la prueba 'returns 404 and creates nothing when the comment
 
 ### TASK-014: Borrar CommentControllerHardeningTest y las pruebas duplicadas de CommentSecurityAuditTest
 
-Aprobado por el usuario. Borrar CommentControllerHardeningTest.php completo (sus 5 pruebas son copias de CommentStoreTest, de H4 y de H5, salvo el 404 ya movido en TASK-013). En CommentSecurityAuditTest borrar H1 (middleware de comments.store y comprobacion del codigo de CommentThreadProps), H2, H3 caracteres de control, H4, H5, H6 y H8 tipo no soportado, junto con los helpers que quedan sin uso (commentRouteMiddleware, commentListingQueryCount) y los imports sobrantes. Conservar H3 whitespace-only, H3 escaneo de dangerouslySetInnerHTML, H7, H8 rutas y H8 user_id forjado, y usar createCommentOn donde aplique.
+Aprobado por el usuario. Borrar CommentControllerHardeningTest.php completo (sus 5 pruebas son copias de CommentStoreTest, de H4 y de H5, salvo el 404 ya movido en TASK-013). En CommentSecurityAuditTest borrar H1 (middleware de comments.store y comprobacion del codigo de CommentThreadProps), H2, H3 caracteres de control, H4, H5, H6 y H8 tipo no soportado, junto con los helpers que quedan sin uso (commentRouteMiddleware, commentListingQueryCount) y los imports sobrantes. Antes de borrar se verifico la cobertura y se encontro un hueco: la regla de un solo nivel (no responder a una respuesta) solo estaba probada en H4 y en CommentControllerHardeningTest, que eran copias entre si. Se MOVIO la version mas estricta de ControllerHardening a CommentStoreTest y se borro H4 (no se pierde cobertura). Conservar H3 whitespace-only, H3 escaneo de dangerouslySetInnerHTML, H7, H8 rutas y H8 user_id forjado, y usar createCommentOn donde aplique.
 
 **Type:** test  
 **Effort:** S  
@@ -357,16 +357,17 @@ Aprobado por el usuario. Borrar CommentControllerHardeningTest.php completo (sus
 
 **Acceptance Criteria:**
 - [ ] CommentSecurityAuditTest queda con exactamente 5 pruebas (H3 whitespace, H3 escaneo del frontend, H7, H8 rutas y H8 user_id forjado) y el escaneo de H3 sigue pudiendo fallar (comprobado con un dangerouslySetInnerHTML temporal).
-- [ ] Cada comportamiento de las pruebas borradas sigue cubierto en otro archivo: reply-to-reply y 404 en CommentStoreTest, caracteres de control en CommentValidationHardeningTest/CommentStoreRequestTest, tipo no soportado en CommentStoreTest/CommentStoreRequestTest, throttle en CommentThrottleTest y CommentThreadPropsTest, consultas constantes en CommentQueryCountTest y CommentThreadPropsTest, flash en CommentStoreTest.
+- [ ] Cada comportamiento de las pruebas borradas sigue cubierto en otro archivo: reply-to-reply (movida a CommentStoreTest) y 404 en CommentStoreTest, caracteres de control en CommentValidationHardeningTest/CommentStoreRequestTest, tipo no soportado en CommentStoreTest/CommentStoreRequestTest, throttle en CommentThrottleTest y CommentThreadPropsTest, consultas constantes en CommentQueryCountTest y CommentThreadPropsTest, flash en CommentStoreTest.
 - [ ] No queda ningun helper ni import sin uso en esos archivos y CommentControllerHardeningTest.php ya no existe.
 
 **writeScope:**
 - `app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php`
 - `app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php`
+- `app/Modules/Comment/Tests/Crud/CommentStoreTest.php`
 
 **validateCommand:** `test ! -e app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php && php artisan test --compact app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php`
 
-**Integration notes:** Borrado de pruebas autorizado explicitamente por el usuario (regla del proyecto: no borrar pruebas sin aprobacion). Se borran 5 + 8 + 1 (TASK-012) = 14 pruebas y el dataset de TASK-013 agrega 1 caso: la suite de Comment pasa de 115 a ~102.
+**Integration notes:** Borrado de pruebas autorizado explicitamente por el usuario (regla del proyecto: no borrar pruebas sin aprobacion). Se borran 5 + 8 + 1 (TASK-012) = 14 pruebas y el dataset de TASK-013 agrega 1 caso: la suite de Comment pasa de 115 a ~102. EJECUTADA: se borraron 13 pruebas (5 de CommentControllerHardeningTest y 8 de CommentSecurityAuditTest: H1 x2, H2, H3 control, H4, H5, H6 y H8 tipo) y se movio 1 a CommentStoreTest (reply-to-reply); la suite de Comment pasa de 115 a 103.
 
 ### TASK-015: Gates de la limpieza de pruebas
 
