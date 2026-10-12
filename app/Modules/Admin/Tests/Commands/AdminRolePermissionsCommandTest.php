@@ -51,6 +51,41 @@ it('revokes a cataloged permission without changing role assignments', function 
         ->and($user->can(AdminPermission::AdminUsersView->value))->toBeTrue();
 });
 
+it('uses the admin guard when matching role and permission names exist in web', function (): void {
+    $webRole = Role::query()->create([
+        'name' => AdminRole::AdminUsersReader->value,
+        'guard_name' => 'web',
+    ]);
+    $webPermission = Permission::query()->create([
+        'name' => AdminPermission::AdminDashboardView->value,
+        'guard_name' => 'web',
+    ]);
+
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $adminRole = Role::query()
+        ->where('name', AdminRole::AdminUsersReader->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $adminPermission = Permission::query()
+        ->where('name', AdminPermission::AdminDashboardView->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+
+    $exitCode = Artisan::call('admin:role-permissions', [
+        'action' => 'grant',
+        'role' => AdminRole::AdminUsersReader->value,
+        'permission' => AdminPermission::AdminDashboardView->value,
+    ]);
+
+    $adminRole->refresh();
+    $webRole->refresh();
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($adminRole->permissions()->whereKey($adminPermission->getKey())->exists())->toBeTrue()
+        ->and($webRole->permissions()->whereKey($webPermission->getKey())->exists())->toBeFalse();
+});
+
 it('rejects an unknown role without changing role permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
