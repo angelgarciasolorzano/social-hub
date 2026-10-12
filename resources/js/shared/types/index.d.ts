@@ -15,5 +15,4 @@ export interface SharedData {
 }
 
 export type * from "./lengthAwarePagination";
-export type * from "./pagination";
 export type * from "./user";

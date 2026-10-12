@@ -328,14 +328,15 @@ Eliminar hasPaginatedKey (y su export) si ya nadie lo consume, y limpiar tipos q
 - `resources/js/shared/lib/hasPaginatedKey.ts`
 - `resources/js/shared/lib/index.ts`
 - `resources/js/shared/types/pagination.ts`
+- `resources/js/shared/types/index.d.ts`
 
 **validateCommand:** `npm run types && npm run lint:check`
 
-**Integration notes:** Si rg encuentra otro consumidor de hasPaginatedKey o de los tipos, esa pieza se conserva y se anota en la revision.
+**Integration notes:** Si rg encuentra otro consumidor de hasPaginatedKey o de los tipos, esa pieza se conserva y se anota en la revision. EJECUTADA (2026-10-12): hasPaginatedKey.ts y types/pagination.ts (PaginatedResponse, PaginationMeta, PaginationLinks) no tenian ningun otro consumidor y se borraron; tambien se quito su re-export en shared/types/index.d.ts (cuarto archivo, necesario para que el barril compile). CLAUDE.md aun menciona PaginatedResponse en el parrafo de TrustedDevice (SOC-23): lo corrige TASK-013.
 
 ### TASK-013: Actualizar CLAUDE.md con el nuevo flujo de datos de Comment
 
-Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThreadProps, props optional 'comments' y 'replies', cursores propios, throttle de lectura trasladado a CommentThreadProps, retiro de la ruta comments.index, CommentStoreController invocable, flash solo para notificacion, hook manual (o InfiniteScroll segun TASK-011) y retiro de CommentController/CommentCollection/hasPaginatedKey.
+Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThreadProps, props optional 'comments' y 'replies', cursores propios, throttle de lectura trasladado a CommentThreadProps, retiro de la ruta comments.index, CommentStoreController invocable, flash solo para notificacion, hook manual (o InfiniteScroll segun TASK-011) y retiro de CommentController/CommentCollection/hasPaginatedKey. Tambien actualizar docs/architecture/backend.md y docs/architecture/frontend.md, que mencionan CommentCollection, comments.index o PaginatedResponse (descubierto en TASK-012).
 
 **Type:** docs  
 **Effort:** S  
@@ -350,8 +351,10 @@ Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThre
 
 **writeScope:**
 - `CLAUDE.md`
+- `docs/architecture/backend.md`
+- `docs/architecture/frontend.md`
 
-**validateCommand:** `! rg -n 'CommentCollection|data\.flash\.comments|hasPaginatedKey' CLAUDE.md`
+**validateCommand:** `! grep -rnE 'CommentCollection|data\.flash\.comments|hasPaginatedKey|comments\.index|PaginatedResponse' CLAUDE.md docs/architecture/backend.md docs/architecture/frontend.md`
 
 ### TASK-014: Gates finales backend y frontend
 
