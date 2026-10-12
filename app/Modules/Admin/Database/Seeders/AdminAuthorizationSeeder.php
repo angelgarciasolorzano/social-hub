@@ -22,6 +22,7 @@ class AdminAuthorizationSeeder extends Seeder
 
         DB::transaction(function (): void {
             $this->renameLegacyPermissions();
+            $this->renameLegacyRoles();
 
             /** @var array<string, Permission> $permissions */
             $permissions = [];
@@ -33,25 +34,37 @@ class AdminAuthorizationSeeder extends Seeder
                 ]);
             }
 
-            $adminRole = Role::query()->firstOrCreate([
-                'name' => AdminRole::Admin->value,
-                'guard_name' => self::GUARD,
-            ]);
+            /** @var array<string, list<AdminPermission>> $permissionsByRole */
+            $permissionsByRole = [
+                AdminRole::Admin->value => [AdminPermission::AdminAccess],
+                AdminRole::UsersReader->value => [
+                    AdminPermission::UsersViewAny,
+                    AdminPermission::UsersView,
+                ],
+                AdminRole::PostsReader->value => [
+                    AdminPermission::PostsViewAny,
+                    AdminPermission::PostsView,
+                ],
+                AdminRole::DashboardReader->value => [AdminPermission::DashboardView],
+            ];
 
-            if ($adminRole->wasRecentlyCreated) {
-                $adminRole->givePermissionTo($permissions[AdminPermission::AdminAccess->value]);
-            }
-
-            $usersReaderRole = Role::query()->firstOrCreate([
-                'name' => AdminRole::UsersReader->value,
-                'guard_name' => self::GUARD,
-            ]);
-
-            if ($usersReaderRole->wasRecentlyCreated) {
-                $usersReaderRole->givePermissionTo([
-                    $permissions[AdminPermission::UsersViewAny->value],
-                    $permissions[AdminPermission::UsersView->value],
+            foreach ($permissionsByRole as $roleName => $adminPermissions) {
+                $role = Role::query()->firstOrCreate([
+                    'name' => $roleName,
+                    'guard_name' => self::GUARD,
                 ]);
+
+                if (! $role->wasRecentlyCreated) {
+                    continue;
+                }
+
+                $rolePermissionModels = [];
+
+                foreach ($adminPermissions as $adminPermission) {
+                    $rolePermissionModels[] = $permissions[$adminPermission->value];
+                }
+
+                $role->givePermissionTo($rolePermissionModels);
             }
         });
 
@@ -69,5 +82,13 @@ class AdminAuthorizationSeeder extends Seeder
                 ->where('guard_name', self::GUARD)
                 ->update(['name' => $adminPermission->value]);
         }
+    }
+
+    private function renameLegacyRoles(): void
+    {
+        Role::query()
+            ->where('name', 'users-reader')
+            ->where('guard_name', self::GUARD)
+            ->update(['name' => AdminRole::UsersReader->value]);
     }
 }

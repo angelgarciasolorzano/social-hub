@@ -8,5 +8,9 @@ enum AdminRole: string
 {
     case Admin = 'admin';
 
-    case UsersReader = 'users-reader';
+    case UsersReader = 'admin-users-reader';
+
+    case PostsReader = 'admin-posts-reader';
+
+    case DashboardReader = 'admin-dashboard-reader';
 }
