@@ -571,7 +571,8 @@
         "resources/js/modules/comment/components/CommentItem.tsx"
       ],
       "validateCommand": "npx eslint resources/js/modules/comment/components/CommentItem.tsx && npm run types && npm run build",
-      "review": "claude"
+      "review": "claude",
+      "integrationNotes": "EJECUTADA (2026-10-12): 3 Button (ghost, xs, type=button, cursor-pointer; 'Me gusta' hover:text-destructive), Card con overrides (gap-0 py-0 rounded-md bg-muted/50 shadow-none; las respuestas con border-0 bg-transparent) y CardContent p-2; el texto del comentario y el nombre heredan el color de la Card (text-card-foreground) en lugar de colores fijos; el tiempo usa text-muted-foreground. El pie usa -ml-2 para alinear el texto de los botones con el borde de la tarjeta. Cambio menor de texto: se quito un espacio final en 'Mostrar N respuestas '. Verificado en tema oscuro y claro (el app sigue el tema del sistema: appearance=system; para probar el claro se emula prefers-color-scheme, no basta alternar la clase dark)."
     },
     {
       "id": "TASK-019",

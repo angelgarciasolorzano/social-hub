@@ -5,6 +5,8 @@ import { IoMdTime } from "react-icons/io";
 import dayjs from "dayjs";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
 
 import { useDialog } from "@/shared/hooks/useDialog";
 
@@ -53,64 +55,75 @@ function CommentItem(props: CommentItemProps) {
 
   return (
     <article className={cn("space-y-1", isReply && "ml-2")}>
-      <div
+      <Card
         className={cn(
-          !isReply && "rounded-md border bg-gray-50/50 dark:border-[#343434] dark:bg-[#1D1D1D]/30",
-          "flex flex-col gap-2 p-2",
+          "gap-0 rounded-md bg-muted/50 py-0 shadow-none",
+          isReply && "border-0 bg-transparent",
         )}
       >
-        <header className="flex items-center gap-2">
-          <Avatar>
-            <AvatarImage
-              alt="Foto de perfil"
-              src={validImage(comment.user.profilePicture, profilePicturePlaceholder)}
-            />
+        <CardContent className="flex flex-col gap-2 p-2">
+          <header className="flex items-center gap-2">
+            <Avatar>
+              <AvatarImage
+                alt="Foto de perfil"
+                src={validImage(comment.user.profilePicture, profilePicturePlaceholder)}
+              />
 
-            <AvatarFallback>Foto de perfil</AvatarFallback>
-          </Avatar>
+              <AvatarFallback>Foto de perfil</AvatarFallback>
+            </Avatar>
 
-          <div className="block">
-            <p className="text-sm font-bold dark:text-white">{comment.user.name}</p>
+            <div className="block">
+              <p className="text-sm font-bold">{comment.user.name}</p>
 
-            <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-              <IoMdTime className="h-3 w-3 text-gray-600 dark:text-gray-500" />
-              {createdAt}
-            </time>
-          </div>
-        </header>
+              <time className="flex items-center gap-1 text-xs text-muted-foreground">
+                <IoMdTime className="h-3 w-3" />
+                {createdAt}
+              </time>
+            </div>
+          </header>
 
-        <section>
-          <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
-        </section>
-      </div>
+          <section>
+            <p className="text-sm">{comment.content}</p>
+          </section>
+        </CardContent>
+      </Card>
 
-      <footer className="flex items-center gap-4 text-xs font-medium text-gray-600 dark:text-gray-400">
-        <button className="cursor-pointer hover:text-red-600 dark:hover:text-red-500">
-          Me gusta
-        </button>
-
-        <button
+      <footer className="-ml-2 flex items-center text-xs font-medium text-muted-foreground">
+        <Button
+          className="cursor-pointer text-muted-foreground hover:text-destructive"
+          size="xs"
           type="button"
-          className="cursor-pointer transition-colors hover:text-black/80 dark:hover:text-white/80"
+          variant="ghost"
+        >
+          Me gusta
+        </Button>
+
+        <Button
+          className="cursor-pointer text-muted-foreground"
           onClick={() => {
             setOpenModalComment(true);
           }}
+          size="xs"
+          type="button"
+          variant="ghost"
         >
           Responder
-        </button>
+        </Button>
 
         {comment.repliesInfo.hasReplies && (
-          <button
-            type="button"
-            className="cursor-pointer transition-colors hover:text-blue-600 dark:hover:text-blue-500"
+          <Button
+            className="cursor-pointer text-muted-foreground"
             onClick={() => {
               setShowReplies(showReplies === comment.id ? null : comment.id);
             }}
+            size="xs"
+            type="button"
+            variant="ghost"
           >
             {showReplies === comment.id
               ? "Ocultar respuestas"
-              : `Mostrar ${comment.repliesInfo.repliesCount} respuestas `}
-          </button>
+              : `Mostrar ${comment.repliesInfo.repliesCount} respuestas`}
+          </Button>
         )}
       </footer>
 
