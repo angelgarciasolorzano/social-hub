@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
 import dayjs from "dayjs";
@@ -28,7 +30,7 @@ interface CommentDialogProps {
   user: User;
 }
 
-function CommentDialog({ postDetail, user }: CommentDialogProps) {
+function CommentDialog({ postDetail, user }: CommentDialogProps): JSX.Element {
   return (
     <Dialog>
       <DialogTrigger asChild>

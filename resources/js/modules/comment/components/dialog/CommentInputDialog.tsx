@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -39,7 +39,7 @@ interface CommentInputDialogProps {
   title: string;
 }
 
-function CommentInputDialog(props: CommentInputDialogProps) {
+function CommentInputDialog(props: CommentInputDialogProps): JSX.Element {
   const {
     previewContext,
     commentableId,
@@ -87,7 +87,7 @@ function CommentInputDialog(props: CommentInputDialogProps) {
           <Separator />
         </DialogHeader>
 
-        <ScrollArea className="-mx-4 [&>[data-slot=scroll-area-viewport]]:max-h-[62vh]">
+        <ScrollArea className="-mx-4 *:data-[slot=scroll-area-viewport]:max-h-[62vh]">
           <div className="px-4">
             {previewContext && <CommentPreviewContent previewContext={previewContext} />}
 

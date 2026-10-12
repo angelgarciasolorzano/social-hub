@@ -1,10 +1,14 @@
-import type { Dispatch, SetStateAction } from "react";
-import { useEffect, useRef, useState } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
+import { useEffect, useRef } from "react";
 
 import { useIntersectionObserver } from "usehooks-ts";
 
+import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
+
 import { CommentType } from "../enums/commentType";
 import { useCommentPaginated } from "../hooks/useCommentPaginated";
+import { useScrollAreaViewport } from "../hooks/useScrollAreaViewport";
 import CommentItem from "./CommentItem";
 import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 
@@ -20,8 +24,8 @@ function CommentRepliesList({
   refreshCounter,
   showReplies,
   setShowReplies,
-}: CommentRepliesListProps) {
-  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
+}: CommentRepliesListProps): JSX.Element | null {
+  const { scrollAreaRef, viewport } = useScrollAreaViewport();
 
   const loadMoreTimer = useRef<number | null>(null);
 
@@ -38,7 +42,7 @@ function CommentRepliesList({
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
-    root: scrollRoot,
+    root: viewport,
     rootMargin: "200px",
   });
 
@@ -95,37 +99,49 @@ function CommentRepliesList({
   }
 
   return (
-    <div className="mt-4 ml-4 flex max-h-72 flex-col gap-4 overflow-auto" ref={setScrollRoot}>
-      {commentsPage.data.map((reply) => (
-        <CommentItem
-          comment={reply}
-          isReply
-          key={reply.id}
-          setShowReplies={setShowReplies}
-          showReplies={showReplies}
-          uploadedComments={uploadedComments}
-        />
-      ))}
+    <ScrollArea
+      className="mt-4 ml-4 *:data-[slot=scroll-area-viewport]:max-h-72"
+      ref={scrollAreaRef}
+    >
+      <div className="flex flex-col gap-4 pr-2.5">
+        {commentsPage.data.map((reply) => (
+          <CommentItem
+            comment={reply}
+            isReply
+            key={reply.id}
+            setShowReplies={setShowReplies}
+            showReplies={showReplies}
+            uploadedComments={uploadedComments}
+          />
+        ))}
 
-      <div className="w-full" ref={sentinelRef} />
+        <div className="w-full" ref={sentinelRef} />
 
-      {loadFailure !== null && (
-        <CommentLoadError
-          message={
-            loadFailure === "more"
-              ? "No se pudieron cargar más respuestas."
-              : "No se pudieron actualizar las respuestas."
-          }
-          onRetry={retryLoad}
-        />
-      )}
+        {loadFailure !== null && (
+          <CommentLoadError
+            message={
+              loadFailure === "more"
+                ? "No se pudieron cargar más respuestas."
+                : "No se pudieron actualizar las respuestas."
+            }
+            onRetry={retryLoad}
+          />
+        )}
 
-      {hasMoreComments && loadFailure === null && (
-        <div className="py-1 text-center text-xs text-gray-500">
-          {isLoadingMore ? "Cargando más respuestas..." : "Desliza para cargar más..."}
-        </div>
-      )}
-    </div>
+        {hasMoreComments && loadFailure === null && (
+          <div className="flex items-center justify-center gap-2 py-1 text-xs text-muted-foreground">
+            {isLoadingMore ? (
+              <>
+                <Spinner />
+                Cargando más respuestas...
+              </>
+            ) : (
+              "Desliza para cargar más..."
+            )}
+          </div>
+        )}
+      </div>
+    </ScrollArea>
   );
 }
 

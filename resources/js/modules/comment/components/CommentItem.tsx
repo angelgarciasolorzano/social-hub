@@ -1,4 +1,5 @@
-import { type Dispatch, type SetStateAction, useState } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
+import { useState } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
@@ -29,7 +30,7 @@ interface CommentItemProps {
   uploadedComments?: () => void;
 }
 
-function CommentItem(props: CommentItemProps) {
+function CommentItem(props: CommentItemProps): JSX.Element {
   const {
     comment,
     isReply = false,

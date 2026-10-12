@@ -1,17 +1,18 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { Input } from "@/shared/components/shadcn/ui/input";
+import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { useDialog } from "@/shared/hooks/useDialog";
 
-import { cn } from "@/shared/lib/utils";
-
 import { CommentType } from "../enums/commentType";
 import { useCommentPaginated } from "../hooks/useCommentPaginated";
+import { useScrollAreaViewport } from "../hooks/useScrollAreaViewport";
 import type { CommentContextPreview } from "../types/comment";
 import CommentItem from "./CommentItem";
 import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
@@ -22,10 +23,11 @@ interface CommentListProps {
   previewContext: CommentContextPreview;
 }
 
-function CommentList({ postId, previewContext }: CommentListProps) {
+function CommentList({ postId, previewContext }: CommentListProps): JSX.Element {
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
-  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
+  const { scrollAreaRef, viewport } = useScrollAreaViewport();
+
   const loadMoreTimer = useRef<number | null>(null);
 
   const { open: openModalComment, setOpen: setOpenModalComment } = useDialog();
@@ -44,7 +46,7 @@ function CommentList({ postId, previewContext }: CommentListProps) {
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
-    root: scrollRoot,
+    root: viewport,
     rootMargin: "200px",
   });
 
@@ -112,37 +114,46 @@ function CommentList({ postId, previewContext }: CommentListProps) {
 
   return (
     <>
-      <div className={cn("flex h-full flex-col gap-6 overflow-y-auto pr-2.5")} ref={setScrollRoot}>
-        {commentsPage.data.map((comment) => (
-          <CommentItem
-            onReplyCreated={increaseRepliesCount}
-            comment={comment}
-            key={comment.id}
-            setShowReplies={setShowReplies}
-            showReplies={showReplies}
-            uploadedComments={uploadedComments}
-          />
-        ))}
+      <ScrollArea className="min-h-0 flex-1" ref={scrollAreaRef}>
+        <div className="flex flex-col gap-6 pr-2.5">
+          {commentsPage.data.map((comment) => (
+            <CommentItem
+              onReplyCreated={increaseRepliesCount}
+              comment={comment}
+              key={comment.id}
+              setShowReplies={setShowReplies}
+              showReplies={showReplies}
+              uploadedComments={uploadedComments}
+            />
+          ))}
 
-        <div className="w-full" ref={sentinelRef} />
+          <div className="w-full" ref={sentinelRef} />
 
-        {loadFailure !== null && (
-          <CommentLoadError
-            message={
-              loadFailure === "more"
-                ? "No se pudieron cargar más comentarios."
-                : "No se pudieron actualizar los comentarios."
-            }
-            onRetry={retryLoad}
-          />
-        )}
+          {loadFailure !== null && (
+            <CommentLoadError
+              message={
+                loadFailure === "more"
+                  ? "No se pudieron cargar más comentarios."
+                  : "No se pudieron actualizar los comentarios."
+              }
+              onRetry={retryLoad}
+            />
+          )}
 
-        {hasMoreComments && loadFailure === null && (
-          <div className="py-2 text-center text-sm text-gray-500">
-            {isLoadingMore ? "Cargando más..." : "Desliza para cargar más..."}
-          </div>
-        )}
-      </div>
+          {hasMoreComments && loadFailure === null && (
+            <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+              {isLoadingMore ? (
+                <>
+                  <Spinner />
+                  Cargando más...
+                </>
+              ) : (
+                "Desliza para cargar más..."
+              )}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
 
       <RenderCommentInput
         openModalComment={openModalComment}
@@ -228,7 +239,7 @@ function RenderEmptyState({
   return (
     <>
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
+        <p className="text-center text-sm text-muted-foreground">
           No hay comentarios en esta publicación para mostrar
         </p>
       </div>
