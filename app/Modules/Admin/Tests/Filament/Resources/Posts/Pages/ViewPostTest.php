@@ -18,12 +18,13 @@ beforeEach(function (): void {
     Filament::setCurrentPanel('admin');
 });
 
-it('allows users with users view permission to view a post and its author', function (): void {
+it('allows Posts readers to view a post and its author', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
+    $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
 
     $user = createUser();
     $post = createPost($user, ['content' => 'Post detail content sentinel']);
@@ -35,8 +36,15 @@ it('allows users with users view permission to view a post and its author', func
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    expect(array_keys(PostResource::getPages()))
+    expect($authenticatedUser->can(AdminPermission::AdminUsersViewAny->value))
+        ->toBeFalse()
+        ->and($authenticatedUser->can(AdminPermission::AdminUsersView->value))
+        ->toBeFalse()
+        ->and(array_keys(PostResource::getPages()))
         ->toBe(['index', 'view']);
+
+    $this->get(PostResource::getUrl('view', ['record' => $post]))
+        ->assertOk();
 
     Livewire::test(ListPosts::class)
         ->assertSee(PostResource::getUrl('view', ['record' => $post]), false);
@@ -57,16 +65,19 @@ it('allows users with users view permission to view a post and its author', func
     expect($component->getCachedHeaderActions())->toBeEmpty();
 });
 
-it('denies post detail without users view permission even when users view any is granted', function (): void {
+it('denies the direct post detail route to users with only Users read access', function (): void {
     $authenticatedUser = createUser();
-    $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+    $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
 
     $post = createPost();
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    Livewire::test(ViewPost::class, ['record' => $post->getKey()])
+    $this->get(PostResource::getUrl('view', ['record' => $post]))
         ->assertForbidden();
 });
 
@@ -74,7 +85,7 @@ it('denies post detail when the post has no existing owner', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $post = createPost();

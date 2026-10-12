@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Posts;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelationManager;
@@ -20,7 +21,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
 use Override;
 
 class PostResource extends Resource
@@ -37,7 +37,7 @@ class PostResource extends Resource
         $authenticatedUser = Filament::auth()->user();
 
         return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('viewAny', User::class);
+            && $authenticatedUser->can(AdminPermission::AdminPostsViewAny->value);
     }
 
     #[Override]
@@ -52,7 +52,7 @@ class PostResource extends Resource
 
         return $authenticatedUser instanceof User
             && $owner instanceof User
-            && Gate::forUser($authenticatedUser)->allows('view', $owner);
+            && $authenticatedUser->can(AdminPermission::AdminPostsView->value);
     }
 
     #[Override]

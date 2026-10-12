@@ -24,7 +24,7 @@ it('lists posts with pagination and content search', function (): void {
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $user = createUser();
@@ -82,9 +82,12 @@ it('lists posts with pagination and content search', function (): void {
         ->not->toContain(postResourceKey($lastTargetPost), postResourceKey($otherAuthorsPost));
 });
 
-it('denies the Posts index without users view any permission', function (): void {
+it('denies the Posts index to users with only Users read access', function (): void {
     $authenticatedUser = createUser();
-    $authenticatedUser->assignRole(AdminRole::Admin->value);
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
 
     $this->actingAs($authenticatedUser, 'admin');
 
@@ -97,7 +100,7 @@ it('keeps the Posts resource index read only', function (): void {
 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $this->actingAs($authenticatedUser, 'admin');
