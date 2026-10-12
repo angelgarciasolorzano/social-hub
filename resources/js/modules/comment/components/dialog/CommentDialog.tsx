@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/shared/components/shadcn/ui/dialog";
+import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import type { User } from "@/shared/types";
@@ -39,7 +40,7 @@ function CommentDialog({ postDetail, user }: CommentDialogProps) {
       <DialogContent className="mx-w-[85%] flex h-[90%] min-w-[80%] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RiArticleLine className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <RiArticleLine className="h-5 w-5 text-muted-foreground" />
             Publicacion de {user.name}
           </DialogTitle>
 
@@ -63,9 +64,11 @@ type CommentDialogPublicationProps = CommentDialogProps;
 
 function CommentDialogPublication({ postDetail, user }: CommentDialogPublicationProps) {
   return (
-    <div className="h-full w-1/2 overflow-y-auto border-r pr-3 dark:border-[#343434]">
-      <PostDetail post={postDetail} user={user} />
-    </div>
+    <ScrollArea className="h-full w-1/2 border-r">
+      <div className="pr-3">
+        <PostDetail post={postDetail} user={user} />
+      </div>
+    </ScrollArea>
   );
 }
 
@@ -95,8 +98,8 @@ function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
 
 function CommentDialogHeader() {
   return (
-    <div className="flex items-center gap-2 text-[15px] font-bold dark:text-gray-200">
-      <RiWechatLine className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+    <div className="flex items-center gap-2 text-[15px] font-bold">
+      <RiWechatLine className="h-5 w-5 text-muted-foreground" />
       Comentarios de la publicacion
     </div>
   );

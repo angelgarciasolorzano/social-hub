@@ -1,5 +1,8 @@
 import type { JSX } from "react";
 
+import { CircleAlert } from "lucide-react";
+
+import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
@@ -24,10 +27,7 @@ export function CommentSkeletonList({
 
       {Array.from({ length: commentSkeletonCount }, (_, skeletonPosition) => (
         <div
-          className={cn(
-            "flex flex-col gap-3 p-2",
-            !isReply && "rounded-md border dark:border-[#343434]",
-          )}
+          className={cn("flex flex-col gap-3 p-2", !isReply && "rounded-md border")}
           key={skeletonPosition}
         >
           <div className="flex items-center gap-2">
@@ -59,14 +59,13 @@ export function CommentLoadError({
   onRetry,
 }: CommentLoadErrorProps): JSX.Element {
   return (
-    <div
-      className={cn("flex flex-col items-center gap-2 py-2 text-center", className)}
-      role="alert"
-    >
-      <p className="text-sm text-gray-600 dark:text-white/90">{message}</p>
+    <Alert className={cn("w-auto", className)} variant="destructive">
+      <CircleAlert />
+
+      <AlertDescription>{message}</AlertDescription>
 
       <Button
-        className="cursor-pointer"
+        className="col-start-2 mt-2 cursor-pointer justify-self-start"
         onClick={onRetry}
         size="sm"
         type="button"
@@ -74,6 +73,6 @@ export function CommentLoadError({
       >
         Reintentar
       </Button>
-    </div>
+    </Alert>
   );
 }

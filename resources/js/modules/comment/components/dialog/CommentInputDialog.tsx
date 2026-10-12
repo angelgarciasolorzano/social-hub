@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
+import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
@@ -64,7 +65,7 @@ function CommentInputDialog(props: CommentInputDialogProps) {
         <DialogHeader>
           <DialogTitle asChild>
             <div className="flex items-center gap-2">
-              <LuMessagesSquare className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <LuMessagesSquare className="h-5 w-5 text-muted-foreground" />
 
               {title}
             </div>
@@ -86,18 +87,20 @@ function CommentInputDialog(props: CommentInputDialogProps) {
           <Separator />
         </DialogHeader>
 
-        <div className="-mx-4 max-h-[62vh] overflow-y-auto px-4">
-          {previewContext && <CommentPreviewContent previewContext={previewContext} />}
+        <ScrollArea className="-mx-4 [&>[data-slot=scroll-area-viewport]]:max-h-[62vh]">
+          <div className="px-4">
+            {previewContext && <CommentPreviewContent previewContext={previewContext} />}
 
-          <CommentForm
-            commentableId={commentableId}
-            commentableType={commentableType}
-            formComment={formComment}
-            formId={formId}
-            setOpenModalComment={setOpenModalComment}
-            uploadedComments={uploadedComments}
-          />
-        </div>
+            <CommentForm
+              commentableId={commentableId}
+              commentableType={commentableType}
+              formComment={formComment}
+              formId={formId}
+              setOpenModalComment={setOpenModalComment}
+              uploadedComments={uploadedComments}
+            />
+          </div>
+        </ScrollArea>
 
         <DialogFooter>
           <DialogClose asChild>
@@ -147,18 +150,16 @@ function CommentPreviewContent({ previewContext }: CommentPreviewContentProps) {
         </Avatar>
 
         <div className="block">
-          <span className="text-sm font-bold dark:text-white">{previewContext?.authorName}</span>
+          <span className="text-sm font-bold">{previewContext?.authorName}</span>
 
-          <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-            <IoMdTime className="h-3 w-3 text-gray-600 dark:text-gray-500" />
+          <time className="flex items-center gap-1 text-xs text-muted-foreground">
+            <IoMdTime className="h-3 w-3" />
             {previewContext?.createdAt}
           </time>
         </div>
       </div>
 
-      <p className="line-clamp-8 text-sm text-gray-700 dark:text-gray-300">
-        {previewContext?.content}
-      </p>
+      <p className="line-clamp-8 text-sm">{previewContext?.content}</p>
     </div>
   );
 }
