@@ -30,18 +30,21 @@ class AdminBootstrapCommand extends Command
         }
 
         return DB::transaction(function () use ($email): int {
-            $adminRole = Role::query()
-                ->where('name', AdminRole::Admin->value)
+            $requiredRoleNames = [
+                AdminRole::Admin->value,
+                AdminRole::AdminDashboardReader->value,
+                AdminRole::AdminUsersReader->value,
+                AdminRole::AdminPostsReader->value,
+            ];
+
+            $roles = Role::query()
+                ->whereIn('name', $requiredRoleNames)
                 ->where('guard_name', self::GUARD)
                 ->lockForUpdate()
-                ->first();
+                ->get()
+                ->keyBy('name');
 
-            $usersReaderRole = Role::query()
-                ->where('name', AdminRole::UsersReader->value)
-                ->where('guard_name', self::GUARD)
-                ->first();
-
-            if (! $adminRole instanceof Role || ! $usersReaderRole instanceof Role) {
+            if ($roles->count() !== count($requiredRoleNames)) {
                 $this->error('Admin roles are not initialized. Run the Admin authorization seeder first.');
 
                 return self::FAILURE;
@@ -70,9 +73,9 @@ class AdminBootstrapCommand extends Command
                 return self::FAILURE;
             }
 
-            $user->assignRole($adminRole, $usersReaderRole);
+            $user->assignRole($roles->all());
 
-            $this->info("Promoted {$email} to the admin and users-reader roles.");
+            $this->info("Promoted {$email} to these Admin roles: ".implode(', ', $requiredRoleNames).'.');
 
             return self::SUCCESS;
         });

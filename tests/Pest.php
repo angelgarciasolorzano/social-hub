@@ -131,6 +131,21 @@ function createComment(?User $user = null, array $attributes = []): Comment
 }
 
 /**
+ * Create a persisted Comment on the given Post, or a reply when given another Comment.
+ * Pass `$user` to attach it to an existing author, or omit it to let the factory create its own.
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createCommentOn(Post|Comment $commentable, ?User $user = null, array $attributes = []): Comment
+{
+    return createComment($user, [
+        ...$attributes,
+        'commentable_id' => $commentable->id,
+        'commentable_type' => $commentable->getMorphClass(),
+    ]);
+}
+
+/**
  * Create a persisted TrustedDevice, same #[UseFactory] workaround as
  * createUser(). Pass `$user` to attach it to an existing owner, or omit it
  * to let the factory create its own.

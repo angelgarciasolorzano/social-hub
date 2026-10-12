@@ -1,0 +1,555 @@
+{
+  "planName": "soc-47-expand-filament-user-administration-dashboard-insights",
+  "title": "SOC-47: Ampliar administración Filament de usuarios e indicadores del dashboard",
+  "linear": {
+    "identifier": "SOC-47",
+    "title": "Feature: Expand Filament user administration and dashboard insights",
+    "statusAtPlanning": "Backlog",
+    "priority": "Medium",
+    "assignee": "Angel Garcia",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-47/feature-expand-filament-user-administration-and-dashboard-insights"
+  },
+  "planningMode": "HOLD",
+  "scopeConfirmed": true,
+  "reviewDefault": "codex",
+  "scopeChallenge": "HOLD confirmado por el usuario: ejecutar el alcance de SOC-47 conservando sus no-objetivos. Se agrega la navegacion dedicada de Posts en Filament para que comentarios y respuestas se consulten desde el detalle correspondiente, manteniendo solo lectura.",
+  "prerequisites": [
+    "SOC-44 está completada; AdminPanelProvider, UserResource, UserPolicy y las suites Admin existen.",
+    "El panel Filament y el catálogo Spatie usan el guard `admin`; `web` permanece como guard predeterminado de la aplicación. AGENTS.md, CLAUDE.md y docs/architecture/backend.md ya reflejan este contrato.",
+    "Las suites Pest de Admin están registradas en phpunit.xml y tests/Pest.php.",
+    "No se requiere paquete ni plugin adicional; el widget puede usar la configuración de descubrimiento existente."
+  ],
+  "nonGoals": [
+    "Suspender o reactivar cuentas (SOC-35).",
+    "Administrar, renovar o revocar dispositivos confiables desde el panel.",
+    "Crear, editar o eliminar usuarios, publicaciones o comentarios.",
+    "Crear una interfaz de Filament para administrar roles o permisos.",
+    "Añadir plugins, páginas React/Inertia o rutas de panel duplicadas."
+  ],
+  "contracts": [
+    "Obligatorio seguir `.ai/rules/backend.md`: los recursos Filament permanecen dentro de `app/Modules/Admin/Filament/Resources/<PluralModel>/`; sus Pages, Tables, Schemas y RelationManagers se organizan bajo el recurso dueño. Los widgets de dashboard van en `app/Modules/Admin/Filament/Widgets/`.",
+    "Usar componentes y flujos nativos de Filament 5.10.1. Posts tendrá un recurso de solo lectura propio bajo Resources/Posts; Users conserva su relacion paginada de publicaciones y enlaza al mismo detalle. El detalle de Post muestra comentarios paginados y carga las respuestas al abrir un comentario.",
+    "Los datos relacionados solo se muestran bajo el detalle autorizado de User y el permiso existente `users.view`; no se amplía el catálogo de permisos ni se confía en ocultar botones como autorización.",
+    "Las vistas de TrustedDevice usan allowlist de campos y el estado se deriva como revocado, expirado o activo; quedan excluidos token_hash, IP, user_agent crudo y credenciales.",
+    "El chart valida el filtro contra valores permitidos antes de consultar y agrupa por granularidad apropiada al rango. El resumen usa agregados; los listados cargan relaciones necesarias sin N+1.",
+    "AdminPanelProvider ya descubre recursos y widgets desde el módulo. No agregar rutas manuales duplicadas ni cambiar guard/provider salvo que una prueba descubra un defecto.",
+    "Crear archivos Filament con generadores de Artisan específicos tras revisar `--help`, pasando `--no-interaction`, y preservar la jerarquía generada conforme a `.ai/rules/backend.md`.",
+    "Después de cada tarea, entregar un breve resumen y detenerse para revisión antes de implementar la siguiente; la revisión predeterminada del plan es Codex."
+  ],
+  "existingCodeLeverage": [
+    {
+      "path": "app/Modules/Admin/Providers/AdminPanelProvider.php",
+      "use": "Admin panel, resource/widget discovery, auth guard and middleware."
+    },
+    {
+      "path": "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+      "use": "Existing read-only resource and owner for related-record managers."
+    },
+    {
+      "path": "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php",
+      "use": "Current columns, name/email search, and sorting."
+    },
+    {
+      "path": "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php",
+      "use": "Current user detail page; attach the compact activity widget here."
+    },
+    {
+      "path": "app/User/Models/User.php",
+      "use": "Typed posts(), comments(), and trustedDevices() relationships."
+    },
+    {
+      "path": "app/Auth/Models/TrustedDevice.php",
+      "use": "Device fields, expires_at, deleted_at soft-delete state, and isActive()."
+    },
+    {
+      "path": "app/Modules/Post/Models/Post.php",
+      "use": "Post ownership and comments relationship."
+    },
+    {
+      "path": "app/Modules/Comment/Models/Comment.php",
+      "use": "Comment author, polymorphic parent, and child-comment/reply relationship."
+    },
+    {
+      "path": "app/User/Policies/UserPolicy.php",
+      "use": "Existing users.viewAny/users.view authorization and denied write abilities."
+    },
+    {
+      "path": "app/Modules/Admin/Tests/Filament/UserResourceTest.php",
+      "use": "Existing Livewire tests for search, allowlisted detail data, permissions, and denied writes."
+    },
+    {
+      "path": "resources/lang/en/messages.php",
+      "use": "Existing English application message catalog."
+    },
+    {
+      "path": "resources/lang/es/messages.php",
+      "use": "Existing Spanish application message catalog."
+    },
+    {
+      "path": "phpunit.xml",
+      "use": "Admin suite already registered."
+    },
+    {
+      "path": "tests/Pest.php",
+      "use": "Admin module tests already receive project Pest setup."
+    }
+  ],
+  "externalReferences": [
+    "Filament 5 resource directory and viewing-record patterns: https://filamentphp.com/docs/5.x/resources/overview and https://filamentphp.com/docs/5.x/resources/viewing-records",
+    "Filament 5 relationship managers and read-only mode: https://filamentphp.com/docs/5.x/resources/managing-relationships",
+    "Filament 5 chart filters and empty state: https://filamentphp.com/docs/5.x/widgets/charts",
+    "Filament 5 nested resources and full-page related records: https://filamentphp.com/docs/5.x/resources/nesting"
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Add the localized last-login fallback",
+      "description": "Show a localized “Never” / “Nunca” placeholder when last_login_at is null. Keep the user table within its current resource hierarchy and use the existing English and Spanish message catalogs.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "A user with a null last_login_at sees the fallback in the active application locale; a real timestamp remains formatted as a date.",
+        "The English and Spanish catalogs resolve the fallback to “Never” and “Nunca” respectively without changing the application's locale policy."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php",
+        "resources/lang/en/messages.php",
+        "resources/lang/es/messages.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php",
+        "resources/lang/en/messages.php",
+        "resources/lang/es/messages.php"
+      ],
+      "validateCommand": "rtk php -l app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php && rtk php -l resources/lang/en/messages.php && rtk php -l resources/lang/es/messages.php && rtk git diff --check -- app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php resources/lang/en/messages.php resources/lang/es/messages.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Add and test user-table filters",
+      "description": "Extend the existing Filament UsersTable with email-verification, registration-date, and has/does-not-have-posts filters. Preserve name/email search, useful sorting, and Filament pagination. Verify filter combinations and the localized fallback through the existing Livewire resource test.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "The verification, registration-date, and posts-presence filters return the expected users when used alone and in combination, including an empty-result edge case.",
+        "Name/email search, sorting, and pagination continue to work with filters applied.",
+        "The feature test verifies both locale fallbacks and confirms that the user resource remains read-only."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php",
+        "app/Modules/Admin/Tests/Filament/UserResourceTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php",
+        "app/Modules/Admin/Tests/Filament/UserResourceTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/UserResourceTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Show compact user activity metrics",
+      "description": "Add a page-attached native Filament stats widget to the User detail page. Display post count, authored comment count including replies, and active trusted-device count; keep the widget under the Users resource hierarchy.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "The User detail page shows correct post, comment/reply, and active-device counts for the selected user.",
+        "A user with no related records sees zero-valued metrics, and the widget does not render device tokens, raw user agents, IP addresses, or authentication secrets.",
+        "A user without users.view cannot access the detail metrics, and the page exposes no mutation action."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Users/Widgets/UserActivityOverview.php",
+        "app/Modules/Admin/Tests/Filament/UserActivityOverviewTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php",
+        "app/Modules/Admin/Filament/Resources/Users/Widgets/UserActivityOverview.php",
+        "app/Modules/Admin/Tests/Filament/UserActivityOverviewTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/UserActivityOverviewTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Add a read-only trusted-devices relation manager",
+      "description": "Create a paginated TrustedDevice relation manager for the User detail and register it on UserResource. Include soft-deleted devices so revoked devices can be represented; display only the approved device fields and derive revoked/expired/active status without reusing the broader API resource.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "The relation is paginated and scoped to the selected user; its allowlist contains name, browser/OS summary, last-used time, expiration, and status.",
+        "Status precedence is revoked when deleted_at is present, expired when expires_at has passed, and active otherwise, including boundary cases.",
+        "Sentinel token_hash, raw user_agent, and IP values never appear in rendered/serialized output; unauthorized users cannot view the relation and no create/edit/delete/revoke action is available."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/TrustedDevicesRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/TrustedDevicesRelationManagerTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/TrustedDevicesRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/TrustedDevicesRelationManagerTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/TrustedDevicesRelationManagerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Add read-only posts and comment context to User detail",
+      "description": "Create a paginated Posts relation manager under the Users resource and register it on UserResource. Use Filament's native read-only ViewAction to show a post with its comments and replies in context; eager-load the relationships required by the view.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "The User detail lists only that user's posts with Filament pagination; opening a post shows its allowlisted detail and its comments/replies with author/context.",
+        "The post detail query eagerly loads the required user/comment/reply relations so query count does not grow per row or reply.",
+        "The view is read-only, direct access remains constrained by the authorized User record, and no create/edit/delete action is registered."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Add the read-only Posts resource index",
+      "description": "Add a Posts resource discovered by the existing Admin panel, with a paginated searchable list and no mutation actions. Gate listing with the existing users.viewAny permission and preserve the per-resource Filament directory hierarchy.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Admins with users.viewAny can open the Posts sidebar item and see a paginated, searchable list with post content summary, author, and creation time.",
+        "A user without users.viewAny is denied access, and the resource exposes no create, edit, delete, or bulk mutation actions."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
+        "app/Modules/Admin/Filament/Resources/Posts/Pages/ListPosts.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
+        "app/Modules/Admin/Filament/Resources/Posts/Pages/ListPosts.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Add the read-only Post detail page",
+      "description": "Add a full-page view for a selected post using Filament native resource routing and an infolist for the post content, author, and timestamps. Authorize record access through the owning User view permission so direct URLs cannot bypass the existing Admin policy boundary.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Opening a post from the resource list renders its content, author, and timestamps on a dedicated view page.",
+        "Direct access is denied when the admin lacks users.view or the post has no authorized owner, and the detail page has no mutation actions."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
+        "app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Show comments and load replies on demand",
+      "description": "Add a read-only Comments relation manager to the Post detail page. Show comments in a paginated table and use a row ViewAction to display the selected comment with its replies, querying replies only when that action opens.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "The Post detail page shows only its comments in a paginated table with author and creation time; the list query does not load replies for every comment.",
+        "Opening one comment shows its content and replies with authors, while unauthorized access and all mutation actions remain blocked."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
+        "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Link User posts to the dedicated Post detail",
+      "description": "Replace the nested post-and-thread modal in the User Posts relation manager with navigation to the Posts resource detail page. Keep the relation scoped to the selected user and remove comment and reply eager loading from this list.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Opening a post from a User detail navigates to the same full-page Post resource view used by the Posts sidebar.",
+        "The User relation remains paginated and scoped, does not preload comment threads, and exposes no mutation actions."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/PostsRelationManagerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Add registration chart and dashboard summary widgets",
+      "description": "Add native Filament dashboard widgets under the already discovered Admin/Filament/Widgets directory. The chart offers 7-day, 30-day, 90-day, and 12-month ranges; use daily buckets for 7/30 days, weekly for 90 days, and monthly for 12 months. Add one or two useful summary metrics and an empty state.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Each supported range includes the correct date boundaries and grouping granularity; an unknown crafted filter value safely falls back instead of being interpolated into a query.",
+        "The no-registration case renders Filament's empty state, and the dashboard summary shows accurate total/verified account metrics.",
+        "The widgets are available through existing AdminPanelProvider widget discovery, use aggregate queries without N+1 loading, and add no plugin or duplicate route."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Widgets/RegistrationsChart.php",
+        "app/Modules/Admin/Filament/Widgets/RegistrationSummaryWidget.php",
+        "app/Modules/Admin/Tests/Filament/RegistrationDashboardTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Widgets/RegistrationsChart.php",
+        "app/Modules/Admin/Filament/Widgets/RegistrationSummaryWidget.php",
+        "app/Modules/Admin/Tests/Filament/RegistrationDashboardTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/RegistrationDashboardTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Document the expanded Admin read surfaces",
+      "description": "Update the backend architecture reference after the feature slices are integrated. Record the User relation-manager layout, allowlisted device data, read-only post/comment context, and dashboard widget discovery without duplicating the existing Filament hierarchy rule.",
+      "type": "docs",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-009",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "La arquitectura describe el recurso Posts, el detalle con comentarios y la carga de respuestas al abrir un comentario, junto con las otras superficies Admin presentes.",
+        "Documentation preserves the `admin` authorization guard contract and points to `.ai/rules/backend.md` for the per-resource Filament directory convention."
+      ],
+      "filesToModify": [
+        "docs/architecture/backend.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "docs/architecture/backend.md"
+      ],
+      "validateCommand": "rtk git diff --check -- docs/architecture/backend.md",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Run integrated backend gates",
+      "description": "After all implementation and documentation slices are reviewed and integrated, run the affected Filament tests, the complete Pest suite, and the required backend gates. Keep Laravel Doctor as the final local command.",
+      "type": "test",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "All Admin Filament feature tests and the complete Pest suite pass.",
+        "Pint, PHPStan, Rector dry-run, Rector apply, and Composer Doctor pass in the required order, with Doctor run last."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [],
+      "writeScope": [],
+      "validateCommand": "rtk git diff --check && rtk vendor/bin/pint --dirty --format agent && rtk composer phpstan && rtk composer rector-dry && rtk composer rector && rtk php artisan test --compact app/Modules/Admin/Tests/Filament && rtk php artisan test --compact && rtk composer doctor",
+      "review": "codex"
+    }
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [],
+    "TASK-004": [],
+    "TASK-005": [
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-005",
+      "TASK-008"
+    ],
+    "TASK-010": [],
+    "TASK-011": [
+      "TASK-002",
+      "TASK-003",
+      "TASK-009",
+      "TASK-010"
+    ],
+    "TASK-012": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 12,
+    "phases": [
+      [
+        "TASK-001",
+        "TASK-003",
+        "TASK-004",
+        "TASK-010"
+      ],
+      [
+        "TASK-002",
+        "TASK-005"
+      ],
+      [
+        "TASK-006"
+      ],
+      [
+        "TASK-007"
+      ],
+      [
+        "TASK-008"
+      ],
+      [
+        "TASK-009"
+      ],
+      [
+        "TASK-011"
+      ],
+      [
+        "TASK-012"
+      ]
+    ],
+    "criticalPaths": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-011",
+        "TASK-012"
+      ],
+      [
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-011",
+        "TASK-012"
+      ],
+      [
+        "TASK-010",
+        "TASK-011",
+        "TASK-012"
+      ]
+    ],
+    "reviewDefault": "codex",
+    "shipCut": "SOC-47 se considera listo únicamente después de integrar todos los slices, ejecutar las pruebas y gates finales y completar el resumen de documentación. No se cambia el estado de Linear dentro de este plan."
+  }
+}

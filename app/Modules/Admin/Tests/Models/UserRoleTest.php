@@ -12,11 +12,20 @@ it('assigns admin guard roles and resolves their permissions', function (): void
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    $user->assignRole(AdminRole::UsersReader->value);
+    $user->assignRole(AdminRole::AdminUsersReader->value);
     $user->refresh();
 
-    expect($user->hasRole(AdminRole::UsersReader->value, 'admin'))->toBeTrue()
-        ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'admin'))->toBeTrue();
+    $this->assertDatabaseMissing('roles', [
+        'name' => AdminRole::AdminUsersReader->value,
+        'guard_name' => 'web',
+    ]);
+    $this->assertDatabaseMissing('permissions', [
+        'name' => AdminPermission::AdminUsersViewAny->value,
+        'guard_name' => 'web',
+    ]);
+
+    expect($user->hasRole(AdminRole::AdminUsersReader->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeTrue();
 });
 
 it('omits authentication secrets from array and json serialization', function (): void {

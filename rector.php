@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Pest\Rector\Set\PestSetList;
 use Rector\CodingStyle\Rector\PostInc\PostIncDecToPreIncDecRector;
 use Rector\Config\RectorConfig;
+use Rector\Naming\Rector\ClassMethod\RenameParamToMatchTypeRector;
 use Rector\ValueObject\PhpVersion;
 use RectorLaravel\Set\LaravelSetList;
 
@@ -33,6 +34,9 @@ return RectorConfig::configure()
     )
     ->withSkip([
         PostIncDecToPreIncDecRector::class,
+        RenameParamToMatchTypeRector::class => [
+            __DIR__.'/app/Modules/Admin/Filament/*',
+        ],
     ])
     ->withImportNames(
         removeUnusedImports: true,

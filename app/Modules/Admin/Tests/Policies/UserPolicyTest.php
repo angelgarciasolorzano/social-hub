@@ -16,12 +16,12 @@ it('resolves UserPolicy from the User model attribute', function (): void {
     expect(Gate::getPolicyFor($user))->toBeInstanceOf(UserPolicy::class);
 });
 
-it('allows listing users only with users.viewAny', function (): void {
+it('allows listing users only with admin.users.viewAny', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
     $listUsersRole = Role::findOrCreate('users-list-test', 'admin');
-    $listUsersRole->givePermissionTo(AdminPermission::UsersViewAny->value);
+    $listUsersRole->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
 
     $authenticatedUser->assignRole($listUsersRole);
     $targetUser = createUser();
@@ -30,12 +30,12 @@ it('allows listing users only with users.viewAny', function (): void {
         ->and(Gate::forUser($authenticatedUser)->allows('view', $targetUser))->toBeFalse();
 });
 
-it('allows viewing a user only with users.view', function (): void {
+it('allows viewing a user only with admin.users.view', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
     $viewUsersRole = Role::findOrCreate('users-view-test', 'admin');
-    $viewUsersRole->givePermissionTo(AdminPermission::UsersView->value);
+    $viewUsersRole->givePermissionTo(AdminPermission::AdminUsersView->value);
 
     $authenticatedUser->assignRole($viewUsersRole);
     $targetUser = createUser();
@@ -54,13 +54,39 @@ it('denies both read abilities when the user has no admin permission', function 
         ->and(Gate::forUser($authenticatedUser)->allows('view', $targetUser))->toBeFalse();
 });
 
+it('does not grant user access through posts or dashboard permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $targetUser = createUser();
+    $unrelatedPermissions = [
+        AdminPermission::AdminPostsViewAny,
+        AdminPermission::AdminPostsView,
+        AdminPermission::AdminDashboardView,
+    ];
+
+    foreach ($unrelatedPermissions as $unrelatedPermission) {
+        $authenticatedUser = createUser();
+        $role = Role::findOrCreate(
+            "user-policy-{$unrelatedPermission->name}-test",
+            'admin',
+        );
+        $role->syncPermissions($unrelatedPermission->value);
+        $authenticatedUser->assignRole($role);
+
+        expect(Gate::forUser($authenticatedUser)->allows('viewAny', User::class))
+            ->toBeFalse()
+            ->and(Gate::forUser($authenticatedUser)->allows('view', $targetUser))
+            ->toBeFalse();
+    }
+});
+
 it('denies every user mutation ability directly through the gate', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::UsersReader->value,
+        AdminRole::AdminUsersReader->value,
     ]);
     $targetUser = createUser();
 

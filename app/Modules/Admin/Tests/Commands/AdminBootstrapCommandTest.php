@@ -7,10 +7,12 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
+use Filament\Panel;
 use Illuminate\Support\Facades\Artisan;
+use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
-it('promotes a verified user to both bootstrap roles', function (): void {
+it('promotes a verified user to the base and all reader roles', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
@@ -23,11 +25,17 @@ it('promotes a verified user to both bootstrap roles', function (): void {
         ->and($commandOutput)->toContain("Promoted {$user->email}")
         ->and($bootstrappedUser->hasAllRoles([
             AdminRole::Admin->value,
-            AdminRole::UsersReader->value,
+            AdminRole::AdminDashboardReader->value,
+            AdminRole::AdminUsersReader->value,
+            AdminRole::AdminPostsReader->value,
         ]))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminAccess->value))->toBeTrue()
-        ->and($bootstrappedUser->can(AdminPermission::UsersViewAny->value))->toBeTrue()
-        ->and($bootstrappedUser->can(AdminPermission::UsersView->value))->toBeTrue();
+        ->and($bootstrappedUser->can(AdminPermission::AdminDashboardView->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminUsersViewAny->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminUsersView->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminPostsViewAny->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminPostsView->value))->toBeTrue()
+        ->and($bootstrappedUser->canAccessPanel(Panel::make()->id('admin')))->toBeTrue();
 });
 
 it('rejects an email that does not belong to an existing user', function (): void {
@@ -73,6 +81,24 @@ it('refuses to bootstrap when a user already has admin.access', function (): voi
 });
 
 it('requires the Admin authorization catalog to be seeded first', function (): void {
+    $user = createUser();
+
+    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $user->email]);
+    $user->refresh();
+
+    expect($exitCode)->toBe(Command::FAILURE)
+        ->and(Artisan::output())->toContain('Admin roles are not initialized.')
+        ->and($user->roles()->exists())->toBeFalse();
+});
+
+it('requires every bootstrap role to exist in the Admin guard', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    Role::query()
+        ->where('name', AdminRole::AdminPostsReader->value)
+        ->where('guard_name', 'admin')
+        ->delete();
+
     $user = createUser();
 
     $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $user->email]);
