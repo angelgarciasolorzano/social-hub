@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Home\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Resources\PostResource;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,7 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function __invoke(): Response
+    public function __invoke(CommentThreadProps $commentThreadProps): Response
     {
         // $friendsId = Auth::user()->friends()->pluck('id')->toArray();
 
@@ -25,6 +26,7 @@ class HomeController extends Controller
         return Inertia::render('home/Home', [
             'user' => Auth::user(),
             'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
+            $commentThreadProps,
         ]);
     }
 }
