@@ -117,14 +117,16 @@ it('[H3] rejects content made only of control characters', function (): void {
 });
 
 it('[H3] never renders comments as raw HTML in the frontend', function (): void {
-    $offenders = collect(File::allFiles(base_path('resources/js/modules/comments')))
+    $frontendFiles = collect(File::allFiles(base_path('resources/js/modules/comment')));
+
+    $offenders = $frontendFiles
         ->filter(fn (SplFileInfo $file): bool => str_contains((string) file_get_contents($file->getPathname()), 'dangerouslySetInnerHTML'))
         ->map(fn (SplFileInfo $file): string => $file->getPathname())
         ->values()
         ->all();
 
-    expect($offenders)
-        ->toBeEmpty();
+    expect($frontendFiles)->not->toBeEmpty()
+        ->and($offenders)->toBeEmpty();
 });
 
 // Hypothesis 4: reply nesting depth -------------------------------------------
