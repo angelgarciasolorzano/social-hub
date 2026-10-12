@@ -103,16 +103,27 @@ When adding a new domain: create it under `app/Modules/<Domain>/`, create both p
 
 Keep Filament resources in the generated per-resource hierarchy under `app/Modules/Admin/Filament/Resources/<PluralModel>/`: the resource class at the directory root, and its `Pages/`, `Schemas/`, and `Tables/` in their own subdirectories as needed. The current User resource is `Users/UserResource.php`, with list/detail pages in `Users/Pages/` and the table definition in `Users/Tables/UsersTable.php`. Follow the [Filament 5 resource documentation](https://filamentphp.com/docs/5.x/resources/overview) when extending this layout.
 
-Authorization identifiers are centralized in `AdminRole` (`admin`, `users-reader`) and `AdminPermission` (`admin.access`, `users.viewAny`, `users.view`); use those enums and the `admin` guard when adding or changing Spatie assignments. `User` declares `guard_name = admin`; the panel requires a verified email and `admin.access`. `UserPolicy` controls read access to User records and denies mutations. User's table/detail view exposes only name, email, verification/creation timestamps, and last login; keep credentials and 2FA secrets out of Filament output.
+The `admin` session guard authenticates Filament panel requests through the existing `users` provider; `web` remains Laravel's default guard for regular application authentication. Spatie also uses `admin` as the `guard_name` for Admin roles and permissions. These are separate concepts: the session guard authenticates requests, while Spatie's guard name scopes which roles and permissions apply to the `User` model.
 
-The authorization catalog is seeded explicitly because it is not included in `DatabaseSeeder`:
+`AdminRole` and `AdminPermission` in `app/Modules/Admin/Enums/` are the canonical catalog. The default bundles are:
+
+| Role | Permissions | Capability |
+| --- | --- | --- |
+| `admin` | `admin.access` | Enter the Admin panel only |
+| `admin-dashboard-reader` | `admin.dashboard.view` | View the dashboard |
+| `admin-users-reader` | `admin.users.viewAny`, `admin.users.view` | View Users and their details |
+| `admin-posts-reader` | `admin.posts.viewAny`, `admin.posts.view` | View Posts and their details |
+
+`User::canAccessPanel()` requires the `admin` panel, a verified email, and `admin.access`; `AdminPanelProvider` also requires app-based MFA. Section access is checked through permissions, so `admin.access` alone does not grant access to dashboard, Users, or Posts. The catalog defaults are assigned when each role is first created; use the authorization commands below for later operational changes. `UserPolicy` controls read access to User records and denies mutations. User's table/detail view exposes only name, email, verification/creation timestamps, and last login; keep credentials and 2FA secrets out of Filament output.
+
+`DatabaseSeeder` runs `AdminAuthorizationSeeder` and `AdminUserSeeder`. The authorization seeder creates the catalog under Spatie's `admin` guard. In `local` and `testing`, the user seeder assigns Angel (`angel@gmail.com`) the base role and all three reader roles, without randomly promoting other users; it preserves existing role assignments. For production bootstrap, initialize the catalog and promote an existing verified account:
 
 ```bash
 php artisan db:seed --class='App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder'
 php artisan admin:bootstrap-admin admin@example.com
 ```
 
-For later operations, `php artisan admin:user-role grant|revoke <email> <admin|users-reader>` assigns or revokes a catalog role for an existing user. `php artisan admin:role-permissions grant|revoke <admin|users-reader> <admin.access|users.viewAny|users.view>` changes a role's catalog permissions. The commands reject unknown enum values and prevent revoking the last `admin.access` assignment.
+`admin:bootstrap-admin <email>` runs once: it requires the authorization catalog, rejects unverified accounts, refuses a second bootstrap after `admin.access` exists, and assigns `admin` plus all three reader roles. Later, `admin:user-role <grant|revoke> <email> <role>` assigns or revokes one catalog role for an existing user; valid roles are `admin`, `admin-dashboard-reader`, `admin-users-reader`, and `admin-posts-reader`. `admin:role-permissions <grant|revoke> <role> <permission>` changes a role's catalog permissions; valid permissions are `admin.access`, `admin.dashboard.view`, `admin.users.viewAny`, `admin.users.view`, `admin.posts.viewAny`, and `admin.posts.view`. Both commands reject identifiers outside their enums and protect the last `admin.access` grant. Role and permission management remains command-line based; SOC-44 does not add a management screen.
 
 ### Frontend layout (`resources/js/`)
 
