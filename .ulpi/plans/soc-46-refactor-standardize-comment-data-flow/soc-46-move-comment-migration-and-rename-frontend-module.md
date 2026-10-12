@@ -10,7 +10,7 @@ Dos limpiezas de organizacion. (1) La migracion de la tabla comments vive en dat
 
 ## Scope Challenge
 
-Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated. Ampliacion posterior (TASK-011 a TASK-015): revision de las pruebas del modulo a peticion del usuario; alcance aprobado 'helpers + duplicados exactos' (no se tocan los solapes entre pruebas de reglas y de HTTP ni se fusionan las de throttle). Ampliacion posterior (TASK-016 y TASK-017): sin <InfiniteScroll> en el frontend, las props de comentarios dejan de usar Inertia::scroll y devuelven el paginador.
+Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated. Ampliacion posterior (TASK-011 a TASK-015): revision de las pruebas del modulo a peticion del usuario; alcance aprobado 'helpers + duplicados exactos' (no se tocan los solapes entre pruebas de reglas y de HTTP ni se fusionan las de throttle). Ampliacion posterior (TASK-016 y TASK-017): sin <InfiniteScroll> en el frontend, las props de comentarios dejan de usar Inertia::scroll y devuelven el paginador. Ampliacion posterior (TASK-018 a TASK-021): el modulo no usaba Button, ScrollArea, Card, Alert ni Spinner de shadcn; alcance aprobado por el usuario: botones, ScrollArea, colores a tokens del tema, Alert/Spinner y Card para el comentario. Condicion del usuario sobre ScrollArea: si resulta muy complejo, se deja como esta (compuerta en TASK-019 y TASK-020).
 
 ## Prerequisites
 
@@ -439,6 +439,98 @@ CLAUDE.md (Comment data flow) deja de decir que las props son Inertia::scroll y 
 
 **Integration notes:** EJECUTADA: CLAUDE.md (Comment data flow) y docs/architecture/backend.md corregidos. La regla de backend.md ahora dice que el paginador se devuelve tal cual y que Inertia::scroll solo aplica a listados con <InfiniteScroll> (verificado en Home.tsx y Profile.tsx, que usan <InfiniteScroll data='posts'>). La verificacion en navegador se hizo en TASK-016, justo tras el cambio de payload; TASK-017 solo toca documentacion.
 
+### TASK-018: CommentItem con Button, Card y tokens del tema
+
+En CommentItem.tsx reemplazar los 3 <button> nativos del pie ('Me gusta', 'Responder' y 'Mostrar/Ocultar respuestas') por el Button de shadcn (variant ghost o link, size xs, type='button'), envolver el comentario de primer nivel en Card/CardContent con overrides para conservar la densidad actual (sin padding de 24px ni sombra) dejando las respuestas (isReply) sin borde, y sustituir los colores fijos (gray-* y hex) por tokens del tema. Mapeo de colores acordado: text-gray-500/600/700 y dark:text-gray-300/400 -> text-muted-foreground; dark:border-[#343434] -> el token border por defecto; bg-gray-50/50 dark:bg-[#1D1D1D]/30 -> bg-muted/50. No cambia ningun handler ni prop.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-017
+
+**Acceptance Criteria:**
+- [ ] No queda ningun <button> nativo en CommentItem: 'Responder' sigue abriendo el dialogo de respuesta, 'Mostrar/Ocultar respuestas' sigue alternando showReplies y 'Me gusta' conserva su estado actual (sin accion), todos como Button con type='button'.
+- [ ] El comentario de primer nivel se renderiza dentro de una Card y las respuestas (isReply) siguen sin borde y con el mismo margen; el pie de acciones queda fuera de la Card como hoy.
+- [ ] No quedan clases text-gray-*, bg-gray-* ni colores hex en el archivo; el aspecto se compara en el navegador en tema claro y oscuro y se mantienen jerarquia y densidad.
+
+**writeScope:**
+- `resources/js/modules/comment/components/CommentItem.tsx`
+
+**validateCommand:** `npx eslint resources/js/modules/comment/components/CommentItem.tsx && npm run types && npm run build`
+
+### TASK-019: Alert en el estado de error y ScrollArea en los dialogos
+
+CommentLoadStates.tsx: el bloque de error de CommentLoadError pasa a Alert/AlertDescription (conservando el boton Reintentar y role='alert') y sus colores a tokens. CommentDialog.tsx: el panel de la publicacion (overflow-y-auto con borde derecho) pasa a ScrollArea. CommentInputDialog.tsx: el contenedor '-mx-4 max-h-[62vh] overflow-y-auto px-4' pasa a ScrollArea con el tope de altura aplicado al viewport, porque en el Root de ScrollArea un max-h no genera scroll (el viewport es size-full). Mapeo de colores acordado: text-gray-500/600/700 y dark:text-gray-300/400 -> text-muted-foreground; dark:border-[#343434] -> el token border por defecto; bg-gray-50/50 dark:bg-[#1D1D1D]/30 -> bg-muted/50.  COMPUERTA (decision del usuario): si implementar ScrollArea resulta demasiado complejo, se conserva el contenedor actual y no se fuerza. Cuenta como demasiado complejo cuando: (a) haria falta editar shadcn/ui; (b) no se logra que la paginacion siga disparandose de forma fiable; o (c) quedan regresiones de layout que no se arreglan solo con className (scroll doble, desborde horizontal con texto largo, tope de altura que no se respeta). En ese caso se revierte solo la parte de ScrollArea de esa tarea (lo demas, como Button, Alert, Spinner y tokens, se conserva), se deja la razon en integrationNotes y en CLAUDE.md.
+
+**Type:** refactor  
+**Effort:** M  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-018
+
+**Acceptance Criteria:**
+- [ ] Una publicacion larga se desplaza dentro del panel de CommentDialog y un contexto de vista previa largo se desplaza dentro de CommentInputDialog sin superar 62vh ni mostrar una segunda barra de scroll. Si se activa la compuerta de ScrollArea, CommentDialog.tsx y CommentInputDialog.tsx conservan sus contenedores overflow-y-auto actuales (sin diff en esa parte) y el Alert de CommentLoadStates se conserva igualmente.
+- [ ] Un fallo de carga muestra un Alert con el mensaje y el boton Reintentar que sigue funcionando (mismo onRetry), y CommentSkeletonList conserva su aspecto con tokens.
+- [ ] Un texto con una palabra muy larga no provoca desbordamiento horizontal en ninguno de los dos ScrollArea (Radix envuelve el contenido en un display:table).
+
+**writeScope:**
+- `resources/js/modules/comment/components/CommentLoadStates.tsx`
+- `resources/js/modules/comment/components/dialog/CommentDialog.tsx`
+- `resources/js/modules/comment/components/dialog/CommentInputDialog.tsx`
+
+**validateCommand:** `npx eslint resources/js/modules/comment && npm run types && npm run build`
+
+**Integration notes:** COMPUERTA (decision del usuario): si implementar ScrollArea resulta demasiado complejo, se conserva el contenedor actual y no se fuerza. Cuenta como demasiado complejo cuando: (a) haria falta editar shadcn/ui; (b) no se logra que la paginacion siga disparandose de forma fiable; o (c) quedan regresiones de layout que no se arreglan solo con className (scroll doble, desborde horizontal con texto largo, tope de altura que no se respeta). En ese caso se revierte solo la parte de ScrollArea de esa tarea (lo demas, como Button, Alert, Spinner y tokens, se conserva), se deja la razon en integrationNotes y en CLAUDE.md.
+
+### TASK-020: ScrollArea con raiz del observador y Spinner en CommentList y CommentRepliesList
+
+Crear hooks/useScrollAreaViewport.ts: devuelve un ref callback para el Root de ScrollArea y el elemento Viewport ([data-slot='scroll-area-viewport']) como estado, sin editar shadcn/ui, para que el useIntersectionObserver de CommentList y de CommentRepliesList use el viewport como root (mantiene rootMargin 200px) y se elimine setScrollRoot de ambos. Reemplazar los contenedores con scroll (overflow-y-auto y max-h-72 overflow-auto) por ScrollArea (en CommentRepliesList el tope de 18rem va al viewport), las filas 'Cargando mas...' por Spinner y los colores por tokens. La logica del sentinel, del temporizador de 300 ms y del manejo de fallos no cambia. COMPUERTA (decision del usuario): si implementar ScrollArea resulta demasiado complejo, se conserva el contenedor actual y no se fuerza. Cuenta como demasiado complejo cuando: (a) haria falta editar shadcn/ui; (b) no se logra que la paginacion siga disparandose de forma fiable; o (c) quedan regresiones de layout que no se arreglan solo con className (scroll doble, desborde horizontal con texto largo, tope de altura que no se respeta). En ese caso se revierte solo la parte de ScrollArea de esa tarea (lo demas, como Button, Alert, Spinner y tokens, se conserva), se deja la razon en integrationNotes y en CLAUDE.md. Aqui la compuerta es la mas probable: si se activa, CommentList y CommentRepliesList conservan su contenedor y su setScrollRoot, el hook useScrollAreaViewport no se crea, y el Spinner y los tokens se conservan.
+
+**Type:** refactor  
+**Effort:** M  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-019
+
+**Acceptance Criteria:**
+- [ ] Al hacer scroll al final de la lista de comentarios y de la de respuestas se sigue cargando la pagina siguiente por cursor (10 -> mas) usando el viewport del ScrollArea como root del observador, sin duplicados y con la URL sin cambios. Si se activa la compuerta de ScrollArea, el hook useScrollAreaViewport no existe, CommentList y CommentRepliesList conservan su contenedor con scroll y su setScrollRoot, y la paginacion funciona exactamente como antes (Spinner y tokens se mantienen).
+- [ ] El fallo al cargar mas sigue mostrando el aviso con Reintentar y no entra en bucle de peticiones; el scroll de respuestas se limita a 18rem y no aparece scroll horizontal con texto largo.
+- [ ] setScrollRoot ya no existe en ninguno de los dos componentes y la logica de obtener el viewport vive solo en useScrollAreaViewport (sin copias).
+
+**writeScope:**
+- `resources/js/modules/comment/hooks/useScrollAreaViewport.ts` (nuevo)
+- `resources/js/modules/comment/components/CommentList.tsx`
+- `resources/js/modules/comment/components/CommentRepliesList.tsx`
+
+**validateCommand:** `npx eslint resources/js/modules/comment && npm run types && npm run build`
+
+**Integration notes:** Tarea mas delicada: si el observador no recibe el viewport correcto, la paginacion deja de dispararse. Verificar en el navegador (comentarios y respuestas, con scroll programatico) antes de pausar. COMPUERTA (decision del usuario): si implementar ScrollArea resulta demasiado complejo, se conserva el contenedor actual y no se fuerza. Cuenta como demasiado complejo cuando: (a) haria falta editar shadcn/ui; (b) no se logra que la paginacion siga disparandose de forma fiable; o (c) quedan regresiones de layout que no se arreglan solo con className (scroll doble, desborde horizontal con texto largo, tope de altura que no se respeta). En ese caso se revierte solo la parte de ScrollArea de esa tarea (lo demas, como Button, Alert, Spinner y tokens, se conserva), se deja la razon en integrationNotes y en CLAUDE.md.
+
+### TASK-021: Gates, verificacion en tema claro y oscuro y documentacion
+
+Gates de frontend (types, lint:check, format:check, build); verificacion manual en el navegador en tema claro y oscuro (dialogo, paginacion, respuestas, publicar con refresco, error con reintento, texto largo); y documentar en CLAUDE.md que el modulo usa los componentes de shadcn (Button, Card, Alert, Spinner, ScrollArea) y que useScrollAreaViewport entrega el viewport como raiz del IntersectionObserver.
+
+**Type:** test  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P3  
+**Review:** none
+**Depends on:** TASK-018, TASK-019, TASK-020
+
+**Acceptance Criteria:**
+- [ ] types, lint:check (0 errores), format:check y build pasan, y en modules/comment no quedan <button> nativos ni colores gray-*/hex; los contenedores overflow-y-auto solo pueden quedar donde se activo la compuerta de ScrollArea (TASK-019/TASK-020), con la razon documentada.
+- [ ] En el navegador, en tema claro y oscuro, todos los flujos del dialogo funcionan igual que antes (carga, cursor, publicar con refresco, respuestas, error con reintento) y la URL no cambia.
+- [ ] CLAUDE.md describe el uso de shadcn y, segun el resultado, el hook useScrollAreaViewport o la razon por la que ScrollArea no se adopto en cada contenedor.
+
+**writeScope:**
+- `CLAUDE.md`
+
+**validateCommand:** `npm run types && npm run lint:check && npm run format:check && npm run build && ! grep -rnE '<button|text-gray-|bg-gray-|#[0-9A-Fa-f]{6}' resources/js/modules/comment`
+
 ## Failure Modes
 
 - Si el nombre de archivo de la migracion cambia, un entorno ya migrado intentaria recrear la tabla y fallaria (tabla existente): se conserva el nombre exacto.
@@ -446,6 +538,10 @@ CLAUDE.md (Comment data flow) deja de decir que las props son Inertia::scroll y 
 - Si CommentServiceProvider no registra la ruta, php artisan migrate:fresh no crearia comments y toda la suite de Comment fallaria: la validacion de TASK-001 ejecuta migrate:fresh y una prueba del modelo.
 - El escaneo de dangerouslySetInnerHTML (H3) podria volverse vacio si apunta a una carpeta que no existe: TASK-006 exige que apunte a modules/comment y siga activo.
 - Entre TASK-002 y TASK-005 conviven modules/comments y modules/comment: nada del modulo nuevo debe importar del viejo y PostCard cambia de import solo en TASK-005.
+- ScrollArea no expone el ref de su Viewport: si el observador de paginacion sigue usando el Root como root, la carga de mas comentarios deja de dispararse (TASK-020 lo resuelve con useScrollAreaViewport y lo verifica en el navegador).
+- En ScrollArea un max-h aplicado al Root no genera scroll porque el Viewport es size-full: el tope de altura de CommentRepliesList (18rem) y de CommentInputDialog (62vh) se aplica al viewport.
+- Cambiar colores fijos por tokens del tema puede alterar el aspecto: se compara en tema claro y oscuro antes de dar por buena cada tarea.
+- Si ScrollArea resulta demasiado complejo (editar shadcn/ui, paginacion no fiable o regresiones de layout sin arreglo con className), se conservan los contenedores actuales: la compuerta de TASK-019/TASK-020 revierte solo esa parte.
 
 ## Ship Cut
 
@@ -457,11 +553,12 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 - Frontend: npm run types, lint:check, format:check y build en cada tarea FE; H3 de CommentSecurityAuditTest sobre modules/comment (TASK-006); verificacion manual en navegador (TASK-008).
 - Renombre del hook (TASK-009, TASK-010): npm run types, eslint y build; verificacion manual en navegador al borrar el hook viejo (no hay pruebas unitarias de frontend).
 - Limpieza de pruebas (TASK-011 a TASK-015): helpers unificados en tests/Pest.php, 14 pruebas duplicadas retiradas con aprobacion del usuario y su cobertura verificada en otros archivos del modulo.
+- Uso de componentes shadcn (TASK-018 a TASK-021): eslint, types y build por tarea; verificacion manual en navegador en tema claro y oscuro (no hay pruebas unitarias de frontend), con foco en la paginacion al cambiar el contenedor con scroll.
 
 ## Execution Summary
 
-- Tareas: 17
-- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010 -> TASK-011 -> TASK-012 -> TASK-014 -> TASK-015 -> TASK-016 -> TASK-017
+- Tareas: 21
+- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010 -> TASK-011 -> TASK-012 -> TASK-014 -> TASK-015 -> TASK-016 -> TASK-017 -> TASK-018 -> TASK-019 -> TASK-020 -> TASK-021
 - Capas de ejecucion:
   1. TASK-001, TASK-002
   2. TASK-003
@@ -478,6 +575,10 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
   13. TASK-015
   14. TASK-016
   15. TASK-017
+  16. TASK-018
+  17. TASK-019
+  18. TASK-020
+  19. TASK-021
 
 ## Task Dependencies
 
@@ -500,3 +601,7 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 | TASK-015 | TASK-012, TASK-014 |
 | TASK-016 | TASK-015 |
 | TASK-017 | TASK-016 |
+| TASK-018 | TASK-017 |
+| TASK-019 | TASK-018 |
+| TASK-020 | TASK-019 |
+| TASK-021 | TASK-018, TASK-019, TASK-020 |
