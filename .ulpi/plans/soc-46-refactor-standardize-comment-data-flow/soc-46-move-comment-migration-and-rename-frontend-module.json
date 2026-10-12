@@ -10,7 +10,7 @@
   "reviewDefault": "claude",
   "executionStyle": "Paso a paso: una tarea y pausa para revision (regla .ai/rules/linear.md). El backend es una sola tarea y no deja la suite en rojo; el frontend se crea completo en modules/comment y el viejo se borra al final.",
   "overview": "Dos limpiezas de organizacion. (1) La migracion de la tabla comments vive en database/migrations, fuera del modulo; se mueve a app/Modules/Comment/Database/Migrations/ con el mismo nombre de archivo y el mismo esquema (morphs('commentable'), que ya sigue la convencion de Laravel y es coherente con likes/likeable) y se registra con loadMigrationsFrom en CommentServiceProvider. (2) El modulo del frontend deja de llamarse comments y pasa a comment (como el del backend), la carpeta modal pasa a dialog, RepliesList pasa a CommentRepliesList y el enum commentableType.ts pasa a commentType.ts (CommentType/CommentTypeValues, igual que el enum del backend). No cambia el esquema, el modelo, el payload ni el comportamiento. El modulo del frontend se crea completo en modules/comment y el viejo se borra al final (crear-luego-borrar, sin renombre directo de carpeta).",
-  "scopeChallenge": "Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion.",
+  "scopeChallenge": "Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated.",
   "prerequisites": [
     "El plan anterior de SOC-46 (soc-46-refactor-standardize-comment-data-flow) esta completo hasta TASK-014 y su trabajo ya esta en commits.",
     "Se leyeron .ai/rules/{app,backend,frontend,linear}.md: sin variables de una letra, hooks de React tipados explicitamente, docblocks de metodo con maximo 3 lineas de prosa.",
@@ -23,7 +23,8 @@
     "Cambiar el esquema de comments, la BD local (no hay migrate:fresh) o cualquier comportamiento observable.",
     "Mover la migracion de posts (create_posts_table sigue en database/migrations, pendiente de su propia tarea) ni tocar la de likes.",
     "Renombrar las props TS commentableId/commentableType, el hook usePaginatedComments, las props comments/replies ni los parametros de URL comments_post/replies_comment.",
-    "Cambios en el modulo Admin."
+    "Cambios en el modulo Admin.",
+    "Cambiar la ruta comments.store o la URL POST /comments: el plural es la convencion de Laravel y coincide con la tabla (decision del usuario); post.store (POST /post) queda pendiente aparte."
   ],
   "contracts": [
     "Migracion: app/Modules/Comment/Database/Migrations/2025_09_26_143542_create_comments_table.php, mismo nombre de archivo y mismo esquema (id, user_id, morphs('commentable'), content, timestamps), registrada con loadMigrationsFrom en CommentServiceProvider::boot(). database/migrations ya no contiene create_comments_table.",
@@ -45,7 +46,8 @@
   "shipCut": "El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualquiera de los dos puede entregarse solo. En el frontend el primer corte seguro es TASK-005 (la app ya usa el modulo nuevo); TASK-006 (borrado del viejo), TASK-007 (docs) y TASK-008 (gates y verificacion) pueden diferirse sin romper comportamiento, aunque dejarian ambos modulos en el repo.",
   "testCoverageMap": [
     "Migracion movida: validacion de TASK-001 (migrate:fresh en pruebas crea commentable_type/commentable_id, la global ya no existe) y CommentModelTest; la suite de Comment completa corre en TASK-008.",
-    "Frontend: npm run types, lint:check, format:check y build en cada tarea FE; H3 de CommentSecurityAuditTest sobre modules/comment (TASK-006); verificacion manual en navegador (TASK-008)."
+    "Frontend: npm run types, lint:check, format:check y build en cada tarea FE; H3 de CommentSecurityAuditTest sobre modules/comment (TASK-006); verificacion manual en navegador (TASK-008).",
+    "Renombre del hook (TASK-009, TASK-010): npm run types, eslint y build; verificacion manual en navegador al borrar el hook viejo (no hay pruebas unitarias de frontend)."
   ],
   "tasks": [
     {
@@ -275,6 +277,65 @@
       "writeScope": [],
       "validateCommand": "npm run types && npm run lint:check && npm run format:check && npm run build && vendor/bin/pint --dirty --format agent && composer rector-dry && composer phpstan && php artisan test --compact app/Modules/Comment/Tests app/Modules/Post/Tests",
       "review": "none"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Crear useCommentPaginated y pasar los dos consumidores al hook nuevo",
+      "description": "Crear hooks/useCommentPaginated.ts como copia del hook actual con la funcion renombrada a useCommentPaginated y su interfaz de retorno a UseCommentPaginatedReturn (misma logica, mismos campos de retorno), y cambiar import y llamada en CommentList.tsx y CommentRepliesList.tsx. El archivo viejo usePaginatedComments.ts sigue existiendo hasta TASK-002 (crear primero, borrar despues).",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "CommentList y CommentRepliesList importan y llaman a useCommentPaginated con los mismos argumentos y usan los mismos campos devueltos; ningun archivo nuevo importa usePaginatedComments.",
+        "El diff del hook nuevo contra el viejo solo muestra los nombres (funcion e interfaz): comportamiento intacto, incluido el manejo de fallos y reintento.",
+        "tsc y eslint pasan con los dos hooks conviviendo."
+      ],
+      "filesToModify": [
+        "resources/js/modules/comment/components/CommentList.tsx",
+        "resources/js/modules/comment/components/CommentRepliesList.tsx"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/comment/hooks/useCommentPaginated.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/comment/hooks/useCommentPaginated.ts",
+        "resources/js/modules/comment/components/CommentList.tsx",
+        "resources/js/modules/comment/components/CommentRepliesList.tsx"
+      ],
+      "validateCommand": "npx eslint resources/js/modules/comment && npm run types",
+      "review": "claude",
+      "integrationNotes": "Ejecutada (2026-10-12). Se agrego a este plan en lugar de crear uno nuevo, como indica la regla de continuar el plan existente; el renombre del hook quedo como ultima tarea porque modules/comment era el unico archivo sin el prefijo Comment."
+    },
+    {
+      "id": "TASK-010",
+      "title": "Borrar usePaginatedComments y actualizar CLAUDE.md",
+      "description": "Con los consumidores en el hook nuevo, borrar hooks/usePaginatedComments.ts (despues de comprobar con grep que nada lo importa) y actualizar CLAUDE.md, que menciona usePaginatedComments(commentableType, commentableId), para que nombre useCommentPaginated. Verificar tambien en el navegador que el dialogo de comentarios y de respuestas sigue cargando, paginando y publicando.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Ningun archivo de resources/js, app, tests, docs ni CLAUDE.md contiene usePaginatedComments (los planes historicos de .ulpi quedan fuera) y npm run types y npm run build pasan.",
+        "En el navegador el dialogo carga 10 comentarios, pagina por cursor, publica y muestra el error con reintento, con la URL sin cambios."
+      ],
+      "filesToModify": [
+        "CLAUDE.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "resources/js/modules/comment/hooks/usePaginatedComments.ts",
+        "CLAUDE.md"
+      ],
+      "validateCommand": "test ! -e resources/js/modules/comment/hooks/usePaginatedComments.ts && ! grep -rn 'usePaginatedComments' resources/js app tests docs CLAUDE.md && npm run types && npm run build",
+      "review": "claude"
     }
   ],
   "dependencies": {
@@ -298,6 +359,13 @@
     ],
     "TASK-008": [
       "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-006"
+    ],
+    "TASK-010": [
+      "TASK-009",
+      "TASK-007"
     ]
   },
   "criticalPath": [
@@ -307,7 +375,9 @@
     "TASK-005",
     "TASK-006",
     "TASK-007",
-    "TASK-008"
+    "TASK-008",
+    "TASK-009",
+    "TASK-010"
   ],
   "executionLayers": [
     [
@@ -331,6 +401,12 @@
     ],
     [
       "TASK-008"
+    ],
+    [
+      "TASK-009"
+    ],
+    [
+      "TASK-010"
     ]
   ]
 }

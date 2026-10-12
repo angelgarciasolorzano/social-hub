@@ -10,7 +10,7 @@ Dos limpiezas de organizacion. (1) La migracion de la tabla comments vive en dat
 
 ## Scope Challenge
 
-Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion.
+Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated.
 
 ## Prerequisites
 
@@ -27,6 +27,7 @@ Modo HOLD. La version anterior de este plan renombraba commentable a model (colu
 - Mover la migracion de posts (create_posts_table sigue en database/migrations, pendiente de su propia tarea) ni tocar la de likes.
 - Renombrar las props TS commentableId/commentableType, el hook usePaginatedComments, las props comments/replies ni los parametros de URL comments_post/replies_comment.
 - Cambios en el modulo Admin.
+- Cambiar la ruta comments.store o la URL POST /comments: el plural es la convencion de Laravel y coincide con la tabla (decision del usuario); post.store (POST /post) queda pendiente aparte.
 
 ## Contracts
 
@@ -224,6 +225,52 @@ Gates de frontend (types, lint:check, format:check, build) y de backend (Pint, R
 
 **validateCommand:** `npm run types && npm run lint:check && npm run format:check && npm run build && vendor/bin/pint --dirty --format agent && composer rector-dry && composer phpstan && php artisan test --compact app/Modules/Comment/Tests app/Modules/Post/Tests`
 
+### TASK-009: Crear useCommentPaginated y pasar los dos consumidores al hook nuevo
+
+Crear hooks/useCommentPaginated.ts como copia del hook actual con la funcion renombrada a useCommentPaginated y su interfaz de retorno a UseCommentPaginatedReturn (misma logica, mismos campos de retorno), y cambiar import y llamada en CommentList.tsx y CommentRepliesList.tsx. El archivo viejo usePaginatedComments.ts sigue existiendo hasta TASK-002 (crear primero, borrar despues).
+
+**Type:** refactor  
+**Effort:** XS  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Review:** claude
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+- [ ] CommentList y CommentRepliesList importan y llaman a useCommentPaginated con los mismos argumentos y usan los mismos campos devueltos; ningun archivo nuevo importa usePaginatedComments.
+- [ ] El diff del hook nuevo contra el viejo solo muestra los nombres (funcion e interfaz): comportamiento intacto, incluido el manejo de fallos y reintento.
+- [ ] tsc y eslint pasan con los dos hooks conviviendo.
+
+**writeScope:**
+- `resources/js/modules/comment/hooks/useCommentPaginated.ts` (nuevo)
+- `resources/js/modules/comment/components/CommentList.tsx`
+- `resources/js/modules/comment/components/CommentRepliesList.tsx`
+
+**validateCommand:** `npx eslint resources/js/modules/comment && npm run types`
+
+**Integration notes:** Ejecutada (2026-10-12). Se agrego a este plan en lugar de crear uno nuevo, como indica la regla de continuar el plan existente; el renombre del hook quedo como ultima tarea porque modules/comment era el unico archivo sin el prefijo Comment.
+
+### TASK-010: Borrar usePaginatedComments y actualizar CLAUDE.md
+
+Con los consumidores en el hook nuevo, borrar hooks/usePaginatedComments.ts (despues de comprobar con grep que nada lo importa) y actualizar CLAUDE.md, que menciona usePaginatedComments(commentableType, commentableId), para que nombre useCommentPaginated. Verificar tambien en el navegador que el dialogo de comentarios y de respuestas sigue cargando, paginando y publicando.
+
+**Type:** refactor  
+**Effort:** XS  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Review:** claude
+**Depends on:** TASK-009, TASK-007
+
+**Acceptance Criteria:**
+- [ ] Ningun archivo de resources/js, app, tests, docs ni CLAUDE.md contiene usePaginatedComments (los planes historicos de .ulpi quedan fuera) y npm run types y npm run build pasan.
+- [ ] En el navegador el dialogo carga 10 comentarios, pagina por cursor, publica y muestra el error con reintento, con la URL sin cambios.
+
+**writeScope:**
+- `resources/js/modules/comment/hooks/usePaginatedComments.ts`
+- `CLAUDE.md`
+
+**validateCommand:** `test ! -e resources/js/modules/comment/hooks/usePaginatedComments.ts && ! grep -rn 'usePaginatedComments' resources/js app tests docs CLAUDE.md && npm run types && npm run build`
+
 ## Failure Modes
 
 - Si el nombre de archivo de la migracion cambia, un entorno ya migrado intentaria recrear la tabla y fallaria (tabla existente): se conserva el nombre exacto.
@@ -240,11 +287,12 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 
 - Migracion movida: validacion de TASK-001 (migrate:fresh en pruebas crea commentable_type/commentable_id, la global ya no existe) y CommentModelTest; la suite de Comment completa corre en TASK-008.
 - Frontend: npm run types, lint:check, format:check y build en cada tarea FE; H3 de CommentSecurityAuditTest sobre modules/comment (TASK-006); verificacion manual en navegador (TASK-008).
+- Renombre del hook (TASK-009, TASK-010): npm run types, eslint y build; verificacion manual en navegador al borrar el hook viejo (no hay pruebas unitarias de frontend).
 
 ## Execution Summary
 
-- Tareas: 8
-- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008
+- Tareas: 10
+- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010
 - Capas de ejecucion:
   1. TASK-001, TASK-002
   2. TASK-003
@@ -253,6 +301,8 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
   5. TASK-006
   6. TASK-007
   7. TASK-008
+  8. TASK-009
+  9. TASK-010
 
 ## Task Dependencies
 
@@ -266,3 +316,5 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 | TASK-006 | TASK-005 |
 | TASK-007 | TASK-001, TASK-006 |
 | TASK-008 | TASK-007 |
+| TASK-009 | TASK-006 |
+| TASK-010 | TASK-009, TASK-007 |

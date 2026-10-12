@@ -11,7 +11,7 @@ import { useDialog } from "@/shared/hooks/useDialog";
 import { cn } from "@/shared/lib/utils";
 
 import { CommentType } from "../enums/commentType";
-import { usePaginatedComments } from "../hooks/usePaginatedComments";
+import { useCommentPaginated } from "../hooks/useCommentPaginated";
 import type { CommentContextPreview } from "../types/comment";
 import CommentItem from "./CommentItem";
 import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
@@ -40,7 +40,7 @@ function CommentList({ postId, previewContext }: CommentListProps) {
     loadFailure,
     retryLoad,
     uploadedComments,
-  } = usePaginatedComments(CommentType.POST, postId);
+  } = useCommentPaginated(CommentType.POST, postId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,

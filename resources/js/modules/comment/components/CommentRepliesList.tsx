@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { CommentType } from "../enums/commentType";
-import { usePaginatedComments } from "../hooks/usePaginatedComments";
+import { useCommentPaginated } from "../hooks/useCommentPaginated";
 import CommentItem from "./CommentItem";
 import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 
@@ -34,7 +34,7 @@ function CommentRepliesList({
     loadFailure,
     retryLoad,
     uploadedComments,
-  } = usePaginatedComments(CommentType.COMMENT, commentId);
+  } = useCommentPaginated(CommentType.COMMENT, commentId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,

@@ -6,7 +6,7 @@ import { CommentType } from "../enums/commentType";
 import type { CommentTypeValues } from "../enums/commentType";
 import type { CommentsLoadFailure, PaginatedComments } from "../types/comment";
 
-interface UsePaginatedCommentsReturn {
+interface UseCommentPaginatedReturn {
   commentsPage: PaginatedComments | null;
   hasMoreComments: boolean;
   increaseRepliesCount: (commentId: number) => void;
@@ -22,10 +22,10 @@ interface UsePaginatedCommentsReturn {
  * Load, page and refresh the comments of a post or the replies of a comment.
  * The target is fixed for the lifetime of the component that calls it: remount it (key) to change it.
  */
-export function usePaginatedComments(
+export function useCommentPaginated(
   commentableType: CommentTypeValues,
   commentableId: number,
-): UsePaginatedCommentsReturn {
+): UseCommentPaginatedReturn {
   const [commentsPage, setCommentsPage] = useState<PaginatedComments | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(true);
