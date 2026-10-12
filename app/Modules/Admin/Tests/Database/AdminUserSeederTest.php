@@ -10,32 +10,23 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Spatie\Permission\Models\Role;
 
-it('assigns Angel all reader roles and preserves existing assignments without random promotion', function (): void {
-    $angel = createUser();
-    $angel->forceFill(['email' => 'angel@gmail.com'])->save();
-
-    $limitedAdmin = createUser();
-    $reader = createUser();
-
-    /** @var Factory<User> $userFactory */
-    $userFactory = User::factory();
-    $userFactory->count(28)->create();
+it('assigns Angel all reader roles and preserves existing assignments', function (): void {
+    $user = createUser();
+    $user->forceFill(['email' => 'angel@gmail.com'])->save();
 
     $this->seed(AdminAuthorizationSeeder::class);
+
     $customAdminRole = Role::query()->create([
         'name' => 'admin-auditor',
         'guard_name' => 'admin',
     ]);
-    $angel->assignRole($customAdminRole);
-    $limitedAdmin->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
-    $reader->assignRole(AdminRole::AdminUsersReader->value);
+
+    $user->assignRole($customAdminRole);
 
     $this->seed(AdminUserSeeder::class);
     $this->seed(AdminUserSeeder::class);
 
-    $angel->refresh();
-    $limitedAdmin->refresh();
-    $reader->refresh();
+    $user->refresh();
 
     $expectedPermissionNames = [
         AdminPermission::AdminAccess->value,
@@ -46,45 +37,48 @@ it('assigns Angel all reader roles and preserves existing assignments without ra
         AdminPermission::AdminUsersViewAny->value,
     ];
 
-    $usersWithAdminRoles = User::query()
-        ->role([
-            AdminRole::Admin->value,
-            AdminRole::AdminDashboardReader->value,
-            AdminRole::AdminUsersReader->value,
-            AdminRole::AdminPostsReader->value,
-        ], 'admin')
-        ->pluck('id')
-        ->sort()
-        ->values()
-        ->all();
-
-    $expectedUsersWithAdminRoles = collect([
-        $angel->getKey(),
-        $limitedAdmin->getKey(),
-        $reader->getKey(),
-    ])->sort()->values()->all();
-
-    $otherPanelAdmins = User::query()
-        ->role(AdminRole::Admin->value, 'admin')
-        ->whereKeyNot($angel->getKey())
-        ->get();
-
-    $usersWithEveryAdminPermission = User::query()
-        ->get()
-        ->filter(fn (User $user): bool => $user->hasAllPermissions($expectedPermissionNames));
-
-    expect($angel->hasAllRoles([
+    $expectedRoleNames = [
         AdminRole::Admin->value,
         AdminRole::AdminDashboardReader->value,
         AdminRole::AdminUsersReader->value,
         AdminRole::AdminPostsReader->value,
-    ]))->toBeTrue()
-        ->and($angel->hasRole('admin-auditor'))->toBeTrue()
-        ->and($angel->getAllPermissions()->pluck('name')->sort()->values()->all())
-        ->toBe(collect($expectedPermissionNames)->sort()->values()->all())
-        ->and($usersWithAdminRoles)->toBe($expectedUsersWithAdminRoles)
-        ->and($otherPanelAdmins->modelKeys())->toBe([$limitedAdmin->getKey()])
-        ->and($usersWithEveryAdminPermission)->toHaveCount(1)
+        $customAdminRole->name,
+    ];
+
+    expect($user->getRoleNames()->sort()->values()->all())
+        ->toBe(collect($expectedRoleNames)->sort()->values()->all())
+        ->and($user->getAllPermissions()->pluck('name')->sort()->values()->all())
+        ->toBe(collect($expectedPermissionNames)->sort()->values()->all());
+});
+
+it('preserves limited assignments and does not randomly promote other users', function (): void {
+    $user = createUser();
+    $user->forceFill(['email' => 'angel@gmail.com'])->save();
+    $limitedAdmin = createUser();
+    $reader = createUser();
+
+    /** @var Factory<User> $userFactory */
+    $userFactory = User::factory();
+
+    $userFactory->count(28)->create();
+
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $limitedAdmin->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
+    $reader->assignRole(AdminRole::AdminUsersReader->value);
+
+    $this->seed(AdminUserSeeder::class);
+
+    $limitedAdmin->refresh();
+    $reader->refresh();
+
+    expect(User::query()->role([
+        AdminRole::Admin->value,
+        AdminRole::AdminDashboardReader->value,
+        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
+    ], 'admin')->count())
+        ->toBe(3)
         ->and($limitedAdmin->hasAllRoles([
             AdminRole::Admin->value,
             AdminRole::AdminUsersReader->value,
@@ -92,4 +86,35 @@ it('assigns Angel all reader roles and preserves existing assignments without ra
         ->and($limitedAdmin->hasAllPermissions([AdminPermission::AdminAccess->value]))->toBeTrue()
         ->and($reader->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue()
         ->and($reader->hasRole(AdminRole::Admin->value))->toBeFalse();
+});
+
+it('grants the complete admin permission set only to Angel', function (): void {
+    $user = createUser();
+    $user->forceFill(['email' => 'angel@gmail.com'])->save();
+
+    /** @var Factory<User> $userFactory */
+    $userFactory = User::factory();
+    $userFactory->count(28)->create();
+
+    $this->seed(AdminAuthorizationSeeder::class);
+    $this->seed(AdminUserSeeder::class);
+
+    $expectedPermissionNames = [
+        AdminPermission::AdminAccess->value,
+        AdminPermission::AdminDashboardView->value,
+        AdminPermission::AdminPostsView->value,
+        AdminPermission::AdminPostsViewAny->value,
+        AdminPermission::AdminUsersView->value,
+        AdminPermission::AdminUsersViewAny->value,
+    ];
+
+    $usersWithAllAdminPermissions = [];
+
+    foreach (User::query()->get() as $candidate) {
+        if ($candidate->hasAllPermissions($expectedPermissionNames)) {
+            $usersWithAllAdminPermissions[] = $candidate->getKey();
+        }
+    }
+
+    expect($usersWithAllAdminPermissions)->toBe([$user->getKey()]);
 });

@@ -53,6 +53,7 @@ class PostActivityOverview extends StatsOverviewWidget
         $startDate = CarbonImmutable::today()->subDays(6);
         $endDate = $startDate->addDays(7);
 
+        /** @var Builder<Comment> $builder */
         $builder = Comment::query()
             ->whereIn('commentable_id', $post->comments()->getQuery()->select('comments.id'))
             ->where('commentable_type', Comment::MORPH_NAME);
