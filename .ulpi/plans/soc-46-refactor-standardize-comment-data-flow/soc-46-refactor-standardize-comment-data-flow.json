@@ -11,7 +11,7 @@
   "planningMode": "HOLD",
   "reviewDefault": "claude",
   "executionStyle": "Paso a paso: se implementa una tarea y se pausa para revision del usuario (regla .ai/rules/linear.md). TASK-011 es una compuerta: si <InfiniteScroll> de Inertia no funciona en el dialogo se revierte y se conserva el hook manual de TASK-008. Las tareas TASK-004 a TASK-007 dejan la suite de Comment en rojo entre una y otra (se retira una ruta y se migran sus pruebas): ejecutarlas de forma contigua.",
-  "overview": "Hoy CommentController::index() entrega la pagina de comentarios como Inertia::flash, CommentCollection reconstruye a mano data/meta/links y usePaginatedComments lee data.flash.comments. Nuevo contrato: HomeController y ProfileController (index y show) incluyen una clase ProvidesInertiaProperties (CommentThreadProps) que expone dos props Inertia::optional, 'comments' (raiz de un post) y 'replies' (respuestas de un comentario), serializadas con cursorPaginate()->through(CommentResource) dentro de Inertia::scroll. Nada se carga hasta que el dialogo o el hilo de respuestas se abre; el cliente hace un partial reload de la pagina anfitriona (only + preserveUrl) con el hilo y el cursor como parametros. Como la lista ya no pasa por una ruta propia, la ruta comments.index se RETIRA junto con CommentController::index y CommentCollection; el throttle de 60/min por usuario se traslada a CommentThreadProps. CommentController queda con una sola accion (store), por lo que se reemplaza por el controlador invocable CommentStoreController, que usa un Data object con los datos validados. El flash queda solo para la notificacion de store().",
+  "overview": "Hoy CommentController::index() entrega la pagina de comentarios como Inertia::flash, CommentCollection reconstruye a mano data/meta/links y usePaginatedComments lee data.flash.comments. Nuevo contrato: HomeController y ProfileController (index y show) incluyen una clase ProvidesInertiaProperties (CommentThreadProps) que expone dos props Inertia::optional, 'comments' (raiz de un post) y 'replies' (respuestas de un comentario), serializadas con cursorPaginate()->through(CommentResource) dentro de Inertia::scroll. Nada se carga hasta que el dialogo o el hilo de respuestas se abre; el cliente hace un partial reload de la pagina anfitriona (only + preserveUrl) con el hilo y el cursor como parametros. Como la lista ya no pasa por una ruta propia, la ruta comments.index se RETIRA junto con CommentController::index y CommentCollection; el throttle de 60/min por usuario se traslada a CommentThreadProps. CommentController queda con una sola accion (store), por lo que se reemplaza por el controlador invocable CommentStoreController. El flash queda solo para la notificacion de store().",
   "scopeChallenge": "Modo HOLD: alcance de SOC-46 sin funcionalidades nuevas. Decisiones del usuario: (1) comments.index se retira porque dejaria de usarse; (2) store pasa a controlador invocable; (3) intentar <InfiniteScroll preserveUrl> en el dialogo y, si da problemas, conservar la via manual estabilizada; (4) Inertia::optional (carga al abrir el dialogo / al expandir respuestas) y no Inertia::defer, que cargaria los comentarios de todos los posts apenas renderice la pagina; skeletons mientras la prop es undefined. Nota: la issue dice 'No cambiar rutas' y 'no cambiar throttles'; retirar comments.index es una desviacion consciente, y el throttle se conserva con el mismo limite (60/min por usuario, presupuesto separado de comments.store). Conviene dejarlo asentado en el comentario de cierre de Linear. Exploracion: el unico consumidor frontend es PostCard -> CommentDialog -> CommentList/RepliesList -> usePaginatedComments; showReplies es un unico id, por lo que solo un hilo de respuestas esta abierto a la vez y una sola prop 'replies' basta. Los anfitriones ya usan Inertia::scroll para 'posts' con el cursor por defecto, asi que comentarios/respuestas necesitan nombres de cursor propios. Siguiendo la preferencia del usuario, el controlador nuevo se crea y el viejo se borra despues, sin rename directo.",
   "prerequisites": [
     "SOC-40 mergeada (Comment vive en app/Modules/Comment con tests de CRUD, seguridad, validacion y consultas).",
@@ -35,7 +35,7 @@
     "Throttle: la evaluacion de 'comments' o 'replies' consume un presupuesto de 60 solicitudes por minuto por usuario autenticado (RateLimiter con clave propia 'comments.index', separada de la de comments.store); al excederlo responde 429 (ThrottleRequestsException) y el cliente lo trata como error reintentable.",
     "Consulta: with('user') + withCount('comments') + orderByDesc('id') en la query; CommentResource sigue sin disparar consultas ocultas (repliesCount reutiliza comments_count) y el numero de consultas es constante al crecer comentarios y respuestas.",
     "Forma serializada de cada comentario sin cambios: {id, content, createdAt, user:{id,name}, repliesInfo:{hasReplies, repliesCount}}. La forma exacta de la envoltura (data/links/meta) la fija el comportamiento real de Inertia::scroll y se registra en TASK-001; TASK-008 adapta los tipos TS a ella.",
-    "Escritura: POST comments (nombre comments.store, auth+verified, throttle:6,1,comments.store) pasa a App\\Modules\\Comment\\Controllers\\CommentStoreController (invocable). Recibe CommentStoreRequest, construye CommentStoreData desde $request->validated(), mantiene el rechazo de responder a una respuesta (error en commentable_id) y el flash de exito {type:'success', message}.",
+    "Escritura: POST comments (nombre comments.store, auth+verified, throttle:6,1,comments.store) pasa a App\\Modules\\Comment\\Controllers\\CommentStoreController (invocable). Recibe CommentStoreRequest, lee los datos con accesores tipados de la request, mantiene el rechazo de responder a una respuesta (error en commentable_id) y el flash de exito {type:'success', message}.",
     "Se retiran: ruta comments.index, CommentController (reemplazado por CommentStoreController), CommentCollection, el import Wayfinder de index en el frontend y hasPaginatedKey si queda sin consumidores."
   ],
   "existingCodeLeverage": [
@@ -125,8 +125,8 @@
     },
     {
       "id": "TASK-003",
-      "title": "Crear CommentStoreController invocable y CommentStoreData",
-      "description": "Crear app/Modules/Comment/Controllers/CommentStoreController.php con __invoke(CommentStoreRequest) que mueve la logica de CommentController::store sin cambios de comportamiento, y app/Modules/Comment/Data/CommentStoreData.php (commentable_type tipado como CommentType, commentable_id int, content string) construido desde $request->validated(). Apuntar la ruta comments.store al controlador nuevo en routes.php; comments.index y CommentController siguen intactos hasta TASK-004. Las reglas FluentRule se quedan en el FormRequest.",
+      "title": "Crear CommentStoreController invocable",
+      "description": "Crear app/Modules/Comment/Controllers/CommentStoreController.php con __invoke(CommentStoreRequest) que mueve la logica de CommentController::store sin cambios de comportamiento, leyendo los datos con los accesores tipados de la request (string(), integer()) en lugar de un Data object, que se descarto por no aportar con solo tres campos usados en un lugar. Apuntar la ruta comments.store al controlador nuevo en routes.php; comments.index y CommentController siguen intactos hasta TASK-004.",
       "priority": "P0",
       "type": "refactor",
       "effort": "S",
@@ -135,18 +135,16 @@
       "acceptanceCriteria": [
         "CommentStoreTest, CommentStoreRequestTest y CommentValidationHardeningTest pasan sin modificarse (mismas reglas, mensajes, normalizacion y flash de exito), y comments.store conserva auth+verified y throttle:6,1,comments.store.",
         "Responder a una respuesta sigue rechazandose con el error de validacion en commentable_id y no se crea ningun comentario.",
-        "CommentStoreController no usa input() ni anotaciones @var para tipo, id o contenido, y php artisan route:list --name=comments.store muestra CommentStoreController como accion."
+        "CommentStoreController no usa input() para tipo, id o contenido (usa accesores tipados de la request) y php artisan route:list --name=comments.store muestra CommentStoreController como accion."
       ],
       "filesToModify": [
         "app/Modules/Comment/routes/routes.php"
       ],
       "filesToCreate": [
-        "app/Modules/Comment/Controllers/CommentStoreController.php",
-        "app/Modules/Comment/Data/CommentStoreData.php"
+        "app/Modules/Comment/Controllers/CommentStoreController.php"
       ],
       "writeScope": [
         "app/Modules/Comment/Controllers/CommentStoreController.php",
-        "app/Modules/Comment/Data/CommentStoreData.php",
         "app/Modules/Comment/routes/routes.php"
       ],
       "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php app/Modules/Comment/Tests/Crud/CommentStoreTest.php app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php",
@@ -415,7 +413,7 @@
     {
       "id": "TASK-013",
       "title": "Actualizar CLAUDE.md con el nuevo flujo de datos de Comment",
-      "description": "Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThreadProps, props optional 'comments' y 'replies', cursores propios, throttle de lectura trasladado a CommentThreadProps, retiro de la ruta comments.index, CommentStoreController invocable con CommentStoreData, flash solo para notificacion, hook manual (o InfiniteScroll segun TASK-011) y retiro de CommentController/CommentCollection/hasPaginatedKey.",
+      "description": "Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThreadProps, props optional 'comments' y 'replies', cursores propios, throttle de lectura trasladado a CommentThreadProps, retiro de la ruta comments.index, CommentStoreController invocable, flash solo para notificacion, hook manual (o InfiniteScroll segun TASK-011) y retiro de CommentController/CommentCollection/hasPaginatedKey.",
       "priority": "P3",
       "type": "docs",
       "effort": "S",

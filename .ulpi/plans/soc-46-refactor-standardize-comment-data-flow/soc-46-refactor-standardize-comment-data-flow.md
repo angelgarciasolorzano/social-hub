@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hoy CommentController::index() entrega la pagina de comentarios como Inertia::flash, CommentCollection reconstruye a mano data/meta/links y usePaginatedComments lee data.flash.comments. Nuevo contrato: HomeController y ProfileController (index y show) incluyen una clase ProvidesInertiaProperties (CommentThreadProps) que expone dos props Inertia::optional, 'comments' (raiz de un post) y 'replies' (respuestas de un comentario), serializadas con cursorPaginate()->through(CommentResource) dentro de Inertia::scroll. Nada se carga hasta que el dialogo o el hilo de respuestas se abre; el cliente hace un partial reload de la pagina anfitriona (only + preserveUrl) con el hilo y el cursor como parametros. Como la lista ya no pasa por una ruta propia, la ruta comments.index se RETIRA junto con CommentController::index y CommentCollection; el throttle de 60/min por usuario se traslada a CommentThreadProps. CommentController queda con una sola accion (store), por lo que se reemplaza por el controlador invocable CommentStoreController, que usa un Data object con los datos validados. El flash queda solo para la notificacion de store().
+Hoy CommentController::index() entrega la pagina de comentarios como Inertia::flash, CommentCollection reconstruye a mano data/meta/links y usePaginatedComments lee data.flash.comments. Nuevo contrato: HomeController y ProfileController (index y show) incluyen una clase ProvidesInertiaProperties (CommentThreadProps) que expone dos props Inertia::optional, 'comments' (raiz de un post) y 'replies' (respuestas de un comentario), serializadas con cursorPaginate()->through(CommentResource) dentro de Inertia::scroll. Nada se carga hasta que el dialogo o el hilo de respuestas se abre; el cliente hace un partial reload de la pagina anfitriona (only + preserveUrl) con el hilo y el cursor como parametros. Como la lista ya no pasa por una ruta propia, la ruta comments.index se RETIRA junto con CommentController::index y CommentCollection; el throttle de 60/min por usuario se traslada a CommentThreadProps. CommentController queda con una sola accion (store), por lo que se reemplaza por el controlador invocable CommentStoreController. El flash queda solo para la notificacion de store().
 
 **Issue:** [SOC-46](https://linear.app/social-hub-ang/issue/SOC-46/refactor-standardize-comment-data-flow-across-backend-and-frontend) · bloquea SOC-41  
 **Modo:** HOLD · **Revision por defecto:** claude  
@@ -37,7 +37,7 @@ Modo HOLD: alcance de SOC-46 sin funcionalidades nuevas. Decisiones del usuario:
 - Throttle: la evaluacion de 'comments' o 'replies' consume un presupuesto de 60 solicitudes por minuto por usuario autenticado (RateLimiter con clave propia 'comments.index', separada de la de comments.store); al excederlo responde 429 (ThrottleRequestsException) y el cliente lo trata como error reintentable.
 - Consulta: with('user') + withCount('comments') + orderByDesc('id') en la query; CommentResource sigue sin disparar consultas ocultas (repliesCount reutiliza comments_count) y el numero de consultas es constante al crecer comentarios y respuestas.
 - Forma serializada de cada comentario sin cambios: {id, content, createdAt, user:{id,name}, repliesInfo:{hasReplies, repliesCount}}. La forma exacta de la envoltura (data/links/meta) la fija el comportamiento real de Inertia::scroll y se registra en TASK-001; TASK-008 adapta los tipos TS a ella.
-- Escritura: POST comments (nombre comments.store, auth+verified, throttle:6,1,comments.store) pasa a App\Modules\Comment\Controllers\CommentStoreController (invocable). Recibe CommentStoreRequest, construye CommentStoreData desde $request->validated(), mantiene el rechazo de responder a una respuesta (error en commentable_id) y el flash de exito {type:'success', message}.
+- Escritura: POST comments (nombre comments.store, auth+verified, throttle:6,1,comments.store) pasa a App\Modules\Comment\Controllers\CommentStoreController (invocable). Recibe CommentStoreRequest, lee los datos con accesores tipados de la request, mantiene el rechazo de responder a una respuesta (error en commentable_id) y el flash de exito {type:'success', message}.
 - Se retiran: ruta comments.index, CommentController (reemplazado por CommentStoreController), CommentCollection, el import Wayfinder de index en el frontend y hasPaginatedKey si queda sin consumidores.
 
 ## Existing Code Leverage
@@ -98,9 +98,9 @@ Agregar CommentThreadProps a Inertia::render en HomeController::__invoke y Profi
 
 **Integration notes:** Confirmar al implementar como se pasa un ProvidesInertiaProperties en el arreglo de props (revisar el uso existente de TrustedDeviceCurrentProps).
 
-### TASK-003: Crear CommentStoreController invocable y CommentStoreData
+### TASK-003: Crear CommentStoreController invocable
 
-Crear app/Modules/Comment/Controllers/CommentStoreController.php con __invoke(CommentStoreRequest) que mueve la logica de CommentController::store sin cambios de comportamiento, y app/Modules/Comment/Data/CommentStoreData.php (commentable_type tipado como CommentType, commentable_id int, content string) construido desde $request->validated(). Apuntar la ruta comments.store al controlador nuevo en routes.php; comments.index y CommentController siguen intactos hasta TASK-004. Las reglas FluentRule se quedan en el FormRequest.
+Crear app/Modules/Comment/Controllers/CommentStoreController.php con __invoke(CommentStoreRequest) que mueve la logica de CommentController::store sin cambios de comportamiento, leyendo los datos con los accesores tipados de la request (string(), integer()) en lugar de un Data object, que se descarto por no aportar con solo tres campos usados en un lugar. Apuntar la ruta comments.store al controlador nuevo en routes.php; comments.index y CommentController siguen intactos hasta TASK-004.
 
 **Type:** refactor  
 **Effort:** S  
@@ -111,11 +111,10 @@ Crear app/Modules/Comment/Controllers/CommentStoreController.php con __invoke(Co
 **Acceptance Criteria:**
 - [ ] CommentStoreTest, CommentStoreRequestTest y CommentValidationHardeningTest pasan sin modificarse (mismas reglas, mensajes, normalizacion y flash de exito), y comments.store conserva auth+verified y throttle:6,1,comments.store.
 - [ ] Responder a una respuesta sigue rechazandose con el error de validacion en commentable_id y no se crea ningun comentario.
-- [ ] CommentStoreController no usa input() ni anotaciones @var para tipo, id o contenido, y php artisan route:list --name=comments.store muestra CommentStoreController como accion.
+- [ ] CommentStoreController no usa input() para tipo, id o contenido (usa accesores tipados de la request) y php artisan route:list --name=comments.store muestra CommentStoreController como accion.
 
 **writeScope:**
 - `app/Modules/Comment/Controllers/CommentStoreController.php` (nuevo)
-- `app/Modules/Comment/Data/CommentStoreData.php` (nuevo)
 - `app/Modules/Comment/routes/routes.php`
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php app/Modules/Comment/Tests/Crud/CommentStoreTest.php app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php`
@@ -335,7 +334,7 @@ Eliminar hasPaginatedKey (y su export) si ya nadie lo consume, y limpiar tipos q
 
 ### TASK-013: Actualizar CLAUDE.md con el nuevo flujo de datos de Comment
 
-Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThreadProps, props optional 'comments' y 'replies', cursores propios, throttle de lectura trasladado a CommentThreadProps, retiro de la ruta comments.index, CommentStoreController invocable con CommentStoreData, flash solo para notificacion, hook manual (o InfiniteScroll segun TASK-011) y retiro de CommentController/CommentCollection/hasPaginatedKey.
+Actualizar la seccion Comment y la de Inertia/Frontend de CLAUDE.md: CommentThreadProps, props optional 'comments' y 'replies', cursores propios, throttle de lectura trasladado a CommentThreadProps, retiro de la ruta comments.index, CommentStoreController invocable, flash solo para notificacion, hook manual (o InfiniteScroll segun TASK-011) y retiro de CommentController/CommentCollection/hasPaginatedKey.
 
 **Type:** docs  
 **Effort:** S  
