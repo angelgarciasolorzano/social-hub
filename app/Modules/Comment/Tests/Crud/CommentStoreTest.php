@@ -125,14 +125,14 @@ it('rejects a non-integer commentable id', function (): void {
     expect(Comment::query()->count())->toBe(0);
 });
 
-it('returns 404 and creates nothing when the commentable does not exist', function (): void {
+it('returns 404 and creates nothing when the commentable does not exist', function (string $commentableType): void {
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
             'content' => 'Un comentario',
-            'commentable_type' => Post::MORPH_NAME,
+            'commentable_type' => $commentableType,
             'commentable_id' => 999999,
         ])
         ->assertNotFound();
 
     expect(Comment::query()->count())->toBe(0);
-});
+})->with([Post::MORPH_NAME, Comment::MORPH_NAME]);

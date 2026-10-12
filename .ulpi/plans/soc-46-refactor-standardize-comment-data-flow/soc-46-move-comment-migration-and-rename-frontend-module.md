@@ -342,6 +342,8 @@ En CommentStoreTest, la prueba 'returns 404 and creates nothing when the comment
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Crud/CommentStoreTest.php app/Modules/Comment/Tests/Resources/CommentResourceTest.php`
 
+**Integration notes:** EJECUTADA. El 404 de CommentStoreTest quedo como dataset [post, comment]; ResourceTest uso createCommentOn/createCommentsOn. La suite de Comment queda en 115 pruebas (el dataset agrega 1 caso). Nota de proceso: vendor/bin/pint --dirty tambien reordeno los imports de app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php (trabajo en curso ajeno); desde aqui se ejecuta Pint solo sobre las rutas propias.
+
 ### TASK-014: Borrar CommentControllerHardeningTest y las pruebas duplicadas de CommentSecurityAuditTest
 
 Aprobado por el usuario. Borrar CommentControllerHardeningTest.php completo (sus 5 pruebas son copias de CommentStoreTest, de H4 y de H5, salvo el 404 ya movido en TASK-013). En CommentSecurityAuditTest borrar H1 (middleware de comments.store y comprobacion del codigo de CommentThreadProps), H2, H3 caracteres de control, H4, H5, H6 y H8 tipo no soportado, junto con los helpers que quedan sin uso (commentRouteMiddleware, commentListingQueryCount) y los imports sobrantes. Conservar H3 whitespace-only, H3 escaneo de dangerouslySetInnerHTML, H7, H8 rutas y H8 user_id forjado, y usar createCommentOn donde aplique.

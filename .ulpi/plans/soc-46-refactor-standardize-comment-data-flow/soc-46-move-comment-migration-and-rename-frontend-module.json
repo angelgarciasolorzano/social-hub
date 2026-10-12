@@ -427,7 +427,8 @@
         "app/Modules/Comment/Tests/Resources/CommentResourceTest.php"
       ],
       "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Crud/CommentStoreTest.php app/Modules/Comment/Tests/Resources/CommentResourceTest.php",
-      "review": "claude"
+      "review": "claude",
+      "integrationNotes": "EJECUTADA. El 404 de CommentStoreTest quedo como dataset [post, comment]; ResourceTest uso createCommentOn/createCommentsOn. La suite de Comment queda en 115 pruebas (el dataset agrega 1 caso). Nota de proceso: vendor/bin/pint --dirty tambien reordeno los imports de app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php (trabajo en curso ajeno); desde aqui se ejecuta Pint solo sobre las rutas propias."
     },
     {
       "id": "TASK-014",

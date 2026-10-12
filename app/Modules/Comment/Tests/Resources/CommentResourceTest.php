@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Resources\CommentResource;
-use App\Modules\Post\Models\Post;
 
 it('serializes only the public comment fields', function (): void {
     $user = createUser();
@@ -33,8 +32,7 @@ it('reports the replies info of the comment', function (): void {
     expect(new CommentResource($comment)->toArray(request())['repliesInfo'])
         ->toBe(['hasReplies' => false, 'repliesCount' => 0]);
 
-    createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
-    createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    createCommentsOn($comment, 2);
 
     expect(new CommentResource($comment)->toArray(request())['repliesInfo'])
         ->toBe(['hasReplies' => true, 'repliesCount' => 2]);
@@ -43,9 +41,7 @@ it('reports the replies info of the comment', function (): void {
 it('keeps the cursor metadata when a page of comments is serialized through the resource', function (): void {
     $post = createPost();
 
-    foreach (range(1, 11) as $index) {
-        createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
-    }
+    createCommentsOn($post, 11);
 
     $cursorPaginator = $post->comments()->with('user')->orderByDesc('id')->cursorPaginate(10)
         ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
@@ -61,7 +57,7 @@ it('keeps the cursor metadata when a page of comments is serialized through the 
 
 it('reports no further pages when everything fits in one', function (): void {
     $post = createPost();
-    createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
+    createCommentOn($post);
 
     $cursorPaginator = $post->comments()->with('user')->orderByDesc('id')->cursorPaginate(10)
         ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
