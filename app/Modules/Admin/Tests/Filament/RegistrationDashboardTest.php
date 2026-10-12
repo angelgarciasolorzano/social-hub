@@ -14,10 +14,15 @@ use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Livewire\Livewire;
 use ReflectionMethod;
+use Tests\TestCase;
 
 beforeEach(function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
-    AdminFilamentTestContext::configure($this);
+
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('discovers the registration widgets through the existing admin panel discovery', function (): void {
@@ -63,8 +68,10 @@ it('groups registrations by day for the seven day range and includes its exact b
     createDashboardRegistration('2026-06-08 23:59:59');
 
     $component = Livewire::test(RegistrationsChart::class, ['filter' => '7_days'])->instance();
+
     throw_unless($component instanceof RegistrationsChart, LogicException::class, 'The chart widget must be mounted.');
 
+    /** @var RegistrationsChart $component */
     $chartData = registrationChartPayload($component);
 
     expect($chartData['labels'])
@@ -84,8 +91,10 @@ it('groups registrations by day for the thirty day range', function (): void {
     createDashboardRegistration('2026-05-16 23:59:59');
 
     $component = Livewire::test(RegistrationsChart::class, ['filter' => '30_days'])->instance();
+
     throw_unless($component instanceof RegistrationsChart, LogicException::class, 'The chart widget must be mounted.');
 
+    /** @var RegistrationsChart $component */
     $chartData = registrationChartPayload($component);
 
     expect($chartData['labels'])
@@ -109,9 +118,12 @@ it('groups registrations by week for the ninety day range', function (): void {
     createDashboardRegistration('2026-06-14 18:00:00');
 
     $component = Livewire::test(RegistrationsChart::class, ['filter' => '90_days'])->instance();
+
     throw_unless($component instanceof RegistrationsChart, LogicException::class, 'The chart widget must be mounted.');
 
+    /** @var RegistrationsChart $component */
     $chartData = registrationChartPayload($component);
+
     $weeklyCounts = array_combine($chartData['labels'], $chartData['datasets'][0]['data']);
 
     expect($chartData['labels'])
@@ -137,9 +149,12 @@ it('groups registrations by month for the twelve month range', function (): void
     createDashboardRegistration('2026-06-15 18:00:00');
 
     $component = Livewire::test(RegistrationsChart::class, ['filter' => '12_months'])->instance();
+
     throw_unless($component instanceof RegistrationsChart, LogicException::class, 'The chart widget must be mounted.');
 
+    /** @var RegistrationsChart $component */
     $chartData = registrationChartPayload($component);
+
     $monthlyCounts = array_combine($chartData['labels'], $chartData['datasets'][0]['data']);
 
     expect($chartData['labels'])
@@ -163,8 +178,10 @@ it('falls back to the thirty day range for an unknown client supplied filter', f
     createDashboardRegistration('2026-05-16 23:59:59');
 
     $component = Livewire::test(RegistrationsChart::class, ['filter' => 'untrusted-filter-value'])->instance();
+
     throw_unless($component instanceof RegistrationsChart, LogicException::class, 'The chart widget must be mounted.');
 
+    /** @var RegistrationsChart $component */
     $chartData = registrationChartPayload($component);
 
     expect($chartData['labels'])
@@ -211,9 +228,12 @@ it('shows seven day registration trends on the account summary cards', function 
     createDashboardRegistration('2026-06-15 08:00:00', verified: false);
 
     $component = Livewire::test(RegistrationSummaryWidget::class)->instance();
+
     throw_unless($component instanceof RegistrationSummaryWidget, LogicException::class, 'The summary widget must be mounted.');
 
+    /** @var RegistrationSummaryWidget $component */
     $statsMethod = new ReflectionMethod(StatsOverviewWidget::class, 'getCachedStats');
+
     $stats = $statsMethod->invoke($component);
 
     throw_unless(
@@ -225,6 +245,7 @@ it('shows seven day registration trends on the account summary cards', function 
         'The account summary must return two stat cards.',
     );
 
+    /** @var array{0: Stat, 1: Stat} $stats */
     expect($stats[0]->getChart())
         ->toBe([1.0, 2.0, 0.0, 0.0, 0.0, 0.0, 1.0])
         ->and($stats[1]->getChart())
@@ -246,10 +267,12 @@ function createDashboardRegistration(string $createdAt, bool $verified = true): 
 function createDashboardReader(): User
 {
     $user = createUser();
+
     $user->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminDashboardReader->value,
     ]);
+
     $user->forceFill(['created_at' => '2020-01-01 00:00:00'])->save();
 
     return $user;
@@ -279,11 +302,13 @@ function registrationChartPayload(RegistrationsChart $registrationsChart): array
         'The registration chart must return its chart data.',
     );
 
+    /** @var list<mixed> $labels */
+    /** @var list<mixed> $counts */
+    /** @var string $datasetLabel */
     $normalizedLabels = [];
 
     foreach ($labels as $label) {
         throw_unless(is_string($label), LogicException::class, 'The chart registration labels must be strings.');
-
         $normalizedLabels[] = $label;
     }
 
@@ -291,7 +316,6 @@ function registrationChartPayload(RegistrationsChart $registrationsChart): array
 
     foreach ($counts as $count) {
         throw_unless(is_int($count), LogicException::class, 'The chart registration counts must be integers.');
-
         $normalizedCounts[] = $count;
     }
 
