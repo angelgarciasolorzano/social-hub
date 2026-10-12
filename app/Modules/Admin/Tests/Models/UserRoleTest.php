@@ -15,6 +15,15 @@ it('assigns admin guard roles and resolves their permissions', function (): void
     $user->assignRole(AdminRole::UsersReader->value);
     $user->refresh();
 
+    $this->assertDatabaseMissing('roles', [
+        'name' => AdminRole::UsersReader->value,
+        'guard_name' => 'web',
+    ]);
+    $this->assertDatabaseMissing('permissions', [
+        'name' => AdminPermission::UsersViewAny->value,
+        'guard_name' => 'web',
+    ]);
+
     expect($user->hasRole(AdminRole::UsersReader->value, 'admin'))->toBeTrue()
         ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'admin'))->toBeTrue();
 });
