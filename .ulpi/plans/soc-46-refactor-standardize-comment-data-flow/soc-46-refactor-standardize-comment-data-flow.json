@@ -368,7 +368,7 @@
       ],
       "acceptanceCriteria": [
         "Con InfiniteScroll: dentro del dialogo la siguiente pagina de comentarios y de respuestas carga al llegar al final del contenedor con scroll, sin duplicados y sin cambiar window.location.",
-        "Un fallo de carga permite reintentar y no se confunde con la lista vacia; si no se puede garantizar, se revierte a TASK-010 y el diff queda sin cambios en CommentList.tsx y RepliesList.tsx.",
+        "Un fallo de carga permite reintentar y no se confunde con la lista vacia; si no se puede garantizar, se revierte a TASK-010 y el diff queda sin cambios en CommentList.tsx y RepliesList.tsx. (Cumplido por reversion: el intento con InfiniteScroll perdia comentarios ya cargados al refrescar tras publicar.)",
         "npm run types, lint:check y build pasan tanto con InfiniteScroll como tras la reversion."
       ],
       "filesToModify": [
@@ -382,7 +382,7 @@
       ],
       "validateCommand": "npx eslint resources/js/modules/comments && npm run types && npm run build",
       "review": "claude",
-      "integrationNotes": "Tarea de decision: el resultado (adoptar o revertir) lo decide el usuario en la pausa de revision. Si se adopta, usePaginatedComments puede simplificarse en un seguimiento."
+      "integrationNotes": "Tarea de decision: el resultado (adoptar o revertir) lo decide el usuario en la pausa de revision. Si se adopta, usePaginatedComments puede simplificarse en un seguimiento. RESULTADO (2026-10-12): se probo en CommentList y RepliesList con <InfiniteScroll data preserveUrl onlyNext params={{data:{comments_post|replies_comment}, onHttpException, onNetworkError}} manual={falloSiguiente}>, renderizando desde usePage().props y montando el componente solo tras la primera carga (el componente lanza un error si la prop optional aun no tiene scrollProps). Funciono: primera pagina, cursor con el objetivo explicito via params, URL intacta, publicar con refresco, 404 simulado + reintento (modo manual con slot next) y paginacion de respuestas. REVERTIDO por una regresion: el refresco usa reset y deja solo la primera pagina, por lo que con 12 comentarios cargados publicar una respuesta desde arriba deja 10 hasta volver a hacer scroll (la implementacion manual conserva los 12 cuando ya estaba todo cargado). Ademas obliga a duplicar la fuente de datos (props de Inertia vs estado del hook) y a usar router.replaceProp para repliesCount. Se conserva el hook manual de TASK-008/010; CommentList.tsx y RepliesList.tsx quedaron identicos a TASK-010."
     },
     {
       "id": "TASK-012",
