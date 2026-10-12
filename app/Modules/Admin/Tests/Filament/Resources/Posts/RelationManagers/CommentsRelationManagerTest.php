@@ -29,8 +29,13 @@ it('lists only the selected posts comments with pagination without loading repli
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
+
+    expect($authenticatedUser->can(AdminPermission::AdminPostsView->value))
+        ->toBeTrue()
+        ->and($authenticatedUser->can(AdminPermission::AdminUsersView->value))
+        ->toBeFalse();
 
     $user = createUser();
     $commentAuthor = createUser();
@@ -128,8 +133,13 @@ it('opens a comment with its replies and authors in a read only view action', fu
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
+
+    expect($authenticatedUser->can(AdminPermission::AdminPostsView->value))
+        ->toBeTrue()
+        ->and($authenticatedUser->can(AdminPermission::AdminUsersView->value))
+        ->toBeFalse();
 
     $user = createUser();
     $commentAuthor = createUser();
@@ -209,10 +219,17 @@ it('opens a comment with its replies and authors in a read only view action', fu
         ->toBeEmpty();
 });
 
-it('denies the comments relation without users view even when users view any is granted', function (): void {
+it('denies the comments relation to a user with only user permissions', function (): void {
     $authenticatedUser = createUser();
-    $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    expect($authenticatedUser->can(AdminPermission::AdminUsersViewAny->value))
+        ->toBeTrue()
+        ->and($authenticatedUser->can(AdminPermission::AdminPostsView->value))
+        ->toBeFalse();
 
     $post = createPost();
 
