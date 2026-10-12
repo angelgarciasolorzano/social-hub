@@ -8,7 +8,7 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { CommentType } from "../enums/commentType";
 import { useCommentPaginated } from "../hooks/useCommentPaginated";
-import { useScrollAreaViewport } from "../hooks/useScrollAreaViewport";
+import { useCommentScrollAreaViewport } from "../hooks/useCommentScrollAreaViewport";
 import CommentItem from "./CommentItem";
 import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 
@@ -25,7 +25,7 @@ function CommentRepliesList({
   showReplies,
   setShowReplies,
 }: CommentRepliesListProps): JSX.Element | null {
-  const { scrollAreaRef, viewport } = useScrollAreaViewport();
+  const { scrollAreaRef, viewport } = useCommentScrollAreaViewport();
 
   const loadMoreTimer = useRef<number | null>(null);
 

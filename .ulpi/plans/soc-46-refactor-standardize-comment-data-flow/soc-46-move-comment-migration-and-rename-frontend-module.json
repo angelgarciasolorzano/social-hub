@@ -640,7 +640,7 @@
     {
       "id": "TASK-021",
       "title": "Gates, verificacion en tema claro y oscuro y documentacion",
-      "description": "Gates de frontend (types, lint:check, format:check, build); verificacion manual en el navegador en tema claro y oscuro (dialogo, paginacion, respuestas, publicar con refresco, error con reintento, texto largo); y documentar en CLAUDE.md que el modulo usa los componentes de shadcn (Button, Card, Alert, Spinner, ScrollArea) y que useScrollAreaViewport entrega el viewport como raiz del IntersectionObserver.",
+      "description": "Gates de frontend (types, lint:check, format:check, build); verificacion manual en el navegador en tema claro y oscuro (dialogo, paginacion, respuestas, publicar con refresco, error con reintento, texto largo); y documentar en CLAUDE.md que el modulo usa los componentes de shadcn (Button, Card, Alert, Spinner, ScrollArea) y que useCommentScrollAreaViewport entrega el viewport como raiz del IntersectionObserver.",
       "priority": "P3",
       "type": "test",
       "effort": "S",
@@ -648,12 +648,13 @@
       "dependsOn": [
         "TASK-018",
         "TASK-019",
-        "TASK-020"
+        "TASK-020",
+        "TASK-022"
       ],
       "acceptanceCriteria": [
         "types, lint:check (0 errores), format:check y build pasan, y en modules/comment no quedan <button> nativos ni colores gray-*/hex; los contenedores overflow-y-auto solo pueden quedar donde se activo la compuerta de ScrollArea (TASK-019/TASK-020), con la razon documentada.",
         "En el navegador, en tema claro y oscuro, todos los flujos del dialogo funcionan igual que antes (carga, cursor, publicar con refresco, respuestas, error con reintento) y la URL no cambia.",
-        "CLAUDE.md describe el uso de shadcn y, segun el resultado, el hook useScrollAreaViewport o la razon por la que ScrollArea no se adopto en cada contenedor."
+        "CLAUDE.md describe el uso de shadcn y, segun el resultado, el hook useCommentScrollAreaViewport o la razon por la que ScrollArea no se adopto en cada contenedor."
       ],
       "filesToModify": [
         "CLAUDE.md"
@@ -664,6 +665,39 @@
       ],
       "validateCommand": "npm run types && npm run lint:check && npm run format:check && npm run build && ! grep -rnE '<button|text-gray-|bg-gray-|#[0-9A-Fa-f]{6}' resources/js/modules/comment",
       "review": "none"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Renombrar useScrollAreaViewport a useCommentScrollAreaViewport",
+      "description": "El hook del modulo Comment debe llevar el nombre de su modulo, como useCommentPaginated. Crear hooks/useCommentScrollAreaViewport.ts como copia del hook actual con la funcion renombrada a useCommentScrollAreaViewport y su interfaz de retorno a UseCommentScrollAreaViewportReturn (misma logica), cambiar import y llamada en CommentList.tsx y CommentRepliesList.tsx, y borrar hooks/useScrollAreaViewport.ts (crear primero, borrar despues, sin renombre directo).",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "XS",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "CommentList y CommentRepliesList importan y llaman a useCommentScrollAreaViewport con los mismos argumentos y campos devueltos (scrollAreaRef, viewport); useScrollAreaViewport ya no existe en resources/js ni en la documentacion.",
+        "El diff del hook nuevo contra el viejo solo muestra los nombres de funcion e interfaz, y la paginacion de comentarios y de respuestas sigue disparandose con el viewport como root del observador (verificado en el navegador).",
+        "tsc, eslint y build pasan sin referencias rotas al nombre antiguo."
+      ],
+      "filesToModify": [
+        "resources/js/modules/comment/components/CommentList.tsx",
+        "resources/js/modules/comment/components/CommentRepliesList.tsx"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/comment/hooks/useCommentScrollAreaViewport.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/comment/hooks/useCommentScrollAreaViewport.ts",
+        "resources/js/modules/comment/components/CommentList.tsx",
+        "resources/js/modules/comment/components/CommentRepliesList.tsx",
+        "resources/js/modules/comment/hooks/useScrollAreaViewport.ts"
+      ],
+      "validateCommand": "test ! -e resources/js/modules/comment/hooks/useScrollAreaViewport.ts && ! grep -rn 'useScrollAreaViewport' resources/js && npx eslint resources/js/modules/comment && npm run types && npm run build",
+      "review": "claude",
+      "integrationNotes": "writeScope de 4 archivos: el cuarto es el borrado del hook viejo (excepcion documentada al limite de 3). Se agrega como ultima tarea de codigo antes de TASK-021 (gates y documentacion), que pasa a depender de ella. EJECUTADA (2026-10-12): diff del hook nuevo = 3 lineas (interfaz, funcion y tipo de retorno); consumidores solo cambian import y llamada; hook viejo borrado. Verificado tras recarga limpia: los observadores reciben scroll-area-viewport como root, la lista pasa de 10 a 11 con una peticion comments_cursor y la URL no cambia. Nota: ejecutar npm run build con la pagina de desarrollo abierta cambia la version de assets de Inertia (409 en la siguiente peticion parcial) y Vite devuelve 500 transitorios; recargar la pagina resuelve ambos."
     }
   ],
   "dependencies": {
@@ -730,6 +764,10 @@
     "TASK-021": [
       "TASK-018",
       "TASK-019",
+      "TASK-020",
+      "TASK-022"
+    ],
+    "TASK-022": [
       "TASK-020"
     ]
   },
@@ -752,6 +790,7 @@
     "TASK-018",
     "TASK-019",
     "TASK-020",
+    "TASK-022",
     "TASK-021"
   ],
   "executionLayers": [
@@ -810,6 +849,9 @@
     ],
     [
       "TASK-020"
+    ],
+    [
+      "TASK-022"
     ],
     [
       "TASK-021"

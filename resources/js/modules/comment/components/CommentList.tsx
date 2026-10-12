@@ -12,7 +12,7 @@ import { useDialog } from "@/shared/hooks/useDialog";
 
 import { CommentType } from "../enums/commentType";
 import { useCommentPaginated } from "../hooks/useCommentPaginated";
-import { useScrollAreaViewport } from "../hooks/useScrollAreaViewport";
+import { useCommentScrollAreaViewport } from "../hooks/useCommentScrollAreaViewport";
 import type { CommentContextPreview } from "../types/comment";
 import CommentItem from "./CommentItem";
 import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
@@ -26,7 +26,7 @@ interface CommentListProps {
 function CommentList({ postId, previewContext }: CommentListProps): JSX.Element {
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
-  const { scrollAreaRef, viewport } = useScrollAreaViewport();
+  const { scrollAreaRef, viewport } = useCommentScrollAreaViewport();
 
   const loadMoreTimer = useRef<number | null>(null);
 
