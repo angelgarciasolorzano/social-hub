@@ -75,9 +75,9 @@ class RegistrationSummaryWidget extends StatsOverviewWidget
             $registrationCountValue = $registrationCountByDate->registration_count;
             $verifiedRegistrationCountValue = $registrationCountByDate->verified_registration_count;
 
-            throw_if(! is_string($registrationDateValue)
-                || (! is_int($registrationCountValue) && (! is_string($registrationCountValue) || ! ctype_digit($registrationCountValue)))
-                || (! is_int($verifiedRegistrationCountValue) && (! is_string($verifiedRegistrationCountValue) || ! ctype_digit($verifiedRegistrationCountValue))), UnexpectedValueException::class, 'The registration aggregate returned an invalid value.');
+            throw_if(! \is_string($registrationDateValue)
+                || (! \is_int($registrationCountValue) && (! \is_string($registrationCountValue) || ! ctype_digit($registrationCountValue)))
+                || (! \is_int($verifiedRegistrationCountValue) && (! \is_string($verifiedRegistrationCountValue) || ! ctype_digit($verifiedRegistrationCountValue))), UnexpectedValueException::class, 'The registration aggregate returned an invalid value.');
 
             $registrationCounts[$registrationDateValue] = (int) $registrationCountValue;
             $verifiedRegistrationCounts[$registrationDateValue] = (int) $verifiedRegistrationCountValue;
