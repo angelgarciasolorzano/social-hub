@@ -533,6 +533,8 @@ Gates de frontend (types, lint:check, format:check, build); verificacion manual 
 
 **validateCommand:** `npm run types && npm run lint:check && npm run format:check && npm run build && ! grep -rnE '<button|text-gray-|bg-gray-|#[0-9A-Fa-f]{6}' resources/js/modules/comment`
 
+**Integration notes:** EJECUTADA (2026-10-12): types, lint:check (0 errores, 35 avisos), format:check y build en verde; grep de '<button|text-gray-|bg-gray-|#hex' y de 'overflow-y-auto|overflow-auto' en modules/comment: limpio. El modulo usa Avatar, Button, Card, Alert, Spinner, Skeleton, ScrollArea, Separator, Input, Textarea y Dialog de shadcn. CLAUDE.md documenta el uso de shadcn, las trampas de ScrollArea y useCommentScrollAreaViewport. Verificado en navegador en tema oscuro y claro (emulando prefers-color-scheme): dialogo principal, hilo de respuestas y 'Nuevo comentario'; publicar comentario y respuesta (POST 200 + refresco). Aclaracion: con el panel del navegador oculto (visibilityState=hidden) las animaciones de salida de Radix no terminan y los dialogos cerrados (data-state=closed) quedan en el DOM; no es una regresion.
+
 ### TASK-022: Renombrar useScrollAreaViewport a useCommentScrollAreaViewport
 
 El hook del modulo Comment debe llevar el nombre de su modulo, como useCommentPaginated. Crear hooks/useCommentScrollAreaViewport.ts como copia del hook actual con la funcion renombrada a useCommentScrollAreaViewport y su interfaz de retorno a UseCommentScrollAreaViewportReturn (misma logica), cambiar import y llamada en CommentList.tsx y CommentRepliesList.tsx, y borrar hooks/useScrollAreaViewport.ts (crear primero, borrar despues, sin renombre directo).
