@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Props\CommentThreadProps;
-use App\Modules\Post\Models\Post;
 use Inertia\Testing\AssertableInertia as Assert;
-use Tests\TestCase;
 
 /**
  * Build the URL of one of the pages that host the comments dialog.
@@ -20,24 +17,6 @@ function commentHostUrl(string $routeName, array $query = []): string
         : route($routeName, $query);
 }
 
-/**
- * Headers of an Inertia partial reload that asks the host page only for the given prop.
- *
- * @return array<string, string>
- */
-function commentHostPartialHeaders(TestCase $testCase, string $component, string $prop): array
-{
-    /** @var array{version: string} $page */
-    $page = $testCase->get(route('home'))->inertiaPage();
-
-    return [
-        'X-Inertia' => 'true',
-        'X-Inertia-Version' => $page['version'],
-        'X-Inertia-Partial-Component' => $component,
-        'X-Inertia-Partial-Data' => $prop,
-    ];
-}
-
 dataset('comment host pages', [
     'home' => ['home', 'home/Home'],
     'own profile' => ['profile.index', 'profile/Profile'],
@@ -48,7 +27,7 @@ it('keeps comments and replies out of a normal visit and leaves posts and user u
     $user = createUser();
     $post = createPost($user);
 
-    createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
+    createCommentOn($post);
 
     $this->actingAs($user)
         ->get(commentHostUrl($routeName, [CommentThreadProps::COMMENTS_PARAMETER => $post->id]))
@@ -66,7 +45,7 @@ it('delivers the comments of a post on a partial reload', function (string $rout
     $post = createPost($user);
 
     foreach (range(1, 12) as $position) {
-        createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
+        createCommentOn($post);
     }
 
     $this->actingAs($user)
@@ -87,10 +66,10 @@ it('delivers the comments of a post on a partial reload', function (string $rout
 it('delivers the replies of a comment on a partial reload', function (string $routeName, string $component): void {
     $user = createUser();
     $post = createPost($user);
-    $comment = createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
+    $comment = createCommentOn($post);
 
     foreach (range(1, 3) as $position) {
-        createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+        createCommentOn($comment);
     }
 
     $this->actingAs($user)
@@ -108,7 +87,7 @@ it('lists the replies of a comment with their author', function (string $routeNa
     $user = createUser();
     $author = createUser();
     $comment = createComment();
-    $reply = createComment($author, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    $reply = createCommentOn($comment, $author);
 
     $this->actingAs($user)
         ->get(commentHostUrl($routeName, [CommentThreadProps::REPLIES_PARAMETER => $comment->id]))
@@ -143,7 +122,7 @@ it('answers 404 to a partial reload of a thread that does not exist', function (
 
     $this->get(
         commentHostUrl($routeName, [CommentThreadProps::COMMENTS_PARAMETER => 999999]),
-        commentHostPartialHeaders($this, $component, 'comments'),
+        inertiaPartialHeaders($this, $component, 'comments'),
     )
         ->assertNotFound();
 })->with('comment host pages');
@@ -153,7 +132,7 @@ it('answers 404 to a partial reload with a thread id that is not a positive inte
 
     $this->get(
         commentHostUrl($routeName, [CommentThreadProps::REPLIES_PARAMETER => 'abc']),
-        commentHostPartialHeaders($this, $component, 'replies'),
+        inertiaPartialHeaders($this, $component, 'replies'),
     )
         ->assertNotFound();
 })->with('comment host pages');

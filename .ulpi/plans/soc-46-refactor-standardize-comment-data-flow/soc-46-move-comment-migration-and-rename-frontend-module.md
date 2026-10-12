@@ -10,7 +10,7 @@ Dos limpiezas de organizacion. (1) La migracion de la tabla comments vive en dat
 
 ## Scope Challenge
 
-Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated.
+Modo HOLD. La version anterior de este plan renombraba commentable a model (columnas, atributos, payload y 16 archivos de prueba, con migrate:fresh --seed en la BD local). Se DESCARTO tras revisar la convencion: Laravel documenta el patron {adjetivo}able para relacion y columnas (commentable_type/commentable_id con commentable()), el proyecto ya lo sigue en likes (likeable) y model_type/model_id es la convencion de los paquetes de Spatie, cuyas tablas son genericas (Media Library, Permission). Decision del usuario (opcion A): conservar commentable_* y limitar el refactor al movimiento de la migracion y a los nombres del frontend. El componente se llama CommentRepliesList y todo va dentro de SOC-46 con el mismo PR. Hallazgos: el unico consumidor del modulo del frontend es PostCard; ya existe una asercion (H3 de CommentSecurityAuditTest) que escanea resources/js/modules/comments; no hay ningun otro consumidor de la migracion. Ampliacion posterior (TASK-009 y TASK-010): el hook usePaginatedComments era el unico archivo de modules/comment sin el prefijo Comment y pasa a useCommentPaginated. Ampliacion posterior (TASK-011 a TASK-015): revision de las pruebas del modulo a peticion del usuario; alcance aprobado 'helpers + duplicados exactos' (no se tocan los solapes entre pruebas de reglas y de HTTP ni se fusionan las de throttle).
 
 ## Prerequisites
 
@@ -271,6 +271,119 @@ Con los consumidores en el hook nuevo, borrar hooks/usePaginatedComments.ts (des
 
 **validateCommand:** `test ! -e resources/js/modules/comment/hooks/usePaginatedComments.ts && ! grep -rn 'usePaginatedComments' resources/js app tests docs CLAUDE.md && npm run types && npm run build`
 
+### TASK-011: Crear los helpers compartidos de pruebas y adoptarlos en HostPages y Throttle
+
+En tests/Pest.php agregar createCommentOn(Post|Comment $commentable, ?User $author = null, array $attributes = []): Comment (crea el comentario con commentable_id y commentable_type tomados del morph del destino) e inertiaPartialHeaders(TestCase $testCase, string $component, string $prop): array (hace el GET a home para leer la version de Inertia y devuelve las cabeceras de un partial reload). CommentThreadHostPagesTest deja de definir commentHostPartialHeaders y usa los helpers; CommentThrottleTest reescribe loadCommentsAs sobre inertiaPartialHeaders y usa createCommentOn si aplica. Es la primera de las tareas de limpieza de pruebas del modulo (aprobada por el usuario: helpers + duplicados exactos).
+
+**Type:** test  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-010
+
+**Acceptance Criteria:**
+- [ ] createCommentOn crea un comentario sobre un Post y sobre un Comment con el alias de morph correcto ('post' o 'comment') y el autor indicado; recibe solo Post|Comment, asi que un destino de otro tipo (por ejemplo un User) falla con TypeError en lugar de crear una fila invalida.
+- [ ] HostPagesTest y ThrottleTest pasan sin perder ningun caso (mismo numero de pruebas) y ya no existen commentHostPartialHeaders ni cabeceras X-Inertia-Partial-* escritas a mano en esos dos archivos.
+- [ ] Pest.php sigue cargando para el resto de suites (la suite de Comment completa sigue verde).
+
+**writeScope:**
+- `tests/Pest.php`
+- `app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php`
+- `app/Modules/Comment/Tests/Security/CommentThrottleTest.php`
+
+**validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Props/CommentThreadHostPagesTest.php app/Modules/Comment/Tests/Security/CommentThrottleTest.php`
+
+### TASK-012: Adoptar los helpers en QueryCount, Props y Model y quitar la prueba duplicada de QueryCount
+
+CommentQueryCountTest usa inertiaPartialHeaders en listCommentsCountingQueries y createCommentOn en sus 9 creaciones, y se borra su tercera prueba ('still counts replies when the resource is built without the preloaded count'), que es una copia de la tercera asercion de CommentResourceTest. CommentThreadPropsTest elimina su helper local commentsOnPost a favor de createCommentOn. CommentModelTest usa createCommentOn en sus 6 creaciones.
+
+**Type:** test  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-011
+
+**Acceptance Criteria:**
+- [ ] QueryCountTest conserva 'reports the exact replies info...' y 'uses the same number of queries...' y deja de tener la prueba duplicada; el conteo de consultas sigue siendo el mismo para 1 y para muchos comentarios y respuestas.
+- [ ] PropsTest y ModelTest conservan todas sus pruebas y aserciones con createCommentOn; commentsOnPost ya no existe.
+- [ ] La cobertura del repliesCount sin conteo precargado sigue presente en CommentResourceTest (tercera prueba) y CommentModelTest.
+
+**writeScope:**
+- `app/Modules/Comment/Tests/Security/CommentQueryCountTest.php`
+- `app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php`
+- `app/Modules/Comment/Tests/Models/CommentModelTest.php`
+
+**validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Security/CommentQueryCountTest.php app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php app/Modules/Comment/Tests/Models/CommentModelTest.php`
+
+### TASK-013: Mover a CommentStoreTest el unico caso de ControllerHardening y adoptar el helper en ResourceTest
+
+En CommentStoreTest, la prueba 'returns 404 and creates nothing when the commentable does not exist' pasa a un dataset con post y comment (absorbe 'still returns 404 when replying to a comment that does not exist' de CommentControllerHardeningTest, el unico caso que no estaba cubierto). CommentResourceTest usa createCommentOn.
+
+**Type:** test  
+**Effort:** XS  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-011
+
+**Acceptance Criteria:**
+- [ ] El 404 se comprueba para commentable_type post y comment con un id inexistente y no se crea ningun comentario en ninguno de los dos casos.
+- [ ] CommentResourceTest conserva sus 5 pruebas con createCommentOn.
+- [ ] El numero de casos del 404 en CommentStoreTest pasa de 1 a 2 (dataset) y el resto de CommentStoreTest queda igual.
+
+**writeScope:**
+- `app/Modules/Comment/Tests/Crud/CommentStoreTest.php`
+- `app/Modules/Comment/Tests/Resources/CommentResourceTest.php`
+
+**validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Crud/CommentStoreTest.php app/Modules/Comment/Tests/Resources/CommentResourceTest.php`
+
+### TASK-014: Borrar CommentControllerHardeningTest y las pruebas duplicadas de CommentSecurityAuditTest
+
+Aprobado por el usuario. Borrar CommentControllerHardeningTest.php completo (sus 5 pruebas son copias de CommentStoreTest, de H4 y de H5, salvo el 404 ya movido en TASK-013). En CommentSecurityAuditTest borrar H1 (middleware de comments.store y comprobacion del codigo de CommentThreadProps), H2, H3 caracteres de control, H4, H5, H6 y H8 tipo no soportado, junto con los helpers que quedan sin uso (commentRouteMiddleware, commentListingQueryCount) y los imports sobrantes. Conservar H3 whitespace-only, H3 escaneo de dangerouslySetInnerHTML, H7, H8 rutas y H8 user_id forjado, y usar createCommentOn donde aplique.
+
+**Type:** test  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Review:** claude
+**Depends on:** TASK-013, TASK-011
+
+**Acceptance Criteria:**
+- [ ] CommentSecurityAuditTest queda con exactamente 5 pruebas (H3 whitespace, H3 escaneo del frontend, H7, H8 rutas y H8 user_id forjado) y el escaneo de H3 sigue pudiendo fallar (comprobado con un dangerouslySetInnerHTML temporal).
+- [ ] Cada comportamiento de las pruebas borradas sigue cubierto en otro archivo: reply-to-reply y 404 en CommentStoreTest, caracteres de control en CommentValidationHardeningTest/CommentStoreRequestTest, tipo no soportado en CommentStoreTest/CommentStoreRequestTest, throttle en CommentThrottleTest y CommentThreadPropsTest, consultas constantes en CommentQueryCountTest y CommentThreadPropsTest, flash en CommentStoreTest.
+- [ ] No queda ningun helper ni import sin uso en esos archivos y CommentControllerHardeningTest.php ya no existe.
+
+**writeScope:**
+- `app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php`
+- `app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php`
+
+**validateCommand:** `test ! -e app/Modules/Comment/Tests/Security/CommentControllerHardeningTest.php && php artisan test --compact app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php`
+
+**Integration notes:** Borrado de pruebas autorizado explicitamente por el usuario (regla del proyecto: no borrar pruebas sin aprobacion). Se borran 5 + 8 + 1 (TASK-012) = 14 pruebas y el dataset de TASK-013 agrega 1 caso: la suite de Comment pasa de 115 a ~102.
+
+### TASK-015: Gates de la limpieza de pruebas
+
+Pint, Rector (dry-run), PHPStan y las suites de Comment, Post y Filament de Admin; comprobar que no quedan helpers repetidos ni sin uso en app/Modules/Comment/Tests y que el recuento de pruebas coincide con lo esperado.
+
+**Type:** test  
+**Effort:** XS  
+**Agent:** general-purpose  
+**Priority:** P3  
+**Review:** none
+**Depends on:** TASK-012, TASK-014
+
+**Acceptance Criteria:**
+- [ ] Pint, Rector (dry-run) y PHPStan sin hallazgos y las suites de Comment, Post y Admin/Filament pasan (salvo la falla conocida ajena de Admin).
+- [ ] Ninguna funcion global de pruebas del modulo esta definida mas de una vez ni queda sin uso (grep de definiciones frente a usos).
+- [ ] El recuento de pruebas de Comment es ~102 y se reporta junto con el de aserciones.
+
+**writeScope:**
+- (ninguno: tarea de verificacion)
+
+**validateCommand:** `vendor/bin/pint --dirty --format agent && composer rector-dry && composer phpstan && php artisan test --compact app/Modules/Comment/Tests app/Modules/Post/Tests`
+
 ## Failure Modes
 
 - Si el nombre de archivo de la migracion cambia, un entorno ya migrado intentaria recrear la tabla y fallaria (tabla existente): se conserva el nombre exacto.
@@ -288,11 +401,12 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 - Migracion movida: validacion de TASK-001 (migrate:fresh en pruebas crea commentable_type/commentable_id, la global ya no existe) y CommentModelTest; la suite de Comment completa corre en TASK-008.
 - Frontend: npm run types, lint:check, format:check y build en cada tarea FE; H3 de CommentSecurityAuditTest sobre modules/comment (TASK-006); verificacion manual en navegador (TASK-008).
 - Renombre del hook (TASK-009, TASK-010): npm run types, eslint y build; verificacion manual en navegador al borrar el hook viejo (no hay pruebas unitarias de frontend).
+- Limpieza de pruebas (TASK-011 a TASK-015): helpers unificados en tests/Pest.php, 14 pruebas duplicadas retiradas con aprobacion del usuario y su cobertura verificada en otros archivos del modulo.
 
 ## Execution Summary
 
-- Tareas: 10
-- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010
+- Tareas: 15
+- Ruta critica: TASK-002 -> TASK-003 -> TASK-004 -> TASK-005 -> TASK-006 -> TASK-007 -> TASK-008 -> TASK-009 -> TASK-010 -> TASK-011 -> TASK-012 -> TASK-014 -> TASK-015
 - Capas de ejecucion:
   1. TASK-001, TASK-002
   2. TASK-003
@@ -303,6 +417,10 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
   7. TASK-008
   8. TASK-009
   9. TASK-010
+  10. TASK-011
+  11. TASK-012, TASK-013
+  12. TASK-014
+  13. TASK-015
 
 ## Task Dependencies
 
@@ -318,3 +436,8 @@ El backend (TASK-001) es independiente del frontend (TASK-002 a TASK-006): cualq
 | TASK-008 | TASK-007 |
 | TASK-009 | TASK-006 |
 | TASK-010 | TASK-009, TASK-007 |
+| TASK-011 | TASK-010 |
+| TASK-012 | TASK-011 |
+| TASK-013 | TASK-011 |
+| TASK-014 | TASK-013, TASK-011 |
+| TASK-015 | TASK-012, TASK-014 |

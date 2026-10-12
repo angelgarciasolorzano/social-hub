@@ -74,17 +74,11 @@ it('throttles each user independently', function (): void {
  */
 function loadCommentsAs(TestCase $testCase, User $user, Post $post): TestResponse
 {
-    /** @var array{version: string} $page */
-    $page = $testCase->actingAs($user)->get(route('home'))->inertiaPage();
+    $testCase->actingAs($user);
 
-    return $testCase->actingAs($user)->get(
+    return $testCase->get(
         route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
-        [
-            'X-Inertia' => 'true',
-            'X-Inertia-Version' => $page['version'],
-            'X-Inertia-Partial-Component' => 'home/Home',
-            'X-Inertia-Partial-Data' => 'comments',
-        ],
+        inertiaPartialHeaders($testCase, 'home/Home', 'comments'),
     );
 }
 
