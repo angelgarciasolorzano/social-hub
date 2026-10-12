@@ -11,9 +11,13 @@ use App\User\Models\User;
 use Filament\Tables\Testing\TestsFilters;
 use Livewire\Livewire;
 use LogicException;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('allows admins with the users reader role to list and search users by name and email', function (): void {
@@ -192,6 +196,7 @@ it('filters users by verification status registration date and post presence alo
 
 it('preserves search sorting and pagination when user filters are active', function (): void {
     $authenticatedUser = UserFactory::new()->unverified()->createOne();
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
@@ -203,6 +208,7 @@ it('preserves search sorting and pagination when user filters are active', funct
 
     throw_unless($firstUser instanceof User, LogicException::class, 'The first filtered user fixture must exist.');
 
+    /** @var User $firstUser */
     $firstUser->forceFill([
         'name' => 'Filtered User 11',
         'email' => 'filtered-user-11@example.test',
@@ -210,6 +216,7 @@ it('preserves search sorting and pagination when user filters are active', funct
 
     for ($index = 10; $index >= 1; $index--) {
         $user = createUser();
+
         $user->forceFill([
             'name' => sprintf('Filtered User %02d', $index),
             'email' => sprintf('filtered-user-%02d@example.test', $index),
@@ -219,6 +226,7 @@ it('preserves search sorting and pagination when user filters are active', funct
     }
 
     $unverifiedUserWithPost = UserFactory::new()->unverified()->createOne();
+
     createPost($unverifiedUserWithPost);
 
     $this->actingAs($authenticatedUser, 'admin');
@@ -228,6 +236,7 @@ it('preserves search sorting and pagination when user filters are active', funct
 
     throw_unless($lastUser instanceof User, LogicException::class, 'The filtered user fixture must exist.');
 
+    /** @var User $lastUser */
     Livewire::test(ListUsers::class)
         ->set('tableFilters.email_verified_at', ['value' => true])
         ->set('tableFilters.has_posts', ['value' => false])

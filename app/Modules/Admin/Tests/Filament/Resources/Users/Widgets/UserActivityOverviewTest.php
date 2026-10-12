@@ -7,9 +7,13 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\Widgets\UserActivityOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use Livewire\Livewire;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('renders the selected users post comment and active trusted device counts', function (): void {

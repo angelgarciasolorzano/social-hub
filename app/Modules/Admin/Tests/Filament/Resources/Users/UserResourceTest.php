@@ -5,14 +5,19 @@ declare(strict_types=1);
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Models\User;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('rejects direct user create edit and delete requests without mutating users', function (): void {
     $authenticatedUser = createUser();
     $authenticatedUser->saveAppAuthenticationSecret('JBSWY3DPEHPK3PXP');
+
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,

@@ -11,9 +11,13 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Crypt;
 use Livewire\Livewire;
 use LogicException;
+use Tests\TestCase;
 
 beforeEach(function (): void {
-    AdminFilamentTestContext::configure($this);
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
 });
 
 it('allows admins with users view permission to open an allowlisted detail without exposing two factor secrets', function (): void {
@@ -49,15 +53,18 @@ it('allows admins with users view permission to open an allowlisted detail witho
 
     throw_unless($detailPageComponent instanceof ViewUser, LogicException::class, 'The detail test must resolve the Filament ViewUser page.');
 
+    /** @var ViewUser $detailPageComponent */
     $infolist = $detailPageComponent->getSchema('infolist');
 
     throw_unless($infolist instanceof Schema, LogicException::class, 'The user detail page must expose its infolist schema.');
 
+    /** @var Schema $infolist */
     $infolistComponents = array_filter(
         $infolist->getFlatComponents(withActions: false, withHidden: true),
         static fn (mixed $component): bool => $component instanceof Component,
     );
 
+    /** @var array<string, Component> $infolistComponents */
     expect(array_keys($infolistComponents))->toBe([
         'name',
         'email',
