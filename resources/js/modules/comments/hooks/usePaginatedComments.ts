@@ -4,26 +4,7 @@ import { router } from "@inertiajs/react";
 
 import { CommentableType } from "../enums/commentableType";
 import type { CommentableTypeValues } from "../enums/commentableType";
-import type { Comment, CommentsLoadFailure, PaginatedComments } from "../types/comment";
-
-interface CommentThreadRequest {
-  cursorParameter: string;
-  prop: "comments" | "replies";
-  targetParameter: string;
-}
-
-const COMMENT_THREAD_REQUESTS: Record<CommentableTypeValues, CommentThreadRequest> = {
-  [CommentableType.POST]: {
-    cursorParameter: "comments_cursor",
-    prop: "comments",
-    targetParameter: "comments_post",
-  },
-  [CommentableType.COMMENT]: {
-    cursorParameter: "replies_cursor",
-    prop: "replies",
-    targetParameter: "replies_comment",
-  },
-};
+import type { CommentsLoadFailure, PaginatedComments } from "../types/comment";
 
 interface UsePaginatedCommentsReturn {
   commentsPage: PaginatedComments | null;
@@ -35,49 +16,6 @@ interface UsePaginatedCommentsReturn {
   loadMoreComments: () => void;
   retryLoad: () => void;
   uploadedComments: () => void;
-}
-
-function isPaginatedComments(candidate: unknown): candidate is PaginatedComments {
-  if (typeof candidate !== "object" || candidate === null) return false;
-
-  const page = candidate as Partial<Record<keyof PaginatedComments, unknown>>;
-
-  return Array.isArray(page.data) && "next_cursor" in page;
-}
-
-function withoutCommentsOf(comments: Comment[], excluded: Comment[]): Comment[] {
-  const excludedIds = new Set<number>(excluded.map((comment) => comment.id));
-
-  return comments.filter((comment) => !excludedIds.has(comment.id));
-}
-
-/**
- * Combine the comments already loaded with a freshly received page, never repeating an id.
- * A next page goes after what is loaded; a refresh goes before it and only keeps the rest
- * when everything was already loaded, otherwise the refreshed first page replaces it.
- */
-function combineCommentPages(
-  loadedPage: PaginatedComments | null,
-  incomingPage: PaginatedComments,
-  kind: CommentsLoadFailure,
-): PaginatedComments {
-  if (loadedPage === null) return incomingPage;
-
-  if (kind === "more") {
-    return {
-      ...incomingPage,
-      data: [...withoutCommentsOf(loadedPage.data, incomingPage.data), ...incomingPage.data],
-    };
-  }
-
-  if (loadedPage.next_cursor !== null) return incomingPage;
-
-  return {
-    ...incomingPage,
-    data: [...incomingPage.data, ...withoutCommentsOf(loadedPage.data, incomingPage.data)],
-    next_cursor: null,
-    next_page_url: null,
-  };
 }
 
 /**
@@ -93,30 +31,22 @@ export function usePaginatedComments(
   const [isRefreshing, setIsRefreshing] = useState<boolean>(true);
   const [loadFailure, setLoadFailure] = useState<CommentsLoadFailure | null>(null);
 
-  const loadingRef = useRef<boolean>(false);
-  const loadFailureRef = useRef<CommentsLoadFailure | null>(null);
-  const commentsPageRef = useRef<PaginatedComments | null>(null);
+  const isRequestInFlight = useRef<boolean>(false);
 
-  const { cursorParameter, prop, targetParameter } = COMMENT_THREAD_REQUESTS[commentableType];
+  const isPostThread = commentableType === CommentableType.POST;
+
+  const propName = isPostThread ? "comments" : "replies";
+  const targetParameter = isPostThread ? "comments_post" : "replies_comment";
+  const cursorParameter = isPostThread ? "comments_cursor" : "replies_cursor";
 
   const nextCursor = commentsPage?.next_cursor ?? null;
   const hasMoreComments = nextCursor !== null;
 
-  const storeCommentsPage = useCallback((page: PaginatedComments | null) => {
-    commentsPageRef.current = page;
-    setCommentsPage(page);
-  }, []);
-
-  const storeLoadFailure = useCallback((failure: CommentsLoadFailure | null) => {
-    loadFailureRef.current = failure;
-    setLoadFailure(failure);
-  }, []);
-
   const sendRequest = useCallback(
     (cursor: string | null, kind: CommentsLoadFailure) => {
-      if (loadingRef.current) return;
+      if (isRequestInFlight.current) return;
 
-      loadingRef.current = true;
+      isRequestInFlight.current = true;
 
       let hasLoaded = false;
 
@@ -125,39 +55,59 @@ export function usePaginatedComments(
           [targetParameter]: commentableId,
           ...(cursor === null ? {} : { [cursorParameter]: cursor }),
         },
-        only: [prop],
+        only: [propName],
         preserveUrl: true,
         replace: true,
-        reset: [prop],
+        reset: [propName],
         onHttpException: () => false,
         onNetworkError: () => false,
         onSuccess: (page) => {
-          const incomingPage: unknown = (page.props as Record<string, unknown>)[prop];
+          const incomingPage = (page.props as Record<string, PaginatedComments | undefined>)[
+            propName
+          ];
 
-          if (!isPaginatedComments(incomingPage)) return;
+          if (!incomingPage?.data) return;
 
           hasLoaded = true;
 
-          storeCommentsPage(combineCommentPages(commentsPageRef.current, incomingPage, kind));
+          setCommentsPage((loadedPage) => {
+            if (loadedPage === null) return incomingPage;
+
+            const incomingIds = new Set<number>(incomingPage.data.map((comment) => comment.id));
+            const keptComments = loadedPage.data.filter((comment) => !incomingIds.has(comment.id));
+
+            if (kind === "more") {
+              return { ...incomingPage, data: [...keptComments, ...incomingPage.data] };
+            }
+
+            if (loadedPage.next_cursor !== null) return incomingPage;
+
+            return {
+              ...incomingPage,
+              data: [...incomingPage.data, ...keptComments],
+              next_cursor: null,
+              next_page_url: null,
+            };
+          });
         },
         onFinish: () => {
-          loadingRef.current = false;
+          isRequestInFlight.current = false;
 
           setIsRefreshing(false);
           setIsLoadingMore(false);
 
-          if (!hasLoaded) storeLoadFailure(kind);
+          if (!hasLoaded) setLoadFailure(kind);
         },
       });
     },
-    [commentableId, cursorParameter, prop, storeCommentsPage, storeLoadFailure, targetParameter],
+    [commentableId, cursorParameter, propName, targetParameter],
   );
 
   const startRequest = useCallback(
     (cursor: string | null, kind: CommentsLoadFailure) => {
-      if (loadingRef.current) return;
+      if (isRequestInFlight.current) return;
 
-      storeLoadFailure(null);
+      setLoadFailure(null);
 
       if (kind === "refresh") {
         setIsRefreshing(true);
@@ -167,7 +117,7 @@ export function usePaginatedComments(
 
       sendRequest(cursor, kind);
     },
-    [sendRequest, storeLoadFailure],
+    [sendRequest],
   );
 
   const uploadedComments = useCallback(() => {
@@ -175,49 +125,36 @@ export function usePaginatedComments(
   }, [startRequest]);
 
   const loadMoreComments = useCallback(() => {
-    if (loadFailureRef.current !== null) return;
+    if (nextCursor === null || loadFailure !== null) return;
 
-    const cursor = commentsPageRef.current?.next_cursor ?? null;
-
-    if (cursor === null) return;
-
-    startRequest(cursor, "more");
-  }, [startRequest]);
+    startRequest(nextCursor, "more");
+  }, [loadFailure, nextCursor, startRequest]);
 
   const retryLoad = useCallback(() => {
-    const failure = loadFailureRef.current;
+    if (loadFailure === null) return;
 
-    if (failure === null) return;
+    startRequest(loadFailure === "refresh" ? null : nextCursor, loadFailure);
+  }, [loadFailure, nextCursor, startRequest]);
 
-    startRequest(
-      failure === "refresh" ? null : (commentsPageRef.current?.next_cursor ?? null),
-      failure,
+  const increaseRepliesCount = useCallback((commentId: number) => {
+    setCommentsPage(
+      (loadedPage) =>
+        loadedPage && {
+          ...loadedPage,
+          data: loadedPage.data.map((comment) =>
+            comment.id === commentId
+              ? {
+                  ...comment,
+                  repliesInfo: {
+                    hasReplies: true,
+                    repliesCount: comment.repliesInfo.repliesCount + 1,
+                  },
+                }
+              : comment,
+          ),
+        },
     );
-  }, [startRequest]);
-
-  const increaseRepliesCount = useCallback(
-    (commentId: number) => {
-      const loadedPage = commentsPageRef.current;
-
-      if (loadedPage === null) return;
-
-      storeCommentsPage({
-        ...loadedPage,
-        data: loadedPage.data.map((comment: Comment) => {
-          if (comment.id !== commentId) return comment;
-
-          return {
-            ...comment,
-            repliesInfo: {
-              hasReplies: true,
-              repliesCount: comment.repliesInfo.repliesCount + 1,
-            },
-          };
-        }),
-      });
-    },
-    [storeCommentsPage],
-  );
+  }, []);
 
   useEffect(() => {
     sendRequest(null, "refresh");
