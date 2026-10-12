@@ -23,6 +23,28 @@ it('seeds each role with only its intended permissions', function (): void {
     $this->assertDatabaseCount('roles', 2);
     $this->assertDatabaseCount('permissions', 3);
 
+    foreach (AdminRole::cases() as $adminRoleCase) {
+        $this->assertDatabaseHas('roles', [
+            'name' => $adminRoleCase->value,
+            'guard_name' => 'admin',
+        ]);
+        $this->assertDatabaseMissing('roles', [
+            'name' => $adminRoleCase->value,
+            'guard_name' => 'web',
+        ]);
+    }
+
+    foreach (AdminPermission::cases() as $adminPermissionCase) {
+        $this->assertDatabaseHas('permissions', [
+            'name' => $adminPermissionCase->value,
+            'guard_name' => 'admin',
+        ]);
+        $this->assertDatabaseMissing('permissions', [
+            'name' => $adminPermissionCase->value,
+            'guard_name' => 'web',
+        ]);
+    }
+
     expect($adminRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([AdminPermission::AdminAccess->value])
         ->and($usersReaderRole->permissions->pluck('name')->sort()->values()
@@ -37,10 +59,14 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
         ->where('name', AdminRole::UsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
+    $user = createUser();
+    $user->assignRole($usersReaderRole);
 
     $usersReaderRole->revokePermissionTo(AdminPermission::UsersViewAny->value);
 
     $this->seed(AdminAuthorizationSeeder::class);
+
+    $user->refresh();
 
     $remainingPermissions = Role::query()
         ->where('name', AdminRole::UsersReader->value)
@@ -54,6 +80,14 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
 
     $this->assertDatabaseCount('roles', 2);
     $this->assertDatabaseCount('permissions', 3);
+    $this->assertDatabaseHas('model_has_roles', [
+        'role_id' => $usersReaderRole->getKey(),
+        'model_type' => $user->getMorphClass(),
+        'model_id' => $user->getKey(),
+    ]);
 
-    expect($remainingPermissions)->toBe([AdminPermission::UsersView->value]);
+    expect($remainingPermissions)->toBe([AdminPermission::UsersView->value])
+        ->and($user->hasRole(AdminRole::UsersReader->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::UsersView->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::UsersViewAny->value, 'admin'))->toBeFalse();
 });

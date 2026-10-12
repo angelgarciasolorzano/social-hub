@@ -15,7 +15,7 @@ EXPANSION confirmada por el usuario. Este plan agrega a SOC-47 la normalización
 ## Prerequisites
 
 - SOC-47 ya tiene recursos de solo lectura para Users y Posts, relation managers para posts, comments y trusted devices, y widgets del dashboard.
-- El código y los documentos actuales usan `admin` como guard Spatie, pero las instrucciones vigentes de esta tarea requieren `web` para Spatie. El guard de autenticación de Filament permanece `admin`; son conceptos separados.
+- El contrato vigente de AGENTS.md usa el guard `admin` para el catálogo Spatie del panel. `web` permanece como guard predeterminado para la autenticación regular.
 - El catálogo Admin ya está centralizado en `AdminRole` y `AdminPermission`, con seeders, comandos Artisan y pruebas existentes en `app/Modules/Admin/`.
 - Los seeders pueden haber asignado `admin` aleatoriamente en bases locales ya pobladas. La actualización deja de crear asignaciones aleatorias, pero no revoca asignaciones existentes que podrían haberse administrado manualmente.
 
@@ -29,14 +29,14 @@ EXPANSION confirmada por el usuario. Este plan agrega a SOC-47 la normalización
 
 ## Contracts
 
-- Spatie usa el guard `web` configurado por el modelo User. Filament conserva `authGuard('admin')`; `canAccessPanel()` exige panel `admin`, correo verificado y permiso `admin.access`.
+- El modelo User y el catálogo Spatie de Admin usan el guard `admin`, conforme al contrato vigente. Filament conserva `authGuard('admin')`; `web` sigue siendo el guard predeterminado de la autenticación regular. `canAccessPanel()` exige panel `admin`, correo verificado y permiso `admin.access`.
 - El rol `admin` agrupa únicamente `admin.access`: permite entrar al panel, pero por sí solo no concede acceso a secciones ni significa superadministrador.
 - `admin-users-reader` agrupa `admin.users.viewAny` y `admin.users.view`; `admin-posts-reader` agrupa `admin.posts.viewAny` y `admin.posts.view`; `admin-dashboard-reader` agrupa `admin.dashboard.view`.
 - Los permisos del catálogo son `admin.access`, `admin.dashboard.view`, `admin.users.viewAny`, `admin.users.view`, `admin.posts.viewAny` y `admin.posts.view`. `AdminPermission` y `AdminRole` son la única fuente de identificadores.
 - User Policies y componentes Filament comprueban permisos con `can()`/Gate, no nombres de roles. Los permisos obtenidos por roles se combinan; no se conceden permisos directos al usuario.
 - El recurso Posts y su vista de comentarios/replies requieren permisos `admin.posts.*`. La relación Posts dentro del detalle User requiere autorización de User y permiso de listado Posts; trusted devices y actividad de User continúan bajo permisos Users.
 - Los widgets de estadísticas del dashboard solo muestran datos con `admin.dashboard.view`.
-- La migración del catálogo transforma solo identificadores Admin conocidos: preserva asignaciones y pivots existentes al mover `guard_name` de `admin` a `web`, renombrar `users-reader` y renombrar permisos `users.*`. No elimina asignaciones de usuarios.
+- La migración del catálogo preserva asignaciones y pivots existentes al renombrar `users-reader` y permisos `users.*`; el `guard_name` canónico del catálogo permanece `admin`. No elimina asignaciones de usuarios.
 - El seeder conserva su comportamiento idempotente y las revocaciones manuales de permisos en roles existentes. `AdminUserSeeder` asigna roles de forma determinista a Angel en local/testing y deja de conceder roles a usuarios aleatorios.
 - Los comandos existentes siguen validando entradas contra los enums y protegiendo que siempre quede al menos un usuario con `admin.access`.
 
@@ -75,39 +75,36 @@ EXPANSION confirmada por el usuario. Este plan agrega a SOC-47 la normalización
 
 ## Tasks
 
-### TASK-013: Align the Spatie guard with web and preserve legacy assignments
+### TASK-013: Preserve the Admin guard contract and existing assignments
 
-Configure User and the Admin authorization seeder to use Spatie guard `web` while leaving Filament's session guard `admin` intact. Normalize existing canonical Admin roles and permissions from `admin` to `web` in place so existing user-role and role-permission pivots remain connected.
+Add regression coverage for the project contract that User and the Admin authorization catalog use Spatie guard `admin`, while `web` remains the regular authentication default. Verify that reseeding preserves user-role and role-permission assignments.
 
-**Type:** refactor · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
 **Depends on:** Ninguna
 
 **Acceptance Criteria:**
-- A legacy Admin catalog seeded under guard `admin` is normalized to `web` without changing the users assigned to its roles or the permissions attached to those roles.
-- Running the authorization seeder twice leaves one catalog entry per identifier and preserves existing grants.
-- User resolves Spatie roles under `web`, while Filament continues authenticating with `admin` and panel admission still requires a verified email plus `admin.access`.
+- The seeded Admin roles and permissions use guard `admin` and are not duplicated under guard `web`.
+- Running the authorization seeder again preserves existing user-role assignments and manually revoked role permissions without creating duplicates.
 
 **writeScope:**
-- `app/User/Models/User.php`
-- `app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php`
 - `app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php`
 
 **validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php`
 
 **Review:** Codex
 
-### TASK-014: Update User role assertions to the web permission guard
+### TASK-014: Assert User role resolution with the Admin guard
 
-Adjust the User role model test to assert role and permission resolution using the Spatie `web` guard, distinct from Filament's authentication guard.
+Keep the User role model test aligned with the Admin catalog's Spatie `admin` guard, distinct from the regular authentication default `web`.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
 **Depends on:** TASK-013
 
 **Acceptance Criteria:**
-- A User receives the seeded reader role and resolves its inherited permission with the `web` guard.
-- The test fails if the Admin catalog is accidentally recreated under the Filament `admin` guard.
+- A User receives the seeded reader role and resolves its inherited permission with guard `admin`.
+- The test fails if the Admin reader role or permission is seeded under the regular `web` guard.
 
 **writeScope:**
 - `app/Modules/Admin/Tests/Models/UserRoleTest.php`
@@ -269,7 +266,7 @@ Gate the registration summary and chart widgets with `admin.dashboard.view`; the
 
 ### TASK-022: Update the user-role command for the new catalog
 
-Use the `web` Spatie guard and the renamed role enum values in admin:user-role. Preserve the safeguard that prevents revoking the final role granting `admin.access`.
+Use the canonical `admin` Spatie guard and the renamed role enum values in admin:user-role. Preserve the safeguard that prevents revoking the final role granting `admin.access`.
 
 **Type:** refactor · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -290,7 +287,7 @@ Use the `web` Spatie guard and the renamed role enum values in admin:user-role. 
 
 ### TASK-023: Update role-permission administration for namespaced permissions
 
-Use the `web` Spatie guard and new enum values in admin:role-permissions. Keep the last-admin-access safeguard and allow operators to update the role bundles from the catalog.
+Use the canonical `admin` Spatie guard and new enum values in admin:role-permissions. Keep the last-admin-access safeguard and allow operators to update the role bundles from the catalog.
 
 **Type:** refactor · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -353,14 +350,14 @@ Assign Angel the base role and all current reader bundles in local/testing, then
 
 ### TASK-026: Synchronize the Admin RBAC documentation
 
-Update the existing project instructions and backend architecture reference to distinguish Filament's `admin` session guard from Spatie's `web` guard and document the new role-permission bundles and command arguments. Do not edit either SOC-47 plan pair.
+Update the existing project instructions and backend architecture reference to distinguish Filament's `admin` session guard and Spatie catalog guard from the regular authentication default `web`, and document the new role-permission bundles and command arguments. Do not edit the original SOC-47 plan pair.
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
 
 **Depends on:** TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025
 
 **Acceptance Criteria:**
-- AGENTS.md, CLAUDE.md, and docs/architecture/backend.md describe the same guards, roles, permissions, and panel-entry behavior.
+- AGENTS.md, CLAUDE.md, and docs/architecture/backend.md describe the `admin` panel/catalog guard and `web` regular-auth default consistently, alongside roles, permissions, and panel-entry behavior.
 - Documentation states that `admin.access` is panel entry only and reader roles grant section capabilities through permissions.
 - The original `.ulpi/plans/soc-47-expand-filament-user-administration-dashboard-insights/` Markdown and JSON files remain unchanged.
 
