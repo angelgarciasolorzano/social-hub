@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
@@ -31,6 +30,7 @@ it('lists only the selected users posts with pagination', function (): void {
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $targetUser = createUser();
@@ -94,6 +94,7 @@ it('links posts to the dedicated read-only detail without loading their comment 
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $targetUser = createUser();
@@ -160,6 +161,7 @@ it('does not load comment threads for posts with many comments and replies', fun
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $targetUser = createUser();
@@ -204,6 +206,7 @@ it('searches the selected users posts and sorts the content column', function ()
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $targetUser = createUser();
@@ -247,6 +250,7 @@ it('filters the selected users posts by comment presence and creation date', fun
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
         AdminRole::AdminUsersReader->value,
+        AdminRole::AdminPostsReader->value,
     ]);
 
     $targetUser = createUser();
@@ -300,10 +304,30 @@ it('filters the selected users posts by comment presence and creation date', fun
         ->toBe([postKey($withinRangeWithoutComments)]);
 });
 
-it('forbids admins without users view permission from viewing posts', function (): void {
+it('forbids users without Posts permission from viewing the relation', function (): void {
     $authenticatedUser = createUser();
-    $authenticatedUser->assignRole(AdminRole::Admin->value);
-    $authenticatedUser->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(PostsRelationManager::class, [
+        'ownerRecord' => $targetUser,
+        'pageClass' => ViewUser::class,
+    ])
+        ->assertForbidden();
+});
+
+it('forbids direct relation requests without User record access', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminPostsReader->value,
+    ]);
 
     $targetUser = createUser();
 
