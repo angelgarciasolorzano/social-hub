@@ -54,14 +54,14 @@ class CommentSeeder extends Seeder
      */
     private function mentionOtherReplyAuthors(Collection $replies): void
     {
-        $replies->each(function (Comment $reply) use ($replies): void {
-            $otherAuthorIds = $replies->pluck('user_id')->unique()->reject($reply->user_id)->values();
+        $replies->each(function (Comment $comment) use ($replies): void {
+            $otherAuthorIds = $replies->pluck('user_id')->unique()->reject($comment->user_id)->values();
 
             if ($otherAuthorIds->isEmpty() || random_int(0, 1) === 0) {
                 return;
             }
 
-            $reply->update(['replied_to_user_id' => $otherAuthorIds->random()]);
+            $comment->update(['replied_to_user_id' => $otherAuthorIds->random()]);
         });
     }
 }

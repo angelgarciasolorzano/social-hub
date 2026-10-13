@@ -60,16 +60,16 @@ it('makes some replies mention the author of another reply in the same thread', 
 
     expect($mentioningReplies)->not->toBeEmpty();
 
-    foreach ($mentioningReplies as $reply) {
+    foreach ($mentioningReplies as $mentioningReply) {
         $threadAuthorIds = Comment::query()
             ->where('commentable_type', Comment::MORPH_NAME)
-            ->where('commentable_id', $reply->commentable_id)
-            ->whereKeyNot($reply->id)
+            ->where('commentable_id', $mentioningReply->commentable_id)
+            ->whereKeyNot($mentioningReply->id)
             ->pluck('user_id')
             ->all();
 
-        expect($threadAuthorIds)->toContain($reply->replied_to_user_id)
-            ->and($reply->replied_to_user_id)->not->toBe($reply->user_id);
+        expect($threadAuthorIds)->toContain($mentioningReply->replied_to_user_id)
+            ->and($mentioningReply->replied_to_user_id)->not->toBe($mentioningReply->user_id);
     }
 });
 

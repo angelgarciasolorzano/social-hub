@@ -24,9 +24,9 @@ it('does not mention anyone by default', function (): void {
 it('mentions the given user with the repliedTo state', function (): void {
     $mentionedUser = createUser();
 
-    $reply = CommentFactory::new()->repliedTo($mentionedUser)->createOne();
+    $comment = CommentFactory::new()->repliedTo($mentionedUser)->createOne();
 
-    expect($reply->replied_to_user_id)->toBe($mentionedUser->id);
+    expect($comment->replied_to_user_id)->toBe($mentionedUser->id);
 });
 
 it('assigns the comment to the given author', function (): void {
