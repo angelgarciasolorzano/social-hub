@@ -31,13 +31,14 @@ function CommentForm(props: CommentFormProps): JSX.Element {
     setOpenModalComment,
   } = props;
 
-  const { setData, errors, submit } = formComment;
+  const { clearErrors, setData, errors, submit } = formComment;
 
   const [serverError, setServerError] = useState<null | string>(null);
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
+    clearErrors();
     setServerError(null);
 
     submit(CommentStoreController(), {
