@@ -6,6 +6,7 @@ use App\Like\Models\Like;
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
+use App\User\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 it('belongs to the user who wrote it', function (): void {
@@ -14,6 +15,30 @@ it('belongs to the user who wrote it', function (): void {
 
     expect($comment->user->is($user))->toBeTrue()
         ->and($user->comments()->pluck('id')->all())->toBe([$comment->id]);
+});
+
+it('belongs to the user it replies to', function (): void {
+    $mentionedUser = createUser();
+    $reply = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
+
+    expect($reply->repliedToUser)->not->toBeNull()
+        ->and($reply->repliedToUser?->is($mentionedUser))->toBeTrue();
+});
+
+it('has no replied to user when it does not mention anyone', function (): void {
+    expect(createComment()->repliedToUser)->toBeNull();
+});
+
+it('keeps the comment and clears the mention when the mentioned user is deleted', function (): void {
+    $mentionedUser = createUser();
+    $reply = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
+
+    User::query()->whereKey($mentionedUser->id)->delete();
+
+    $freshReply = $reply->fresh();
+
+    expect($freshReply)->not->toBeNull()
+        ->and($freshReply?->replied_to_user_id)->toBeNull();
 });
 
 it('belongs to the post or comment it was written on', function (): void {

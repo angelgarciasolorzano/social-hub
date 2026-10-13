@@ -22,13 +22,16 @@ use Override;
  * @property int $id
  * @property string $content
  * @property CarbonImmutable|null $created_at
+ * @property int|null $replied_to_user_id
  * @property-read User $user
+ * @property-read User|null $repliedToUser
  *
  * @mixin IdeHelperComment
  */
 #[UseFactory(CommentFactory::class)]
 #[Fillable([
     'user_id',
+    'replied_to_user_id',
     'commentable_id',
     'commentable_type',
     'content',
@@ -64,6 +67,16 @@ class Comment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the user mentioned when this comment replies to another reply.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function repliedToUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'replied_to_user_id');
     }
 
     /**
