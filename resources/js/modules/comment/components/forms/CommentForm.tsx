@@ -2,19 +2,19 @@ import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
-import { store } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
+import CommentStoreController from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentStoreController";
 
 import { InputError } from "@/shared/components/form";
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Textarea } from "@/shared/components/shadcn/ui/textarea";
 
-import type { CommentableTypeValues } from "../../enums/commentableType";
+import type { CommentTypeValues } from "../../enums/commentType";
 import type { CommentFormData } from "../../types/comment";
 
 interface CommentFormProps {
   formComment: InertiaFormProps<CommentFormData>;
   commentableId: number;
-  commentableType: CommentableTypeValues;
+  commentableType: CommentTypeValues;
   formId: string;
   uploadedComments?: () => void;
   setOpenModalComment: Dispatch<SetStateAction<boolean>>;
@@ -35,7 +35,7 @@ function CommentForm(props: CommentFormProps): JSX.Element {
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
-    submit(store(), {
+    submit(CommentStoreController(), {
       onSuccess: () => {
         if (uploadedComments) uploadedComments();
 

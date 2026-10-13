@@ -146,6 +146,38 @@ function createCommentOn(Post|Comment $commentable, ?User $user = null, array $a
 }
 
 /**
+ * Create the given number of comments on a Post, or replies when given another Comment.
+ *
+ * @return list<Comment>
+ */
+function createCommentsOn(Post|Comment $commentable, int $total, ?User $user = null): array
+{
+    return array_map(
+        static fn (int $position): Comment => createCommentOn($commentable, $user),
+        range(1, $total),
+    );
+}
+
+/**
+ * Headers of an Inertia partial reload that asks a page only for the given prop.
+ * The caller must already be acting as a user, since the version is read from the home page.
+ *
+ * @return array<string, string>
+ */
+function inertiaPartialHeaders(TestCase $testCase, string $component, string $prop): array
+{
+    /** @var array{version: string} $page */
+    $page = $testCase->get(route('home'))->inertiaPage();
+
+    return [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $page['version'],
+        'X-Inertia-Partial-Component' => $component,
+        'X-Inertia-Partial-Data' => $prop,
+    ];
+}
+
+/**
  * Create a persisted TrustedDevice, same #[UseFactory] workaround as
  * createUser(). Pass `$user` to attach it to an existing owner, or omit it
  * to let the factory create its own.

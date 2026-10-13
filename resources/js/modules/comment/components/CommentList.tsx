@@ -1,30 +1,33 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { useIntersectionObserver } from "usehooks-ts";
 
 import { Input } from "@/shared/components/shadcn/ui/input";
+import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { useDialog } from "@/shared/hooks/useDialog";
 
-import { cn } from "@/shared/lib/utils";
-
-import { CommentableType } from "../enums/commentableType";
-import { usePaginatedComments } from "../hooks/usePaginatedComments";
+import { CommentType } from "../enums/commentType";
+import { useCommentPaginated } from "../hooks/useCommentPaginated";
+import { useCommentScrollAreaViewport } from "../hooks/useCommentScrollAreaViewport";
 import type { CommentContextPreview } from "../types/comment";
 import CommentItem from "./CommentItem";
-import CommentInputDialog from "./modal/CommentInputDialog";
+import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
+import CommentInputDialog from "./dialog/CommentInputDialog";
 
 interface CommentListProps {
   postId: number;
   previewContext: CommentContextPreview;
 }
 
-function CommentList({ postId, previewContext }: CommentListProps) {
+function CommentList({ postId, previewContext }: CommentListProps): JSX.Element {
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
-  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
+  const { scrollAreaRef, viewport } = useCommentScrollAreaViewport();
+
   const loadMoreTimer = useRef<number | null>(null);
 
   const { open: openModalComment, setOpen: setOpenModalComment } = useDialog();
@@ -36,17 +39,27 @@ function CommentList({ postId, previewContext }: CommentListProps) {
     loadMoreComments,
     hasMoreComments,
     increaseRepliesCount,
+    loadFailure,
+    retryLoad,
     uploadedComments,
-  } = usePaginatedComments(CommentableType.POST, postId);
+  } = useCommentPaginated(CommentType.POST, postId);
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
-    root: scrollRoot,
+    root: viewport,
     rootMargin: "200px",
   });
 
   useEffect(() => {
-    if (!isIntersecting || isRefreshing || isLoadingMore || !hasMoreComments) return;
+    if (
+      !isIntersecting ||
+      isRefreshing ||
+      isLoadingMore ||
+      !hasMoreComments ||
+      loadFailure !== null
+    ) {
+      return;
+    }
     if (loadMoreTimer.current !== null) return;
 
     loadMoreTimer.current = window.setTimeout(() => {
@@ -60,11 +73,24 @@ function CommentList({ postId, previewContext }: CommentListProps) {
         loadMoreTimer.current = null;
       }
     };
-  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments]);
+  }, [loadMoreComments, isIntersecting, isRefreshing, isLoadingMore, hasMoreComments, loadFailure]);
 
   if (isRefreshing && !commentsPage) {
     return (
       <RenderLoadingState
+        openModalComment={openModalComment}
+        postId={postId}
+        previewContext={previewContext}
+        setOpenModalComment={setOpenModalComment}
+        uploadedComments={uploadedComments}
+      />
+    );
+  }
+
+  if (!commentsPage && loadFailure !== null) {
+    return (
+      <RenderErrorState
+        onRetry={retryLoad}
         openModalComment={openModalComment}
         postId={postId}
         previewContext={previewContext}
@@ -88,26 +114,46 @@ function CommentList({ postId, previewContext }: CommentListProps) {
 
   return (
     <>
-      <div className={cn("flex h-full flex-col gap-6 overflow-y-auto pr-2.5")} ref={setScrollRoot}>
-        {commentsPage.data.map((comment) => (
-          <CommentItem
-            onReplyCreated={increaseRepliesCount}
-            comment={comment}
-            key={comment.id}
-            setShowReplies={setShowReplies}
-            showReplies={showReplies}
-            uploadedComments={uploadedComments}
-          />
-        ))}
+      <ScrollArea className="min-h-0 flex-1" ref={scrollAreaRef}>
+        <div className="flex flex-col gap-6 pr-2.5">
+          {commentsPage.data.map((comment) => (
+            <CommentItem
+              onReplyCreated={increaseRepliesCount}
+              comment={comment}
+              key={comment.id}
+              setShowReplies={setShowReplies}
+              showReplies={showReplies}
+              uploadedComments={uploadedComments}
+            />
+          ))}
 
-        <div className="w-full" ref={sentinelRef} />
+          <div className="w-full" ref={sentinelRef} />
 
-        {hasMoreComments && (
-          <div className="py-2 text-center text-sm text-gray-500">
-            {isLoadingMore ? "Cargando más..." : "Desliza para cargar más..."}
-          </div>
-        )}
-      </div>
+          {loadFailure !== null && (
+            <CommentLoadError
+              message={
+                loadFailure === "more"
+                  ? "No se pudieron cargar más comentarios."
+                  : "No se pudieron actualizar los comentarios."
+              }
+              onRetry={retryLoad}
+            />
+          )}
+
+          {hasMoreComments && loadFailure === null && (
+            <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+              {isLoadingMore ? (
+                <>
+                  <Spinner />
+                  Cargando más...
+                </>
+              ) : (
+                "Desliza para cargar más..."
+              )}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
 
       <RenderCommentInput
         openModalComment={openModalComment}
@@ -137,10 +183,37 @@ function RenderLoadingState({
 }: RenderLoadingStateProps) {
   return (
     <>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <CommentSkeletonList commentSkeletonCount={3} label="Cargando comentarios..." />
+      </div>
+
+      <RenderCommentInput
+        openModalComment={openModalComment}
+        postId={postId}
+        previewContext={previewContext}
+        setOpenModalComment={setOpenModalComment}
+        uploadedComments={uploadedComments}
+      />
+    </>
+  );
+}
+
+type RenderErrorStateProps = RenderCommentBaseProps & {
+  onRetry: () => void;
+};
+
+function RenderErrorState({
+  onRetry,
+  openModalComment,
+  setOpenModalComment,
+  uploadedComments,
+  postId,
+  previewContext,
+}: RenderErrorStateProps) {
+  return (
+    <>
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
-          Cargando comentarios...
-        </p>
+        <CommentLoadError message="No se pudieron cargar los comentarios." onRetry={onRetry} />
       </div>
 
       <RenderCommentInput
@@ -166,7 +239,7 @@ function RenderEmptyState({
   return (
     <>
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-center text-sm text-gray-600 dark:text-white/90">
+        <p className="text-center text-sm text-muted-foreground">
           No hay comentarios en esta publicación para mostrar
         </p>
       </div>
@@ -204,7 +277,7 @@ function RenderCommentInput(props: RenderCommentInputProps) {
       <CommentInputDialog
         onOpenChange={setOpenModalComment}
         commentableId={postId}
-        commentableType={CommentableType.POST}
+        commentableType={CommentType.POST}
         openModalComment={openModalComment}
         previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}

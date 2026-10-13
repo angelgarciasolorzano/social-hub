@@ -4,7 +4,7 @@ import { RiTimeZoneLine } from "react-icons/ri";
 
 import dayjs from "dayjs";
 
-import { CommentDialog } from "@/modules/comments";
+import { CommentDialog } from "@/modules/comment";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 import { Button } from "@/shared/components/shadcn/ui/button";

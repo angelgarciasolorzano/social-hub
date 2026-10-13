@@ -59,6 +59,22 @@ it('replies to another comment', function (): void {
         ->and($comment->comments()->count())->toBe(1);
 });
 
+it('rejects a reply to a reply with a validation error on commentable_id', function (): void {
+    $comment = createComment();
+    $reply = createCommentOn($comment);
+
+    $this->actingAs(createUser())
+        ->post(route('comments.store'), [
+            'content' => 'Una respuesta a una respuesta',
+            'commentable_type' => Comment::MORPH_NAME,
+            'commentable_id' => $reply->id,
+        ])
+        ->assertSessionHasErrors(['commentable_id' => 'No se puede responder a una respuesta.']);
+
+    expect($reply->repliesCount())->toBe(0)
+        ->and($comment->repliesCount())->toBe(1);
+});
+
 it('requires the content of the comment', function (): void {
     $post = createPost();
 
@@ -125,14 +141,14 @@ it('rejects a non-integer commentable id', function (): void {
     expect(Comment::query()->count())->toBe(0);
 });
 
-it('returns 404 and creates nothing when the commentable does not exist', function (): void {
+it('returns 404 and creates nothing when the commentable does not exist', function (string $commentableType): void {
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
             'content' => 'Un comentario',
-            'commentable_type' => Post::MORPH_NAME,
+            'commentable_type' => $commentableType,
             'commentable_id' => 999999,
         ])
         ->assertNotFound();
 
     expect(Comment::query()->count())->toBe(0);
-});
+})->with([Post::MORPH_NAME, Comment::MORPH_NAME]);

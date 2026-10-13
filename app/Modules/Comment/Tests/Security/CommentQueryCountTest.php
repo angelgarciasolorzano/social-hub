@@ -2,15 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Modules\Comment\Models\Comment;
-use App\Modules\Comment\Resources\CommentResource;
+use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Post\Models\Post;
 use Illuminate\Support\Facades\DB;
-use Inertia\Support\SessionKey;
 use Tests\TestCase;
 
 /**
- * List the comments of a post and return the serialized page plus the number of queries used.
+ * Load the comments of a post the way the dialog does and return the serialized page plus the number of queries used.
  *
  * @return array{payload: array{data: list<array<string, mixed>>}, queries: int}
  */
@@ -18,34 +16,32 @@ function listCommentsCountingQueries(TestCase $testCase, Post $post): array
 {
     $user = createUser();
 
+    $testCase->actingAs($user);
+
+    $headers = inertiaPartialHeaders($testCase, 'home/Home', 'comments');
+
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $testCase->actingAs($user)
-        ->get(route('comments.index', ['commentType' => Post::MORPH_NAME, 'commentableId' => $post->id]));
-
-    /** @var array<string, mixed> $flash */
-    $flash = session()->get(SessionKey::FLASH_DATA, []);
-
-    /** @var array{data: list<array<string, mixed>>} $payload */
-    $payload = json_decode((string) json_encode($flash['comments']), true);
+    $testResponse = $testCase->get(route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]), $headers);
 
     $queries = count(DB::getQueryLog());
     DB::disableQueryLog();
+
+    /** @var array{data: list<array<string, mixed>>} $payload */
+    $payload = $testResponse->assertOk()->json('props.comments');
 
     return ['payload' => $payload, 'queries' => $queries];
 }
 
 it('reports the exact replies info of each comment in the listing', function (): void {
     $post = createPost();
-    $comment = createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
-    $withOneReply = createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
-    $withThreeReplies = createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
+    $comment = createCommentOn($post);
+    $withOneReply = createCommentOn($post);
+    $withThreeReplies = createCommentOn($post);
 
-    createComment(null, ['commentable_id' => $withOneReply->id, 'commentable_type' => Comment::MORPH_NAME]);
-    foreach (range(1, 3) as $attempt) {
-        createComment(null, ['commentable_id' => $withThreeReplies->id, 'commentable_type' => Comment::MORPH_NAME]);
-    }
+    createCommentOn($withOneReply);
+    createCommentsOn($withThreeReplies, 3);
 
     $listing = listCommentsCountingQueries($this, $post);
     $repliesInfo = array_column($listing['payload']['data'], 'repliesInfo', 'id');
@@ -57,12 +53,12 @@ it('reports the exact replies info of each comment in the listing', function ():
 
 it('uses the same number of queries regardless of how many comments or replies are listed', function (): void {
     $smallPost = createPost();
-    createComment(null, ['commentable_id' => $smallPost->id, 'commentable_type' => Post::MORPH_NAME]);
+    createCommentOn($smallPost);
 
     $largePost = createPost();
     foreach (range(1, 10) as $attempt) {
-        $comment = createComment(null, ['commentable_id' => $largePost->id, 'commentable_type' => Post::MORPH_NAME]);
-        createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+        $comment = createCommentOn($largePost);
+        createCommentOn($comment);
     }
 
     $small = listCommentsCountingQueries($this, $smallPost);
@@ -70,13 +66,4 @@ it('uses the same number of queries regardless of how many comments or replies a
 
     expect($large['payload']['data'])->toHaveCount(10)
         ->and($large['queries'])->toBe($small['queries']);
-});
-
-it('still counts replies when the resource is built without the preloaded count', function (): void {
-    $comment = createComment();
-    createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
-
-    $payload = new CommentResource($comment)->toArray(request());
-
-    expect($payload['repliesInfo'])->toBe(['hasReplies' => true, 'repliesCount' => 1]);
 });

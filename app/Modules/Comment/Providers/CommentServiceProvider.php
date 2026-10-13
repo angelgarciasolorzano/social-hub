@@ -17,4 +17,12 @@ class CommentServiceProvider extends ServiceProvider
     {
         $this->app->register(CommentRouteServiceProvider::class);
     }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+    }
 }

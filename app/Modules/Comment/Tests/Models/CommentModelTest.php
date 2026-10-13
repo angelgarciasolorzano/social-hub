@@ -18,8 +18,8 @@ it('belongs to the user who wrote it', function (): void {
 
 it('belongs to the post or comment it was written on', function (): void {
     $post = createPost();
-    $postComment = createComment(null, ['commentable_id' => $post->id, 'commentable_type' => Post::MORPH_NAME]);
-    $comment = createComment(null, ['commentable_id' => $postComment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    $postComment = createCommentOn($post);
+    $comment = createCommentOn($postComment);
 
     expect($postComment->commentable)->toBeInstanceOf(Post::class)
         ->and($postComment->commentable->getKey())->toBe($post->id)
@@ -30,8 +30,8 @@ it('belongs to the post or comment it was written on', function (): void {
 it('loads its replies with their author', function (): void {
     $comment = createComment();
     $user = createUser();
-    $reply = createComment($user, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
-    createComment(null, ['commentable_id' => createComment()->id, 'commentable_type' => Comment::MORPH_NAME]);
+    $reply = createCommentOn($comment, $user);
+    createCommentOn(createComment());
 
     $replies = $comment->comments()->get();
 
@@ -46,8 +46,8 @@ it('reports whether it has replies and how many', function (): void {
     expect($comment->hasReplies())->toBeFalse()
         ->and($comment->repliesCount())->toBe(0);
 
-    createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
-    createComment(null, ['commentable_id' => $comment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    createCommentOn($comment);
+    createCommentOn($comment);
 
     expect($comment->hasReplies())->toBeTrue()
         ->and($comment->repliesCount())->toBe(2);
@@ -66,7 +66,7 @@ it('owns the likes attached to it', function (): void {
 
 it('casts the commentable type to the CommentType enum', function (): void {
     $postComment = createComment();
-    $comment = createComment(null, ['commentable_id' => $postComment->id, 'commentable_type' => Comment::MORPH_NAME]);
+    $comment = createCommentOn($postComment);
 
     expect($postComment->refresh()->commentable_type)->toBe(CommentType::POST)
         ->and($comment->refresh()->commentable_type)->toBe(CommentType::COMMENT);
