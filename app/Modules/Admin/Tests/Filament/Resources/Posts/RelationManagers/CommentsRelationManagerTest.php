@@ -9,9 +9,11 @@ use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelation
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Post\Models\Post;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
 use Livewire\Component;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use LogicException;
 use Tests\TestCase;
@@ -23,13 +25,19 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
-it('lists only the selected post comments with their author and creation date', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
+/**
+ * @return Testable<Component>
+ */
+function commentsRelationManagerFor(Post $post): Testable
+{
+    return Livewire::test(CommentsRelationManager::class, [
+        'ownerRecord' => $post,
+        'pageClass' => ViewPost::class,
     ]);
+}
+
+it('lists only the selected post comments with their author and creation date', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $post = createPost($user);
@@ -47,12 +55,7 @@ it('lists only the selected post comments with their author and creation date', 
         'content' => 'Foreign post comment sentinel',
     ]);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    commentsRelationManagerFor($post)
         ->assertOk()
         ->assertSeeText('Content')
         ->assertSeeText('Selected root comment sentinel')
@@ -62,12 +65,7 @@ it('lists only the selected post comments with their author and creation date', 
 });
 
 it('paginates only the selected posts comments', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $commentAuthor = createUser();
@@ -97,21 +95,12 @@ it('paginates only the selected posts comments', function (): void {
         'content' => 'Foreign post comment sentinel',
     ]);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    $testable = commentsRelationManagerFor($post)
         ->assertOk()
         ->assertSeeText('Target comment 11')
         ->assertDontSeeText('Foreign post comment sentinel');
 
-    $component = $testable->instance();
-
-    throw_unless($component instanceof HasTable, LogicException::class, 'The comments relation must expose a Filament table.');
-
-    /** @var HasTable&Component $component */
+    $component = FilamentTableRecords::table($testable);
     $firstPageComments = FilamentTableRecords::visibleRecords($component, Comment::class);
 
     expect($component->getAllTableRecordsCount())
@@ -126,11 +115,7 @@ it('paginates only the selected posts comments', function (): void {
         ->assertSeeText('Target comment 01')
         ->assertDontSeeText('Target comment 11');
 
-    $secondPage = $testable->instance();
-
-    throw_unless($secondPage instanceof HasTable, LogicException::class, 'The comments second page must expose a Filament table.');
-
-    /** @var HasTable&Component $secondPage */
+    $secondPage = FilamentTableRecords::table($testable);
     $secondPageComments = FilamentTableRecords::visibleRecords($secondPage, Comment::class);
 
     expect(array_map(FilamentTableRecords::recordKey(...), $secondPageComments))
@@ -138,12 +123,7 @@ it('paginates only the selected posts comments', function (): void {
 });
 
 it('opens a comment with its author in the view action', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $post = createPost();
@@ -154,12 +134,7 @@ it('opens a comment with its author in the view action', function (): void {
         'content' => 'Selected root comment sentinel',
     ]);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    $testable = commentsRelationManagerFor($post)
         ->assertOk()
         ->call('mountAction', 'view', [], [
             'table' => true,
@@ -180,12 +155,7 @@ it('opens a comment with its author in the view action', function (): void {
 });
 
 it('opens a comment with its replies and their authors in the view action', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $replyAuthor = createUser();
@@ -203,12 +173,7 @@ it('opens a comment with its replies and their authors in the view action', func
         'content' => 'Selected reply sentinel',
     ]);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    $testable = commentsRelationManagerFor($post)
         ->assertOk()
         ->call('mountAction', 'view', [], [
             'table' => true,
@@ -238,12 +203,7 @@ it('opens a comment with its replies and their authors in the view action', func
 });
 
 it('does not load replies while listing comments', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $post = createPost();
@@ -260,12 +220,7 @@ it('does not load replies while listing comments', function (): void {
         'content' => 'Reply not loaded in table sentinel',
     ]);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $component = Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    $component = commentsRelationManagerFor($post)
         ->assertOk()
         ->instance();
 
@@ -282,21 +237,11 @@ it('does not load replies while listing comments', function (): void {
 });
 
 it('keeps the comment view action read only', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $post = createPost();
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $component = Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    $component = commentsRelationManagerFor($post)
         ->assertOk()
         ->instance();
 
@@ -337,10 +282,7 @@ it('denies the comments relation to a user with only user permissions', function
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    Livewire::test(CommentsRelationManager::class, [
-        'ownerRecord' => $post,
-        'pageClass' => ViewPost::class,
-    ])
+    commentsRelationManagerFor($post)
         ->assertForbidden();
 });
 
