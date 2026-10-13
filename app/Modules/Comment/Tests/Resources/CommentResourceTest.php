@@ -61,7 +61,7 @@ it('omits the mention without running queries when the relation is not loaded', 
 
     DB::enableQueryLog();
     $payload = new CommentResource($reply)->resolve(request());
-    $queries = DB::getQueryLog();
+    $queries = DB::connection()->getQueryLog();
     DB::disableQueryLog();
 
     expect($payload)->not->toHaveKey('repliedTo')

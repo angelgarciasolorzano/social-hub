@@ -60,7 +60,7 @@ it('exposes comments and replies as optional props that run no query until they 
     expect(array_keys($props))->toBe(['comments', 'replies'])
         ->and($props['comments'])->toBeInstanceOf(OptionalProp::class)
         ->and($props['replies'])->toBeInstanceOf(OptionalProp::class)
-        ->and(DB::getQueryLog())->toBeEmpty();
+        ->and(DB::connection()->getQueryLog())->toBeEmpty();
 });
 
 it('lists the comments of a post ten at a time in descending id order with their own cursor', function (): void {
@@ -133,9 +133,37 @@ it('serializes each comment with the resource shape and nothing else', function 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
     $serializedComment = $firstPage->items()[0];
 
-    expect(array_keys($serializedComment))->toBe(['id', 'content', 'createdAt', 'user', 'repliesInfo'])
+    expect(array_keys($serializedComment))->toBe(['id', 'content', 'createdAt', 'user', 'repliedTo', 'repliesInfo'])
         ->and($serializedComment['user'])->toHaveKeys(['id', 'name'])->toHaveCount(2)
+        ->and($serializedComment['repliedTo'])->toBeNull()
         ->and($serializedComment['repliesInfo'])->toBe(['hasReplies' => true, 'repliesCount' => 1]);
+});
+
+it('serializes the mentioned user of each reply with only its id and name', function (): void {
+    $comment = createComment();
+    $mentionedUser = createUser();
+    $mentioningReply = createCommentOn($comment, attributes: ['replied_to_user_id' => $mentionedUser->id]);
+    $plainReply = createCommentOn($comment);
+
+    $replies = resolveCommentThread('replies', [CommentThreadProps::REPLIES_PARAMETER => $comment->id], createUser());
+    $serializedReplies = array_column($replies->items(), null, 'id');
+
+    expect($serializedReplies[$mentioningReply->id]['repliedTo'])->toBe(['id' => $mentionedUser->id, 'name' => $mentionedUser->name])
+        ->and($serializedReplies[$plainReply->id]['repliedTo'])->toBeNull();
+});
+
+it('lists a reply with a null mention when the mentioned user was deleted', function (): void {
+    $comment = createComment();
+    $mentionedUser = createUser();
+    $reply = createCommentOn($comment, attributes: ['replied_to_user_id' => $mentionedUser->id]);
+
+    User::query()->whereKey($mentionedUser->id)->delete();
+
+    $replies = resolveCommentThread('replies', [CommentThreadProps::REPLIES_PARAMETER => $comment->id], createUser());
+
+    expect($replies->items())->toHaveCount(1)
+        ->and($replies->items()[0]['id'])->toBe($reply->id)
+        ->and($replies->items()[0]['repliedTo'])->toBeNull();
 });
 
 it('serializes each page as a plain cursor paginator envelope with its own cursor name', function (): void {
@@ -245,7 +273,7 @@ it('uses the same number of queries whether the thread has one or many comments 
 
         resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $postId], $user);
 
-        $queries = count(DB::getQueryLog());
+        $queries = count(DB::connection()->getQueryLog());
         DB::disableQueryLog();
 
         return $queries;

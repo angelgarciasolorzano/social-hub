@@ -73,7 +73,7 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
         $encodedCursor = $this->request->query($cursorName);
 
         return $commentable->comments()
-            ->with('user')
+            ->with(['user', 'repliedToUser:id,name'])
             ->withCount('comments')
             ->orderByDesc('id')
             ->cursorPaginate(

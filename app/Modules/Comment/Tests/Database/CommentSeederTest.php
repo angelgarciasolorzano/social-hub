@@ -47,3 +47,41 @@ it('creates no comments when there are no posts', function (): void {
     expect(Post::query()->count())->toBe(0)
         ->and(Comment::query()->count())->toBe(0);
 });
+
+it('makes some replies mention the author of another reply in the same thread', function (): void {
+    createUser();
+    createUser();
+    createUser();
+    createPost();
+
+    $this->seed(CommentSeeder::class);
+
+    $mentioningReplies = Comment::query()->whereNotNull('replied_to_user_id')->get();
+
+    expect($mentioningReplies)->not->toBeEmpty();
+
+    foreach ($mentioningReplies as $reply) {
+        $threadAuthorIds = Comment::query()
+            ->where('commentable_type', Comment::MORPH_NAME)
+            ->where('commentable_id', $reply->commentable_id)
+            ->whereKeyNot($reply->id)
+            ->pluck('user_id')
+            ->all();
+
+        expect($threadAuthorIds)->toContain($reply->replied_to_user_id)
+            ->and($reply->replied_to_user_id)->not->toBe($reply->user_id);
+    }
+});
+
+it('never mentions anyone on root comments or keeps threads to a single level', function (): void {
+    createUser();
+    createUser();
+    createPost();
+
+    $this->seed(CommentSeeder::class);
+
+    $replyIds = Comment::query()->where('commentable_type', Comment::MORPH_NAME)->pluck('id')->all();
+
+    expect(Comment::query()->where('commentable_type', Post::MORPH_NAME)->whereNotNull('replied_to_user_id')->count())->toBe(0)
+        ->and(Comment::query()->where('commentable_type', Comment::MORPH_NAME)->whereIn('commentable_id', $replyIds)->count())->toBe(0);
+});
