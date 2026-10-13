@@ -108,7 +108,7 @@
             "@php artisan ide-helper:models -RM"
         ],
         "phpcpd": "vendor/bin/phpcpd --preset=laravel .",
-        "pint-ci": "vendor/bin/pint --dirty --test",
+        "pint-ci": "vendor/bin/pint --test",
         "pint-fix": "vendor/bin/pint",
         "pint-dirty": "vendor/bin/pint --dirty",
         "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
@@ -119,7 +119,7 @@
     "script-descriptions": {
         "dev": "Start the development environment with hot reloading and concurrent processes.",
         "test": "Run the test suite with a 2G memory limit.",
-        "pint-ci": "Run Laravel Pint in CI mode to check code style.",
+        "pint-ci": "Run Laravel Pint in CI mode to check code style across the whole codebase.",
         "pint-fix": "Run Laravel Pint to fix code style issues.",
         "pint-dirty": "Run Laravel Pint only on changed files.",
         "doctor": "Run Laravel Doctor diagnostics locally without applying fixes.",
