@@ -5,6 +5,23 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\User\Models\User;
+use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Tests\TestCase;
+
+/**
+ * Register the current device as the given user, sending a deterministic Chrome/Windows User-Agent.
+ *
+ * @param  array<string, mixed>  $data
+ * @return TestResponse<Response>
+ */
+function storeTrustedDeviceAs(TestCase $testCase, User $user, array $data = []): TestResponse
+{
+    return $testCase->actingAs($user)
+        ->withHeader('User-Agent', chromeWindowsUserAgent())
+        ->post(route('user.trusted-devices.store'), $data);
+}
 
 it('redirects guests to the login page', function (): void {
     $this->post(route('user.trusted-devices.store'))
@@ -14,9 +31,7 @@ it('redirects guests to the login page', function (): void {
 it('creates a trusted device with an inferred name when no name is given', function (): void {
     $user = createUser();
 
-    $testResponse = $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'));
+    $testResponse = storeTrustedDeviceAs($this, $user);
 
     $testResponse->assertRedirect()
         ->assertInertiaFlash('type', 'success');
@@ -38,9 +53,7 @@ it('creates a trusted device with an inferred name when no name is given', funct
 it('accepts a custom device name', function (): void {
     $user = createUser();
 
-    $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'), ['name' => 'Mi laptop personal']);
+    storeTrustedDeviceAs($this, $user, ['name' => 'Mi laptop personal']);
 
     expect(TrustedDevice::query()->where('user_id', $user->id)->sole()->name)
         ->toBe('Mi laptop personal');
@@ -49,9 +62,7 @@ it('accepts a custom device name', function (): void {
 it('rejects a name longer than 50 characters', function (): void {
     $user = createUser();
 
-    $testResponse = $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'), ['name' => str_repeat('a', 51)]);
+    $testResponse = storeTrustedDeviceAs($this, $user, ['name' => str_repeat('a', 51)]);
 
     $testResponse->assertSessionHasErrors('name');
 
@@ -61,13 +72,9 @@ it('rejects a name longer than 50 characters', function (): void {
 it('does not create a duplicate when an active device with the same fingerprint already exists', function (): void {
     $user = createUser();
 
-    $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'));
+    storeTrustedDeviceAs($this, $user);
 
-    $testResponse = $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'));
+    $testResponse = storeTrustedDeviceAs($this, $user);
 
     $testResponse->assertInertiaFlash('type', 'error');
 
@@ -81,15 +88,11 @@ it('does not create a duplicate when an active device with the same fingerprint 
 it('reports a revoked duplicate as needing reactivation instead of creating a new device', function (): void {
     $user = createUser();
 
-    $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'));
+    storeTrustedDeviceAs($this, $user);
 
     TrustedDevice::query()->where('user_id', $user->id)->sole()->delete();
 
-    $testResponse = $this->actingAs($user)
-        ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'));
+    $testResponse = storeTrustedDeviceAs($this, $user);
 
     $testResponse->assertInertiaFlash('type', 'error');
 
