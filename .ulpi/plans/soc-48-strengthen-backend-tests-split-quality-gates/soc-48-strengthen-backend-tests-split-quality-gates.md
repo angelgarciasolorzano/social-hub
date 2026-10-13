@@ -259,7 +259,7 @@ Candidato de TASK-008. Segun el triage, extraer solo la logica realmente repetid
 
 ### TASK-010: Deduplicar update/renew/store de TrustedDeviceController
 
-Candidato de TASK-008. Las lineas 46-64 y 84-102 de TrustedDeviceController repiten el flujo de flash/cookie. Despues del split controlador-servicio de SOC-37 la autorizacion vive en `#[Authorize]` y el estado en `TrustedDeviceService`; extraer solo si el cuerpo repetido es identico en sustancia, reutilizando `TrustedDeviceOperationResult` (que ya expone `message()`/`payload()`) en vez de un helper privado de un solo uso. Si no hay una extraccion limpia, cerrar como justificada.
+Candidato de TASK-008. Las lineas 46-64 y 84-102 de TrustedDeviceController repiten el flujo de flash/cookie. Despues del split controlador-servicio de SOC-37 la autorizacion vive en `#[Authorize]` y el estado en `TrustedDeviceService`; extraer solo si el cuerpo repetido es identico en sustancia, reutilizando `TrustedDeviceOperationResult` (que ya expone `message()`/`payload()`) en vez de un helper privado de un solo uso. Si no hay una extraccion limpia, cerrar como justificada. RESULTADO DEL TRIAGE (TASK-008, confirmado por el usuario): cerrada como justificada sin cambios; solo se repiten el guard 401 y una llamada al servicio con flash. Decision publicada en el comentario de SOC-48.
 
 **Type:** refactor  
 **Priority:** P2  

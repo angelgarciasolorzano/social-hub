@@ -9,7 +9,6 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
-use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -17,21 +16,15 @@ use Spatie\Permission\Models\Role;
 
 #[Signature('admin:user-role {action : grant or revoke} {email : User account email} {role : Role name from the Admin catalog}')]
 #[Description('Grant or revoke a cataloged Admin role for a user.')]
-class AdminUserRoleCommand extends Command
+class AdminUserRoleCommand extends AdminCatalogCommand
 {
-    private const string ACTION_GRANT = 'grant';
-
-    private const string ACTION_REVOKE = 'revoke';
-
-    private const string GUARD = 'admin';
-
     public function handle(): int
     {
         $action = $this->argument('action');
         $email = $this->argument('email');
         $roleName = $this->argument('role');
 
-        if (! in_array($action, [self::ACTION_GRANT, self::ACTION_REVOKE], true)) {
+        if (! $this->isValidAction($action)) {
             $this->error('Action must be "grant" or "revoke".');
 
             return self::INVALID;
@@ -61,37 +54,14 @@ class AdminUserRoleCommand extends Command
         }
 
         return DB::transaction(function () use ($action, $email, $adminRole): int {
-            $adminRoleLock = Role::query()
-                ->where('name', AdminRole::Admin->value)
-                ->where('guard_name', self::GUARD)
-                ->lockForUpdate()
-                ->first();
+            $lockedCatalog = $this->lockCatalogRole($adminRole);
 
-            $adminAccessPermission = Permission::query()
-                ->where('name', AdminPermission::AdminAccess->value)
-                ->where('guard_name', self::GUARD)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $adminRoleLock instanceof Role || ! $adminAccessPermission instanceof Permission) {
-                $this->error('Admin authorization is not initialized. Run the Admin authorization seeder first.');
-
+            if ($lockedCatalog === null) {
                 return self::FAILURE;
             }
 
-            $role = $adminRole === AdminRole::Admin
-                ? $adminRoleLock
-                : Role::query()
-                    ->where('name', $adminRole->value)
-                    ->where('guard_name', self::GUARD)
-                    ->lockForUpdate()
-                    ->first();
-
-            if (! $role instanceof Role) {
-                $this->error("The Admin role {$adminRole->value} is not initialized. Run the Admin authorization seeder first.");
-
-                return self::FAILURE;
-            }
+            $role = $lockedCatalog['role'];
+            $adminAccessPermission = $lockedCatalog['adminAccessPermission'];
 
             $user = User::query()
                 ->where('email', $email)
