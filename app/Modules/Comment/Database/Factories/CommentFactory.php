@@ -34,9 +34,18 @@ class CommentFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'replied_to_user_id' => null,
             'commentable_id' => Post::factory(),
             'commentable_type' => Post::MORPH_NAME,
             'content' => fake()->paragraph(random_int(1, 30)),
         ];
+    }
+
+    /**
+     * Mark the comment as a reply that mentions the given user.
+     */
+    public function repliedTo(User $user): static
+    {
+        return $this->state(fn (): array => ['replied_to_user_id' => $user->id]);
     }
 }
