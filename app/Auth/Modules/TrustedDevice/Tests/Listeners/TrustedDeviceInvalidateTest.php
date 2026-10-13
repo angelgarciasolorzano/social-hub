@@ -19,15 +19,12 @@ it('revokes every trusted device and records a RevokedAll event for each when 2F
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
 
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
-    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
-    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
+    $otherUserStatsCacheKey = trustedDeviceStatsCacheKey($otherUser);
+    $otherUserActivityCacheKey = trustedDeviceRecentActivityCacheKey($otherUser);
 
-    Cache::forget($userStatsCacheKey);
-    Cache::forget($userActivityCacheKey);
-    Cache::forget($otherUserStatsCacheKey);
-    Cache::forget($otherUserActivityCacheKey);
+    forgetTrustedDeviceDashboardCache($user, $otherUser);
 
     $trustedDeviceDashboardCache->stats($user);
     $trustedDeviceDashboardCache->recentActivity($user, request());
@@ -80,15 +77,12 @@ it("invalidates only the current user's cache when 2FA is disabled without devic
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
 
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
-    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
-    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
+    $otherUserStatsCacheKey = trustedDeviceStatsCacheKey($otherUser);
+    $otherUserActivityCacheKey = trustedDeviceRecentActivityCacheKey($otherUser);
 
-    Cache::forget($userStatsCacheKey);
-    Cache::forget($userActivityCacheKey);
-    Cache::forget($otherUserStatsCacheKey);
-    Cache::forget($otherUserActivityCacheKey);
+    forgetTrustedDeviceDashboardCache($user, $otherUser);
 
     $trustedDeviceDashboardCache->stats($user);
     $trustedDeviceDashboardCache->recentActivity($user, request());

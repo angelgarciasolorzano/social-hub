@@ -296,6 +296,25 @@ function trustedDeviceStatsCacheKey(User $user): string
 }
 
 /**
+ * Cache key under which TrustedDeviceDashboardCache stores a user's recent activity.
+ */
+function trustedDeviceRecentActivityCacheKey(User $user): string
+{
+    return \sprintf('trusted-device:dashboard:%s:recent-activity', $user->id);
+}
+
+/**
+ * Drop the dashboard stats and recent activity cache entries of the given users.
+ */
+function forgetTrustedDeviceDashboardCache(User ...$users): void
+{
+    foreach ($users as $user) {
+        Cache::forget(trustedDeviceStatsCacheKey($user));
+        Cache::forget(trustedDeviceRecentActivityCacheKey($user));
+    }
+}
+
+/**
  * Populate the user's dashboard stats cache and assert it is warm.
  */
 function warmTrustedDeviceStatsCache(User $user): void
