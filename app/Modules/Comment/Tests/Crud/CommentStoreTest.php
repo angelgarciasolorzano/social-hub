@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 
@@ -59,9 +60,53 @@ it('replies to another comment', function (): void {
         ->and($comment->comments()->count())->toBe(1);
 });
 
-it('rejects a reply to a reply with a validation error on commentable_id', function (): void {
+it('does not mention anyone when commenting on a post or replying to a root comment', function (): void {
+    $user = createUser();
+    $comment = createComment();
+
+    $this->actingAs($user)->post(route('comments.store'), [
+        'content' => 'Un comentario',
+        'commentable_type' => Post::MORPH_NAME,
+        'commentable_id' => $comment->commentable_id,
+    ]);
+    $this->actingAs($user)->post(route('comments.store'), [
+        'content' => 'Una respuesta',
+        'commentable_type' => Comment::MORPH_NAME,
+        'commentable_id' => $comment->id,
+    ]);
+
+    expect(Comment::query()->whereKeyNot($comment->id)->pluck('replied_to_user_id')->all())->toBe([null, null]);
+});
+
+it('attaches a reply to a reply to the parent comment and mentions its author', function (): void {
+    $replier = createUser();
+    $replyAuthor = createUser();
+    $comment = createComment();
+    $reply = createCommentOn($comment, $replyAuthor);
+
+    $this->actingAs($replier)
+        ->post(route('comments.store'), [
+            'content' => 'Una respuesta a una respuesta',
+            'commentable_type' => Comment::MORPH_NAME,
+            'commentable_id' => $reply->id,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $newReply = Comment::query()->whereNotIn('id', [$comment->id, $reply->id])->sole();
+
+    expect($newReply->commentable_id)->toBe($comment->id)
+        ->and($newReply->commentable_type)->toBe(CommentType::COMMENT)
+        ->and($newReply->user_id)->toBe($replier->id)
+        ->and($newReply->replied_to_user_id)->toBe($replyAuthor->id)
+        ->and($reply->repliesCount())->toBe(0)
+        ->and($comment->repliesCount())->toBe(2);
+});
+
+it('returns 404 and creates nothing when the parent of the replied comment no longer exists', function (): void {
     $comment = createComment();
     $reply = createCommentOn($comment);
+    $comment->delete();
 
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
@@ -69,10 +114,9 @@ it('rejects a reply to a reply with a validation error on commentable_id', funct
             'commentable_type' => Comment::MORPH_NAME,
             'commentable_id' => $reply->id,
         ])
-        ->assertSessionHasErrors(['commentable_id' => 'No se puede responder a una respuesta.']);
+        ->assertNotFound();
 
-    expect($reply->repliesCount())->toBe(0)
-        ->and($comment->repliesCount())->toBe(1);
+    expect(Comment::query()->count())->toBe(1);
 });
 
 it('requires the content of the comment', function (): void {

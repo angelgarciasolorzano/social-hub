@@ -10,7 +10,6 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Requests\CommentStoreRequest;
 use App\Modules\Post\Models\Post;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -21,16 +20,19 @@ class CommentStoreController extends Controller
         /** @var class-string<Post | Comment> $modelType */
         $modelType = CommentType::from($commentStoreRequest->string('commentable_type')->toString())->modelClass();
 
-        $commentable = $modelType::query()->findOrFail($commentStoreRequest->integer('commentable_id'));
+        $target = $modelType::query()->findOrFail($commentStoreRequest->integer('commentable_id'));
 
-        if ($commentable instanceof Comment && $commentable->commentable_type === CommentType::COMMENT) {
-            throw ValidationException::withMessages([
-                'commentable_id' => 'No se puede responder a una respuesta.',
-            ]);
+        $thread = $target;
+        $repliedToUserId = null;
+
+        if ($target instanceof Comment && $target->commentable_type === CommentType::COMMENT) {
+            $thread = Comment::query()->findOrFail($target->commentable_id);
+            $repliedToUserId = $target->user_id;
         }
 
-        $commentable->comments()->create([
+        $thread->comments()->create([
             'user_id' => Auth::id(),
+            'replied_to_user_id' => $repliedToUserId,
             'content' => $commentStoreRequest->string('content')->toString(),
         ]);
 
