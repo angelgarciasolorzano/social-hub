@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Console\Commands;
 
+use App\Modules\Admin\Console\Concerns\InteractsWithAdminCatalog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
+use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -16,8 +18,10 @@ use Spatie\Permission\Models\Role;
 
 #[Signature('admin:user-role {action : grant or revoke} {email : User account email} {role : Role name from the Admin catalog}')]
 #[Description('Grant or revoke a cataloged Admin role for a user.')]
-class AdminUserRoleCommand extends AdminCatalogCommand
+class AdminUserRoleCommand extends Command
 {
+    use InteractsWithAdminCatalog;
+
     public function handle(): int
     {
         $action = $this->argument('action');

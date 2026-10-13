@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Admin\Console\Commands;
+namespace App\Modules\Admin\Console\Concerns;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
@@ -10,7 +10,10 @@ use Illuminate\Console\Command;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-abstract class AdminCatalogCommand extends Command
+/**
+ * @phpstan-require-extends Command
+ */
+trait InteractsWithAdminCatalog
 {
     protected const string ACTION_GRANT = 'grant';
 
