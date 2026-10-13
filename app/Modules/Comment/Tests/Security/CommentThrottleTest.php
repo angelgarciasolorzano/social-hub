@@ -24,6 +24,20 @@ function storeCommentAs(TestCase $testCase, User $user, Post $post): TestRespons
     ]);
 }
 
+/**
+ * Send a comment on the given post, comment or reply as the given user.
+ *
+ * @return TestResponse<Response>
+ */
+function storeCommentOn(TestCase $testCase, User $user, Post|Comment $commentable): TestResponse
+{
+    return $testCase->actingAs($user)->post(route('comments.store'), [
+        'content' => 'Un comentario',
+        'commentable_type' => $commentable instanceof Post ? Post::MORPH_NAME : Comment::MORPH_NAME,
+        'commentable_id' => $commentable->id,
+    ]);
+}
+
 it('allows 6 comments per minute and then answers 429', function (): void {
     $user = createUser();
     $post = createPost();
@@ -35,6 +49,19 @@ it('allows 6 comments per minute and then answers 429', function (): void {
     storeCommentAs($this, $user, $post)->assertTooManyRequests();
 
     expect(Comment::query()->count())->toBe(6);
+});
+
+it('shares the publishing budget between posts, comments and replies', function (): void {
+    $user = createUser();
+    $post = createPost();
+    $comment = createCommentOn($post);
+    $reply = createCommentOn($comment);
+
+    foreach ([$post, $comment, $reply, $post, $comment, $reply] as $commentable) {
+        storeCommentOn($this, $user, $commentable)->assertRedirect();
+    }
+
+    storeCommentOn($this, $user, $reply)->assertTooManyRequests();
 });
 
 it('lets the user comment again once the minute has passed', function (): void {
