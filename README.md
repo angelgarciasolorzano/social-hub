@@ -102,7 +102,7 @@ Todas se definen en `.env`, que se crea a partir de `.env.example`. Las más rel
 
 ## Calidad de código
 
-Antes de abrir un PR, ejecuta los mismos checks que corre el CI (`.github/workflows/backend-code-quality.yml` y `.github/workflows/frontend-code-quality.yml`).
+Antes de abrir un PR, ejecuta los mismos checks que corre el CI. El backend tiene un workflow por gate en `.github/workflows/` (`backend-code-quality-test.yml`, `-pint.yml`, `-rector.yml`, `-phpstan.yml` y `-doctor.yml`) y el frontend usa `.github/workflows/frontend-code-quality.yml`. El detalle de cada comando está en [docs/development/backend-commands.md](docs/development/backend-commands.md).
 
 **Backend**
 
@@ -110,7 +110,7 @@ Antes de abrir un PR, ejecuta los mismos checks que corre el CI (`.github/workfl
 vendor/bin/pint --dirty --format agent   # formatea solo los archivos PHP modificados
 composer rector-dry                      # previsualiza las transformaciones de Rector
 composer phpstan                         # análisis estático (nivel máximo)
-composer test                            # suite de Pest
+composer test                            # suite de Pest (límite de memoria de 2G)
 ```
 
 Si `composer rector-dry` propone cambios, aplícalos con `composer rector`.
