@@ -84,6 +84,12 @@ function CommentItem(props: CommentItemProps): JSX.Element {
           </header>
 
           <section>
+            {comment.repliedTo && (
+              <p className="mb-1 text-xs text-muted-foreground">
+                Respondiendo a <strong>@{comment.repliedTo.name}</strong>
+              </p>
+            )}
+
             <p className="text-sm">{comment.content}</p>
           </section>
         </CardContent>
@@ -111,7 +117,7 @@ function CommentItem(props: CommentItemProps): JSX.Element {
           Responder
         </Button>
 
-        {comment.repliesInfo.hasReplies && (
+        {!isReply && comment.repliesInfo.hasReplies && (
           <Button
             className="cursor-pointer text-muted-foreground"
             onClick={() => {
@@ -135,7 +141,11 @@ function CommentItem(props: CommentItemProps): JSX.Element {
         openModalComment={openModalComment}
         previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
-        title={`Responder al comentario de ${comment.user.name}`}
+        title={
+          isReply
+            ? `Responder a ${comment.user.name}`
+            : `Responder al comentario de ${comment.user.name}`
+        }
         uploadedComments={() => {
           onReplyCreated?.(comment.id);
           if (showReplies === comment.id) {
@@ -145,7 +155,7 @@ function CommentItem(props: CommentItemProps): JSX.Element {
         }}
       />
 
-      {showReplies === comment.id && (
+      {!isReply && showReplies === comment.id && (
         <CommentRepliesList
           commentId={comment.id}
           refreshCounter={repliesRefreshCounter}
