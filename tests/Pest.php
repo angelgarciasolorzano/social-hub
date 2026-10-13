@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Testing\TestResponse;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -43,19 +42,6 @@ pest()->extend(TestCase::class)
         __DIR__.'/../app/User/Modules/TwoFactor/Tests',
         __DIR__.'/../app/User/Modules/AccountSettings/Tests',
     );
-
-/*
-|--------------------------------------------------------------------------
-| Expectations
-|--------------------------------------------------------------------------
-|
-| When you're writing tests, you often need to check that values meet certain conditions. The
-| "expect()" function gives you access to a set of "expectations" methods that you can use
-| to assert different things. Of course, you may extend the Expectation API at any time.
-|
-*/
-
-expect()->extend('toBeOne', fn () => $this->toBe(1));
 
 /*
 |--------------------------------------------------------------------------
@@ -260,31 +246,6 @@ function validOtpFor(User $user): string
     $google2fa = resolve(Google2FA::class);
 
     return $google2fa->getCurrentOtp(decrypt($encryptedSecret));
-}
-
-/**
- * Extract a LengthAwarePaginator-shaped Inertia prop's `data` array with a
- * concrete type, sidestepping TestResponse::inertiaProps()'s untyped mixed.
- *
- * @return array<int, array<string, mixed>>
- */
-function paginatedPropData(TestResponse $testResponse, string $prop): array
-{
-    /** @var array{data: array<int, array<string, mixed>>, total: int} $paginated */
-    $paginated = $testResponse->inertiaProps($prop);
-
-    return $paginated['data'];
-}
-
-/**
- * Same as paginatedPropData(), but for the paginator's `total` count.
- */
-function paginatedPropTotal(TestResponse $testResponse, string $prop): int
-{
-    /** @var array{data: array<int, array<string, mixed>>, total: int} $paginated */
-    $paginated = $testResponse->inertiaProps($prop);
-
-    return $paginated['total'];
 }
 
 /**
