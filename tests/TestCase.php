@@ -11,6 +11,16 @@ use RuntimeException;
 abstract class TestCase extends BaseTestCase
 {
     /**
+     * Mock Vite so the suite does not depend on a compiled manifest or a running dev server.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
+    /**
      * Create the application for the test suite.
      */
     public function createApplication(): Application
