@@ -118,7 +118,7 @@
       "dependsOn": [],
       "acceptanceCriteria": [
         "Un test temporal (no commiteado) que imprime ini_get('memory_limit') dentro del proceso de Pest, ejecutado con `composer test`, muestra 2G; sin el cambio muestra el valor por defecto del php.ini.",
-        "`composer test -- app/Modules/Post/Tests` sigue aceptando argumentos extra (filtros/rutas) y termina en verde; el comando no requiere variables de entorno nuevas.",
+        "`composer test` completo termina en verde sin variables de entorno nuevas. Nota (hallazgo de la ejecucion): composer reenvia los argumentos a TODOS los comandos del script, por lo que `composer test -- <ruta>` falla en `config:clear`; para filtrar se usa `php artisan test -d memory_limit=2G <ruta>`.",
         "Falla/borde: si el limite no llega al proceso hijo de `artisan test`, la tarea NO se da por cumplida con solo anadir el flag; debe cambiar la invocacion hasta que la medicion del primer criterio de 2G."
       ],
       "filesToModify": [
@@ -128,7 +128,7 @@
       "writeScope": [
         "composer.json"
       ],
-      "validateCommand": "composer test -- app/Modules/Post/Tests",
+      "validateCommand": "composer test",
       "review": "claude"
     },
     {
