@@ -8,6 +8,7 @@ use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceOperationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
+use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
@@ -28,6 +29,17 @@ function trustedDeviceStoreRequest(): TrustedDeviceStoreRequest
         'REMOTE_ADDR' => trustedDeviceFingerprint()['ip'],
         'HTTP_USER_AGENT' => trustedDeviceFingerprint()['user_agent'],
     ]);
+}
+
+function registerChromeWindowsDevice(User $user, string $name = ''): TrustedDeviceOperationResult
+{
+    return resolve(TrustedDeviceService::class)->register(
+        $user,
+        parsedChromeWindowsDetector(),
+        trustedDeviceStoreRequest(),
+        hash('sha256', 'new-token'),
+        $name,
+    );
 }
 
 it('renames the device, records a Renamed event and invalidates the dashboard cache', function (): void {
@@ -148,13 +160,7 @@ it('registers a new device, records a Created event and invalidates the dashboar
     $user = createUser();
     warmTrustedDeviceStatsCache($user);
 
-    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
-        $user,
-        parsedChromeWindowsDetector(),
-        trustedDeviceStoreRequest(),
-        hash('sha256', 'new-token'),
-        'Work laptop',
-    );
+    $trustedDeviceOperationResult = registerChromeWindowsDevice($user, 'Work laptop');
 
     $trustedDevice = TrustedDevice::query()->where('user_id', $user->id)->sole();
 
@@ -171,55 +177,32 @@ it('prunes an expired device with the same fingerprint when registering', functi
     $user = createUser();
     $trustedDevice = createTrustedDevice($user, [...trustedDeviceFingerprint(), 'expires_at' => Date::now()->subDay()]);
 
-    resolve(TrustedDeviceService::class)->register(
-        $user,
-        parsedChromeWindowsDetector(),
-        trustedDeviceStoreRequest(),
-        hash('sha256', 'new-token'),
-        '',
-    );
+    registerChromeWindowsDevice($user);
 
     expect(TrustedDevice::query()->find($trustedDevice->id))->toBeNull()
         ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(1);
 });
 
-it('reports AlreadyActive without creating anything when the fingerprint is already trusted', function (): void {
+it('reports :dataset without creating anything when the fingerprint is already known', function (bool $isRevoked, TrustedDeviceOperationResult $expectedResult): void {
     $user = createUser();
-    createTrustedDevice($user, trustedDeviceFingerprint());
+    $trustedDevice = createTrustedDevice($user, trustedDeviceFingerprint());
+
+    if ($isRevoked) {
+        $trustedDevice->delete();
+    }
+
     warmTrustedDeviceStatsCache($user);
 
-    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
-        $user,
-        parsedChromeWindowsDetector(),
-        trustedDeviceStoreRequest(),
-        hash('sha256', 'new-token'),
-        '',
-    );
+    $trustedDeviceOperationResult = registerChromeWindowsDevice($user);
 
-    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::AlreadyActive)
-        ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(1)
-        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
-        ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
-});
-
-it('reports AlreadyRevoked without creating anything when the fingerprint was revoked', function (): void {
-    $user = createUser();
-    createTrustedDevice($user, trustedDeviceFingerprint())->delete();
-    warmTrustedDeviceStatsCache($user);
-
-    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->register(
-        $user,
-        parsedChromeWindowsDetector(),
-        trustedDeviceStoreRequest(),
-        hash('sha256', 'new-token'),
-        '',
-    );
-
-    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::AlreadyRevoked)
+    expect($trustedDeviceOperationResult)->toBe($expectedResult)
         ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
         ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
-});
+})->with([
+    'AlreadyActive' => [false, TrustedDeviceOperationResult::AlreadyActive],
+    'AlreadyRevoked' => [true, TrustedDeviceOperationResult::AlreadyRevoked],
+]);
 
 it('reactivates a revoked device, records a Reactivated event and invalidates the dashboard cache', function (): void {
     $user = createUser();
