@@ -8,6 +8,22 @@ use App\Modules\Admin\Enums\AdminRole;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+/**
+ * @return array<int, mixed>
+ */
+function usersReaderPermissionNames(): array
+{
+    return Role::query()
+        ->where('name', AdminRole::AdminUsersReader->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail()
+        ->permissions
+        ->pluck('name')
+        ->sort()
+        ->values()
+        ->all();
+}
+
 it('seeds each role with only its intended permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
@@ -81,15 +97,7 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
 
     $user->refresh();
 
-    $remainingPermissions = Role::query()
-        ->where('name', AdminRole::AdminUsersReader->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail()
-        ->permissions
-        ->pluck('name')
-        ->sort()
-        ->values()
-        ->all();
+    $remainingPermissions = usersReaderPermissionNames();
 
     $this->assertDatabaseCount('roles', 4);
     $this->assertDatabaseCount('permissions', 6);
@@ -130,15 +138,7 @@ it('renames the legacy users reader role without losing users or role permission
     $this->seed(AdminAuthorizationSeeder::class);
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $renamedUsersReaderRole = Role::query()
-        ->where('name', AdminRole::AdminUsersReader->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail();
-    $remainingPermissions = $renamedUsersReaderRole->permissions
-        ->pluck('name')
-        ->sort()
-        ->values()
-        ->all();
+    $remainingPermissions = usersReaderPermissionNames();
     $user->refresh();
 
     $this->assertDatabaseCount('roles', 4);
@@ -197,11 +197,7 @@ it('renames legacy permissions in place while preserving role grants and revocat
         ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
-    $remainingPermissions = $renamedUsersReaderRole->permissions
-        ->pluck('name')
-        ->sort()
-        ->values()
-        ->all();
+    $remainingPermissions = usersReaderPermissionNames();
 
     $this->assertDatabaseCount('permissions', 6);
     $this->assertDatabaseHas('permissions', [

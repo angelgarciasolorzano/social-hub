@@ -16,75 +16,25 @@ it('rejects content made only of control characters with the required message', 
     expect($fluentRulesTester->errors()->first('content'))->toBe('El comentario es obligatorio');
 });
 
-it('strips control characters from the stored content', function (): void {
+it('stores the content sanitized: :dataset', function (string $submittedContent, string $storedContent): void {
     $post = createPost();
 
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
-            'content' => "Ho\0la \x07mun\x1Fdo",
+            'content' => $submittedContent,
             'commentable_type' => Post::MORPH_NAME,
             'commentable_id' => $post->id,
         ])
         ->assertSessionHasNoErrors();
 
-    expect(Comment::query()->sole()->content)->toBe('Hola mundo');
-});
-
-it('keeps tabs and line breaks inside the content', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => "Línea 1\nLínea 2\tfin",
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(Comment::query()->sole()->content)->toBe("Línea 1\nLínea 2\tfin");
-});
-
-it('trims the whitespace that remains after stripping control characters', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => "\0  hola  \x01",
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(Comment::query()->sole()->content)->toBe('hola');
-});
-
-it('validates the length after stripping control characters', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => str_repeat("a\0", 1000),
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(Comment::query()->sole()->content)->toHaveLength(1000);
-});
-
-it('keeps accented and emoji characters untouched', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => 'Qué buen día ☀️ — ¡gracias!',
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(Comment::query()->sole()->content)->toBe('Qué buen día ☀️ — ¡gracias!');
-});
+    expect(Comment::query()->sole()->content)->toBe($storedContent);
+})->with([
+    'control characters are stripped' => ["Ho\0la \x07mun\x1Fdo", 'Hola mundo'],
+    'tabs and line breaks are kept' => ["Línea 1\nLínea 2\tfin", "Línea 1\nLínea 2\tfin"],
+    'whitespace left after stripping is trimmed' => ["\0  hola  \x01", 'hola'],
+    'the length is validated after stripping' => [str_repeat("a\0", 1000), str_repeat('a', 1000)],
+    'accented and emoji characters are untouched' => ['Qué buen día ☀️ — ¡gracias!', 'Qué buen día ☀️ — ¡gracias!'],
+]);
 
 it('rejects non-string content without failing with a server error', function (): void {
     $post = createPost();

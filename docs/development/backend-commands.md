@@ -87,10 +87,26 @@ composer phpstan   # Rector puede introducir issues de tipos, revalida
 composer test
 ```
 
-Limpia la config cacheada y ejecuta la suite completa de PHPUnit.
+Limpia la config cacheada y ejecuta la suite completa de Pest con un límite de memoria de 2G (`artisan test -d memory_limit=2G`).
 
 - ⚠️ **No** usar para tests rápidos — limpia caché antes de correr
-- ✅ Útil antes de abrir PR o en CI
+- 🧠 El límite de 2G es necesario: con el `memory_limit` por defecto de PHP CLI (128M) la suite completa se queda sin memoria. `php artisan test` a secas sirve para archivos o filtros, pero no para la suite completa
+- 🚫 No acepta argumentos (`composer test -- <ruta>` falla porque Composer los reenvía también a `config:clear`); para filtrar usa `php artisan test --compact <ruta>`
+- ✅ Útil antes de abrir PR; es el comando que ejecuta el workflow de CI
+
+### `composer pint-ci`
+
+```bash
+composer pint-ci
+```
+
+Ejecuta `vendor/bin/pint --test` sobre **todo el repositorio** en modo solo lectura, para CI.
+
+- ❌ Falla (código `1`) si algún archivo no cumple el estilo del proyecto y lista cuáles
+- 🚫 No modifica archivos; para corregirlos usa `composer pint-fix` o `composer pint-dirty`
+- 🔎 Antes de SOC-48 usaba `--dirty`, que en un checkout limpio de CI no revisa ningún archivo; ahora revisa todo el código
+
+**Cuándo:** lo ejecuta el workflow `Backend Code Quality Pint`; localmente solo hace falta si quieres reproducir el gate.
 
 ### `composer doctor`
 
@@ -118,7 +134,7 @@ Ejecuta Laravel Doctor con formato de anotaciones de GitHub para el workflow de 
 - 📋 Produce anotaciones que GitHub Actions puede mostrar directamente en el job
 - 🚫 No aplica reparaciones automáticas
 
-**Cuándo:** el workflow de calidad del backend lo ejecuta con anotaciones para GitHub Actions. Su ejecución ocurre en CI al llegar a este paso; no sustituye el gate local final ni es un chequeo intermedio durante la implementación.
+**Cuándo:** el workflow `Backend Code Quality Laravel Doctor` lo ejecuta con anotaciones para GitHub Actions. Su ejecución ocurre en CI al llegar a este paso; no sustituye el gate local final ni es un chequeo intermedio durante la implementación.
 
 ### `composer phpcpd`
 
@@ -131,9 +147,25 @@ Ejecuta PHPCPD Next con el preset de Laravel para detectar código duplicado.
 - 🧪 Es una herramienta experimental y actualmente no bloquea CI
 - ❗ Devuelve código `1` cuando encuentra clones, aunque el análisis sea válido
 - 🔍 Los hallazgos deben revisarse manualmente porque tests paralelos y configuraciones repetitivas pueden ser intencionales
-- 📊 En la primera ejecución detectó 8 clones, 119 líneas duplicadas y 1.14% de duplicación
+- 📊 En SOC-48 detectó 53 clones, 889 líneas duplicadas y 4.14% de duplicación; tras la revisión y limpieza quedan 28 clones, 440 líneas y 2.09%. Los que permanecen son repetición intencional de escenarios de prueba o estructura propia de clases y se justifican en SOC-48
 
 **Cuándo:** durante la evaluación de duplicación antes de decidir si se convierte en un gate obligatorio.
+
+### `composer sloppy`
+
+```bash
+composer sloppy
+```
+
+Ejecuta [Sloppy](https://github.com/Heyosseus/sloppy) (`heyosseus/sloppy`), un análisis estático experimental de deuda típica del código generado por agentes de IA.
+
+- 🧪 Es experimental y **no está en CI** (igual que PHPCPD), mientras se evalúa
+- 📖 Es de solo lectura: lista los hallazgos por riesgo y una puntuación sobre 100; no modifica archivos ni requiere configuración
+- ❗ Devuelve código `1` cuando encuentra hallazgos, aunque el análisis sea válido
+- 🚫 No uses `sloppy fix` ni `sloppy agents install` sin revisarlo: el primero aplica Rector y Pint sobre los archivos y el segundo escribe hooks y reglas en los archivos de agentes
+- 📊 Primera ejecución en SOC-48: puntuación 96/100 con 3 hallazgos (`TrustedDeviceIndexController::__invoke`, `AdminUserRoleCommand::handle` y `User` con una notificación en el modelo), sin acción por ahora
+
+**Cuándo:** durante la evaluación, para decidir si se convierte en un gate.
 
 ### `php artisan test --compact`
 
@@ -206,7 +238,23 @@ Limpia la caché de resultados de PHPStan.
 
 **Cuándo:** si PHPStan reporta errores "raros" que parecen cacheados, o después de cambios grandes en `phpstan.neon`.
 
-## 4. Resumen rápido
+## 4. Workflows de CI del backend
+
+Cada gate corre en su propio workflow de GitHub Actions, en paralelo, con los mismos triggers (`push` y `pull_request` sobre `main` y `develop`) y PHP 8.5:
+
+| Workflow (`name`)                      | Archivo                                   | Comando               | Preparación específica                                    |
+| -------------------------------------- | ----------------------------------------- | --------------------- | --------------------------------------------------------- |
+| Backend Code Quality Test              | `backend-code-quality-test.yml`           | `composer test`       | Servicio MySQL 8.4 y `.env.testing` desde `.env.testing.example` |
+| Backend Code Quality Pint              | `backend-code-quality-pint.yml`           | `composer pint-ci`    | Ninguna                                                   |
+| Backend Code Quality Rector            | `backend-code-quality-rector.yml`         | `composer rector-dry` | Caché de `storage/rector`                                 |
+| Backend Code Quality PHPStan           | `backend-code-quality-phpstan.yml`        | `composer phpstan`    | `.env.ci` + SQLite + migraciones + `composer ide-helper`, y caché de `storage/phpstan` |
+| Backend Code Quality Laravel Doctor    | `backend-code-quality-doctor.yml`         | `composer doctor-ci`  | `.env.ci` + SQLite + migraciones                          |
+
+- PHPStan **necesita** `composer ide-helper` antes de analizar: `phpstan.neon` escanea `_ide_helper_models.php`, que se genera y no está en git.
+- PHPCPD no está en CI (experimental).
+- Si cambias un workflow o el nombre de un check, actualiza también los checks requeridos de la rama protegida en GitHub.
+
+## 5. Resumen rápido
 
 | Comando                        | Para qué                       | Cuándo                          |
 | ------------------------------ | ------------------------------ | ------------------------------- |
@@ -214,10 +262,12 @@ Limpia la caché de resultados de PHPStan.
 | `composer phpstan`             | Análisis estático              | Antes de commit                 |
 | `composer rector-dry`          | Preview Rector                 | Después de cualquier cambio PHP |
 | `composer rector`              | Aplicar Rector                 | Después de `rector-dry`         |
-| `composer test`                | Suite completa PHPUnit         | Antes de PR                     |
+| `composer test`                | Suite completa Pest (2G)       | Antes de PR                     |
+| `composer pint-ci`             | Pint de solo lectura, todo el repo | Gate del workflow de CI     |
 | `composer doctor`              | Diagnósticos locales Laravel   | Último gate local de tarea backend |
 | `composer doctor-ci`           | Doctor con anotaciones GitHub  | Gate del workflow de CI         |
 | `composer phpcpd`              | Detección experimental clones  | Evaluar duplicación             |
+| `composer sloppy`              | Análisis experimental de deuda | Evaluar (no está en CI)         |
 | `php artisan test --compact`   | Tests rápidos con filtro       | Después de cada test modificado |
 | `composer ide-helper`          | Regenerar helpers IDE          | Después de cambiar modelos      |
 | `composer setup`               | Setup inicial                  | Primera vez                     |

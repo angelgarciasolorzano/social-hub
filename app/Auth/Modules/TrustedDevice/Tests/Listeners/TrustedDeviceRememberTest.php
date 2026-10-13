@@ -16,15 +16,12 @@ it('creates a trusted device and records a Created event when remember_device is
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
 
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
-    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
-    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
+    $otherUserStatsCacheKey = trustedDeviceStatsCacheKey($otherUser);
+    $otherUserActivityCacheKey = trustedDeviceRecentActivityCacheKey($otherUser);
 
-    Cache::forget($userStatsCacheKey);
-    Cache::forget($userActivityCacheKey);
-    Cache::forget($otherUserStatsCacheKey);
-    Cache::forget($otherUserActivityCacheKey);
+    forgetTrustedDeviceDashboardCache($user, $otherUser);
 
     $trustedDeviceDashboardStatsData = $trustedDeviceDashboardCache->stats($user);
     $userActivityBefore = $trustedDeviceDashboardCache->recentActivity($user, request());
@@ -80,15 +77,12 @@ it('does not create a trusted device when remember_device is not checked', funct
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
 
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
-    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
-    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
+    $otherUserStatsCacheKey = trustedDeviceStatsCacheKey($otherUser);
+    $otherUserActivityCacheKey = trustedDeviceRecentActivityCacheKey($otherUser);
 
-    Cache::forget($userStatsCacheKey);
-    Cache::forget($userActivityCacheKey);
-    Cache::forget($otherUserStatsCacheKey);
-    Cache::forget($otherUserActivityCacheKey);
+    forgetTrustedDeviceDashboardCache($user, $otherUser);
 
     $userStatsBefore = $trustedDeviceDashboardCache->stats($user)->toArray();
     $userActivityBefore = $trustedDeviceDashboardCache->recentActivity($user, request());

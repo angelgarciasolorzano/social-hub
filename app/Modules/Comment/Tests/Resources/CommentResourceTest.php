@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Resources\CommentResource;
+use App\Modules\Post\Models\Post;
+use Illuminate\Pagination\CursorPaginator;
+
+/**
+ * @return CursorPaginator<int, array<mixed>>
+ */
+function commentsCursorPage(Post $post): CursorPaginator
+{
+    return $post->comments()->with('user')->orderByDesc('id')->cursorPaginate(10)
+        ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
+}
 
 it('serializes only the public comment fields', function (): void {
     $user = createUser();
@@ -43,8 +54,7 @@ it('keeps the cursor metadata when a page of comments is serialized through the 
 
     createCommentsOn($post, 11);
 
-    $cursorPaginator = $post->comments()->with('user')->orderByDesc('id')->cursorPaginate(10)
-        ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
+    $cursorPaginator = commentsCursorPage($post);
 
     $payload = $cursorPaginator->toArray();
 
@@ -59,8 +69,7 @@ it('reports no further pages when everything fits in one', function (): void {
     $post = createPost();
     createCommentOn($post);
 
-    $cursorPaginator = $post->comments()->with('user')->orderByDesc('id')->cursorPaginate(10)
-        ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
+    $cursorPaginator = commentsCursorPage($post);
 
     $payload = $cursorPaginator->toArray();
 

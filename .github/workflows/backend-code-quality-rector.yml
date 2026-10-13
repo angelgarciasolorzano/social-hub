@@ -1,4 +1,4 @@
-name: Backend Code Quality Checks
+name: Backend Code Quality Rector
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  backend-code-quality:
+  backend-rector:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,17 +38,7 @@ jobs:
         run: composer install -q --no-ansi --no-interaction --no-progress --prefer-dist
 
       - name: Prepare cache directories
-        run: |
-          mkdir -p storage/phpstan
-          mkdir -p storage/rector
-
-      - name: Cache PHPStan
-        uses: actions/cache@v6
-        with:
-          path: storage/phpstan
-          key: ${{ runner.os }}-code-quality-phpstan-${{ hashFiles('**/composer.lock', '**/phpstan.neon*') }}
-          restore-keys: |
-            ${{ runner.os }}-code-quality-phpstan-
+        run: mkdir -p storage/rector
 
       - name: Cache Rector
         uses: actions/cache@v6
@@ -58,25 +48,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-code-quality-rector-
 
-      - name: Execute Laravel Pint
-        run: composer pint-ci
-
       - name: Execute Rector
         run: composer rector-dry
-
-      - name: Setup Laravel environment
-        run: |
-          cp .env.ci .env
-          mkdir -p database
-          touch database/database.sqlite
-          php artisan key:generate --ansi
-          php artisan migrate --force
-
-      - name: Execute Laravel Doctor
-        run: composer doctor-ci
-
-      - name: Generate IDE Helper files
-        run: composer ide-helper
-
-      - name: Execute PHPStan
-        run: composer phpstan

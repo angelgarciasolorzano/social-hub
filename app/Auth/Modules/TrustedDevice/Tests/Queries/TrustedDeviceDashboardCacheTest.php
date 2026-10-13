@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\User\Models\User;
 use Closure;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -18,18 +20,12 @@ it('uses warm per-user cache entries for stats and recent activity', function ()
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
-    $coldStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
-    $warmStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
+    $coldStats = measureDashboardStats($trustedDeviceDashboardCache, $user);
+    $warmStats = measureDashboardStats($trustedDeviceDashboardCache, $user);
 
-    $coldRecentActivity = measureTrustedDeviceTableQueries(
-        fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
-        'trusted_device_events',
-    );
+    $coldRecentActivity = measureDashboardRecentActivity($trustedDeviceDashboardCache, $user, $request);
 
-    $warmRecentActivity = measureTrustedDeviceTableQueries(
-        fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
-        'trusted_device_events',
-    );
+    $warmRecentActivity = measureDashboardRecentActivity($trustedDeviceDashboardCache, $user, $request);
 
     expect($coldStats['queryCount'])->toBe(8)
         ->and($warmStats['queryCount'])->toBe(0)
@@ -89,16 +85,13 @@ it('expires recent activity after 30 seconds and stats after 60 seconds', functi
 
     $this->travel(31)->seconds();
 
-    $warmStatsBeforeExpiry = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
+    $warmStatsBeforeExpiry = measureDashboardStats($trustedDeviceDashboardCache, $user);
 
-    $expiredRecentActivity = measureTrustedDeviceTableQueries(
-        fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
-        'trusted_device_events',
-    );
+    $expiredRecentActivity = measureDashboardRecentActivity($trustedDeviceDashboardCache, $user, $request);
 
     $this->travel(30)->seconds();
 
-    $expiredStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
+    $expiredStats = measureDashboardStats($trustedDeviceDashboardCache, $user);
 
     expect($warmStatsBeforeExpiry['queryCount'])->toBe(0)
         ->and($warmStatsBeforeExpiry['result']['total'])->toBe(0)
@@ -117,18 +110,12 @@ it('keeps dashboard cache entries isolated between users', function (): void {
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
-    $firstStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($firstUser)->toArray());
-    $secondStats = measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($secondUser)->toArray());
+    $firstStats = measureDashboardStats($trustedDeviceDashboardCache, $firstUser);
+    $secondStats = measureDashboardStats($trustedDeviceDashboardCache, $secondUser);
 
-    $firstRecentActivity = measureTrustedDeviceTableQueries(
-        fn (): array => $trustedDeviceDashboardCache->recentActivity($firstUser, $request),
-        'trusted_device_events',
-    );
+    $firstRecentActivity = measureDashboardRecentActivity($trustedDeviceDashboardCache, $firstUser, $request);
 
-    $secondRecentActivity = measureTrustedDeviceTableQueries(
-        fn (): array => $trustedDeviceDashboardCache->recentActivity($secondUser, $request),
-        'trusted_device_events',
-    );
+    $secondRecentActivity = measureDashboardRecentActivity($trustedDeviceDashboardCache, $secondUser, $request);
 
     expect($firstStats['result']['total'])->toBe(1)
         ->and($secondStats['queryCount'])->toBe(8)
@@ -407,6 +394,25 @@ it('excludes revoked devices from dashboard counts while retaining their events'
         ->and($stats['revoked'])->toBe(1)
         ->and($stats['byDeviceType'])->toBe(['desktop' => 1, 'mobile' => 0]);
 });
+
+/**
+ * @return array{queryCount: int, result: array<mixed>}
+ */
+function measureDashboardStats(TrustedDeviceDashboardCache $trustedDeviceDashboardCache, User $user): array
+{
+    return measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
+}
+
+/**
+ * @return array{queryCount: int, result: array<int, array<string, mixed>>}
+ */
+function measureDashboardRecentActivity(TrustedDeviceDashboardCache $trustedDeviceDashboardCache, User $user, Request $request): array
+{
+    return measureTrustedDeviceTableQueries(
+        fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
+        'trusted_device_events',
+    );
+}
 
 /**
  * @template TResult

@@ -29,6 +29,7 @@
         "driftingly/rector-laravel": "^2.6.0",
         "fakerphp/faker": "^1.24.1",
         "fruitcake/laravel-debugbar": "^4.4.3",
+        "heyosseus/sloppy": "^1.6",
         "larastan/larastan": "^3.12.1",
         "laravel/boost": "^2.5.3",
         "laravel/doctor": "^0.1.0",
@@ -99,7 +100,7 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "@php artisan test -d memory_limit=2G"
         ],
         "doctor": "@php artisan doctor",
         "doctor-ci": "@php artisan doctor --format=github --no-interaction",
@@ -108,7 +109,8 @@
             "@php artisan ide-helper:models -RM"
         ],
         "phpcpd": "vendor/bin/phpcpd --preset=laravel .",
-        "pint-ci": "vendor/bin/pint --dirty --test",
+        "sloppy": "vendor/bin/sloppy",
+        "pint-ci": "vendor/bin/pint --test",
         "pint-fix": "vendor/bin/pint",
         "pint-dirty": "vendor/bin/pint --dirty",
         "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
@@ -118,8 +120,8 @@
     },
     "script-descriptions": {
         "dev": "Start the development environment with hot reloading and concurrent processes.",
-        "test": "Run the test suite.",
-        "pint-ci": "Run Laravel Pint in CI mode to check code style.",
+        "test": "Run the test suite with a 2G memory limit.",
+        "pint-ci": "Run Laravel Pint in CI mode to check code style across the whole codebase.",
         "pint-fix": "Run Laravel Pint to fix code style issues.",
         "pint-dirty": "Run Laravel Pint only on changed files.",
         "doctor": "Run Laravel Doctor diagnostics locally without applying fixes.",
@@ -127,6 +129,7 @@
         "phpstan": "Run PHPStan for static analysis of the codebase.",
         "phpstan-clear-cache": "Clear PHPStan's result cache.",
         "phpcpd": "Run experimental copy/paste detection with PHPCPD Next.",
+        "sloppy": "Run experimental static analysis for AI-generated code debt with Sloppy.",
         "rector": "Run Rector to automatically refactor code.",
         "rector-dry": "Run Rector in dry-run mode to see potential changes without applying them.",
         "ide-helper": "Generate IDE helper files for better autocompletion."

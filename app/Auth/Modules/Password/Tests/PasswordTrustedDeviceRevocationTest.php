@@ -15,12 +15,11 @@ it('invalidates trusted device dashboard caches after the enclosing transaction 
     createTrustedDevice($user);
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
     $passwordRequest = PasswordRequest::create('/setting/password', 'PUT');
 
-    Cache::forget($userStatsCacheKey);
-    Cache::forget($userActivityCacheKey);
+    forgetTrustedDeviceDashboardCache($user);
 
     $trustedDeviceDashboardCache->stats($user);
     $trustedDeviceDashboardCache->recentActivity($user, $passwordRequest);
@@ -53,15 +52,12 @@ it("revokes the authenticated user's trusted devices without affecting other use
     createTrustedDeviceEvent($otherUser, ['action' => TrustedDeviceAction::Created]);
 
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
-    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
-    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
+    $otherUserStatsCacheKey = trustedDeviceStatsCacheKey($otherUser);
+    $otherUserActivityCacheKey = trustedDeviceRecentActivityCacheKey($otherUser);
 
-    Cache::forget($userStatsCacheKey);
-    Cache::forget($userActivityCacheKey);
-    Cache::forget($otherUserStatsCacheKey);
-    Cache::forget($otherUserActivityCacheKey);
+    forgetTrustedDeviceDashboardCache($user, $otherUser);
 
     $trustedDeviceDashboardCache->stats($user);
     $trustedDeviceDashboardCache->recentActivity($user, request());

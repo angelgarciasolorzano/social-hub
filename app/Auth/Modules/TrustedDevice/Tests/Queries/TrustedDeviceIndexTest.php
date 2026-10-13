@@ -69,19 +69,39 @@ it("only lists the authenticated user's devices", function (): void {
         ->and($names)->not->toContain("Someone else's laptop");
 });
 
-it('filters by search across name, browser and os', function (): void {
+it('lists only the devices matching a single filter', function (array $query, array $matchingAttributes, array $otherAttributes): void {
     $user = createUser();
-    createTrustedDevice($user, ['name' => 'Work MacBook']);
-    createTrustedDevice($user, ['name' => 'Home PC']);
+
+    /** @var array<string, mixed> $matchingAttributes */
+    createTrustedDevice($user, $matchingAttributes);
+
+    /** @var array<string, mixed> $otherAttributes */
+    createTrustedDevice($user, $otherAttributes);
 
     $testResponse = $this->actingAs($user)
-        ->get(route('setting.security.trusted-devices.index', ['search' => 'macbook']));
+        ->get(route('setting.security.trusted-devices.index', $query));
 
     $names = collect(trustedDevicePaginationData($testResponse)['data'])->pluck('name');
 
     expect($names)->toHaveCount(1)
-        ->and($names)->toContain('Work MacBook');
-});
+        ->and($names)->toContain($matchingAttributes['name']);
+})->with([
+    'search across name, browser and os' => [
+        ['search' => 'macbook'],
+        ['name' => 'Work MacBook'],
+        ['name' => 'Home PC'],
+    ],
+    'browser' => [
+        ['browser' => 'chrome'],
+        ['name' => 'Chrome device', 'browser' => 'Chrome 120'],
+        ['name' => 'Firefox device', 'browser' => 'Firefox 118'],
+    ],
+    'device type' => [
+        ['device_type' => 'mobile / tablet'],
+        ['name' => 'Mobile device', 'is_mobile' => true],
+        ['name' => 'Desktop device', 'is_mobile' => false],
+    ],
+]);
 
 it('filters by revoked status', function (): void {
     $user = createUser();
@@ -113,34 +133,6 @@ it('filters by active and inactive status', function (): void {
         ->toBe(['Active device'])
         ->and(collect(trustedDevicePaginationData($inactiveResponse)['data'])->pluck('name')->all())
         ->toBe(['Expired device']);
-});
-
-it('filters by browser', function (): void {
-    $user = createUser();
-    createTrustedDevice($user, ['name' => 'Chrome device', 'browser' => 'Chrome 120']);
-    createTrustedDevice($user, ['name' => 'Firefox device', 'browser' => 'Firefox 118']);
-
-    $testResponse = $this->actingAs($user)
-        ->get(route('setting.security.trusted-devices.index', ['browser' => 'chrome']));
-
-    $names = collect(trustedDevicePaginationData($testResponse)['data'])->pluck('name');
-
-    expect($names)->toHaveCount(1)
-        ->and($names)->toContain('Chrome device');
-});
-
-it('filters by device type', function (): void {
-    $user = createUser();
-    createTrustedDevice($user, ['name' => 'Desktop device', 'is_mobile' => false]);
-    createTrustedDevice($user, ['name' => 'Mobile device', 'is_mobile' => true]);
-
-    $testResponse = $this->actingAs($user)
-        ->get(route('setting.security.trusted-devices.index', ['device_type' => 'mobile / tablet']));
-
-    $names = collect(trustedDevicePaginationData($testResponse)['data'])->pluck('name');
-
-    expect($names)->toHaveCount(1)
-        ->and($names)->toContain('Mobile device');
 });
 
 it('filters by last access window', function (): void {

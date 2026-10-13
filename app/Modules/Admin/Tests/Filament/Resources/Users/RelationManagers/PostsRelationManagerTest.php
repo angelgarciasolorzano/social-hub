@@ -10,9 +10,11 @@ use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
+use App\User\Models\User;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
 use Livewire\Component;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use LogicException;
 use Tests\TestCase;
@@ -24,31 +26,31 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
+/**
+ * @return Testable<Component>
+ */
+function postsRelationManagerFor(User $user): Testable
+{
+    return Livewire::test(PostsRelationManager::class, [
+        'ownerRecord' => $user,
+        'pageClass' => ViewUser::class,
+    ]);
+}
+
 it('registers posts as a user resource relation', function (): void {
     expect(UserResource::getRelations())
         ->toContain(PostsRelationManager::class);
 });
 
 it('lists only the selected users posts with detail links', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $otherUser = createUser();
     $targetPost = createPost($targetUser, ['content' => 'Selected user post sentinel']);
     $foreignPost = createPost($otherUser, ['content' => 'Foreign user post sentinel']);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    postsRelationManagerFor($targetUser)
         ->assertOk()
         ->assertSee(PostResource::getUrl('view', ['record' => $targetPost]), false)
         ->assertSeeText('Selected user post sentinel')
@@ -57,13 +59,7 @@ it('lists only the selected users posts with detail links', function (): void {
 });
 
 it('paginates only the selected users posts', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $firstTargetPost = createPost($targetUser, ['content' => 'Target post 01']);
@@ -75,12 +71,7 @@ it('paginates only the selected users posts', function (): void {
         ]);
     }
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    $testable = postsRelationManagerFor($targetUser)
         ->assertOk()
         ->assertSeeText('Target post 11')
         ->assertDontSeeText('Target post 01')
@@ -91,47 +82,25 @@ it('paginates only the selected users posts', function (): void {
 });
 
 it('links user posts to their read-only detail and hides their comments', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $targetPost = createPost($targetUser, ['content' => 'Selected post content sentinel']);
     createCommentOn($targetPost, attributes: ['content' => 'Root comment sentinel']);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    postsRelationManagerFor($targetUser)
         ->assertOk()
         ->assertSee(PostResource::getUrl('view', ['record' => $targetPost]), false)
         ->assertDontSeeText('Root comment sentinel');
 });
 
 it('keeps the posts relation read only', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     createPost($targetUser);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $component = Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    $component = postsRelationManagerFor($targetUser)
         ->assertOk()
         ->instance();
 
@@ -153,13 +122,7 @@ it('keeps the posts relation read only', function (): void {
 });
 
 it('does not load comment threads for posts with many comments and replies', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $user = createUser();
@@ -181,12 +144,7 @@ it('does not load comment threads for posts with many comments and replies', fun
         ]);
     }
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ]);
+    $testable = postsRelationManagerFor($targetUser);
 
     $component = $testable->instance();
 
@@ -201,13 +159,7 @@ it('does not load comment threads for posts with many comments and replies', fun
 });
 
 it('searches the selected users posts and sorts the content column', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $otherUser = createUser();
@@ -216,19 +168,10 @@ it('searches the selected users posts and sorts the content column', function ()
     createPost($targetUser, ['content' => 'Unrelated target post']);
     $foreignPost = createPost($otherUser, ['content' => 'Target search Foreign']);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    $testable = postsRelationManagerFor($targetUser)
         ->set('tableSearch', 'Target search');
 
-    $component = $testable->instance();
-
-    throw_unless($component instanceof HasTable, LogicException::class, 'The posts component must expose a Filament table.');
-
-    /** @var HasTable&Component $component */
+    $component = FilamentTableRecords::table($testable);
     expect($component->getAllTableRecordsCount())
         ->toBe(2)
         ->and(FilamentTableRecords::visibleRecordKeys($component, Post::class))
@@ -237,11 +180,7 @@ it('searches the selected users posts and sorts the content column', function ()
 
     $testable->call('sortTable', 'content', 'asc');
 
-    $sortedRelationManager = $testable->instance();
-
-    throw_unless($sortedRelationManager instanceof HasTable, LogicException::class, 'The sorted posts component must expose a Filament table.');
-
-    /** @var HasTable&Component $sortedRelationManager */
+    $sortedRelationManager = FilamentTableRecords::table($testable);
     expect(FilamentTableRecords::visibleRecordKeys($sortedRelationManager, Post::class))
         ->toBe([
             FilamentTableRecords::recordKey($alphaPost),
@@ -250,13 +189,7 @@ it('searches the selected users posts and sorts the content column', function ()
 });
 
 it('filters the selected users posts by comment presence and creation date', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $user = createUser();
@@ -282,69 +215,36 @@ it('filters the selected users posts by comment presence and creation date', fun
         'content' => 'Comment outside range',
     ]);
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    $testable = Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    $testable = postsRelationManagerFor($targetUser)
         ->set('tableFilters.created_at.created_from', '2026-01-15')
         ->set('tableFilters.created_at.created_until', '2026-01-20')
         ->set('tableFilters.has_comments.value', true);
 
-    $relationManager = $testable->instance();
-
-    throw_unless($relationManager instanceof HasTable, LogicException::class, 'The filtered posts component must expose a Filament table.');
-
-    /** @var HasTable&Component $relationManager */
+    $relationManager = FilamentTableRecords::table($testable);
     expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
         ->toBe([FilamentTableRecords::recordKey($post)]);
 
     $testable->set('tableFilters.has_comments.value', false);
 
-    $relationManager = $testable->instance();
-
-    throw_unless($relationManager instanceof HasTable, LogicException::class, 'The filtered posts component must expose a Filament table.');
-
-    /** @var HasTable&Component $relationManager */
+    $relationManager = FilamentTableRecords::table($testable);
     expect(FilamentTableRecords::visibleRecordKeys($relationManager, Post::class))
         ->toBe([FilamentTableRecords::recordKey($withinRangeWithoutComments)]);
 });
 
 it('forbids users without Posts permission from viewing the relation', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
 
     $targetUser = createUser();
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    postsRelationManagerFor($targetUser)
         ->assertForbidden();
 });
 
 it('forbids direct relation requests without User record access', function (): void {
-    $authenticatedUser = createUser();
-
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminPostsReader->value,
-    ]);
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
 
-    $this->actingAs($authenticatedUser, 'admin');
-
-    Livewire::test(PostsRelationManager::class, [
-        'ownerRecord' => $targetUser,
-        'pageClass' => ViewUser::class,
-    ])
+    postsRelationManagerFor($targetUser)
         ->assertForbidden();
 });

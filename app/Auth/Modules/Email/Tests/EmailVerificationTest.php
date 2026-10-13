@@ -2,10 +2,27 @@
 
 declare(strict_types=1);
 
+use App\User\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
+
+function verificationUrlFor(User $user, string $tampering = ''): string
+{
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        $tampering === 'expiry' ? now()->subMinute() : now()->addMinutes(60),
+        [
+            'id' => $tampering === 'id' ? $user->id + 1 : $user->id,
+            'hash' => sha1($tampering === 'hash' ? 'different-email@example.test' : $user->email),
+        ],
+    );
+
+    return $tampering === 'signature'
+        ? str_replace('signature=', 'signature=altered-', $verificationUrl)
+        : $verificationUrl;
+}
 
 it('redirects guests to login from the verification notice', function (): void {
     $this->get(route('verification.notice'))
@@ -51,11 +68,7 @@ it('verifies an email from a valid signed URL and dispatches Verified once', fun
 
     Event::fake([Verified::class]);
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
+    $verificationUrl = verificationUrlFor($user);
 
     $testResponse = $this->actingAs($user)->get($verificationUrl);
 
@@ -67,19 +80,13 @@ it('verifies an email from a valid signed URL and dispatches Verified once', fun
     Event::assertDispatchedOnce(Verified::class);
 });
 
-it('rejects a signed verification URL with an invalid email hash', function (): void {
+it('rejects a verification URL with :dataset', function (string $tampering): void {
     $user = createUser();
     $user->forceFill(['email_verified_at' => null])->save();
 
     Event::fake([Verified::class]);
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1('different-email@example.test')],
-    );
-
-    $testResponse = $this->actingAs($user)->get($verificationUrl);
+    $testResponse = $this->actingAs($user)->get(verificationUrlFor($user, $tampering));
 
     $testResponse->assertForbidden();
 
@@ -87,85 +94,19 @@ it('rejects a signed verification URL with an invalid email hash', function (): 
     expect($user->hasVerifiedEmail())->toBeFalse();
 
     Event::assertNotDispatched(Verified::class);
-});
-
-it('rejects a signed verification URL for a different user id', function (): void {
-    $user = createUser();
-    $user->forceFill(['email_verified_at' => null])->save();
-
-    Event::fake([Verified::class]);
-
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id + 1, 'hash' => sha1($user->email)],
-    );
-
-    $testResponse = $this->actingAs($user)->get($verificationUrl);
-
-    $testResponse->assertForbidden();
-
-    $user->refresh();
-    expect($user->hasVerifiedEmail())->toBeFalse();
-
-    Event::assertNotDispatched(Verified::class);
-});
-
-it('rejects a verification URL with an altered signature', function (): void {
-    $user = createUser();
-    $user->forceFill(['email_verified_at' => null])->save();
-
-    Event::fake([Verified::class]);
-
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
-    $alteredVerificationUrl = str_replace('signature=', 'signature=altered-', $verificationUrl);
-
-    $testResponse = $this->actingAs($user)->get($alteredVerificationUrl);
-
-    $testResponse->assertForbidden();
-
-    $user->refresh();
-    expect($user->hasVerifiedEmail())->toBeFalse();
-
-    Event::assertNotDispatched(Verified::class);
-});
-
-it('rejects an expired signed verification URL', function (): void {
-    $user = createUser();
-    $user->forceFill(['email_verified_at' => null])->save();
-
-    Event::fake([Verified::class]);
-
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->subMinute(),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
-
-    $testResponse = $this->actingAs($user)->get($verificationUrl);
-
-    $testResponse->assertForbidden();
-
-    $user->refresh();
-    expect($user->hasVerifiedEmail())->toBeFalse();
-
-    Event::assertNotDispatched(Verified::class);
-});
+})->with([
+    'an invalid email hash' => ['hash'],
+    'a different user id' => ['id'],
+    'an altered signature' => ['signature'],
+    'an expired link' => ['expiry'],
+]);
 
 it('does not dispatch Verified again for an already verified user', function (): void {
     $user = createUser();
 
     Event::fake([Verified::class]);
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        ['id' => $user->id, 'hash' => sha1($user->email)],
-    );
+    $verificationUrl = verificationUrlFor($user);
 
     $testResponse = $this->actingAs($user)->get($verificationUrl);
 

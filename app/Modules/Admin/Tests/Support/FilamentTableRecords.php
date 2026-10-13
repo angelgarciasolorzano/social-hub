@@ -9,10 +9,26 @@ use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Livewire\Component;
+use Livewire\Features\SupportTesting\Testable;
 use LogicException;
 
 final class FilamentTableRecords
 {
+    /**
+     * @param  Testable<Component>  $testable
+     * @return HasTable&Component
+     */
+    public static function table(Testable $testable): HasTable
+    {
+        $component = $testable->instance();
+
+        throw_unless($component instanceof HasTable, LogicException::class, 'The Livewire component must expose a Filament table.');
+
+        /** @var HasTable&Component $component */
+        return $component;
+    }
+
     /**
      * @template TRecord of Model
      *
