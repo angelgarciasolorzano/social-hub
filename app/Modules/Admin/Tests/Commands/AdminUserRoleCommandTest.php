@@ -11,16 +11,21 @@ use Illuminate\Support\Facades\Artisan;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
+function runAdminUserRole(string $action, string $email, string $role): int
+{
+    return Artisan::call('admin:user-role', [
+        'action' => $action,
+        'email' => $email,
+        'role' => $role,
+    ]);
+}
+
 it('grants a catalog role and exposes its permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'grant',
-        'email' => $user->email,
-        'role' => AdminRole::AdminUsersReader->value,
-    ]);
+    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::AdminUsersReader->value);
     $commandOutput = Artisan::output();
     $user->refresh();
 
@@ -38,11 +43,7 @@ it('grants Posts and Dashboard reader roles without panel entry', function (Admi
 
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'grant',
-        'email' => $user->email,
-        'role' => $adminRole->value,
-    ]);
+    $exitCode = runAdminUserRole('grant', $user->email, $adminRole->value);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -60,11 +61,7 @@ it('grants panel entry through the admin role', function (): void {
 
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'grant',
-        'email' => $user->email,
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::Admin->value);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -79,11 +76,7 @@ it('revokes only the selected role and its permissions', function (): void {
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'revoke',
-        'email' => $user->email,
-        'role' => AdminRole::AdminUsersReader->value,
-    ]);
+    $exitCode = runAdminUserRole('revoke', $user->email, AdminRole::AdminUsersReader->value);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -99,11 +92,7 @@ it('revokes Posts and Dashboard reader roles without changing panel access', fun
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value, $adminRole->value);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'revoke',
-        'email' => $user->email,
-        'role' => $adminRole->value,
-    ]);
+    $exitCode = runAdminUserRole('revoke', $user->email, $adminRole->value);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -122,11 +111,7 @@ it('rejects an unknown role without changing existing assignments', function ():
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'grant',
-        'email' => $user->email,
-        'role' => 'unlisted-role',
-    ]);
+    $exitCode = runAdminUserRole('grant', $user->email, 'unlisted-role');
     $user->refresh();
 
     expect($exitCode)->toBe(Command::INVALID)
@@ -141,11 +126,7 @@ it('rejects actions other than grant or revoke without mutation', function (): v
 
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'replace',
-        'email' => $user->email,
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('replace', $user->email, AdminRole::Admin->value);
 
     expect($exitCode)->toBe(Command::INVALID)
         ->and(Artisan::output())->toContain('Action must be "grant" or "revoke".')
@@ -155,11 +136,7 @@ it('rejects actions other than grant or revoke without mutation', function (): v
 it('rejects an email that does not belong to an existing user', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'grant',
-        'email' => 'missing@example.com',
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('grant', 'missing@example.com', AdminRole::Admin->value);
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('No user was found with the email missing@example.com.')
@@ -172,11 +149,7 @@ it('prevents revoking admin.access from the last administrator', function (): vo
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'revoke',
-        'email' => $user->email,
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('revoke', $user->email, AdminRole::Admin->value);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::FAILURE)
@@ -195,11 +168,7 @@ it('allows revoking admin.access from one user when another administrator remain
     $targetUser = createUser();
     $targetUser->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'revoke',
-        'email' => $targetUser->email,
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('revoke', $targetUser->email, AdminRole::Admin->value);
     $user->refresh();
     $targetUser->refresh();
 
@@ -222,11 +191,7 @@ it('allows revoking one role when the user retains admin.access through another 
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value, AdminRole::AdminUsersReader->value);
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'revoke',
-        'email' => $user->email,
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('revoke', $user->email, AdminRole::Admin->value);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -238,11 +203,7 @@ it('allows revoking one role when the user retains admin.access through another 
 it('rejects role changes until the authorization catalog is seeded', function (): void {
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:user-role', [
-        'action' => 'grant',
-        'email' => $user->email,
-        'role' => AdminRole::Admin->value,
-    ]);
+    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::Admin->value);
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('Admin authorization is not initialized.')
