@@ -7,10 +7,16 @@ interface CommentReplies {
   repliesCount: number;
 }
 
+interface CommentRepliedTo {
+  id: number;
+  name: string;
+}
+
 export interface Comment {
   content: string;
   createdAt: string;
   id: number;
+  repliedTo?: CommentRepliedTo | null;
   repliesInfo: CommentReplies;
   user: User;
 }
