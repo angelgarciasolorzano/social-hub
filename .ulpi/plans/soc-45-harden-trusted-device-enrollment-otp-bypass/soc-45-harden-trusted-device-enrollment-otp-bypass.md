@@ -2,21 +2,21 @@
 
 ## Overview
 
-El plan cierra el bypass de OTP en capas: (1) un verificador único de 2FA/TOTP/códigos de recuperación; (2) el login solo omite OTP con 2FA confirmado; (3) al confirmar 2FA se revocan los dispositivos existentes (decisión A) y una migración de datos revoca los históricos; (4) alta y renovación exigen un TOTP vigente (decisión B) y 2FA confirmado, verificado en el request y de nuevo dentro de la transacción con el usuario bloqueado; (5) la reactivación consume los códigos de recuperación una sola vez bajo bloqueo; (6) la UI explica cómo activar 2FA, pide el OTP y aclara que recordar el navegador es una comodidad temporal.
+El plan cierra el bypass de OTP en capas: (1) un verificador único de 2FA/TOTP/códigos de recuperación; (2) el login solo omite OTP con 2FA confirmado; (3) al confirmar 2FA se revocan los dispositivos existentes (decisión A); (4) alta y renovación exigen un TOTP vigente (decisión B) y 2FA confirmado, verificado en el request y de nuevo dentro de la transacción con el usuario bloqueado; (5) la reactivación consume los códigos de recuperación una sola vez bajo bloqueo; (6) la UI explica cómo activar 2FA, pide el OTP y aclara que recordar el navegador es una comodidad temporal.
 
 **Issue:** [SOC-45](https://linear.app/social-hub-ang/issue/SOC-45/feature-harden-trusted-device-enrollment-and-otp-bypass) — Feature: Harden trusted-device enrollment and OTP bypass
 **Modo:** HOLD · **Estilo:** Paso a paso: se implementa una tarea y se pausa para revisión (regla .ai/rules/linear.md). · **Review por defecto:** claude
 
 ## Scope Challenge
 
-Modo HOLD: se mantiene el alcance de la tarea y las decisiones A (revocar al confirmar + migración de datos) y B (TOTP en el mismo request) sin ampliar. Se descartó vincular dispositivos a una 'generación' de 2FA (requiere columna, backfill y es más frágil) y también un chequeo created_at < two_factor_confirmed_at en el login, porque rompería la reactivación legítima de dispositivos revocados. Ya existen el Service, el listener de desactivación, la validación TOTP en TrustedDeviceReactivateRequest y los tests por flujo, que se reutilizan.
+Modo HOLD: se mantiene el alcance de la tarea y las decisiones A (revocar al confirmar) y B (TOTP en el mismo request) sin ampliar. Se descartó una migración de datos para registros históricos porque aún no hay datos en producción: los históricos quedan cubiertos por TASK-002 y TASK-003 (revisar antes de desplegar con datos reales). Se descartó vincular dispositivos a una 'generación' de 2FA (requiere columna, backfill y es más frágil) y también un chequeo created_at < two_factor_confirmed_at en el login, porque rompería la reactivación legítima de dispositivos revocados. Ya existen el Service, el listener de desactivación, la validación TOTP en TrustedDeviceReactivateRequest y los tests por flujo, que se reutilizan.
 
 ## Prerequisites
 
 - Los tests actuales de app/Auth/Modules/TrustedDevice/Tests, Login/Tests y User/Modules/TwoFactor/Tests están en verde antes de empezar.
 - Se leyeron .ai/rules/{app,backend,frontend,linear}.md: sin variables de una letra, docblocks con máximo 3 líneas de prosa, FluentRule en FormRequests, un comportamiento por test, pausa tras cada tarea.
 - config/fortify.php mantiene confirm=true: hasEnabledTwoFactorAuthentication() exige secreto y two_factor_confirmed_at.
-- phpunit.xml ya registra app/Auth/Modules/TrustedDevice/Tests, Login/Tests y la suite TwoFactor; las subcarpetas nuevas (Migrations/) quedan cubiertas sin registro adicional.
+- phpunit.xml ya registra app/Auth/Modules/TrustedDevice/Tests, Login/Tests y la suite TwoFactor; las subcarpetas nuevas quedan cubiertas sin registro adicional.
 
 ## Non-Goals
 
@@ -24,7 +24,7 @@ Modo HOLD: se mantiene el alcance de la tarea y las decisiones A (revocar al con
 - Cambiar los factores de Fortify o sustituir el sistema TOTP.
 - Rate limiting nuevo para los OTP de alta/renovación/reactivación.
 - Migrar la cookie a otro mecanismo o usar IP/User-Agent como credencial (siguen siendo solo metadatos).
-- Registrar eventos de auditoría para los dispositivos que revoca la migración de datos.
+- Migración de datos para registros históricos (descartada: no hay datos en producción; TASK-004 eliminada y su número no se reutiliza).
 
 ## Contracts
 
@@ -34,7 +34,7 @@ Modo HOLD: se mantiene el alcance de la tarea y las decisiones A (revocar al con
 - TrustedDeviceOperationResult::TwoFactorRequired es no exitoso: el controlador no encola cookie con resultados no exitosos (lógica existente en store).
 - Los errores de validación nunca incluyen el código enviado, el secreto, los códigos de recuperación ni tokens; los logs del verificador tampoco.
 - Capability providers: persistencia y bloqueo vía Eloquent/DB::transaction (existentes); TOTP vía Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider (existente); consumo de códigos vía User::replaceRecoveryCode de Fortify (existente); eventos TwoFactorAuthenticationConfirmed/Disabled de Fortify.
-- Wiring: TwoFactorCodeVerifier, TrustedDeviceRenewRequest, TwoFactorStatus y la migración se autocargan por PSR-4 / loadMigrationsFrom; el único registro nuevo es el listener de TwoFactorAuthenticationConfirmed en AuthEventServiceProvider (TASK-003).
+- Wiring: TwoFactorCodeVerifier, TrustedDeviceRenewRequest, TwoFactorStatus se autocargan por PSR-4; el único registro nuevo es el listener de TwoFactorAuthenticationConfirmed en AuthEventServiceProvider (TASK-003).
 - Las rutas y nombres de ruta de user.trusted-devices.* no cambian; cambia el contrato de sus payloads (store y renew ahora requieren otp_code).
 
 ## Existing Code Leverage
@@ -53,7 +53,7 @@ Modo HOLD: se mantiene el alcance de la tarea y las decisiones A (revocar al con
 
 ### TASK-001: Crear TwoFactorCodeVerifier (TOTP y código de recuperación de un solo uso)
 
-Crear un servicio final readonly en el módulo TrustedDevice con tres operaciones: hasConfirmedTwoFactor(User) (delega en hasEnabledTwoFactorAuthentication(), que con confirm=true exige secreto y two_factor_confirmed_at), verifyTotp(User, string) (descifra el secreto y usa TwoFactorAuthenticationProvider; registra con Log::warning sin incluir el código ni el secreto si el descifrado falla) y consumeRecoveryCode(User, string) (debe llamarse dentro de una DB::transaction del llamador: relee al usuario con lockForUpdate, compara con hash_equals contra los códigos descifrados y consume el aceptado con User::replaceRecoveryCode, de modo que el mismo código no sirva dos veces). Es la única fuente de verdad de verificación para alta, renovación y reactivación.
+Crear un servicio final readonly en el módulo TrustedDevice con tres operaciones: hasConfirmedTwoFactor(User) (delega en hasEnabledTwoFactorAuthentication(), que con confirm=true exige secreto y two_factor_confirmed_at), verifyTotp(User, string) (descifra el secreto y usa TwoFactorAuthenticationProvider; registra con Log::warning sin incluir el código ni el secreto si el descifrado falla) y consumeRecoveryCode(User, string) (debe llamarse dentro de una DB::transaction del llamador: relee al usuario con lockForUpdate, compara con hash_equals contra los códigos descifrados y consume el aceptado con User::replaceRecoveryCode (que lo elimina), de modo que el mismo código no sirva dos veces). Es la única fuente de verdad de verificación para alta, renovación y reactivación.
 
 **Type:** feature
 **Priority:** P0
@@ -64,7 +64,7 @@ Crear un servicio final readonly en el módulo TrustedDevice con tres operacione
 **Acceptance Criteria:**
 
 - [ ] verifyTotp devuelve true con el TOTP vigente de createUserWithTwoFactor() y false con un código inválido o con un usuario sin secreto; hasConfirmedTwoFactor devuelve false con secreto pendiente (two_factor_confirmed_at nulo) y con 2FA desactivado.
-- [ ] consumeRecoveryCode devuelve true la primera vez y false la segunda con el mismo código (el código queda reemplazado por uno nuevo en two_factor_recovery_codes); un código de recuperación de otro usuario devuelve false.
+- [ ] consumeRecoveryCode devuelve true la primera vez y false la segunda con el mismo código (el código se elimina de two_factor_recovery_codes, porque User::replaceRecoveryCode del proyecto lo quita); un código de recuperación de otro usuario devuelve false.
 - [ ] Caso de falla: ni los valores devueltos ni los logs contienen el código, el secreto ni los códigos de recuperación (Log spy), y un secreto cifrado corrupto devuelve false en lugar de lanzar.
 
 **writeScope:**
@@ -124,31 +124,6 @@ Generalizar el listener TrustedDeviceInvalidate para que acepte el evento base T
 **validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php && vendor/bin/pint --dirty --format agent`
 
 **Notas:** El registro del listener vive en AuthEventServiceProvider (ya cargado por AuthServiceProvider); no hay archivos nuevos.
-
-### TASK-004: Migración de datos: revocar dispositivos históricos previos a 2FA confirmado
-
-Agregar a app/Auth/Database/Migrations una migración de datos que marque deleted_at en los trusted_devices activos cuyo usuario no tiene two_factor_confirmed_at o cuyo created_at es anterior a two_factor_confirmed_at. Cubre los registros históricos que el listener de TASK-003 nunca vio. Los dispositivos ya revocados no se tocan, up() es idempotente y down() queda documentado como no reversible. AuthServiceProvider ya la carga con loadMigrationsFrom.
-
-**Type:** feature
-**Priority:** P1
-**Effort:** S
-**Agent:** laravel-senior-engineer
-**Review:** claude
-
-**Acceptance Criteria:**
-
-- [ ] Tras up(), un dispositivo de un usuario sin two_factor_confirmed_at y otro creado antes de two_factor_confirmed_at quedan con deleted_at; uno creado después de la confirmación sigue activo.
-- [ ] Caso de falla/edge: filas ya soft-deleted conservan su deleted_at original y ejecutar up() dos veces no cambia nada la segunda vez.
-- [ ] Una cookie de un dispositivo revocado por la migración no omite el OTP en login.
-
-**writeScope:**
-
-- `app/Auth/Database/Migrations/2026_10_14_120000_revoke_trusted_devices_without_confirmed_two_factor.php` (crear)
-- `app/Auth/Modules/TrustedDevice/Tests/Migrations/RevokeHistoricalTrustedDevicesMigrationTest.php` (crear)
-
-**validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Migrations/RevokeHistoricalTrustedDevicesMigrationTest.php && vendor/bin/pint --dirty --format agent`
-
-**Notas:** La migración se descubre vía AuthServiceProvider::loadMigrationsFrom; el test la ejecuta con require y up() sobre el esquema de pruebas. No se registran eventos de auditoría (los snapshots de TrustedDeviceEvent requieren la solicitud), y queda documentado en el docblock.
 
 ### TASK-005: Exigir 2FA confirmado dentro de register() y renew() del Service
 
@@ -406,18 +381,18 @@ TrustedDeviceReactivationDialog acepta TOTP (6 dígitos) o código de recuperaci
 
 ### TASK-015: Actualizar CLAUDE.md con el endurecimiento de dispositivos confiables
 
-Documentar en la sección Auth/TrustedDevice y en la de AccountSettings/TwoFactor de CLAUDE.md: definición de 2FA activo, revocación al confirmar, migración de datos, OTP en alta/renovación, código de recuperación de un solo uso, TwoFactorCodeVerifier, TwoFactorStatus y el nuevo caso TwoFactorRequired. Regla del proyecto: la doc se actualiza en el mismo cambio.
+Documentar en la sección Auth/TrustedDevice y en la de AccountSettings/TwoFactor de CLAUDE.md: definición de 2FA activo, revocación al confirmar, OTP en alta/renovación, código de recuperación de un solo uso, TwoFactorCodeVerifier, TwoFactorStatus y el nuevo caso TwoFactorRequired. Regla del proyecto: la doc se actualiza en el mismo cambio.
 
 **Type:** docs
 **Priority:** P3
 **Effort:** S
 **Agent:** general-purpose
 **Review:** claude
-**Depends on:** TASK-003, TASK-004, TASK-006, TASK-007, TASK-008, TASK-011, TASK-012
+**Depends on:** TASK-003, TASK-006, TASK-007, TASK-008, TASK-011, TASK-012
 
 **Acceptance Criteria:**
 
-- [ ] CLAUDE.md describe las nuevas reglas (2FA confirmado, reautenticación con TOTP, consumo único, revocación al confirmar, migración histórica) con los nombres reales de clases y archivos.
+- [ ] CLAUDE.md describe las nuevas reglas (2FA confirmado, reautenticación con TOTP, consumo único, revocación al confirmar) con los nombres reales de clases y archivos.
 - [ ] Ninguna afirmación de CLAUDE.md contradice el código (rutas, enums y clases mencionadas existen).
 
 **writeScope:**
@@ -454,16 +429,15 @@ Ejecutar los gates completos: composer rector-clear-cache, rector-dry, rector, P
 ## Failure Modes
 
 - Entregar TASK-006/TASK-007 sin TASK-012/TASK-013 rompe el alta y la renovación en la UI (no enviarían otp_code): se deben desplegar juntas.
-- Si la migración de TASK-004 se ejecuta antes de TASK-003, los usuarios que confirmen 2FA entre ambos despliegues conservarían dispositivos previos hasta el siguiente ciclo; por eso TASK-003 va primero.
 - Un TOTP aceptado no se puede verificar dos veces (Fortify evita su reuso): la reactivación verifica solo en el Service, no también en el request (TASK-008).
 - El consumo de códigos de recuperación con User::replaceRecoveryCode reemplaza el código en el JSON cifrado; si el JSON fuera inválido, el verificador devuelve false y registra sin datos sensibles.
 - La concurrencia real no se puede probar en Pest; se simula con modelos obsoletos y se confía en lockForUpdate sobre el usuario (TASK-009).
-- La migración de datos no es reversible: down() no restaura dispositivos y la decisión queda documentada.
+- Sin migración de datos: si se despliega con registros previos a 2FA confirmado en la base, esos dispositivos solo se revocan cuando el usuario confirme 2FA de nuevo; revisar antes de desplegar con datos reales.
 - Los usuarios con dispositivos confiables tendrán que volver a registrarlos tras confirmar 2FA; es el comportamiento buscado.
 
 ## Ship Cut
 
-Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005 y TASK-008 cierran el bypass de OTP y el reuso de códigos sin cambiar la UI (la reactivación sigue aceptando el mismo campo). Las rutas de alta y renovación (TASK-006, TASK-007) cambian su contrato, así que solo se entregan junto con TASK-010 a TASK-013. TASK-009, TASK-014 (copy), TASK-015 y TASK-016 pueden ir después, pero TASK-016 es necesaria para cerrar la tarea.
+Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002, TASK-003, TASK-005 y TASK-008 cierran el bypass de OTP y el reuso de códigos sin cambiar la UI (la reactivación sigue aceptando el mismo campo). Las rutas de alta y renovación (TASK-006, TASK-007) cambian su contrato, así que solo se entregan junto con TASK-010 a TASK-013. TASK-009, TASK-014 (copy), TASK-015 y TASK-016 pueden ir después, pero TASK-016 es necesaria para cerrar la tarea.
 
 ## Test Coverage Map
 
@@ -472,7 +446,6 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002, TASK-003, TAS
 | Verificador (TOTP, estado 2FA, un solo uso) | app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php | TASK-001 |
 | Login: cookie válida/expirada/revocada/ajena/2FA pendiente | app/Auth/Modules/Login/Tests/TrustedDeviceOtpBypassTest.php | TASK-002 |
 | Revocación al confirmar y al desactivar 2FA | app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php | TASK-003 |
-| Dispositivos históricos | app/Auth/Modules/TrustedDevice/Tests/Migrations/RevokeHistoricalTrustedDevicesMigrationTest.php | TASK-004 |
 | register/renew con 2FA no confirmado y carrera | app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php | TASK-005 |
 | Alta HTTP: sin 2FA, OTP inválido, éxito | app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php | TASK-006 |
 | Renovación HTTP: reautenticación | app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php | TASK-007 |
@@ -483,9 +456,9 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002, TASK-003, TAS
 
 ## Execution Summary
 
-- Tareas: 16
+- Tareas: 15
 - Ruta crítica: TASK-001 → TASK-005 → TASK-006 → TASK-007 → TASK-013 → TASK-016
-- Capa 0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-010
+- Capa 0: TASK-001, TASK-002, TASK-003, TASK-010
 - Capa 1: TASK-005, TASK-011, TASK-012
 - Capa 2: TASK-006, TASK-008
 - Capa 3: TASK-007, TASK-009, TASK-014
@@ -499,7 +472,6 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002, TASK-003, TAS
 | TASK-001 | — |
 | TASK-002 | — |
 | TASK-003 | — |
-| TASK-004 | — |
 | TASK-005 | TASK-001 |
 | TASK-006 | TASK-001, TASK-005 |
 | TASK-007 | TASK-005, TASK-006 |
@@ -510,5 +482,5 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002, TASK-003, TAS
 | TASK-012 | TASK-010 |
 | TASK-013 | TASK-007 |
 | TASK-014 | TASK-008 |
-| TASK-015 | TASK-003, TASK-004, TASK-006, TASK-007, TASK-008, TASK-011, TASK-012 |
+| TASK-015 | TASK-003, TASK-006, TASK-007, TASK-008, TASK-011, TASK-012 |
 | TASK-016 | TASK-002, TASK-009, TASK-013, TASK-014, TASK-015 |
