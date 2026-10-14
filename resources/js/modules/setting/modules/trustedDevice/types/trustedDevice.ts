@@ -26,6 +26,8 @@ export interface TrustedDevice {
   isActive: boolean;
 }
 
+export type TwoFactorStatus = "disabled" | "pending" | "confirmed";
+
 export type TrustedDeviceAction =
   "created" | "renewed" | "renamed" | "revoked" | "revoked_all" | "reactivated";
 

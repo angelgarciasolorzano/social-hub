@@ -1,11 +1,13 @@
 import { type JSX, type SubmitEvent } from "react";
 
 import type { SetDataAction } from "@inertiajs/react";
-import { useForm, usePage } from "@inertiajs/react";
+import { Link, useForm, usePage } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
-import { CircleAlert, ShieldPlus } from "lucide-react";
+import { CircleAlert, ShieldAlert, ShieldPlus } from "lucide-react";
 
+import TrustedDeviceOtpField from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceOtpField";
+import type { TwoFactorStatus } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
@@ -14,8 +16,10 @@ import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
+import { index as twoFactorAuthenticationIndex } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
+
 import { InputError, LabelForm } from "@/shared/components/form";
-import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -48,6 +52,19 @@ interface TrustedDeviceAddDialogProps {
 
 interface AddDeviceFormData {
   name: string;
+  otp_code: string;
+}
+
+interface AddDeviceFormErrors extends FormDataErrors<AddDeviceFormData> {
+  two_factor?: string;
+}
+
+function readTwoFactorStatus(pageProps: Record<string, unknown>): TwoFactorStatus {
+  const twoFactorStatus = pageProps["twoFactorStatus"];
+
+  return twoFactorStatus === "confirmed" || twoFactorStatus === "pending"
+    ? twoFactorStatus
+    : "disabled";
 }
 
 function TrustedDeviceAddDialog({
@@ -55,11 +72,14 @@ function TrustedDeviceAddDialog({
   open,
   onClose,
 }: TrustedDeviceAddDialogProps): JSX.Element {
-  const { setData, submit, processing, reset, errors } = useForm<AddDeviceFormData>({
+  const { data, setData, submit, processing, reset, errors } = useForm<AddDeviceFormData>({
     name: "",
+    otp_code: "",
   });
 
   const pageProps = usePage().props as Record<string, unknown>;
+  const twoFactorStatus = readTwoFactorStatus(pageProps);
+  const formErrors: AddDeviceFormErrors = errors;
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
@@ -87,6 +107,9 @@ function TrustedDeviceAddDialog({
         reset();
         onClose();
       },
+      onError: () => {
+        setData("otp_code", "");
+      },
       preserveScroll: true,
     });
   };
@@ -103,15 +126,26 @@ function TrustedDeviceAddDialog({
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
             Este navegador aún no está registrado como dispositivo de confianza. Al agregarlo, no se
-            te solicitara el codigo de verificacion desde este navegador hasta su fecha de
-            expiracion.
+            te solicitará el código de verificación desde este navegador hasta su fecha de
+            expiración. Es una comodidad temporal para omitir ese código, no un segundo factor de
+            autenticación independiente.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <DevicePreviewInfo preview={preview} />
 
-          <AddDeviceForm handleSubmit={handleSubmit} errors={errors} setData={setData} />
+          {twoFactorStatus === "confirmed" ? (
+            <AddDeviceForm
+              handleSubmit={handleSubmit}
+              errors={formErrors}
+              otpCode={data.otp_code}
+              processing={processing}
+              setData={setData}
+            />
+          ) : (
+            <TwoFactorRequiredNotice twoFactorStatus={twoFactorStatus} />
+          )}
 
           <Alert className={alertVariants.warning}>
             <CircleAlert aria-hidden="true" />
@@ -129,16 +163,24 @@ function TrustedDeviceAddDialog({
             </Button>
           </DialogClose>
 
-          <Button type="submit" form="add-trusted-device-form" disabled={processing}>
-            {processing ? (
-              <>
-                <Spinner />
-                Agregando...
-              </>
-            ) : (
-              "Agregar dispositivo"
-            )}
-          </Button>
+          {twoFactorStatus === "confirmed" ? (
+            <Button type="submit" form="add-trusted-device-form" disabled={processing}>
+              {processing ? (
+                <>
+                  <Spinner />
+                  Agregando...
+                </>
+              ) : (
+                "Agregar dispositivo"
+              )}
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href={twoFactorAuthenticationIndex.url()}>
+                Ir a autenticación de dos factores
+              </Link>
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -247,31 +289,84 @@ function DevicePreviewMetadataItem({
 }
 
 interface AddDeviceFormProps {
-  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
-  errors: FormDataErrors<AddDeviceFormData>;
+  handleSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
+  errors: AddDeviceFormErrors;
+  otpCode: string;
+  processing: boolean;
   setData: SetDataAction<AddDeviceFormData>;
 }
 
-function AddDeviceForm({ handleSubmit, errors, setData }: AddDeviceFormProps): JSX.Element {
+function AddDeviceForm({
+  handleSubmit,
+  errors,
+  otpCode,
+  processing,
+  setData,
+}: AddDeviceFormProps): JSX.Element {
   return (
-    <form id="add-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <LabelForm htmlFor="add-device-name" error={errors.name}>
-        Nombre del dispositivo (opcional)
-      </LabelForm>
+    <form id="add-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <LabelForm htmlFor="add-device-name" error={errors.name}>
+          Nombre del dispositivo (opcional)
+        </LabelForm>
 
-      <Input
-        id="add-device-name"
-        name="name"
-        placeholder="Mi dispositivo"
-        aria-describedby={errors.name ? "add-device-name-error" : undefined}
-        onChange={(event) => {
-          setData("name", event.target.value);
+        <Input
+          id="add-device-name"
+          name="name"
+          placeholder="Mi dispositivo"
+          aria-describedby={errors.name ? "add-device-name-error" : undefined}
+          onChange={(event) => {
+            setData("name", event.target.value);
+          }}
+          aria-invalid={errors.name !== undefined ? "true" : "false"}
+        />
+
+        <InputError aria-live="polite" id="add-device-name-error" message={errors.name} />
+      </div>
+
+      <TrustedDeviceOtpField
+        id="add-device-otp"
+        label="Código de verificación"
+        value={otpCode}
+        error={errors.otp_code}
+        disabled={processing}
+        onChange={(value) => {
+          setData("otp_code", value);
         }}
-        aria-invalid={errors.name !== undefined ? "true" : "false"}
       />
 
-      <InputError aria-live="polite" id="add-device-name-error" message={errors.name} />
+      {errors.two_factor && (
+        <InputError
+          aria-live="polite"
+          id="add-device-two-factor-error"
+          message={errors.two_factor}
+        />
+      )}
     </form>
+  );
+}
+
+interface TwoFactorRequiredNoticeProps {
+  twoFactorStatus: Exclude<TwoFactorStatus, "confirmed">;
+}
+
+function TwoFactorRequiredNotice({ twoFactorStatus }: TwoFactorRequiredNoticeProps): JSX.Element {
+  const isPending = twoFactorStatus === "pending";
+
+  return (
+    <Alert className={alertVariants.info}>
+      <ShieldAlert aria-hidden="true" />
+      <AlertTitle>
+        {isPending
+          ? "Falta confirmar la autenticación de dos factores"
+          : "Primero activa la autenticación de dos factores"}
+      </AlertTitle>
+      <AlertDescription>
+        {isPending
+          ? "Ya iniciaste la configuración, pero aún no ingresaste el código de tu aplicación autenticadora. Confírmala para poder agregar dispositivos de confianza."
+          : "Para agregar un dispositivo de confianza necesitas tener la autenticación de dos factores activada y confirmada. Actívala desde la configuración de seguridad."}
+      </AlertDescription>
+    </Alert>
   );
 }
 
