@@ -88,7 +88,7 @@
       ],
       "acceptanceCriteria": [
         "Con 30 usuarios y mt_srand fijo, ningún usuario tiene más de 50 posts y no todos tienen la misma cantidad (al menos 5 valores distintos).",
-        "Caso de falla/edge: un usuario puede quedar con 0 posts sin que el seeder falle, y sin usuarios no se crea ningún post; ningún post queda sin dueño.",
+        "Caso de falla/edge: sin usuarios no se crea ningún post y ningún post queda sin dueño; que el conteo pueda ser 0 lo cubre SkewedRandomTest (el seeder acepta count(0)).",
         "Cada post pertenece al usuario para el que se generó (la relación for($user) se conserva)."
       ],
       "filesToModify": [
@@ -117,20 +117,20 @@
       ],
       "acceptanceCriteria": [
         "Con 30 usuarios, mt_srand fijo y varios posts, los comentarios raíz de un mismo post no son todos del mismo autor, y los conteos por post y por comentario están dentro de 0..10 y 0..6.",
-        "Caso de falla/edge: un post o un comentario raíz puede quedar sin comentarios/respuestas sin error, y con un solo usuario en la base el seeder funciona y no crea menciones.",
+        "Caso de falla/edge: sin posts no se crean comentarios, y con un solo usuario en la base el seeder funciona y no crea menciones (el conteo 0 lo cubre SkewedRandomTest).",
         "Se conservan las propiedades existentes: los comentarios raíz nunca mencionan, las respuestas siguen siendo de un solo nivel y toda mención apunta a otro autor del mismo hilo."
       ],
       "filesToModify": [
         "app/Modules/Comment/Database/Seeders/CommentSeeder.php",
-        "app/Modules/Comment/Tests/Database/CommentSeederTest.php"
+        "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php"
       ],
       "filesToCreate": [],
       "writeScope": [
         "app/Modules/Comment/Database/Seeders/CommentSeeder.php",
-        "app/Modules/Comment/Tests/Database/CommentSeederTest.php"
+        "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php"
       ],
-      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Database/CommentSeederTest.php && vendor/bin/pint --dirty --format agent",
-      "notes": "Reemplaza las pruebas de rangos fijos (5 a 10 y 5 a 8) y mantiene las de menciones y nivel único. Los autores aleatorios por comentario también cubren que no comente siempre el mismo usuario.",
+      "validateCommand": "vendor/bin/pest app/Modules/Comment/Tests/Seeders/CommentSeederTest.php && vendor/bin/pint --dirty --format agent",
+      "notes": "Reemplaza las pruebas de rangos fijos (5 a 10 y 5 a 8) y mantiene las de menciones y nivel único. El archivo se movió a Tests/Seeders (convención de TrustedDevice). Los autores aleatorios por comentario también cubren que no comente siempre el mismo usuario.",
       "review": "claude"
     },
     {
@@ -306,7 +306,7 @@
     }
   ],
   "failureModes": [
-    "Las pruebas con azar pueden volverse inestables: todas usan mt_srand con semilla fija para la distribución y verifican rangos y propiedades, no valores exactos.",
+    "Las pruebas con azar pueden volverse inestables: mt_srand no basta, porque PostFactory consume mt_rand (array_rand de la imagen) solo cuando un random_int decide adjuntarla, así que la secuencia no es reproducible. Las pruebas verifican rangos y propiedades con muestras grandes, y no afirman que ocurra un valor puntual (como 0 posts): esa posibilidad se prueba en SkewedRandomTest. Se comprobó con 40 ejecuciones sin fallos.",
     "Los cambios de AdminUserSeeder contradicen dos pruebas y la frase de CLAUDE.md; se reescriben y actualizan en TASK-004 y TASK-006 para no dejar documentación falsa.",
     "Con pocos usuarios el 20% puede ser menor que el número de roles lectores posibles: la cantidad se redondea hacia arriba y Angel cuenta dentro del total.",
     "Los administradores aleatorios tendrán roles pero no podrán entrar al panel sin configurar la autenticación de app (el panel exige MFA); es una limitación conocida, no un error del seeder.",
@@ -328,7 +328,7 @@
     ],
     [
       "Comentarios y respuestas, autores distintos, menciones",
-      "app/Modules/Comment/Tests/Database/CommentSeederTest.php",
+      "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php",
       "TASK-003"
     ],
     [

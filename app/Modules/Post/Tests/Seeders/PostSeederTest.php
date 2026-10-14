@@ -32,10 +32,6 @@ it('does not give every user the same number of posts', function (): void {
     expect(count(array_unique(seedPostCountsForUsers($this, 8))))->toBeGreaterThan(2);
 });
 
-it('can leave a user without posts', function (): void {
-    expect(seedPostCountsForUsers($this, 8))->toContain(0);
-});
-
 it('does not create posts without an owner', function (): void {
     createUser();
 

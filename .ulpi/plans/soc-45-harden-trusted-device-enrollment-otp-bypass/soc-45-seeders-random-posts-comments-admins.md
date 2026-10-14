@@ -90,7 +90,7 @@ PostSeeder deja de usar random_int(5, 20) y calcula la cantidad por usuario con 
 **Acceptance Criteria:**
 
 - [ ] Con 30 usuarios y mt_srand fijo, ningún usuario tiene más de 50 posts y no todos tienen la misma cantidad (al menos 5 valores distintos).
-- [ ] Caso de falla/edge: un usuario puede quedar con 0 posts sin que el seeder falle, y sin usuarios no se crea ningún post; ningún post queda sin dueño.
+- [ ] Caso de falla/edge: sin usuarios no se crea ningún post y ningún post queda sin dueño; que el conteo pueda ser 0 lo cubre SkewedRandomTest (el seeder acepta count(0)).
 - [ ] Cada post pertenece al usuario para el que se generó (la relación for($user) se conserva).
 
 **writeScope:**
@@ -116,17 +116,17 @@ CommentSeeder calcula los comentarios raíz por post con SkewedRandom::count(0, 
 **Acceptance Criteria:**
 
 - [ ] Con 30 usuarios, mt_srand fijo y varios posts, los comentarios raíz de un mismo post no son todos del mismo autor, y los conteos por post y por comentario están dentro de 0..10 y 0..6.
-- [ ] Caso de falla/edge: un post o un comentario raíz puede quedar sin comentarios/respuestas sin error, y con un solo usuario en la base el seeder funciona y no crea menciones.
+- [ ] Caso de falla/edge: sin posts no se crean comentarios, y con un solo usuario en la base el seeder funciona y no crea menciones (el conteo 0 lo cubre SkewedRandomTest).
 - [ ] Se conservan las propiedades existentes: los comentarios raíz nunca mencionan, las respuestas siguen siendo de un solo nivel y toda mención apunta a otro autor del mismo hilo.
 
 **writeScope:**
 
 - `app/Modules/Comment/Database/Seeders/CommentSeeder.php` (modificar)
-- `app/Modules/Comment/Tests/Database/CommentSeederTest.php` (modificar)
+- `app/Modules/Comment/Tests/Seeders/CommentSeederTest.php` (modificar)
 
-**validateCommand:** `vendor/bin/pest app/Modules/Comment/Tests/Database/CommentSeederTest.php && vendor/bin/pint --dirty --format agent`
+**validateCommand:** `vendor/bin/pest app/Modules/Comment/Tests/Seeders/CommentSeederTest.php && vendor/bin/pint --dirty --format agent`
 
-**Notas:** Reemplaza las pruebas de rangos fijos (5 a 10 y 5 a 8) y mantiene las de menciones y nivel único. Los autores aleatorios por comentario también cubren que no comente siempre el mismo usuario.
+**Notas:** Reemplaza las pruebas de rangos fijos (5 a 10 y 5 a 8) y mantiene las de menciones y nivel único. El archivo se movió a Tests/Seeders (convención de TrustedDevice). Los autores aleatorios por comentario también cubren que no comente siempre el mismo usuario.
 
 ### TASK-004: AdminUserSeeder: Angel con todo y administradores aleatorios (mínimo 20%)
 
@@ -280,7 +280,7 @@ Ejecutar rector-clear-cache, rector-dry, rector, Pint, PHPStan y las suites de P
 
 ## Failure Modes
 
-- Las pruebas con azar pueden volverse inestables: todas usan mt_srand con semilla fija para la distribución y verifican rangos y propiedades, no valores exactos.
+- Las pruebas con azar pueden volverse inestables: mt_srand no basta, porque PostFactory consume mt_rand (array_rand de la imagen) solo cuando un random_int decide adjuntarla, así que la secuencia no es reproducible. Las pruebas verifican rangos y propiedades con muestras grandes, y no afirman que ocurra un valor puntual (como 0 posts): esa posibilidad se prueba en SkewedRandomTest. Se comprobó con 40 ejecuciones sin fallos.
 - Los cambios de AdminUserSeeder contradicen dos pruebas y la frase de CLAUDE.md; se reescriben y actualizan en TASK-004 y TASK-006 para no dejar documentación falsa.
 - Con pocos usuarios el 20% puede ser menor que el número de roles lectores posibles: la cantidad se redondea hacia arriba y Angel cuenta dentro del total.
 - Los administradores aleatorios tendrán roles pero no podrán entrar al panel sin configurar la autenticación de app (el panel exige MFA); es una limitación conocida, no un error del seeder.
@@ -298,7 +298,7 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002 y TASK-003 ent
 | --- | --- | --- |
 | Helper SkewedRandom (rango, sesgo, semilla, errores) | tests/Unit/Support/Seeding/SkewedRandomTest.php | TASK-001 |
 | Posts por usuario 0-50 y variedad | app/Modules/Post/Tests/Seeders/PostSeederTest.php | TASK-002 |
-| Comentarios y respuestas, autores distintos, menciones | app/Modules/Comment/Tests/Database/CommentSeederTest.php | TASK-003 |
+| Comentarios y respuestas, autores distintos, menciones | app/Modules/Comment/Tests/Seeders/CommentSeederTest.php | TASK-003 |
 | Angel con todo y administradores aleatorios (>= 20%) | app/Modules/Admin/Tests/Database/AdminUserSeederTest.php + app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php | TASK-004 |
 | Estados de 2FA del UserFactory | app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php | TASK-005 |
 | Cuotas de 2FA sembradas y Angel sin 2FA | app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php | TASK-006 |
