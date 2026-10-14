@@ -179,13 +179,13 @@ TrustedDeviceStoreRequest agrega otp_code (6 dígitos) y en withValidator: si el
 
 **Notas:** Cambio de contrato: la UI actual no envía otp_code; TASK-012 debe entregarse junto con esta tarea (ver Ship Cut).
 
-### TASK-007: Renovación: nueva TrustedDeviceRenewRequest con OTP vigente
+### TASK-007: Renovación: OTP vigente con TrustedDeviceRenewRequest y trait compartido
 
-Crear TrustedDeviceRenewRequest (HasFluentRules) con la misma verificación que el alta (error two_factor sin 2FA confirmado, error otp_code con TOTP inválido) y usarla en TrustedDeviceController::renew. La autorización por #[Authorize('update','trustedDevice')] sigue ejecutándose antes de validar, así que un dispositivo ajeno responde 403 sin evaluar el OTP. Si el Service devuelve TwoFactorRequired se muestra el flash de error.
+Crear TrustedDeviceRenewRequest (HasFluentRules) y el trait Concerns/RequiresTwoFactorOtp, que concentra la regla otp_code y la verificación (error two_factor sin 2FA confirmado, error otp_code con TOTP inválido); TrustedDeviceStoreRequest pasa a usar el mismo trait en lugar de duplicar la lógica. TrustedDeviceController::renew usa la nueva request y devuelve el payload del resultado del Service. La autorización por #[Authorize('update','trustedDevice')] sigue ejecutándose antes de validar, así que un dispositivo ajeno responde 403 sin evaluar el OTP. Se mueve el helper allowOtpReuse a tests/Pest.php y se corrigen las pruebas de TrustedDeviceDashboardCacheTest que hacían alta y renovación sin OTP. Alcance ampliado a 8 archivos a petición del usuario (arreglo de DashboardCacheTest) y por la extracción del trait y el helper compartidos.
 
 **Type:** feature
 **Priority:** P1
-**Effort:** M
+**Effort:** L
 **Agent:** laravel-senior-engineer
 **Review:** claude
 **Depends on:** TASK-005, TASK-006
@@ -193,18 +193,23 @@ Crear TrustedDeviceRenewRequest (HasFluentRules) con la misma verificación que 
 **Acceptance Criteria:**
 
 - [ ] Con 2FA confirmado y TOTP vigente la renovación extiende expires_at y registra el evento Renewed.
-- [ ] Caso de falla: sin otp_code o con TOTP inválido responde con error de validación y no modifica expires_at ni registra eventos; con 2FA desactivado/pendiente se rechaza igual.
-- [ ] Un dispositivo de otro usuario responde 403 y no consume ni valida el OTP.
+- [ ] Caso de falla: sin otp_code, con TOTP inválido o con código en formato de recuperación responde con error otp_code y no modifica expires_at ni registra eventos; con 2FA desactivado/pendiente se rechaza con el error two_factor.
+- [ ] Un dispositivo de otro usuario responde 403 antes de validar el OTP; el alta (TrustedDeviceStoreTest) sigue pasando con el trait compartido y las pruebas de TrustedDeviceDashboardCacheTest pasan enviando OTP.
 
 **writeScope:**
 
 - `app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceStoreRequest.php` (modificar)
 - `app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php` (modificar)
+- `tests/Pest.php` (modificar)
 - `app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceRenewRequest.php` (crear)
+- `app/Auth/Modules/TrustedDevice/Concerns/RequiresTwoFactorOtp.php` (crear)
 
-**validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php && vendor/bin/pint --dirty --format agent`
+**validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php && vendor/bin/pint --dirty --format agent`
 
-**Notas:** El FormRequest nuevo se autocarga por PSR-4 y se inyecta en el método renew; la ruta user.trusted-devices.renew no cambia.
+**Notas:** Los archivos nuevos se autocargan por PSR-4; la ruta user.trusted-devices.renew no cambia. Excepción deliberada a la regla de 3 archivos por tarea. allowOtpReuse vive en tests/Pest.php porque Fortify rechaza reutilizar un TOTP dentro de su ventana y varias pruebas lo necesitan.
 
 ### TASK-008: Reactivación: verificar y consumir el código dentro del Service
 
