@@ -14,6 +14,7 @@ use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
+use App\User\Modules\TwoFactor\Enums\TwoFactorStatus;
 use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Database\Eloquent\Builder;
@@ -123,6 +124,7 @@ final class TrustedDeviceIndexController extends Controller
         $perPage = $trustedDeviceFiltersData->perPage;
 
         $props = [
+            'twoFactorStatus' => TwoFactorStatus::fromUser($user)->value,
             'filters' => $trustedDeviceFiltersData->toArray(),
             'trustedDevices' => Inertia::defer(
                 fn (): LengthAwarePaginator => $query
