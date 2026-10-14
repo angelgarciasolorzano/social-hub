@@ -37,4 +37,7 @@ For code under app/Modules/Admin/Filament, keep Filament's generated resource la
 Across all Filament classes, keep concise component declarations in the framework-provided method so Filament's native structure stays visible. For example, declare StatsOverviewWidget Stat::make() entries directly in getStats(). Extract substantial or reusable queries and calculations into private methods; avoid one wrapper method per individual component.
 
 ## Keep backend tests focused
-Each backend test should verify one behavior or invariant. Split tests that cover unrelated responsibilities into smaller, clearly named cases so setup and assertions stay easy to understand. Share only concise helpers that reduce duplication without hiding what each test verifies.
+Each backend test should verify one behavior or invariant. Whenever possible, write several small tests instead of one test that covers many cases, and split tests that cover unrelated responsibilities into smaller, clearly named cases so setup and assertions stay easy to understand. Use a dataset when the same behavior is checked with different inputs. Share only concise helpers that reduce duplication without hiding what each test verifies.
+
+## Tests change model data through Eloquent, not DB::table
+In tests, do not use DB::table(...)->update(...) to modify data that belongs to a model. Use the model instead, e.g. User::query()->findOrFail($user->id)->forceFill([...])->save(). Loading a second instance also keeps the original in-memory model stale, which is how tests simulate another request changing the row.
