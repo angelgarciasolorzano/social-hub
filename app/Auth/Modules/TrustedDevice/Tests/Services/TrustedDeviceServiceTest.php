@@ -205,12 +205,12 @@ it('reports :dataset without creating anything when the fingerprint is already k
 ]);
 
 it('reactivates a revoked device, records a Reactivated event and invalidates the dashboard cache', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->subDay()]);
     $trustedDevice->delete();
     warmTrustedDeviceStatsCache($user);
 
-    $rawToken = resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, trustedDeviceAuditRequest());
+    $rawToken = resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, validOtpFor($user), trustedDeviceAuditRequest());
 
     expect($trustedDevice->refresh()->deleted_at)->toBeNull()
         ->and($trustedDevice->isActive())->toBeTrue()

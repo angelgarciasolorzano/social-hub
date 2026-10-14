@@ -234,6 +234,21 @@ function createUserWithTwoFactor(): User
 }
 
 /**
+ * Create a persisted User with two-factor authentication enabled and exactly
+ * the given recovery codes stored.
+ */
+function createUserWithRecoveryCodes(string ...$recoveryCodes): User
+{
+    $user = createUserWithTwoFactor();
+
+    $user->forceFill([
+        'two_factor_recovery_codes' => encrypt(json_encode(array_values($recoveryCodes))),
+    ])->save();
+
+    return $user;
+}
+
+/**
  * Compute the current valid TOTP code for a user created via
  * createUserWithTwoFactor().
  */

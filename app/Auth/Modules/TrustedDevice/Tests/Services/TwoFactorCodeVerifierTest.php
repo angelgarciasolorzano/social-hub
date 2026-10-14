@@ -15,20 +15,6 @@ function twoFactorCodeVerifier(): TwoFactorCodeVerifier
     return resolve(TwoFactorCodeVerifier::class);
 }
 
-function createUserWithRecoveryCodes(): User
-{
-    $user = createUserWithTwoFactor();
-
-    $user->forceFill([
-        'two_factor_recovery_codes' => encrypt(json_encode([
-            VERIFIER_FIRST_RECOVERY_CODE,
-            VERIFIER_SECOND_RECOVERY_CODE,
-        ])),
-    ])->save();
-
-    return $user;
-}
-
 /**
  * @return list<string>
  */
@@ -86,7 +72,7 @@ it('returns false and logs without the code when the secret cannot be decrypted'
 });
 
 it('consumes a valid recovery code and removes it from the stored codes', function (): void {
-    $user = createUserWithRecoveryCodes();
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE, VERIFIER_SECOND_RECOVERY_CODE);
 
     $consumed = DB::transaction(
         fn (): bool => twoFactorCodeVerifier()->consumeRecoveryCode($user, VERIFIER_FIRST_RECOVERY_CODE)
@@ -97,7 +83,7 @@ it('consumes a valid recovery code and removes it from the stored codes', functi
 });
 
 it('does not accept the same recovery code twice', function (): void {
-    $user = createUserWithRecoveryCodes();
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE, VERIFIER_SECOND_RECOVERY_CODE);
 
     DB::transaction(fn (): bool => twoFactorCodeVerifier()->consumeRecoveryCode($user, VERIFIER_FIRST_RECOVERY_CODE));
 
@@ -109,7 +95,7 @@ it('does not accept the same recovery code twice', function (): void {
 });
 
 it('does not accept the same recovery code from a stale user model', function (): void {
-    $user = createUserWithRecoveryCodes();
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE, VERIFIER_SECOND_RECOVERY_CODE);
     $staleUser = User::query()->whereKey($user->getKey())->firstOrFail();
 
     DB::transaction(fn (): bool => twoFactorCodeVerifier()->consumeRecoveryCode($user, VERIFIER_FIRST_RECOVERY_CODE));
@@ -122,7 +108,7 @@ it('does not accept the same recovery code from a stale user model', function ()
 });
 
 it('rejects a recovery code that belongs to another user', function (): void {
-    $user = createUserWithRecoveryCodes();
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE, VERIFIER_SECOND_RECOVERY_CODE);
     $otherUser = createUserWithTwoFactor();
 
     $consumed = DB::transaction(
@@ -134,7 +120,7 @@ it('rejects a recovery code that belongs to another user', function (): void {
 });
 
 it('rejects an empty or unknown recovery code without changing the stored codes', function (): void {
-    $user = createUserWithRecoveryCodes();
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE, VERIFIER_SECOND_RECOVERY_CODE);
 
     $consumedEmpty = DB::transaction(fn (): bool => twoFactorCodeVerifier()->consumeRecoveryCode($user, ''));
     $consumedUnknown = DB::transaction(fn (): bool => twoFactorCodeVerifier()->consumeRecoveryCode($user, 'unknown-code'));
