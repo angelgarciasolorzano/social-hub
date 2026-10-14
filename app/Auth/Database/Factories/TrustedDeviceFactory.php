@@ -32,7 +32,7 @@ class TrustedDeviceFactory extends Factory
 
     private const int TABLET_SHARE_OF_MOBILE_PERCENT = 15;
 
-    private const int TRUST_LIFETIME_DAYS = 30;
+    public const int TRUST_LIFETIME_DAYS = 30;
 
     /** @var array<string, int> */
     private const array DESKTOP_OS_WEIGHTS = ['Windows' => 50, 'Mac' => 30, 'Linux' => 20];
