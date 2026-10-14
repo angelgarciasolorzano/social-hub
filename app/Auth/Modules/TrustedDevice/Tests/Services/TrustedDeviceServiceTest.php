@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 
 function parsedChromeWindowsDetector(): DeviceDetector
 {
@@ -219,6 +220,70 @@ it('reactivates a revoked device, records a Reactivated event and invalidates th
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
 });
 
+it('does not reactivate a second device with a recovery code that a stale user model still holds', function (): void {
+    $user = createUserWithRecoveryCodes('abcde12345-fghij67890');
+    $staleUser = User::query()->whereKey($user->id)->firstOrFail();
+    $trustedDevice = createTrustedDevice($user);
+    $secondDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+    $secondDevice->delete();
+
+    $trustedDeviceService = resolve(TrustedDeviceService::class);
+    $trustedDeviceService->reactivate($user, $trustedDevice, 'abcde12345-fghij67890', trustedDeviceAuditRequest());
+
+    expect(fn () => $trustedDeviceService->reactivate($staleUser, $secondDevice, 'abcde12345-fghij67890', trustedDeviceAuditRequest()))
+        ->toThrow(ValidationException::class)
+        ->and($secondDevice->refresh()->deleted_at)->not->toBeNull();
+});
+
+it('does not reactivate a device when two-factor was disabled after the user model was loaded', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    User::query()->findOrFail($user->id)->forceFill(['two_factor_secret' => null, 'two_factor_confirmed_at' => null])->save();
+
+    expect(fn () => resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, '123456', trustedDeviceAuditRequest()))
+        ->toThrow(ValidationException::class)
+        ->and($trustedDevice->refresh()->deleted_at)->not->toBeNull()
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Reactivated))->toBe(0);
+});
+
+it('keeps the recovery codes and the revoked device untouched when the code is invalid', function (string $invalidCode): void {
+    $user = createUserWithRecoveryCodes('abcde12345-fghij67890');
+    $trustedDevice = createTrustedDevice($user, ['token_hash' => hash('sha256', 'old-token')]);
+    $trustedDevice->delete();
+
+    expect(fn () => resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, $invalidCode, trustedDeviceAuditRequest()))
+        ->toThrow(ValidationException::class)
+        ->and($user->refresh()->recoveryCodes())->toBe(['abcde12345-fghij67890'])
+        ->and($trustedDevice->refresh()->deleted_at)->not->toBeNull()
+        ->and($trustedDevice->token_hash)->toBe(hash('sha256', 'old-token'));
+})->with([
+    'wrong TOTP' => ['000000'],
+    'unknown recovery code' => ['zzzzz00000-yyyyy11111'],
+]);
+
+it('gives the recovery code back when the reactivation fails after consuming it', function (): void {
+    $user = createUserWithRecoveryCodes('abcde12345-fghij67890');
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    TrustedDeviceEvent::creating(function (): never {
+        throw new RuntimeException('audit failure');
+    });
+
+    try {
+        expect(fn () => resolve(TrustedDeviceService::class)->reactivate($user, $trustedDevice, 'abcde12345-fghij67890', trustedDeviceAuditRequest()))
+            ->toThrow(RuntimeException::class, 'audit failure');
+    } finally {
+        Event::forget('eloquent.creating: '.TrustedDeviceEvent::class);
+    }
+
+    expect($user->refresh()->recoveryCodes())->toBe(['abcde12345-fghij67890'])
+        ->and($trustedDevice->refresh()->deleted_at)->not->toBeNull();
+});
+
 it('rejects registering a device when two-factor is disabled or pending', function (bool $hasPendingSecret): void {
     $user = $hasPendingSecret ? createUserWithTwoFactor() : createUser();
 
@@ -242,7 +307,7 @@ it('rejects registering a device when two-factor is disabled or pending', functi
 it('rejects registering a device when two-factor was disabled after the user model was loaded', function (): void {
     $user = createUserWithTwoFactor();
 
-    DB::table('users')->where('id', $user->id)->update(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+    User::query()->findOrFail($user->id)->forceFill(['two_factor_secret' => null, 'two_factor_confirmed_at' => null])->save();
 
     $trustedDeviceOperationResult = registerChromeWindowsDevice($user);
 
@@ -287,7 +352,7 @@ it('rejects renewing a device when two-factor was disabled after the user model 
     $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addHour()]);
     $expiresAt = $trustedDevice->refresh()->expires_at;
 
-    DB::table('users')->where('id', $user->id)->update(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+    User::query()->findOrFail($user->id)->forceFill(['two_factor_secret' => null, 'two_factor_confirmed_at' => null])->save();
 
     $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->renew($user, $trustedDevice, trustedDeviceAuditRequest());
 

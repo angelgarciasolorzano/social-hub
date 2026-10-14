@@ -412,7 +412,7 @@ Documentar en la sección Auth/TrustedDevice y en la de AccountSettings/TwoFacto
 
 ### TASK-016: Gates de calidad, verificación en navegador y comentario en Linear
 
-Ejecutar los gates completos: composer rector-clear-cache, rector-dry, rector, Pint, PHPStan, las suites TrustedDevice, Login, TwoFactor y Password, y types/lint/format del frontend. Verificar en el navegador los estados desactivado, pendiente y confirmado en el alta, la renovación y la reactivación. Dejar un comentario resumen en SOC-45 (Definition of Done). Sin cambios de código salvo correcciones que surjan de los gates.
+Ejecutar los gates completos: composer rector-clear-cache, rector-dry, rector, Pint, PHPStan, las suites TrustedDevice, Login, TwoFactor y Password, y types/lint/format del frontend. Verificar en el navegador los estados desactivado, pendiente y confirmado en el alta, la renovación y la reactivación. Dejar un comentario resumen en SOC-45 (Definition of Done). Antes de cerrar, recordar al usuario registrar con record-rule tres reglas: (backend) no usar DB::table en tests para modificar datos de modelos, usar Eloquent; (backend) preferir tests pequeños de un solo comportamiento; (global) reutilizar funciones utilitarias en lugar de repetir código. Sin cambios de código salvo correcciones que surjan de los gates.
 
 **Type:** verification
 **Priority:** P3
