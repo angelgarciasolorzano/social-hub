@@ -58,7 +58,7 @@ it('renames the device, records a Renamed event and invalidates the dashboard ca
 });
 
 it('renews the expiration, records a Renewed event and invalidates the dashboard cache', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addHour()]);
     warmTrustedDeviceStatsCache($user);
 
@@ -125,7 +125,7 @@ it('rolls back the change and keeps the cache warm when recording the event fail
 });
 
 it('reports AlreadyActive without creating anything when another request registers the device mid-flight', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
     $fingerprint = trustedDeviceFingerprint();
     $deviceDetector = parsedChromeWindowsDetector();
     $trustedDeviceStoreRequest = trustedDeviceStoreRequest();
@@ -157,7 +157,7 @@ it('reports AlreadyActive without creating anything when another request registe
 });
 
 it('registers a new device, records a Created event and invalidates the dashboard cache', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
     warmTrustedDeviceStatsCache($user);
 
     $trustedDeviceOperationResult = registerChromeWindowsDevice($user, 'Work laptop');
@@ -174,7 +174,7 @@ it('registers a new device, records a Created event and invalidates the dashboar
 });
 
 it('prunes an expired device with the same fingerprint when registering', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user, [...trustedDeviceFingerprint(), 'expires_at' => Date::now()->subDay()]);
 
     registerChromeWindowsDevice($user);
@@ -184,7 +184,7 @@ it('prunes an expired device with the same fingerprint when registering', functi
 });
 
 it('reports :dataset without creating anything when the fingerprint is already known', function (bool $isRevoked, TrustedDeviceOperationResult $expectedResult): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user, trustedDeviceFingerprint());
 
     if ($isRevoked) {
@@ -219,6 +219,83 @@ it('reactivates a revoked device, records a Reactivated event and invalidates th
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
 });
 
+it('rejects registering a device when two-factor is disabled or pending', function (bool $hasPendingSecret): void {
+    $user = $hasPendingSecret ? createUserWithTwoFactor() : createUser();
+
+    if ($hasPendingSecret) {
+        $user->forceFill(['two_factor_confirmed_at' => null])->save();
+    }
+
+    warmTrustedDeviceStatsCache($user);
+
+    $trustedDeviceOperationResult = registerChromeWindowsDevice($user);
+
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::TwoFactorRequired)
+        ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
+})->with([
+    'two-factor disabled' => [false],
+    'pending secret' => [true],
+]);
+
+it('rejects registering a device when two-factor was disabled after the user model was loaded', function (): void {
+    $user = createUserWithTwoFactor();
+
+    DB::table('users')->where('id', $user->id)->update(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+
+    $trustedDeviceOperationResult = registerChromeWindowsDevice($user);
+
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::TwoFactorRequired)
+        ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(0);
+});
+
+it('returns Renewed when renewing a device with confirmed two-factor', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user);
+
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->renew($user, $trustedDevice, trustedDeviceAuditRequest());
+
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::Renewed);
+});
+
+it('rejects renewing a device when two-factor is disabled or pending', function (bool $hasPendingSecret): void {
+    $user = $hasPendingSecret ? createUserWithTwoFactor() : createUser();
+
+    if ($hasPendingSecret) {
+        $user->forceFill(['two_factor_confirmed_at' => null])->save();
+    }
+
+    $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addHour()]);
+    $expiresAt = $trustedDevice->refresh()->expires_at;
+    warmTrustedDeviceStatsCache($user);
+
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->renew($user, $trustedDevice, trustedDeviceAuditRequest());
+
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::TwoFactorRequired)
+        ->and($trustedDevice->refresh()->expires_at->equalTo($expiresAt))->toBeTrue()
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Renewed))->toBe(0)
+        ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
+})->with([
+    'two-factor disabled' => [false],
+    'pending secret' => [true],
+]);
+
+it('rejects renewing a device when two-factor was disabled after the user model was loaded', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addHour()]);
+    $expiresAt = $trustedDevice->refresh()->expires_at;
+
+    DB::table('users')->where('id', $user->id)->update(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+
+    $trustedDeviceOperationResult = resolve(TrustedDeviceService::class)->renew($user, $trustedDevice, trustedDeviceAuditRequest());
+
+    expect($trustedDeviceOperationResult)->toBe(TrustedDeviceOperationResult::TwoFactorRequired)
+        ->and($trustedDevice->refresh()->expires_at->equalTo($expiresAt))->toBeTrue()
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Renewed))->toBe(0);
+});
+
 it('revokes every device with one RevokedAll event each and invalidates the cache', function (): void {
     $user = createUser();
     createTrustedDevice($user);
@@ -246,11 +323,12 @@ it('revokes nothing and leaves other users untouched when revoking all', functio
         ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
 });
 
-it('exposes a success payload for every completed action and an error payload for known devices', function (): void {
+it('exposes a success payload for every completed action and an error payload for rejected ones', function (): void {
     foreach (TrustedDeviceOperationResult::cases() as $operationResult) {
         $isError = \in_array($operationResult, [
             TrustedDeviceOperationResult::AlreadyActive,
             TrustedDeviceOperationResult::AlreadyRevoked,
+            TrustedDeviceOperationResult::TwoFactorRequired,
         ], true);
 
         expect($operationResult->payload())->toBe([
