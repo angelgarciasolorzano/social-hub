@@ -19,10 +19,10 @@ it('belongs to the user who wrote it', function (): void {
 
 it('belongs to the user it replies to', function (): void {
     $mentionedUser = createUser();
-    $reply = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
+    $replyComment = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
 
-    expect($reply->repliedToUser)->not->toBeNull()
-        ->and($reply->repliedToUser?->is($mentionedUser))->toBeTrue();
+    expect($replyComment->repliedToUser)->not->toBeNull()
+        ->and($replyComment->repliedToUser?->is($mentionedUser))->toBeTrue();
 });
 
 it('has no replied to user when it does not mention anyone', function (): void {
@@ -31,11 +31,11 @@ it('has no replied to user when it does not mention anyone', function (): void {
 
 it('keeps the comment and clears the mention when the mentioned user is deleted', function (): void {
     $mentionedUser = createUser();
-    $reply = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
+    $replyComment = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
 
     User::query()->whereKey($mentionedUser->id)->delete();
 
-    $freshReply = $reply->fresh();
+    $freshReply = $replyComment->fresh();
 
     expect($freshReply)->not->toBeNull()
         ->and($freshReply?->replied_to_user_id)->toBeNull();

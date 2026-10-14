@@ -73,16 +73,16 @@ it('uses the same number of queries regardless of how many comments or replies a
 });
 
 it('uses the same number of queries for replies with mentions regardless of how many are listed', function (): void {
-    $smallThread = createComment();
-    createCommentOn($smallThread, attributes: ['replied_to_user_id' => createUser()->id]);
+    $smallThreadComment = createComment();
+    createCommentOn($smallThreadComment, attributes: ['replied_to_user_id' => createUser()->id]);
 
-    $largeThread = createComment();
+    $largeThreadComment = createComment();
     foreach (range(1, 10) as $attempt) {
-        createCommentOn($largeThread, attributes: ['replied_to_user_id' => createUser()->id]);
+        createCommentOn($largeThreadComment, attributes: ['replied_to_user_id' => createUser()->id]);
     }
 
-    $small = listCommentsCountingQueries($this, $smallThread);
-    $large = listCommentsCountingQueries($this, $largeThread);
+    $small = listCommentsCountingQueries($this, $smallThreadComment);
+    $large = listCommentsCountingQueries($this, $largeThreadComment);
 
     expect($large['payload']['data'])->toHaveCount(10)
         ->and(array_filter(array_column($large['payload']['data'], 'repliedTo'), is_array(...)))->toHaveCount(10)

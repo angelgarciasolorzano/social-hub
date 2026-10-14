@@ -25,13 +25,13 @@ it('[H3] rejects whitespace-only content', function (): void {
 });
 
 it('[H3] strips control characters and trims the content of a reply to a reply', function (): void {
-    $reply = createCommentOn(createComment());
+    $replyComment = createCommentOn(createComment());
 
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
             'content' => "  Hola\x00 mundo\x07  ",
             'commentable_type' => Comment::MORPH_NAME,
-            'commentable_id' => $reply->id,
+            'commentable_id' => $replyComment->id,
         ])
         ->assertSessionHasNoErrors();
 
@@ -83,7 +83,7 @@ it('[H8] exposes no route to update or delete comments', function (): void {
 
 it('[H8] ignores a forged user_id and attributes the comment to the authenticated user', function (): void {
     $user = createUser();
-    $victim = createUser();
+    $victimUser = createUser();
     $post = createPost();
 
     $this->actingAs($user)
@@ -91,26 +91,26 @@ it('[H8] ignores a forged user_id and attributes the comment to the authenticate
             'content' => 'Un comentario',
             'commentable_type' => Post::MORPH_NAME,
             'commentable_id' => $post->id,
-            'user_id' => $victim->id,
+            'user_id' => $victimUser->id,
         ]);
 
     expect(Comment::query()->sole()->user_id)->toBe($user->id);
 });
 
 it('[H8] ignores a forged replied_to_user_id and mentions the author of the replied comment', function (): void {
-    $replyAuthor = createUser();
-    $victim = createUser();
-    $reply = createCommentOn(createComment(), $replyAuthor);
+    $replyAuthorUser = createUser();
+    $victimUser = createUser();
+    $replyComment = createCommentOn(createComment(), $replyAuthorUser);
 
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
             'content' => 'Una respuesta a una respuesta',
             'commentable_type' => Comment::MORPH_NAME,
-            'commentable_id' => $reply->id,
-            'replied_to_user_id' => $victim->id,
+            'commentable_id' => $replyComment->id,
+            'replied_to_user_id' => $victimUser->id,
         ]);
 
-    expect(Comment::query()->latest('id')->firstOrFail()->replied_to_user_id)->toBe($replyAuthor->id);
+    expect(Comment::query()->latest('id')->firstOrFail()->replied_to_user_id)->toBe($replyAuthorUser->id);
 });
 
 it('[H8] never nests replies deeper than one level when replying in a chain', function (): void {

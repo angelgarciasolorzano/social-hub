@@ -40,9 +40,9 @@ it('exposes only the id and name of the author', function (): void {
 
 it('exposes only the id and name of the mentioned user', function (): void {
     $mentionedUser = createUser();
-    $reply = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
+    $replyComment = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
 
-    $payload = new CommentResource($reply->load('repliedToUser'))->resolve(request());
+    $payload = new CommentResource($replyComment->load('repliedToUser'))->resolve(request());
 
     expect($payload['repliedTo'])->toBe(['id' => $mentionedUser->id, 'name' => $mentionedUser->name])
         ->and(json_encode($payload))->not->toContain($mentionedUser->email);
@@ -57,10 +57,10 @@ it('reports a null mention when the comment does not mention anyone', function (
 
 it('omits the mention without running queries when the relation is not loaded', function (): void {
     $mentionedUser = createUser();
-    $reply = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id])->load('user')->loadCount('comments');
+    $replyComment = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id])->load('user')->loadCount('comments');
 
     DB::enableQueryLog();
-    $payload = new CommentResource($reply)->resolve(request());
+    $payload = new CommentResource($replyComment)->resolve(request());
     $queries = DB::connection()->getQueryLog();
     DB::disableQueryLog();
 

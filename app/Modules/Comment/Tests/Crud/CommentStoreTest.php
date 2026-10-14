@@ -79,12 +79,12 @@ it('does not mention anyone when commenting on a post or replying to a root comm
 });
 
 it('attaches a reply to a reply to the parent comment and mentions its author', function (): void {
-    $replier = createUser();
-    $replyAuthor = createUser();
+    $replierUser = createUser();
+    $replyAuthorUser = createUser();
     $comment = createComment();
-    $reply = createCommentOn($comment, $replyAuthor);
+    $reply = createCommentOn($comment, $replyAuthorUser);
 
-    $this->actingAs($replier)
+    $this->actingAs($replierUser)
         ->post(route('comments.store'), [
             'content' => 'Una respuesta a una respuesta',
             'commentable_type' => Comment::MORPH_NAME,
@@ -97,8 +97,8 @@ it('attaches a reply to a reply to the parent comment and mentions its author', 
 
     expect($newReply->commentable_id)->toBe($comment->id)
         ->and($newReply->commentable_type)->toBe(CommentType::COMMENT)
-        ->and($newReply->user_id)->toBe($replier->id)
-        ->and($newReply->replied_to_user_id)->toBe($replyAuthor->id)
+        ->and($newReply->user_id)->toBe($replierUser->id)
+        ->and($newReply->replied_to_user_id)->toBe($replyAuthorUser->id)
         ->and($reply->repliesCount())->toBe(0)
         ->and($comment->repliesCount())->toBe(2);
 });
