@@ -8,6 +8,7 @@ use App\Auth\Modules\TrustedDevice\Listeners\TrustedDeviceInvalidate;
 use App\Auth\Modules\TrustedDevice\Listeners\TrustedDeviceRemember;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Fortify\Events\TwoFactorAuthenticationConfirmed;
 use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 use Laravel\Fortify\Events\ValidTwoFactorAuthenticationCodeProvided;
 
@@ -33,6 +34,11 @@ class AuthEventServiceProvider extends ServiceProvider
 
         Event::listen(
             TwoFactorAuthenticationDisabled::class,
+            TrustedDeviceInvalidate::class,
+        );
+
+        Event::listen(
+            TwoFactorAuthenticationConfirmed::class,
             TrustedDeviceInvalidate::class,
         );
     }
