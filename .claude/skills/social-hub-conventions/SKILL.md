@@ -65,7 +65,8 @@ vendor/bin/pint --dirty --format agent
 # 2. Static analysis (level max + type_coverage 100)
 composer phpstan
 
-# 3. Rector preview (always required after PHP changes)
+# 3. Rector preview (always required after PHP changes). Clear its cache first and run on the whole project (no paths)
+composer rector-clear-cache
 composer rector-dry
 
 # 4. Apply Rector changes from the mandatory gate
@@ -81,7 +82,7 @@ Details and rationale for each command: [`docs/development/backend-commands.md`]
 
 Hard rules:
 
-- AI agents must always run `composer rector-dry` and then `composer rector` after modifying PHP, even when the change is not a large refactor. Rector is an automatic mandatory gate and does not require explicit user approval.
+- AI agents must always run `composer rector-clear-cache`, then `composer rector-dry` and then `composer rector` after modifying PHP, even when the change is not a large refactor. Rector is an automatic mandatory gate and does not require explicit user approval. Rector's local cache (`storage/rector`) can report a clean run while CI (`backend-rector`) still flags files, and a run limited to some paths can miss renames that need types from other files (SOC-41); so always clear the cache first and run it over the whole project.
 
 - Tests are written in Pest. Create with `php artisan make:test --pest {Name}` (add `--unit` for unit tests). Existing PHPUnit-class tests keep working side by side; write new tests in Pest.
 - Validation uses `HasFluentRules` + `FluentRule::*` chains. Never string rules, never `Rule::*` when a `FluentRule::` equivalent exists. The `fluent-validation` / `fluent-validation-optimize` skills have the method reference.
@@ -113,7 +114,7 @@ Hard rules:
 
 Before moving an issue to `Done`, every one of these must be true:
 
-1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-dry` (preview), `composer rector` (apply), `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too. Rector is split into two steps on purpose: always preview first, then apply the suggested changes automatically.
+1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-clear-cache` (first), `composer rector-dry` (preview), `composer rector` (apply), `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too. Rector is split into two steps on purpose: always preview first, then apply the suggested changes automatically.
 2. **Doc sync** — update the docs that the change actually touched:
    - [`CLAUDE.md`](../../CLAUDE.md) when the change touches: domain structure, the morph map, package versions, the Wayfinder layout, or the project's tooling/conventions.
    - [`AGENTS.md`](../../AGENTS.md) when the change touches: package-specific rules (Inertia, Fortify, Wayfinder, MediaLibrary, FluentValidation, Pint, PHPUnit) or Laravel/React conventions.

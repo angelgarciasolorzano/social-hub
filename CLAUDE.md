@@ -68,6 +68,7 @@ All commands run from the repo root. For first-time setup (prerequisites, `compo
 
 - `composer pint` / `composer pint-dirty` — Laravel Pint formatter. After touching any PHP, run `vendor/bin/pint --dirty --format agent` (per AGENTS.md).
 - `composer phpstan` — PHPStan at `level: max` with 100% type-coverage on return/param/property/constant/declare.
+- `composer rector-clear-cache` — borra la caché de Rector (`storage/rector`). Ejecútalo **antes** de `composer rector-dry`: la caché puede ocultar cambios que el CI sí detecta (SOC-41).
 - `composer rector-dry` — preview obligatorio de Rector para los agentes de IA después de cualquier cambio PHP.
 - `composer rector` — aplica obligatoriamente las transformaciones de Rector después de ejecutar y revisar `composer rector-dry`.
 - `composer ide-helper` — regenerates `_ide_helper_models.php` (PHPStan scans it).
@@ -163,7 +164,7 @@ php artisan admin:bootstrap-admin admin@example.com
 - Every PHP file starts with `declare(strict_types=1);`.
 - PHPStan (`phpstan.neon`) runs at `level: max` with `type_coverage: 100` across all dimensions and `type_perfect` rules — type hints/return types are mandatory, `mixed` is disallowed.
 - Rector is configured for PHP 8.5; new typed class constants use `private const string NAME = '...';` syntax (see `FortifyServiceProvider` for the pattern).
-- Los agentes de IA deben ejecutar `composer rector-dry` y `composer rector` en toda tarea que modifique PHP, aunque no sea un refactor grande. Rector es un gate obligatorio y no requiere aprobación adicional.
+- Los agentes de IA deben ejecutar `composer rector-dry` y `composer rector` en toda tarea que modifique PHP, aunque no sea un refactor grande. Rector es un gate obligatorio y no requiere aprobación adicional. Orden del gate: `composer rector-clear-cache` → `composer rector-dry` → `composer rector`. Ejecútalo siempre sobre todo el proyecto (sin pasar rutas): reglas como `RenameVariableToMatchMethodCallReturnTypeRector` necesitan los tipos de otros archivos (p. ej. los helpers de `tests/Pest.php`) y con una ruta parcial o con la caché de Rector pueden no detectar lo que el CI (`backend-rector`) sí marca.
 
 ### Naming — no single-letter variables
 

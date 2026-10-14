@@ -36,6 +36,19 @@ Análisis estático a `level: max` con cobertura de tipos al 100%.
 
 **Cuándo:** después de modificar PHP, antes de commit. Si falla, corrige antes de commitear.
 
+### `composer rector-clear-cache`
+
+```bash
+composer rector-clear-cache
+```
+
+Borra la caché de Rector (`storage/rector`, ignorada por git).
+
+- 🧹 Obliga a que la siguiente ejecución analice todos los archivos
+- ⚠️ Rector guarda por archivo que "no hay cambios" y no invalida ese resultado cuando cambian los tipos de **otros** archivos (p. ej. los helpers de `tests/Pest.php` o un modelo). Reglas como `RenameVariableToMatchMethodCallReturnTypeRector` dependen de esos tipos: en SOC-41 `composer rector-dry` salía limpio en local y el CI (`backend-rector`, sin esa caché) marcaba 5 archivos de tests.
+
+**Cuándo:** siempre **antes** de `composer rector-dry`, al inicio del gate de Rector. Ejecuta después Rector sobre todo el proyecto (sin pasar rutas): con una ruta parcial puede no detectar lo que el CI sí marca.
+
 ### `composer rector-dry`
 
 ```bash
@@ -71,7 +84,8 @@ composer pint-dirty
 # 2. Verificar tipos
 composer phpstan
 
-# 3. Preview obligatorio de Rector
+# 3. Limpiar la caché de Rector y hacer el preview obligatorio (todo el proyecto, sin rutas)
+composer rector-clear-cache
 composer rector-dry
 # Aplicar el gate obligatorio:
 composer rector
@@ -260,6 +274,7 @@ Cada gate corre en su propio workflow de GitHub Actions, en paralelo, con los mi
 | ------------------------------ | ------------------------------ | ------------------------------- |
 | `composer pint-dirty`          | Formatear archivos modificados | Antes de commit                 |
 | `composer phpstan`             | Análisis estático              | Antes de commit                 |
+| `composer rector-clear-cache`  | Borrar la caché de Rector      | Antes de `rector-dry`           |
 | `composer rector-dry`          | Preview Rector                 | Después de cualquier cambio PHP |
 | `composer rector`              | Aplicar Rector                 | Después de `rector-dry`         |
 | `composer test`                | Suite completa Pest (2G)       | Antes de PR                     |
