@@ -6,6 +6,7 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\User\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
@@ -23,18 +24,79 @@ function storeTrustedDeviceAs(TestCase $testCase, User $user, array $data = []):
         ->post(route('user.trusted-devices.store'), $data);
 }
 
+/**
+ * Let the same TOTP code be accepted again; Fortify otherwise rejects a replayed code.
+ */
+function allowOtpReuse(string $otp): void
+{
+    Cache::forget('fortify.2fa_codes.'.md5($otp));
+}
+
 it('redirects guests to the login page', function (): void {
     $this->post(route('user.trusted-devices.store'))
         ->assertRedirect(route('login'));
 });
 
-it('creates a trusted device with an inferred name when no name is given', function (): void {
-    $user = createUser();
+it('rejects the registration without creating anything when two-factor is disabled or pending', function (bool $hasPendingSecret): void {
+    $user = $hasPendingSecret ? createUserWithTwoFactor() : createUser();
 
-    $testResponse = storeTrustedDeviceAs($this, $user);
+    if ($hasPendingSecret) {
+        $user->forceFill(['two_factor_confirmed_at' => null])->save();
+    }
 
-    $testResponse->assertRedirect()
-        ->assertInertiaFlash('type', 'success');
+    $otp = $hasPendingSecret ? validOtpFor($user) : '123456';
+
+    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => $otp]);
+
+    $testResponse->assertSessionHasErrors('two_factor')
+        ->assertCookieMissing('trusted_device');
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
+})->with([
+    'two-factor disabled' => [false],
+    'pending secret' => [true],
+]);
+
+it('does not ask for the OTP code when two-factor is not confirmed', function (): void {
+    $testResponse = storeTrustedDeviceAs($this, createUser());
+
+    $testResponse->assertSessionHasErrors('two_factor')
+        ->assertSessionDoesntHaveErrors('otp_code');
+});
+
+it('rejects a missing, wrong or recovery-format OTP code without creating anything', function (?string $otp): void {
+    $user = createUserWithTwoFactor();
+
+    $testResponse = storeTrustedDeviceAs($this, $user, $otp === null ? [] : ['otp_code' => $otp]);
+
+    $testResponse->assertSessionHasErrors('otp_code')
+        ->assertCookieMissing('trusted_device');
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->exists())->toBeFalse()
+        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
+})->with([
+    'missing code' => [null],
+    'wrong code' => ['000000'],
+    'recovery-format code' => ['abcde12345-fghij67890'],
+]);
+
+it('answers a wrong OTP code with a fixed message that does not echo the submitted code', function (): void {
+    $user = createUserWithTwoFactor();
+
+    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => '000000']);
+
+    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+});
+
+it('creates a trusted device with an inferred name and issues the cookie when the OTP is valid', function (): void {
+    $user = createUserWithTwoFactor();
+
+    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => validOtpFor($user)]);
+
+    $testResponse->assertRedirect();
+    $testResponse->assertInertiaFlash('type', 'success');
+    $testResponse->assertCookie('trusted_device');
 
     $trustedDevice = TrustedDevice::query()->where('user_id', $user->id)->sole();
 
@@ -51,18 +113,18 @@ it('creates a trusted device with an inferred name when no name is given', funct
 });
 
 it('accepts a custom device name', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
 
-    storeTrustedDeviceAs($this, $user, ['name' => 'Mi laptop personal']);
+    storeTrustedDeviceAs($this, $user, ['name' => 'Mi laptop personal', 'otp_code' => validOtpFor($user)]);
 
     expect(TrustedDevice::query()->where('user_id', $user->id)->sole()->name)
         ->toBe('Mi laptop personal');
 });
 
 it('rejects a name longer than 50 characters', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
 
-    $testResponse = storeTrustedDeviceAs($this, $user, ['name' => str_repeat('a', 51)]);
+    $testResponse = storeTrustedDeviceAs($this, $user, ['name' => str_repeat('a', 51), 'otp_code' => validOtpFor($user)]);
 
     $testResponse->assertSessionHasErrors('name');
 
@@ -70,29 +132,35 @@ it('rejects a name longer than 50 characters', function (): void {
 });
 
 it('does not create a duplicate when an active device with the same fingerprint already exists', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
+    createTrustedDevice($user, [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '127.0.0.1',
+    ]);
 
-    storeTrustedDeviceAs($this, $user);
-
-    $testResponse = storeTrustedDeviceAs($this, $user);
+    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => validOtpFor($user)]);
 
     $testResponse->assertInertiaFlash('type', 'error');
+    $testResponse->assertCookieMissing('trusted_device');
 
     expect(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(1)
         ->and(TrustedDeviceEvent::query()
             ->where('user_id', $user->id)
             ->where('action', TrustedDeviceAction::Created)
-            ->count())->toBe(1);
+            ->exists())->toBeFalse();
 });
 
 it('reports a revoked duplicate as needing reactivation instead of creating a new device', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
+    $otp = validOtpFor($user);
 
-    storeTrustedDeviceAs($this, $user);
+    storeTrustedDeviceAs($this, $user, ['otp_code' => $otp]);
+    allowOtpReuse($otp);
 
     TrustedDevice::query()->where('user_id', $user->id)->sole()->delete();
 
-    $testResponse = storeTrustedDeviceAs($this, $user);
+    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => $otp]);
 
     $testResponse->assertInertiaFlash('type', 'error');
 
