@@ -158,6 +158,9 @@ function CommentItem(props: CommentItemProps): JSX.Element {
       {!isReply && showReplies === comment.id && (
         <CommentRepliesList
           commentId={comment.id}
+          onReplyCreated={() => {
+            onReplyCreated?.(comment.id);
+          }}
           refreshCounter={repliesRefreshCounter}
           setShowReplies={setShowReplies}
           showReplies={showReplies}

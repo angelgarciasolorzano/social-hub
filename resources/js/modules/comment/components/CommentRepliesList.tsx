@@ -14,6 +14,7 @@ import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 
 interface CommentRepliesListProps {
   commentId: number;
+  onReplyCreated?: () => void;
   refreshCounter: number;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
   showReplies: number | null;
@@ -21,6 +22,7 @@ interface CommentRepliesListProps {
 
 function CommentRepliesList({
   commentId,
+  onReplyCreated,
   refreshCounter,
   showReplies,
   setShowReplies,
@@ -109,6 +111,7 @@ function CommentRepliesList({
             comment={reply}
             isReply
             key={reply.id}
+            onReplyCreated={onReplyCreated}
             setShowReplies={setShowReplies}
             showReplies={showReplies}
             uploadedComments={uploadedComments}
