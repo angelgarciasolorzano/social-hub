@@ -182,6 +182,13 @@ it('invalidates dashboard cache after every successful trusted device mutation',
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
+    $freshOtp = function () use ($user): string {
+        $otp = validOtpFor($user);
+        allowOtpReuse($otp);
+
+        return $otp;
+    };
+
     $statsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
     $recentActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
 
@@ -214,7 +221,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
     $assertInvalidatedAndRefreshed(
         fn (): mixed => $this->actingAs($user)
             ->withHeader('User-Agent', chromeWindowsUserAgent())
-            ->post(route('user.trusted-devices.store'), ['name' => 'New device'])
+            ->post(route('user.trusted-devices.store'), ['name' => 'New device', 'otp_code' => $freshOtp()])
             ->assertInertiaFlash('type', 'success'),
         expectedTotal: 3,
         expectedRevoked: 0,
@@ -232,7 +239,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
 
     $assertInvalidatedAndRefreshed(
         fn (): mixed => $this->actingAs($user)
-            ->post(route('user.trusted-devices.renew', $mutableDevice))
+            ->post(route('user.trusted-devices.renew', $mutableDevice), ['otp_code' => $freshOtp()])
             ->assertInertiaFlash('type', 'success'),
         expectedTotal: 3,
         expectedRevoked: 0,
@@ -242,7 +249,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
     $assertInvalidatedAndRefreshed(
         fn (): mixed => $this->actingAs($user)
             ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
-                'otp_code' => validOtpFor($user),
+                'otp_code' => $freshOtp(),
             ])
             ->assertInertiaFlash('type', 'success'),
         expectedTotal: 3,
@@ -290,7 +297,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
 });
 
 it('keeps cache entries isolated when mutations fail or make no changes', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
 
     $trustedDevice = createTrustedDevice($user, [
         'user_agent' => chromeWindowsUserAgent(),
@@ -353,7 +360,7 @@ it('keeps cache entries isolated when mutations fail or make no changes', functi
 
     $this->actingAs($user)
         ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'))
+        ->post(route('user.trusted-devices.store'), ['otp_code' => validOtpFor($user)])
         ->assertInertiaFlash('type', 'error');
 
     expect(Cache::has($userStatsCacheKey))->toBeTrue()

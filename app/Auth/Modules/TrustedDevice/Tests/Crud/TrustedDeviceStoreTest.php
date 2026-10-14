@@ -6,7 +6,6 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\User\Models\User;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
@@ -22,14 +21,6 @@ function storeTrustedDeviceAs(TestCase $testCase, User $user, array $data = []):
     return $testCase->actingAs($user)
         ->withHeader('User-Agent', chromeWindowsUserAgent())
         ->post(route('user.trusted-devices.store'), $data);
-}
-
-/**
- * Let the same TOTP code be accepted again; Fortify otherwise rejects a replayed code.
- */
-function allowOtpReuse(string $otp): void
-{
-    Cache::forget('fortify.2fa_codes.'.md5($otp));
 }
 
 it('redirects guests to the login page', function (): void {

@@ -249,6 +249,15 @@ function validOtpFor(User $user): string
 }
 
 /**
+ * Let a TOTP code be accepted again within its window; Fortify otherwise
+ * rejects a replayed code.
+ */
+function allowOtpReuse(string $otp): void
+{
+    Cache::forget('fortify.2fa_codes.'.md5($otp));
+}
+
+/**
  * Cache key under which TrustedDeviceDashboardCache stores a user's stats.
  */
 function trustedDeviceStatsCacheKey(User $user): string
