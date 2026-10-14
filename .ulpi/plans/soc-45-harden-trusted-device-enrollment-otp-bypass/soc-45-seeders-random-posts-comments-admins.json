@@ -166,7 +166,7 @@
     {
       "id": "TASK-005",
       "title": "UserFactory: estados de 2FA confirmado y pendiente",
-      "description": "Agregar a UserFactory los estados twoFactorConfirmed() (secreto TOTP real cifrado con el cifrador de Fortify, ocho códigos de recuperación con el formato real de Fortify y two_factor_confirmed_at, recovery_codes_regenerated_at) y twoFactorPending() (solo secreto, sin confirmación). tests/Pest.php createUserWithTwoFactor() pasa a reutilizar el estado en vez de armar los campos a mano (los códigos falsos 111111/222222 no se usan en ninguna otra prueba).",
+      "description": "Agregar a UserFactory los estados twoFactorConfirmed() (secreto TOTP real cifrado con el cifrador de Fortify, ocho códigos de recuperación con el formato real de Fortify y two_factor_confirmed_at) y twoFactorPending() (secreto y códigos de recuperación, sin confirmación, como deja Fortify al activar 2FA). tests/Pest.php createUserWithTwoFactor() pasa a reutilizar el estado en vez de armar los campos a mano (los códigos falsos 111111/222222 no se usan en ninguna otra prueba).",
       "priority": "P1",
       "type": "feature",
       "effort": "S",
@@ -182,15 +182,15 @@
         "tests/Pest.php"
       ],
       "filesToCreate": [
-        "app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php"
+        "app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php"
       ],
       "writeScope": [
         "app/User/Database/Factories/UserFactory.php",
         "tests/Pest.php",
-        "app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php"
+        "app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php"
       ],
-      "validateCommand": "vendor/bin/pest app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php app/Auth app/User --compact && vendor/bin/pint --dirty --format agent",
-      "notes": "Reutiliza el estado en el helper de pruebas (regla de no repetir código). La prueba nueva va en app/User/Modules/TwoFactor/Tests/Database, directorio ya vinculado a TestCase.",
+      "validateCommand": "vendor/bin/pest app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php app/Auth app/User --compact && vendor/bin/pint --dirty --format agent",
+      "notes": "Reutiliza el estado en el helper de pruebas (regla de no repetir código). La prueba nueva va en app/User/Modules/TwoFactor/Tests/Factories (convención de TrustedDevice), directorio ya vinculado a TestCase. En PHPStan el factory se obtiene con UserFactory::new() para que reconozca los estados.",
       "review": "claude"
     },
     {
@@ -213,13 +213,13 @@
         "app/User/Database/Seeders/UserSeeder.php"
       ],
       "filesToCreate": [
-        "app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php"
+        "app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php"
       ],
       "writeScope": [
         "app/User/Database/Seeders/UserSeeder.php",
-        "app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php"
+        "app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php"
       ],
-      "validateCommand": "vendor/bin/pest app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php --compact && vendor/bin/pint --dirty --format agent",
+      "validateCommand": "vendor/bin/pest app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php --compact && vendor/bin/pint --dirty --format agent",
       "notes": "El seeder ya crea a Angel al final de run(); las cuotas se aplican sobre los usuarios del factory antes de crearlo.",
       "review": "claude"
     },
@@ -338,12 +338,12 @@
     ],
     [
       "Estados de 2FA del UserFactory",
-      "app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php",
+      "app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php",
       "TASK-005"
     ],
     [
       "Cuotas de 2FA sembradas y Angel sin 2FA",
-      "app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php",
+      "app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php",
       "TASK-006"
     ],
     [

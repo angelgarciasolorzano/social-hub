@@ -9,9 +9,13 @@ use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Laravel\Fortify\Fortify;
+use Laravel\Fortify\RecoveryCode;
 use Override;
+use PragmaRX\Google2FA\Google2FA;
 
 /**
  * @extends Factory<User>
@@ -66,6 +70,31 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user started enabling two-factor authentication
+     * (a secret and recovery codes exist) but has not confirmed it yet.
+     */
+    public function twoFactorPending(): static
+    {
+        return $this->state(fn (): array => [
+            'two_factor_secret' => Fortify::currentEncrypter()->encrypt(resolve(Google2FA::class)->generateSecretKey()),
+            'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode(
+                Collection::times(8, fn (): string => RecoveryCode::generate())->all(),
+            )),
+            'two_factor_confirmed_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has two-factor authentication enabled and confirmed.
+     */
+    public function twoFactorConfirmed(): static
+    {
+        return $this->twoFactorPending()->state(fn (): array => [
+            'two_factor_confirmed_at' => now(),
         ]);
     }
 

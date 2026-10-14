@@ -156,7 +156,7 @@ AdminUserSeeder (solo en local y testing, sin cambios en otros entornos) mantien
 
 ### TASK-005: UserFactory: estados de 2FA confirmado y pendiente
 
-Agregar a UserFactory los estados twoFactorConfirmed() (secreto TOTP real cifrado con el cifrador de Fortify, ocho códigos de recuperación con el formato real de Fortify y two_factor_confirmed_at, recovery_codes_regenerated_at) y twoFactorPending() (solo secreto, sin confirmación). tests/Pest.php createUserWithTwoFactor() pasa a reutilizar el estado en vez de armar los campos a mano (los códigos falsos 111111/222222 no se usan en ninguna otra prueba).
+Agregar a UserFactory los estados twoFactorConfirmed() (secreto TOTP real cifrado con el cifrador de Fortify, ocho códigos de recuperación con el formato real de Fortify y two_factor_confirmed_at) y twoFactorPending() (secreto y códigos de recuperación, sin confirmación, como deja Fortify al activar 2FA). tests/Pest.php createUserWithTwoFactor() pasa a reutilizar el estado en vez de armar los campos a mano (los códigos falsos 111111/222222 no se usan en ninguna otra prueba).
 
 **Type:** feature
 **Priority:** P1
@@ -174,11 +174,11 @@ Agregar a UserFactory los estados twoFactorConfirmed() (secreto TOTP real cifrad
 
 - `app/User/Database/Factories/UserFactory.php` (modificar)
 - `tests/Pest.php` (modificar)
-- `app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php` (crear)
+- `app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php` (crear)
 
-**validateCommand:** `vendor/bin/pest app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php app/Auth app/User --compact && vendor/bin/pint --dirty --format agent`
+**validateCommand:** `vendor/bin/pest app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php app/Auth app/User --compact && vendor/bin/pint --dirty --format agent`
 
-**Notas:** Reutiliza el estado en el helper de pruebas (regla de no repetir código). La prueba nueva va en app/User/Modules/TwoFactor/Tests/Database, directorio ya vinculado a TestCase.
+**Notas:** Reutiliza el estado en el helper de pruebas (regla de no repetir código). La prueba nueva va en app/User/Modules/TwoFactor/Tests/Factories (convención de TrustedDevice), directorio ya vinculado a TestCase. En PHPStan el factory se obtiene con UserFactory::new() para que reconozca los estados.
 
 ### TASK-006: UserSeeder: repartir estados de 2FA entre los usuarios
 
@@ -200,9 +200,9 @@ UserSeeder reparte los 200 usuarios del factory con cuotas fijas (constantes): ~
 **writeScope:**
 
 - `app/User/Database/Seeders/UserSeeder.php` (modificar)
-- `app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php` (crear)
+- `app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php` (crear)
 
-**validateCommand:** `vendor/bin/pest app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php --compact && vendor/bin/pint --dirty --format agent`
+**validateCommand:** `vendor/bin/pest app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php --compact && vendor/bin/pint --dirty --format agent`
 
 **Notas:** El seeder ya crea a Angel al final de run(); las cuotas se aplican sobre los usuarios del factory antes de crearlo.
 
@@ -300,8 +300,8 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002 y TASK-003 ent
 | Posts por usuario 0-50 y variedad | app/Modules/Post/Tests/Seeders/PostSeederTest.php | TASK-002 |
 | Comentarios y respuestas, autores distintos, menciones | app/Modules/Comment/Tests/Seeders/CommentSeederTest.php | TASK-003 |
 | Angel con todo y administradores aleatorios (>= 20%) | app/Modules/Admin/Tests/Database/AdminUserSeederTest.php + app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php | TASK-004 |
-| Estados de 2FA del UserFactory | app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php | TASK-005 |
-| Cuotas de 2FA sembradas y Angel sin 2FA | app/User/Modules/TwoFactor/Tests/Database/UserSeederTwoFactorTest.php | TASK-006 |
+| Estados de 2FA del UserFactory | app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php | TASK-005 |
+| Cuotas de 2FA sembradas y Angel sin 2FA | app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php | TASK-006 |
 | Dispositivos coherentes con el 2FA | app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php | TASK-007 |
 | Documentación sin contradicciones | grep en CLAUDE.md | TASK-008 |
 | Gates de calidad y suites afectadas | composer + pest | TASK-009 |
