@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
 
     private const int PENDING_TWO_FACTOR_SHARE_PERCENT = 5;
 
-    private const string TEST_USER_EMAIL = 'angel@gmail.com';
+    public const string TEST_USER_EMAIL = 'angel@gmail.com';
 
     public function __construct(private readonly int $userCount = self::DEFAULT_USER_COUNT) {}
 

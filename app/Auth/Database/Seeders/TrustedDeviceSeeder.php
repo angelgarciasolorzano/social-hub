@@ -7,54 +7,131 @@ namespace App\Auth\Database\Seeders;
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Support\Seeding\SkewedRandom;
+use App\User\Database\Seeders\UserSeeder;
 use App\User\Models\User;
+use App\User\Modules\TwoFactor\Enums\TwoFactorStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
+/**
+ * @phpstan-type DeviceScenario array{
+ *     attributes: array{
+ *         name: string,
+ *         last_used_at: CarbonImmutable|null,
+ *         expires_at: CarbonImmutable,
+ *         os_name: string,
+ *         os_version: string,
+ *         is_mobile: bool
+ *     },
+ *     isRevoked: bool,
+ *     lifecycleAction: TrustedDeviceAction|null
+ * }
+ */
 final class TrustedDeviceSeeder extends Seeder
 {
+    private const int DEFAULT_FORMER_TWO_FACTOR_SHARE_PERCENT = 5;
+
+    private const int MAX_DEVICES_PER_USER = 30;
+
+    private const float DEVICES_SKEW = 2.0;
+
+    public function __construct(private readonly int $formerTwoFactorSharePercent = self::DEFAULT_FORMER_TWO_FACTOR_SHARE_PERCENT) {}
+
     /**
-     * Run the database seeds.
+     * Seed devices that match each user's real two-factor state: confirmed
+     * users have a random mix of devices, a share of the users without
+     * two-factor authentication are ones who disabled it (all their devices
+     * revoked), and nobody else has any.
      */
     public function run(): void
     {
-        User::query()->each(function (User $user): void {
-            foreach ($this->deviceScenarios() as $deviceScenario) {
-                /** @var Factory<TrustedDevice> $trustedDeviceFactory */
-                $trustedDeviceFactory = TrustedDevice::factory();
+        $users = User::query()->get();
+        $formerTwoFactorUserIds = $this->pickFormerTwoFactorUserIds($users);
 
-                $trustedDevice = $trustedDeviceFactory->createOne([
-                    'user_id' => $user->id,
-                    ...$deviceScenario['attributes'],
-                ]);
-
-                $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Created);
-
-                if ($deviceScenario['isRevoked']) {
-                    $trustedDevice->delete();
-                }
-
-                if ($deviceScenario['lifecycleAction'] instanceof TrustedDeviceAction) {
-                    $this->recordEvent($user, $trustedDevice, $deviceScenario['lifecycleAction']);
-                }
-            }
-        });
+        foreach ($users as $user) {
+            match (TwoFactorStatus::fromUser($user)) {
+                TwoFactorStatus::Confirmed => $this->seedConfirmedUserDevices($user),
+                TwoFactorStatus::Disabled => \in_array($user->id, $formerTwoFactorUserIds, true)
+                    ? $this->seedDisabledTwoFactorDevices($user)
+                    : null,
+                TwoFactorStatus::Pending => null,
+            };
+        }
     }
 
     /**
-     * @return list<array{
-     *     attributes: array{
-     *         name: string,
-     *         last_used_at: CarbonImmutable|null,
-     *         expires_at: CarbonImmutable,
-     *         os_name: string,
-     *         os_version: string,
-     *         is_mobile: bool
-     *     },
-     *     isRevoked: bool,
-     *     lifecycleAction: TrustedDeviceAction|null
-     * }>
+     * Pick, at random, the share of users without two-factor authentication
+     * that had it and disabled it. The test user is never one of them.
+     *
+     * @param  Collection<int, User>  $users
+     * @return array<int, int>
+     */
+    private function pickFormerTwoFactorUserIds(Collection $users): array
+    {
+        $candidateIds = $users
+            ->filter(fn (User $user): bool => TwoFactorStatus::fromUser($user) === TwoFactorStatus::Disabled
+                && $user->email !== UserSeeder::TEST_USER_EMAIL)
+            ->map(fn (User $user): int => $user->id)
+            ->shuffle();
+
+        return $candidateIds->take(intdiv($candidateIds->count() * $this->formerTwoFactorSharePercent, 100))->values()->all();
+    }
+
+    private function seedConfirmedUserDevices(User $user): void
+    {
+        $scenarios = collect($this->deviceScenarios())
+            ->shuffle()
+            ->take(SkewedRandom::count(0, self::MAX_DEVICES_PER_USER, self::DEVICES_SKEW));
+
+        foreach ($scenarios as $scenario) {
+            $this->seedDevice($user, $scenario, $scenario['lifecycleAction']);
+        }
+    }
+
+    /**
+     * Seed the revoked devices a user is left with after disabling two-factor
+     * authentication, each with the RevokedAll event that action records.
+     */
+    private function seedDisabledTwoFactorDevices(User $user): void
+    {
+        $revokedScenarios = collect($this->deviceScenarios())
+            ->filter(fn (array $deviceScenario): bool => $deviceScenario['isRevoked'])
+            ->shuffle();
+
+        foreach ($revokedScenarios->take(SkewedRandom::count(1, $revokedScenarios->count(), 1.0)) as $deviceScenario) {
+            $this->seedDevice($user, $deviceScenario, TrustedDeviceAction::RevokedAll);
+        }
+    }
+
+    /**
+     * @param  DeviceScenario  $deviceScenario
+     */
+    private function seedDevice(User $user, array $deviceScenario, ?TrustedDeviceAction $trustedDeviceAction): void
+    {
+        /** @var Factory<TrustedDevice> $trustedDeviceFactory */
+        $trustedDeviceFactory = TrustedDevice::factory();
+
+        $trustedDevice = $trustedDeviceFactory->createOne([
+            'user_id' => $user->id,
+            ...$deviceScenario['attributes'],
+        ]);
+
+        $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Created);
+
+        if ($deviceScenario['isRevoked']) {
+            $trustedDevice->delete();
+        }
+
+        if ($trustedDeviceAction instanceof TrustedDeviceAction) {
+            $this->recordEvent($user, $trustedDevice, $trustedDeviceAction);
+        }
+    }
+
+    /**
+     * @return list<DeviceScenario>
      */
     private function deviceScenarios(): array
     {
