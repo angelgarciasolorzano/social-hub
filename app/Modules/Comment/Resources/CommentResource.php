@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Comment\Resources;
 
 use App\Modules\Comment\Models\Comment;
+use App\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Override;
@@ -28,10 +29,27 @@ class CommentResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ],
+            'repliedTo' => $this->whenLoaded('repliedToUser', fn (): ?array => $this->repliedTo()),
             'repliesInfo' => [
                 'hasReplies' => $this->hasReplies(),
                 'repliesCount' => $this->repliesCount(),
             ],
         ];
+    }
+
+    /**
+     * Get the id and name of the user this comment replies to, or null when it mentions no one.
+     *
+     * @return array{id: int, name: string}|null
+     */
+    private function repliedTo(): ?array
+    {
+        $repliedToUser = $this->repliedToUser;
+
+        if (! $repliedToUser instanceof User) {
+            return null;
+        }
+
+        return ['id' => $repliedToUser->id, 'name' => $repliedToUser->name];
     }
 }

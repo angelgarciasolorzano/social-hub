@@ -36,7 +36,7 @@ When you read this skill, the project conventions are already in effect. Treat t
 - **No single-letter variable names** in PHP or TypeScript. Use a full descriptive word (`$candidate`, `$device`, `$browserFilter`, `deviceTypeFilter`). Single-letter closure parameters like `$v`, `$i`, `$e` are forbidden — they force the reader to decode intent from context. The only acceptable exception is a numeric `for` loop counter. Mirrors the Laravel Boost foundation rule but is enforced more strictly because the rule was being violated in practice.
 - Create files with the appropriate `php artisan make:*` command (`--no-interaction`). Don't hand-author migrations, models, requests, controllers, or tests when a generator exists.
 - **Submodule convention — old architecture** (`app/<Domain>/Modules/<Feature>/`) — established in SOC-14. Don't confuse it with the top-level `app/Modules/` folder; Auth/User submodules will be relocated when those domains migrate. Use when a feature grows beyond a per-concern folder and earns its own namespace (canonical example: `app/Auth/Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap. Extraction rule of thumb: the feature owns its own event listeners, or has 3+ controllers/requests of its own.
-- **Route and input hardening (SOC-40).** The route placeholder must match the controller's typed parameter name when using implicit enum/model binding (`{commentType}` ↔ `CommentType $commentType`; Rector renames parameters to match their type, so fix the route, not the parameter). Routes that write data get `throttle`; when a module has several throttled routes pass a prefix as the third argument (`throttle:6,1,comments.store`) because unnamed throttles are keyed by user only. Normalize free-text input in the FormRequest's `prepareForValidation()`. Preload relation counters with `withCount()` and reuse `{relation}_count` in model accessors so listings cost a constant number of queries. Back each fix with a regression test under the module's `Tests/Security/`.
+- **Route and input hardening (SOC-40).** The route placeholder must match the controller's typed parameter name when using implicit enum/model binding (`{commentType}` ↔ `CommentType $commentType`; Rector renames parameters to match their type, so fix the route, not the parameter). Routes that write data get `throttle`; when a module has several throttled routes pass a prefix as the third argument (`throttle:6,1,comments.store`) because unnamed throttles are keyed by user only. Normalize free-text input in the FormRequest's `prepareForValidation()`. Preload relation counters with `withCount()` and reuse `{relation}_count` in model accessors so listings cost a constant number of queries. Back each fix with a regression test under the module's `Tests/Security/`. Comment threads have a single level with a mention (SOC-41): replying to a reply is flattened to the thread's parent and the replied author is stored server-side in `replied_to_user_id`; never take that user from the request, and preload `repliedToUser:id,name` in listings.
 - See [`CLAUDE.md`](../../CLAUDE.md) "Modular service-provider pattern" and "Models and relations" sections for the canonical references.
 
 ### Frontend
@@ -65,7 +65,8 @@ vendor/bin/pint --dirty --format agent
 # 2. Static analysis (level max + type_coverage 100)
 composer phpstan
 
-# 3. Rector preview (always required after PHP changes)
+# 3. Rector preview (always required after PHP changes). Clear its cache first and run on the whole project (no paths)
+composer rector-clear-cache
 composer rector-dry
 
 # 4. Apply Rector changes from the mandatory gate
@@ -81,7 +82,7 @@ Details and rationale for each command: [`docs/development/backend-commands.md`]
 
 Hard rules:
 
-- AI agents must always run `composer rector-dry` and then `composer rector` after modifying PHP, even when the change is not a large refactor. Rector is an automatic mandatory gate and does not require explicit user approval.
+- AI agents must always run `composer rector-clear-cache`, then `composer rector-dry` and then `composer rector` after modifying PHP, even when the change is not a large refactor. Rector is an automatic mandatory gate and does not require explicit user approval. Rector's local cache (`storage/rector`) can report a clean run while CI (`backend-rector`) still flags files, and a run limited to some paths can miss renames that need types from other files (SOC-41); so always clear the cache first and run it over the whole project.
 
 - Tests are written in Pest. Create with `php artisan make:test --pest {Name}` (add `--unit` for unit tests). Existing PHPUnit-class tests keep working side by side; write new tests in Pest.
 - Validation uses `HasFluentRules` + `FluentRule::*` chains. Never string rules, never `Rule::*` when a `FluentRule::` equivalent exists. The `fluent-validation` / `fluent-validation-optimize` skills have the method reference.
@@ -113,7 +114,7 @@ Hard rules:
 
 Before moving an issue to `Done`, every one of these must be true:
 
-1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-dry` (preview), `composer rector` (apply), `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too. Rector is split into two steps on purpose: always preview first, then apply the suggested changes automatically.
+1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-clear-cache` (first), `composer rector-dry` (preview), `composer rector` (apply), `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too. Rector is split into two steps on purpose: always preview first, then apply the suggested changes automatically.
 2. **Doc sync** — update the docs that the change actually touched:
    - [`CLAUDE.md`](../../CLAUDE.md) when the change touches: domain structure, the morph map, package versions, the Wayfinder layout, or the project's tooling/conventions.
    - [`AGENTS.md`](../../AGENTS.md) when the change touches: package-specific rules (Inertia, Fortify, Wayfinder, MediaLibrary, FluentValidation, Pint, PHPUnit) or Laravel/React conventions.

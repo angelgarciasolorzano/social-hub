@@ -115,6 +115,7 @@
         "pint-dirty": "vendor/bin/pint --dirty",
         "phpstan": "vendor/bin/phpstan analyse --memory-limit=2G",
         "phpstan-clear-cache": "vendor/bin/phpstan clear-result-cache",
+        "rector-clear-cache": "rm -rf storage/rector",
         "rector": "vendor/bin/rector process",
         "rector-dry": "vendor/bin/rector process --dry-run"
     },
@@ -130,6 +131,7 @@
         "phpstan-clear-cache": "Clear PHPStan's result cache.",
         "phpcpd": "Run experimental copy/paste detection with PHPCPD Next.",
         "sloppy": "Run experimental static analysis for AI-generated code debt with Sloppy.",
+        "rector-clear-cache": "Clear Rector's cache (storage/rector) so the next run analyses every file.",
         "rector": "Run Rector to automatically refactor code.",
         "rector-dry": "Run Rector in dry-run mode to see potential changes without applying them.",
         "ide-helper": "Generate IDE helper files for better autocompletion."

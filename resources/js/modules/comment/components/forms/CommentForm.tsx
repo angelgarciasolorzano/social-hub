@@ -1,4 +1,5 @@
 import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
+import { useState } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
@@ -30,12 +31,31 @@ function CommentForm(props: CommentFormProps): JSX.Element {
     setOpenModalComment,
   } = props;
 
-  const { setData, errors, submit } = formComment;
+  const { clearErrors, setData, errors, submit } = formComment;
+
+  const [serverError, setServerError] = useState<null | string>(null);
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
+    clearErrors();
+    setServerError(null);
+
     submit(CommentStoreController(), {
+      onHttpException: (response) => {
+        setServerError(
+          response.status === 429
+            ? "Estás comentando demasiado rápido. Espera un momento e inténtalo de nuevo."
+            : "No se pudo publicar el comentario. Inténtalo de nuevo.",
+        );
+
+        return false;
+      },
+      onNetworkError: () => {
+        setServerError("No se pudo conectar con el servidor. Revisa tu conexión.");
+
+        return false;
+      },
       onSuccess: () => {
         if (uploadedComments) uploadedComments();
 
@@ -62,6 +82,10 @@ function CommentForm(props: CommentFormProps): JSX.Element {
         />
 
         <InputError className="mt-1" message={errors.content} />
+
+        <InputError className="mt-1" message={errors.commentable_id} />
+
+        <InputError className="mt-1" message={serverError ?? undefined} role="alert" />
       </div>
     </form>
   );
