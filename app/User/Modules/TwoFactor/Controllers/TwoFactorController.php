@@ -9,6 +9,7 @@ use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
+use App\User\Modules\TwoFactor\Enums\TwoFactorStatus;
 use App\User\Modules\TwoFactor\Requests\TwoFactorDisableRequest;
 use App\User\Modules\TwoFactor\Requests\TwoFactorRegenerateRecoveryCodesRequest;
 use App\User\Modules\TwoFactor\Requests\TwoFactorRequest;
@@ -55,6 +56,7 @@ class TwoFactorController extends Controller implements HasMiddleware
             $twoFactorEnabled = $user->hasEnabledTwoFactorAuthentication();
 
             $props['twoFactorEnabled'] = $twoFactorEnabled;
+            $props['twoFactorStatus'] = TwoFactorStatus::fromUser($user)->value;
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
 
             $props['twoFactorConfirmedAt'] = $user->two_factor_confirmed_at?->toIso8601String();
