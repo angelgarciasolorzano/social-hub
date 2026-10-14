@@ -190,10 +190,15 @@ class TrustedDevice extends Model
 
     /**
      * Match the request's trusted_device cookie against an active device for
-     * the user. Refreshes `last_used_at` on hit. Returns true to skip 2FA.
+     * the user. Refreshes `last_used_at` on hit. Returns true to skip 2FA, and
+     * never does so unless the user has confirmed two-factor authentication.
      */
     public static function validateAndTouch(User $user, Request $request): bool
     {
+        if (! $user->hasEnabledTwoFactorAuthentication()) {
+            return false;
+        }
+
         $token = $request->cookie('trusted_device');
 
         if (! is_string($token) || $token === '') {
