@@ -1,17 +1,24 @@
 import type { JSX, SubmitEvent } from "react";
 
+import type { SetDataAction } from "@inertiajs/react";
 import { useForm, usePage } from "@inertiajs/react";
 
+import type { FormDataErrors } from "@inertiajs/core";
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
 
+import TrustedDeviceOtpField from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceOtpField";
 import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
-import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type {
+  TrustedDevice,
+  TwoFactorRequiredErrors,
+} from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
+import { InputError } from "@/shared/components/form";
 import { Alert, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -42,6 +49,12 @@ interface TrustedDeviceRenewTrustDialogProps {
   onClose: () => void;
 }
 
+interface RenewFormData {
+  otp_code: string;
+}
+
+interface RenewFormErrors extends FormDataErrors<RenewFormData>, TwoFactorRequiredErrors {}
+
 const TRUST_RENEWAL_DAYS = 30;
 const TRUST_RENEWAL_LABEL = "1 mes";
 
@@ -50,7 +63,10 @@ function TrustedDeviceRenewTrustDialog({
   open,
   onClose,
 }: TrustedDeviceRenewTrustDialogProps): JSX.Element {
-  const { submit, processing, reset } = useForm();
+  const { data, setData, submit, processing, reset, errors } = useForm<RenewFormData>({
+    otp_code: "",
+  });
+  const formErrors: RenewFormErrors = errors;
   const pageProps = usePage().props as Record<string, unknown>;
 
   const handleOpenChange = (nextOpen: boolean): void => {
@@ -70,6 +86,9 @@ function TrustedDeviceRenewTrustDialog({
       onSuccess: () => {
         onClose();
       },
+      onError: () => {
+        setData("otp_code", "");
+      },
       preserveScroll: true,
     });
   };
@@ -85,15 +104,24 @@ function TrustedDeviceRenewTrustDialog({
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Extiende el periodo de confianza para evitar que se te solicite el codigo de
-            verificacion en este dispositivo.
+            Extiende el periodo de confianza para evitar que se te solicite el código de
+            verificación en este dispositivo. Es una comodidad temporal, no un segundo factor de
+            autenticación independiente. Por seguridad, confirma con un código de tu aplicación
+            autenticadora.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
           <TrustedDeviceSummaryCard device={device} lastUsedAt={fromNow(device.lastUsedAt)} />
 
-          <RenewDeviceForm device={device} handleSubmit={handleSubmit} />
+          <RenewDeviceForm
+            device={device}
+            errors={formErrors}
+            handleSubmit={handleSubmit}
+            otpCode={data.otp_code}
+            processing={processing}
+            setData={setData}
+          />
 
           <RenewInfoAlert />
         </div>
@@ -122,10 +150,21 @@ function TrustedDeviceRenewTrustDialog({
 }
 
 type RenewDeviceFormProps = Pick<TrustedDeviceRenewTrustDialogProps, "device"> & {
-  handleSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  errors: RenewFormErrors;
+  handleSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
+  otpCode: string;
+  processing: boolean;
+  setData: SetDataAction<RenewFormData>;
 };
 
-function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.Element {
+function RenewDeviceForm({
+  device,
+  errors,
+  handleSubmit,
+  otpCode,
+  processing,
+  setData,
+}: RenewDeviceFormProps): JSX.Element {
   const newExpiresAt = dayjs().add(TRUST_RENEWAL_DAYS, "day");
   const newExpiresAtFormatted = formatLongDate(newExpiresAt.toISOString());
 
@@ -162,6 +201,25 @@ function RenewDeviceForm({ device, handleSubmit }: RenewDeviceFormProps): JSX.El
           <Badge className={badgeVariants.success}>+ {TRUST_RENEWAL_LABEL}</Badge>
         </ItemActions>
       </Item>
+
+      <TrustedDeviceOtpField
+        id="renew-device-otp"
+        label="Código de verificación"
+        value={otpCode}
+        error={errors.otp_code}
+        disabled={processing}
+        onChange={(value) => {
+          setData("otp_code", value);
+        }}
+      />
+
+      {errors.two_factor && (
+        <InputError
+          aria-live="polite"
+          id="renew-device-two-factor-error"
+          message={errors.two_factor}
+        />
+      )}
     </form>
   );
 }
@@ -172,8 +230,8 @@ function RenewInfoAlert(): JSX.Element {
       <CircleAlert />
 
       <AlertTitle className="line-clamp-3">
-        No se te pedira el codigo de verificacion en este dispositivo hasta la nueva fecha de
-        expiracion.
+        No se te pedirá el código de verificación en este dispositivo hasta la nueva fecha de
+        expiración.
       </AlertTitle>
     </Alert>
   );

@@ -7,7 +7,10 @@ import type { FormDataErrors } from "@inertiajs/core";
 import { CircleAlert, ShieldAlert, ShieldPlus } from "lucide-react";
 
 import TrustedDeviceOtpField from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceOtpField";
-import type { TwoFactorStatus } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import type {
+  TwoFactorRequiredErrors,
+  TwoFactorStatus,
+} from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
@@ -55,9 +58,7 @@ interface AddDeviceFormData {
   otp_code: string;
 }
 
-interface AddDeviceFormErrors extends FormDataErrors<AddDeviceFormData> {
-  two_factor?: string;
-}
+interface AddDeviceFormErrors extends FormDataErrors<AddDeviceFormData>, TwoFactorRequiredErrors {}
 
 function readTwoFactorStatus(pageProps: Record<string, unknown>): TwoFactorStatus {
   const twoFactorStatus = pageProps["twoFactorStatus"];

@@ -28,6 +28,11 @@ export interface TrustedDevice {
 
 export type TwoFactorStatus = "disabled" | "pending" | "confirmed";
 
+/** Error the server adds when two-factor is not confirmed, outside the form's own fields. */
+export interface TwoFactorRequiredErrors {
+  two_factor?: string;
+}
+
 export type TrustedDeviceAction =
   "created" | "renewed" | "renamed" | "revoked" | "revoked_all" | "reactivated";
 
