@@ -93,14 +93,14 @@
       ],
       "filesToModify": [
         "app/Modules/Post/Database/Seeders/PostSeeder.php",
-        "app/Modules/Post/Tests/Database/PostSeederTest.php"
+        "app/Modules/Post/Tests/Seeders/PostSeederTest.php"
       ],
       "filesToCreate": [],
       "writeScope": [
         "app/Modules/Post/Database/Seeders/PostSeeder.php",
-        "app/Modules/Post/Tests/Database/PostSeederTest.php"
+        "app/Modules/Post/Tests/Seeders/PostSeederTest.php"
       ],
-      "validateCommand": "vendor/bin/pest app/Modules/Post/Tests/Database/PostSeederTest.php && vendor/bin/pint --dirty --format agent",
+      "validateCommand": "vendor/bin/pest app/Modules/Post/Tests/Seeders/PostSeederTest.php && vendor/bin/pint --dirty --format agent",
       "notes": "Reemplaza la prueba 'seeds between 5 and 20 posts for each user' por pruebas pequeñas de un solo comportamiento (regla backend de tests).",
       "review": "claude"
     },
@@ -323,7 +323,7 @@
     ],
     [
       "Posts por usuario 0-50 y variedad",
-      "app/Modules/Post/Tests/Database/PostSeederTest.php",
+      "app/Modules/Post/Tests/Seeders/PostSeederTest.php",
       "TASK-002"
     ],
     [

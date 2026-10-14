@@ -96,9 +96,9 @@ PostSeeder deja de usar random_int(5, 20) y calcula la cantidad por usuario con 
 **writeScope:**
 
 - `app/Modules/Post/Database/Seeders/PostSeeder.php` (modificar)
-- `app/Modules/Post/Tests/Database/PostSeederTest.php` (modificar)
+- `app/Modules/Post/Tests/Seeders/PostSeederTest.php` (modificar)
 
-**validateCommand:** `vendor/bin/pest app/Modules/Post/Tests/Database/PostSeederTest.php && vendor/bin/pint --dirty --format agent`
+**validateCommand:** `vendor/bin/pest app/Modules/Post/Tests/Seeders/PostSeederTest.php && vendor/bin/pint --dirty --format agent`
 
 **Notas:** Reemplaza la prueba 'seeds between 5 and 20 posts for each user' por pruebas pequeñas de un solo comportamiento (regla backend de tests).
 
@@ -297,7 +297,7 @@ Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002 y TASK-003 ent
 | Comportamiento | Prueba | Tarea |
 | --- | --- | --- |
 | Helper SkewedRandom (rango, sesgo, semilla, errores) | tests/Unit/Support/Seeding/SkewedRandomTest.php | TASK-001 |
-| Posts por usuario 0-50 y variedad | app/Modules/Post/Tests/Database/PostSeederTest.php | TASK-002 |
+| Posts por usuario 0-50 y variedad | app/Modules/Post/Tests/Seeders/PostSeederTest.php | TASK-002 |
 | Comentarios y respuestas, autores distintos, menciones | app/Modules/Comment/Tests/Database/CommentSeederTest.php | TASK-003 |
 | Angel con todo y administradores aleatorios (>= 20%) | app/Modules/Admin/Tests/Database/AdminUserSeederTest.php + app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php | TASK-004 |
 | Estados de 2FA del UserFactory | app/User/Modules/TwoFactor/Tests/Database/UserFactoryTwoFactorStatesTest.php | TASK-005 |
