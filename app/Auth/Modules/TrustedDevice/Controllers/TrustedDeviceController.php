@@ -114,7 +114,12 @@ class TrustedDeviceController extends Controller
         abort_unless($user instanceof User, 401);
         abort_if($trustedDevice->deleted_at === null, 404);
 
-        $newToken = $this->trustedDeviceService->reactivate($user, $trustedDevice, $trustedDeviceReactivateRequest);
+        $newToken = $this->trustedDeviceService->reactivate(
+            $user,
+            $trustedDevice,
+            $trustedDeviceReactivateRequest->string('otp_code')->toString(),
+            $trustedDeviceReactivateRequest,
+        );
 
         $this->queueTrustedDeviceCookie($newToken);
 

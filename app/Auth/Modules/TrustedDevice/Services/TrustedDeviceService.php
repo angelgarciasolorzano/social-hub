@@ -16,6 +16,7 @@ use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final readonly class TrustedDeviceService
 {
@@ -163,9 +164,18 @@ final readonly class TrustedDeviceService
         });
     }
 
-    public function reactivate(User $user, TrustedDevice $trustedDevice, Request $request): string
+    /**
+     * Restore a revoked device after verifying the code inside the same
+     * transaction. A recovery code is consumed here, so a failure further down
+     * rolls the consumption back too.
+     *
+     * @throws ValidationException
+     */
+    public function reactivate(User $user, TrustedDevice $trustedDevice, string $otpCode, Request $request): string
     {
-        return DB::transaction(function () use ($user, $trustedDevice, $request): string {
+        return DB::transaction(function () use ($user, $trustedDevice, $otpCode, $request): string {
+            $this->assertReactivationCodeIsValid($user, $otpCode);
+
             $this->dropDuplicateActiveDevice($user, $trustedDevice, $request);
 
             $newToken = $this->mintToken();
@@ -212,6 +222,33 @@ final readonly class TrustedDeviceService
 
             return $trustedDevices->count();
         });
+    }
+
+    /**
+     * Require confirmed two-factor and a valid code: six digits are a TOTP,
+     * anything else is treated as a single-use recovery code.
+     *
+     * @throws ValidationException
+     */
+    private function assertReactivationCodeIsValid(User $user, string $otpCode): void
+    {
+        $lockedUser = User::query()->lockForUpdate()->find($user->getKey());
+
+        if (! $lockedUser instanceof User || ! $this->twoFactorCodeVerifier->hasConfirmedTwoFactor($lockedUser)) {
+            throw ValidationException::withMessages([
+                'two_factor' => TrustedDeviceOperationResult::TwoFactorRequired->message(),
+            ]);
+        }
+
+        $isValidCode = preg_match('/^\d{6}$/', $otpCode) === 1
+            ? $this->twoFactorCodeVerifier->verifyTotp($lockedUser, $otpCode)
+            : $this->twoFactorCodeVerifier->consumeRecoveryCode($lockedUser, $otpCode);
+
+        if (! $isValidCode) {
+            throw ValidationException::withMessages([
+                'otp_code' => 'El código de verificación es incorrecto.',
+            ]);
+        }
     }
 
     /**

@@ -213,7 +213,7 @@ Crear TrustedDeviceRenewRequest (HasFluentRules) y el trait Concerns/RequiresTwo
 
 ### TASK-008: Reactivación: verificar y consumir el código dentro del Service
 
-TrustedDeviceService::reactivate verifica dentro de su DB::transaction (con el usuario bloqueado) que 2FA esté confirmado y valida el otp_code leído del Request: seis dígitos se tratan como TOTP y el formato de Fortify (10 caracteres, guion, 10 caracteres) como código de recuperación, que se consume con TwoFactorCodeVerifier::consumeRecoveryCode. Si falla lanza ValidationException con el mensaje existente ('El código de verificación es incorrecto.') sin modificar nada, por lo que el controlador no cambia. TrustedDeviceReactivateRequest queda solo con reglas de formato (acepta ambos formatos) y sin verificación propia.
+TrustedDeviceService::reactivate verifica dentro de su DB::transaction (con el usuario bloqueado) que 2FA esté confirmado y valida el otp_code leído del Request: seis dígitos se tratan como TOTP y el formato de Fortify (10 caracteres, guion, 10 caracteres) como código de recuperación, que se consume con TwoFactorCodeVerifier::consumeRecoveryCode. Si falla lanza ValidationException (otp_code con el mensaje existente, o two_factor sin 2FA confirmado) sin modificar nada. La firma pasa a reactivate(User, TrustedDevice, string $otpCode, Request) y el controlador le pasa el código; el helper createUserWithRecoveryCodes se mueve a tests/Pest.php. TrustedDeviceReactivateRequest queda solo con reglas de formato (acepta ambos formatos) y sin verificación propia.
 
 **Type:** bugfix
 **Priority:** P1
@@ -231,12 +231,16 @@ TrustedDeviceService::reactivate verifica dentro de su DB::transaction (con el u
 **writeScope:**
 
 - `app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController.php` (modificar)
 - `app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceReactivateRequest.php` (modificar)
 - `app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php` (modificar)
+- `tests/Pest.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php` (modificar)
 
 **validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php && vendor/bin/pint --dirty --format agent`
 
-**Notas:** Se evita verificar dos veces el mismo TOTP: Fortify impide reutilizar un código ya aceptado, por eso la verificación vive solo en el Service.
+**Notas:** Se evita verificar dos veces el mismo TOTP: Fortify impide reutilizar un código ya aceptado, por eso la verificación vive solo en el Service. Alcance ampliado a 7 archivos: el Service ya no lee el código del Request, lo que obliga a tocar el controlador y la prueba existente del Service.
 
 ### TASK-009: Pruebas de concurrencia y reuso en el Service
 
