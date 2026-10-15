@@ -34,7 +34,7 @@ Modo HOLD con decisiones del usuario: toggle único por usuario (índice único 
 
 - Estructura: app/Modules/Like/{Controllers,Database/{Factories,Migrations,Seeders},Models,Providers,Tests,routes}; namespace App\Modules\Like\…. LikeServiceProvider registrado en bootstrap/providers.php; registra LikeRouteServiceProvider y llama loadMigrationsFrom.
 - Migración create_likes_table: mismo nombre de archivo (2025_09_26_144232_create_likes_table.php), contenido idéntico, ubicada en app/Modules/Like/Database/Migrations/. La morph map conserva la clave 'like' (Like::MORPH_NAME) y MORPH_COLUMN = 'likeable'.
-- Índice único: unique(user_id, likeable_type, likeable_id), añadido por migración nueva que primero depura duplicados (conserva el id menor).
+- Índice único: unique(user_id, likeable_type, likeable_id), añadido por migración nueva sin depuración de duplicados (el módulo no está en producción).
 - Endpoint: POST comments/{comment}/like, name comments.like, middleware auth + verified + throttle:30,1,comments.like. Respuesta 200 JSON {liked: bool, likesCount: int}. 404 si el comentario no existe, 429 con Retry-After al excederse. Cualquier usuario verificado puede dar like a cualquier comentario, incluido el propio y las respuestas. Sin flash.
 - Concurrencia: alternar dentro de DB::transaction; una UniqueConstraintViolationException durante la creación se trata como 'el like ya existe' y la respuesta refleja el estado real.
 - Lectura: CommentResource añade likesInfo {count:int, likedByMe:bool}. CommentThreadProps precarga withCount('likes') y withExists(likes as liked_by_me) en la misma consulta paginada; el número de consultas es constante. Comment::likesCount() e isLikedBy(User) reutilizan los atributos precargados y solo consultan si faltan.
@@ -233,7 +233,7 @@ Registra app/Modules/Like/Tests en phpunit.xml (testsuite 'Like') y en pest()->i
 
 ### TASK-008: Índice único (user_id, likeable) para impedir likes duplicados
 
-Crea una migración nueva en app/Modules/Like/Database/Migrations/ (la original no se edita) que primero elimina los duplicados existentes conservando el like más antiguo de cada (user_id, likeable_type, likeable_id) y después añade unique(['user_id','likeable_type','likeable_id']). Incluye un test que prueba la restricción a nivel de base de datos.
+Crea una migración nueva en app/Modules/Like/Database/Migrations/ (la original no se edita) que añade unique(['user_id','likeable_type','likeable_id']). No depura duplicados previos: el módulo no está en producción y nada crea likes todavía. Incluye un test que prueba la restricción a nivel de base de datos.
 
 **Type:** feature  
 **Priority:** P1  
@@ -245,7 +245,7 @@ Crea una migración nueva en app/Modules/Like/Database/Migrations/ (la original 
 **Acceptance Criteria:**
 
 - [ ] Insertar dos likes del mismo usuario sobre el mismo comentario lanza UniqueConstraintViolationException; el mismo usuario puede dar like a otro comentario y otro usuario al mismo comentario.
-- [ ] La migración depura duplicados previos sin fallar: con dos filas idénticas antes de migrar queda una sola (la de menor id) y la tabla acepta el índice.
+- [ ] La migración crea el índice con nombre explícito y php artisan migrate lo aplica sin error sobre la tabla likes.
 - [ ] down() elimina el índice sin borrar la tabla y la migración original create_likes_table queda sin tocar.
 
 **writeScope:**
@@ -455,7 +455,7 @@ Actualiza CLAUDE.md: Like pasa de app/Like/ a app/Modules/Like/ (nueva arquitect
 
 - Doble creación de la tabla likes: mover la migración sin registrar el provider, o registrar el provider sin borrar la global, rompe migrate; TASK-002 hace ambas cosas juntas.
 - Clases duplicadas durante la transición: las tareas 003-005 repuntan importadores antes de borrar el Like viejo en TASK-006; entre medias ambos modelos apuntan a la misma tabla.
-- Duplicados previos en producción/local: la migración del índice único los depura antes de crear el índice.
+- Duplicados previos en una base local: el índice único no los depura; si migrate falla por filas repetidas, vaciar la tabla likes (el módulo no está en producción).
 - Carrera al alternar (doble clic o dos pestañas): índice único + captura de la violación; el cliente ignora pulsaciones mientras isPending.
 - N+1 al serializar likes: sin withCount/withExists el Resource consultaría por fila; CommentQueryCountTest lo vigila.
 - 429 o error de red al alternar: el hook revierte el estado optimista y muestra el error sin abrir el modal de Inertia.
@@ -476,7 +476,7 @@ Tras TASK-008 el módulo Like ya está migrado, cubierto por tests y con el índ
 - **TASK-005**: Tests existentes repuntados, sin aserciones nuevas.
 - **TASK-006**: PHPStan completo y tests de modelos; grep sin referencias a App\Like.
 - **TASK-007**: LikeModelTest: user(), likeable() (Post/Comment), constantes y morph no registrado.
-- **TASK-008**: LikeUniquenessTest: violación del índice, combinaciones válidas y depuración de duplicados.
+- **TASK-008**: LikeUniquenessTest: violación del índice, combinaciones válidas y rollback.
 - **TASK-009**: CommentResourceTest: likesInfo, sin consultas extra, invitado.
 - **TASK-010**: CommentThreadPropsTest y CommentQueryCountTest: forma de likesInfo y consultas constantes.
 - **TASK-011**: Verificación estática; el comportamiento HTTP se prueba en TASK-012.
