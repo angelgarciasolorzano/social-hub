@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Requests;
 
+use App\Auth\Modules\TrustedDevice\Concerns\RequiresTwoFactorOtp;
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
@@ -12,6 +13,7 @@ use SanderMuller\FluentValidation\HasFluentRules;
 class TrustedDeviceStoreRequest extends FormRequest
 {
     use HasFluentRules;
+    use RequiresTwoFactorOtp;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -32,6 +34,7 @@ class TrustedDeviceStoreRequest extends FormRequest
             'name' => FluentRule::string()
                 ->nullable()
                 ->max(50, message: 'El nombre no puede tener más de 50 caracteres.'),
+            ...$this->otpRules(),
         ];
     }
 }

@@ -212,22 +212,28 @@ function createTrustedDeviceEvent(?User $user = null, array $attributes = []): T
 }
 
 /**
- * Create a persisted User with two-factor authentication enabled, using a
- * real TOTP secret and two 6-digit recovery codes (the format the OTP field
- * itself requires) so tests can compute a genuinely valid code with
- * validOtpFor() or exercise the recovery-code fallback.
+ * Create a persisted User with confirmed two-factor authentication, using the
+ * factory state: a real TOTP secret and Fortify-format recovery codes, so
+ * tests can compute a genuinely valid code with validOtpFor().
  */
 function createUserWithTwoFactor(): User
 {
-    $user = createUser();
+    /** @var Factory<User> $factory */
+    $factory = User::factory();
 
-    /** @var Google2FA $google2fa */
-    $google2fa = resolve(Google2FA::class);
+    return $factory->twoFactorConfirmed()->createOne();
+}
+
+/**
+ * Create a persisted User with two-factor authentication enabled and exactly
+ * the given recovery codes stored.
+ */
+function createUserWithRecoveryCodes(string ...$recoveryCodes): User
+{
+    $user = createUserWithTwoFactor();
 
     $user->forceFill([
-        'two_factor_secret' => encrypt($google2fa->generateSecretKey()),
-        'two_factor_recovery_codes' => encrypt(json_encode(['111111', '222222'])),
-        'two_factor_confirmed_at' => now(),
+        'two_factor_recovery_codes' => encrypt(json_encode(array_values($recoveryCodes))),
     ])->save();
 
     return $user;
@@ -246,6 +252,15 @@ function validOtpFor(User $user): string
     $google2fa = resolve(Google2FA::class);
 
     return $google2fa->getCurrentOtp(decrypt($encryptedSecret));
+}
+
+/**
+ * Let a TOTP code be accepted again within its window; Fortify otherwise
+ * rejects a replayed code.
+ */
+function allowOtpReuse(string $otp): void
+{
+    Cache::forget('fortify.2fa_codes.'.md5($otp));
 }
 
 /**

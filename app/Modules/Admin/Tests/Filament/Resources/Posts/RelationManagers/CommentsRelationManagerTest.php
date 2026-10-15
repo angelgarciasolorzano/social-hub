@@ -18,13 +18,6 @@ use Livewire\Livewire;
 use LogicException;
 use Tests\TestCase;
 
-beforeEach(function (): void {
-    /** @var TestCase $testCase */
-    $testCase = $this;
-
-    AdminFilamentTestContext::configure($testCase);
-});
-
 /**
  * @return Testable<Component>
  */
@@ -35,6 +28,39 @@ function commentsRelationManagerFor(Post $post): Testable
         'pageClass' => ViewPost::class,
     ]);
 }
+
+/**
+ * @return array<string, mixed>
+ */
+function mountedCommentViewActionData(CommentsRelationManager $commentsRelationManager): array
+{
+    $mountedAction = $commentsRelationManager->mountedActions[0] ?? null;
+
+    throw_unless(is_array($mountedAction), LogicException::class, 'The comments relation must mount a view action.');
+
+    /** @var array<int|string, mixed> $mountedAction */
+    $data = $mountedAction['data'] ?? null;
+
+    throw_unless(is_array($data), LogicException::class, 'The comment view action must include its record data.');
+
+    /** @var array<int|string, mixed> $data */
+    $stringKeyedData = [];
+
+    foreach ($data as $key => $value) {
+        if (is_string($key)) {
+            $stringKeyedData[$key] = $value;
+        }
+    }
+
+    return $stringKeyedData;
+}
+
+beforeEach(function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
+});
 
 it('lists only the selected post comments with their author and creation date', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
@@ -285,29 +311,3 @@ it('denies the comments relation to a user with only user permissions', function
     commentsRelationManagerFor($post)
         ->assertForbidden();
 });
-
-/**
- * @return array<string, mixed>
- */
-function mountedCommentViewActionData(CommentsRelationManager $commentsRelationManager): array
-{
-    $mountedAction = $commentsRelationManager->mountedActions[0] ?? null;
-
-    throw_unless(is_array($mountedAction), LogicException::class, 'The comments relation must mount a view action.');
-
-    /** @var array<int|string, mixed> $mountedAction */
-    $data = $mountedAction['data'] ?? null;
-
-    throw_unless(is_array($data), LogicException::class, 'The comment view action must include its record data.');
-
-    /** @var array<int|string, mixed> $data */
-    $stringKeyedData = [];
-
-    foreach ($data as $key => $value) {
-        if (is_string($key)) {
-            $stringKeyedData[$key] = $value;
-        }
-    }
-
-    return $stringKeyedData;
-}

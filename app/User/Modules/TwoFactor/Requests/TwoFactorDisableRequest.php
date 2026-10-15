@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\User\Modules\TwoFactor\Requests;
 
+use App\Auth\Modules\TrustedDevice\Services\TwoFactorCodeVerifier;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
-use Laravel\Fortify\Fortify;
-use Laravel\Fortify\TwoFactorAuthenticationProvider;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
 use SanderMuller\FluentValidation\HasFluentRules;
@@ -36,9 +36,11 @@ class TwoFactorDisableRequest extends FormRequest
 
             'code' => FluentRule::string()
                 ->required(message: 'Debes ingresar el código de autenticación.')
-                ->min(6, message: 'El código debe tener 6 dígitos.')
-                ->max(6, message: 'El código debe tener 6 dígitos.')
-                ->rule('regex:/^[0-9]+$/', 'El código solo puede contener números.'),
+                ->max(21, message: 'El código es demasiado largo.')
+                ->rule(
+                    'regex:/^([0-9]{6}|[A-Za-z0-9]{10}-[A-Za-z0-9]{10})$/',
+                    'Ingresa un código de 6 dígitos o un código de recuperación válido.',
+                ),
         ];
     }
 
@@ -55,7 +57,9 @@ class TwoFactorDisableRequest extends FormRequest
     }
 
     /**
-     * Determine if the request has a valid two factor code.
+     * Determine if the request has a valid two factor code: a TOTP code or a
+     * single-use recovery code. Disabling two-factor wipes the recovery codes,
+     * so consuming the one used leaves nothing inconsistent.
      */
     protected function hasValidCode(): bool
     {
@@ -65,15 +69,8 @@ class TwoFactorDisableRequest extends FormRequest
             return false;
         }
 
-        /** @var string $decryptedSecret */
-        $decryptedSecret = Fortify::currentEncrypter()->decrypt($user->two_factor_secret);
-
-        /** @var string $code */
-        $code = $this->input('code');
-
-        return resolve(TwoFactorAuthenticationProvider::class)->verify(
-            $decryptedSecret,
-            $code
+        return DB::transaction(
+            fn (): bool => resolve(TwoFactorCodeVerifier::class)->verifyCode($user, $this->string('code')->toString())
         );
     }
 }

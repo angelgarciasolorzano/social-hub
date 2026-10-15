@@ -24,8 +24,8 @@ it('reactivates a revoked device with a valid TOTP code', function (): void {
             'otp_code' => validOtpFor($user),
         ]);
 
-    $testResponse->assertRedirect()
-        ->assertInertiaFlash('type', 'success');
+    $testResponse->assertRedirect();
+    $testResponse->assertInertiaFlash('type', 'success');
 
     $trustedDevice->refresh();
 
@@ -38,20 +38,79 @@ it('reactivates a revoked device with a valid TOTP code', function (): void {
         ->toBeTrue();
 });
 
-it('reactivates a revoked device with a valid recovery code', function (): void {
-    $user = createUserWithTwoFactor();
+it('reactivates a revoked device with a valid recovery code and consumes it', function (): void {
+    $user = createUserWithRecoveryCodes('abcde12345-fghij67890', 'klmno12345-pqrst67890');
     $trustedDevice = createTrustedDevice($user);
     $trustedDevice->delete();
 
     $testResponse = $this->actingAs($user)
         ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
-            'otp_code' => '111111',
+            'otp_code' => 'abcde12345-fghij67890',
         ]);
 
-    $testResponse->assertRedirect()
-        ->assertInertiaFlash('type', 'success');
+    $testResponse->assertRedirect();
+    $testResponse->assertInertiaFlash('type', 'success');
 
-    expect($trustedDevice->refresh()->deleted_at)->toBeNull();
+    expect($trustedDevice->refresh()->deleted_at)->toBeNull()
+        ->and($user->refresh()->recoveryCodes())->toBe(['klmno12345-pqrst67890']);
+});
+
+it('does not accept the same recovery code to reactivate a second device', function (): void {
+    $user = createUserWithRecoveryCodes('abcde12345-fghij67890');
+    $trustedDevice = createTrustedDevice($user);
+    $secondDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+    $secondDevice->delete();
+
+    $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => 'abcde12345-fghij67890']);
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $secondDevice), ['otp_code' => 'abcde12345-fghij67890']);
+
+    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+
+    expect($trustedDevice->refresh()->deleted_at)->toBeNull()
+        ->and($secondDevice->refresh()->deleted_at)->not->toBeNull();
+});
+
+it('rejects a recovery code that belongs to another user without consuming it', function (): void {
+    $owner = createUserWithRecoveryCodes('abcde12345-fghij67890');
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => 'abcde12345-fghij67890']);
+
+    $testResponse->assertSessionHasErrors('otp_code');
+
+    expect($trustedDevice->refresh()->deleted_at)->not->toBeNull()
+        ->and($owner->refresh()->recoveryCodes())->toBe(['abcde12345-fghij67890']);
+});
+
+it('rejects the reactivation when two-factor is disabled', function (): void {
+    $user = createUser();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => '123456']);
+
+    $testResponse->assertSessionHasErrors('two_factor');
+
+    expect($trustedDevice->refresh()->deleted_at)->not->toBeNull();
+});
+
+it('answers a wrong code with a fixed message that does not echo the submitted code', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => '000000']);
+
+    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
 });
 
 it('rejects an incorrect otp code and keeps the device revoked', function (): void {

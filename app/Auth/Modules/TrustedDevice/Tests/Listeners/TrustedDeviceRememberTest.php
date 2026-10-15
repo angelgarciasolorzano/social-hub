@@ -6,7 +6,44 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\User\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Tests\TestCase;
+
+/**
+ * Create a device for the browser the tests send (Chrome on Windows from 127.0.0.1).
+ *
+ * @param  array<string, mixed>  $attributes
+ */
+function createDeviceOfTestBrowser(User $user, array $attributes = []): TrustedDevice
+{
+    return createTrustedDevice($user, [
+        'user_agent' => chromeWindowsUserAgent(),
+        'os_name' => 'Windows',
+        'ip' => '127.0.0.1',
+        ...$attributes,
+    ]);
+}
+
+/**
+ * Pass the two-factor challenge from the test browser, asking to remember it.
+ *
+ * @return TestResponse<Response>
+ */
+function passChallengeRememberingBrowser(TestCase $testCase, User $user, bool $rememberDevice = true): TestResponse
+{
+    $otp = validOtpFor($user);
+    allowOtpReuse($otp);
+
+    Auth::logout();
+
+    return $testCase->withSession(['login.id' => $user->id])
+        ->withHeader('User-Agent', chromeWindowsUserAgent())
+        ->post(route('two-factor.login.store'), ['code' => $otp, 'remember_device' => $rememberDevice]);
+}
 
 it('creates a trusted device and records a Created event when remember_device is checked', function (): void {
     $user = createUserWithTwoFactor();
@@ -117,4 +154,71 @@ it('does not create a trusted device when remember_device is not checked', funct
         ->toBe($otherUsersStatsBefore)
         ->and($trustedDeviceDashboardCache->recentActivity($otherUser, request()))
         ->toBe($otherUsersActivityBefore);
+});
+
+it('leaves a single active device when a revoked browser is remembered again', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createDeviceOfTestBrowser($user);
+    $trustedDevice->delete();
+
+    passChallengeRememberingBrowser($this, $user)->assertRedirect();
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
+        ->and($trustedDevice->refresh()->deleted_at)->toBeNull()
+        ->and($trustedDevice->isActive())->toBeTrue();
+});
+
+it('records a Reactivated event instead of a Created one when a revoked browser is remembered again', function (): void {
+    $user = createUserWithTwoFactor();
+    createDeviceOfTestBrowser($user)->delete();
+
+    passChallengeRememberingBrowser($this, $user);
+
+    expect(countTrustedDeviceEvents($user, TrustedDeviceAction::Reactivated))->toBe(1)
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(0);
+});
+
+it('records a Renewed event when an expired browser is remembered again', function (): void {
+    $user = createUserWithTwoFactor();
+    createDeviceOfTestBrowser($user, ['expires_at' => now()->subDay()]);
+
+    passChallengeRememberingBrowser($this, $user);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Renewed))->toBe(1);
+});
+
+it('does not add a second device when the same browser is remembered twice', function (): void {
+    $user = createUserWithTwoFactor();
+
+    passChallengeRememberingBrowser($this, $user);
+    passChallengeRememberingBrowser($this, $user);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
+});
+
+it('issues a cookie whose hash matches the restored device', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createDeviceOfTestBrowser($user, ['token_hash' => hash('sha256', 'old-token')]);
+    $trustedDevice->delete();
+
+    $testResponse = passChallengeRememberingBrowser($this, $user);
+
+    $cookie = $testResponse->getCookie('trusted_device');
+
+    expect($cookie)->not->toBeNull()
+        ->and($trustedDevice->refresh()->token_hash)->toBe(hash('sha256', (string) $cookie?->getValue()));
+});
+
+it('leaves a revoked browser untouched when remember_device is not checked', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createDeviceOfTestBrowser($user);
+    $trustedDevice->delete();
+
+    $testResponse = passChallengeRememberingBrowser($this, $user, rememberDevice: false);
+
+    $testResponse->assertCookieMissing('trusted_device');
+
+    expect($trustedDevice->refresh()->deleted_at)->not->toBeNull()
+        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
 });

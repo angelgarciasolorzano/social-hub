@@ -2,9 +2,9 @@ import { type JSX, type SubmitEvent, useId } from "react";
 
 import { useForm } from "@inertiajs/react";
 
-import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ShieldBan, ShieldQuestionMark } from "lucide-react";
 
+import TwoFactorCodeField from "@/modules/setting/shared/components/TwoFactorCodeField";
 import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
 
 import { destroy } from "@/shared/wayfinder/routes/setting/security/two-factor-authentication";
@@ -21,17 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants } from "@/shared/lib/styling";
-
-import { OTP_MAX_LENGTH } from "../../../hooks/useTwoFactorAuth";
 
 interface DisableTwoFactorFormData {
   password: string;
@@ -48,14 +40,14 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
   const formId = `${idPrefix}-disable-two-factor-form`;
   const passwordInputId = `${idPrefix}-password`;
   const passwordErrorId = `${idPrefix}-password-error`;
-  const otpInputId = `${idPrefix}-otp`;
-  const otpErrorId = `${idPrefix}-otp-error`;
+  const codeFieldId = `${idPrefix}-code`;
   const dialogFocusRestoration = useDialogFocusRestoration();
 
-  const { data, setData, processing, errors, reset, submit } = useForm<DisableTwoFactorFormData>({
-    password: "",
-    code: "",
-  });
+  const { data, setData, processing, errors, reset, submit, clearErrors } =
+    useForm<DisableTwoFactorFormData>({
+      password: "",
+      code: "",
+    });
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -64,6 +56,9 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
       onSuccess: () => {
         setOpen(false);
         reset();
+      },
+      onError: () => {
+        setData("code", "");
       },
       preserveState: true,
     });
@@ -90,7 +85,8 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           </DialogTitle>
           <DialogDescription>
             Por seguridad, necesitamos verificar tu identidad antes de desactivar la autenticación
-            de dos factores.
+            de dos factores. Ingresa el código de tu aplicación autenticadora o uno de tus códigos
+            de recuperación.
           </DialogDescription>
         </DialogHeader>
 
@@ -130,43 +126,17 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
             <InputError id={passwordErrorId} message={errors.password} />
           </div>
 
-          <div className="flex flex-col items-center justify-center space-y-3 text-center">
-            <LabelForm error={errors.code} htmlFor={otpInputId}>
-              Código de tu aplicación autenticadora
-            </LabelForm>
-
-            <div className="flex w-full items-center justify-center">
-              <InputOTP
-                id={otpInputId}
-                name="code-otp"
-                required
-                onChange={(e) => {
-                  setData("code", e);
-                }}
-                disabled={processing}
-                maxLength={OTP_MAX_LENGTH}
-                pattern={REGEXP_ONLY_DIGITS}
-                value={data.code}
-                aria-invalid={!!errors.code}
-                aria-describedby={errors.code ? otpErrorId : undefined}
-              >
-                <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
-                  {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
-                    <InputOTPSlot index={index} key={index} />
-                  ))}
-                </InputOTPGroup>
-
-                <InputOTPSeparator className="mx-2" />
-
-                <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
-                  {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
-                    <InputOTPSlot index={index + OTP_MAX_LENGTH / 2} key={index} />
-                  ))}
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-            <InputError id={otpErrorId} message={errors.code} />
-          </div>
+          <TwoFactorCodeField
+            id={codeFieldId}
+            name="code"
+            value={data.code}
+            error={errors.code}
+            disabled={processing}
+            onChange={(value) => {
+              setData("code", value);
+            }}
+            onModeChange={clearErrors}
+          />
         </form>
 
         <DialogFooter>

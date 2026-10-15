@@ -20,6 +20,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tanstack/devtools-vite": "^0.8.5",
     "@tanstack/react-devtools": "^0.10.12",
+    "@tanstack/react-hotkeys-devtools": "^0.10.2",
     "@tanstack/react-table-devtools": "^9.2.0",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^26.2.0",

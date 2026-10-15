@@ -9,16 +9,20 @@ use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\User\Models\User;
 use Illuminate\Support\Facades\DB;
-use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
+use Laravel\Fortify\Events\TwoFactorAuthenticationEvent;
 
 final readonly class TrustedDeviceInvalidate
 {
     public function __construct(private TrustedDeviceDashboardCache $trustedDeviceDashboardCache) {}
 
-    public function handle(TwoFactorAuthenticationDisabled $twoFactorAuthenticationDisabled): void
+    /**
+     * Revoke every trusted device when two-factor is confirmed or disabled,
+     * so no cookie issued under a previous configuration keeps bypassing the OTP.
+     */
+    public function handle(TwoFactorAuthenticationEvent $twoFactorAuthenticationEvent): void
     {
         /** @var User $user */
-        $user = $twoFactorAuthenticationDisabled->user;
+        $user = $twoFactorAuthenticationEvent->user;
 
         DB::transaction(function () use ($user): void {
             $trustedDevices = $user->trustedDevices()->latest('last_used_at')->get();

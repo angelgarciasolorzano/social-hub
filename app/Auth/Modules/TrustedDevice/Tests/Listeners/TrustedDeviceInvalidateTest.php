@@ -6,7 +6,27 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\User\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Date;
+
+function createUserWithPendingTwoFactor(): User
+{
+    $user = createUserWithTwoFactor();
+    $user->forceFill(['two_factor_confirmed_at' => null])->save();
+
+    return $user;
+}
+
+/**
+ * @return array<string, int>
+ */
+function confirmedPasswordSession(): array
+{
+    return ['auth.password_confirmed_at' => Date::now()
+        ->getTimestamp()];
+}
 
 it('revokes every trusted device and records a RevokedAll event for each when 2FA is disabled', function (): void {
     $user = createUserWithTwoFactor();
@@ -106,4 +126,85 @@ it("invalidates only the current user's cache when 2FA is disabled without devic
         ->and($trustedDeviceDashboardCache->stats($otherUser)->toArray())->toBe($otherUsersStatsBefore)
         ->and($trustedDeviceDashboardCache->recentActivity($otherUser, request()))
         ->toBe($otherUsersActivityBefore);
+});
+
+it('revokes every trusted device and records a RevokedAll event for each when 2FA is confirmed', function (): void {
+    $user = createUserWithPendingTwoFactor();
+    createTrustedDevice($user, ['name' => 'MacBook']);
+    createTrustedDevice($user, ['name' => 'iPhone']);
+
+    $this->actingAs($user)
+        ->withSession(confirmedPasswordSession())
+        ->post(route('two-factor.confirm'), ['code' => validOtpFor($user)])
+        ->assertRedirect();
+
+    expect($user->refresh()->two_factor_confirmed_at)->not->toBeNull()
+        ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(0)
+        ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(2)
+        ->and(TrustedDeviceEvent::query()
+            ->where('user_id', $user->id)
+            ->where('action', TrustedDeviceAction::RevokedAll)
+            ->count())->toBe(2);
+});
+
+it('invalidates the dashboard cache of the user who confirms 2FA', function (): void {
+    $user = createUserWithPendingTwoFactor();
+    createTrustedDevice($user);
+
+    $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
+
+    forgetTrustedDeviceDashboardCache($user);
+    $trustedDeviceDashboardCache->stats($user);
+
+    $this->actingAs($user)
+        ->withSession(confirmedPasswordSession())
+        ->post(route('two-factor.confirm'), ['code' => validOtpFor($user)])
+        ->assertRedirect();
+
+    expect(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse()
+        ->and($trustedDeviceDashboardCache->stats($user)->total)->toBe(0);
+});
+
+it('leaves the trusted devices of other users untouched when 2FA is confirmed', function (): void {
+    $user = createUserWithPendingTwoFactor();
+    createTrustedDevice($user);
+
+    $otherUser = createUser();
+    $trustedDevice = createTrustedDevice($otherUser);
+
+    $this->actingAs($user)
+        ->withSession(confirmedPasswordSession())
+        ->post(route('two-factor.confirm'), ['code' => validOtpFor($user)])
+        ->assertRedirect();
+
+    expect($trustedDevice->fresh()?->deleted_at)->toBeNull();
+});
+
+it('does not revoke trusted devices when the 2FA confirmation code is invalid', function (): void {
+    $user = createUserWithPendingTwoFactor();
+    $trustedDevice = createTrustedDevice($user);
+
+    $this->actingAs($user)
+        ->withSession(confirmedPasswordSession())
+        ->post(route('two-factor.confirm'), ['code' => '000000']);
+
+    expect($user->refresh()->two_factor_confirmed_at)->toBeNull()
+        ->and($trustedDevice->fresh()?->deleted_at)->toBeNull();
+});
+
+it('does not let a cookie issued before 2FA was confirmed skip the OTP challenge afterwards', function (): void {
+    $user = createUserWithPendingTwoFactor();
+    createTrustedDevice($user, ['token_hash' => hash('sha256', 'pre-confirmation-token')]);
+
+    $this->actingAs($user)
+        ->withSession(confirmedPasswordSession())
+        ->post(route('two-factor.confirm'), ['code' => validOtpFor($user)])
+        ->assertRedirect();
+    Auth::logout();
+
+    $this->withCookie('trusted_device', 'pre-confirmation-token')
+        ->post(route('login.store'), ['email' => $user->email, 'password' => 'password'])
+        ->assertRedirect(route('two-factor.login'));
+
+    $this->assertGuest();
 });

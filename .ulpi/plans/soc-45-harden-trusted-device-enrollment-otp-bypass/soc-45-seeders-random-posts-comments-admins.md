@@ -1,0 +1,466 @@
+# Plan: SOC-45 (extra): Seeders con datos aleatorios para posts, comentarios y administradores
+
+## Overview
+
+AMPLIACIÓN (TASK-010 a TASK-014): a petición del usuario, los dispositivos de confianza dejan de salir de 10 escenarios fijos (que producían proporciones fijas, p. ej. 62% escritorio y 38% móvil) y pasan a generarse de forma aleatoria pero coherente (tipo, sistema, navegador, user agent, estado y eventos). Hoy `php artisan db:seed` crea 201 usuarios (200 del factory más Angel). Los posts ya son aleatorios pero en un rango angosto y uniforme (5 a 20), los comentarios raíz de cada post salen todos del mismo usuario por un bug (el autor se sortea una sola vez por post), las respuestas son casi de cantidad fija (5 a 8 por comentario) y solo Angel tiene roles de administración. El plan agrega un helper de conteos sesgados, usa cantidades aleatorias para posts (0-50), comentarios (0-10) y respuestas (0-6) con autores distintos por comentario, convierte al menos el 20% de los usuarios en administradores con roles lectores aleatorios, y (EXPANSION) siembra estados reales de 2FA y reparte los dispositivos confiables de forma coherente con ellos (solo usuarios con 2FA confirmado tienen dispositivos activos).
+
+**Issue:** [SOC-45](https://linear.app/social-hub-ang/issue/SOC-45/feature-harden-trusted-device-enrollment-and-otp-bypass) — Feature: Harden trusted-device enrollment and OTP bypass
+**Modo:** EXPANSION · **Estilo:** Paso a paso: se implementa una tarea y se pausa para revisión (regla .ai/rules/linear.md). · **Review por defecto:** claude
+
+## Scope Challenge
+
+Modo EXPANSION: además de lo pedido (posts, comentarios, respuestas y administradores), se siembran estados reales de 2FA (TASK-005 y TASK-006) y los dispositivos de confianza coherentes con ellos (TASK-007). Antes de SOC-45 el seeder creaba 30 dispositivos para todos los usuarios, un estado que la app ya no produce; además genera ~6.000 dispositivos y ~12.000 eventos. TASK-007 se puede descartar sin afectar el resto, y TASK-005/006 sirven por sí solas para tener usuarios con 2FA. Decisiones del usuario: Angel sin 2FA, secretos aleatorios por usuario, distribución sesgada (muchos usuarios con pocos posts y pocos con muchos), rangos 0-10 comentarios y 0-6 respuestas, un solo seeder de administración (AdminUserSeeder modificado) y rol admin más 1 a 3 lectores por administrador aleatorio. Fuera: el 60% de posts con imagen y las imágenes de perfil, que ya son aleatorias.
+
+## Prerequisites
+
+- Los tests actuales de app/Modules/{Post,Comment,Admin}/Tests, app/Auth/Modules/TrustedDevice/Tests y app/User/Modules/TwoFactor/Tests están en verde antes de empezar.
+- Se leyeron .ai/rules/{app,backend,linear}.md: sin variables de una letra, pruebas pequeñas de un solo comportamiento, Eloquent en vez de DB::table en tests, reutilizar utilitarios, pausa tras cada tarea.
+- La suite Unit ya está registrada en phpunit.xml (tests/Unit); las pruebas de los módulos usan los directorios Tests/Database ya vinculados a TestCase en tests/Pest.php.
+- DatabaseSeeder mantiene su orden (UserSeeder → AdminAuthorizationSeeder → AdminUserSeeder → TrustedDeviceSeeder → PostSeeder → CommentSeeder): los estados de 2FA se siembran en UserSeeder, y los administradores aleatorios y los dispositivos se asignan después de crear a los 201 usuarios.
+
+## Non-Goals
+
+- Cambiar los factories de Post y Comment ni el 60% de posts con imagen o las imágenes de perfil y portada (UserFactory solo gana los estados de 2FA).
+- Sembrar un secreto TOTP conocido o compartido: cada usuario con 2FA recibe el suyo, así que sirven para ver la interfaz pero no para iniciar sesión con OTP. Angel queda sin 2FA.
+- Cambiar la lógica de menciones de las respuestas ni el hilo de un solo nivel (SOC-41).
+- Sembrar administradores fuera de local y testing, o sembrar la autenticación de app (MFA) que exige el panel Filament.
+- Crear un seeder separado para administradores: se modifica AdminUserSeeder.
+- Ejecutar migrate:fresh --seed contra la base de desarrollo sin confirmación del usuario.
+
+## Contracts
+
+- SkewedRandom::count(min, max, skew) devuelve siempre un entero en [min, max] y usa mt_rand, de modo que mt_srand fija la secuencia en las pruebas; es el único generador de conteos sesgados de los seeders.
+- Rangos: posts por usuario 0-50 (skew 3), comentarios raíz por post 0-10 (skew 2), respuestas por comentario raíz 0-6 (skew 2), dispositivos por usuario con 2FA confirmado 0-30 (skew 2).
+- Cada comentario, raíz o respuesta, elige su propio autor aleatorio entre todos los usuarios; los comentarios raíz nunca mencionan y las respuestas mantienen el hilo de un solo nivel con mención a otro autor del hilo.
+- AdminUserSeeder: solo en local/testing; Angel recibe admin y los tres lectores; el total de administradores (usuarios con el rol admin, Angel incluido) es al menos ceil(0,2 × total de usuarios); cada administrador aleatorio recibe admin más un subconjunto aleatorio de 1 a 3 roles lectores; ejecutar dos veces no agrega administradores y conserva asignaciones existentes.
+- Los permisos viven en los roles del catálogo AdminRole; no se asignan permisos directos.
+- Estados de 2FA sembrados (cuotas fijas sobre los usuarios del factory): ~25% confirmado, ~5% pendiente, resto sin 2FA; Angel sin 2FA. Invariante de SOC-45: solo usuarios con 2FA confirmado tienen dispositivos activos o expirados; quien lo desactivó solo tiene dispositivos revocados con eventos RevokedAll; pendientes y sin 2FA no tienen dispositivos activos.
+- Capability providers: Spatie Permission (assignRole, roles del guard admin creados por AdminAuthorizationSeeder, que corre antes), factories existentes y SkewedRandom (TASK-001).
+- Wiring: SkewedRandom se autocarga por PSR-4 desde app/Support; los seeders ya están registrados en DatabaseSeeder y no cambia su orden.
+
+## Existing Code Leverage
+
+- app/Modules/Post/Database/Seeders/PostSeeder.php: ya crea los posts por usuario con Post::factory()->for($user); solo cambia cómo se calcula la cantidad.
+- app/Modules/Comment/Database/Seeders/CommentSeeder.php: ya implementa respuestas y la mención a otro autor del hilo (mentionOtherReplyAuthors).
+- app/Modules/Admin/Database/Seeders/AdminUserSeeder.php y app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php: el segundo crea el catálogo de roles; el primero ya asigna los cuatro roles a Angel.
+- app/Auth/Database/Seeders/TrustedDeviceSeeder.php: ya define los 10 escenarios de dispositivo y sus copias.
+- app/User/Database/Factories/UserFactory.php y app/User/Database/Seeders/UserSeeder.php: base de los estados de 2FA; tests/Pest.php createUserWithTwoFactor() se reutiliza como prueba del estado confirmado.
+- app/Modules/Admin/Enums/AdminRole.php: los cuatro roles del catálogo.
+- tests/Pest.php: createUser(), createPost() y helpers compartidos; las pruebas existentes de seeders sirven de base.
+- app/Support: lugar existente para clases globales sin dominio (hoy MediaLibrary).
+
+## Tasks
+
+### TASK-001: Crear el helper SkewedRandom para conteos aleatorios sesgados
+
+Crear App\Support\Seeding\SkewedRandom con un método estático count(int $min, int $max, float $skew = 2.0): int que devuelve un entero entre $min y $max (ambos incluidos) sesgado hacia $min elevando un número uniforme a la potencia $skew, de modo que haya muchos valores bajos y pocos altos. Usa mt_rand para que las pruebas puedan fijar la semilla con mt_srand. Lanza InvalidArgumentException si $min > $max o $skew <= 0. Es la única fuente de aleatoriedad sesgada de los seeders (PostSeeder, CommentSeeder y TrustedDeviceSeeder la reutilizan, regla de no repetir código).
+
+**Type:** feature
+**Priority:** P0
+**Effort:** S
+**Agent:** laravel-senior-engineer
+**Review:** claude
+
+**Acceptance Criteria:**
+
+- [ ] Con 5.000 sorteos de count(0, 50, 3.0) todos los valores caen entre 0 y 50 (ambos incluidos) y se observan al menos 10 valores distintos.
+- [ ] Con $skew mayor que 1 el promedio de los sorteos queda por debajo del punto medio del rango, y con $skew = 1 queda cerca del punto medio; con la misma semilla mt_srand se repite la misma secuencia.
+- [ ] Caso de falla/edge: count(7, 7) devuelve 7, y count(10, 0) o un $skew menor o igual a 0 lanzan InvalidArgumentException.
+
+**writeScope:**
+
+- `app/Support/Seeding/SkewedRandom.php` (crear)
+- `tests/Unit/Support/Seeding/SkewedRandomTest.php` (crear)
+
+**validateCommand:** `vendor/bin/pest tests/Unit/Support/Seeding/SkewedRandomTest.php && vendor/bin/pint --dirty --format agent`
+
+**Notas:** app/Support ya existe para clases globales sin dominio (MediaLibrary); se agrega la subcarpeta Seeding. La prueba va en tests/Unit (suite Unit ya registrada en phpunit.xml, sin RefreshDatabase porque no usa base de datos).
+
+### TASK-002: PostSeeder: cantidad de posts aleatoria y sesgada por usuario (0 a 50)
+
+PostSeeder deja de usar random_int(5, 20) y calcula la cantidad por usuario con SkewedRandom::count(0, 50, 3.0): muchos usuarios con pocos posts y unos pocos con muchos, con promedio cercano a 12 posts (volumen total parecido al actual, ~2.500 posts con 201 usuarios). Se actualizan las pruebas que fijaban el rango de 5 a 20.
+
+**Type:** feature
+**Priority:** P1
+**Effort:** S
+**Agent:** laravel-senior-engineer
+**Review:** claude
+**Depends on:** TASK-001
+
+**Acceptance Criteria:**
+
+- [ ] Con 30 usuarios y mt_srand fijo, ningún usuario tiene más de 50 posts y no todos tienen la misma cantidad (al menos 5 valores distintos).
+- [ ] Caso de falla/edge: sin usuarios no se crea ningún post y ningún post queda sin dueño; que el conteo pueda ser 0 lo cubre SkewedRandomTest (el seeder acepta count(0)).
+- [ ] Cada post pertenece al usuario para el que se generó (la relación for($user) se conserva).
+
+**writeScope:**
+
+- `app/Modules/Post/Database/Seeders/PostSeeder.php` (modificar)
+- `app/Modules/Post/Tests/Seeders/PostSeederTest.php` (modificar)
+
+**validateCommand:** `vendor/bin/pest app/Modules/Post/Tests/Seeders/PostSeederTest.php && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Reemplaza la prueba 'seeds between 5 and 20 posts for each user' por pruebas pequeñas de un solo comportamiento (regla backend de tests).
+
+### TASK-003: CommentSeeder: comentarios y respuestas aleatorios con autores distintos
+
+CommentSeeder calcula los comentarios raíz por post con SkewedRandom::count(0, 10, 2.0) y las respuestas por comentario raíz con SkewedRandom::count(0, 6, 2.0). Corrige el bug actual: user_id se evaluaba una sola vez por post, así que todos los comentarios raíz de un post eran del mismo usuario; ahora cada comentario (raíz y respuesta) elige su autor aleatoriamente, con una única función privada para elegirlo (sin repetir código). Se conserva el hilo de un solo nivel y la mención a otro autor del hilo (SOC-41). El volumen baja de ~140.000 a ~25.000 comentarios.
+
+**Type:** bugfix
+**Priority:** P1
+**Effort:** M
+**Agent:** laravel-senior-engineer
+**Review:** claude
+**Depends on:** TASK-001
+
+**Acceptance Criteria:**
+
+- [ ] Con 30 usuarios, mt_srand fijo y varios posts, los comentarios raíz de un mismo post no son todos del mismo autor, y los conteos por post y por comentario están dentro de 0..10 y 0..6.
+- [ ] Caso de falla/edge: sin posts no se crean comentarios, y con un solo usuario en la base el seeder funciona y no crea menciones (el conteo 0 lo cubre SkewedRandomTest).
+- [ ] Se conservan las propiedades existentes: los comentarios raíz nunca mencionan, las respuestas siguen siendo de un solo nivel y toda mención apunta a otro autor del mismo hilo.
+
+**writeScope:**
+
+- `app/Modules/Comment/Database/Seeders/CommentSeeder.php` (modificar)
+- `app/Modules/Comment/Tests/Seeders/CommentSeederTest.php` (modificar)
+
+**validateCommand:** `vendor/bin/pest app/Modules/Comment/Tests/Seeders/CommentSeederTest.php && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Reemplaza las pruebas de rangos fijos (5 a 10 y 5 a 8) y mantiene las de menciones y nivel único. El archivo se movió a Tests/Seeders (convención de TrustedDevice). Los autores aleatorios por comentario también cubren que no comente siempre el mismo usuario.
+
+### TASK-004: AdminUserSeeder: Angel con todo y administradores aleatorios (mínimo 20%)
+
+AdminUserSeeder (solo en local y testing, sin cambios en otros entornos) mantiene a Angel con los cuatro roles y suma administradores aleatorios hasta completar ceil(20% de los usuarios), contando a Angel y a quienes ya tengan el rol admin (así correrlo dos veces no agrega más). Cada administrador aleatorio recibe el rol admin más un subconjunto aleatorio no vacío (1 a 3) de los tres roles lectores (dashboard, usuarios, posts). Se conservan las asignaciones existentes y se elimina la repetición de las cuatro consultas de rol con un método privado. Se reescriben las dos pruebas que decían que no se promueve a otros usuarios.
+
+**Type:** feature
+**Priority:** P1
+**Effort:** M
+**Agent:** laravel-senior-engineer
+**Review:** claude
+
+**Acceptance Criteria:**
+
+- [ ] Con 30 usuarios el seeder deja exactamente ceil(0,2 × 30) = 6 usuarios con el rol admin (Angel incluido): Angel tiene los cuatro roles y cada administrador aleatorio tiene admin más entre 1 y 3 lectores.
+- [ ] Caso de falla/edge: ejecutar el seeder dos veces no cambia la cantidad de administradores, conserva roles personalizados ya asignados, y fuera de local/testing no asigna nada; con un solo usuario (Angel) solo Angel queda administrador.
+- [ ] Los usuarios que no son administradores no reciben ningún rol, y la cantidad de administradores nunca baja del 20% aunque el total de usuarios no sea múltiplo de 5.
+
+**writeScope:**
+
+- `app/Modules/Admin/Database/Seeders/AdminUserSeeder.php` (modificar)
+- `app/Modules/Admin/Tests/Database/AdminUserSeederTest.php` (modificar)
+- `app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php` (crear)
+
+**validateCommand:** `vendor/bin/pest app/Modules/Admin/Tests/Database/AdminUserSeederTest.php app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php && vendor/bin/pint --dirty --format agent`
+
+**Notas:** El archivo de pruebas nuevo evita que AdminUserSeederTest crezca sin control; las dos pruebas contradictorias se reescriben (no se borran). No se siembra MFA: los administradores aleatorios tendrán roles pero no podrán entrar al panel sin configurar la autenticación de app.
+
+### TASK-005: UserFactory: estados de 2FA confirmado y pendiente
+
+Agregar a UserFactory los estados twoFactorConfirmed() (secreto TOTP real cifrado con el cifrador de Fortify, ocho códigos de recuperación con el formato real de Fortify y two_factor_confirmed_at) y twoFactorPending() (secreto y códigos de recuperación, sin confirmación, como deja Fortify al activar 2FA). tests/Pest.php createUserWithTwoFactor() pasa a reutilizar el estado en vez de armar los campos a mano (los códigos falsos 111111/222222 no se usan en ninguna otra prueba).
+
+**Type:** feature
+**Priority:** P1
+**Effort:** S
+**Agent:** laravel-senior-engineer
+**Review:** claude
+
+**Acceptance Criteria:**
+
+- [ ] UserFactory::twoFactorConfirmed() crea un usuario con hasEnabledTwoFactorAuthentication() verdadero, un secreto que genera un TOTP válido y códigos de recuperación en el formato de Fortify (xxxxxxxxxx-xxxxxxxxxx).
+- [ ] Caso de falla/edge: UserFactory::twoFactorPending() deja el secreto sin two_factor_confirmed_at, así que hasEnabledTwoFactorAuthentication() es falso; el estado por defecto del factory sigue sin 2FA.
+- [ ] createUserWithTwoFactor() sigue devolviendo un usuario confirmado y las suites Auth y User que lo usan siguen en verde.
+
+**writeScope:**
+
+- `app/User/Database/Factories/UserFactory.php` (modificar)
+- `tests/Pest.php` (modificar)
+- `app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php` (crear)
+
+**validateCommand:** `vendor/bin/pest app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php app/Auth app/User --compact && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Reutiliza el estado en el helper de pruebas (regla de no repetir código). La prueba nueva va en app/User/Modules/TwoFactor/Tests/Factories (convención de TrustedDevice), directorio ya vinculado a TestCase. En PHPStan el factory se obtiene con UserFactory::new() para que reconozca los estados.
+
+### TASK-006: UserSeeder: repartir estados de 2FA entre los usuarios
+
+UserSeeder reparte los 200 usuarios del factory con cuotas fijas (constantes): ~25% con twoFactorConfirmed(), ~5% con twoFactorPending() y el resto sin 2FA. Angel queda sin 2FA para no cambiar el login local. Las cuotas se calculan sobre el total de usuarios y se asignan a usuarios elegidos al azar, de modo que las pruebas pueden verificar los conteos exactos.
+
+**Type:** feature
+**Priority:** P1
+**Effort:** M
+**Agent:** laravel-senior-engineer
+**Review:** claude
+**Depends on:** TASK-005
+
+**Acceptance Criteria:**
+
+- [ ] Con 200 usuarios sembrados exactamente 50 tienen 2FA confirmado y 10 tienen 2FA pendiente; los demás no tienen secreto.
+- [ ] Caso de falla/edge: Angel (angel@gmail.com) nunca recibe un estado de 2FA, y con pocos usuarios las cuotas se redondean sin fallar (con 0 usuarios del factory no hay error).
+- [ ] Los usuarios confirmados tienen secreto y códigos de recuperación válidos y los pendientes no tienen two_factor_confirmed_at.
+
+**writeScope:**
+
+- `app/User/Database/Seeders/UserSeeder.php` (modificar)
+- `app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php` (crear)
+
+**validateCommand:** `vendor/bin/pest app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php --compact && vendor/bin/pint --dirty --format agent`
+
+**Notas:** El seeder ya crea a Angel al final de run(); las cuotas se aplican sobre los usuarios del factory antes de crearlo.
+
+### TASK-007: TrustedDeviceSeeder: dispositivos según el estado real de 2FA (EXPANSION)
+
+TrustedDeviceSeeder deja de crear 30 dispositivos para todos. Usuarios con 2FA confirmado reciben un subconjunto aleatorio de escenarios con SkewedRandom::count(0, 30, 2.0) (activos, por expirar, expirados, renovados, reactivados y revocados, cada uno con su evento). Un ~5% de los usuarios sin 2FA (cuota fija) representa a quien lo tuvo y lo desactivó: solo recibe dispositivos revocados (soft delete) con eventos RevokedAll, como los deja TrustedDeviceInvalidate. Usuarios con 2FA pendiente, Angel y el resto no reciben dispositivos. Elimina los estados que la app ya no puede producir (dispositivos activos sin 2FA confirmado).
+
+**Type:** feature
+**Priority:** P2
+**Effort:** M
+**Agent:** laravel-senior-engineer
+**Review:** claude
+**Depends on:** TASK-001, TASK-006
+
+**Acceptance Criteria:**
+
+- [ ] Los usuarios con 2FA confirmado reciben entre 0 y 30 dispositivos sin repetir escenarios, cada uno con su evento Created y el de ciclo de vida correspondiente.
+- [ ] Caso de falla/edge: ningún usuario con 2FA pendiente, sin 2FA o Angel recibe dispositivos activos ni expirados; los usuarios que lo desactivaron solo tienen dispositivos revocados con eventos RevokedAll.
+- [ ] Un usuario confirmado con 0 dispositivos no genera eventos ni errores, y ningún dispositivo activo pertenece a un usuario sin 2FA confirmado.
+
+**writeScope:**
+
+- `app/Auth/Database/Seeders/TrustedDeviceSeeder.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php` (modificar)
+
+**validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php --compact && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Ítem de EXPANSION: se puede descartar sin afectar el resto del plan. (Su lógica de 30 escenarios fijos la reemplaza TASK-012.) Reemplaza la prueba 'treinta dispositivos para cada usuario' por pruebas pequeñas y verifica la invariante nueva de SOC-45 (sin 2FA confirmado no hay dispositivos activos).
+
+### TASK-008: Actualizar CLAUDE.md con las reglas nuevas de los seeders
+
+Documentar en CLAUDE.md: cantidades aleatorias y sesgadas con SkewedRandom (posts 0-50, comentarios 0-10, respuestas 0-6, dispositivos 0-30), autores aleatorios por comentario, estados de 2FA sembrados (confirmado ~25%, pendiente ~5%, Angel sin 2FA) y dispositivos coherentes con ellos, AdminUserSeeder con Angel completo y al menos 20% de administradores con rol admin más 1 a 3 lectores (solo local/testing), y corregir la frase de la sección Admin que dice que no se promueve a otros usuarios.
+
+**Type:** docs
+**Priority:** P3
+**Effort:** S
+**Agent:** general-purpose
+**Review:** claude
+**Depends on:** TASK-002, TASK-003, TASK-004, TASK-007
+
+**Acceptance Criteria:**
+
+- [ ] CLAUDE.md describe los rangos, las cuotas de 2FA y el helper con los nombres reales de clases y archivos, y ya no dice que AdminUserSeeder no promueve a otros usuarios.
+- [ ] Ninguna afirmación de CLAUDE.md contradice el código (rutas de seeders, enums, estados del factory y rangos coinciden).
+
+**writeScope:**
+
+- `CLAUDE.md` (modificar)
+
+**validateCommand:** `grep -n 'SkewedRandom\|twoFactorConfirmed' CLAUDE.md`
+
+### TASK-009: Gates de calidad y verificación de los seeders
+
+Ejecutar rector-clear-cache, rector-dry, rector, Pint, PHPStan y las suites de Post, Comment, Admin, Auth, User y Unit. Medir el tiempo de las pruebas de seeders. La ejecución real de php artisan migrate:fresh --seed borra la base de desarrollo, por eso queda a decisión del usuario y no se ejecuta sin su confirmación.
+
+**Type:** verification
+**Priority:** P3
+**Effort:** S
+**Agent:** general-purpose
+**Review:** claude
+**Depends on:** TASK-008
+
+**Acceptance Criteria:**
+
+- [ ] composer rector-clear-cache, rector-dry, phpstan y vendor/bin/pint --dirty --format agent terminan sin hallazgos y pasan las suites de Post, Comment, Admin, Auth, User y Unit.
+- [ ] Caso de falla: si una prueba de seeders depende del azar sin semilla fija, se corrige con mt_srand antes de cerrar la tarea.
+
+**writeScope:**
+
+- (sin archivos: tarea de verificación)
+
+**validateCommand:** `composer rector-clear-cache && composer rector-dry && composer phpstan && vendor/bin/pest app/Modules/Post app/Modules/Comment app/Modules/Admin app/Auth app/User tests/Unit --compact`
+
+**Notas:** Sin writeScope: tarea de verificación. La suite completa y el seed real quedan pendientes del usuario.
+
+### TASK-010: Helper WeightedRandom para elegir con probabilidades
+
+Crear App\Support\Seeding\WeightedRandom con pick(array $weights), que devuelve una clave del arreglo con probabilidad proporcional a su peso, y chance(int $percent): bool, que devuelve true con esa probabilidad. Usa mt_rand (como SkewedRandom) y lanza InvalidArgumentException si no hay pesos, si un peso es menor o igual a cero o si el porcentaje queda fuera de 0 a 100. Es la única fuente de elecciones ponderadas del factory y del seeder de dispositivos (regla de no repetir código).
+
+**Type:** feature
+**Priority:** P1
+**Effort:** S
+**Agent:** laravel-senior-engineer
+**Review:** claude
+
+**Acceptance Criteria:**
+
+- [ ] Con pesos ['a' => 70, 'b' => 30] y 10.000 sorteos, 'a' sale entre 66% y 74% de las veces y siempre se devuelve una de las claves del arreglo.
+- [ ] Caso de falla/edge: un arreglo vacío, un peso cero o negativo y un porcentaje fuera de 0..100 lanzan InvalidArgumentException; chance(0) nunca es verdadero y chance(100) siempre lo es.
+- [ ] Con una sola clave pick() la devuelve siempre, y con la misma semilla mt_srand se repite la misma secuencia.
+
+**writeScope:**
+
+- `app/Support/Seeding/WeightedRandom.php` (crear)
+- `tests/Unit/Support/Seeding/WeightedRandomTest.php` (crear)
+
+**validateCommand:** `vendor/bin/pest tests/Unit/Support/Seeding/WeightedRandomTest.php && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Mismo lugar y convención que SkewedRandom (app/Support/Seeding, prueba en tests/Unit). Se autocarga por PSR-4.
+
+### TASK-011: TrustedDeviceFactory: datos coherentes y estados de dispositivo
+
+Reescribir la definición por defecto de TrustedDeviceFactory para que los datos sean coherentes: is_mobile con ~40% de probabilidad; el sistema operativo sale del tipo (móvil: iOS o Android; escritorio: Windows, Mac o Linux, con pesos); el navegador sale del sistema (Safari solo en Mac e iOS, Edge en Windows y Mac, Chrome y Firefox en todos); la versión del sistema corresponde al sistema; el user_agent se arma con una plantilla del navegador y sistema elegidos; el nombre corresponde al sistema (MacBook, iPhone, Tablet Android, etc.). Agregar los estados active(), expiringSoon(), expired() y revoked() (este último con deleted_at) con fechas coherentes entre last_used_at, expires_at y created_at. Los tests que fijan atributos conservan su valor porque los atributos explícitos prevalecen.
+
+**Type:** feature
+**Priority:** P1
+**Effort:** M
+**Agent:** laravel-senior-engineer
+**Review:** claude
+**Depends on:** TASK-010
+
+**Acceptance Criteria:**
+
+- [ ] Para 300 dispositivos generados, un user_agent parseado con DeviceDetector coincide con os_name, browser e is_mobile del dispositivo, y los dispositivos móviles solo son iOS o Android y los de escritorio solo Windows, Mac o Linux.
+- [ ] Caso de falla/edge: nunca se genera Safari fuera de Mac o iOS ni Edge fuera de Windows o Mac, y los estados son coherentes: active() expira en el futuro, expiringSoon() en menos de 7 días, expired() en el pasado con last_used_at anterior a expires_at, y revoked() tiene deleted_at.
+- [ ] Los 24 archivos de prueba que usan el factory de dispositivos siguen en verde sin cambiar sus aserciones.
+
+**writeScope:**
+
+- `app/Auth/Database/Factories/TrustedDeviceFactory.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Factories/TrustedDeviceFactoryTest.php` (crear)
+
+**validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Factories/TrustedDeviceFactoryTest.php app/Auth --compact && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Cambia datos por defecto que usan 24 archivos de prueba; si alguno depende de un valor aleatorio concreto, se ajusta ese test (no el factory). La prueba nueva va en Tests/Factories (convención de TrustedDevice).
+
+### TASK-012: TrustedDeviceSeeder: dispositivos realmente aleatorios y coherentes
+
+Reemplazar los 10 escenarios fijos (y sus 3 copias) de TrustedDeviceSeeder por generación aleatoria con los estados del factory: cada usuario con 2FA confirmado recibe SkewedRandom::count(0, 30, 2.0) dispositivos y cada uno elige su estado con WeightedRandom (activo 45%, por expirar 10%, expirado 25%, revocado 20%) y sus eventos de ciclo de vida según el estado: activo (sin eventos extra, Renamed, Renewed o revocado y reactivado), por expirar o expirado (sin eventos extra o Renamed) y revocado (Revoked). Los usuarios que desactivaron 2FA (~5%) conservan solo dispositivos revocados con RevokedAll. Los eventos llevan created_at coherente con la fecha del dispositivo y en orden (Created primero). Mantiene las reglas de SOC-45: pendientes, el resto y Angel no reciben dispositivos.
+
+**Type:** feature
+**Priority:** P2
+**Effort:** L
+**Agent:** laravel-senior-engineer
+**Review:** claude
+**Depends on:** TASK-007, TASK-011
+
+**Acceptance Criteria:**
+
+- [ ] Con 20 usuarios confirmados, los atributos de los dispositivos no vienen de plantillas fijas: aparecen móviles y de escritorio, los cuatro estados (activo, por expirar, expirado y revocado) y varios sistemas operativos, y ningún usuario recibe más de 30.
+- [ ] Caso de falla/edge: todo dispositivo revocado tiene un evento Revoked (o RevokedAll para quien desactivó 2FA), todo dispositivo reactivado tiene Created, Revoked y Reactivated en ese orden y está activo, y ningún usuario sin 2FA confirmado tiene dispositivos activos ni expirados.
+- [ ] Cada dispositivo tiene un evento Created con los metadatos del dispositivo y created_at anterior a los demás eventos del mismo dispositivo.
+
+**writeScope:**
+
+- `app/Auth/Database/Seeders/TrustedDeviceSeeder.php` (modificar)
+- `app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php` (modificar)
+
+**validateCommand:** `vendor/bin/pest app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php --compact && vendor/bin/pint --dirty --format agent`
+
+**Notas:** Reemplaza la lógica de escenarios de TASK-007. Las pruebas verifican proporciones con tolerancia y propiedades de coherencia, no valores exactos; que cada estado ocurra se comprueba con muestras grandes (muchos usuarios confirmados) para no depender del azar.
+
+### TASK-013: Actualizar CLAUDE.md con los dispositivos aleatorios y coherentes
+
+Actualizar la sección de seeders de CLAUDE.md: ya no hay escenarios fijos de dispositivos, la coherencia tipo-sistema-navegador-user agent del factory, los estados del factory, los pesos de estado y de eventos, y el helper WeightedRandom junto a SkewedRandom.
+
+**Type:** docs
+**Priority:** P3
+**Effort:** S
+**Agent:** general-purpose
+**Review:** claude
+**Depends on:** TASK-008, TASK-010, TASK-011, TASK-012
+
+**Acceptance Criteria:**
+
+- [ ] CLAUDE.md describe los pesos, los estados del factory y WeightedRandom con los nombres reales de clases y archivos, y ya no menciona los 30 escenarios fijos.
+- [ ] Ninguna afirmación de CLAUDE.md contradice el código.
+
+**writeScope:**
+
+- `CLAUDE.md` (modificar)
+
+**validateCommand:** `grep -n 'WeightedRandom' CLAUDE.md`
+
+### TASK-014: Gates de calidad y verificación de los dispositivos aleatorios
+
+Ejecutar rector-clear-cache, rector-dry, rector, Pint, PHPStan y las suites de app y tests (con memory_limit de 512M), repetir las pruebas de seeders 30 veces para detectar inestabilidad y, si el usuario lo confirma, volver a sembrar la base de desarrollo y revisar con tinker la distribución de móvil/escritorio, sistema, estado y escenarios.
+
+**Type:** verification
+**Priority:** P3
+**Effort:** S
+**Agent:** general-purpose
+**Review:** claude
+**Depends on:** TASK-013
+
+**Acceptance Criteria:**
+
+- [ ] composer rector-clear-cache, rector-dry, phpstan y vendor/bin/pint --dirty --format agent terminan sin hallazgos y pasan app y tests.
+- [ ] Caso de falla: si una prueba de seeders falla en alguna de 30 ejecuciones, se corrige antes de cerrar la tarea.
+
+**writeScope:**
+
+- (sin archivos: tarea de verificación)
+
+**validateCommand:** `composer rector-clear-cache && composer rector-dry && composer phpstan && php -d memory_limit=512M vendor/bin/pest app tests --compact`
+
+**Notas:** Sin writeScope: tarea de verificación. El seed real sobre la base de desarrollo requiere confirmación del usuario.
+
+## Failure Modes
+
+- TASK-011 cambia los datos por defecto del factory de dispositivos, usado por 24 archivos de prueba; si alguno dependía de un valor aleatorio concreto, se ajusta ese test, no el factory.
+- Un user agent generado que DeviceDetector interprete distinto rompe la coherencia: TASK-011 lo comprueba con 300 muestras, y las plantillas deben cubrir solo combinaciones sistema-navegador reales.
+- Las pruebas de TASK-012 no pueden exigir un valor concreto del azar: verifican propiedades y proporciones con tolerancia sobre muestras grandes.
+- Las pruebas con azar pueden volverse inestables: mt_srand no basta, porque PostFactory consume mt_rand (array_rand de la imagen) solo cuando un random_int decide adjuntarla, así que la secuencia no es reproducible. Las pruebas verifican rangos y propiedades con muestras grandes, y no afirman que ocurra un valor puntual (como 0 posts): esa posibilidad se prueba en SkewedRandomTest. Se comprobó con 40 ejecuciones sin fallos.
+- Los cambios de AdminUserSeeder contradicen dos pruebas y la frase de CLAUDE.md; se reescriben y actualizan en TASK-004 y TASK-006 para no dejar documentación falsa.
+- Con pocos usuarios el 20% puede ser menor que el número de roles lectores posibles: la cantidad se redondea hacia arriba y Angel cuenta dentro del total.
+- Los administradores aleatorios tendrán roles pero no podrán entrar al panel sin configurar la autenticación de app (el panel exige MFA); es una limitación conocida, no un error del seeder.
+- Un volumen aleatorio alto puede ralentizar el seeder: el sesgo hacia valores bajos mantiene los posts cerca del volumen actual y baja los comentarios de ~140.000 a ~25.000.
+- Si TASK-007 se descarta, TrustedDeviceSeeder sigue creando 30 dispositivos por usuario (incluso sin 2FA) sin afectar el resto, pero esos datos contradicen las reglas de SOC-45.
+- Los usuarios sembrados con 2FA confirmado piden OTP al iniciar sesión y su secreto aleatorio no se conoce: sirven para ver pantallas desde la base, no para iniciar sesión (Angel queda sin 2FA para no afectar el login local).
+
+## Ship Cut
+
+(Ampliación) TASK-010, TASK-011 y TASK-012 son una unidad: sin TASK-012 el seeder sigue con escenarios fijos; TASK-013 y TASK-014 cierran documentación y calidad. TASK-005 a TASK-009 no dependen de esto. Si la ejecución se detiene a mitad de camino: TASK-001, TASK-002 y TASK-003 entregan posts y comentarios aleatorios y corrigen el bug de autor único; TASK-004 entrega los administradores aleatorios (independiente de las anteriores); TASK-005 y TASK-006 siembran usuarios con 2FA (independientes del resto); TASK-007 (dispositivos coherentes) es opcional (EXPANSION). TASK-008 y TASK-009 cierran documentación y calidad.
+
+## Test Coverage Map
+
+| Comportamiento | Prueba | Tarea |
+| --- | --- | --- |
+| Helper SkewedRandom (rango, sesgo, semilla, errores) | tests/Unit/Support/Seeding/SkewedRandomTest.php | TASK-001 |
+| Posts por usuario 0-50 y variedad | app/Modules/Post/Tests/Seeders/PostSeederTest.php | TASK-002 |
+| Comentarios y respuestas, autores distintos, menciones | app/Modules/Comment/Tests/Seeders/CommentSeederTest.php | TASK-003 |
+| Angel con todo y administradores aleatorios (>= 20%) | app/Modules/Admin/Tests/Database/AdminUserSeederTest.php + app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php | TASK-004 |
+| Estados de 2FA del UserFactory | app/User/Modules/TwoFactor/Tests/Factories/UserFactoryTwoFactorStatesTest.php | TASK-005 |
+| Cuotas de 2FA sembradas y Angel sin 2FA | app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php | TASK-006 |
+| Dispositivos coherentes con el 2FA | app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php | TASK-007 |
+| Elección ponderada (pick, chance, errores) | tests/Unit/Support/Seeding/WeightedRandomTest.php | TASK-010 |
+| Coherencia del factory de dispositivos (DeviceDetector, estados) | app/Auth/Modules/TrustedDevice/Tests/Factories/TrustedDeviceFactoryTest.php | TASK-011 |
+| Seeder de dispositivos aleatorio y coherente | app/Auth/Modules/TrustedDevice/Tests/Seeders/TrustedDeviceSeederTest.php | TASK-012 |
+| Documentación sin contradicciones | grep en CLAUDE.md | TASK-008 |
+| Gates de calidad y suites afectadas | composer + pest | TASK-009 |
+
+## Execution Summary
+
+- Tareas: 14
+- Ruta crítica: TASK-005 → TASK-006 → TASK-007 → TASK-008 → TASK-013 → TASK-014
+- Capa 0: TASK-001, TASK-004, TASK-005, TASK-010
+- Capa 1: TASK-002, TASK-003, TASK-006, TASK-011
+- Capa 2: TASK-007
+- Capa 3: TASK-008, TASK-012
+- Capa 4: TASK-009, TASK-013
+- Capa 5: TASK-014
+
+## Task Dependencies
+
+| Tarea | Depende de |
+| --- | --- |
+| TASK-001 | — |
+| TASK-002 | TASK-001 |
+| TASK-003 | TASK-001 |
+| TASK-004 | — |
+| TASK-005 | — |
+| TASK-006 | TASK-005 |
+| TASK-007 | TASK-001, TASK-006 |
+| TASK-008 | TASK-002, TASK-003, TASK-004, TASK-007 |
+| TASK-009 | TASK-008 |
+| TASK-010 | — |
+| TASK-011 | TASK-010 |
+| TASK-012 | TASK-007, TASK-011 |
+| TASK-013 | TASK-008, TASK-010, TASK-011, TASK-012 |
+| TASK-014 | TASK-013 |

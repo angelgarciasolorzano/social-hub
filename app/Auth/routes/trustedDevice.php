@@ -11,16 +11,19 @@ Route::prefix('user')->name('user.')->group(function (): void {
         ->name('trusted-devices.')
         ->group(function (): void {
             Route::post('', [TrustedDeviceController::class, 'store'])
+                ->middleware('throttle:two-factor-code')
                 ->name('store');
 
             Route::patch('{trustedDevice}', [TrustedDeviceController::class, 'update'])
                 ->name('update');
 
             Route::post('{trustedDevice}/renew', [TrustedDeviceController::class, 'renew'])
+                ->middleware('throttle:two-factor-code')
                 ->name('renew');
 
             Route::post('{trustedDevice}/reactivate', [TrustedDeviceController::class, 'reactivate'])
                 ->withTrashed()
+                ->middleware('throttle:two-factor-code')
                 ->name('reactivate');
 
             Route::delete('{trustedDevice}', [TrustedDeviceController::class, 'destroy'])

@@ -24,10 +24,12 @@ enum TrustedDeviceOperationResult
 
     case ForceDeleted;
 
+    case TwoFactorRequired;
+
     public function isSuccessful(): bool
     {
         return match ($this) {
-            self::AlreadyActive, self::AlreadyRevoked => false,
+            self::AlreadyActive, self::AlreadyRevoked, self::TwoFactorRequired => false,
             self::Created,
             self::Renamed,
             self::Renewed,
@@ -50,6 +52,7 @@ enum TrustedDeviceOperationResult
             self::RevokedAll => 'Todos los dispositivos de confianza fueron revocados.',
             self::Reactivated => 'Dispositivo reactivado correctamente. Se regeneró el token de confianza por seguridad.',
             self::ForceDeleted => 'Dispositivo eliminado permanentemente.',
+            self::TwoFactorRequired => 'Primero debes activar y confirmar la autenticación de dos factores para administrar dispositivos de confianza.',
         };
     }
 

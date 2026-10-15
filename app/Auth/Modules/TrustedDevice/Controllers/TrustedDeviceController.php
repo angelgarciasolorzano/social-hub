@@ -11,13 +11,13 @@ use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyAllRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyForceRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceDestroyRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceReactivateRequest;
+use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceRenewRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceUpdateRequest;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\Http\Controllers\Controller;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Attributes\Controllers\Authorize;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -46,15 +46,15 @@ class TrustedDeviceController extends Controller
     }
 
     #[Authorize('update', 'trustedDevice')]
-    public function renew(Request $request, TrustedDevice $trustedDevice): RedirectResponse
+    public function renew(TrustedDeviceRenewRequest $trustedDeviceRenewRequest, TrustedDevice $trustedDevice): RedirectResponse
     {
-        $user = $request->user();
+        $user = $trustedDeviceRenewRequest->user();
 
         abort_unless($user instanceof User, 401);
 
-        $this->trustedDeviceService->renew($user, $trustedDevice, $request);
+        $trustedDeviceOperationResult = $this->trustedDeviceService->renew($user, $trustedDevice, $trustedDeviceRenewRequest);
 
-        return Inertia::flash(TrustedDeviceOperationResult::Renewed->payload())->back();
+        return Inertia::flash($trustedDeviceOperationResult->payload())->back();
     }
 
     public function store(TrustedDeviceStoreRequest $trustedDeviceStoreRequest): RedirectResponse
@@ -114,7 +114,12 @@ class TrustedDeviceController extends Controller
         abort_unless($user instanceof User, 401);
         abort_if($trustedDevice->deleted_at === null, 404);
 
-        $newToken = $this->trustedDeviceService->reactivate($user, $trustedDevice, $trustedDeviceReactivateRequest);
+        $newToken = $this->trustedDeviceService->reactivate(
+            $user,
+            $trustedDevice,
+            $trustedDeviceReactivateRequest->string('otp_code')->toString(),
+            $trustedDeviceReactivateRequest,
+        );
 
         $this->queueTrustedDeviceCookie($newToken);
 

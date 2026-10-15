@@ -16,13 +16,17 @@ use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 final readonly class TrustedDeviceService
 {
     use InfersDeviceMetadata;
     use MintsTrustedDeviceToken;
 
-    public function __construct(private TrustedDeviceDashboardCache $trustedDeviceDashboardCache) {}
+    public function __construct(
+        private TrustedDeviceDashboardCache $trustedDeviceDashboardCache,
+        private TwoFactorCodeVerifier $twoFactorCodeVerifier,
+    ) {}
 
     public function create(
         User $user,
@@ -60,6 +64,10 @@ final readonly class TrustedDeviceService
         string $tokenHash,
         string $name,
     ): TrustedDeviceOperationResult {
+        if (! $this->twoFactorCodeVerifier->hasConfirmedTwoFactor($user)) {
+            return TrustedDeviceOperationResult::TwoFactorRequired;
+        }
+
         $userAgent = $trustedDeviceStoreRequest->userAgent();
         $ip = $trustedDeviceStoreRequest->ip();
         $osName = $this->inferOsInfo($deviceDetector)['name'];
@@ -84,6 +92,10 @@ final readonly class TrustedDeviceService
             $ip,
             $osName,
         ): TrustedDeviceOperationResult {
+            if (! $this->lockedUserHasConfirmedTwoFactor($user)) {
+                return TrustedDeviceOperationResult::TwoFactorRequired;
+            }
+
             if ($userAgent !== null && $ip !== null) {
                 $concurrentMatch = TrustedDevice::findActiveMatch($user, $userAgent, $osName, $ip, lockForUpdate: true);
 
@@ -104,6 +116,42 @@ final readonly class TrustedDeviceService
         });
     }
 
+    /**
+     * Trust the current browser after a successful two-factor challenge and
+     * return the raw token for its cookie. The device row of the same
+     * fingerprint is reused (restored if revoked) instead of adding a second
+     * one; only a browser never seen before gets a new row.
+     */
+    public function rememberAfterTwoFactorChallenge(User $user, DeviceDetector $deviceDetector, Request $request): string
+    {
+        return DB::transaction(function () use ($user, $deviceDetector, $request): string {
+            $userAgent = $request->userAgent();
+            $ip = $request->ip();
+            $osName = $this->inferOsInfo($deviceDetector)['name'];
+            $newToken = $this->mintToken();
+
+            $existingDevice = $userAgent !== null
+                ? TrustedDevice::findLatestForFingerprint($user, $userAgent, $osName, $ip, lockForUpdate: true)
+                : null;
+
+            if ($existingDevice instanceof TrustedDevice) {
+                $trustedDeviceAction = $existingDevice->trashed() ? TrustedDeviceAction::Reactivated : TrustedDeviceAction::Renewed;
+                $trustedDevice = $this->refreshTrust($existingDevice, $newToken['hash']);
+            } else {
+                $trustedDeviceAction = TrustedDeviceAction::Created;
+                $trustedDevice = $this->create($user, $deviceDetector, $newToken['hash'], null, $userAgent, $ip);
+            }
+
+            if ($userAgent !== null && $ip !== null) {
+                TrustedDevice::pruneOlder($user, $userAgent, $osName, $ip, $trustedDevice->id);
+            }
+
+            $this->recordEvent($user, $trustedDevice, $trustedDeviceAction, $request);
+
+            return $newToken['token'];
+        });
+    }
+
     public function rename(User $user, TrustedDevice $trustedDevice, string $name, Request $request): void
     {
         DB::transaction(function () use ($user, $trustedDevice, $name, $request): void {
@@ -113,14 +161,24 @@ final readonly class TrustedDeviceService
         });
     }
 
-    public function renew(User $user, TrustedDevice $trustedDevice, Request $request): void
+    public function renew(User $user, TrustedDevice $trustedDevice, Request $request): TrustedDeviceOperationResult
     {
-        DB::transaction(function () use ($user, $trustedDevice, $request): void {
+        if (! $this->twoFactorCodeVerifier->hasConfirmedTwoFactor($user)) {
+            return TrustedDeviceOperationResult::TwoFactorRequired;
+        }
+
+        return DB::transaction(function () use ($user, $trustedDevice, $request): TrustedDeviceOperationResult {
+            if (! $this->lockedUserHasConfirmedTwoFactor($user)) {
+                return TrustedDeviceOperationResult::TwoFactorRequired;
+            }
+
             $trustedDevice->forceFill([
                 'expires_at' => CarbonImmutable::now()->addMinutes($this->cookieLifetimeMinutes()),
             ])->save();
 
             $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Renewed, $request);
+
+            return TrustedDeviceOperationResult::Renewed;
         });
     }
 
@@ -142,21 +200,23 @@ final readonly class TrustedDeviceService
         });
     }
 
-    public function reactivate(User $user, TrustedDevice $trustedDevice, Request $request): string
+    /**
+     * Restore a revoked device after verifying the code inside the same
+     * transaction. A recovery code is consumed here, so a failure further down
+     * rolls the consumption back too.
+     *
+     * @throws ValidationException
+     */
+    public function reactivate(User $user, TrustedDevice $trustedDevice, string $otpCode, Request $request): string
     {
-        return DB::transaction(function () use ($user, $trustedDevice, $request): string {
+        return DB::transaction(function () use ($user, $trustedDevice, $otpCode, $request): string {
+            $this->assertReactivationCodeIsValid($user, $otpCode);
+
             $this->dropDuplicateActiveDevice($user, $trustedDevice, $request);
 
             $newToken = $this->mintToken();
-            $now = CarbonImmutable::now();
 
-            $trustedDevice->forceFill([
-                'token_hash' => $newToken['hash'],
-                'expires_at' => $now->addMinutes($this->cookieLifetimeMinutes()),
-                'last_used_at' => $now,
-            ])->save();
-
-            $trustedDevice->restore();
+            $this->refreshTrust($trustedDevice, $newToken['hash']);
 
             $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Reactivated, $request);
 
@@ -191,6 +251,61 @@ final readonly class TrustedDeviceService
 
             return $trustedDevices->count();
         });
+    }
+
+    /**
+     * Require confirmed two-factor and a valid code (a TOTP or a single-use
+     * recovery code, see TwoFactorCodeVerifier::verifyCode).
+     *
+     * @throws ValidationException
+     */
+    private function assertReactivationCodeIsValid(User $user, string $otpCode): void
+    {
+        $lockedUser = User::query()->lockForUpdate()->find($user->getKey());
+
+        if (! $lockedUser instanceof User || ! $this->twoFactorCodeVerifier->hasConfirmedTwoFactor($lockedUser)) {
+            throw ValidationException::withMessages([
+                'two_factor' => TrustedDeviceOperationResult::TwoFactorRequired->message(),
+            ]);
+        }
+
+        if (! $this->twoFactorCodeVerifier->verifyCode($lockedUser, $otpCode)) {
+            throw ValidationException::withMessages([
+                'otp_code' => 'El código de verificación es incorrecto.',
+            ]);
+        }
+    }
+
+    /**
+     * Give an existing device a new token and a new trust window, restoring
+     * it when it was revoked.
+     */
+    private function refreshTrust(TrustedDevice $trustedDevice, string $tokenHash): TrustedDevice
+    {
+        $now = CarbonImmutable::now();
+
+        $trustedDevice->forceFill([
+            'token_hash' => $tokenHash,
+            'expires_at' => $now->addMinutes($this->cookieLifetimeMinutes()),
+            'last_used_at' => $now,
+        ])->save();
+
+        if ($trustedDevice->trashed()) {
+            $trustedDevice->restore();
+        }
+
+        return $trustedDevice;
+    }
+
+    /**
+     * Re-read the user with a write lock so a concurrent request that disables
+     * two-factor cannot leave a trusted device behind. Call inside a transaction.
+     */
+    private function lockedUserHasConfirmedTwoFactor(User $user): bool
+    {
+        $lockedUser = User::query()->lockForUpdate()->find($user->getKey());
+
+        return $lockedUser instanceof User && $this->twoFactorCodeVerifier->hasConfirmedTwoFactor($lockedUser);
     }
 
     /**

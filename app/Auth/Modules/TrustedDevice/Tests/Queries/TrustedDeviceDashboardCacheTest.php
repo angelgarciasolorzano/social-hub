@@ -12,6 +12,77 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
+/**
+ * @return array{queryCount: int, result: array<mixed>}
+ */
+function measureDashboardStats(TrustedDeviceDashboardCache $trustedDeviceDashboardCache, User $user): array
+{
+    return measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
+}
+
+/**
+ * @return array{queryCount: int, result: array<int, array<string, mixed>>}
+ */
+function measureDashboardRecentActivity(TrustedDeviceDashboardCache $trustedDeviceDashboardCache, User $user, Request $request): array
+{
+    return measureTrustedDeviceTableQueries(
+        fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
+        'trusted_device_events',
+    );
+}
+
+/**
+ * @template TResult
+ *
+ * @param  Closure(): TResult  $callback
+ * @return array{queryCount: int, result: TResult}
+ */
+function measureTrustedDeviceTableQueries(Closure $callback, ?string $tableName = null, ?string $sqlFragment = null): array
+{
+    $connection = DB::connection();
+    $wasLoggingQueries = $connection->logging();
+
+    if (! $wasLoggingQueries) {
+        $connection->enableQueryLog();
+    }
+
+    $startingQueryCount = count($connection->getQueryLog());
+
+    try {
+        $result = $callback();
+    } finally {
+        $queries = array_slice($connection->getQueryLog(), $startingQueryCount);
+
+        if (! $wasLoggingQueries) {
+            $connection->disableQueryLog();
+        }
+    }
+
+    $queryCount = 0;
+
+    foreach ($queries as $query) {
+        $sql = strtolower($query['query']);
+        $matchesTrustedDeviceTable = $tableName === null
+            ? str_contains($sql, 'trusted_devices') || str_contains($sql, 'trusted_device_events')
+            : str_contains($sql, $tableName);
+
+        if (! $matchesTrustedDeviceTable) {
+            continue;
+        }
+
+        if ($sqlFragment !== null && ! str_contains($sql, strtolower($sqlFragment))) {
+            continue;
+        }
+
+        $queryCount++;
+    }
+
+    return [
+        'queryCount' => $queryCount,
+        'result' => $result,
+    ];
+}
+
 it('uses warm per-user cache entries for stats and recent activity', function (): void {
     $user = createUser();
     createTrustedDevice($user, ['is_mobile' => false]);
@@ -182,6 +253,13 @@ it('invalidates dashboard cache after every successful trusted device mutation',
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
+    $freshOtp = function () use ($user): string {
+        $otp = validOtpFor($user);
+        allowOtpReuse($otp);
+
+        return $otp;
+    };
+
     $statsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
     $recentActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
 
@@ -214,7 +292,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
     $assertInvalidatedAndRefreshed(
         fn (): mixed => $this->actingAs($user)
             ->withHeader('User-Agent', chromeWindowsUserAgent())
-            ->post(route('user.trusted-devices.store'), ['name' => 'New device'])
+            ->post(route('user.trusted-devices.store'), ['name' => 'New device', 'otp_code' => $freshOtp()])
             ->assertInertiaFlash('type', 'success'),
         expectedTotal: 3,
         expectedRevoked: 0,
@@ -232,7 +310,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
 
     $assertInvalidatedAndRefreshed(
         fn (): mixed => $this->actingAs($user)
-            ->post(route('user.trusted-devices.renew', $mutableDevice))
+            ->post(route('user.trusted-devices.renew', $mutableDevice), ['otp_code' => $freshOtp()])
             ->assertInertiaFlash('type', 'success'),
         expectedTotal: 3,
         expectedRevoked: 0,
@@ -242,7 +320,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
     $assertInvalidatedAndRefreshed(
         fn (): mixed => $this->actingAs($user)
             ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
-                'otp_code' => validOtpFor($user),
+                'otp_code' => $freshOtp(),
             ])
             ->assertInertiaFlash('type', 'success'),
         expectedTotal: 3,
@@ -290,7 +368,7 @@ it('invalidates dashboard cache after every successful trusted device mutation',
 });
 
 it('keeps cache entries isolated when mutations fail or make no changes', function (): void {
-    $user = createUser();
+    $user = createUserWithTwoFactor();
 
     $trustedDevice = createTrustedDevice($user, [
         'user_agent' => chromeWindowsUserAgent(),
@@ -353,7 +431,7 @@ it('keeps cache entries isolated when mutations fail or make no changes', functi
 
     $this->actingAs($user)
         ->withHeader('User-Agent', chromeWindowsUserAgent())
-        ->post(route('user.trusted-devices.store'))
+        ->post(route('user.trusted-devices.store'), ['otp_code' => validOtpFor($user)])
         ->assertInertiaFlash('type', 'error');
 
     expect(Cache::has($userStatsCacheKey))->toBeTrue()
@@ -394,74 +472,3 @@ it('excludes revoked devices from dashboard counts while retaining their events'
         ->and($stats['revoked'])->toBe(1)
         ->and($stats['byDeviceType'])->toBe(['desktop' => 1, 'mobile' => 0]);
 });
-
-/**
- * @return array{queryCount: int, result: array<mixed>}
- */
-function measureDashboardStats(TrustedDeviceDashboardCache $trustedDeviceDashboardCache, User $user): array
-{
-    return measureTrustedDeviceTableQueries(fn (): array => $trustedDeviceDashboardCache->stats($user)->toArray());
-}
-
-/**
- * @return array{queryCount: int, result: array<int, array<string, mixed>>}
- */
-function measureDashboardRecentActivity(TrustedDeviceDashboardCache $trustedDeviceDashboardCache, User $user, Request $request): array
-{
-    return measureTrustedDeviceTableQueries(
-        fn (): array => $trustedDeviceDashboardCache->recentActivity($user, $request),
-        'trusted_device_events',
-    );
-}
-
-/**
- * @template TResult
- *
- * @param  Closure(): TResult  $callback
- * @return array{queryCount: int, result: TResult}
- */
-function measureTrustedDeviceTableQueries(Closure $callback, ?string $tableName = null, ?string $sqlFragment = null): array
-{
-    $connection = DB::connection();
-    $wasLoggingQueries = $connection->logging();
-
-    if (! $wasLoggingQueries) {
-        $connection->enableQueryLog();
-    }
-
-    $startingQueryCount = count($connection->getQueryLog());
-
-    try {
-        $result = $callback();
-    } finally {
-        $queries = array_slice($connection->getQueryLog(), $startingQueryCount);
-
-        if (! $wasLoggingQueries) {
-            $connection->disableQueryLog();
-        }
-    }
-
-    $queryCount = 0;
-
-    foreach ($queries as $query) {
-        $sql = strtolower($query['query']);
-        $matchesTrustedDeviceTable = $tableName === null
-            ? str_contains($sql, 'trusted_devices') || str_contains($sql, 'trusted_device_events')
-            : str_contains($sql, $tableName);
-
-        if (! $matchesTrustedDeviceTable) {
-            continue;
-        }
-
-        if ($sqlFragment !== null && ! str_contains($sql, strtolower($sqlFragment))) {
-            continue;
-        }
-
-        $queryCount++;
-    }
-
-    return [
-        'queryCount' => $queryCount,
-        'result' => $result,
-    ];
-}

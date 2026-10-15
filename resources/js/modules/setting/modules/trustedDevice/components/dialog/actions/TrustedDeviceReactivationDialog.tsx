@@ -2,15 +2,18 @@ import type { JSX, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
-import { REGEXP_ONLY_DIGITS } from "input-otp";
+import type { FormDataErrors } from "@inertiajs/core";
 import { KeyRound, RotateCw } from "lucide-react";
 
-import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
-import { OTP_MAX_LENGTH } from "@/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth";
+import type {
+  TrustedDevice,
+  TwoFactorRequiredErrors,
+} from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import TwoFactorCodeField from "@/modules/setting/shared/components/TwoFactorCodeField";
 
 import { reactivate } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
-import { InputError, LabelForm } from "@/shared/components/form";
+import { InputError } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -22,12 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants } from "@/shared/lib/styling";
@@ -42,14 +39,19 @@ interface ReactivationFormData {
   otp_code: string;
 }
 
+interface ReactivationFormErrors
+  extends FormDataErrors<ReactivationFormData>, TwoFactorRequiredErrors {}
+
 function TrustedDeviceReactivationDialog({
   device,
   open,
   onClose,
 }: TrustedDeviceReactivationDialogProps): JSX.Element {
-  const { data, setData, submit, processing, reset, errors } = useForm<ReactivationFormData>({
-    otp_code: "",
-  });
+  const { data, setData, submit, processing, reset, errors, clearErrors } =
+    useForm<ReactivationFormData>({
+      otp_code: "",
+    });
+  const formErrors: ReactivationFormErrors = errors;
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (processing && !nextOpen) {
@@ -68,6 +70,9 @@ function TrustedDeviceReactivationDialog({
         onClose();
         reset();
       },
+      onError: () => {
+        setData("otp_code", "");
+      },
       preserveScroll: true,
       preserveState: true,
     });
@@ -84,55 +89,34 @@ function TrustedDeviceReactivationDialog({
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Para volver a confiar en este dispositivo, ingresa el código de verificación de tu
-            aplicación autenticadora.
+            Para volver a confiar en este dispositivo, ingresa un código de verificación de tu
+            aplicación autenticadora o uno de tus códigos de recuperación. Recordar un navegador es
+            una comodidad temporal, no un segundo factor de autenticación independiente.
           </DialogDescription>
         </DialogHeader>
 
         <ReactivationInstructions deviceName={device.name ?? "este dispositivo"} />
 
         <form id="reactivation-form" onSubmit={handleSubmit} className="grid gap-4">
-          <div className="flex flex-col items-center justify-center gap-2 text-center">
-            <LabelForm error={errors.otp_code} htmlFor="reactivate-otp">
-              Código de verificación
-            </LabelForm>
+          <TwoFactorCodeField
+            id="reactivate-code"
+            name="otp_code"
+            value={data.otp_code}
+            error={formErrors.otp_code}
+            disabled={processing}
+            onChange={(value) => {
+              setData("otp_code", value);
+            }}
+            onModeChange={clearErrors}
+          />
 
-            <div className="flex w-full items-center justify-center">
-              <InputOTP
-                id="reactivate-otp"
-                name="otp_code"
-                required
-                autoFocus
-                onChange={(value) => {
-                  setData("otp_code", value);
-                }}
-                disabled={processing}
-                maxLength={OTP_MAX_LENGTH}
-                pattern={REGEXP_ONLY_DIGITS}
-                value={data.otp_code}
-                aria-describedby={errors.otp_code ? "reactivate-otp-error" : undefined}
-                aria-invalid={errors.otp_code ? "true" : "false"}
-              >
-                <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
-                  {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
-                    <InputOTPSlot index={index} key={index} />
-                  ))}
-                </InputOTPGroup>
-
-                <InputOTPSeparator className="mx-2" />
-
-                <InputOTPGroup className="*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg">
-                  {Array.from({ length: OTP_MAX_LENGTH / 2 }, (_, index) => (
-                    <InputOTPSlot index={index + OTP_MAX_LENGTH / 2} key={index} />
-                  ))}
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-
-            {errors.otp_code && (
-              <InputError aria-live="polite" id="reactivate-otp-error" message={errors.otp_code} />
-            )}
-          </div>
+          {formErrors.two_factor && (
+            <InputError
+              aria-live="polite"
+              id="reactivate-two-factor-error"
+              message={formErrors.two_factor}
+            />
+          )}
         </form>
 
         <DialogFooter className="mt-1.5">
@@ -169,7 +153,8 @@ function ReactivationInstructions({ deviceName }: ReactivationInstructionsProps)
       <AlertTitle>¿Por qué pedimos código?</AlertTitle>
       <AlertDescription>
         Por seguridad, reactivar <strong>{deviceName}</strong> requiere autenticarte de nuevo.
-        Ingresa el código de 6 dígitos de tu aplicación autenticadora.
+        Ingresa el código de 6 dígitos de tu aplicación autenticadora o uno de tus códigos de
+        recuperación.
       </AlertDescription>
     </Alert>
   );

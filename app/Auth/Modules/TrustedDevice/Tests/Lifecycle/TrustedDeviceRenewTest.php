@@ -13,15 +13,15 @@ it('redirects guests to the login page', function (): void {
         ->assertRedirect(route('login'));
 });
 
-it('extends the expiration and records a Renewed event', function (): void {
-    $user = createUser();
+it('extends the expiration and records a Renewed event when the OTP is valid', function (): void {
+    $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addDay()]);
 
     $testResponse = $this->actingAs($user)
-        ->post(route('user.trusted-devices.renew', $trustedDevice));
+        ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => validOtpFor($user)]);
 
-    $testResponse->assertRedirect()
-        ->assertInertiaFlash('type', 'success');
+    $testResponse->assertRedirect();
+    $testResponse->assertInertiaFlash('type', 'success');
 
     /** @var int $cookieLifetimeMinutes */
     $cookieLifetimeMinutes = config('module.auth.trusted_devices.cookie_lifetime_minutes');
@@ -36,15 +36,66 @@ it('extends the expiration and records a Renewed event', function (): void {
         ->toBeTrue();
 });
 
+it('does not extend the trust when the OTP is missing, wrong or in recovery-code format', function (?string $otp): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addDay()]);
+    $expiresAt = $trustedDevice->refresh()->expires_at;
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.renew', $trustedDevice), $otp === null ? [] : ['otp_code' => $otp]);
+
+    $testResponse->assertSessionHasErrors('otp_code');
+
+    expect($trustedDevice->refresh()->expires_at->equalTo($expiresAt))->toBeTrue()
+        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
+})->with([
+    'missing code' => [null],
+    'wrong code' => ['000000'],
+    'recovery-format code' => ['abcde12345-fghij67890'],
+]);
+
+it('answers a wrong OTP code with a fixed message that does not echo the submitted code', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user);
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => '000000']);
+
+    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+});
+
+it('does not extend the trust when two-factor is disabled or pending', function (bool $hasPendingSecret): void {
+    $user = $hasPendingSecret ? createUserWithTwoFactor() : createUser();
+
+    if ($hasPendingSecret) {
+        $user->forceFill(['two_factor_confirmed_at' => null])->save();
+    }
+
+    $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addDay()]);
+    $expiresAt = $trustedDevice->refresh()->expires_at;
+
+    $testResponse = $this->actingAs($user)
+        ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => $hasPendingSecret ? validOtpFor($user) : '123456']);
+
+    $testResponse->assertSessionHasErrors('two_factor');
+    $testResponse->assertSessionDoesntHaveErrors('otp_code');
+
+    expect($trustedDevice->refresh()->expires_at->equalTo($expiresAt))->toBeTrue()
+        ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
+})->with([
+    'two-factor disabled' => [false],
+    'pending secret' => [true],
+]);
+
 it('forbids renewing a device that belongs to another user', function (): void {
     $user = createUser();
     $expiresAt = Date::now()->addDay();
     $trustedDevice = createTrustedDevice($user, ['expires_at' => $expiresAt]);
 
-    $intruder = createUser();
+    $intruder = createUserWithTwoFactor();
 
     $this->actingAs($intruder)
-        ->post(route('user.trusted-devices.renew', $trustedDevice))
+        ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => validOtpFor($intruder)])
         ->assertForbidden();
 
     expect($trustedDevice->refresh()->expires_at->toDateTimeString())

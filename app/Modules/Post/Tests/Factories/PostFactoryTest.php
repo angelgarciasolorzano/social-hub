@@ -25,7 +25,7 @@ it('assigns the post to the given user', function (): void {
     $post = $factory->for($user)->createOne();
 
     expect($post->user_id)->toBe($user->id)
-        ->and(User::query()->count())->toBe(1);
+        ->and(User::query()->count('*'))->toBe(1);
 });
 
 it('never attaches more than one seeding image to a post', function (): void {

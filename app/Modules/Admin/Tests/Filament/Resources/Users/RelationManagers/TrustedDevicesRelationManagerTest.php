@@ -18,13 +18,6 @@ use Livewire\Livewire;
 use LogicException;
 use Tests\TestCase;
 
-beforeEach(function (): void {
-    /** @var TestCase $testCase */
-    $testCase = $this;
-
-    AdminFilamentTestContext::configure($testCase);
-});
-
 /**
  * @return Testable<Component>
  */
@@ -35,6 +28,19 @@ function trustedDevicesRelationManagerFor(User $user): Testable
         'pageClass' => ViewUser::class,
     ]);
 }
+
+function assertTrustedDevicesRelationIsForbidden(User $targetUser): void
+{
+    trustedDevicesRelationManagerFor($targetUser)
+        ->assertForbidden();
+}
+
+beforeEach(function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
+});
 
 it('shows only scoped trusted device details without exposing sensitive data', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
@@ -199,9 +205,3 @@ it('forbids admins without users view permission from viewing the relation', fun
 
     assertTrustedDevicesRelationIsForbidden($targetUser);
 });
-
-function assertTrustedDevicesRelationIsForbidden(User $targetUser): void
-{
-    trustedDevicesRelationManagerFor($targetUser)
-        ->assertForbidden();
-}

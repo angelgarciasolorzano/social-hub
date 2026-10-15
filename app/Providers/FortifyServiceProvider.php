@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\User\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,12 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id')));
+
+        RateLimiter::for('two-factor-code', function (Request $request): Limit {
+            $user = $request->user();
+
+            return Limit::perMinute(5)->by($user instanceof User ? 'user:'.$user->id : 'ip:'.$request->ip());
+        });
 
         $this->app->singleton(PasswordConfirmedResponse::class, fn (): PasswordConfirmedResponse => new class implements PasswordConfirmedResponse
         {

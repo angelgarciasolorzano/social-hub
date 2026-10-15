@@ -15,7 +15,9 @@ Route::prefix('setting')->name('setting.security.')->group(function (): void {
         ->group(function (): void {
             Route::get('', 'index')->name('index');
 
-            Route::delete('', 'destroy')->name('destroy');
+            Route::delete('', 'destroy')
+                ->middleware('throttle:two-factor-code')
+                ->name('destroy');
 
             Route::post('regenerate-recovery-codes', 'storeRecoveryCodes')->name('store-recovery-codes');
         });
