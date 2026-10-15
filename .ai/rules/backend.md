@@ -41,3 +41,6 @@ Each backend test should verify one behavior or invariant. Whenever possible, wr
 
 ## Tests change model data through Eloquent, not DB::table
 In tests, do not use DB::table(...)->update(...) to modify data that belongs to a model. Use the model instead, e.g. User::query()->findOrFail($user->id)->forceFill([...])->save(). Loading a second instance also keeps the original in-memory model stale, which is how tests simulate another request changing the row.
+
+## Test helper functions go at the top of the test file
+In backend test files, declare helper functions and constants at the top of the file, before the first test, not in the middle or at the end. This keeps the file readable: the reader meets the helpers before the tests that use them.
