@@ -9,14 +9,19 @@ use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use DateTimeInterface;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -55,6 +60,41 @@ class CommentsRelationManager extends RelationManager
                 TextColumn::make('created_at')
                     ->label('Created at')
                     ->dateTime(),
+            ])
+            ->filters([
+                Filter::make('created_at')
+                    ->label('Creation date')
+                    ->schema([
+                        DatePicker::make('created_from')->label('From'),
+                        DatePicker::make('created_until')->label('Until'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'] ?? null,
+                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
+                                ? $builder->whereDate('created_at', '>=', $date)
+                                : $builder,
+                        )
+                        ->when(
+                            $data['created_until'] ?? null,
+                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
+                                ? $builder->whereDate('created_at', '<=', $date)
+                                : $builder,
+                        )),
+                SelectFilter::make('author')
+                    ->label('Author')
+                    ->relationship('user', 'name')
+                    ->searchable(),
+                TernaryFilter::make('has_replies')
+                    ->label('Reply presence')
+                    ->placeholder('All comments')
+                    ->trueLabel('Has replies')
+                    ->falseLabel('No replies')
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereHas('comments'),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('comments'),
+                        blank: fn (Builder $query): Builder => $query,
+                    ),
             ])
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])

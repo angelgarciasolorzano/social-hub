@@ -148,6 +148,120 @@ it('paginates only the selected posts comments', function (): void {
         ->toBe([FilamentTableRecords::recordKey($firstTargetComment)]);
 });
 
+it('filters the selected posts comments by creation date', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $otherPost = createPost();
+    $commentInsideRange = createCommentOn($post, attributes: [
+        'content' => 'Comment inside date range sentinel',
+        'created_at' => '2026-01-15 12:00:00',
+    ]);
+    createCommentOn($post, attributes: [
+        'content' => 'Comment outside date range sentinel',
+        'created_at' => '2026-02-01 12:00:00',
+    ]);
+    createCommentOn($otherPost, attributes: [
+        'content' => 'Foreign post comment inside date range sentinel',
+        'created_at' => '2026-01-16 12:00:00',
+    ]);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.created_at.created_from', '2026-01-15')
+        ->set('tableFilters.created_at.created_until', '2026-01-20');
+    $table = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($table, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($commentInsideRange)]);
+});
+
+it('filters the selected posts comments by author', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $user = createUser();
+    $otherAuthor = createUser();
+    $post = createPost();
+    $otherPost = createPost();
+    $selectedComment = createCommentOn($post, $user, ['content' => 'Selected author comment sentinel']);
+    createCommentOn($post, $otherAuthor, ['content' => 'Other author comment sentinel']);
+    createCommentOn($otherPost, $user, ['content' => 'Foreign post author comment sentinel']);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.author.value', $user->getKey());
+    $table = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($table, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($selectedComment)]);
+});
+
+it('filters the selected posts comments by reply presence', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $commentWithReplies = createCommentOn($post, attributes: ['content' => 'Comment with replies sentinel']);
+    createCommentOn($commentWithReplies, attributes: ['content' => 'Reply for selected comment sentinel']);
+    $commentWithoutReplies = createCommentOn($post, attributes: ['content' => 'Comment without replies sentinel']);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.has_replies.value', true);
+    $withRepliesTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($withRepliesTable, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($commentWithReplies)]);
+
+    $testable->set('tableFilters.has_replies.value', false);
+    $withoutRepliesTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($withoutRepliesTable, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($commentWithoutReplies)]);
+});
+
+it('combines comment filters without showing other posts comments', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $user = createUser();
+    $otherAuthor = createUser();
+    $post = createPost();
+    $otherPost = createPost();
+
+    $matchingComment = createCommentOn($post, $user, [
+        'content' => 'Comment matching all filters sentinel',
+        'created_at' => '2026-01-15 12:00:00',
+    ]);
+    createCommentOn($matchingComment, attributes: ['content' => 'Reply for matching comment sentinel']);
+
+    createCommentOn($post, $otherAuthor, [
+        'content' => 'Comment with another author sentinel',
+        'created_at' => '2026-01-16 12:00:00',
+    ]);
+    createCommentOn($post, $user, [
+        'content' => 'Comment with no replies sentinel',
+        'created_at' => '2026-01-17 12:00:00',
+    ]);
+    createCommentOn($otherPost, $user, [
+        'content' => 'Foreign post matching comment filters sentinel',
+        'created_at' => '2026-01-18 12:00:00',
+    ]);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.created_at.created_from', '2026-01-15')
+        ->set('tableFilters.created_at.created_until', '2026-01-20')
+        ->set('tableFilters.author.value', $user->getKey())
+        ->set('tableFilters.has_replies.value', true);
+    $filteredTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($filteredTable, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($matchingComment)]);
+
+    $testable
+        ->set('tableFilters.created_at.created_from', '2026-03-01')
+        ->set('tableFilters.created_at.created_until', '2026-03-05');
+    $emptyTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($emptyTable, Comment::class))
+        ->toBeEmpty();
+});
+
 it('opens a comment with its author in the view action', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
