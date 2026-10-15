@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Console\Commands\MediaLibraryCleanFoldersCommand;
-use App\Like\Models\Like;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;

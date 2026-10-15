@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Posts\Widgets;
 
-use App\Like\Models\Like;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
