@@ -1,0 +1,484 @@
+# Plan: SOC-53: Mejorar la administración Filament de usuarios, publicaciones y comentarios
+
+## Overview
+
+Implementar el alcance vigente de SOC-53 para los detalles y tablas de usuarios/publicaciones/comentarios, el detalle paginado de comentarios y la corrección de redirecciones. La única ampliación es reemplazar la creación directa de usuarios por invitaciones seguras de administradores, tanto para cuentas existentes como para correos aún no registrados.
+
+**Linear:** [SOC-53](https://linear.app/social-hub-ang/issue/SOC-53/feature-improve-filament-user-post-and-comment-administration) · **Modo:** EXPANSION · **Revisión predeterminada:** Codex
+
+## Scope Challenge
+
+EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovisionamiento de administradores: Filament permite buscar una cuenta existente o escribir un correo nuevo; el destinatario acepta la invitación y completa datos desde una página Livewire segura. Las otras áreas y los no-objetivos de SOC-53 permanecen intactos. Revisión predeterminada: Codex.
+
+## Prerequisites
+
+- SOC-44 y SOC-47 aportan el panel Filament, la separación de permisos y los recursos de usuarios/publicaciones que SOC-53 amplía.
+- El panel ya está registrado en bootstrap/providers.php y descubre recursos Filament desde app/Modules/Admin/Filament/.
+- Filament 5.10.1, Livewire 4.4.7 y spatie/laravel-permission 8.3.0 ya están instalados; no se requiere cambiar dependencias.
+- User ya define colecciones de imagen con fallbacks; Post usa Spatie Media Library; Comment.comments() representa respuestas.
+- El envío real de correo depende del mailer de Laravel configurado por el entorno; la notificación de invitación usa ese canal existente.
+
+## Non-Goals
+
+- No cambiar las otras áreas de SOC-53 ni convertir el registro normal Inertia/React a Livewire.
+- No habilitar edición/eliminación de usuarios ni mutaciones de publicaciones, comentarios o respuestas.
+- No incluir enrolamiento MFA en la aceptación de invitación; el panel conserva su requisito actual de MFA.
+- No crear una interfaz para administrar roles/permisos ni conceder el rol de aprovisionamiento automáticamente a cada administrador.
+- No crear documentación de producto o arquitectura adicional.
+
+## Contracts
+
+- Conservar el guard admin, el proveedor users, la verificación de correo y el MFA de aplicación requeridos para entrar al panel. El rol admin asignado al aceptar habilita admin.access; permisos de secciones siguen siendo explícitos.
+- Añadir admin.users.create y asignarlo únicamente al rol explícito admin-users-provisioner, que también necesita admin.users.viewAny para abrir el listado; no asignarlo a admin ni a los roles reader.
+- La acción de Filament emite invitaciones, no crea contraseñas ni habilita los endpoints nativos de creación directa, edición o eliminación de User.
+- Un correo registrado se puede buscar y seleccionar. Su invitación conserva la contraseña/datos existentes. Un correo nuevo se puede escribir y abre una página de aceptación Livewire fuera del guard y las rutas protegidas de Filament.
+- La invitación contiene un token aleatorio de un solo uso y vencimiento, guarda solamente su hash y fija el correo objetivo. La aceptación verifica el correo, consume el token y asigna admin; token vencido, reutilizado o alterado no cambia cuenta ni roles.
+- Si el envío falla, el emisor recibe un error recuperable; emitir una nueva invitación invalida la pendiente anterior para ese correo.
+- CommentsResource se descubre mediante la configuración existente de Filament, pero se oculta del sidebar. La navegación desde CommentsRelationManager lleva al detalle autorizado; sus respuestas usan Comment.comments() y permanecen paginadas/filtrables.
+- Las consultas mantienen eager loading donde los datos mostrados lo requieren y las listas continúan siendo de solo lectura.
+
+## Existing Code Leverage
+
+- `app/Modules/Admin/Filament/Resources/Users/UserResource.php` — infolist de usuario y registro actual del recurso.
+- `app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php` — página de detalle donde mostrar avatar y portada.
+- `app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php` — tabla y filtros ya existentes.
+- `app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php` — punto de entrada para la acción Filament de invitar administradores.
+- `app/User/Models/User.php` — colecciones profile-picture/cover-image con fallbacks y gate de acceso al panel.
+- `app/Modules/Admin/Filament/Resources/Posts/Tables/PostsTable.php y app/Modules/Admin/Filament/Resources/Posts/Pages/ViewPost.php` — list/detail de publicaciones.
+- `app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php` — tabla de publicaciones desde detalle de usuario.
+- `app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php` — tabla actual de comentarios y punto de navegación al detalle.
+- `app/Modules/Comment/Models/Comment.php y app/Modules/Post/Models/Post.php` — relaciones polimórficas, respuestas, likes e imágenes.
+- `app/Modules/Admin/Enums/AdminPermission.php, app/Modules/Admin/Enums/AdminRole.php y app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php` — catálogo RBAC canónico.
+- `app/Modules/Admin/Providers/AdminServiceProvider.php` — proveedor registrado para registrar migraciones y rutas del módulo Admin.
+- `app/Auth/Modules/Login/Controllers/LoginSessionController.php y sus pruebas` — destino intended del login normal.
+- `app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php, app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php, app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php y app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php` — suites de regresión existentes.
+
+## External References
+
+- [Filament 5 viewing records](https://filamentphp.com/docs/5.x/resources/viewing-records)
+- [Filament 5 creating records/actions](https://filamentphp.com/docs/5.x/resources/creating-records)
+- [Filament 5 image entries](https://filamentphp.com/docs/5.x/infolists/image-entry)
+- [Filament 5 image columns](https://filamentphp.com/docs/5.x/tables/columns/image)
+- [Filament 5 table filters](https://filamentphp.com/docs/5.x/tables/filters/overview)
+- [Livewire 4 full-page components](https://livewire.laravel.com/docs/4.x/components)
+- [Livewire 4 forms](https://livewire.laravel.com/docs/4.x/forms)
+- [Livewire 4 security](https://livewire.laravel.com/docs/4.x/security)
+
+## Tasks
+
+### TASK-001: Mostrar avatar y portada en el detalle de usuario
+
+Completar el infolist de UserResource con entradas nativas ImageEntry para las colecciones de perfil y portada de User, aprovechando los fallbacks ya registrados.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- El detalle de usuario muestra foto de perfil y portada desde sus colecciones respectivas.
+- Sin media se muestra el fallback configurado; con media se muestra la URL de la colección correcta.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Users/UserResource.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php`
+
+**Review:** Codex
+
+### TASK-002: Mostrar imagen o fallback en la tabla Posts
+
+Añadir a PostsTable una columna de imagen que lea posts_images y muestre un fallback estable cuando el registro no tenga media.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- La tabla de Posts muestra la imagen de la colección posts_images para publicaciones con media.
+- Una publicación sin media muestra el fallback y sigue apareciendo en la lista paginada.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/Tables/PostsTable.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
+
+**Review:** Codex
+
+### TASK-003: Mostrar imagen o fallback en Posts relacionados del usuario
+
+Añadir la misma presentación de imagen a la tabla PostsRelationManager conservando filtros, paginación y navegación al detalle.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- La relación de Posts muestra imagen para una publicación con media y fallback para una sin media.
+- La imagen no altera el filtrado por usuario ni las acciones de solo lectura.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Users/RelationManagers/PostsRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/PostsRelationManagerTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/PostsRelationManagerTest.php`
+
+**Review:** Codex
+
+### TASK-004: Mostrar imagen en el detalle de publicación
+
+Añadir una entrada de imagen al infolist del detalle de Post usando posts_images y su estado vacío/fallback sin exponer rutas internas de almacenamiento.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- El detalle autorizado de Post presenta su imagen junto con autor y contenido.
+- Sin imagen se muestra un fallback y el usuario sin admin.posts.view continúa recibiendo denegación.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php`
+
+**Review:** Codex
+
+### TASK-005: Añadir filtros a la tabla general de publicaciones
+
+Incorporar filtros por fecha y presencia de comentarios en PostsTable, respetando el orden descendente, paginación y la consulta autorizada existente.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- Los filtros de fecha y presencia de comentarios devuelven únicamente las publicaciones que cumplen cada criterio y su combinación.
+- Un intervalo sin resultados queda vacío sin error; búsqueda, paginación y permisos actuales permanecen operativos.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/Tables/PostsTable.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php`
+
+**Review:** Codex
+
+### TASK-006: Añadir filtros útiles a la tabla de comentarios
+
+Añadir filtros de fecha, autor y presencia de respuestas en CommentsRelationManager, usando los campos/relaciones existentes y conservando la consulta acotada al Post.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- Los filtros de fecha, autor y presencia de respuestas funcionan solos y combinados para el Post seleccionado.
+- Un filtro sin coincidencias no revela comentarios de otro Post ni agrega acciones mutables.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
+
+**Review:** Codex
+
+### TASK-007: Crear el detalle dedicado y oculto de comentario
+
+Agregar CommentResource y su página ViewComment para mostrar el comentario seleccionado en una ruta de Filament accesible desde enlaces, sin sección propia en el sidebar y protegida por admin.posts.view.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- La ruta de detalle representa el comentario indicado, muestra contenido/autor y puede abrirse directamente con permiso admin.posts.view.
+- El recurso no aparece en navegación; el acceso directo sin permiso o a un registro inválido se deniega.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Comments/CommentResource.php`
+- `app/Modules/Admin/Filament/Resources/Comments/Pages/ViewComment.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Comments/Pages/ViewCommentTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Comments/Pages/ViewCommentTest.php`
+
+**Review:** Codex
+
+### TASK-008: Añadir respuestas paginadas y filtrables al detalle
+
+Implementar RepliesRelationManager sobre Comment.comments(), registrarlo en CommentResource y mantener las respuestas en modo de solo lectura.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-007
+
+**Acceptance Criteria:**
+- El detalle lista únicamente las respuestas del comentario seleccionado con paginación y filtros de fecha/autor.
+- Una respuesta de otro comentario no aparece aunque se fuerce su identificador; no se ofrecen acciones de mutación.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Comments/CommentResource.php`
+- `app/Modules/Admin/Filament/Resources/Comments/RelationManagers/RepliesRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Comments/RelationManagers/RepliesRelationManagerTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Comments/RelationManagers/RepliesRelationManagerTest.php`
+
+**Review:** Codex
+
+### TASK-009: Añadir indicadores al detalle de comentario
+
+Crear un widget de estadísticas para replies/likes del comentario y conectarlo como header widget a ViewComment.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-007
+
+**Acceptance Criteria:**
+- Los indicadores reflejan el número de respuestas y likes del comentario seleccionado sin consulta por fila.
+- Cero relaciones se representan como cero; la página y widget siguen denegados para administradores sin admin.posts.view.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Comments/Pages/ViewComment.php`
+- `app/Modules/Admin/Filament/Resources/Comments/Widgets/CommentActivityOverview.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Comments/Widgets/CommentActivityOverviewTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Comments/Widgets/CommentActivityOverviewTest.php`
+
+**Review:** Codex
+
+### TASK-010: Navegar desde comentarios al detalle dedicado
+
+Cambiar la acción actual de detalle modal por un enlace a CommentResource::getUrl('view'), preservando tabla, filtros, paginación y permisos.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-006, TASK-008, TASK-009
+
+**Acceptance Criteria:**
+- Desde la tabla de comentarios de Post se abre la página del comentario seleccionado y se muestran sus replies/widgets.
+- La fila conserva el permiso del Post y no abre el modal anterior ni habilita mutaciones.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php`
+
+**Review:** Codex
+
+### TASK-011: Separar el destino de login Admin del login normal
+
+Corregir el caso de intended redirect compartido al visitar /admin/login y luego iniciar sesión web; probar el flujo normal y conservar el acceso de Filament.
+
+**Type:** bug · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- Visitar Admin login, luego login normal e iniciar sesión redirige a home o al destino web previsto, no a /admin.
+- Un guest sigue yendo a /admin/login cuando visita el panel y un administrador autorizado conserva el flujo del panel.
+
+**writeScope:**
+- `app/Auth/Modules/Login/Controllers/LoginSessionController.php`
+- `app/Auth/Modules/Login/Tests/AuthenticationTest.php`
+- `app/Modules/Admin/Tests/Filament/AdminPanelAccessTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Auth/Modules/Login/Tests/AuthenticationTest.php app/Modules/Admin/Tests/Filament/AdminPanelAccessTest.php`
+
+**Review:** Codex
+
+### TASK-012: Definir permiso y rol explícito de aprovisionamiento
+
+Agregar admin.users.create al enum y seeder, con el rol admin-users-provisioner que permita abrir la tabla (admin.users.viewAny) y emitir invitaciones, sin conceder lectura de detalle ni escalar roles base/readers.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- El catálogo AdminPermission y AdminRole incluye el permiso de crear invitaciones y el rol de aprovisionamiento.
+- La siembra concede admin.users.viewAny y admin.users.create solo al rol provisioner; admin, admin-users-reader y otros readers no reciben admin.users.create.
+
+**writeScope:**
+- `app/Modules/Admin/Enums/AdminPermission.php`
+- `app/Modules/Admin/Enums/AdminRole.php`
+- `app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php`
+
+**validateCommand:** `rtk php -l app/Modules/Admin/Enums/AdminPermission.php && rtk php -l app/Modules/Admin/Enums/AdminRole.php && rtk php -l app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php`
+
+**Review:** Codex
+
+### TASK-013: Cubrir el catálogo RBAC del aprovisionador
+
+Actualizar la prueba existente del seeder para verificar idempotencia y asignación mínima del rol admin-users-provisioner.
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-012
+
+**Acceptance Criteria:**
+- La prueba demuestra que el rol provisioner puede ver el listado y crear invitaciones, pero no obtiene admin.users.view ni permisos de posts/dashboard.
+- Re-seedear conserva asignaciones manuales y no concede admin.users.create a admin/readers.
+
+**writeScope:**
+- `app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php`
+
+**Review:** Codex
+
+### TASK-014: Crear el modelo y almacenamiento de invitaciones Admin
+
+Añadir AdminInvitation y su migración al módulo Admin, y registrar el directorio de migraciones en el proveedor ya cargado. Persistir email canónico, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- La migración permite invitaciones para correo nuevo o User existente y guarda hash/expiración/aceptación, nunca el token plano.
+- AdminServiceProvider carga la migración en la instalación y rollback; el modelo expone estados con casts/relaciones tipadas.
+
+**writeScope:**
+- `app/Modules/Admin/Providers/AdminServiceProvider.php`
+- `app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php`
+- `app/Modules/Admin/Models/AdminInvitation.php`
+
+**validateCommand:** `rtk php -l app/Modules/Admin/Providers/AdminServiceProvider.php && rtk php -l app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php && rtk php -l app/Modules/Admin/Models/AdminInvitation.php`
+
+**Review:** Codex
+
+### TASK-015: Implementar emisión, aceptación y correo de invitación
+
+Crear AdminInvitationService y la notificación por correo. El servicio emite token aleatorio de un solo uso, guarda solo su hash, vence/invalida invitaciones previas y resuelve las ramas de cuenta existente y correo nuevo en transacciones.
+
+**Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-012, TASK-014
+
+**Acceptance Criteria:**
+- La aceptación válida de una cuenta existente conserva sus credenciales; para un correo nuevo crea los datos permitidos, verifica el correo con el token consumido y asigna admin solo una vez.
+- Token vencido/reutilizado/alterado, correo distinto o fallo de entrega no asigna rol; una nueva emisión invalida el token anterior y permite recuperar el envío.
+
+**writeScope:**
+- `app/Modules/Admin/Services/AdminInvitationService.php`
+- `app/Modules/Admin/Notifications/AdminInvitationNotification.php`
+- `app/Modules/Admin/Tests/Invitations/AdminInvitationServiceTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Invitations/AdminInvitationServiceTest.php`
+
+**Review:** Codex
+
+### TASK-016: Añadir en Filament búsqueda y envío de invitaciones
+
+Añadir a ListUsers una acción de invitación protegida por admin.users.create. Permitir buscar/seleccionar una cuenta por email o escribir un email que aún no exista y delegar el envío al servicio.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-012, TASK-015
+
+**Acceptance Criteria:**
+- Un provisioner puede buscar y seleccionar un usuario existente o introducir un email no registrado; ambas ramas generan una invitación dirigida al mismo email.
+- Un usuario sin admin.users.create no ve ni ejecuta la acción; la acción nunca pide, crea ni altera password y no habilita endpoints directos de User CRUD.
+
+**writeScope:**
+- `app/Modules/Admin/Filament/Resources/Users/Pages/ListUsers.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ListUsersTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ListUsersTest.php`
+
+**Review:** Codex
+
+### TASK-017: Crear aceptación segura de invitación con Livewire
+
+Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.
+
+**Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-015
+
+**Acceptance Criteria:**
+- Un token válido permite completar la rama existente o el formulario de cuenta nueva; el correo objetivo se muestra fijo y no se puede sustituir desde props/campos cliente.
+- Un token inválido, expirado o ya consumido no crea usuario ni asigna rol; la pantalla no requiere sesión Admin/MFA antes de aceptar la invitación.
+
+**writeScope:**
+- `app/Modules/Admin/Livewire/AcceptAdminInvitation.php`
+- `resources/views/admin/invitations/accept-admin-invitation.blade.php`
+- `app/Modules/Admin/Tests/Invitations/AcceptAdminInvitationTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Invitations/AcceptAdminInvitationTest.php`
+
+**Review:** Codex
+
+### TASK-018: Registrar y probar la ruta pública de invitación
+
+Registrar una ruta web con nombre estable desde AdminServiceProvider y el archivo de rutas del módulo; entregar token al componente Livewire sin colocar la página bajo el guard admin ni rutas del panel.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-014, TASK-017
+
+**Acceptance Criteria:**
+- El enlace enviado por correo resuelve la página Livewire sin sesión Admin, y el panel /admin sigue usando su guard y middleware existentes.
+- La ruta valida token contra la invitación y presenta expiración/uso previo sin mutar cuenta ni rol.
+
+**writeScope:**
+- `app/Modules/Admin/Providers/AdminServiceProvider.php`
+- `app/Modules/Admin/routes/invitations.php`
+- `app/Modules/Admin/Tests/Invitations/AdminInvitationRouteTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Invitations/AdminInvitationRouteTest.php`
+
+**Review:** Codex
+
+## Failure Modes
+
+- A missing profile, cover, or post image renders the configured fallback; a present image still renders from the correct collection.
+- An expired, altered, mismatched, or already-consumed invitation is rejected without creating a user or changing roles.
+- A duplicate pending invite is replaced safely; a mail transport error is surfaced and can be recovered by issuing a new token.
+- A user lacking admin.users.create cannot see or invoke the invitation action, even by a crafted Livewire request.
+- A user lacking admin.posts.view cannot access a comment detail URL or its reply data; the hidden resource does not become a sidebar entry.
+- Visiting Admin login before normal login does not contaminate the web guard's intended destination; Admin panel login behavior remains intact.
+
+## Ship Cut
+
+Los detalles de imágenes, filtros y redirección pueden integrarse como cambios independientes. El flujo de invitación no se considera completo hasta que RBAC, persistencia/servicio, acción Filament, componente Livewire y registro de ruta estén conectados y cubiertos por pruebas. El detalle de comentarios no se considera completo hasta que ruta oculta, respuestas, widgets y enlace desde la tabla estén integrados.
+
+## Test Coverage Map
+
+- Usuarios: ViewUserTest cubre imagen de perfil/portada, fallbacks, permiso de detalle y ausencia de secretos.
+- Publicaciones: ListPostsTest cubre imagen/fallback y filtros; PostsRelationManagerTest cubre imagen/fallback y conserva alcance por usuario; ViewPostTest cubre imagen/fallback.
+- Comentarios: CommentsRelationManagerTest cubre filtros y navegación; ViewCommentTest cubre ruta/datos/autorización; RepliesRelationManagerTest cubre alcance, filtros, paginación y solo lectura; CommentActivityOverviewTest cubre contadores.
+- Autenticación: AuthenticationTest y AdminPanelAccessTest cubren destino normal después de visitar login Admin y acceso del panel.
+- Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública.
+
+## Execution Summary
+
+- Tareas: 18.
+- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-014; L1: TASK-008, TASK-009, TASK-013, TASK-015; L2: TASK-010, TASK-016, TASK-017; L3: TASK-018.
+- Ruta crítica (4 tareas): TASK-012 → TASK-015 → TASK-017 → TASK-018.
+- Próxima ejecución: implementar solo la siguiente tarea atómica y detenerse para revisión.
+
+## Task Dependencies
+
+- **TASK-001** ← sin dependencias
+- **TASK-002** ← sin dependencias
+- **TASK-003** ← sin dependencias
+- **TASK-004** ← sin dependencias
+- **TASK-005** ← sin dependencias
+- **TASK-006** ← sin dependencias
+- **TASK-007** ← sin dependencias
+- **TASK-008** ← TASK-007
+- **TASK-009** ← TASK-007
+- **TASK-010** ← TASK-006, TASK-008, TASK-009
+- **TASK-011** ← sin dependencias
+- **TASK-012** ← sin dependencias
+- **TASK-013** ← TASK-012
+- **TASK-014** ← sin dependencias
+- **TASK-015** ← TASK-012, TASK-014
+- **TASK-016** ← TASK-012, TASK-015
+- **TASK-017** ← TASK-015
+- **TASK-018** ← TASK-014, TASK-017
