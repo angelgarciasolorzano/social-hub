@@ -10,11 +10,21 @@ use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceService;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
+
+function rememberChromeWindowsBrowser(User $user, ?Request $request = null): string
+{
+    return resolve(TrustedDeviceService::class)->rememberAfterTwoFactorChallenge(
+        $user,
+        parsedChromeWindowsDetector(),
+        $request ?? trustedDeviceAuditRequest(),
+    );
+}
 
 function parsedChromeWindowsDetector(): DeviceDetector
 {
@@ -403,4 +413,119 @@ it('exposes a success payload for every completed action and an error payload fo
             ->and($operationResult->message())->not->toBeEmpty()
             ->and($operationResult->isSuccessful())->toBe(! $isError);
     }
+});
+
+it('creates a device with a Created event when the browser was never seen', function (): void {
+    $user = createUserWithTwoFactor();
+
+    rememberChromeWindowsBrowser($user);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(1);
+});
+
+it('restores the revoked device of the same browser instead of adding a second one', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, trustedDeviceFingerprint());
+    $trustedDevice->delete();
+
+    rememberChromeWindowsBrowser($user);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
+        ->and($trustedDevice->refresh()->deleted_at)->toBeNull()
+        ->and($trustedDevice->isActive())->toBeTrue();
+});
+
+it('records a Reactivated event and no Created event when it restores a revoked device', function (): void {
+    $user = createUserWithTwoFactor();
+    createTrustedDevice($user, trustedDeviceFingerprint())->delete();
+
+    rememberChromeWindowsBrowser($user);
+
+    expect(countTrustedDeviceEvents($user, TrustedDeviceAction::Reactivated))->toBe(1)
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(0);
+});
+
+it('renews the expired device of the same browser instead of adding a second one', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, [...trustedDeviceFingerprint(), 'expires_at' => Date::now()->subDay()]);
+
+    rememberChromeWindowsBrowser($user);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
+        ->and($trustedDevice->refresh()->isActive())->toBeTrue()
+        ->and($trustedDevice->deleted_at)->toBeNull()
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Renewed))->toBe(1);
+});
+
+it('renews the active device of the same browser instead of adding a second one', function (): void {
+    $user = createUserWithTwoFactor();
+    createTrustedDevice($user, trustedDeviceFingerprint());
+
+    rememberChromeWindowsBrowser($user);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
+        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Renewed))->toBe(1);
+});
+
+it('returns a new token that validates the next login and invalidates the old one', function (): void {
+    $user = createUserWithTwoFactor();
+    createTrustedDevice($user, [...trustedDeviceFingerprint(), 'token_hash' => hash('sha256', 'old-token')])->delete();
+
+    $newToken = rememberChromeWindowsBrowser($user);
+
+    expect(TrustedDevice::validateAndTouch($user, Request::create('/', 'POST', cookies: ['trusted_device' => $newToken])))->toBeTrue()
+        ->and(TrustedDevice::validateAndTouch($user, Request::create('/', 'POST', cookies: ['trusted_device' => 'old-token'])))->toBeFalse();
+});
+
+it('does not touch the device of another user with the same fingerprint', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice(createUser(), trustedDeviceFingerprint());
+    $trustedDevice->delete();
+
+    rememberChromeWindowsBrowser($user);
+
+    expect($trustedDevice->fresh()?->deleted_at)->not->toBeNull()
+        ->and(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
+});
+
+it('does not reuse a device when the request has no IP address', function (): void {
+    $user = createUserWithTwoFactor();
+    createTrustedDevice($user, trustedDeviceFingerprint())->delete();
+
+    $request = trustedDeviceAuditRequest();
+    $request->server->remove('REMOTE_ADDR');
+
+    rememberChromeWindowsBrowser($user, $request);
+
+    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(2);
+});
+
+it('invalidates the dashboard cache when it remembers the browser', function (): void {
+    $user = createUserWithTwoFactor();
+    warmTrustedDeviceStatsCache($user);
+
+    rememberChromeWindowsBrowser($user);
+
+    expect(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
+});
+
+it('keeps the device revoked and the cache warm when recording the event fails', function (): void {
+    $user = createUserWithTwoFactor();
+    $trustedDevice = createTrustedDevice($user, trustedDeviceFingerprint());
+    $trustedDevice->delete();
+    warmTrustedDeviceStatsCache($user);
+
+    TrustedDeviceEvent::creating(function (): never {
+        throw new RuntimeException('audit failure');
+    });
+
+    try {
+        expect(fn (): string => rememberChromeWindowsBrowser($user))->toThrow(RuntimeException::class, 'audit failure');
+    } finally {
+        Event::forget('eloquent.creating: '.TrustedDeviceEvent::class);
+    }
+
+    expect($trustedDevice->fresh()?->deleted_at)->not->toBeNull()
+        ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue();
 });

@@ -128,6 +128,36 @@ class TrustedDevice extends Model
     }
 
     /**
+     * Find the most recent device for the same fingerprint in any state:
+     * active, expired or revoked. Null when `$ip` is null. When
+     * `$lockForUpdate` is true the read is serialised with concurrent changes.
+     */
+    public static function findLatestForFingerprint(
+        User $user,
+        string $userAgent,
+        string $osName,
+        ?string $ip,
+        bool $lockForUpdate = false,
+    ): ?self {
+        if ($ip === null) {
+            return null;
+        }
+
+        $builder = $user->trustedDevices()
+            ->withTrashed()
+            ->where('user_agent', $userAgent)
+            ->where('os_name', $osName)
+            ->where('ip', $ip)
+            ->latest('id');
+
+        if ($lockForUpdate) {
+            $builder->lockForUpdate();
+        }
+
+        return $builder->first();
+    }
+
+    /**
      * Find any trusted device matching the fingerprint, preferring active over revoked.
      * Used by the UI to surface "already registered" hints regardless of state.
      */

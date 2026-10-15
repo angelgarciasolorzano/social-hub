@@ -116,6 +116,42 @@ final readonly class TrustedDeviceService
         });
     }
 
+    /**
+     * Trust the current browser after a successful two-factor challenge and
+     * return the raw token for its cookie. The device row of the same
+     * fingerprint is reused (restored if revoked) instead of adding a second
+     * one; only a browser never seen before gets a new row.
+     */
+    public function rememberAfterTwoFactorChallenge(User $user, DeviceDetector $deviceDetector, Request $request): string
+    {
+        return DB::transaction(function () use ($user, $deviceDetector, $request): string {
+            $userAgent = $request->userAgent();
+            $ip = $request->ip();
+            $osName = $this->inferOsInfo($deviceDetector)['name'];
+            $newToken = $this->mintToken();
+
+            $existingDevice = $userAgent !== null
+                ? TrustedDevice::findLatestForFingerprint($user, $userAgent, $osName, $ip, lockForUpdate: true)
+                : null;
+
+            if ($existingDevice instanceof TrustedDevice) {
+                $trustedDeviceAction = $existingDevice->trashed() ? TrustedDeviceAction::Reactivated : TrustedDeviceAction::Renewed;
+                $trustedDevice = $this->refreshTrust($existingDevice, $newToken['hash']);
+            } else {
+                $trustedDeviceAction = TrustedDeviceAction::Created;
+                $trustedDevice = $this->create($user, $deviceDetector, $newToken['hash'], null, $userAgent, $ip);
+            }
+
+            if ($userAgent !== null && $ip !== null) {
+                TrustedDevice::pruneOlder($user, $userAgent, $osName, $ip, $trustedDevice->id);
+            }
+
+            $this->recordEvent($user, $trustedDevice, $trustedDeviceAction, $request);
+
+            return $newToken['token'];
+        });
+    }
+
     public function rename(User $user, TrustedDevice $trustedDevice, string $name, Request $request): void
     {
         DB::transaction(function () use ($user, $trustedDevice, $name, $request): void {
@@ -179,15 +215,8 @@ final readonly class TrustedDeviceService
             $this->dropDuplicateActiveDevice($user, $trustedDevice, $request);
 
             $newToken = $this->mintToken();
-            $now = CarbonImmutable::now();
 
-            $trustedDevice->forceFill([
-                'token_hash' => $newToken['hash'],
-                'expires_at' => $now->addMinutes($this->cookieLifetimeMinutes()),
-                'last_used_at' => $now,
-            ])->save();
-
-            $trustedDevice->restore();
+            $this->refreshTrust($trustedDevice, $newToken['hash']);
 
             $this->recordEvent($user, $trustedDevice, TrustedDeviceAction::Reactivated, $request);
 
@@ -245,6 +274,27 @@ final readonly class TrustedDeviceService
                 'otp_code' => 'El código de verificación es incorrecto.',
             ]);
         }
+    }
+
+    /**
+     * Give an existing device a new token and a new trust window, restoring
+     * it when it was revoked.
+     */
+    private function refreshTrust(TrustedDevice $trustedDevice, string $tokenHash): TrustedDevice
+    {
+        $now = CarbonImmutable::now();
+
+        $trustedDevice->forceFill([
+            'token_hash' => $tokenHash,
+            'expires_at' => $now->addMinutes($this->cookieLifetimeMinutes()),
+            'last_used_at' => $now,
+        ])->save();
+
+        if ($trustedDevice->trashed()) {
+            $trustedDevice->restore();
+        }
+
+        return $trustedDevice;
     }
 
     /**
