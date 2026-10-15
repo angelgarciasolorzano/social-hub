@@ -6,12 +6,14 @@ namespace App\Modules\Admin\Filament\Resources\Comments;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
+use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelationManager;
 use App\Modules\Comment\Models\Comment;
 use App\User\Models\User;
 use BackedEnum;
 use Filament\Facades\Filament;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\PageRegistration;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -89,6 +91,17 @@ class CommentResource extends Resource
                     ->label('Content')
                     ->columnSpanFull(),
             ]);
+    }
+
+    /**
+     * @return array<class-string<RelationManager>>
+     */
+    #[Override]
+    public static function getRelations(): array
+    {
+        return [
+            RepliesRelationManager::class,
+        ];
     }
 
     /**
