@@ -11,6 +11,23 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Date;
 
+function createUserWithPendingTwoFactor(): User
+{
+    $user = createUserWithTwoFactor();
+    $user->forceFill(['two_factor_confirmed_at' => null])->save();
+
+    return $user;
+}
+
+/**
+ * @return array<string, int>
+ */
+function confirmedPasswordSession(): array
+{
+    return ['auth.password_confirmed_at' => Date::now()
+        ->getTimestamp()];
+}
+
 it('revokes every trusted device and records a RevokedAll event for each when 2FA is disabled', function (): void {
     $user = createUserWithTwoFactor();
     createTrustedDevice($user, ['name' => 'MacBook']);
@@ -110,23 +127,6 @@ it("invalidates only the current user's cache when 2FA is disabled without devic
         ->and($trustedDeviceDashboardCache->recentActivity($otherUser, request()))
         ->toBe($otherUsersActivityBefore);
 });
-
-function createUserWithPendingTwoFactor(): User
-{
-    $user = createUserWithTwoFactor();
-    $user->forceFill(['two_factor_confirmed_at' => null])->save();
-
-    return $user;
-}
-
-/**
- * @return array<string, int>
- */
-function confirmedPasswordSession(): array
-{
-    return ['auth.password_confirmed_at' => Date::now()
-        ->getTimestamp()];
-}
 
 it('revokes every trusted device and records a RevokedAll event for each when 2FA is confirmed', function (): void {
     $user = createUserWithPendingTwoFactor();

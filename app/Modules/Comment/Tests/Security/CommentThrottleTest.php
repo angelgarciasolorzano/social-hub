@@ -38,6 +38,21 @@ function storeCommentOn(TestCase $testCase, User $user, Post|Comment $commentabl
     ]);
 }
 
+/**
+ * Ask the home page for the comments of the given post the way the dialog does, as the given user.
+ *
+ * @return TestResponse<Response>
+ */
+function loadCommentsAs(TestCase $testCase, User $user, Post $post): TestResponse
+{
+    $testCase->actingAs($user);
+
+    return $testCase->get(
+        route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
+        inertiaPartialHeaders($testCase, 'home/Home', 'comments'),
+    );
+}
+
 it('allows 6 comments per minute and then answers 429', function (): void {
     $user = createUser();
     $post = createPost();
@@ -93,21 +108,6 @@ it('throttles each user independently', function (): void {
     storeCommentAs($this, $user, $post)->assertTooManyRequests();
     storeCommentAs($this, $bystander, $post)->assertRedirect();
 });
-
-/**
- * Ask the home page for the comments of the given post the way the dialog does, as the given user.
- *
- * @return TestResponse<Response>
- */
-function loadCommentsAs(TestCase $testCase, User $user, Post $post): TestResponse
-{
-    $testCase->actingAs($user);
-
-    return $testCase->get(
-        route('home', [CommentThreadProps::COMMENTS_PARAMETER => $post->id]),
-        inertiaPartialHeaders($testCase, 'home/Home', 'comments'),
-    );
-}
 
 it('does not let listing comments consume the comment publishing budget', function (): void {
     $user = createUser();

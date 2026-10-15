@@ -16,6 +16,82 @@ use Livewire\Livewire;
 use ReflectionMethod;
 use Tests\TestCase;
 
+function createDashboardRegistration(string $createdAt, bool $verified = true): User
+{
+    $user = createUser();
+
+    $user->forceFill([
+        'created_at' => $createdAt,
+        'email_verified_at' => $verified ? now() : null,
+    ])->save();
+
+    return $user;
+}
+
+function createDashboardReader(): User
+{
+    $user = createUser();
+
+    $user->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminDashboardReader->value,
+    ]);
+
+    $user->forceFill(['created_at' => '2020-01-01 00:00:00'])->save();
+
+    return $user;
+}
+
+/**
+ * @return array{datasets: list<array{label: string, data: list<int>}>, labels: list<string>}
+ */
+function registrationChartPayload(RegistrationsChart $registrationsChart): array
+{
+    $cachedDataMethod = new ReflectionMethod(ChartWidget::class, 'getCachedData');
+    $chartData = $cachedDataMethod->invoke($registrationsChart);
+
+    $labels = is_array($chartData) ? ($chartData['labels'] ?? null) : null;
+    $datasets = is_array($chartData) ? ($chartData['datasets'] ?? null) : null;
+    $firstDataset = is_array($datasets) ? ($datasets[0] ?? null) : null;
+    $datasetLabel = is_array($firstDataset) ? ($firstDataset['label'] ?? null) : null;
+    $counts = is_array($firstDataset) ? ($firstDataset['data'] ?? null) : null;
+
+    throw_unless(
+        is_array($labels)
+            && array_is_list($labels)
+            && is_array($counts)
+            && array_is_list($counts)
+            && is_string($datasetLabel),
+        LogicException::class,
+        'The registration chart must return its chart data.',
+    );
+
+    /** @var list<mixed> $labels */
+    /** @var list<mixed> $counts */
+    /** @var string $datasetLabel */
+    $normalizedLabels = [];
+
+    foreach ($labels as $label) {
+        throw_unless(is_string($label), LogicException::class, 'The chart registration labels must be strings.');
+        $normalizedLabels[] = $label;
+    }
+
+    $normalizedCounts = [];
+
+    foreach ($counts as $count) {
+        throw_unless(is_int($count), LogicException::class, 'The chart registration counts must be integers.');
+        $normalizedCounts[] = $count;
+    }
+
+    return [
+        'datasets' => [[
+            'label' => $datasetLabel,
+            'data' => $normalizedCounts,
+        ]],
+        'labels' => $normalizedLabels,
+    ];
+}
+
 beforeEach(function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
 
@@ -251,79 +327,3 @@ it('shows seven day registration trends on the account summary cards', function 
         ->and($stats[1]->getChart())
         ->toBe([1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
 });
-
-function createDashboardRegistration(string $createdAt, bool $verified = true): User
-{
-    $user = createUser();
-
-    $user->forceFill([
-        'created_at' => $createdAt,
-        'email_verified_at' => $verified ? now() : null,
-    ])->save();
-
-    return $user;
-}
-
-function createDashboardReader(): User
-{
-    $user = createUser();
-
-    $user->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminDashboardReader->value,
-    ]);
-
-    $user->forceFill(['created_at' => '2020-01-01 00:00:00'])->save();
-
-    return $user;
-}
-
-/**
- * @return array{datasets: list<array{label: string, data: list<int>}>, labels: list<string>}
- */
-function registrationChartPayload(RegistrationsChart $registrationsChart): array
-{
-    $cachedDataMethod = new ReflectionMethod(ChartWidget::class, 'getCachedData');
-    $chartData = $cachedDataMethod->invoke($registrationsChart);
-
-    $labels = is_array($chartData) ? ($chartData['labels'] ?? null) : null;
-    $datasets = is_array($chartData) ? ($chartData['datasets'] ?? null) : null;
-    $firstDataset = is_array($datasets) ? ($datasets[0] ?? null) : null;
-    $datasetLabel = is_array($firstDataset) ? ($firstDataset['label'] ?? null) : null;
-    $counts = is_array($firstDataset) ? ($firstDataset['data'] ?? null) : null;
-
-    throw_unless(
-        is_array($labels)
-            && array_is_list($labels)
-            && is_array($counts)
-            && array_is_list($counts)
-            && is_string($datasetLabel),
-        LogicException::class,
-        'The registration chart must return its chart data.',
-    );
-
-    /** @var list<mixed> $labels */
-    /** @var list<mixed> $counts */
-    /** @var string $datasetLabel */
-    $normalizedLabels = [];
-
-    foreach ($labels as $label) {
-        throw_unless(is_string($label), LogicException::class, 'The chart registration labels must be strings.');
-        $normalizedLabels[] = $label;
-    }
-
-    $normalizedCounts = [];
-
-    foreach ($counts as $count) {
-        throw_unless(is_int($count), LogicException::class, 'The chart registration counts must be integers.');
-        $normalizedCounts[] = $count;
-    }
-
-    return [
-        'datasets' => [[
-            'label' => $datasetLabel,
-            'data' => $normalizedCounts,
-        ]],
-        'labels' => $normalizedLabels,
-    ];
-}

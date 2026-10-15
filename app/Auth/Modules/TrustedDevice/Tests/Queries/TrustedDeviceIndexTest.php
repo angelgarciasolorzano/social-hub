@@ -7,6 +7,55 @@ use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use UnexpectedValueException;
 
+/**
+ * @template TResponse of \Symfony\Component\HttpFoundation\Response
+ *
+ * @param  TestResponse<TResponse>  $testResponse
+ * @return array{data: array<int, array<string, mixed>>, total: int}
+ */
+function trustedDevicePaginationData(TestResponse $testResponse): array
+{
+    $trustedDevicePagination = null;
+
+    $testResponse->assertInertia(function (Assert $assert) use (&$trustedDevicePagination): void {
+        $assert->loadDeferredProps(function (Assert $assert) use (&$trustedDevicePagination): void {
+            $pageProps = $assert->toArray()['props'] ?? null;
+
+            throw_if(! is_array($pageProps) || ! array_key_exists('trustedDevices', $pageProps), UnexpectedValueException::class, 'The trusted devices prop is missing from the Inertia response.');
+
+            $trustedDevicePagination = $pageProps['trustedDevices'];
+        });
+    });
+
+    throw_unless(is_array($trustedDevicePagination), UnexpectedValueException::class, 'The trusted devices prop must be an array.');
+
+    $paginationData = $trustedDevicePagination['data'] ?? null;
+    $paginationTotal = $trustedDevicePagination['total'] ?? null;
+
+    throw_if(! is_array($paginationData) || ! array_is_list($paginationData) || ! is_int($paginationTotal), UnexpectedValueException::class, 'The trusted devices pagination data has an invalid shape.');
+
+    $devices = [];
+
+    foreach ($paginationData as $deviceData) {
+        throw_unless(is_array($deviceData), UnexpectedValueException::class, 'Each trusted device must be represented as an array.');
+
+        $deviceAttributes = [];
+
+        foreach ($deviceData as $attribute => $value) {
+            throw_unless(is_string($attribute), UnexpectedValueException::class, 'Trusted device attributes must use string keys.');
+
+            $deviceAttributes[$attribute] = $value;
+        }
+
+        $devices[] = $deviceAttributes;
+    }
+
+    return [
+        'data' => $devices,
+        'total' => $paginationTotal,
+    ];
+}
+
 it('redirects guests to the login page', function (): void {
     $this->get(route('setting.security.trusted-devices.index'))
         ->assertRedirect(route('login'));
@@ -227,52 +276,3 @@ it('honors a valid per_page value', function (): void {
     expect($trustedDevicePagination['data'])->toHaveCount(5)
         ->and($trustedDevicePagination['total'])->toBe(6);
 });
-
-/**
- * @template TResponse of \Symfony\Component\HttpFoundation\Response
- *
- * @param  TestResponse<TResponse>  $testResponse
- * @return array{data: array<int, array<string, mixed>>, total: int}
- */
-function trustedDevicePaginationData(TestResponse $testResponse): array
-{
-    $trustedDevicePagination = null;
-
-    $testResponse->assertInertia(function (Assert $assert) use (&$trustedDevicePagination): void {
-        $assert->loadDeferredProps(function (Assert $assert) use (&$trustedDevicePagination): void {
-            $pageProps = $assert->toArray()['props'] ?? null;
-
-            throw_if(! is_array($pageProps) || ! array_key_exists('trustedDevices', $pageProps), UnexpectedValueException::class, 'The trusted devices prop is missing from the Inertia response.');
-
-            $trustedDevicePagination = $pageProps['trustedDevices'];
-        });
-    });
-
-    throw_unless(is_array($trustedDevicePagination), UnexpectedValueException::class, 'The trusted devices prop must be an array.');
-
-    $paginationData = $trustedDevicePagination['data'] ?? null;
-    $paginationTotal = $trustedDevicePagination['total'] ?? null;
-
-    throw_if(! is_array($paginationData) || ! array_is_list($paginationData) || ! is_int($paginationTotal), UnexpectedValueException::class, 'The trusted devices pagination data has an invalid shape.');
-
-    $devices = [];
-
-    foreach ($paginationData as $deviceData) {
-        throw_unless(is_array($deviceData), UnexpectedValueException::class, 'Each trusted device must be represented as an array.');
-
-        $deviceAttributes = [];
-
-        foreach ($deviceData as $attribute => $value) {
-            throw_unless(is_string($attribute), UnexpectedValueException::class, 'Trusted device attributes must use string keys.');
-
-            $deviceAttributes[$attribute] = $value;
-        }
-
-        $devices[] = $deviceAttributes;
-    }
-
-    return [
-        'data' => $devices,
-        'total' => $paginationTotal,
-    ];
-}
