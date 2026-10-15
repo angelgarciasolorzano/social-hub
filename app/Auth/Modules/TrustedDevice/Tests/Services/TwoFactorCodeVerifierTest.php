@@ -6,6 +6,8 @@ use App\Auth\Modules\TrustedDevice\Services\TwoFactorCodeVerifier;
 use App\User\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
+use Mockery\MockInterface;
 
 const VERIFIER_FIRST_RECOVERY_CODE = 'abcde12345-fghij67890';
 const VERIFIER_SECOND_RECOVERY_CODE = 'klmno12345-pqrst67890';
@@ -142,4 +144,68 @@ it('returns false and logs without secrets when the recovery codes are unreadabl
     $consumed = DB::transaction(fn (): bool => twoFactorCodeVerifier()->consumeRecoveryCode($user, VERIFIER_FIRST_RECOVERY_CODE));
 
     expect($consumed)->toBeFalse();
+});
+
+it('accepts the current TOTP code as a verification code', function (): void {
+    $user = createUserWithTwoFactor();
+
+    expect(twoFactorCodeVerifier()->verifyCode($user, validOtpFor($user)))->toBeTrue();
+});
+
+it('accepts a valid recovery code as a verification code and consumes it', function (): void {
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE, VERIFIER_SECOND_RECOVERY_CODE);
+
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
+
+    expect($isValid)->toBeTrue()
+        ->and(storedRecoveryCodes($user))->toBe([VERIFIER_SECOND_RECOVERY_CODE]);
+});
+
+it('does not accept the same recovery code twice as a verification code', function (): void {
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE);
+
+    DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
+
+    $isValidAgain = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
+
+    expect($isValidAgain)->toBeFalse();
+});
+
+it('does not look for a six-digit code among the recovery codes', function (): void {
+    $user = createUserWithRecoveryCodes('123456');
+
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, '123456'));
+
+    expect($isValid)->toBeFalse()
+        ->and(storedRecoveryCodes($user))->toBe(['123456']);
+});
+
+it('does not check a recovery-format code as a TOTP code', function (): void {
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE);
+
+    $this->mock(TwoFactorAuthenticationProvider::class, function (MockInterface $mock): void {
+        $mock->shouldNotReceive('verify');
+    });
+
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
+
+    expect($isValid)->toBeTrue();
+});
+
+it('rejects a recovery code that belongs to another user as a verification code', function (): void {
+    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE);
+    $otherUser = createUserWithTwoFactor();
+
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($otherUser, VERIFIER_FIRST_RECOVERY_CODE));
+
+    expect($isValid)->toBeFalse()
+        ->and(storedRecoveryCodes($user))->toBe([VERIFIER_FIRST_RECOVERY_CODE]);
+});
+
+it('rejects an empty verification code', function (): void {
+    $user = createUserWithTwoFactor();
+
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, ''));
+
+    expect($isValid)->toBeFalse();
 });

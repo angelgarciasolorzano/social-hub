@@ -50,6 +50,18 @@ final readonly class TwoFactorCodeVerifier
     }
 
     /**
+     * Verify the code a user typed: six digits are a TOTP code, anything else
+     * is a single-use recovery code that is consumed. Must run inside the
+     * caller's DB::transaction because of the recovery code.
+     */
+    public function verifyCode(User $user, string $code): bool
+    {
+        return preg_match('/^\d{6}$/', $code) === 1
+            ? $this->verifyTotp($user, $code)
+            : $this->consumeRecoveryCode($user, $code);
+    }
+
+    /**
      * Consume a recovery code so it cannot be used again. Must run inside the
      * caller's DB::transaction: the user row is re-read with a write lock.
      */
