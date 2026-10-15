@@ -13,6 +13,8 @@ use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -56,6 +58,38 @@ it('lists only the selected users posts with detail links', function (): void {
         ->assertSeeText('Selected user post sentinel')
         ->assertDontSee(PostResource::getUrl('view', ['record' => $foreignPost]), false)
         ->assertDontSeeText('Foreign user post sentinel');
+});
+
+it('shows the selected users post image from the posts_images collection', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
+
+    $targetUser = createUser();
+    $targetPost = createPost($targetUser, ['content' => 'Post image relation sentinel']);
+    $targetPost->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+    $targetPost->addMedia(UploadedFile::fake()->image('relation-post-image.jpg'))
+        ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    $testable = postsRelationManagerFor($targetUser)
+        ->assertOk();
+    $imageUrl = url($targetPost->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION));
+
+    expect($testable->html())->toContain($imageUrl);
+});
+
+it('shows the fallback for selected users posts without images', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
+
+    $targetUser = createUser();
+    $postWithoutImage = createPost($targetUser, ['content' => 'Post without image relation sentinel']);
+    $postWithoutImage->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    $testable = postsRelationManagerFor($targetUser)
+        ->assertOk()
+        ->assertSeeText('Post without image relation sentinel');
+
+    expect($testable->html())->toContain(asset('default-cover.svg'));
 });
 
 it('paginates only the selected users posts', function (): void {
