@@ -7,13 +7,13 @@ import type { FormDataErrors } from "@inertiajs/core";
 import dayjs from "dayjs";
 import { ArrowBigDown, CalendarClock, CalendarRange, CircleAlert, RefreshCcw } from "lucide-react";
 
-import TrustedDeviceOtpField from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceOtpField";
 import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type {
   TrustedDevice,
   TwoFactorRequiredErrors,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
+import TwoFactorOtpField from "@/modules/setting/shared/components/TwoFactorOtpField";
 import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -202,7 +202,7 @@ function RenewDeviceForm({
         </ItemActions>
       </Item>
 
-      <TrustedDeviceOtpField
+      <TwoFactorOtpField
         id="renew-device-otp"
         label="Código de verificación"
         value={otpCode}

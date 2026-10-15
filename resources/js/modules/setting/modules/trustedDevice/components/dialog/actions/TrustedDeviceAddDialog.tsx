@@ -6,7 +6,6 @@ import { Link, useForm, usePage } from "@inertiajs/react";
 import type { FormDataErrors } from "@inertiajs/core";
 import { CircleAlert, ShieldAlert, ShieldPlus } from "lucide-react";
 
-import TrustedDeviceOtpField from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceOtpField";
 import type {
   TwoFactorRequiredErrors,
   TwoFactorStatus,
@@ -14,6 +13,7 @@ import type {
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
+import TwoFactorOtpField from "@/modules/setting/shared/components/TwoFactorOtpField";
 import { formatShortDate, fromNow, valueOrNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
@@ -325,7 +325,7 @@ function AddDeviceForm({
         <InputError aria-live="polite" id="add-device-name-error" message={errors.name} />
       </div>
 
-      <TrustedDeviceOtpField
+      <TwoFactorOtpField
         id="add-device-otp"
         label="Código de verificación"
         value={otpCode}

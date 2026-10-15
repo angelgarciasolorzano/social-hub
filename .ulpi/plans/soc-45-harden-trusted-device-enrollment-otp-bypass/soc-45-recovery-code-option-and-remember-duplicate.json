@@ -182,17 +182,23 @@
         "npm run types, lint y format pasan, sin variables de una letra y con hooks tipados explícitamente."
       ],
       "filesToModify": [
-        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx"
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx"
       ],
       "filesToCreate": [
-        "resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx"
+        "resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx",
+        "resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx"
       ],
       "writeScope": [
         "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
-        "resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx"
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+        "resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx",
+        "resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx"
       ],
       "validateCommand": "npm run types && npm run lint:check && npm run format:check",
-      "notes": "Convención: los componentes compartidos entre sub-módulos de setting viven en modules/setting/shared/components.",
+      "notes": "Convención: los componentes compartidos entre sub-módulos de setting viven en modules/setting/shared/components. Excepción deliberada a la regla de 3 archivos (5 archivos más una eliminación): el campo de seis dígitos TrustedDeviceOtpField se mueve a shared como TwoFactorOtpField para que el componente compartido no dependa de un sub-módulo, lo que obliga a actualizar el import en los diálogos de alta y renovación (solo el import y el nombre del componente; siguen pidiendo únicamente el TOTP).",
       "review": "claude"
     },
     {

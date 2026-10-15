@@ -1,19 +1,19 @@
-import { type JSX, type SubmitEvent, useState } from "react";
+import type { JSX, SubmitEvent } from "react";
 
 import { useForm } from "@inertiajs/react";
 
 import type { FormDataErrors } from "@inertiajs/core";
 import { KeyRound, RotateCw } from "lucide-react";
 
-import TrustedDeviceOtpField from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceOtpField";
 import type {
   TrustedDevice,
   TwoFactorRequiredErrors,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
+import TwoFactorCodeField from "@/modules/setting/shared/components/TwoFactorCodeField";
 
 import { reactivate } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
-import { InputError, LabelForm } from "@/shared/components/form";
+import { InputError } from "@/shared/components/form";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -25,7 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
-import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
 import { alertVariants } from "@/shared/lib/styling";
@@ -43,8 +42,6 @@ interface ReactivationFormData {
 interface ReactivationFormErrors
   extends FormDataErrors<ReactivationFormData>, TwoFactorRequiredErrors {}
 
-const RECOVERY_CODE_MAX_LENGTH = 21;
-
 function TrustedDeviceReactivationDialog({
   device,
   open,
@@ -54,7 +51,6 @@ function TrustedDeviceReactivationDialog({
     useForm<ReactivationFormData>({
       otp_code: "",
     });
-  const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
   const formErrors: ReactivationFormErrors = errors;
 
   const handleOpenChange = (nextOpen: boolean): void => {
@@ -63,14 +59,7 @@ function TrustedDeviceReactivationDialog({
     }
 
     reset();
-    setShowRecoveryInput(false);
     onClose();
-  };
-
-  const handleToggleRecoveryInput = (): void => {
-    setShowRecoveryInput(!showRecoveryInput);
-    setData("otp_code", "");
-    clearErrors();
   };
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
@@ -80,7 +69,6 @@ function TrustedDeviceReactivationDialog({
       onSuccess: () => {
         onClose();
         reset();
-        setShowRecoveryInput(false);
       },
       onError: () => {
         setData("otp_code", "");
@@ -110,27 +98,17 @@ function TrustedDeviceReactivationDialog({
         <ReactivationInstructions deviceName={device.name ?? "este dispositivo"} />
 
         <form id="reactivation-form" onSubmit={handleSubmit} className="grid gap-4">
-          {showRecoveryInput ? (
-            <RecoveryCodeField
-              error={formErrors.otp_code}
-              processing={processing}
-              value={data.otp_code}
-              onChange={(value) => {
-                setData("otp_code", value);
-              }}
-            />
-          ) : (
-            <TrustedDeviceOtpField
-              id="reactivate-otp"
-              label="Código de verificación"
-              value={data.otp_code}
-              error={formErrors.otp_code}
-              disabled={processing}
-              onChange={(value) => {
-                setData("otp_code", value);
-              }}
-            />
-          )}
+          <TwoFactorCodeField
+            id="reactivate-code"
+            name="otp_code"
+            value={data.otp_code}
+            error={formErrors.otp_code}
+            disabled={processing}
+            onChange={(value) => {
+              setData("otp_code", value);
+            }}
+            onModeChange={clearErrors}
+          />
 
           {formErrors.two_factor && (
             <InputError
@@ -139,18 +117,6 @@ function TrustedDeviceReactivationDialog({
               message={formErrors.two_factor}
             />
           )}
-
-          <Button
-            type="button"
-            variant="link"
-            className="self-center"
-            disabled={processing}
-            onClick={handleToggleRecoveryInput}
-          >
-            {showRecoveryInput
-              ? "Usar un código de mi aplicación autenticadora"
-              : "Usar un código de recuperación"}
-          </Button>
         </form>
 
         <DialogFooter className="mt-1.5">
@@ -173,54 +139,6 @@ function TrustedDeviceReactivationDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface RecoveryCodeFieldProps {
-  error: string | undefined;
-  processing: boolean;
-  value: string;
-  onChange: (value: string) => void;
-}
-
-function RecoveryCodeField({
-  error,
-  processing,
-  value,
-  onChange,
-}: RecoveryCodeFieldProps): JSX.Element {
-  return (
-    <div className="flex flex-col gap-2">
-      <LabelForm error={error} htmlFor="reactivate-recovery-code">
-        Código de recuperación
-      </LabelForm>
-
-      <Input
-        id="reactivate-recovery-code"
-        name="otp_code"
-        type="text"
-        required
-        autoComplete="off"
-        spellCheck={false}
-        placeholder="xxxxxxxxxx-xxxxxxxxxx"
-        maxLength={RECOVERY_CODE_MAX_LENGTH}
-        disabled={processing}
-        value={value}
-        aria-describedby={error ? "reactivate-recovery-code-error" : undefined}
-        aria-invalid={error ? "true" : "false"}
-        onChange={(event) => {
-          onChange(event.target.value.trim());
-        }}
-      />
-
-      <p className="text-xs text-muted-foreground">
-        Cada código de recuperación solo se puede usar una vez.
-      </p>
-
-      {error && (
-        <InputError aria-live="polite" id="reactivate-recovery-code-error" message={error} />
-      )}
-    </div>
   );
 }
 

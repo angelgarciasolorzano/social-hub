@@ -12,8 +12,9 @@ import {
   InputOTPSlot,
 } from "@/shared/components/shadcn/ui/input-otp";
 
-interface TrustedDeviceOtpFieldProps {
+interface TwoFactorOtpFieldProps {
   id: string;
+  name?: string;
   label: string;
   value: string;
   error: string | undefined;
@@ -24,14 +25,15 @@ interface TrustedDeviceOtpFieldProps {
 const otpSlotClassName =
   "*:data-[slot=input-otp-slot]:h-12 *:data-[slot=input-otp-slot]:w-12 *:data-[slot=input-otp-slot]:text-lg";
 
-function TrustedDeviceOtpField({
+function TwoFactorOtpField({
   id,
+  name = "otp_code",
   label,
   value,
   error,
   disabled,
   onChange,
-}: TrustedDeviceOtpFieldProps): JSX.Element {
+}: TwoFactorOtpFieldProps): JSX.Element {
   const errorId = `${id}-error`;
   const halfLength = OTP_MAX_LENGTH / 2;
 
@@ -44,7 +46,7 @@ function TrustedDeviceOtpField({
       <div className="flex w-full items-center justify-center">
         <InputOTP
           id={id}
-          name="otp_code"
+          name={name}
           required
           onChange={onChange}
           disabled={disabled}
@@ -75,4 +77,4 @@ function TrustedDeviceOtpField({
   );
 }
 
-export default TrustedDeviceOtpField;
+export default TwoFactorOtpField;

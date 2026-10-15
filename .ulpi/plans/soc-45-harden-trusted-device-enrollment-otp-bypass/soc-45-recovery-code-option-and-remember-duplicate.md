@@ -138,11 +138,14 @@ Crear en modules/setting/shared/components el componente TwoFactorCodeField que 
 **writeScope:**
 
 - `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx` (modificar)
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx` (modificar)
+- `resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx` (modificar)
 - `resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx` (crear)
+- `resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx` (crear)
 
 **validateCommand:** `npm run types && npm run lint:check && npm run format:check`
 
-**Notas:** Convención: los componentes compartidos entre sub-módulos de setting viven en modules/setting/shared/components.
+**Notas:** Convención: los componentes compartidos entre sub-módulos de setting viven en modules/setting/shared/components. Excepción deliberada a la regla de 3 archivos (5 archivos más una eliminación): el campo de seis dígitos TrustedDeviceOtpField se mueve a shared como TwoFactorOtpField para que el componente compartido no dependa de un sub-módulo, lo que obliga a actualizar el import en los diálogos de alta y renovación (solo el import y el nombre del componente; siguen pidiendo únicamente el TOTP).
 
 ### TASK-005: Diálogo de desactivar 2FA con la opción de código de recuperación
 
