@@ -8,6 +8,8 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -128,4 +130,49 @@ it('keeps the Posts resource index read only', function (): void {
         ->toBeEmpty()
         ->and($table->getToolbarActions())
         ->toBeEmpty();
+});
+
+it('shows the image from the posts_images collection', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+    $post->addMedia(UploadedFile::fake()->image('post-image.jpg'))
+        ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    $testable = Livewire::test(ListPosts::class)
+        ->assertOk();
+
+    $imageUrl = url($post->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION));
+
+    expect($testable->html())->toContain($imageUrl);
+});
+
+it('shows the fallback for posts without images while keeping them paginated', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+
+    $postWithoutImage = createPost(null, ['content' => 'Post without image sentinel']);
+    $postWithoutImage->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    foreach (range(1, 10) as $sequence) {
+        createPost(null, ['content' => 'Paginated post '.$sequence]);
+    }
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $testable = Livewire::test(ListPosts::class)
+        ->assertOk();
+    $table = FilamentTableRecords::table($testable);
+
+    expect($table->getAllTableRecordsCount())->toBe(11);
+
+    $testable->call('setPage', 2);
+
+    $secondPage = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($secondPage, Post::class))
+        ->toContain(FilamentTableRecords::recordKey($postWithoutImage))
+        ->and($testable->html())
+        ->toContain(asset('default-cover.svg'));
 });
