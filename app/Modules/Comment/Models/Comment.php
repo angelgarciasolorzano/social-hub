@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Comment\Models;
 
-use App\Like\Models\Like;
 use App\Modules\Comment\Database\Factories\CommentFactory;
 use App\Modules\Comment\Enums\CommentType;
+use App\Modules\Like\Models\Like;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
