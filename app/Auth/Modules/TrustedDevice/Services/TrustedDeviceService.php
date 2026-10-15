@@ -225,8 +225,8 @@ final readonly class TrustedDeviceService
     }
 
     /**
-     * Require confirmed two-factor and a valid code: six digits are a TOTP,
-     * anything else is treated as a single-use recovery code.
+     * Require confirmed two-factor and a valid code (a TOTP or a single-use
+     * recovery code, see TwoFactorCodeVerifier::verifyCode).
      *
      * @throws ValidationException
      */
@@ -240,11 +240,7 @@ final readonly class TrustedDeviceService
             ]);
         }
 
-        $isValidCode = preg_match('/^\d{6}$/', $otpCode) === 1
-            ? $this->twoFactorCodeVerifier->verifyTotp($lockedUser, $otpCode)
-            : $this->twoFactorCodeVerifier->consumeRecoveryCode($lockedUser, $otpCode);
-
-        if (! $isValidCode) {
+        if (! $this->twoFactorCodeVerifier->verifyCode($lockedUser, $otpCode)) {
             throw ValidationException::withMessages([
                 'otp_code' => 'El código de verificación es incorrecto.',
             ]);
