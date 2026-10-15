@@ -14,6 +14,7 @@ use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use BackedEnum;
 use Filament\Facades\Filament;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -110,6 +111,17 @@ class PostResource extends Resource
                 TextEntry::make('updated_at')
                     ->label('Updated at')
                     ->dateTime(),
+                ImageEntry::make('post_image')
+                    ->label('Post image')
+                    ->state(function (Post $record): ?string {
+                        $imageUrl = $record->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+                        return filled($imageUrl) ? url($imageUrl) : null;
+                    })
+                    ->defaultImageUrl(asset('default-cover.svg'))
+                    ->imageHeight(320)
+                    ->columnSpanFull()
+                    ->alt('Post image'),
                 TextEntry::make('content')
                     ->label('Content')
                     ->columnSpanFull(),

@@ -9,7 +9,10 @@ use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Posts\Widgets\PostActivityOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Post\Models\Post;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use ReflectionMethod;
 use Tests\TestCase;
@@ -80,6 +83,54 @@ it('renders a post author and timestamps on the detail page', function (): void 
         ->assertSeeText('Updated at')
         ->assertSeeText($createdAt->format('M j, Y'))
         ->assertSeeText($updatedAt->format('M j, Y'));
+});
+
+it('shows the image from the posts_images collection on the post detail page', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminPostsReader->value,
+    ]);
+    $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
+
+    $user = createUser();
+    $post = createPost($user, ['content' => 'Post image detail content sentinel']);
+    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+    $post->addMedia(UploadedFile::fake()->image('post-detail-image.jpg'))
+        ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $testable = Livewire::test(ViewPost::class, ['record' => $post->getKey()])
+        ->assertSeeText('Post image detail content sentinel')
+        ->assertSeeText($user->name);
+
+    $imageUrl = url($post->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION));
+
+    expect($testable->html())->toContain($imageUrl);
+});
+
+it('shows the fallback when a post has no image on the detail page', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminPostsReader->value,
+    ]);
+    $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
+
+    $post = createPost();
+    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $testable = Livewire::test(ViewPost::class, ['record' => $post->getKey()])
+        ->assertSeeText($post->content);
+
+    expect($testable->html())->toContain(asset('default-cover.svg'));
 });
 
 it('keeps the detail page read-only and includes the activity overview', function (): void {
