@@ -32,6 +32,33 @@ it('authenticates a user with valid credentials and redirects home', function ()
     $testResponse->assertRedirect(route('home', absolute: false));
 });
 
+it('does not redirect a web login to the admin panel after an unauthenticated panel request', function (): void {
+    $user = createUser();
+
+    $this->get('/admin')->assertRedirect('/admin/login');
+
+    $testResponse = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user, 'web');
+    $testResponse->assertRedirect(route('home', absolute: false));
+});
+
+it('preserves a web intended destination after login', function (): void {
+    $user = createUser();
+    $intendedUrl = route('profile.index', absolute: false);
+
+    $testResponse = $this->withSession(['url.intended' => $intendedUrl])
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+    $testResponse->assertRedirect($intendedUrl);
+});
+
 it('keeps guests unauthenticated when login credentials are invalid', function (bool $existingAccount): void {
     $email = 'missing-login@example.test';
     $password = 'password';
@@ -85,6 +112,31 @@ it('redirects users with two-factor authentication enabled to the challenge', fu
     $testResponse->assertRedirect(route('two-factor.login'));
     $testResponse->assertSessionHas('login.id', $user->id);
     $this->assertGuest();
+});
+
+it('does not carry an admin intended destination into the web two-factor challenge', function (): void {
+    Features::twoFactorAuthentication([
+        'confirm' => true,
+        'confirmPassword' => true,
+    ]);
+
+    $user = createUser();
+
+    $user->forceFill([
+        'two_factor_secret' => encrypt('test-secret'),
+        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
+        'two_factor_confirmed_at' => now(),
+    ])->save();
+
+    $this->get('/admin')->assertRedirect('/admin/login');
+
+    $testResponse = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $testResponse->assertRedirect(route('two-factor.login'))
+        ->assertSessionMissing('url.intended');
 });
 
 it('blocks the sixth login attempt after five invalid credentials', function (): void {

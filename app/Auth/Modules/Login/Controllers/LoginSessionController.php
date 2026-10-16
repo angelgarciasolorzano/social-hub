@@ -34,6 +34,7 @@ class LoginSessionController extends Controller
     public function store(LoginRequest $loginRequest): RedirectResponse
     {
         $user = $loginRequest->validateCredentials();
+        $this->forgetAdminIntendedUrl($loginRequest);
 
         if (Features::enabled(Features::twoFactorAuthentication()) && $user->hasEnabledTwoFactorAuthentication()) {
             if (TrustedDevice::validateAndTouch($user, $loginRequest)) {
@@ -57,6 +58,25 @@ class LoginSessionController extends Controller
         $loginRequest->session()->regenerate();
 
         return redirect()->intended(route('home', absolute: false));
+    }
+
+    private function forgetAdminIntendedUrl(LoginRequest $loginRequest): void
+    {
+        $intendedUrl = $loginRequest->session()->get('url.intended');
+
+        if (! \is_string($intendedUrl)) {
+            return;
+        }
+
+        $intendedPath = parse_url($intendedUrl, PHP_URL_PATH);
+
+        if (! \is_string($intendedPath)) {
+            return;
+        }
+
+        if ($intendedPath === '/admin' || str_starts_with($intendedPath, '/admin/')) {
+            $loginRequest->session()->forget('url.intended');
+        }
     }
 
     /**
