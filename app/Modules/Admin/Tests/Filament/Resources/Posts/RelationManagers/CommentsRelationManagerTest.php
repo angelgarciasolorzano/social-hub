@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelationManager;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
@@ -27,32 +28,6 @@ function commentsRelationManagerFor(Post $post): Testable
         'ownerRecord' => $post,
         'pageClass' => ViewPost::class,
     ]);
-}
-
-/**
- * @return array<string, mixed>
- */
-function mountedCommentViewActionData(CommentsRelationManager $commentsRelationManager): array
-{
-    $mountedAction = $commentsRelationManager->mountedActions[0] ?? null;
-
-    throw_unless(is_array($mountedAction), LogicException::class, 'The comments relation must mount a view action.');
-
-    /** @var array<int|string, mixed> $mountedAction */
-    $data = $mountedAction['data'] ?? null;
-
-    throw_unless(is_array($data), LogicException::class, 'The comment view action must include its record data.');
-
-    /** @var array<int|string, mixed> $data */
-    $stringKeyedData = [];
-
-    foreach ($data as $key => $value) {
-        if (is_string($key)) {
-            $stringKeyedData[$key] = $value;
-        }
-    }
-
-    return $stringKeyedData;
 }
 
 beforeEach(function (): void {
@@ -262,43 +237,35 @@ it('combines comment filters without showing other posts comments', function ():
         ->toBeEmpty();
 });
 
-it('opens a comment with its author in the view action', function (): void {
+it('links each comment to its dedicated detail page', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $post = createPost();
+    $otherPost = createPost();
 
     $selectedComment = createComment($user, [
         'commentable_id' => $post->getKey(),
         'commentable_type' => $post->getMorphClass(),
         'content' => 'Selected root comment sentinel',
     ]);
-
-    $testable = commentsRelationManagerFor($post)
-        ->assertOk()
-        ->call('mountAction', 'view', [], [
-            'table' => true,
-            'recordKey' => $selectedComment->getKey(),
-        ]);
-
-    $component = $testable->instance();
-
-    throw_unless($component instanceof CommentsRelationManager, LogicException::class, 'The comments relation must expose its mounted view action.');
-
-    /** @var CommentsRelationManager $component */
-    $viewActionData = mountedCommentViewActionData($component);
-
-    expect($viewActionData)->toMatchArray([
-        'content' => 'Selected root comment sentinel',
-        'user' => ['name' => $user->name],
+    $foreignComment = createComment($user, [
+        'commentable_id' => $otherPost->getKey(),
+        'commentable_type' => $otherPost->getMorphClass(),
+        'content' => 'Foreign post comment sentinel',
     ]);
+
+    commentsRelationManagerFor($post)
+        ->assertOk()
+        ->assertSee(CommentResource::getUrl('view', ['record' => $selectedComment]), false)
+        ->assertDontSee(CommentResource::getUrl('view', ['record' => $foreignComment]), false);
 });
 
-it('opens a comment with its replies and their authors in the view action', function (): void {
-    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+it('loads the selected comment details after following its detail link', function (): void {
+    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+    $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
 
     $user = createUser();
-    $replyAuthor = createUser();
     $post = createPost();
 
     $selectedComment = createComment($user, [
@@ -307,39 +274,15 @@ it('opens a comment with its replies and their authors in the view action', func
         'content' => 'Selected root comment for replies sentinel',
     ]);
 
-    createComment($replyAuthor, [
-        'commentable_id' => $selectedComment->getKey(),
-        'commentable_type' => $selectedComment->getMorphClass(),
-        'content' => 'Selected reply sentinel',
-    ]);
+    $detailUrl = CommentResource::getUrl('view', ['record' => $selectedComment]);
 
-    $testable = commentsRelationManagerFor($post)
+    commentsRelationManagerFor($post)
         ->assertOk()
-        ->call('mountAction', 'view', [], [
-            'table' => true,
-            'recordKey' => $selectedComment->getKey(),
-        ]);
+        ->assertSee($detailUrl, false);
 
-    $component = $testable->instance();
-
-    throw_unless($component instanceof CommentsRelationManager, LogicException::class, 'The comments relation must expose its mounted view action.');
-
-    /** @var CommentsRelationManager $component */
-    $viewActionData = mountedCommentViewActionData($component);
-
-    $replies = $viewActionData['replies'] ?? null;
-    $replyData = is_array($replies) ? ($replies[0] ?? null) : null;
-
-    throw_unless(is_array($replies) && is_array($replyData), LogicException::class, 'The selected comment must include its reply data.');
-
-    /** @var array<int, mixed> $replies */
-    /** @var array<string, mixed> $replyData */
-    expect($replies)->toHaveCount(1)
-        ->and($replyData)
-        ->toMatchArray([
-            'content' => 'Selected reply sentinel',
-            'user' => ['name' => $replyAuthor->name],
-        ]);
+    $this->get($detailUrl)
+        ->assertOk()
+        ->assertSeeText('Selected root comment for replies sentinel');
 });
 
 it('does not load replies while listing comments', function (): void {
@@ -394,11 +337,12 @@ it('keeps the comment view action read only', function (): void {
 
     throw_unless($viewAction instanceof ViewAction, LogicException::class, 'The comments relation must expose its view action.');
 
-    /** @var ViewAction $viewAction */
     expect($recordActions)
         ->toHaveCount(1)
-        ->and($viewAction->getModalHeading())
-        ->toBe('Comment details')
+        ->and($viewAction->hasModal())
+        ->toBeFalse()
+        ->and($viewAction->hasUrl())
+        ->toBeTrue()
         ->and($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getToolbarActions())
