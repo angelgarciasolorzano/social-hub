@@ -18,6 +18,7 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 
 import { CommentType } from "../enums/commentType";
 import type { Comment, CommentContextPreview } from "../types/comment";
+import CommentLikeButton from "./CommentLikeButton";
 import CommentRepliesList from "./CommentRepliesList";
 import CommentInputDialog from "./dialog/CommentInputDialog";
 
@@ -96,14 +97,7 @@ function CommentItem(props: CommentItemProps): JSX.Element {
       </Card>
 
       <footer className="-ml-2 flex items-center text-xs font-medium text-muted-foreground">
-        <Button
-          className="cursor-pointer text-muted-foreground hover:text-destructive"
-          size="xs"
-          type="button"
-          variant="ghost"
-        >
-          Me gusta
-        </Button>
+        <CommentLikeButton commentId={comment.id} initialLikesInfo={comment.likesInfo} />
 
         <Button
           className="cursor-pointer text-muted-foreground"
