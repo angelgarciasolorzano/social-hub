@@ -8,7 +8,6 @@ use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelati
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
-use Filament\Tables\Contracts\HasTable;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use LogicException;
@@ -77,11 +76,11 @@ it('paginates the selected comments replies', function (): void {
     $testable = repliesRelationManagerFor($selectedComment)
         ->assertOk()
         ->assertSeeText('Showing 1 to 10 of 11 results');
-    $firstPageTable = FilamentTableRecords::table($testable);
+    $repliesRelationManager = FilamentTableRecords::table($testable);
 
-    expect($firstPageTable->getAllTableRecordsCount())
+    expect($repliesRelationManager->getAllTableRecordsCount())
         ->toBe(11)
-        ->and(FilamentTableRecords::visibleRecords($firstPageTable, Comment::class))
+        ->and(FilamentTableRecords::visibleRecords($repliesRelationManager, Comment::class))
         ->toHaveCount(10);
 
     $testable->call('setPage', 2)
@@ -152,9 +151,6 @@ it('keeps the replies table read only', function (): void {
         ->assertOk()
         ->instance();
 
-    throw_unless($repliesRelationManager instanceof HasTable, LogicException::class, 'The replies component must expose a Filament table.');
-
-    /** @var HasTable&RepliesRelationManager $repliesRelationManager */
     $table = $repliesRelationManager->getTable();
 
     expect($table->getHeaderActions())
