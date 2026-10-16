@@ -317,7 +317,7 @@ Agregar admin.users.create al enum y seeder, con el rol admin-users-provisioner 
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** Ninguna
+**Depends on:** TASK-012
 
 **Acceptance Criteria:**
 - El catálogo AdminPermission y AdminRole incluye el permiso de crear invitaciones y el rol de aprovisionamiento.
