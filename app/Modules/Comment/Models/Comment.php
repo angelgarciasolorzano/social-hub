@@ -130,16 +130,12 @@ class Comment extends Model
     /**
      * Check if the given user liked this comment, reusing a preloaded `liked_by_me` of that same user.
      */
-    public function isLikedBy(?User $user): bool
+    public function isLikedBy(User $user): bool
     {
-        if (! $user instanceof User) {
-            return false;
-        }
-
         $loadedExists = $this->getAttributes()['liked_by_me'] ?? null;
 
         return $loadedExists === null
-            ? $this->likes()->where('user_id', $user->id)->exists()
+            ? $this->likes()->whereBelongsTo($user)->exists()
             : (bool) $loadedExists;
     }
 

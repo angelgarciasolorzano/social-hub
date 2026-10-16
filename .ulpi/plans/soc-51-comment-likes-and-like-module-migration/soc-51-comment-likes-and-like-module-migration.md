@@ -332,7 +332,7 @@ Crea LikeCommentToggleController (invocable) en el módulo Like: recibe el Comme
 
 ### TASK-012: Registrar las rutas de Like y cubrir el toggle y su límite de peticiones
 
-LikeServiceProvider registra LikeRouteServiceProvider en register() (como CommentServiceProvider). Tests en el módulo: LikeCommentToggleTest (flujo de dar/quitar like, invitado, no verificado, comentario inexistente, un usuario no afecta al like de otro) y LikeThrottleTest (31ª petición del minuto responde 429; el presupuesto es por usuario, no se comparte con comments.store).
+LikeServiceProvider registra LikeRouteServiceProvider en register() (como CommentServiceProvider). Tests en el módulo: LikeCommentToggleTest (flujo de dar/quitar like, invitado, comentario inexistente, un usuario no afecta al like de otro) y LikeThrottleTest (31ª petición del minuto responde 429; el presupuesto es por usuario, no se comparte con comments.store).
 
 **Type:** test  
 **Priority:** P1  
@@ -343,7 +343,7 @@ LikeServiceProvider registra LikeRouteServiceProvider en register() (como Commen
 
 **Acceptance Criteria:**
 
-- [ ] route('comments.like', $comment) existe en php artisan route:list y un invitado es redirigido al login y un usuario sin email verificado no puede dar like.
+- [ ] route('comments.like', $comment) existe en php artisan route:list y un invitado es redirigido al login y un invitado recibe 401 sin crear un like (el middleware verified no filtra hoy a nadie porque User no implementa MustVerifyEmail; es el comportamiento de todo el proyecto y queda fuera de alcance).
 - [ ] Dar like como usuario A no cambia liked para el usuario B; el conteo refleja los likes de todos, y dar like a una respuesta (comentario con commentable_type comment) también funciona.
 - [ ] Tras 30 peticiones en un minuto la siguiente responde 429 con Retry-After, y el límite de comments.store sigue siendo independiente.
 
@@ -480,7 +480,7 @@ Tras TASK-008 el módulo Like ya está migrado, cubierto por tests y con el índ
 - **TASK-009**: CommentResourceTest: likesInfo, sin consultas extra, invitado.
 - **TASK-010**: CommentThreadPropsTest y CommentQueryCountTest: forma de likesInfo y consultas constantes.
 - **TASK-011**: Verificación estática; el comportamiento HTTP se prueba en TASK-012.
-- **TASK-012**: LikeCommentToggleTest y LikeThrottleTest: alternar, 404, invitado, no verificado, 429.
+- **TASK-012**: LikeCommentToggleTest y LikeThrottleTest: alternar, 404, invitado, 429.
 - **TASK-013**: tsc y ESLint; el comportamiento optimista se comprueba en TASK-014 (sin infraestructura de tests de frontend).
 - **TASK-014**: tsc, ESLint, Prettier y verificación visual en el navegador (claro/oscuro, comentario y respuesta, error 429).
 - **TASK-015**: LikeSeederTest: rangos, sin duplicados, idempotencia, pocos usuarios.
