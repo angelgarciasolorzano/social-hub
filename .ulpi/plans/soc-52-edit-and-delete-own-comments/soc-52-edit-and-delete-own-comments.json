@@ -1,0 +1,734 @@
+{
+  "title": "SOC-52: Editar y eliminar comentarios propios",
+  "issue": {
+    "id": "SOC-52",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-52/feature-edit-and-delete-own-comments",
+    "title": "Feature: Edit and delete own comments",
+    "parent": "SOC-49",
+    "blockedBy": "SOC-51 (mergeada)"
+  },
+  "planningMode": "HOLD",
+  "reviewDefault": "claude",
+  "executionStyle": "Paso a paso: una tarea y pausa para revisión (regla .ai/rules/linear.md).",
+  "overview": "Hoy el módulo Comment solo tiene comments.store (y comments.like en el módulo Like); el test de seguridad [H8] afirma que no hay rutas para editar o eliminar. Este plan permite que el autor edite el contenido de su comentario (marca edited_at, mismo límite y normalización que al crear) y lo elimine con borrado mixto: con respuestas, borrado lógico y tombstone 'Comentario eliminado' que conserva el hilo; sin respuestas, borrado físico junto con sus likes en la misma transacción. Añade CommentPolicy (solo el autor), rutas PATCH y DELETE con throttle propio, tombstones en los listados sin romper el número constante de consultas y la UI (menú, diálogo de edición, confirmación con el Dialog existente, 'editado' y tombstone).",
+  "scopeChallenge": "Modo HOLD con decisiones del usuario: (1) borrado mixto (lógico con respuestas, físico sin ellas, likes borrados explícitamente porque likes no tiene FK); (2) confirmación con el Dialog existente: shadcn no tiene alert-dialog y añadirlo sería una dependencia nueva; (3) sin ventana de edición, columna edited_at, mismo límite de 1000 y throttle propio por ruta. Hallazgos del repositorio: SoftDeletes cambia las consultas por defecto de todo el proyecto: Post::comments(), User::comments() y el panel Admin (CommentResource, widgets y relation managers) dejarán de ver los tombstones; se acepta porque la moderación desde Admin está fuera de alcance, y el plan lo cubre corriendo la suite completa. Casos límite resueltos explícitamente: un tombstone se limpia (borrado físico) cuando se elimina su última respuesta; no se puede comentar sobre un tombstone pero sí responder a respuestas de su hilo; las respuestas nunca son tombstones porque no tienen hijos. La descripción de la issue menciona AlertDialog, docs/architecture/backend.md y el skill: este plan usa Dialog y, además, corrige en la documentación la omisión de SOC-51 (Like seguía listado como arquitectura vieja).",
+  "prerequisites": [
+    "SOC-51 está mergeada en main: existe app/Modules/Like/ con Like::likes() de Comment, el índice único y comments.like.",
+    "Se leyeron .ai/rules/{app,backend,frontend,linear}.md: sin variables de una letra, docblocks con máximo 3 líneas, factories completas, un test = una conducta, helpers de test al inicio del archivo.",
+    "Las migraciones existentes de comments no se editan: edited_at y deleted_at llegan en una migración nueva dentro de app/Modules/Comment/Database/Migrations/.",
+    "Para la suite completa en local hay que usar php -d memory_limit=2G vendor/bin/pest (artisan test agota los 128M por un test de imágenes de Admin).",
+    "Rama propia de GitButler para SOC-52 (rama sugerida: soc-52-feature-edit-and-delete-own-comments)."
+  ],
+  "nonGoals": [
+    "Moderación desde el panel Admin (ocultar o eliminar comentarios ajenos) y permisos Admin dedicados.",
+    "Historial de versiones de un comentario editado.",
+    "Notificaciones y anidación de más de un nivel.",
+    "Restaurar comentarios eliminados.",
+    "Ventana de tiempo para editar.",
+    "Añadir @radix-ui/react-alert-dialog o cualquier dependencia nueva.",
+    "replied_to_comment_id: la mención sigue dependiendo solo de replied_to_user_id."
+  ],
+  "contracts": [
+    "Persistencia: comments.edited_at (timestamp nullable) y comments.deleted_at (softDeletes). Comment usa SoftDeletes, edited_at en #[Fillable] con cast a fecha. La clave de borrado: un comentario eliminado lógicamente siempre tuvo respuestas al borrarse y es siempre de primer nivel.",
+    "Policy: CommentPolicy::update/delete solo para el autor (user_id == id del usuario) y nunca sobre un comentario eliminado; registrada con #[UsePolicy] en Comment y aplicada en los controladores con #[Authorize('update'|'delete', 'comment')] (corre tras el route model binding y antes de la validación).",
+    "Rutas (auth + verified): PATCH comments/{comment} → comments.update, throttle:10,1,comments.update; DELETE comments/{comment} → comments.destroy, throttle:10,1,comments.destroy. Ambas responden Inertia::flash success y back() como comments.store; 403 si no es el autor, 404 si no existe o ya está eliminado, 429 al exceder. Controladores invocables CommentUpdateController y CommentDestroyController.",
+    "Edición: CommentUpdateRequest solo acepta content (obligatorio, máximo 1000) con la misma normalización que CommentStoreRequest (concern NormalizesCommentContent compartido); edited_at = now() solo si el contenido cambió.",
+    "Borrado (DB::transaction): con respuestas → delete() lógico y likes conservados; sin respuestas → $comment->likes()->delete() y forceDelete(); si era una respuesta y su padre está eliminado lógicamente y no le quedan más respuestas → forceDelete del padre y de sus likes. El contenido de un tombstone permanece en la base pero nunca se serializa.",
+    "Listados: CommentThreadProps lista los raíz con withTrashed() y busca el padre de las respuestas con withTrashed(); sigue habiendo un número constante de consultas. CommentStoreController da 404 al comentar sobre un tombstone y, al responder a una respuesta de un hilo con raíz eliminado, busca el padre con withTrashed().",
+    "Resource: CommentResource añade editedAt, abilities {canUpdate, canDelete}, isDeleted; un tombstone serializa content null, user null, likesInfo en cero, abilities en false y conserva id, createdAt y repliesInfo. Sin consultas adicionales.",
+    "Frontend: Comment.editedAt, Comment.abilities, Comment.isDeleted y content/user nullables; CommentActionsMenu (DropdownMenu), CommentEditDialog (PATCH con useForm) y CommentDeleteDialog (Dialog existente, router.delete) con acciones de Wayfinder; errores 429/red sin modal de Inertia (onHttpException/onNetworkError devuelven false); tras editar o eliminar se refresca el hilo con uploadedComments.",
+    "Protecciones previas intactas: throttle:6,1,comments.store, throttle de comments.like, normalización de content, profundidad de un nivel y consultas constantes."
+  ],
+  "existingCodeLeverage": [
+    "app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php y #[UsePolicy]/#[Authorize] en TrustedDeviceController: patrón de la policy y de su aplicación.",
+    "app/Modules/Comment/Requests/CommentStoreRequest.php: normalización y reglas FluentRule que se comparten.",
+    "app/Modules/Comment/Controllers/CommentStoreController.php: patrón de controlador invocable con Inertia::flash()->back() y de aplanado de hilos.",
+    "app/Modules/Comment/routes/routes.php y Tests/Security/{CommentThrottleTest,CommentSecurityAuditTest,CommentQueryCountTest}.php: rutas con throttle de prefijo propio y pruebas de límites, [H8] y consultas constantes.",
+    "app/Modules/Comment/Props/CommentThreadProps.php y Resources/CommentResource.php: listados paginados y serialización con precarga de contadores.",
+    "app/Modules/Like/: Comment::likes() para borrar likes explícitamente.",
+    "tests/Pest.php: createComment(), createCommentOn(), createCommentsOn() y createLike().",
+    "resources/js/modules/comment/components/{CommentItem,CommentList,CommentRepliesList,forms/CommentForm,dialog/CommentInputDialog}.tsx y hooks/useCommentPaginated.ts: patrón de diálogos, formularios, errores sin modal de Inertia y refresco del hilo (uploadedComments).",
+    "shadcn ya instalado: dialog, dropdown-menu, textarea, button, alert, skeleton (no existe alert-dialog)."
+  ],
+  "failureModes": [
+    "Tombstone huérfano: sin la limpieza al eliminar la última respuesta quedarían tombstones sin hijos para siempre; TASK-007 lo cubre.",
+    "Likes huérfanos: likes no tiene FK ni cascada; el borrado físico los elimina explícitamente dentro de la transacción y el lógico los conserva (nunca se serializan para un tombstone).",
+    "Borrado a medias: todo el borrado va en DB::transaction; un fallo no deja likes borrados con el comentario vivo.",
+    "Fuga de contenido: un tombstone conserva el texto en la base; la prueba de TASK-009 exige que ni el contenido ni el autor aparezcan en el JSON.",
+    "Cambio global de SoftDeletes: Admin, Post::comments() y User::comments() dejan de ver los tombstones; se verifica con la suite completa y queda documentado.",
+    "Doble envío o carrera al borrar o editar: el segundo borrado responde 404 y la edición repetida es idempotente; el botón se deshabilita mientras procesa.",
+    "N+1 en abilities y tombstones: la policy solo compara user_id sobre atributos cargados; CommentQueryCountTest lo vigila con tombstones y ediciones.",
+    "Autor eliminado o comentario ajeno: 403 por policy sin tocar la fila; invitado al login; ids inexistentes 404.",
+    "429 al editar o eliminar: los diálogos muestran un mensaje local y no abren el modal de errores de Inertia.",
+    "Wayfinder desactualizado: sin regenerar tras las rutas, tsc falla en el import; TASK-013 lo regenera primero."
+  ],
+  "shipCut": "Tras TASK-008 el backend completo de editar y eliminar (migración, policy, rutas, throttles y [H8]) está probado, pero los listados todavía no muestran tombstones: no desplegar entre TASK-007 y TASK-010. Corte útil mínimo: TASK-001 a TASK-011 (backend consistente: tombstones en listados y publicación). La UI (TASK-013 a TASK-017) puede ir en un segundo PR y el seeder y la documentación (TASK-012, TASK-018) se pueden diferir, pero la documentación debe actualizarse antes de cerrar la issue.",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Migración y modelo: edited_at y borrado lógico en comments",
+      "description": "Crea una migración nueva en app/Modules/Comment/Database/Migrations/ (la original no se edita; CommentServiceProvider ya la registra con loadMigrationsFrom) que añade edited_at (timestamp nullable) y softDeletes() a comments. Comment usa SoftDeletes, añade edited_at a #[Fillable], lo castea a datetime inmutable y documenta las propiedades. Con SoftDeletes, las consultas por defecto (Admin, User::comments(), Post::comments()) dejan de ver los comentarios eliminados lógicamente.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Comment::delete() deja la fila con deleted_at, el comentario desaparece de Comment::query() y de Post::comments(), y Comment::withTrashed() lo sigue encontrando.",
+        "edited_at es null para un comentario nuevo y se castea a fecha al asignarlo; la migración original create_comments_table y la de replied_to_user_id no se modifican.",
+        "migrate:fresh en testing aplica las tres migraciones sin error y down() de la nueva elimina ambas columnas."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Models/Comment.php",
+        "app/Modules/Comment/Tests/Models/CommentModelTest.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Database/Migrations/<timestamp>_add_edited_at_and_soft_deletes_to_comments_table.php"
+      ],
+      "writeScope": [
+        "app/Modules/Comment/Database/Migrations/<timestamp>_add_edited_at_and_soft_deletes_to_comments_table.php (generada con php artisan make:migration --path)",
+        "app/Modules/Comment/Models/Comment.php (SoftDeletes, Fillable, cast, docblock)",
+        "app/Modules/Comment/Tests/Models/CommentModelTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Models/CommentModelTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Factory completa: edited_at, deleted_at y estado edited()",
+      "description": "CommentFactory declara edited_at y deleted_at como null (regla de factories completas) y añade el estado edited() con una fecha posterior a created_at. Para comentarios eliminados se usa el trashed() del propio Factory de Laravel, que funciona porque el modelo ya usa SoftDeletes.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Comment::factory()->create() persiste edited_at y deleted_at en null; ->edited()->create() deja edited_at posterior a created_at.",
+        "Comment::factory()->trashed()->create() persiste deleted_at y el comentario no aparece en Comment::query() pero sí en withTrashed().",
+        "Los helpers createComment()/createCommentOn() de tests/Pest.php siguen funcionando sin cambios."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Database/Factories/CommentFactory.php",
+        "app/Modules/Comment/Tests/Factories/CommentFactoryTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Comment/Database/Factories/CommentFactory.php",
+        "app/Modules/Comment/Tests/Factories/CommentFactoryTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Factories/CommentFactoryTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "CommentPolicy: solo el autor edita y elimina",
+      "description": "Crea CommentPolicy en app/Modules/Comment/Policies/ con update y delete (true solo si comment->user_id es el id del usuario; un comentario eliminado lógicamente no se puede editar) y la registra con #[UsePolicy(CommentPolicy::class)] en Comment (la autodetección por nombre no la encontraría bajo Modules/, igual que TrustedDevicePolicy). Admin no tiene permiso propio: la moderación queda fuera de alcance.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "El autor puede update y delete su comentario; otro usuario recibe false en ambas habilidades (Gate::forUser).",
+        "Un comentario con deleted_at ya no es editable ni siquiera por su autor (update false), y delete sobre uno ya eliminado no se ofrece.",
+        "La policy se resuelve sin registro manual: Gate::getPolicyFor(Comment::class) devuelve CommentPolicy."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Models/Comment.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Policies/CommentPolicy.php",
+        "app/Modules/Comment/Tests/Policies/CommentPolicyTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Comment/Policies/CommentPolicy.php",
+        "app/Modules/Comment/Models/Comment.php (#[UsePolicy])",
+        "app/Modules/Comment/Tests/Policies/CommentPolicyTest.php (la suite Comment ya cubre la carpeta nueva)"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Policies/CommentPolicyTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Extraer la normalización del contenido a un concern compartido",
+      "description": "Mueve la normalización de prepareForValidation() de CommentStoreRequest (quitar caracteres de control conservando tabulaciones y saltos de línea, y trim) a un trait Concerns/NormalizesCommentContent.php, y hace que CommentStoreRequest lo use. Sin cambios de comportamiento: los tests existentes de CommentStoreRequest y de hardening lo demuestran.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "CommentStoreRequestTest y CommentValidationHardeningTest siguen pasando sin cambiar ninguna aserción.",
+        "El trait normaliza solo cuando content es string: con content ausente o no string no lanza ni lo crea.",
+        "CommentStoreRequest ya no contiene la expresión regular de normalización (vive en un único lugar)."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Requests/CommentStoreRequest.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Requests/Concerns/NormalizesCommentContent.php"
+      ],
+      "writeScope": [
+        "app/Modules/Comment/Requests/Concerns/NormalizesCommentContent.php",
+        "app/Modules/Comment/Requests/CommentStoreRequest.php (usa el trait)"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "CommentUpdateRequest con la misma normalización y límite de 1000",
+      "description": "Crea CommentUpdateRequest (HasFluentRules, NormalizesCommentContent) con solo content (obligatorio, máximo 1000, mismo mensaje que al crear). authorize() devuelve true: la autorización por propietario la aplica la policy en el controlador, que corre antes de la validación (#[Authorize] actúa como middleware tras el route model binding).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "Un content con caracteres de control o espacios alrededor se normaliza igual que en CommentStoreRequest y uno vacío tras normalizar falla con el mensaje 'El comentario es obligatorio'.",
+        "Un content de 1001 caracteres falla y uno de 1000 pasa; campos ajenos como commentable_id o user_id no aparecen en validated().",
+        "Un content que no es string (array o número) falla la validación sin lanzar excepciones."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Comment/Requests/CommentUpdateRequest.php",
+        "app/Modules/Comment/Tests/Requests/CommentUpdateRequestTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Comment/Requests/CommentUpdateRequest.php",
+        "app/Modules/Comment/Tests/Requests/CommentUpdateRequestTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Requests/CommentUpdateRequestTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Ruta y controlador de edición (PATCH comments/{comment})",
+      "description": "Crea CommentUpdateController invocable con #[Authorize('update', 'comment')] (patrón de TrustedDeviceController) y añade a routes/routes.php PATCH comments/{comment} con nombre comments.update, grupo auth+verified y throttle:10,1,comments.update. Guarda content y marca edited_at = now() solo si el contenido cambió; responde Inertia::flash success y back(), como comments.store. El comentario eliminado lógicamente da 404 por el route model binding.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "El autor edita: content se actualiza normalizado, edited_at se llena y la respuesta es un redirect con flash success; mandar el mismo texto no cambia edited_at.",
+        "Otro usuario recibe 403 sin modificar la fila, un invitado es redirigido al login y un comentario inexistente o eliminado lógicamente responde 404.",
+        "Un content inválido (vacío o de 1001 caracteres) responde con error de validación en content y no toca el comentario."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/routes/routes.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Controllers/CommentUpdateController.php",
+        "app/Modules/Comment/Tests/Crud/CommentUpdateTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Comment/Controllers/CommentUpdateController.php",
+        "app/Modules/Comment/routes/routes.php (PATCH comments.update)",
+        "app/Modules/Comment/Tests/Crud/CommentUpdateTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Crud/CommentUpdateTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Ruta y controlador de borrado mixto (DELETE comments/{comment})",
+      "description": "Crea CommentDestroyController invocable con #[Authorize('delete', 'comment')] y añade a routes/routes.php DELETE comments/{comment} (comments.destroy, auth+verified, throttle:10,1,comments.destroy). Dentro de DB::transaction: si el comentario tiene respuestas, borrado lógico (delete()) conservando sus likes; si no tiene, borra sus likes ($comment->likes()->delete(), la tabla no tiene FK) y lo elimina de forma física (forceDelete()). Si era una respuesta y su padre ya estaba eliminado lógicamente y no le quedan más respuestas, elimina también al padre y sus likes de forma física para no dejar tombstones vacíos. Responde Inertia::flash success y back().",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Un comentario sin respuestas se elimina físicamente junto con sus likes (Comment::withTrashed() y Like ya no lo encuentran); uno con respuestas queda con deleted_at, sus respuestas y mensajes intactos y sus likes conservados.",
+        "Eliminar la última respuesta de un comentario ya eliminado lógicamente borra también al padre y sus likes; si quedan otras respuestas el padre permanece como tombstone.",
+        "Otro usuario recibe 403, un invitado va al login, un comentario inexistente o ya eliminado responde 404 y nada se borra; si algo falla dentro de la transacción no queda un borrado a medias."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/routes/routes.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Comment/Controllers/CommentDestroyController.php",
+        "app/Modules/Comment/Tests/Crud/CommentDestroyTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Comment/Controllers/CommentDestroyController.php",
+        "app/Modules/Comment/routes/routes.php (DELETE comments.destroy)",
+        "app/Modules/Comment/Tests/Crud/CommentDestroyTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Crud/CommentDestroyTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Throttle de editar y eliminar y actualización del test [H8]",
+      "description": "Añade a CommentThrottleTest casos para comments.update y comments.destroy (10 por minuto por usuario, 429 al exceder, presupuestos independientes entre sí y de comments.store y comments.like) y actualiza CommentSecurityAuditTest: el test '[H8] exposes no route to update or delete comments' pasa a afirmar exactamente las rutas esperadas (comments.destroy, comments.like, comments.store, comments.update) y se renombra para reflejarlo.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "La 11ª edición y el 11º borrado del minuto responden 429, y cada ruta tiene su propio presupuesto (agotar update no bloquea destroy ni store).",
+        "El test [H8] falla si aparece una ruta comments.* inesperada y pasa con las cuatro actuales, con el nombre actualizado.",
+        "Los tests existentes de throttle de comments.store siguen pasando sin cambios."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Tests/Security/CommentThrottleTest.php",
+        "app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Security/CommentThrottleTest.php",
+        "app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Security/CommentThrottleTest.php app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "CommentResource: editedAt, abilities y carga útil de tombstone",
+      "description": "CommentResource añade editedAt (ISO 8601 o null) y abilities {canUpdate, canDelete} calculadas con la policy sobre atributos ya cargados (sin consultas). Para un comentario eliminado lógicamente (trashed) devuelve la forma de tombstone: id, createdAt, isDeleted true, repliesInfo, content null, user null, likesInfo en cero y abilities en false, sin exponer contenido ni autor. Para los demás isDeleted es false.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Para el autor abilities es {canUpdate: true, canDelete: true} y para otro usuario o invitado ambas false; editedAt refleja edited_at (null si nunca se editó).",
+        "Un comentario trashed serializa con content null, user null, isDeleted true y sin filtrar el texto original (json_encode no contiene el contenido ni el nombre del autor).",
+        "Con los atributos precargados el Resource no ejecuta consultas adicionales, también para el tombstone."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Resources/CommentResource.php",
+        "app/Modules/Comment/Tests/Resources/CommentResourceTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Comment/Resources/CommentResource.php",
+        "app/Modules/Comment/Tests/Resources/CommentResourceTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Resources/CommentResourceTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "CommentThreadProps lista los tombstones sin romper el número de consultas",
+      "description": "En CommentThreadProps los comentarios raíz de un post se listan con withTrashed() (los eliminados lógicamente siempre tienen respuestas y se muestran como tombstone), y la búsqueda del padre de las respuestas también usa withTrashed() para que las respuestas de un tombstone sigan cargando en vez de dar 404. Las respuestas nunca son tombstones: se eliminan de forma física porque no tienen hijos.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "El listado de comentarios de un post incluye al tombstone (isDeleted true) en su posición, y el listado de respuestas de un comentario eliminado lógicamente responde 200 con sus respuestas.",
+        "CommentQueryCountTest sigue exigiendo el mismo número de consultas con 1 o muchos comentarios, incluidos tombstones, ediciones y likes.",
+        "Un post inexistente o un id inválido siguen respondiendo 404, y el sobre del paginador y el orden descendente por id no cambian."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Props/CommentThreadProps.php",
+        "app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php",
+        "app/Modules/Comment/Tests/Security/CommentQueryCountTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Comment/Props/CommentThreadProps.php",
+        "app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php",
+        "app/Modules/Comment/Tests/Security/CommentQueryCountTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Props app/Modules/Comment/Tests/Security/CommentQueryCountTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Publicar comentarios respeta los tombstones",
+      "description": "CommentStoreController responde 404 al comentar sobre un comentario eliminado lógicamente (el findOrFail del destino ya excluye los trashed por SoftDeletes), pero al responder a una respuesta cuyo comentario raíz está eliminado lógicamente busca el padre con withTrashed() para que el hilo siga vivo y la respuesta se aplane al raíz.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "Comentar sobre o responder directamente a un tombstone responde 404 y no crea nada.",
+        "Responder a una respuesta de un hilo cuyo raíz es un tombstone crea la respuesta bajo ese raíz con la mención del autor respondido (aplanado intacto).",
+        "Comentar sobre un post o un comentario normal funciona igual que antes (CommentStoreTest existente sin cambios de aserciones)."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Controllers/CommentStoreController.php",
+        "app/Modules/Comment/Tests/Crud/CommentStoreTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Comment/Controllers/CommentStoreController.php",
+        "app/Modules/Comment/Tests/Crud/CommentStoreTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Crud/CommentStoreTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Sembrar comentarios editados y tombstones",
+      "description": "CommentSeeder marca alrededor del 10% de los comentarios como editados (edited_at posterior a created_at) y elimina lógicamente algunos comentarios raíz que tienen respuestas, para poder ver 'editado' y el tombstone con datos locales. Sus pruebas validan rangos y propiedades, no valores concretos (regla de los seeders aleatorios).",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "Tras el seeder existen comentarios con edited_at posterior a created_at y todo comentario eliminado lógicamente tiene al menos una respuesta.",
+        "Ningún comentario eliminado lógicamente es una respuesta y los límites de comentarios y respuestas por hilo no cambian.",
+        "Los tests existentes del seeder (límites, un nivel, menciones) siguen pasando."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Database/Seeders/CommentSeeder.php",
+        "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Comment/Database/Seeders/CommentSeeder.php",
+        "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php"
+      ],
+      "validateCommand": "php artisan test --compact app/Modules/Comment/Tests/Seeders/CommentSeederTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Tipos de frontend y Wayfinder para editar y eliminar",
+      "description": "Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; está en .gitignore) y amplía types/comment.ts: Comment.editedAt, Comment.abilities {canUpdate, canDelete}, Comment.isDeleted, y content y user pasan a admitir null para el tombstone (con un tipo auxiliar si hace falta), de modo que tsc obligue a tratar el caso eliminado en los consumidores.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "npm run types pasa y marca como error cualquier uso de comment.content o comment.user sin tratar el caso null (CommentItem se ajusta en TASK-017).",
+        "Las acciones de Wayfinder CommentUpdateController y CommentDestroyController existen tras regenerar y se importan desde @/shared/wayfinder/actions/App/Modules/Comment/Controllers/.",
+        "types/comment.ts no duplica la forma de likesInfo ni de repliesInfo ya existentes."
+      ],
+      "filesToModify": [
+        "resources/js/modules/comment/types/comment.ts"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "resources/js/modules/comment/types/comment.ts"
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Diálogo de edición de comentario",
+      "description": "Crea components/dialog/CommentEditDialog.tsx: Dialog existente con un Textarea precargado con el contenido, contador/errores con InputError, envío PATCH con useForm y la acción de Wayfinder de CommentUpdateController, y errores de servidor (429 y red) con onHttpException/onNetworkError devolviendo false como CommentForm. Al guardar cierra el diálogo y llama a onUpdated para refrescar la lista del hilo. Limite de 1000 caracteres como en el backend. Colores solo con tokens del tema.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-013",
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Guardar un texto válido llama a onUpdated una sola vez, cierra el diálogo y no cierra el diálogo padre de comentarios.",
+        "Un content vacío o de más de 1000 caracteres muestra el error de validación del servidor en el campo y mantiene el diálogo abierto; un 429 o un fallo de red muestran un mensaje local sin abrir el modal de errores de Inertia.",
+        "Reabrir el diálogo muestra el contenido actual del comentario (no el borrador anterior) y npm run types/lint/format pasan."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/js/modules/comment/components/dialog/CommentEditDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/comment/components/dialog/CommentEditDialog.tsx"
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Diálogo de confirmación de borrado",
+      "description": "Crea components/dialog/CommentDeleteDialog.tsx con el Dialog existente (sin añadir @radix-ui/react-alert-dialog): texto de confirmación, botones Cancelar y Eliminar (variant destructive, deshabilitado mientras procesa), envío DELETE con router.delete y la acción de Wayfinder de CommentDestroyController, preserveScroll y manejo de 429/red como los demás formularios. Al terminar cierra y llama a onDeleted.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-013",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Confirmar llama a onDeleted una sola vez y cierra el diálogo; Cancelar cierra sin enviar ninguna petición.",
+        "Mientras la petición está en curso el botón Eliminar queda deshabilitado (no se envían dos borrados) y un 429 o fallo de red muestra el mensaje sin cerrar el diálogo ni abrir el modal de Inertia.",
+        "El diálogo no contiene colores hard-coded ni <button> nativos y npm run types/lint/format pasan."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/js/modules/comment/components/dialog/CommentDeleteDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/comment/components/dialog/CommentDeleteDialog.tsx"
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Menú de acciones del comentario (Editar / Eliminar)",
+      "description": "Crea components/CommentActionsMenu.tsx con el DropdownMenu de shadcn (trigger Button ghost de icono con aria-label) que ofrece Editar y Eliminar según comment.abilities, abre CommentEditDialog y CommentDeleteDialog y reenvía onUpdated/onDeleted. No se renderiza nada si ninguna habilidad está permitida.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-014",
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "Con canUpdate y canDelete en false el componente no renderiza nada; con solo una de ellas muestra solo esa opción.",
+        "Elegir Editar o Eliminar abre el diálogo correspondiente y el menú es operable con teclado (aria-label en el trigger, foco devuelto al cerrar).",
+        "Usa solo componentes shadcn y tokens del tema; npm run types/lint/format pasan."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/js/modules/comment/components/CommentActionsMenu.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/comment/components/CommentActionsMenu.tsx"
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Integrar editar, 'editado' y tombstone en CommentItem",
+      "description": "CommentItem muestra el menú de acciones en el encabezado del comentario, el texto 'editado' (con la fecha completa en title) cuando editedAt existe y, para isDeleted, un tombstone 'Comentario eliminado' sin autor, contenido, me gusta ni 'Responder', conservando 'Mostrar N respuestas'. Tras editar o eliminar refresca el hilo con uploadedComments (y, en respuestas, también el de la lista raíz como ya hace al responder). CommentList y CommentRepliesList pasan los callbacks necesarios.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-016",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Editar un comentario propio refresca la lista sin cerrar el diálogo de comentarios y muestra 'editado'; eliminar uno sin respuestas lo quita de la lista y uno con respuestas lo deja como tombstone con 'Mostrar N respuestas' funcionando.",
+        "En comentarios ajenos y en el tombstone no aparece el menú ni el botón 'Responder'; eliminar una respuesta actualiza el conteo de respuestas del comentario padre.",
+        "Verificación visual en el navegador en claro y oscuro (prefers-color-scheme) con edición, borrado, tombstone y error 429, y npm run types/lint/format pasan."
+      ],
+      "filesToModify": [
+        "resources/js/modules/comment/components/CommentItem.tsx",
+        "resources/js/modules/comment/components/CommentList.tsx",
+        "resources/js/modules/comment/components/CommentRepliesList.tsx"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "resources/js/modules/comment/components/CommentItem.tsx",
+        "resources/js/modules/comment/components/CommentList.tsx",
+        "resources/js/modules/comment/components/CommentRepliesList.tsx"
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Documentación: CLAUDE.md, docs de arquitectura y skill de convenciones",
+      "description": "Actualiza CLAUDE.md (reglas del módulo Comment: SoftDeletes, borrado mixto, tombstone, policy, rutas comments.update/destroy con sus throttles, edited_at, abilities, frontend de edición y borrado), docs/architecture/backend.md y el skill .claude/skills/social-hub-conventions/SKILL.md (la regla de rutas del módulo cambia). Además corrige una omisión de SOC-51: docs/architecture/backend.md y el skill todavía dicen que Like vive en app/<Domain>/ (arquitectura vieja) cuando ya está en app/Modules/Like/.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-017"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md, docs/architecture/backend.md y el skill describen el borrado mixto, el tombstone, la policy y las dos rutas nuevas con sus throttles, y ninguno dice ya que 'no existe ruta para editar o eliminar'.",
+        "Ninguno de los tres archivos afirma que Like sigue en la arquitectura vieja; todos lo listan junto a Post y Comment como módulo migrado.",
+        "Se revisan también docs/architecture/frontend.md y AGENTS.md y solo se editan si mencionan los comentarios o su ruta antigua (grep sin referencias obsoletas)."
+      ],
+      "filesToModify": [
+        "CLAUDE.md",
+        "docs/architecture/backend.md",
+        ".claude/skills/social-hub-conventions/SKILL.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "CLAUDE.md",
+        "docs/architecture/backend.md",
+        ".claude/skills/social-hub-conventions/SKILL.md"
+      ],
+      "validateCommand": "grep -n 'Like.*arquitectura vieja\\|Like.*old architecture\\|Like. and .User. still live' CLAUDE.md docs/architecture/backend.md .claude/skills/social-hub-conventions/SKILL.md; test $? -eq 1",
+      "review": "claude"
+    }
+  ],
+  "testCoverageMap": {
+    "TASK-001": "CommentModelTest: borrado lógico, edited_at y exclusión de consultas por defecto.",
+    "TASK-002": "CommentFactoryTest: edited_at/deleted_at por defecto, estados edited() y trashed().",
+    "TASK-003": "CommentPolicyTest: autor, otro usuario, comentario eliminado.",
+    "TASK-004": "CommentStoreRequestTest y CommentValidationHardeningTest sin cambios (refactor).",
+    "TASK-005": "CommentUpdateRequestTest: normalización, límite de 1000, tipos incorrectos.",
+    "TASK-006": "CommentUpdateTest: autor, edited_at, 403, login, 404, validación.",
+    "TASK-007": "CommentDestroyTest: borrado mixto, likes, limpieza del tombstone, 403/404, transacción.",
+    "TASK-008": "CommentThrottleTest (update/destroy) y CommentSecurityAuditTest [H8].",
+    "TASK-009": "CommentResourceTest: editedAt, abilities, tombstone sin fuga y sin consultas.",
+    "TASK-010": "CommentThreadPropsTest y CommentQueryCountTest: tombstones listados y consultas constantes.",
+    "TASK-011": "CommentStoreTest: 404 sobre tombstone y aplanado con raíz eliminado.",
+    "TASK-012": "CommentSeederTest: editados, tombstones con respuestas y límites previos.",
+    "TASK-013": "tsc (los consumidores deben tratar content/user null).",
+    "TASK-014": "tsc, ESLint, Prettier; comportamiento verificado en TASK-017 (sin infraestructura de tests de frontend).",
+    "TASK-015": "tsc, ESLint, Prettier; comportamiento verificado en TASK-017.",
+    "TASK-016": "tsc, ESLint, Prettier; comportamiento verificado en TASK-017.",
+    "TASK-017": "tsc, ESLint, Prettier y verificación visual en el navegador (claro/oscuro, edición, borrado, tombstone, 429).",
+    "TASK-018": "grep de referencias obsoletas."
+  },
+  "dependencies": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [
+      "TASK-001"
+    ],
+    "TASK-004": [],
+    "TASK-005": [
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-001",
+      "TASK-003",
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-002",
+      "TASK-003",
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003"
+    ],
+    "TASK-010": [
+      "TASK-009",
+      "TASK-002"
+    ],
+    "TASK-011": [
+      "TASK-001",
+      "TASK-002"
+    ],
+    "TASK-012": [
+      "TASK-002"
+    ],
+    "TASK-013": [
+      "TASK-009"
+    ],
+    "TASK-014": [
+      "TASK-013",
+      "TASK-006"
+    ],
+    "TASK-015": [
+      "TASK-013",
+      "TASK-007"
+    ],
+    "TASK-016": [
+      "TASK-014",
+      "TASK-015"
+    ],
+    "TASK-017": [
+      "TASK-016",
+      "TASK-010",
+      "TASK-011"
+    ],
+    "TASK-018": [
+      "TASK-008",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-017"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 18,
+    "layers": {
+      "0": [
+        "TASK-001",
+        "TASK-004"
+      ],
+      "1": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-005"
+      ],
+      "2": [
+        "TASK-006",
+        "TASK-009",
+        "TASK-011",
+        "TASK-012"
+      ],
+      "3": [
+        "TASK-007",
+        "TASK-010",
+        "TASK-013"
+      ],
+      "4": [
+        "TASK-008",
+        "TASK-014",
+        "TASK-015"
+      ],
+      "5": [
+        "TASK-016"
+      ],
+      "6": [
+        "TASK-017"
+      ],
+      "7": [
+        "TASK-018"
+      ]
+    },
+    "criticalPath": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-009",
+      "TASK-013",
+      "TASK-014",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018"
+    ]
+  }
+}
