@@ -36,9 +36,9 @@ Modo HOLD con decisiones del usuario: toggle único por usuario (índice único 
 - Migración create_likes_table: mismo nombre de archivo (2025_09_26_144232_create_likes_table.php), contenido idéntico, ubicada en app/Modules/Like/Database/Migrations/. La morph map conserva la clave 'like' (Like::MORPH_NAME) y MORPH_COLUMN = 'likeable'.
 - Índice único: unique(user_id, likeable_type, likeable_id), añadido por migración nueva sin depuración de duplicados (el módulo no está en producción).
 - Endpoint: POST comments/{comment}/like, name comments.like, middleware auth + verified + throttle:30,1,comments.like. Respuesta 200 JSON {liked: bool, likesCount: int}. 404 si el comentario no existe, 429 con Retry-After al excederse. Cualquier usuario verificado puede dar like a cualquier comentario, incluido el propio y las respuestas. Sin flash.
-- Concurrencia: alternar dentro de DB::transaction; una UniqueConstraintViolationException durante la creación se trata como 'el like ya existe' y la respuesta refleja el estado real.
+- Concurrencia: el índice único resuelve la carrera (sin transacción: es un solo insert); una UniqueConstraintViolationException durante la creación se trata como 'el like ya existe' y la respuesta refleja el estado real.
 - Lectura: CommentResource añade likesInfo {count:int, likedByMe:bool}. CommentThreadProps precarga withCount('likes') y withExists(likes as liked_by_me) en la misma consulta paginada; el número de consultas es constante. Comment::likesCount() e isLikedBy(User) reutilizan los atributos precargados y solo consultan si faltan.
-- Frontend: Comment.likesInfo en types/comment.ts; useCommentLike (estado optimista con reversión, ignora llamadas mientras isPending) y CommentLikeButton usados desde CommentItem para comentarios y respuestas; acciones de Wayfinder importadas de @/shared/wayfinder/actions/App/Modules/Like/Controllers/CommentLikeToggleController.
+- Frontend: Comment.likesInfo en types/comment.ts; useCommentLike (estado optimista con reversión, ignora llamadas mientras isPending) y CommentLikeButton usados desde CommentItem para comentarios y respuestas; acciones de Wayfinder importadas de @/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeCommentToggleController.
 - Protecciones de SOC-40/41/46 intactas: throttle:6,1,comments.store, sobre del paginador, profundidad de un nivel y consultas constantes.
 
 ## Existing Code Leverage
@@ -307,7 +307,7 @@ En CommentThreadProps::thread() añade withCount('likes') y withExists(['likes a
 
 ### TASK-011: Controlador y rutas del toggle de me gusta en comentarios
 
-Crea CommentLikeToggleController (invocable) en el módulo Like: recibe el Comment por route model binding, dentro de DB::transaction elimina el like del usuario autenticado si existe o lo crea si no (capturando UniqueConstraintViolationException de una carrera para tratarla como 'ya existe'), y responde JSON {liked: bool, likesCount: int}. Crea routes/routes.php (middleware auth + verified, POST comments/{comment}/like, name comments.like, throttle:30,1,comments.like) y LikeRouteServiceProvider (mismo patrón que CommentRouteServiceProvider). Todavía sin registrar el provider de rutas (lo hace TASK-012) para que php artisan route:list no apunte a una clase a medio cablear.
+Crea LikeCommentToggleController (invocable) en el módulo Like: recibe el Comment por route model binding, elimina el like del usuario autenticado si existe o lo crea si no (capturando UniqueConstraintViolationException de una carrera para tratarla como 'ya existe'), y responde JSON {liked: bool, likesCount: int}. Crea routes/routes.php (middleware auth + verified, POST comments/{comment}/like, name comments.like, throttle:30,1,comments.like, igual que app/Modules/Comment/routes/routes.php) y LikeRouteServiceProvider (mismo patrón que CommentRouteServiceProvider). Todavía sin registrar el provider de rutas (lo hace TASK-012) para que php artisan route:list no apunte a una clase a medio cablear.
 
 **Type:** feature  
 **Priority:** P1  
@@ -324,7 +324,7 @@ Crea CommentLikeToggleController (invocable) en el módulo Like: recibe el Comme
 
 **writeScope:**
 
-- `app/Modules/Like/Controllers/CommentLikeToggleController.php`
+- `app/Modules/Like/Controllers/LikeCommentToggleController.php`
 - `app/Modules/Like/Providers/LikeRouteServiceProvider.php`
 - `app/Modules/Like/routes/routes.php`
 
@@ -332,7 +332,7 @@ Crea CommentLikeToggleController (invocable) en el módulo Like: recibe el Comme
 
 ### TASK-012: Registrar las rutas de Like y cubrir el toggle y su límite de peticiones
 
-LikeServiceProvider registra LikeRouteServiceProvider en register() (como CommentServiceProvider). Tests en el módulo: CommentLikeToggleTest (flujo de dar/quitar like, invitado, no verificado, comentario inexistente, un usuario no afecta al like de otro) y LikeThrottleTest (31ª petición del minuto responde 429; el presupuesto es por usuario, no se comparte con comments.store).
+LikeServiceProvider registra LikeRouteServiceProvider en register() (como CommentServiceProvider). Tests en el módulo: LikeCommentToggleTest (flujo de dar/quitar like, invitado, no verificado, comentario inexistente, un usuario no afecta al like de otro) y LikeThrottleTest (31ª petición del minuto responde 429; el presupuesto es por usuario, no se comparte con comments.store).
 
 **Type:** test  
 **Priority:** P1  
@@ -350,14 +350,14 @@ LikeServiceProvider registra LikeRouteServiceProvider en register() (como Commen
 **writeScope:**
 
 - `app/Modules/Like/Providers/LikeServiceProvider.php` (register del provider de rutas)
-- `app/Modules/Like/Tests/Crud/CommentLikeToggleTest.php`
+- `app/Modules/Like/Tests/Crud/LikeCommentToggleTest.php`
 - `app/Modules/Like/Tests/Security/LikeThrottleTest.php`
 
 **validateCommand:** `php artisan test --compact app/Modules/Like/Tests`
 
 ### TASK-013: Tipo y hook de frontend para dar me gusta con actualización optimista
 
-Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; está en .gitignore) y añade a Comment el campo likesInfo: {count:number; likedByMe:boolean} en types/comment.ts. Crea hooks/useCommentLike.ts: recibe el comentario, mantiene el estado local {count, likedByMe}, actualiza de forma optimista, llama al endpoint con la acción de Wayfinder de CommentLikeToggleController y revierte si falla (429/red), exponiendo {likesInfo, isPending, error, toggleLike}. Consultar la documentación de Inertia v3 (useHttp) antes de elegir el transporte; no usar router.post porque la respuesta es JSON, no una página Inertia.
+Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; está en .gitignore) y añade a Comment el campo likesInfo: {count:number; likedByMe:boolean} en types/comment.ts. Crea hooks/useCommentLike.ts: recibe el comentario, mantiene el estado local {count, likedByMe}, actualiza de forma optimista, llama al endpoint con la acción de Wayfinder de LikeCommentToggleController y revierte si falla (429/red), exponiendo {likesInfo, isPending, error, toggleLike}. Consultar la documentación de Inertia v3 (useHttp) antes de elegir el transporte; no usar router.post porque la respuesta es JSON, no una página Inertia.
 
 **Type:** feature  
 **Priority:** P1  
@@ -480,7 +480,7 @@ Tras TASK-008 el módulo Like ya está migrado, cubierto por tests y con el índ
 - **TASK-009**: CommentResourceTest: likesInfo, sin consultas extra, invitado.
 - **TASK-010**: CommentThreadPropsTest y CommentQueryCountTest: forma de likesInfo y consultas constantes.
 - **TASK-011**: Verificación estática; el comportamiento HTTP se prueba en TASK-012.
-- **TASK-012**: CommentLikeToggleTest y LikeThrottleTest: alternar, 404, invitado, no verificado, 429.
+- **TASK-012**: LikeCommentToggleTest y LikeThrottleTest: alternar, 404, invitado, no verificado, 429.
 - **TASK-013**: tsc y ESLint; el comportamiento optimista se comprueba en TASK-014 (sin infraestructura de tests de frontend).
 - **TASK-014**: tsc, ESLint, Prettier y verificación visual en el navegador (claro/oscuro, comentario y respuesta, error 429).
 - **TASK-015**: LikeSeederTest: rangos, sin duplicados, idempotencia, pocos usuarios.
