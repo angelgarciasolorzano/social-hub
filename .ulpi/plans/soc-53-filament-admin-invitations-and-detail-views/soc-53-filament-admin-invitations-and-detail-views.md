@@ -290,7 +290,28 @@ Corregir el caso de intended redirect compartido al visitar /admin/login y luego
 
 **Review:** Codex
 
-### TASK-012: Definir permiso y rol explícito de aprovisionamiento
+### TASK-012: Impedir la asignación automática del rol provisioner
+
+Hacer explícitos los roles iniciales de AdminUserSeeder para que futuros roles de AdminRole no se asignen automáticamente; cubrir que admin-users-provisioner permanece sin asignar y que los roles manuales se conservan.
+
+**Type:** bug · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- AdminUserSeeder asigna a Angel explícitamente solo el rol base y los tres roles reader previstos.
+- La presencia de admin-users-provisioner en el catálogo no lo asigna automáticamente a Angel.
+- Las asignaciones manuales existentes se conservan y las promociones aleatorias siguen usando solo roles reader.
+
+**writeScope:**
+- `app/Modules/Admin/Database/Seeders/AdminUserSeeder.php`
+- `app/Modules/Admin/Tests/Database/AdminUserSeederTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Database/AdminUserSeederTest.php`
+
+**Review:** Codex
+
+### TASK-013: Definir permiso y rol explícito de aprovisionamiento
 
 Agregar admin.users.create al enum y seeder, con el rol admin-users-provisioner que permita abrir la tabla (admin.users.viewAny) y emitir invitaciones, sin conceder lectura de detalle ni escalar roles base/readers.
 
@@ -311,13 +332,13 @@ Agregar admin.users.create al enum y seeder, con el rol admin-users-provisioner 
 
 **Review:** Codex
 
-### TASK-013: Cubrir el catálogo RBAC del aprovisionador
+### TASK-014: Cubrir el catálogo RBAC del aprovisionador
 
 Actualizar la prueba existente del seeder para verificar idempotencia y asignación mínima del rol admin-users-provisioner.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-012
+**Depends on:** TASK-013
 
 **Acceptance Criteria:**
 - La prueba demuestra que el rol provisioner puede ver el listado y crear invitaciones, pero no obtiene admin.users.view ni permisos de posts/dashboard.
@@ -330,7 +351,7 @@ Actualizar la prueba existente del seeder para verificar idempotencia y asignaci
 
 **Review:** Codex
 
-### TASK-014: Crear el modelo y almacenamiento de invitaciones Admin
+### TASK-015: Crear el modelo y almacenamiento de invitaciones Admin
 
 Añadir AdminInvitation y su migración al módulo Admin, y registrar el directorio de migraciones en el proveedor ya cargado. Persistir email canónico, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.
 
@@ -351,13 +372,13 @@ Añadir AdminInvitation y su migración al módulo Admin, y registrar el directo
 
 **Review:** Codex
 
-### TASK-015: Implementar emisión, aceptación y correo de invitación
+### TASK-016: Implementar emisión, aceptación y correo de invitación
 
 Crear AdminInvitationService y la notificación por correo. El servicio emite token aleatorio de un solo uso, guarda solo su hash, vence/invalida invitaciones previas y resuelve las ramas de cuenta existente y correo nuevo en transacciones.
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-012, TASK-014
+**Depends on:** TASK-013, TASK-015
 
 **Acceptance Criteria:**
 - La aceptación válida de una cuenta existente conserva sus credenciales; para un correo nuevo crea los datos permitidos, verifica el correo con el token consumido y asigna admin solo una vez.
@@ -372,13 +393,13 @@ Crear AdminInvitationService y la notificación por correo. El servicio emite to
 
 **Review:** Codex
 
-### TASK-016: Añadir en Filament búsqueda y envío de invitaciones
+### TASK-017: Añadir en Filament búsqueda y envío de invitaciones
 
 Añadir a ListUsers una acción de invitación protegida por admin.users.create. Permitir buscar/seleccionar una cuenta por email o escribir un email que aún no exista y delegar el envío al servicio.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-012, TASK-015
+**Depends on:** TASK-013, TASK-016
 
 **Acceptance Criteria:**
 - Un provisioner puede buscar y seleccionar un usuario existente o introducir un email no registrado; ambas ramas generan una invitación dirigida al mismo email.
@@ -392,13 +413,13 @@ Añadir a ListUsers una acción de invitación protegida por admin.users.create.
 
 **Review:** Codex
 
-### TASK-017: Crear aceptación segura de invitación con Livewire
+### TASK-018: Crear aceptación segura de invitación con Livewire
 
 Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-015
+**Depends on:** TASK-016
 
 **Acceptance Criteria:**
 - Un token válido permite completar la rama existente o el formulario de cuenta nueva; el correo objetivo se muestra fijo y no se puede sustituir desde props/campos cliente.
@@ -413,13 +434,13 @@ Implementar una página completa Livewire fuera del panel Admin. Para cuenta exi
 
 **Review:** Codex
 
-### TASK-018: Registrar y probar la ruta pública de invitación
+### TASK-019: Registrar y probar la ruta pública de invitación
 
 Registrar una ruta web con nombre estable desde AdminServiceProvider y el archivo de rutas del módulo; entregar token al componente Livewire sin colocar la página bajo el guard admin ni rutas del panel.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-014, TASK-017
+**Depends on:** TASK-015, TASK-018
 
 **Acceptance Criteria:**
 - El enlace enviado por correo resuelve la página Livewire sin sesión Admin, y el panel /admin sigue usando su guard y middleware existentes.
@@ -453,13 +474,14 @@ Los detalles de imágenes, filtros y redirección pueden integrarse como cambios
 - Publicaciones: ListPostsTest cubre imagen/fallback y filtros; PostsRelationManagerTest cubre imagen/fallback y conserva alcance por usuario; ViewPostTest cubre imagen/fallback.
 - Comentarios: CommentsRelationManagerTest cubre filtros y navegación; ViewCommentTest cubre ruta/datos/autorización; RepliesRelationManagerTest cubre alcance, filtros, paginación y solo lectura; CommentActivityOverviewTest cubre contadores.
 - Autenticación: AuthenticationTest y AdminPanelAccessTest cubren destino normal después de visitar login Admin y acceso del panel.
+- Seed local: AdminUserSeederTest cubre que Angel conserva roles manuales y no recibe automáticamente el rol provisioner.
 - Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública.
 
 ## Execution Summary
 
-- Tareas: 18.
-- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-014; L1: TASK-008, TASK-009, TASK-013, TASK-015; L2: TASK-010, TASK-016, TASK-017; L3: TASK-018.
-- Ruta crítica (4 tareas): TASK-012 → TASK-015 → TASK-017 → TASK-018.
+- Tareas: 19.
+- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-015; L1: TASK-008, TASK-009, TASK-013; L2: TASK-010, TASK-014, TASK-016; L3: TASK-017, TASK-018; L4: TASK-019.
+- Ruta crítica (5 tareas): TASK-012 → TASK-013 → TASK-016 → TASK-018 → TASK-019.
 - Próxima ejecución: implementar solo la siguiente tarea atómica y detenerse para revisión.
 
 ## Task Dependencies
@@ -477,8 +499,9 @@ Los detalles de imágenes, filtros y redirección pueden integrarse como cambios
 - **TASK-011** ← sin dependencias
 - **TASK-012** ← sin dependencias
 - **TASK-013** ← TASK-012
-- **TASK-014** ← sin dependencias
-- **TASK-015** ← TASK-012, TASK-014
-- **TASK-016** ← TASK-012, TASK-015
-- **TASK-017** ← TASK-015
-- **TASK-018** ← TASK-014, TASK-017
+- **TASK-014** ← TASK-013
+- **TASK-015** ← sin dependencias
+- **TASK-016** ← TASK-013, TASK-015
+- **TASK-017** ← TASK-013, TASK-016
+- **TASK-018** ← TASK-016
+- **TASK-019** ← TASK-015, TASK-018

@@ -65,7 +65,8 @@
     "A duplicate pending invite is replaced safely; a mail transport error is surfaced and can be recovered by issuing a new token.",
     "A user lacking admin.users.create cannot see or invoke the invitation action, even by a crafted Livewire request.",
     "A user lacking admin.posts.view cannot access a comment detail URL or its reply data; the hidden resource does not become a sidebar entry.",
-    "Visiting Admin login before normal login does not contaminate the web guard's intended destination; Admin panel login behavior remains intact."
+    "Visiting Admin login before normal login does not contaminate the web guard's intended destination; Admin panel login behavior remains intact.",
+    "El seeder local de Angel no asigna admin-users-provisioner automáticamente aunque el rol exista en el catálogo."
   ],
   "shipCut": "Los detalles de imágenes, filtros y redirección pueden integrarse como cambios independientes. El flujo de invitación no se considera completo hasta que RBAC, persistencia/servicio, acción Filament, componente Livewire y registro de ruta estén conectados y cubiertos por pruebas. El detalle de comentarios no se considera completo hasta que ruta oculta, respuestas, widgets y enlace desde la tabla estén integrados.",
   "testCoverageMap": [
@@ -73,6 +74,7 @@
     "Publicaciones: ListPostsTest cubre imagen/fallback y filtros; PostsRelationManagerTest cubre imagen/fallback y conserva alcance por usuario; ViewPostTest cubre imagen/fallback.",
     "Comentarios: CommentsRelationManagerTest cubre filtros y navegación; ViewCommentTest cubre ruta/datos/autorización; RepliesRelationManagerTest cubre alcance, filtros, paginación y solo lectura; CommentActivityOverviewTest cubre contadores.",
     "Autenticación: AuthenticationTest y AdminPanelAccessTest cubren destino normal después de visitar login Admin y acceso del panel.",
+    "AdminUserSeederTest cubre que el usuario local conserva roles manuales y no recibe automáticamente el rol provisioner.",
     "Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública."
   ],
   "tasks": [
@@ -426,13 +428,46 @@
     },
     {
       "id": "TASK-012",
+      "title": "Impedir la asignación automática del rol provisioner",
+      "description": "Hacer explícitos los roles iniciales de AdminUserSeeder para que futuros roles de AdminRole no se asignen automáticamente; cubrir que admin-users-provisioner permanece sin asignar y que los roles manuales se conservan.",
+      "priority": "P1",
+      "type": "bug",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "admin",
+        "users",
+        "permissions"
+      ],
+      "acceptanceCriteria": [
+        "AdminUserSeeder asigna a Angel explícitamente solo el rol base y los tres roles reader previstos.",
+        "La presencia de admin-users-provisioner en el catálogo no lo asigna automáticamente a Angel.",
+        "Las asignaciones manuales existentes se conservan y las promociones aleatorias siguen usando solo roles reader."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-013",
       "title": "Definir permiso y rol explícito de aprovisionamiento",
       "description": "Agregar admin.users.create al enum y seeder, con el rol admin-users-provisioner que permita abrir la tabla (admin.users.viewAny) y emitir invitaciones, sin conceder lectura de detalle ni escalar roles base/readers.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
       "agent": "laravel-senior-engineer",
-      "dependsOn": [],
+      "dependsOn": [
+        "TASK-012"
+      ],
       "labels": [
         "admin",
         "rbac",
@@ -457,7 +492,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-013",
+      "id": "TASK-014",
       "title": "Cubrir el catálogo RBAC del aprovisionador",
       "description": "Actualizar la prueba existente del seeder para verificar idempotencia y asignación mínima del rol admin-users-provisioner.",
       "priority": "P1",
@@ -465,7 +500,7 @@
       "effort": "S",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-012"
+        "TASK-013"
       ],
       "labels": [
         "admin",
@@ -487,7 +522,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-014",
+      "id": "TASK-015",
       "title": "Crear el modelo y almacenamiento de invitaciones Admin",
       "description": "Añadir AdminInvitation y su migración al módulo Admin, y registrar el directorio de migraciones en el proveedor ya cargado. Persistir email canónico, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.",
       "priority": "P1",
@@ -520,7 +555,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-015",
+      "id": "TASK-016",
       "title": "Implementar emisión, aceptación y correo de invitación",
       "description": "Crear AdminInvitationService y la notificación por correo. El servicio emite token aleatorio de un solo uso, guarda solo su hash, vence/invalida invitaciones previas y resuelve las ramas de cuenta existente y correo nuevo en transacciones.",
       "priority": "P1",
@@ -528,8 +563,8 @@
       "effort": "L",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-012",
-        "TASK-014"
+        "TASK-013",
+        "TASK-015"
       ],
       "labels": [
         "admin",
@@ -556,7 +591,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-016",
+      "id": "TASK-017",
       "title": "Añadir en Filament búsqueda y envío de invitaciones",
       "description": "Añadir a ListUsers una acción de invitación protegida por admin.users.create. Permitir buscar/seleccionar una cuenta por email o escribir un email que aún no exista y delegar el envío al servicio.",
       "priority": "P1",
@@ -564,8 +599,8 @@
       "effort": "M",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-012",
-        "TASK-015"
+        "TASK-013",
+        "TASK-016"
       ],
       "labels": [
         "admin",
@@ -590,7 +625,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-017",
+      "id": "TASK-018",
       "title": "Crear aceptación segura de invitación con Livewire",
       "description": "Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.",
       "priority": "P1",
@@ -598,7 +633,7 @@
       "effort": "L",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-015"
+        "TASK-016"
       ],
       "labels": [
         "admin",
@@ -625,7 +660,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-018",
+      "id": "TASK-019",
       "title": "Registrar y probar la ruta pública de invitación",
       "description": "Registrar una ruta web con nombre estable desde AdminServiceProvider y el archivo de rutas del módulo; entregar token al componente Livewire sin colocar la página bajo el guard admin ni rutas del panel.",
       "priority": "P1",
@@ -633,8 +668,8 @@
       "effort": "M",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-014",
-        "TASK-017"
+        "TASK-015",
+        "TASK-018"
       ],
       "labels": [
         "admin",
