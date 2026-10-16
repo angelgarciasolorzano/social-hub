@@ -7,6 +7,7 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,6 +33,7 @@ pest()->extend(TestCase::class)
     ->in(
         'Feature',
         __DIR__.'/../app/Modules/Comment/Tests',
+        __DIR__.'/../app/Modules/Like/Tests',
         __DIR__.'/../app/Modules/Post/Tests',
         __DIR__.'/../app/Modules/Admin/Tests',
         __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests',
@@ -142,6 +144,26 @@ function createCommentsOn(Post|Comment $commentable, int $total, ?User $user = n
         static fn (int $position): Comment => createCommentOn($commentable, $user),
         range(1, $total),
     );
+}
+
+/**
+ * Create a persisted Like by the given user (or a new one) on the given Post or Comment.
+ * Omit `$likeable` to like a new Post.
+ */
+function createLike(?User $user = null, Post|Comment|null $likeable = null): Like
+{
+    /** @var Factory<Like> $factory */
+    $factory = Like::factory();
+
+    if ($user instanceof User) {
+        $factory = $factory->for($user);
+    }
+
+    if ($likeable !== null) {
+        $factory = $factory->for($likeable, 'likeable');
+    }
+
+    return $factory->createOne();
 }
 
 /**

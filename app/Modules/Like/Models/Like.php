@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Like\Models;
+namespace App\Modules\Like\Models;
 
+use App\Modules\Like\Database\Factories\LikeFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
-use Database\Factories\LikeFactory;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  *
  * @mixin IdeHelperLike
  */
+#[UseFactory(LikeFactory::class)]
 class Like extends Model
 {
     /** @use HasFactory<LikeFactory> */
@@ -43,7 +45,7 @@ class Like extends Model
     }
 
     /**
-     * Get the parent model that the like belongs to (e.g., Post).
+     * Get the parent model that the like belongs to (e.g., Post or Comment).
      *
      * @return MorphTo<Model, $this>
      */

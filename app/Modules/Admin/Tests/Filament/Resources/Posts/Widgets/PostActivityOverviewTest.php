@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Like\Models\Like;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Widgets\PostActivityOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -45,11 +45,11 @@ it('shows scoped comment reply and like counts with seven day charts', function 
         return $comment;
     };
 
-    $createLikeAt = static function (Post $post, CarbonImmutable $createdAt) use ($user): void {
+    $createLikeAt = static function (Post $post, CarbonImmutable $createdAt): void {
         $like = new Like;
 
         $like->forceFill([
-            'user_id' => $user->getKey(),
+            'user_id' => createUser()->getKey(),
             'created_at' => $createdAt,
         ]);
         $post->likes()->save($like);

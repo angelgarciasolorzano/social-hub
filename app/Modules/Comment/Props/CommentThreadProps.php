@@ -8,6 +8,7 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Resources\CommentResource;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Cursor;
@@ -66,7 +67,7 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
      */
     private function thread(string $commentableClass, string $parameter, string $cursorName): CursorPaginator
     {
-        $this->consumeThrottleBudget();
+        $user = $this->consumeThrottleBudget();
 
         $commentable = $commentableClass::query()->findOrFail($this->commentableId($parameter));
 
@@ -74,7 +75,8 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
 
         return $commentable->comments()
             ->with(['user', 'repliedToUser:id,name'])
-            ->withCount('comments')
+            ->withCount(['comments', 'likes'])
+            ->withExists(['likes as liked_by_me' => fn (Builder $builder): Builder => $builder->whereBelongsTo($user)])
             ->orderByDesc('id')
             ->cursorPaginate(
                 perPage: self::PER_PAGE,
@@ -97,9 +99,9 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
     }
 
     /**
-     * Count this load against the per-user budget, answering 429 once it is spent.
+     * Count this load against the per-user budget, answering 429 once it is spent, and return the user.
      */
-    private function consumeThrottleBudget(): void
+    private function consumeThrottleBudget(): User
     {
         $user = $this->request->user();
 
@@ -116,5 +118,7 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
         }
 
         RateLimiter::hit($throttleKey, self::THROTTLE_DECAY_SECONDS);
+
+        return $user;
     }
 }

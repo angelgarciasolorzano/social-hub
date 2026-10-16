@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Database\Factories;
+namespace App\Modules\Like\Database\Factories;
 
-use App\Like\Models\Like;
+use App\Modules\Like\Models\Like;
+use App\Modules\Post\Models\Post;
+use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Override;
 
@@ -24,14 +26,16 @@ class LikeFactory extends Factory
     /**
      * Define the model's default state.
      *
-     * @return array{}
+     * @return array<string, mixed>
      *
      * @phpstan-return array<model-property<Like>, mixed>
      */
     public function definition(): array
     {
         return [
-            //
+            'user_id' => User::factory(),
+            'likeable_id' => Post::factory(),
+            'likeable_type' => Post::MORPH_NAME,
         ];
     }
 }

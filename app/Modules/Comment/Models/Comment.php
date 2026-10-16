@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Comment\Models;
 
-use App\Like\Models\Like;
 use App\Modules\Comment\Database\Factories\CommentFactory;
 use App\Modules\Comment\Enums\CommentType;
+use App\Modules\Like\Models\Like;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -115,6 +115,28 @@ class Comment extends Model
         $loadedCount = $this->getAttributes()['comments_count'] ?? null;
 
         return is_numeric($loadedCount) ? (int) $loadedCount : $this->comments()->count();
+    }
+
+    /**
+     * Get the total number of likes, reusing a preloaded `likes_count` when present.
+     */
+    public function likesCount(): int
+    {
+        $loadedCount = $this->getAttributes()['likes_count'] ?? null;
+
+        return is_numeric($loadedCount) ? (int) $loadedCount : $this->likes()->count();
+    }
+
+    /**
+     * Check if the given user liked this comment, reusing a preloaded `liked_by_me` of that same user.
+     */
+    public function isLikedBy(User $user): bool
+    {
+        $loadedExists = $this->getAttributes()['liked_by_me'] ?? null;
+
+        return $loadedExists === null
+            ? $this->likes()->whereBelongsTo($user)->exists()
+            : (bool) $loadedExists;
     }
 
     /**

@@ -34,7 +34,21 @@ class CommentResource extends JsonResource
                 'hasReplies' => $this->hasReplies(),
                 'repliesCount' => $this->repliesCount(),
             ],
+            'likesInfo' => [
+                'count' => $this->likesCount(),
+                'likedByMe' => $this->isLikedByRequestUser($request),
+            ],
         ];
+    }
+
+    /**
+     * Check if the authenticated user of the request liked the comment, which is false for guests.
+     */
+    private function isLikedByRequestUser(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user instanceof User && $this->isLikedBy($user);
     }
 
     /**

@@ -63,6 +63,7 @@ it('uses the same number of queries regardless of how many comments or replies a
     foreach (range(1, 10) as $attempt) {
         $comment = createCommentOn($largePost);
         createCommentOn($comment);
+        createLike(createUser(), $comment);
     }
 
     $small = listCommentsCountingQueries($this, $smallPost);

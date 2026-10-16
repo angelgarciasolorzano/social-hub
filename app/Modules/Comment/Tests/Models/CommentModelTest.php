@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Like\Models\Like;
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;

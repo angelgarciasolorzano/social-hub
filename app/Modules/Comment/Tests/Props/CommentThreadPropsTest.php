@@ -133,10 +133,45 @@ it('serializes each comment with the resource shape and nothing else', function 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
     $serializedComment = $firstPage->items()[0];
 
-    expect(array_keys($serializedComment))->toBe(['id', 'content', 'createdAt', 'user', 'repliedTo', 'repliesInfo'])
+    expect(array_keys($serializedComment))->toBe(['id', 'content', 'createdAt', 'user', 'repliedTo', 'repliesInfo', 'likesInfo'])
         ->and($serializedComment['user'])->toHaveKeys(['id', 'name'])->toHaveCount(2)
         ->and($serializedComment['repliedTo'])->toBeNull()
-        ->and($serializedComment['repliesInfo'])->toBe(['hasReplies' => true, 'repliesCount' => 1]);
+        ->and($serializedComment['repliesInfo'])->toBe(['hasReplies' => true, 'repliesCount' => 1])
+        ->and($serializedComment['likesInfo'])->toBe(['count' => 0, 'likedByMe' => false]);
+});
+
+it('reports the likes of each comment and whether the viewer liked it', function (): void {
+    $post = createPost();
+    $user = createUser();
+    $comment = createCommentOn($post);
+    $likedByOthers = createCommentOn($post);
+    $unliked = createCommentOn($post);
+
+    createLike($user, $comment);
+    createLike(createUser(), $comment);
+    createLike(createUser(), $likedByOthers);
+
+    $page = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], $user);
+    $likesInfo = array_column($page->items(), 'likesInfo', 'id');
+
+    expect($likesInfo[$comment->id])->toBe(['count' => 2, 'likedByMe' => true])
+        ->and($likesInfo[$likedByOthers->id])->toBe(['count' => 1, 'likedByMe' => false])
+        ->and($likesInfo[$unliked->id])->toBe(['count' => 0, 'likedByMe' => false]);
+});
+
+it('reports the likes of each reply and whether the viewer liked it', function (): void {
+    $comment = createComment();
+    $user = createUser();
+    $likedReply = createCommentOn($comment);
+    $plainReply = createCommentOn($comment);
+
+    createLike($user, $likedReply);
+
+    $page = resolveCommentThread('replies', [CommentThreadProps::REPLIES_PARAMETER => $comment->id], $user);
+    $likesInfo = array_column($page->items(), 'likesInfo', 'id');
+
+    expect($likesInfo[$likedReply->id])->toBe(['count' => 1, 'likedByMe' => true])
+        ->and($likesInfo[$plainReply->id])->toBe(['count' => 0, 'likedByMe' => false]);
 });
 
 it('serializes the mentioned user of each reply with only its id and name', function (): void {
@@ -263,6 +298,7 @@ it('uses the same number of queries whether the thread has one or many comments 
 
     foreach (createCommentsOn($largePost, 10) as $comment) {
         createCommentOn($comment);
+        createLike(createUser(), $comment);
     }
 
     $user = createUser();

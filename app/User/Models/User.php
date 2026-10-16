@@ -6,9 +6,9 @@ namespace App\User\Models;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
-use App\Like\Models\Like;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
 use App\User\Enums\PreferredLocale;
