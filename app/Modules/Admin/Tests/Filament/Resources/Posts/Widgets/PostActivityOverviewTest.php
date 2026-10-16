@@ -45,11 +45,11 @@ it('shows scoped comment reply and like counts with seven day charts', function 
         return $comment;
     };
 
-    $createLikeAt = static function (Post $post, CarbonImmutable $createdAt) use ($user): void {
+    $createLikeAt = static function (Post $post, CarbonImmutable $createdAt): void {
         $like = new Like;
 
         $like->forceFill([
-            'user_id' => $user->getKey(),
+            'user_id' => createUser()->getKey(),
             'created_at' => $createdAt,
         ]);
         $post->likes()->save($like);
