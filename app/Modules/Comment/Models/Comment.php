@@ -118,6 +118,32 @@ class Comment extends Model
     }
 
     /**
+     * Get the total number of likes, reusing a preloaded `likes_count` when present.
+     */
+    public function likesCount(): int
+    {
+        $loadedCount = $this->getAttributes()['likes_count'] ?? null;
+
+        return is_numeric($loadedCount) ? (int) $loadedCount : $this->likes()->count();
+    }
+
+    /**
+     * Check if the given user liked this comment, reusing a preloaded `liked_by_me` of that same user.
+     */
+    public function isLikedBy(?User $user): bool
+    {
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        $loadedExists = $this->getAttributes()['liked_by_me'] ?? null;
+
+        return $loadedExists === null
+            ? $this->likes()->where('user_id', $user->id)->exists()
+            : (bool) $loadedExists;
+    }
+
+    /**
      * Get all of the comment's likes.
      *
      * @return MorphMany<Like, $this>

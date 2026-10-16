@@ -34,6 +34,10 @@ class CommentResource extends JsonResource
                 'hasReplies' => $this->hasReplies(),
                 'repliesCount' => $this->repliesCount(),
             ],
+            'likesInfo' => [
+                'count' => $this->likesCount(),
+                'likedByMe' => $this->isLikedBy($request->user()),
+            ],
         ];
     }
 
