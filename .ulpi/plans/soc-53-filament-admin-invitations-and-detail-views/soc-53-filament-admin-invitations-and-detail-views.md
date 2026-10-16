@@ -539,7 +539,7 @@ Agregar los plugins Alpine que BlatUI requiere y crear un entrypoint pequeño qu
 **writeScope:**
 - `package.json`
 - `package-lock.json`
-- `resources/js/admin/blatui.ts`
+- `resources/js/blatui/livewire.ts`
 
 **validateCommand:** `rtk npm ls @alpinejs/anchor @alpinejs/collapse @alpinejs/focus @floating-ui/dom`
 
@@ -547,20 +547,20 @@ Agregar los plugins Alpine que BlatUI requiere y crear un entrypoint pequeño qu
 
 ### TASK-024: Crear layout público Livewire con assets BlatUI
 
-Registrar la entrada Vite aislada de la aceptación de invitaciones y crear su layout Livewire público con estilos BlatUI, `@livewireStyles` y `@livewireScripts`.
+Registrar entradas Vite para BlatUI y crear un layout público reutilizable para páginas Livewire, con `@livewireStyles` y `@livewireScripts`.
 
 **Type:** feature · **Effort:** M · **Agent:** react-vite-tailwind-engineer · **Priority:** P1
 
 **Depends on:** TASK-023
 
 **Acceptance Criteria:**
-- El layout carga una hoja CSS propia de la página y el entrypoint BlatUI desde Vite, además de las directivas de assets de Livewire.
+- El layout carga los estilos BlatUI y su entrypoint Livewire desde Vite, además de las directivas de assets de Livewire.
 - El build produce los assets sin ejecutar ni renderizar el entrypoint Inertia/React en la ruta pública.
 
 **writeScope:**
 - `vite.config.ts`
-- `resources/css/admin-invitation.css`
-- `resources/views/layouts/admin-invitation.blade.php`
+- `resources/css/blatui-livewire.css`
+- `resources/views/layouts/blatui-livewire.blade.php`
 
 **validateCommand:** `rtk npm run build`
 

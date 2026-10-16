@@ -14,6 +14,8 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/app/app.tsx',
+                'resources/css/blatui-livewire.css',
+                'resources/js/blatui/livewire.ts',
                 'resources/css/filament/admin/theme.css',
             ],
             refresh: true,

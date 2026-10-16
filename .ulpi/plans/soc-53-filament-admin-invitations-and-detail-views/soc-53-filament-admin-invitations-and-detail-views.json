@@ -831,12 +831,12 @@
         "package-lock.json"
       ],
       "filesToCreate": [
-        "resources/js/admin/blatui.ts"
+        "resources/js/blatui/livewire.ts"
       ],
       "writeScope": [
         "package.json",
         "package-lock.json",
-        "resources/js/admin/blatui.ts"
+        "resources/js/blatui/livewire.ts"
       ],
       "validateCommand": "rtk npm ls @alpinejs/anchor @alpinejs/collapse @alpinejs/focus @floating-ui/dom",
       "review": "codex"
@@ -844,7 +844,7 @@
     {
       "id": "TASK-024",
       "title": "Crear layout público Livewire con assets BlatUI",
-      "description": "Registrar la entrada Vite aislada de la aceptación de invitaciones y crear el layout Livewire público con estilos BlatUI, @livewireStyles y @livewireScripts.",
+      "description": "Registrar entradas Vite para BlatUI y crear un layout público reutilizable para páginas Livewire, con @livewireStyles y @livewireScripts.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
@@ -859,20 +859,20 @@
         "livewire"
       ],
       "acceptanceCriteria": [
-        "El layout carga una hoja CSS propia de la página y el entrypoint BlatUI desde Vite, además de las directivas de assets de Livewire.",
+        "El layout carga los estilos BlatUI y su entrypoint Livewire desde Vite, además de las directivas de assets de Livewire.",
         "El build produce los assets sin ejecutar ni renderizar el entrypoint Inertia/React en la ruta pública."
       ],
       "filesToModify": [
         "vite.config.ts"
       ],
       "filesToCreate": [
-        "resources/css/admin-invitation.css",
-        "resources/views/layouts/admin-invitation.blade.php"
+        "resources/css/blatui-livewire.css",
+        "resources/views/layouts/blatui-livewire.blade.php"
       ],
       "writeScope": [
         "vite.config.ts",
-        "resources/css/admin-invitation.css",
-        "resources/views/layouts/admin-invitation.blade.php"
+        "resources/css/blatui-livewire.css",
+        "resources/views/layouts/blatui-livewire.blade.php"
       ],
       "validateCommand": "rtk npm run build",
       "review": "codex"
