@@ -36,6 +36,10 @@ it('seeds each role with only its intended permissions', function (): void {
         ->where('name', AdminRole::AdminUsersReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
+    $usersProvisionerRole = Role::query()
+        ->where('name', AdminRole::AdminUsersProvisioner->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
     $postsReaderRole = Role::query()
         ->where('name', AdminRole::AdminPostsReader->value)
         ->where('guard_name', 'admin')
@@ -45,8 +49,8 @@ it('seeds each role with only its intended permissions', function (): void {
         ->where('guard_name', 'admin')
         ->firstOrFail();
 
-    $this->assertDatabaseCount('roles', 4);
-    $this->assertDatabaseCount('permissions', 6);
+    $this->assertDatabaseCount('roles', 5);
+    $this->assertDatabaseCount('permissions', 7);
 
     foreach (AdminRole::cases() as $adminRoleCase) {
         $this->assertDatabaseHas('roles', [
@@ -75,13 +79,29 @@ it('seeds each role with only its intended permissions', function (): void {
         ->and($usersReaderRole->permissions->pluck('name')->sort()->values()
             ->all())
         ->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
+        ->and($usersProvisionerRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([AdminPermission::AdminUsersCreate->value, AdminPermission::AdminUsersViewAny->value])
         ->and($postsReaderRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([AdminPermission::AdminPostsView->value, AdminPermission::AdminPostsViewAny->value])
         ->and($dashboardReaderRole->permissions->pluck('name')->all())
         ->toBe([AdminPermission::AdminDashboardView->value]);
 });
 
-it('keeps a revoked permission revoked when the seeder runs again', function (): void {
+it('allows the provisioner to list users and create invitations without other section access', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminUsersProvisioner->value);
+
+    expect($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersCreate->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersView->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminPostsViewAny->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminPostsView->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminDashboardView->value, 'admin'))->toBeFalse();
+});
+
+it('preserves role assignments and revoked permissions when the seeder runs again', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $usersReaderRole = Role::query()
@@ -99,8 +119,8 @@ it('keeps a revoked permission revoked when the seeder runs again', function ():
 
     $remainingPermissions = usersReaderPermissionNames();
 
-    $this->assertDatabaseCount('roles', 4);
-    $this->assertDatabaseCount('permissions', 6);
+    $this->assertDatabaseCount('roles', 5);
+    $this->assertDatabaseCount('permissions', 7);
     $this->assertDatabaseHas('model_has_roles', [
         'role_id' => $usersReaderRole->getKey(),
         'model_type' => $user->getMorphClass(),
@@ -141,7 +161,7 @@ it('renames the legacy users reader role without losing users or role permission
     $remainingPermissions = usersReaderPermissionNames();
     $user->refresh();
 
-    $this->assertDatabaseCount('roles', 4);
+    $this->assertDatabaseCount('roles', 5);
     $this->assertDatabaseHas('roles', [
         'id' => $legacyUsersReaderRole->getKey(),
         'name' => AdminRole::AdminUsersReader->value,
@@ -199,7 +219,7 @@ it('renames legacy permissions in place while preserving role grants and revocat
         ->firstOrFail();
     $remainingPermissions = usersReaderPermissionNames();
 
-    $this->assertDatabaseCount('permissions', 6);
+    $this->assertDatabaseCount('permissions', 7);
     $this->assertDatabaseHas('permissions', [
         'id' => $legacyUsersViewAnyPermission->getKey(),
         'name' => AdminPermission::AdminUsersViewAny->value,
