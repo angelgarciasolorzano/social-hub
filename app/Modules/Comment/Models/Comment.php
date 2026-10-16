@@ -6,11 +6,13 @@ namespace App\Modules\Comment\Models;
 
 use App\Modules\Comment\Database\Factories\CommentFactory;
 use App\Modules\Comment\Enums\CommentType;
+use App\Modules\Comment\Policies\CommentPolicy;
 use App\Modules\Like\Models\Like;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +34,7 @@ use Override;
  * @mixin IdeHelperComment
  */
 #[UseFactory(CommentFactory::class)]
+#[UsePolicy(CommentPolicy::class)]
 #[Fillable([
     'user_id',
     'replied_to_user_id',
