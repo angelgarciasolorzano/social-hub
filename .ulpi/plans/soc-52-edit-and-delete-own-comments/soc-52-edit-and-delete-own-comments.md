@@ -83,7 +83,7 @@ Crea una migración nueva en app/Modules/Comment/Database/Migrations/ (la origin
 
 ### TASK-002: Factory completa: edited_at, deleted_at y estado edited()
 
-CommentFactory declara edited_at y deleted_at como null (regla de factories completas) y añade el estado edited() con una fecha posterior a created_at. Para comentarios eliminados se usa el trashed() del propio Factory de Laravel, que funciona porque el modelo ya usa SoftDeletes.
+CommentFactory declara edited_at y deleted_at como null (regla de factories completas) y añade los estados edited() (fecha posterior a created_at) y trashed() (deleted_at = ahora); el Factory de Laravel no trae un trashed() propio, así que se define aquí.
 
 **Type:** feature  
 **Priority:** P0  
@@ -95,7 +95,7 @@ CommentFactory declara edited_at y deleted_at como null (regla de factories comp
 **Acceptance Criteria:**
 
 - [ ] Comment::factory()->create() persiste edited_at y deleted_at en null; ->edited()->create() deja edited_at posterior a created_at.
-- [ ] Comment::factory()->trashed()->create() persiste deleted_at y el comentario no aparece en Comment::query() pero sí en withTrashed().
+- [ ] CommentFactory::new()->trashed()->create() persiste deleted_at y el comentario no aparece en Comment::query() pero sí en withTrashed().
 - [ ] Los helpers createComment()/createCommentOn() de tests/Pest.php siguen funcionando sin cambios.
 
 **writeScope:**

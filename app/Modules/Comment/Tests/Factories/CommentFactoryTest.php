@@ -50,3 +50,26 @@ it('lets explicit attributes override the defaults', function (): void {
         ->and($reply->commentable_id)->toBe($comment->id)
         ->and($reply->commentable_type)->toBe(CommentType::COMMENT);
 });
+
+it('is neither edited nor deleted by default', function (): void {
+    $comment = createComment()->fresh();
+
+    expect($comment?->edited_at)->toBeNull()
+        ->and($comment?->deleted_at)->toBeNull();
+});
+
+it('marks the comment as edited after it was written with the edited state', function (): void {
+    $comment = CommentFactory::new()->edited()->createOne()->fresh();
+    $createdTimestamp = $comment?->created_at->timestamp ?? 0;
+
+    expect($comment?->edited_at)->not->toBeNull()
+        ->and($comment?->edited_at?->timestamp)->toBeGreaterThan($createdTimestamp)
+        ->and($comment?->deleted_at)->toBeNull();
+});
+
+it('marks the comment as deleted with the trashed state', function (): void {
+    $comment = CommentFactory::new()->trashed()->createOne();
+
+    expect(Comment::query()->whereKey($comment->id)->exists())->toBeFalse()
+        ->and(Comment::withTrashed()->find($comment->id)?->trashed())->toBeTrue();
+});

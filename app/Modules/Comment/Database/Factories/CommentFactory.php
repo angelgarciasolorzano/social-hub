@@ -38,7 +38,25 @@ class CommentFactory extends Factory
             'commentable_id' => Post::factory(),
             'commentable_type' => Post::MORPH_NAME,
             'content' => fake()->paragraph(random_int(1, 30)),
+            'edited_at' => null,
+            'deleted_at' => null,
         ];
+    }
+
+    /**
+     * Mark the comment as edited some time after it was written.
+     */
+    public function edited(): static
+    {
+        return $this->state(fn (): array => ['edited_at' => now()->addMinutes(random_int(1, 1440))]);
+    }
+
+    /**
+     * Mark the comment as deleted, the way a top-level comment with replies is deleted.
+     */
+    public function trashed(): static
+    {
+        return $this->state(fn (): array => ['deleted_at' => now()]);
     }
 
     /**
