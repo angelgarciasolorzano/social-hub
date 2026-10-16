@@ -351,34 +351,55 @@ Actualizar la prueba existente del seeder para verificar idempotencia y asignaci
 
 **Review:** Codex
 
-### TASK-015: Crear el modelo y almacenamiento de invitaciones Admin
+### TASK-015: Crear el almacenamiento de invitaciones Admin
 
-Añadir AdminInvitation y su migración al módulo Admin, y registrar el directorio de migraciones en el proveedor ya cargado. Persistir email canónico, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.
+Añadir la migración de invitaciones al módulo Admin y registrar su directorio en el proveedor ya cargado. Persistir email, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
 **Depends on:** Ninguna
 
 **Acceptance Criteria:**
-- La migración permite invitaciones para correo nuevo o User existente y guarda hash/expiración/aceptación, nunca el token plano.
-- AdminServiceProvider carga la migración en la instalación y rollback; el modelo expone estados con casts/relaciones tipadas.
+- La tabla admite invitaciones a correo nuevo o User existente y guarda hash, expiración y aceptación, nunca el token plano.
+- AdminServiceProvider carga la migración del módulo y el rollback elimina la tabla y sus claves foráneas.
 
 **writeScope:**
 - `app/Modules/Admin/Providers/AdminServiceProvider.php`
-- `app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php`
-- `app/Modules/Admin/Models/AdminInvitation.php`
+- `app/Modules/Admin/Database/Migrations/2026_10_16_171137_create_admin_invitations_table.php`
 
-**validateCommand:** `rtk php -l app/Modules/Admin/Providers/AdminServiceProvider.php && rtk php -l app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php && rtk php -l app/Modules/Admin/Models/AdminInvitation.php`
+**validateCommand:** `rtk php -l app/Modules/Admin/Providers/AdminServiceProvider.php && rtk php -l app/Modules/Admin/Database/Migrations/2026_10_16_171137_create_admin_invitations_table.php`
 
 **Review:** Codex
 
-### TASK-016: Implementar emisión, aceptación y correo de invitación
+### TASK-016: Crear modelo, factory y pruebas de AdminInvitation
+
+Añadir AdminInvitation con email canónico, casts de fechas y relaciones tipadas; agregar una factory realista y pruebas enfocadas en la persistencia del modelo.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-015
+
+**Acceptance Criteria:**
+- El modelo normaliza el email y castea expiración/aceptación como fechas inmutables, con relaciones tipadas al invitador y usuario objetivo opcional.
+- La factory crea invitaciones realistas con hash de token, invitador y usuario objetivo opcional; no existe un atributo para el token plano.
+- Las pruebas cubren normalización, casts, relaciones y el caso de correo nuevo sin usuario objetivo.
+
+**writeScope:**
+- `app/Modules/Admin/Models/AdminInvitation.php`
+- `app/Modules/Admin/Database/Factories/AdminInvitationFactory.php`
+- `app/Modules/Admin/Tests/Models/AdminInvitationTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Models/AdminInvitationTest.php`
+
+**Review:** Codex
+
+### TASK-017: Implementar emisión, aceptación y correo de invitación
 
 Crear AdminInvitationService y la notificación por correo. El servicio emite token aleatorio de un solo uso, guarda solo su hash, vence/invalida invitaciones previas y resuelve las ramas de cuenta existente y correo nuevo en transacciones.
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-013, TASK-015
+**Depends on:** TASK-013, TASK-015, TASK-016
 
 **Acceptance Criteria:**
 - La aceptación válida de una cuenta existente conserva sus credenciales; para un correo nuevo crea los datos permitidos, verifica el correo con el token consumido y asigna admin solo una vez.
@@ -393,13 +414,13 @@ Crear AdminInvitationService y la notificación por correo. El servicio emite to
 
 **Review:** Codex
 
-### TASK-017: Añadir en Filament búsqueda y envío de invitaciones
+### TASK-018: Añadir en Filament búsqueda y envío de invitaciones
 
 Añadir a ListUsers una acción de invitación protegida por admin.users.create. Permitir buscar/seleccionar una cuenta por email o escribir un email que aún no exista y delegar el envío al servicio.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-013, TASK-016
+**Depends on:** TASK-013, TASK-017
 
 **Acceptance Criteria:**
 - Un provisioner puede buscar y seleccionar un usuario existente o introducir un email no registrado; ambas ramas generan una invitación dirigida al mismo email.
@@ -413,13 +434,13 @@ Añadir a ListUsers una acción de invitación protegida por admin.users.create.
 
 **Review:** Codex
 
-### TASK-018: Crear aceptación segura de invitación con Livewire
+### TASK-019: Crear aceptación segura de invitación con Livewire
 
 Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-016
+**Depends on:** TASK-017
 
 **Acceptance Criteria:**
 - Un token válido permite completar la rama existente o el formulario de cuenta nueva; el correo objetivo se muestra fijo y no se puede sustituir desde props/campos cliente.
@@ -434,13 +455,13 @@ Implementar una página completa Livewire fuera del panel Admin. Para cuenta exi
 
 **Review:** Codex
 
-### TASK-019: Registrar y probar la ruta pública de invitación
+### TASK-020: Registrar y probar la ruta pública de invitación
 
 Registrar una ruta web con nombre estable desde AdminServiceProvider y el archivo de rutas del módulo; entregar token al componente Livewire sin colocar la página bajo el guard admin ni rutas del panel.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-015, TASK-018
+**Depends on:** TASK-015, TASK-019
 
 **Acceptance Criteria:**
 - El enlace enviado por correo resuelve la página Livewire sin sesión Admin, y el panel /admin sigue usando su guard y middleware existentes.
@@ -463,6 +484,7 @@ Registrar una ruta web con nombre estable desde AdminServiceProvider y el archiv
 - A user lacking admin.users.create cannot see or invoke the invitation action, even by a crafted Livewire request.
 - A user lacking admin.posts.view cannot access a comment detail URL or its reply data; the hidden resource does not become a sidebar entry.
 - Visiting Admin login before normal login does not contaminate the web guard's intended destination; Admin panel login behavior remains intact.
+- El seeder local de Angel no asigna admin-users-provisioner automáticamente aunque el rol exista en el catálogo.
 
 ## Ship Cut
 
@@ -474,16 +496,14 @@ Los detalles de imágenes, filtros y redirección pueden integrarse como cambios
 - Publicaciones: ListPostsTest cubre imagen/fallback y filtros; PostsRelationManagerTest cubre imagen/fallback y conserva alcance por usuario; ViewPostTest cubre imagen/fallback.
 - Comentarios: CommentsRelationManagerTest cubre filtros y navegación; ViewCommentTest cubre ruta/datos/autorización; RepliesRelationManagerTest cubre alcance, filtros, paginación y solo lectura; CommentActivityOverviewTest cubre contadores.
 - Autenticación: AuthenticationTest y AdminPanelAccessTest cubren destino normal después de visitar login Admin y acceso del panel.
-- Seed local: AdminUserSeederTest cubre que Angel conserva roles manuales y no recibe automáticamente el rol provisioner.
-- Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública.
-
+- AdminUserSeederTest cubre que el usuario local conserva roles manuales y no recibe automáticamente el rol provisioner.
+- Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationTest cubre modelo/casts/relaciones; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública.
 ## Execution Summary
 
-- Tareas: 19.
-- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-015; L1: TASK-008, TASK-009, TASK-013; L2: TASK-010, TASK-014, TASK-016; L3: TASK-017, TASK-018; L4: TASK-019.
-- Ruta crítica (5 tareas): TASK-012 → TASK-013 → TASK-016 → TASK-018 → TASK-019.
+- Tareas: 20.
+- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-015; L1: TASK-008, TASK-009, TASK-013, TASK-016; L2: TASK-010, TASK-014, TASK-017; L3: TASK-018, TASK-019; L4: TASK-020.
+- Ruta crítica (5 tareas): TASK-012 → TASK-013 → TASK-017 → TASK-019 → TASK-020.
 - Próxima ejecución: implementar solo la siguiente tarea atómica y detenerse para revisión.
-
 ## Task Dependencies
 
 - **TASK-001** ← sin dependencias
@@ -501,7 +521,8 @@ Los detalles de imágenes, filtros y redirección pueden integrarse como cambios
 - **TASK-013** ← TASK-012
 - **TASK-014** ← TASK-013
 - **TASK-015** ← sin dependencias
-- **TASK-016** ← TASK-013, TASK-015
-- **TASK-017** ← TASK-013, TASK-016
-- **TASK-018** ← TASK-016
-- **TASK-019** ← TASK-015, TASK-018
+- **TASK-016** ← TASK-015
+- **TASK-017** ← TASK-013, TASK-015, TASK-016
+- **TASK-018** ← TASK-013, TASK-017
+- **TASK-019** ← TASK-017
+- **TASK-020** ← TASK-015, TASK-019

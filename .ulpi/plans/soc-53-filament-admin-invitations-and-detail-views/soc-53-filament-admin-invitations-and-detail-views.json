@@ -75,7 +75,7 @@
     "Comentarios: CommentsRelationManagerTest cubre filtros y navegación; ViewCommentTest cubre ruta/datos/autorización; RepliesRelationManagerTest cubre alcance, filtros, paginación y solo lectura; CommentActivityOverviewTest cubre contadores.",
     "Autenticación: AuthenticationTest y AdminPanelAccessTest cubren destino normal después de visitar login Admin y acceso del panel.",
     "AdminUserSeederTest cubre que el usuario local conserva roles manuales y no recibe automáticamente el rol provisioner.",
-    "Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública."
+    "Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationTest cubre modelo/casts/relaciones; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública."
   ],
   "tasks": [
     {
@@ -523,8 +523,8 @@
     },
     {
       "id": "TASK-015",
-      "title": "Crear el modelo y almacenamiento de invitaciones Admin",
-      "description": "Añadir AdminInvitation y su migración al módulo Admin, y registrar el directorio de migraciones en el proveedor ya cargado. Persistir email canónico, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.",
+      "title": "Crear el almacenamiento de invitaciones Admin",
+      "description": "Añadir la migración de invitaciones al módulo Admin y registrar su directorio en el proveedor ya cargado. Persistir email, invitador, usuario objetivo opcional, hash de token, expiración y aceptación.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
@@ -536,26 +536,61 @@
         "database"
       ],
       "acceptanceCriteria": [
-        "La migración permite invitaciones para correo nuevo o User existente y guarda hash/expiración/aceptación, nunca el token plano.",
-        "AdminServiceProvider carga la migración en la instalación y rollback; el modelo expone estados con casts/relaciones tipadas."
+        "La tabla admite invitaciones a correo nuevo o User existente y guarda hash, expiración y aceptación, nunca el token plano.",
+        "AdminServiceProvider carga la migración del módulo y el rollback elimina la tabla y sus claves foráneas."
       ],
       "filesToModify": [
         "app/Modules/Admin/Providers/AdminServiceProvider.php"
       ],
       "filesToCreate": [
-        "app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php",
-        "app/Modules/Admin/Models/AdminInvitation.php"
+        "app/Modules/Admin/Database/Migrations/2026_10_16_171137_create_admin_invitations_table.php"
       ],
       "writeScope": [
         "app/Modules/Admin/Providers/AdminServiceProvider.php",
-        "app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php",
-        "app/Modules/Admin/Models/AdminInvitation.php"
+        "app/Modules/Admin/Database/Migrations/2026_10_16_171137_create_admin_invitations_table.php"
       ],
-      "validateCommand": "rtk php -l app/Modules/Admin/Providers/AdminServiceProvider.php && rtk php -l app/Modules/Admin/Database/Migrations/2026_10_15_200000_create_admin_invitations_table.php && rtk php -l app/Modules/Admin/Models/AdminInvitation.php",
+      "validateCommand": "rtk php -l app/Modules/Admin/Providers/AdminServiceProvider.php && rtk php -l app/Modules/Admin/Database/Migrations/2026_10_16_171137_create_admin_invitations_table.php",
       "review": "codex"
     },
     {
       "id": "TASK-016",
+      "title": "Crear modelo, factory y pruebas de AdminInvitation",
+      "description": "Añadir AdminInvitation con email canónico, casts de fechas y relaciones tipadas; agregar una factory realista y pruebas enfocadas en la persistencia del modelo.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-015"
+      ],
+      "labels": [
+        "admin",
+        "invitations",
+        "database",
+        "testing"
+      ],
+      "acceptanceCriteria": [
+        "El modelo normaliza el email y castea expiración/aceptación como fechas inmutables, con relaciones tipadas al invitador y usuario objetivo opcional.",
+        "La factory crea invitaciones realistas con hash de token, invitador y usuario objetivo opcional; no existe un atributo para el token plano.",
+        "Las pruebas cubren normalización, casts, relaciones y el caso de correo nuevo sin usuario objetivo."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Models/AdminInvitation.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Database/Factories/AdminInvitationFactory.php",
+        "app/Modules/Admin/Tests/Models/AdminInvitationTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Models/AdminInvitation.php",
+        "app/Modules/Admin/Database/Factories/AdminInvitationFactory.php",
+        "app/Modules/Admin/Tests/Models/AdminInvitationTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Models/AdminInvitationTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-017",
       "title": "Implementar emisión, aceptación y correo de invitación",
       "description": "Crear AdminInvitationService y la notificación por correo. El servicio emite token aleatorio de un solo uso, guarda solo su hash, vence/invalida invitaciones previas y resuelve las ramas de cuenta existente y correo nuevo en transacciones.",
       "priority": "P1",
@@ -564,7 +599,8 @@
       "agent": "laravel-senior-engineer",
       "dependsOn": [
         "TASK-013",
-        "TASK-015"
+        "TASK-015",
+        "TASK-016"
       ],
       "labels": [
         "admin",
@@ -591,7 +627,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-017",
+      "id": "TASK-018",
       "title": "Añadir en Filament búsqueda y envío de invitaciones",
       "description": "Añadir a ListUsers una acción de invitación protegida por admin.users.create. Permitir buscar/seleccionar una cuenta por email o escribir un email que aún no exista y delegar el envío al servicio.",
       "priority": "P1",
@@ -600,7 +636,7 @@
       "agent": "laravel-senior-engineer",
       "dependsOn": [
         "TASK-013",
-        "TASK-016"
+        "TASK-017"
       ],
       "labels": [
         "admin",
@@ -625,7 +661,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-018",
+      "id": "TASK-019",
       "title": "Crear aceptación segura de invitación con Livewire",
       "description": "Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.",
       "priority": "P1",
@@ -633,7 +669,7 @@
       "effort": "L",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-016"
+        "TASK-017"
       ],
       "labels": [
         "admin",
@@ -660,7 +696,7 @@
       "review": "codex"
     },
     {
-      "id": "TASK-019",
+      "id": "TASK-020",
       "title": "Registrar y probar la ruta pública de invitación",
       "description": "Registrar una ruta web con nombre estable desde AdminServiceProvider y el archivo de rutas del módulo; entregar token al componente Livewire sin colocar la página bajo el guard admin ni rutas del panel.",
       "priority": "P1",
@@ -669,7 +705,7 @@
       "agent": "laravel-senior-engineer",
       "dependsOn": [
         "TASK-015",
-        "TASK-018"
+        "TASK-019"
       ],
       "labels": [
         "admin",
@@ -697,7 +733,7 @@
     }
   ],
   "executionSummary": {
-    "taskCount": 18,
+    "taskCount": 20,
     "layers": [
       [
         "TASK-001",
@@ -709,30 +745,35 @@
         "TASK-007",
         "TASK-011",
         "TASK-012",
-        "TASK-014"
+        "TASK-015"
       ],
       [
         "TASK-008",
         "TASK-009",
         "TASK-013",
-        "TASK-015"
+        "TASK-016"
       ],
       [
         "TASK-010",
-        "TASK-016",
+        "TASK-014",
         "TASK-017"
       ],
       [
-        "TASK-018"
+        "TASK-018",
+        "TASK-019"
+      ],
+      [
+        "TASK-020"
       ]
     ],
     "criticalPath": [
       "TASK-012",
-      "TASK-015",
+      "TASK-013",
       "TASK-017",
-      "TASK-018"
+      "TASK-019",
+      "TASK-020"
     ],
-    "criticalPathLength": 4
+    "criticalPathLength": 5
   },
   "dependencyMap": {
     "TASK-001": [],
@@ -758,21 +799,28 @@
     "TASK-013": [
       "TASK-012"
     ],
-    "TASK-014": [],
-    "TASK-015": [
-      "TASK-012",
-      "TASK-014"
+    "TASK-014": [
+      "TASK-013"
     ],
+    "TASK-015": [],
     "TASK-016": [
-      "TASK-012",
       "TASK-015"
     ],
     "TASK-017": [
-      "TASK-015"
+      "TASK-013",
+      "TASK-015",
+      "TASK-016"
     ],
     "TASK-018": [
-      "TASK-014",
+      "TASK-013",
       "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-017"
+    ],
+    "TASK-020": [
+      "TASK-015",
+      "TASK-019"
     ]
   }
 }
