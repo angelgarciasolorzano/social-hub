@@ -7,6 +7,11 @@ interface CommentReplies {
   repliesCount: number;
 }
 
+export interface CommentLikesInfo {
+  count: number;
+  likedByMe: boolean;
+}
+
 interface CommentRepliedTo {
   id: number;
   name: string;
@@ -16,6 +21,7 @@ export interface Comment {
   content: string;
   createdAt: string;
   id: number;
+  likesInfo: CommentLikesInfo;
   repliedTo?: CommentRepliedTo | null;
   repliesInfo: CommentReplies;
   user: User;
@@ -34,6 +40,11 @@ export interface PaginatedComments {
   per_page: number;
   prev_cursor: string | null;
   prev_page_url: string | null;
+}
+
+export interface CommentLikeToggleResponse {
+  liked: boolean;
+  likesCount: number;
 }
 
 export type CommentsLoadFailure = "more" | "refresh";
