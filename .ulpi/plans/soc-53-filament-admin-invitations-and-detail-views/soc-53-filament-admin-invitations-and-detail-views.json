@@ -7,18 +7,19 @@
   },
   "mode": "EXPANSION",
   "reviewDefault": "codex",
-  "date": "2026-10-15",
-  "overview": "Implementar el alcance vigente de SOC-53 para los detalles y tablas de usuarios/publicaciones/comentarios, el detalle paginado de comentarios y la corrección de redirecciones. La única ampliación es reemplazar la creación directa de usuarios por invitaciones seguras de administradores, tanto para cuentas existentes como para correos aún no registrados.",
-  "scopeChallenge": "EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovisionamiento de administradores: Filament permite buscar una cuenta existente o escribir un correo nuevo; el destinatario acepta la invitación y completa datos desde una página Livewire segura. Las otras áreas y los no-objetivos de SOC-53 permanecen intactos. Revisión predeterminada: Codex.",
+  "date": "2026-10-16",
+  "overview": "Implementar el alcance vigente de SOC-53 para los detalles y tablas de usuarios/publicaciones/comentarios, el detalle paginado de comentarios y la corrección de redirecciones. La única ampliación de producto es reemplazar la creación directa de usuarios por invitaciones seguras de administradores; su onboarding público con Livewire usará BlatUI como biblioteca reutilizable de componentes Blade.",
+  "scopeChallenge": "EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovisionamiento de administradores: Filament permite buscar una cuenta existente o escribir un correo nuevo; el destinatario acepta la invitación y completa datos desde una página Livewire segura construida con componentes BlatUI. Se integra BlatUI de forma reutilizable, sin migrar las vistas existentes. Las otras áreas y los no-objetivos de SOC-53 permanecen intactos. Revisión predeterminada: Codex.",
   "prerequisites": [
     "SOC-44 y SOC-47 aportan el panel Filament, la separación de permisos y los recursos de usuarios/publicaciones que SOC-53 amplía.",
     "El panel ya está registrado en bootstrap/providers.php y descubre recursos Filament desde app/Modules/Admin/Filament/.",
-    "Filament 5.10.1, Livewire 4.4.7 y spatie/laravel-permission 8.3.0 ya están instalados; no se requiere cambiar dependencias.",
+    "Filament 5.10.1, Livewire 4.4.7, Laravel 13 y Tailwind CSS 4 ya están instalados. BlatUI y sus dependencias documentadas todavía deben agregarse; Livewire/Filament ya proporcionan Alpine, así que no se instala ni arranca una segunda copia.",
     "User ya define colecciones de imagen con fallbacks; Post usa Spatie Media Library; Comment.comments() representa respuestas.",
     "El envío real de correo depende del mailer de Laravel configurado por el entorno; la notificación de invitación usa ese canal existente."
   ],
   "nonGoals": [
     "No cambiar las otras áreas de SOC-53 ni convertir el registro normal Inertia/React a Livewire.",
+    "No migrar las vistas existentes de Filament o Inertia a BlatUI; la integración inicial se limita a dejar disponible la biblioteca y usarla en el onboarding de invitaciones.",
     "No habilitar edición/eliminación de usuarios ni mutaciones de publicaciones, comentarios o respuestas.",
     "No incluir enrolamiento MFA en la aceptación de invitación; el panel conserva su requisito actual de MFA.",
     "No crear una interfaz para administrar roles/permisos ni conceder el rol de aprovisionamiento automáticamente a cada administrador.",
@@ -28,7 +29,8 @@
     "Conservar el guard admin, el proveedor users, la verificación de correo y el MFA de aplicación requeridos para entrar al panel. El rol admin asignado al aceptar habilita admin.access; permisos de secciones siguen siendo explícitos.",
     "Añadir admin.users.create y asignarlo únicamente al rol explícito admin-users-provisioner, que también necesita admin.users.viewAny para abrir el listado; no asignarlo a admin ni a los roles reader.",
     "La acción de Filament emite invitaciones, no crea contraseñas ni habilita los endpoints nativos de creación directa, edición o eliminación de User.",
-    "Un correo registrado se puede buscar y seleccionar. Su invitación conserva la contraseña/datos existentes. Un correo nuevo se puede escribir y abre una página de aceptación Livewire fuera del guard y las rutas protegidas de Filament.",
+    "Un correo registrado se puede buscar y seleccionar. Su invitación conserva la contraseña/datos existentes. Un correo nuevo se puede escribir y abre una página de aceptación Livewire fuera del guard y las rutas protegidas de Filament; su UI usa componentes BlatUI copiados al proyecto.",
+    "BlatUI registra sus mejoras sobre la instancia Alpine que Livewire ya inicia. No se agrega otra instancia Alpine ni se usa el bootstrap de BlatUI que vuelve a iniciarla; el layout público carga sus propios assets y conserva separado el entrypoint Inertia/React.",
     "La invitación contiene un token aleatorio de un solo uso y vencimiento, guarda solamente su hash y fija el correo objetivo. La aceptación verifica el correo, consume el token y asigna admin; token vencido, reutilizado o alterado no cambia cuenta ni roles.",
     "Si el envío falla, el emisor recibe un error recuperable; emitir una nueva invitación invalida la pendiente anterior para ese correo.",
     "CommentsResource se descubre mediante la configuración existente de Filament, pero se oculta del sidebar. La navegación desde CommentsRelationManager lleva al detalle autorizado; sus respuestas usan Comment.comments() y permanecen paginadas/filtrables.",
@@ -57,7 +59,10 @@
     "Filament 5 table filters: https://filamentphp.com/docs/5.x/tables/filters/overview",
     "Livewire 4 full-page components: https://livewire.laravel.com/docs/4.x/components",
     "Livewire 4 forms: https://livewire.laravel.com/docs/4.x/forms",
-    "Livewire 4 security: https://livewire.laravel.com/docs/4.x/security"
+    "Livewire 4 security: https://livewire.laravel.com/docs/4.x/security",
+    "BlatUI installation and requirements: https://packagist.org/packages/anousss007/blatui",
+    "BlatUI with Livewire: https://blatui.remix-it.com/docs/livewire",
+    "Livewire 4 Alpine integration: https://livewire.laravel.com/docs/4.x/alpine"
   ],
   "failureModes": [
     "A missing profile, cover, or post image renders the configured fallback; a present image still renders from the correct collection.",
@@ -663,13 +668,15 @@
     {
       "id": "TASK-019",
       "title": "Crear aceptación segura de invitación con Livewire",
-      "description": "Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.",
+      "description": "Implementar una página completa Livewire fuera del panel Admin usando los componentes Blade de BlatUI preparados por TASK-021–025. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.",
       "priority": "P1",
       "type": "feature",
       "effort": "L",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-017"
+        "TASK-017",
+        "TASK-024",
+        "TASK-025"
       ],
       "labels": [
         "admin",
@@ -679,7 +686,8 @@
       ],
       "acceptanceCriteria": [
         "Un token válido permite completar la rama existente o el formulario de cuenta nueva; el correo objetivo se muestra fijo y no se puede sustituir desde props/campos cliente.",
-        "Un token inválido, expirado o ya consumido no crea usuario ni asigna rol; la pantalla no requiere sesión Admin/MFA antes de aceptar la invitación."
+        "Un token inválido, expirado o ya consumido no crea usuario ni asigna rol; la pantalla no requiere sesión Admin/MFA antes de aceptar la invitación.",
+        "La vista de onboarding usa los campos y botones BlatUI dentro de un layout público Livewire; no arranca una segunda instancia Alpine ni carga el entrypoint Inertia/React."
       ],
       "filesToModify": [],
       "filesToCreate": [
@@ -730,10 +738,180 @@
       ],
       "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Invitations/AdminInvitationRouteTest.php",
       "review": "codex"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Agregar BlatUI y sus dependencias PHP",
+      "description": "Instalar el paquete CLI de BlatUI y sus dependencias PHP documentadas para copiar componentes Blade al proyecto.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "admin",
+        "invitations",
+        "blatui",
+        "dependencies"
+      ],
+      "acceptanceCriteria": [
+        "Composer resuelve BlatUI, tailwind-merge-laravel y blade-lucide-icons con las versiones de PHP/Laravel del proyecto.",
+        "La actualización conserva Livewire 4 y Filament 5 instalados y no introduce conflictos en Composer."
+      ],
+      "filesToModify": [
+        "composer.json",
+        "composer.lock"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "composer.json",
+        "composer.lock"
+      ],
+      "validateCommand": "rtk composer validate",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Publicar los foundations de BlatUI",
+      "description": "Publicar los assets de BlatUI que el proyecto mantendrá bajo resources: tokens CSS y motores JavaScript, conservando el bootstrap alternativo solo como archivo publicado sin usarlo con Livewire.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-021"
+      ],
+      "labels": [
+        "admin",
+        "invitations",
+        "blatui",
+        "assets"
+      ],
+      "acceptanceCriteria": [
+        "Los assets publicados de BlatUI quedan versionados en resources/css y resources/js para que el build no dependa de rutas internas de vendor.",
+        "La integración de Livewire usa registerBlatUI desde blatui-core.js y no ejecuta blatui.js para arrancar Alpine otra vez."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/css/blatui.css",
+        "resources/js/blatui.js",
+        "resources/js/blatui-core.js"
+      ],
+      "writeScope": [
+        "resources/css/blatui.css",
+        "resources/js/blatui.js",
+        "resources/js/blatui-core.js"
+      ],
+      "validateCommand": "rtk php artisan blatui:list input",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Registrar BlatUI sobre Alpine de Livewire",
+      "description": "Agregar los plugins Alpine que BlatUI requiere y crear un entrypoint pequeño que registre BlatUI en el evento alpine:init de la instancia que Livewire ya administra.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "labels": [
+        "admin",
+        "invitations",
+        "blatui",
+        "livewire"
+      ],
+      "acceptanceCriteria": [
+        "Los plugins anchor, collapse y focus, y floating-ui, quedan instalados como dependencias de desarrollo sin agregar alpinejs.",
+        "El entrypoint importa registerBlatUI desde el asset publicado y lo registra en alpine:init sin importar o llamar Alpine.start()."
+      ],
+      "filesToModify": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "filesToCreate": [
+        "resources/js/admin/blatui.ts"
+      ],
+      "writeScope": [
+        "package.json",
+        "package-lock.json",
+        "resources/js/admin/blatui.ts"
+      ],
+      "validateCommand": "rtk npm ls @alpinejs/anchor @alpinejs/collapse @alpinejs/focus @floating-ui/dom",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Crear layout público Livewire con assets BlatUI",
+      "description": "Registrar la entrada Vite aislada de la aceptación de invitaciones y crear el layout Livewire público con estilos BlatUI, @livewireStyles y @livewireScripts.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-023"
+      ],
+      "labels": [
+        "admin",
+        "invitations",
+        "blatui",
+        "livewire"
+      ],
+      "acceptanceCriteria": [
+        "El layout carga una hoja CSS propia de la página y el entrypoint BlatUI desde Vite, además de las directivas de assets de Livewire.",
+        "El build produce los assets sin ejecutar ni renderizar el entrypoint Inertia/React en la ruta pública."
+      ],
+      "filesToModify": [
+        "vite.config.ts"
+      ],
+      "filesToCreate": [
+        "resources/css/admin-invitation.css",
+        "resources/views/layouts/admin-invitation.blade.php"
+      ],
+      "writeScope": [
+        "vite.config.ts",
+        "resources/css/admin-invitation.css",
+        "resources/views/layouts/admin-invitation.blade.php"
+      ],
+      "validateCommand": "rtk npm run build",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Copiar controles BlatUI para el onboarding",
+      "description": "Usar el CLI de BlatUI para agregar al proyecto únicamente los componentes Blade de input y button que necesita la aceptación segura.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-021"
+      ],
+      "labels": [
+        "admin",
+        "invitations",
+        "blatui"
+      ],
+      "acceptanceCriteria": [
+        "Los componentes x-ui.input y x-ui.button quedan copiados en resources/views/components/ui y disponibles para la vista Livewire.",
+        "La instalación conserva el alcance mínimo de los componentes utilizados; no copia todos los componentes de la biblioteca."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/views/components/ui/input.blade.php",
+        "resources/views/components/ui/button.blade.php"
+      ],
+      "writeScope": [
+        "resources/views/components/ui/input.blade.php",
+        "resources/views/components/ui/button.blade.php"
+      ],
+      "validateCommand": "rtk php artisan blatui:list input",
+      "review": "codex"
     }
   ],
   "executionSummary": {
-    "taskCount": 20,
+    "taskCount": 25,
     "layers": [
       [
         "TASK-001",
@@ -745,21 +923,28 @@
         "TASK-007",
         "TASK-011",
         "TASK-012",
-        "TASK-015"
+        "TASK-015",
+        "TASK-021"
       ],
       [
         "TASK-008",
         "TASK-009",
         "TASK-013",
-        "TASK-016"
+        "TASK-016",
+        "TASK-022",
+        "TASK-025"
       ],
       [
         "TASK-010",
         "TASK-014",
-        "TASK-017"
+        "TASK-017",
+        "TASK-023"
       ],
       [
         "TASK-018",
+        "TASK-024"
+      ],
+      [
         "TASK-019"
       ],
       [
@@ -767,13 +952,14 @@
       ]
     ],
     "criticalPath": [
-      "TASK-012",
-      "TASK-013",
-      "TASK-017",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
+      "TASK-024",
       "TASK-019",
       "TASK-020"
     ],
-    "criticalPathLength": 5
+    "criticalPathLength": 6
   },
   "dependencyMap": {
     "TASK-001": [],
@@ -816,11 +1002,26 @@
       "TASK-017"
     ],
     "TASK-019": [
-      "TASK-017"
+      "TASK-017",
+      "TASK-024",
+      "TASK-025"
     ],
     "TASK-020": [
       "TASK-015",
       "TASK-019"
+    ],
+    "TASK-021": [],
+    "TASK-022": [
+      "TASK-021"
+    ],
+    "TASK-023": [
+      "TASK-022"
+    ],
+    "TASK-024": [
+      "TASK-023"
+    ],
+    "TASK-025": [
+      "TASK-021"
     ]
   }
 }

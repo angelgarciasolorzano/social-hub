@@ -2,25 +2,26 @@
 
 ## Overview
 
-Implementar el alcance vigente de SOC-53 para los detalles y tablas de usuarios/publicaciones/comentarios, el detalle paginado de comentarios y la corrección de redirecciones. La única ampliación es reemplazar la creación directa de usuarios por invitaciones seguras de administradores, tanto para cuentas existentes como para correos aún no registrados.
+Implementar el alcance vigente de SOC-53 para los detalles y tablas de usuarios/publicaciones/comentarios, el detalle paginado de comentarios y la corrección de redirecciones. La única ampliación de producto es reemplazar la creación directa de usuarios por invitaciones seguras de administradores; su onboarding público con Livewire usará BlatUI como biblioteca reutilizable de componentes Blade.
 
 **Linear:** [SOC-53](https://linear.app/social-hub-ang/issue/SOC-53/feature-improve-filament-user-post-and-comment-administration) · **Modo:** EXPANSION · **Revisión predeterminada:** Codex
 
 ## Scope Challenge
 
-EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovisionamiento de administradores: Filament permite buscar una cuenta existente o escribir un correo nuevo; el destinatario acepta la invitación y completa datos desde una página Livewire segura. Las otras áreas y los no-objetivos de SOC-53 permanecen intactos. Revisión predeterminada: Codex.
+EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovisionamiento de administradores: Filament permite buscar una cuenta existente o escribir un correo nuevo; el destinatario acepta la invitación y completa datos desde una página Livewire segura construida con componentes BlatUI. Se integra BlatUI de forma reutilizable, sin migrar las vistas existentes. Las otras áreas y los no-objetivos de SOC-53 permanecen intactos. Revisión predeterminada: Codex.
 
 ## Prerequisites
 
 - SOC-44 y SOC-47 aportan el panel Filament, la separación de permisos y los recursos de usuarios/publicaciones que SOC-53 amplía.
 - El panel ya está registrado en bootstrap/providers.php y descubre recursos Filament desde app/Modules/Admin/Filament/.
-- Filament 5.10.1, Livewire 4.4.7 y spatie/laravel-permission 8.3.0 ya están instalados; no se requiere cambiar dependencias.
+- Filament 5.10.1, Livewire 4.4.7, Laravel 13 y Tailwind CSS 4 ya están instalados. BlatUI y sus dependencias documentadas todavía deben agregarse; Livewire/Filament ya proporcionan Alpine, así que no se instala ni arranca una segunda copia.
 - User ya define colecciones de imagen con fallbacks; Post usa Spatie Media Library; Comment.comments() representa respuestas.
 - El envío real de correo depende del mailer de Laravel configurado por el entorno; la notificación de invitación usa ese canal existente.
 
 ## Non-Goals
 
 - No cambiar las otras áreas de SOC-53 ni convertir el registro normal Inertia/React a Livewire.
+- No migrar las vistas existentes de Filament o Inertia a BlatUI; la integración inicial se limita a dejar disponible la biblioteca y usarla en el onboarding de invitaciones.
 - No habilitar edición/eliminación de usuarios ni mutaciones de publicaciones, comentarios o respuestas.
 - No incluir enrolamiento MFA en la aceptación de invitación; el panel conserva su requisito actual de MFA.
 - No crear una interfaz para administrar roles/permisos ni conceder el rol de aprovisionamiento automáticamente a cada administrador.
@@ -32,6 +33,8 @@ EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovis
 - Añadir admin.users.create y asignarlo únicamente al rol explícito admin-users-provisioner, que también necesita admin.users.viewAny para abrir el listado; no asignarlo a admin ni a los roles reader.
 - La acción de Filament emite invitaciones, no crea contraseñas ni habilita los endpoints nativos de creación directa, edición o eliminación de User.
 - Un correo registrado se puede buscar y seleccionar. Su invitación conserva la contraseña/datos existentes. Un correo nuevo se puede escribir y abre una página de aceptación Livewire fuera del guard y las rutas protegidas de Filament.
+- La UI pública de aceptación usa componentes BlatUI copiados al proyecto. Su registro se conecta a la instancia Alpine que Livewire ya inicia; no se agrega Alpine por separado ni se carga el bootstrap que lo arrancaría otra vez.
+- El layout público carga sus propios assets de Vite y Livewire y mantiene separado el entrypoint Inertia/React.
 - La invitación contiene un token aleatorio de un solo uso y vencimiento, guarda solamente su hash y fija el correo objetivo. La aceptación verifica el correo, consume el token y asigna admin; token vencido, reutilizado o alterado no cambia cuenta ni roles.
 - Si el envío falla, el emisor recibe un error recuperable; emitir una nueva invitación invalida la pendiente anterior para ese correo.
 - CommentsResource se descubre mediante la configuración existente de Filament, pero se oculta del sidebar. La navegación desde CommentsRelationManager lleva al detalle autorizado; sus respuestas usan Comment.comments() y permanecen paginadas/filtrables.
@@ -63,6 +66,9 @@ EXPANSION confirmada por el usuario. Se amplía solamente el apartado de aprovis
 - [Livewire 4 full-page components](https://livewire.laravel.com/docs/4.x/components)
 - [Livewire 4 forms](https://livewire.laravel.com/docs/4.x/forms)
 - [Livewire 4 security](https://livewire.laravel.com/docs/4.x/security)
+- [BlatUI: instalación y requisitos](https://packagist.org/packages/anousss007/blatui)
+- [BlatUI con Livewire](https://blatui.remix-it.com/docs/livewire)
+- [Livewire 4: integración con Alpine](https://livewire.laravel.com/docs/4.x/alpine)
 
 ## Tasks
 
@@ -436,15 +442,16 @@ Añadir a ListUsers una acción de invitación protegida por admin.users.create.
 
 ### TASK-019: Crear aceptación segura de invitación con Livewire
 
-Implementar una página completa Livewire fuera del panel Admin. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.
+Implementar una página completa Livewire fuera del panel Admin usando los componentes Blade de BlatUI preparados por TASK-021–025. Para cuenta existente, aceptar la invitación sin modificar credenciales; para correo nuevo, recoger nombre/password y completar la aceptación del token.
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-017
+**Depends on:** TASK-017, TASK-024, TASK-025
 
 **Acceptance Criteria:**
 - Un token válido permite completar la rama existente o el formulario de cuenta nueva; el correo objetivo se muestra fijo y no se puede sustituir desde props/campos cliente.
 - Un token inválido, expirado o ya consumido no crea usuario ni asigna rol; la pantalla no requiere sesión Admin/MFA antes de aceptar la invitación.
+- La vista usa campos y botones BlatUI dentro de un layout público Livewire; no arranca una segunda instancia Alpine ni carga el entrypoint Inertia/React.
 
 **writeScope:**
 - `app/Modules/Admin/Livewire/AcceptAdminInvitation.php`
@@ -476,6 +483,109 @@ Registrar una ruta web con nombre estable desde AdminServiceProvider y el archiv
 
 **Review:** Codex
 
+### TASK-021: Agregar BlatUI y sus dependencias PHP
+
+Instalar el paquete CLI de BlatUI y sus dependencias PHP documentadas para copiar componentes Blade al proyecto.
+
+**Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+- Composer resuelve BlatUI, tailwind-merge-laravel y blade-lucide-icons con las versiones de PHP/Laravel del proyecto.
+- La actualización conserva Livewire 4 y Filament 5 instalados y no introduce conflictos en Composer.
+
+**writeScope:**
+- `composer.json`
+- `composer.lock`
+
+**validateCommand:** `rtk composer validate`
+
+**Review:** Codex
+
+### TASK-022: Publicar los foundations de BlatUI
+
+Publicar los assets de BlatUI que el proyecto mantendrá bajo resources: tokens CSS y motores JavaScript. La integración Livewire usará `blatui-core.js`; el bootstrap alternativo quedará sin uso en las páginas Livewire.
+
+**Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-021
+
+**Acceptance Criteria:**
+- Los assets publicados quedan versionados en `resources/css/` y `resources/js/` para que el build no dependa de rutas internas de `vendor/`.
+- El flujo Livewire registra BlatUI desde `blatui-core.js` y no ejecuta `blatui.js` para arrancar Alpine otra vez.
+
+**writeScope:**
+- `resources/css/blatui.css`
+- `resources/js/blatui.js`
+- `resources/js/blatui-core.js`
+
+**validateCommand:** `rtk php artisan blatui:list input`
+
+**Review:** Codex
+
+### TASK-023: Registrar BlatUI sobre Alpine de Livewire
+
+Agregar los plugins Alpine que BlatUI requiere y crear un entrypoint pequeño que registre BlatUI en `alpine:init` sobre la instancia que Livewire ya administra.
+
+**Type:** chore · **Effort:** M · **Agent:** react-vite-tailwind-engineer · **Priority:** P1
+
+**Depends on:** TASK-022
+
+**Acceptance Criteria:**
+- Los plugins `anchor`, `collapse` y `focus`, además de `floating-ui`, quedan instalados sin agregar `alpinejs`.
+- El entrypoint importa `registerBlatUI` desde el asset publicado y lo registra en `alpine:init` sin importar ni llamar `Alpine.start()`.
+
+**writeScope:**
+- `package.json`
+- `package-lock.json`
+- `resources/js/admin/blatui.ts`
+
+**validateCommand:** `rtk npm ls @alpinejs/anchor @alpinejs/collapse @alpinejs/focus @floating-ui/dom`
+
+**Review:** Codex
+
+### TASK-024: Crear layout público Livewire con assets BlatUI
+
+Registrar la entrada Vite aislada de la aceptación de invitaciones y crear su layout Livewire público con estilos BlatUI, `@livewireStyles` y `@livewireScripts`.
+
+**Type:** feature · **Effort:** M · **Agent:** react-vite-tailwind-engineer · **Priority:** P1
+
+**Depends on:** TASK-023
+
+**Acceptance Criteria:**
+- El layout carga una hoja CSS propia de la página y el entrypoint BlatUI desde Vite, además de las directivas de assets de Livewire.
+- El build produce los assets sin ejecutar ni renderizar el entrypoint Inertia/React en la ruta pública.
+
+**writeScope:**
+- `vite.config.ts`
+- `resources/css/admin-invitation.css`
+- `resources/views/layouts/admin-invitation.blade.php`
+
+**validateCommand:** `rtk npm run build`
+
+**Review:** Codex
+
+### TASK-025: Copiar controles BlatUI para el onboarding
+
+Usar el CLI de BlatUI para agregar al proyecto únicamente los componentes Blade `input` y `button` que necesita la aceptación segura.
+
+**Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-021
+
+**Acceptance Criteria:**
+- Los componentes `x-ui.input` y `x-ui.button` quedan copiados en `resources/views/components/ui/` y disponibles para la vista Livewire.
+- La instalación conserva el alcance mínimo de los componentes utilizados; no copia todos los componentes de la biblioteca.
+
+**writeScope:**
+- `resources/views/components/ui/input.blade.php`
+- `resources/views/components/ui/button.blade.php`
+
+**validateCommand:** `rtk php artisan blatui:list input`
+
+**Review:** Codex
+
 ## Failure Modes
 
 - A missing profile, cover, or post image renders the configured fallback; a present image still renders from the correct collection.
@@ -488,7 +598,7 @@ Registrar una ruta web con nombre estable desde AdminServiceProvider y el archiv
 
 ## Ship Cut
 
-Los detalles de imágenes, filtros y redirección pueden integrarse como cambios independientes. El flujo de invitación no se considera completo hasta que RBAC, persistencia/servicio, acción Filament, componente Livewire y registro de ruta estén conectados y cubiertos por pruebas. El detalle de comentarios no se considera completo hasta que ruta oculta, respuestas, widgets y enlace desde la tabla estén integrados.
+Los detalles de imágenes, filtros y redirección pueden integrarse como cambios independientes. El flujo de invitación no se considera completo hasta que RBAC, persistencia/servicio, acción Filament, componentes BlatUI, layout público, componente Livewire y registro de ruta estén conectados y cubiertos por pruebas. El detalle de comentarios no se considera completo hasta que ruta oculta, respuestas, widgets y enlace desde la tabla estén integrados.
 
 ## Test Coverage Map
 
@@ -497,12 +607,12 @@ Los detalles de imágenes, filtros y redirección pueden integrarse como cambios
 - Comentarios: CommentsRelationManagerTest cubre filtros y navegación; ViewCommentTest cubre ruta/datos/autorización; RepliesRelationManagerTest cubre alcance, filtros, paginación y solo lectura; CommentActivityOverviewTest cubre contadores.
 - Autenticación: AuthenticationTest y AdminPanelAccessTest cubren destino normal después de visitar login Admin y acceso del panel.
 - AdminUserSeederTest cubre que el usuario local conserva roles manuales y no recibe automáticamente el rol provisioner.
-- Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationTest cubre modelo/casts/relaciones; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública.
+- Invitaciones: AdminAuthorizationSeederTest cubre el rol mínimo; AdminInvitationTest cubre modelo/casts/relaciones; AdminInvitationServiceTest cubre token/expiración/duplicados/entrega; ListUsersTest cubre búsqueda, correo nuevo y autorización; AcceptAdminInvitationTest y AdminInvitationRouteTest cubren aceptación y ruta pública. El build comprueba los assets BlatUI y Livewire usa la misma instancia Alpine.
 ## Execution Summary
 
-- Tareas: 20.
-- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-015; L1: TASK-008, TASK-009, TASK-013, TASK-016; L2: TASK-010, TASK-014, TASK-017; L3: TASK-018, TASK-019; L4: TASK-020.
-- Ruta crítica (5 tareas): TASK-012 → TASK-013 → TASK-017 → TASK-019 → TASK-020.
+- Tareas: 25.
+- Capas paralelizables: L0: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-011, TASK-012, TASK-015, TASK-021; L1: TASK-008, TASK-009, TASK-013, TASK-016, TASK-022, TASK-025; L2: TASK-010, TASK-014, TASK-017, TASK-023; L3: TASK-018, TASK-024; L4: TASK-019; L5: TASK-020.
+- Ruta crítica (6 tareas): TASK-021 → TASK-022 → TASK-023 → TASK-024 → TASK-019 → TASK-020.
 - Próxima ejecución: implementar solo la siguiente tarea atómica y detenerse para revisión.
 ## Task Dependencies
 
@@ -524,5 +634,10 @@ Los detalles de imágenes, filtros y redirección pueden integrarse como cambios
 - **TASK-016** ← TASK-015
 - **TASK-017** ← TASK-013, TASK-015, TASK-016
 - **TASK-018** ← TASK-013, TASK-017
-- **TASK-019** ← TASK-017
+- **TASK-019** ← TASK-017, TASK-024, TASK-025
 - **TASK-020** ← TASK-015, TASK-019
+- **TASK-021** ← sin dependencias
+- **TASK-022** ← TASK-021
+- **TASK-023** ← TASK-022
+- **TASK-024** ← TASK-023
+- **TASK-025** ← TASK-021
