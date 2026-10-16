@@ -16,12 +16,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Override;
 
 /**
  * @property int $id
  * @property string $content
  * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $edited_at
+ * @property CarbonImmutable|null $deleted_at
  * @property int|null $replied_to_user_id
  * @property-read User $user
  * @property-read User|null $repliedToUser
@@ -35,11 +38,14 @@ use Override;
     'commentable_id',
     'commentable_type',
     'content',
+    'edited_at',
 ])]
 class Comment extends Model
 {
     /** @use HasFactory<CommentFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     /**
      * The morph name used for polymorphic relations.
@@ -56,6 +62,7 @@ class Comment extends Model
     {
         return [
             'commentable_type' => CommentType::class,
+            'edited_at' => 'immutable_datetime',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 it('belongs to the user who wrote it', function (): void {
@@ -101,4 +102,38 @@ it('is registered in the morph map under the comment key', function (): void {
     expect(Comment::MORPH_NAME)->toBe('comment')
         ->and(Relation::getMorphedModel('comment'))->toBe(Comment::class)
         ->and((new Comment)->getMorphClass())->toBe('comment');
+});
+
+it('has no edited date when it is created', function (): void {
+    expect(createComment()->fresh()?->edited_at)->toBeNull();
+});
+
+it('casts the edited date to an immutable date', function (): void {
+    $comment = createComment();
+    $comment->forceFill(['edited_at' => '2026-10-01 10:00:00'])->save();
+
+    expect($comment->fresh()?->edited_at)->toBeInstanceOf(CarbonImmutable::class)
+        ->and($comment->fresh()?->edited_at?->toDateTimeString())->toBe('2026-10-01 10:00:00');
+});
+
+it('keeps a deleted comment out of the default queries', function (): void {
+    $post = createPost();
+    $comment = createCommentOn($post);
+
+    $comment->delete();
+
+    expect(Comment::query()->whereKey($comment->id)->exists())->toBeFalse()
+        ->and($post->comments()->count())->toBe(0);
+});
+
+it('still finds a deleted comment when trashed comments are included', function (): void {
+    $comment = createComment();
+
+    $comment->delete();
+
+    $trashedComment = Comment::withTrashed()->find($comment->id);
+
+    expect($trashedComment)->not->toBeNull()
+        ->and($trashedComment?->deleted_at)->not->toBeNull()
+        ->and($trashedComment?->trashed())->toBeTrue();
 });
