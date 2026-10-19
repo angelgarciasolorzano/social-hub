@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
+use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use Illuminate\Support\Collection;
@@ -155,4 +156,43 @@ it('keeps threads to a single level', function (): void {
     $replyIds = seededReplies()->pluck('id')->all();
 
     expect(Comment::query()->where('commentable_type', Comment::MORPH_NAME)->whereIn('commentable_id', $replyIds)->count())->toBe(0);
+});
+
+it('marks some comments as edited after they were written', function (): void {
+    seedCommentThreads($this, 20);
+
+    $editedComments = Comment::query()->whereNotNull('edited_at')->get();
+
+    expect($editedComments)->not->toBeEmpty();
+
+    foreach ($editedComments as $editedComment) {
+        expect($editedComment->edited_at?->timestamp)->toBeGreaterThan($editedComment->created_at->timestamp ?? 0);
+    }
+});
+
+it('does not mark every comment as edited', function (): void {
+    seedCommentThreads($this, 20);
+
+    expect(Comment::query()->whereNull('edited_at')->count())->toBeGreaterThan(0);
+});
+
+it('leaves some root comments with replies as deleted tombstones', function (): void {
+    seedCommentThreads($this, 60);
+
+    expect(Comment::onlyTrashed()->count())->toBeGreaterThan(0);
+});
+
+it('only deletes root comments that have replies', function (): void {
+    seedCommentThreads($this, 60);
+
+    foreach (Comment::onlyTrashed()->get() as $deletedComment) {
+        expect($deletedComment->commentable_type)->toBe(CommentType::POST)
+            ->and(Comment::query()->where('commentable_type', Comment::MORPH_NAME)->where('commentable_id', $deletedComment->id)->exists())->toBeTrue();
+    }
+});
+
+it('never deletes a reply', function (): void {
+    seedCommentThreads($this, 60);
+
+    expect(Comment::onlyTrashed()->where('commentable_type', Comment::MORPH_NAME)->count())->toBe(0);
 });
