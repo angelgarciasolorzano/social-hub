@@ -78,7 +78,10 @@ final class AcceptAdminInvitation extends Component
                 $this->requiresRegistration ? $this->password : null,
             );
         } catch (ValidationException $validationException) {
-            throw_unless(\array_key_exists('invitation', $validationException->errors()), $validationException);
+            throw_unless(
+                \array_key_exists('invitation', $validationException->errors()),
+                fn (): ValidationException => $validationException,
+            );
 
             $this->isInvitationValid = false;
             $this->requiresRegistration = false;
