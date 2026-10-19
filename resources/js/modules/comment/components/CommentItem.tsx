@@ -38,8 +38,6 @@ interface CommentItemProps {
 
 type LiveComment = Comment & { content: string; user: User };
 
-type LiveCommentItemProps = CommentItemProps & { comment: LiveComment };
-
 function isLiveComment(comment: Comment): comment is LiveComment {
   return !comment.isDeleted && comment.content !== null && comment.user !== null;
 }
@@ -52,71 +50,7 @@ function CommentItem(props: CommentItemProps): JSX.Element {
   return <LiveCommentItem {...props} comment={comment} />;
 }
 
-function DeletedCommentItem({
-  comment,
-  isReply = false,
-  onDeleted,
-  setShowReplies,
-  showReplies,
-}: CommentItemProps): JSX.Element {
-  return (
-    <article className={cn("space-y-1", isReply && "ml-2")}>
-      <Card className="gap-0 rounded-md bg-muted/50 py-0 shadow-none">
-        <CardContent className="p-2">
-          <p className="text-sm text-muted-foreground italic">Comentario eliminado</p>
-        </CardContent>
-      </Card>
-
-      {comment.repliesInfo.hasReplies && (
-        <footer className="-ml-2 flex items-center text-xs font-medium text-muted-foreground">
-          <CommentRepliesToggle
-            comment={comment}
-            setShowReplies={setShowReplies}
-            showReplies={showReplies}
-          />
-        </footer>
-      )}
-
-      {showReplies === comment.id && (
-        <CommentRepliesList
-          commentId={comment.id}
-          onReplyDeleted={onDeleted}
-          refreshCounter={0}
-          setShowReplies={setShowReplies}
-          showReplies={showReplies}
-        />
-      )}
-    </article>
-  );
-}
-
-interface CommentRepliesToggleProps {
-  comment: Comment;
-  setShowReplies: Dispatch<SetStateAction<number | null>>;
-  showReplies: number | null;
-}
-
-function CommentRepliesToggle({
-  comment,
-  setShowReplies,
-  showReplies,
-}: CommentRepliesToggleProps): JSX.Element {
-  return (
-    <Button
-      className="cursor-pointer text-muted-foreground"
-      onClick={() => {
-        setShowReplies(showReplies === comment.id ? null : comment.id);
-      }}
-      size="xs"
-      type="button"
-      variant="ghost"
-    >
-      {showReplies === comment.id
-        ? "Ocultar respuestas"
-        : `Mostrar ${String(comment.repliesInfo.repliesCount)} respuestas`}
-    </Button>
-  );
-}
+type LiveCommentItemProps = CommentItemProps & { comment: LiveComment };
 
 function LiveCommentItem(props: LiveCommentItemProps): JSX.Element {
   const {
@@ -263,6 +197,72 @@ function LiveCommentItem(props: LiveCommentItemProps): JSX.Element {
         />
       )}
     </article>
+  );
+}
+
+function DeletedCommentItem({
+  comment,
+  isReply = false,
+  onDeleted,
+  setShowReplies,
+  showReplies,
+}: CommentItemProps): JSX.Element {
+  return (
+    <article className={cn("space-y-1", isReply && "ml-2")}>
+      <Card className="gap-0 rounded-md bg-muted/50 py-0 shadow-none">
+        <CardContent className="p-2">
+          <p className="text-sm text-muted-foreground italic">Comentario eliminado</p>
+        </CardContent>
+      </Card>
+
+      {comment.repliesInfo.hasReplies && (
+        <footer className="-ml-2 flex items-center text-xs font-medium text-muted-foreground">
+          <CommentRepliesToggle
+            comment={comment}
+            setShowReplies={setShowReplies}
+            showReplies={showReplies}
+          />
+        </footer>
+      )}
+
+      {showReplies === comment.id && (
+        <CommentRepliesList
+          commentId={comment.id}
+          onReplyDeleted={onDeleted}
+          refreshCounter={0}
+          setShowReplies={setShowReplies}
+          showReplies={showReplies}
+        />
+      )}
+    </article>
+  );
+}
+
+interface CommentRepliesToggleProps {
+  comment: Comment;
+  setShowReplies: Dispatch<SetStateAction<number | null>>;
+  showReplies: number | null;
+}
+
+function CommentRepliesToggle({
+  comment,
+  setShowReplies,
+  showReplies,
+}: CommentRepliesToggleProps): JSX.Element {
+  return (
+    <Button
+      className="cursor-pointer text-muted-foreground"
+      onClick={() => {
+        setShowReplies(showReplies === comment.id ? null : comment.id);
+      }}
+      size="xs"
+      type="button"
+      variant="ghost"
+    >
+      {showReplies === comment.id
+        ? "Ocultar respuestas"
+        : `Mostrar ${String(comment.repliesInfo.repliesCount)} respuestas`}
+    </Button>
   );
 }
 
