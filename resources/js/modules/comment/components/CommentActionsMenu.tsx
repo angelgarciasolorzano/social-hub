@@ -19,7 +19,7 @@ import CommentEditDialog from "./dialog/CommentEditDialog";
 interface CommentActionsMenuProps {
   comment: Comment;
   onDeleted: () => void;
-  onUpdated: () => void;
+  onUpdated: (content: string) => void;
 }
 
 function CommentActionsMenu({

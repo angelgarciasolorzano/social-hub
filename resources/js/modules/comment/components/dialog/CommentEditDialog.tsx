@@ -26,7 +26,7 @@ interface CommentEditDialogProps {
   commentId: number;
   initialContent: string;
   onOpenChange: (open: boolean) => void;
-  onUpdated: () => void;
+  onUpdated: (content: string) => void;
   open: boolean;
 }
 
@@ -81,7 +81,7 @@ function CommentEditDialogBody({
         return false;
       },
       onSuccess: () => {
-        onUpdated();
+        onUpdated(data.content.trim());
 
         onOpenChange(false);
       },

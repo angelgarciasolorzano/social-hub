@@ -40,7 +40,9 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
     hasMoreComments,
     increaseRepliesCount,
     loadFailure,
+    reloadComments,
     retryLoad,
+    updateCommentContent,
     uploadedComments,
   } = useCommentPaginated(CommentType.POST, postId);
 
@@ -118,6 +120,8 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
         <div className="flex flex-col gap-6 pr-2.5">
           {commentsPage.data.map((comment) => (
             <CommentItem
+              onContentUpdated={updateCommentContent}
+              onDeleted={reloadComments}
               onReplyCreated={increaseRepliesCount}
               comment={comment}
               key={comment.id}
