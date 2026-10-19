@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Comment\Requests;
 
 use App\Modules\Comment\Concerns\NormalizesCommentContent;
+use App\Modules\Comment\Models\Comment;
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
@@ -33,7 +34,7 @@ class CommentUpdateRequest extends FormRequest
         return [
             'content' => FluentRule::string()
                 ->required(message: 'El comentario es obligatorio')
-                ->max(1000),
+                ->max(Comment::CONTENT_MAX_LENGTH),
         ];
     }
 }

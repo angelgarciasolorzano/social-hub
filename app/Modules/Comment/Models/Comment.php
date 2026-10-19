@@ -60,6 +60,11 @@ class Comment extends Model
      */
     public const string MORPH_COLUMN = 'commentable';
 
+    /**
+     * The maximum number of characters of a comment, mirrored by the frontend counter.
+     */
+    public const int CONTENT_MAX_LENGTH = 1000;
+
     #[Override]
     protected function casts(): array
     {

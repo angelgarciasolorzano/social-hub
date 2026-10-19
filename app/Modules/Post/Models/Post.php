@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -118,13 +117,14 @@ class Post extends Model implements HasMedia
             ->whereColumn('comments.commentable_id', 'posts.id')
             ->where('comments.commentable_type', self::MORPH_NAME);
 
-        $replies = DB::table('comments as replies')
+        $replies = Comment::query()
+            ->toBase()
             ->selectRaw('count(*)')
-            ->join('comments as roots', 'roots.id', '=', 'replies.commentable_id')
-            ->where('replies.commentable_type', Comment::MORPH_NAME)
-            ->whereNull('replies.deleted_at')
-            ->where('roots.commentable_type', self::MORPH_NAME)
-            ->whereColumn('roots.commentable_id', 'posts.id');
+            ->where('comments.commentable_type', Comment::MORPH_NAME)
+            ->whereIn('comments.commentable_id', Comment::withTrashed()
+                ->select('id')
+                ->where('commentable_type', self::MORPH_NAME)
+                ->whereColumn('commentable_id', 'posts.id'));
 
         $query
             ->selectSub($liveRootComments, 'root_comments_count')
