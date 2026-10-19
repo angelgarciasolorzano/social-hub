@@ -30,8 +30,6 @@ interface CommentEditDialogProps {
   open: boolean;
 }
 
-type CommentEditDialogBodyProps = Omit<CommentEditDialogProps, "open">;
-
 function CommentEditDialog({ open, ...bodyProps }: CommentEditDialogProps): JSX.Element {
   return (
     <Dialog onOpenChange={bodyProps.onOpenChange} open={open}>
@@ -41,6 +39,8 @@ function CommentEditDialog({ open, ...bodyProps }: CommentEditDialogProps): JSX.
     </Dialog>
   );
 }
+
+type CommentEditDialogBodyProps = Omit<CommentEditDialogProps, "open">;
 
 /**
  * Mounted only while the dialog is open, so every opening starts from the current content of the comment.

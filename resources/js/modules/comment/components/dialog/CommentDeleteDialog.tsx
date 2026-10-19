@@ -28,8 +28,6 @@ interface CommentDeleteDialogProps {
   open: boolean;
 }
 
-type CommentDeleteDialogBodyProps = Omit<CommentDeleteDialogProps, "open">;
-
 function CommentDeleteDialog({ open, ...bodyProps }: CommentDeleteDialogProps): JSX.Element {
   return (
     <Dialog onOpenChange={bodyProps.onOpenChange} open={open}>
@@ -39,6 +37,8 @@ function CommentDeleteDialog({ open, ...bodyProps }: CommentDeleteDialogProps): 
     </Dialog>
   );
 }
+
+type CommentDeleteDialogBodyProps = Omit<CommentDeleteDialogProps, "open">;
 
 /**
  * Mounted only while the dialog is open, so a failed attempt never leaves its error for the next opening.
