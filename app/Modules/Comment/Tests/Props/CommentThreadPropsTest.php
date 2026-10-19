@@ -174,6 +174,49 @@ it('reports the likes of each reply and whether the viewer liked it', function (
         ->and($likesInfo[$plainReply->id])->toBe(['count' => 0, 'likedByMe' => false]);
 });
 
+it('lists a deleted comment as a tombstone in its position without its text or author', function (): void {
+    $post = createPost();
+    $firstComment = createCommentOn($post);
+
+    $deletedComment = createComment(null, [
+        'commentable_id' => $post->id,
+        'commentable_type' => Post::MORPH_NAME,
+        'content' => 'Texto que debe desaparecer',
+        'deleted_at' => now(),
+    ]);
+
+    createCommentOn($deletedComment);
+    $lastComment = createCommentOn($post);
+
+    $page = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
+    $serializedComments = array_column($page->items(), null, 'id');
+
+    expect(array_column($page->items(), 'id'))->toBe([$lastComment->id, $deletedComment->id, $firstComment->id])
+        ->and($serializedComments[$deletedComment->id])->toMatchArray(['isDeleted' => true, 'content' => null, 'user' => null])
+        ->and(json_encode($page->items()))->not->toContain('Texto que debe desaparecer');
+});
+
+it('lists the replies of a deleted comment instead of answering 404', function (): void {
+    $deletedComment = createComment(null, ['deleted_at' => now()]);
+    $comment = createCommentOn($deletedComment);
+
+    $page = resolveCommentThread('replies', [CommentThreadProps::REPLIES_PARAMETER => $deletedComment->id], createUser());
+
+    expect(array_column($page->items(), 'id'))->toBe([$comment->id]);
+});
+
+it('marks only the comments written by the viewer as mine', function (): void {
+    $post = createPost();
+    $user = createUser();
+    $ownComment = createCommentOn($post, $user);
+    $otherComment = createCommentOn($post);
+
+    $page = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], $user);
+    $ownership = array_column($page->items(), 'isMine', 'id');
+
+    expect($ownership)->toBe([$otherComment->id => false, $ownComment->id => true]);
+});
+
 it('serializes the mentioned user of each reply with only its id and name', function (): void {
     $comment = createComment();
     $mentionedUser = createUser();

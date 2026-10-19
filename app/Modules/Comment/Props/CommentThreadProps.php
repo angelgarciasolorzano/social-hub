@@ -69,11 +69,14 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
     {
         $user = $this->consumeThrottleBudget();
 
-        $commentable = $commentableClass::query()->findOrFail($this->commentableId($parameter));
+        $commentable = $commentableClass === Comment::class
+            ? Comment::withTrashed()->findOrFail($this->commentableId($parameter))
+            : Post::query()->findOrFail($this->commentableId($parameter));
 
         $encodedCursor = $this->request->query($cursorName);
 
         return $commentable->comments()
+            ->withTrashed()
             ->with(['user', 'repliedToUser:id,name'])
             ->withCount(['comments', 'likes'])
             ->withExists(['likes as liked_by_me' => fn (Builder $builder): Builder => $builder->whereBelongsTo($user)])
