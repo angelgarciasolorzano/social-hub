@@ -18,19 +18,23 @@ interface CommentRepliedTo {
 }
 
 export interface Comment {
-  content: string;
+  content: null | string;
   createdAt: string;
+  editedAt: null | string;
   id: number;
+  isDeleted: boolean;
+  isMine: boolean;
   likesInfo: CommentLikesInfo;
   repliedTo?: CommentRepliedTo | null;
   repliesInfo: CommentReplies;
-  user: User;
+  user: null | User;
 }
 
-export type CommentFormData = Pick<Comment, "content"> & {
+export interface CommentFormData {
   commentable_id: number;
   commentable_type: CommentTypeValues;
-};
+  content: string;
+}
 
 export interface PaginatedComments {
   data: Comment[];
