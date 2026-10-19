@@ -31,7 +31,7 @@ Modo EXPANSION con decisiones del usuario: (1) el conteo es 'raíz vivos + todas
 
 ## Contracts
 
-- Conteo: comments_total = comentarios raíz del post con deleted_at nulo + todas las respuestas a los raíz del post (incluidas las de un tombstone). Se calcula en Post::withEngagementFor(User) con subconsultas correlacionadas en la misma consulta del listado; Post::commentsTotal() reutiliza el atributo y solo consulta si falta.
+- Conteo: Total de comentarios = comentarios raíz del post con deleted_at nulo + todas las respuestas a los raíz del post (incluidas las de un tombstone). Se calcula en Post::withEngagementFor(User) con dos subconsultas correlacionadas (atributos root_comments_count y replies_count) en la misma consulta del listado; Post::commentsTotal() suma ambos atributos y solo consulta si faltan.
 - Post::withEngagementFor(User $viewer) precarga también likes_count y liked_by_me; Post::likesCount() e isLikedBy(User) siguen el patrón de Comment. PostResource añade commentsCount y likesInfo {count, likedByMe}, cada bloque en un método privado.
 - Rutas de like: POST comments/{comment}/like (comments.like) y POST posts/{post}/like (posts.like), ambas auth + verified y throttle:30,1 con prefijo propio (comments.like, posts.like), servidas por LikeController::toggleComment y togglePost, con respuesta JSON {liked: bool, likesCount: int} (404 inexistente, 429 con Retry-After).
 - Orden: CommentThreadProps lista comments (raíz de un post) por id descendente y replies por id ascendente, ambos con cursorPaginate(10) y sus nombres de cursor actuales; el número de consultas es constante.
@@ -56,7 +56,7 @@ Modo EXPANSION con decisiones del usuario: (1) el conteo es 'raíz vivos + todas
 
 ### TASK-001: Post: scope de engagement y totales de comentarios y me gusta
 
-En Post añade el scope #[Scope] withEngagementFor(User $viewer) que, en la misma consulta del listado, precarga: withCount('likes'), withExists(['likes as liked_by_me' => whereBelongsTo($viewer)]) y comments_total, una subconsulta correlacionada que suma los comentarios raíz vivos del post (Comment con deleted_at nulo) más todas las respuestas a ellos, incluidas las de un tombstone porque siguen visibles (join de comments como replies con comments como roots por commentable_id). Añade Post::commentsTotal() y Post::likesCount() (reutilizan los atributos precargados y consultan solo si faltan) y Post::isLikedBy(User) (reutiliza liked_by_me), siguiendo el patrón de Comment::repliesCount()/isLikedBy().
+En Post añade el scope #[Scope] withEngagementFor(User $viewer) que, en la misma consulta del listado, precarga: withCount('likes'), withExists(['likes as liked_by_me' => whereBelongsTo($viewer)]) y dos subconsultas correlacionadas con selectSub: root_comments_count (comentarios raíz vivos del post, con el scope de SoftDeletes) y replies_count (todas las respuestas a los raíz del post, incluidas las de un tombstone porque siguen visibles; join de comments como replies con comments como roots por commentable_id). Añade Post::commentsTotal() y Post::likesCount() (reutilizan los atributos precargados y consultan solo si faltan) y Post::isLikedBy(User) (reutiliza liked_by_me), siguiendo el patrón de Comment::repliesCount()/isLikedBy().
 
 **Type:** feature  
 **Priority:** P0  
@@ -67,9 +67,9 @@ En Post añade el scope #[Scope] withEngagementFor(User $viewer) que, en la mism
 
 **Acceptance Criteria:**
 
-- [ ] comments_total de un post cuenta raíz vivos más todas sus respuestas: con 2 raíz vivos, 1 raíz eliminado (tombstone) con 3 respuestas y 1 respuesta en un raíz vivo da 2 + 3 + 1 = 6, y no cuenta comentarios de otros posts.
+- [ ] commentsTotal() de un post cuenta raíz vivos más todas sus respuestas: con 2 raíz vivos, 1 raíz eliminado (tombstone) con 3 respuestas y 1 respuesta en un raíz vivo da 2 + 3 + 1 = 6, y no cuenta comentarios de otros posts.
 - [ ] withEngagementFor ejecuta una sola consulta para N posts (el conteo de consultas es el mismo con 1 o con 10 posts con comentarios, respuestas y likes) y liked_by_me es true solo para el viewer.
-- [ ] Post::commentsTotal(), likesCount() e isLikedBy() devuelven el mismo valor con los atributos precargados y consultando directamente, y 0/false para un post sin actividad.
+- [ ] Post::commentsTotal() (suma de root_comments_count y replies_count), likesCount() e isLikedBy() devuelven el mismo valor con los atributos precargados y consultando directamente, y 0/false para un post sin actividad.
 
 **writeScope:**
 
