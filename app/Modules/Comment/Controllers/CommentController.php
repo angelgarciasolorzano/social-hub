@@ -12,6 +12,7 @@ use App\Modules\Comment\Requests\CommentUpdateRequest;
 use App\Modules\Post\Models\Post;
 use Illuminate\Routing\Attributes\Controllers\Authorize;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -57,5 +58,52 @@ class CommentController extends Controller
             'type' => 'success',
             'message' => 'Comentario actualizado correctamente',
         ])->back();
+    }
+
+    #[Authorize('delete', 'comment')]
+    public function destroy(Comment $comment): RedirectResponse
+    {
+        DB::transaction(function () use ($comment): void {
+            if ($comment->comments()->exists()) {
+                $comment->delete();
+
+                return;
+            }
+
+            $this->forceDeleteWithLikes($comment);
+
+            $this->forceDeleteEmptiedParent($comment);
+        });
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => 'Comentario eliminado correctamente',
+        ])->back();
+    }
+
+    /**
+     * Delete the comment for good along with its likes, which have no foreign key to cascade.
+     */
+    private function forceDeleteWithLikes(Comment $comment): void
+    {
+        $comment->likes()->delete();
+
+        $comment->forceDelete();
+    }
+
+    /**
+     * Remove a deleted parent that just lost its last reply, so no empty tombstone is left behind.
+     */
+    private function forceDeleteEmptiedParent(Comment $comment): void
+    {
+        if ($comment->commentable_type !== CommentType::COMMENT) {
+            return;
+        }
+
+        $parent = Comment::withTrashed()->find($comment->commentable_id);
+
+        if ($parent instanceof Comment && $parent->trashed() && ! $parent->comments()->exists()) {
+            $this->forceDeleteWithLikes($parent);
+        }
     }
 }

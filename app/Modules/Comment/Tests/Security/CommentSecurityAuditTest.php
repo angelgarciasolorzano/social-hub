@@ -78,7 +78,7 @@ it('[H8] exposes no route to update or delete comments', function (): void {
         ->values()
         ->all();
 
-    expect($commentRoutes)->toBe(['comments.like', 'comments.store', 'comments.update']);
+    expect($commentRoutes)->toBe(['comments.destroy', 'comments.like', 'comments.store', 'comments.update']);
 });
 
 it('[H8] ignores a forged user_id and attributes the comment to the authenticated user', function (): void {

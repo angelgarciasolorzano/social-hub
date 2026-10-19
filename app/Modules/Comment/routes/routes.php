@@ -17,5 +17,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::patch('{comment}', [CommentController::class, 'update'])
                 ->middleware('throttle:10,1,comments.update')
                 ->name('update');
+
+            Route::delete('{comment}', [CommentController::class, 'destroy'])
+                ->middleware('throttle:10,1,comments.destroy')
+                ->name('destroy');
         });
 });
