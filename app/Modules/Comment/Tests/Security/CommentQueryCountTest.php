@@ -73,6 +73,30 @@ it('uses the same number of queries regardless of how many comments or replies a
         ->and($large['queries'])->toBe($small['queries']);
 });
 
+it('uses the same number of queries when the listed comments include edited and deleted ones', function (): void {
+    $smallPost = createPost();
+    createCommentOn($smallPost);
+
+    $largePost = createPost();
+
+    foreach (range(1, 5) as $attempt) {
+        createCommentOn($largePost, attributes: ['edited_at' => now()]);
+
+        $deletedComment = createComment(null, [
+            'commentable_id' => $largePost->id,
+            'commentable_type' => Post::MORPH_NAME,
+            'deleted_at' => now(),
+        ]);
+        createCommentOn($deletedComment);
+    }
+
+    $small = listCommentsCountingQueries($this, $smallPost);
+    $large = listCommentsCountingQueries($this, $largePost);
+
+    expect($large['payload']['data'])->toHaveCount(10)
+        ->and($large['queries'])->toBe($small['queries']);
+});
+
 it('uses the same number of queries for replies with mentions regardless of how many are listed', function (): void {
     $smallThreadComment = createComment();
     createCommentOn($smallThreadComment, attributes: ['replied_to_user_id' => createUser()->id]);

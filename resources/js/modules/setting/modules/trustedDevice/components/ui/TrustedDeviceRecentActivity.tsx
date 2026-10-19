@@ -19,13 +19,13 @@ import type {
   TrustedDeviceActivityItem,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { cn } from "@/shared/lib";
+import { fromNow } from "@/shared/lib/dateTime";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";

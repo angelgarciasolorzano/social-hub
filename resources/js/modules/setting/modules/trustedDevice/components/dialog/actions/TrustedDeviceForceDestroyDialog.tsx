@@ -6,7 +6,6 @@ import { AlertTriangleIcon, Trash2 } from "lucide-react";
 
 import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
-import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { forceDestroy } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -26,6 +25,7 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants, buttonVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceForceDestroyDialogProps {

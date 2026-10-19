@@ -44,7 +44,6 @@ import type {
   TrustedDevicePagination as TrustedDevicePaginationData,
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { createDialogCloseHandler } from "@/modules/setting/shared/utils/dialog";
 import type { DialogClosingState } from "@/modules/setting/shared/utils/dialog";
 import {
@@ -77,6 +76,7 @@ import {
 import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
+import { formatLongDate, formatTimeUntil, fromNow } from "@/shared/lib/dateTime";
 import { badgeVariants } from "@/shared/lib/styling";
 
 type TrustedDeviceRowDialogActionKey =

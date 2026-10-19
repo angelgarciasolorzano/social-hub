@@ -15,6 +15,7 @@ import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 interface CommentRepliesListProps {
   commentId: number;
   onReplyCreated?: () => void;
+  onReplyDeleted?: () => void;
   refreshCounter: number;
   setShowReplies: Dispatch<SetStateAction<number | null>>;
   showReplies: number | null;
@@ -23,6 +24,7 @@ interface CommentRepliesListProps {
 function CommentRepliesList({
   commentId,
   onReplyCreated,
+  onReplyDeleted,
   refreshCounter,
   showReplies,
   setShowReplies,
@@ -38,7 +40,9 @@ function CommentRepliesList({
     loadMoreComments,
     hasMoreComments,
     loadFailure,
+    reloadComments,
     retryLoad,
+    updateCommentContent,
     uploadedComments,
   } = useCommentPaginated(CommentType.COMMENT, commentId);
 
@@ -111,6 +115,10 @@ function CommentRepliesList({
             comment={reply}
             isReply
             key={reply.id}
+            onContentUpdated={updateCommentContent}
+            onDeleted={() => {
+              reloadComments(onReplyDeleted);
+            }}
             onReplyCreated={onReplyCreated}
             setShowReplies={setShowReplies}
             showReplies={showReplies}

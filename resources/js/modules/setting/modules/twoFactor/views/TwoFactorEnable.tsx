@@ -15,7 +15,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -38,6 +37,7 @@ import { Progress } from "@/shared/components/shadcn/ui/progress";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib";
+import { formatLongDate } from "@/shared/lib/dateTime";
 import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";

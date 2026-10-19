@@ -10,7 +10,6 @@ import TrustedDeviceSummaryCard from "@/modules/setting/modules/trustedDevice/co
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
-import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { update } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -30,6 +29,7 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 

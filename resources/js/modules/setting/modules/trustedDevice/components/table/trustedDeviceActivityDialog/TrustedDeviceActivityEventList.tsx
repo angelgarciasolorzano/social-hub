@@ -17,12 +17,12 @@ import type { LucideIcon } from "lucide-react";
 import type { TrustedDeviceAction } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type { TrustedDeviceActivityEvent } from "@/modules/setting/modules/trustedDevice/types/trustedDeviceActivityDialog";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 
 import { cn } from "@/shared/lib";
+import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }> = {

@@ -5,10 +5,6 @@ import { Link } from "@inertiajs/react";
 import { ArrowRight, Clock, ShieldCheck } from "lucide-react";
 
 import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
-import {
-  formatActivationDate,
-  formatActivationTime,
-} from "@/modules/setting/shared/utils/dateTime";
 
 import TrustedDeviceIndexController from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController";
 
@@ -26,6 +22,7 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/shadcn/ui/tooltip";
 
+import { formatActivationDate, formatActivationTime } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TwoFactorActivationDetailsDialogProps {

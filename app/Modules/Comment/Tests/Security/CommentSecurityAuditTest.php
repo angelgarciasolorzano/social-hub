@@ -70,7 +70,7 @@ it('[H7] does not expose private user data in the serialized comments', function
 
 // Hypothesis 8: authorization and forged input --------------------------------
 
-it('[H8] exposes no route to update or delete comments', function (): void {
+it('[H8] exposes only the store, update, destroy and like routes for comments', function (): void {
     $commentRoutes = collect(Route::getRoutes()->getRoutes())
         ->filter(fn (Illuminate\Routing\Route $route): bool => str_starts_with($route->uri(), 'comments'))
         ->map(fn (Illuminate\Routing\Route $route): string => (string) $route->getName())
@@ -78,7 +78,7 @@ it('[H8] exposes no route to update or delete comments', function (): void {
         ->values()
         ->all();
 
-    expect($commentRoutes)->toBe(['comments.like', 'comments.store']);
+    expect($commentRoutes)->toBe(['comments.destroy', 'comments.like', 'comments.store', 'comments.update']);
 });
 
 it('[H8] ignores a forged user_id and attributes the comment to the authenticated user', function (): void {

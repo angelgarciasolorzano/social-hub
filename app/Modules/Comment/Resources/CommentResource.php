@@ -21,34 +21,90 @@ class CommentResource extends JsonResource
     #[Override]
     public function toArray(Request $request): array
     {
+        if ($this->trashed()) {
+            return $this->tombstone();
+        }
+
         return [
             'id' => $this->id,
             'content' => $this->content,
             'createdAt' => $this->created_at?->toIso8601String(),
-            'user' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-            ],
+            'editedAt' => $this->edited_at?->toIso8601String(),
+            'isDeleted' => false,
+            'isMine' => $this->isMine($request),
+            'user' => $this->author(),
             'repliedTo' => $this->whenLoaded('repliedToUser', fn (): ?array => $this->repliedTo()),
-            'repliesInfo' => [
-                'hasReplies' => $this->hasReplies(),
-                'repliesCount' => $this->repliesCount(),
-            ],
-            'likesInfo' => [
-                'count' => $this->likesCount(),
-                'likedByMe' => $this->isLikedByRequestUser($request),
-            ],
+            'repliesInfo' => $this->repliesInfo(),
+            'likesInfo' => $this->likesInfo($request),
         ];
     }
 
     /**
-     * Check if the authenticated user of the request liked the comment, which is false for guests.
+     * The shape of a deleted comment that keeps its thread alive, without its text or its author.
+     *
+     * @return array<string, mixed>
      */
-    private function isLikedByRequestUser(Request $request): bool
+    private function tombstone(): array
+    {
+        return [
+            'id' => $this->id,
+            'content' => null,
+            'createdAt' => $this->created_at?->toIso8601String(),
+            'editedAt' => null,
+            'isDeleted' => true,
+            'isMine' => false,
+            'user' => null,
+            'repliesInfo' => $this->repliesInfo(),
+            'likesInfo' => ['count' => 0, 'likedByMe' => false],
+        ];
+    }
+
+    /**
+     * Check if the authenticated user of the request wrote the comment, which is false for guests.
+     */
+    private function isMine(Request $request): bool
     {
         $user = $request->user();
 
-        return $user instanceof User && $this->isLikedBy($user);
+        return $user instanceof User && $this->user_id === $user->id;
+    }
+
+    /**
+     * Get the id and name of the author.
+     *
+     * @return array{id: int, name: string}
+     */
+    private function author(): array
+    {
+        return ['id' => $this->user->id, 'name' => $this->user->name];
+    }
+
+    /**
+     * Get the number of likes and whether the authenticated user of the request liked the comment.
+     *
+     * @return array{count: int, likedByMe: bool}
+     */
+    private function likesInfo(Request $request): array
+    {
+        $user = $request->user();
+
+        return [
+            'count' => $this->likesCount(),
+            'likedByMe' => $user instanceof User && $this->isLikedBy($user),
+        ];
+    }
+
+    /**
+     * Get whether the comment has replies and how many.
+     *
+     * @return array{hasReplies: bool, repliesCount: int}
+     */
+    private function repliesInfo(): array
+    {
+        return [
+            'hasReplies' => $this->hasReplies(),
+            'repliesCount' => $this->repliesCount(),
+        ];
     }
 
     /**

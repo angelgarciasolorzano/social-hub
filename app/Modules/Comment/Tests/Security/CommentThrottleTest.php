@@ -39,6 +39,26 @@ function storeCommentOn(TestCase $testCase, User $user, Post|Comment $commentabl
 }
 
 /**
+ * Edit the given comment as the given user.
+ *
+ * @return TestResponse<Response>
+ */
+function updateCommentAs(TestCase $testCase, User $user, Comment $comment): TestResponse
+{
+    return $testCase->actingAs($user)->patch(route('comments.update', $comment), ['content' => 'Texto corregido']);
+}
+
+/**
+ * Delete the given comment as the given user.
+ *
+ * @return TestResponse<Response>
+ */
+function destroyCommentAs(TestCase $testCase, User $user, Comment $comment): TestResponse
+{
+    return $testCase->actingAs($user)->delete(route('comments.destroy', $comment));
+}
+
+/**
  * Ask the home page for the comments of the given post the way the dialog does, as the given user.
  *
  * @return TestResponse<Response>
@@ -170,4 +190,83 @@ it('lets the user read comments again once the minute has passed', function (): 
     $this->travel(61)->seconds();
 
     loadCommentsAs($this, $user, $post)->assertOk();
+});
+
+it('allows 10 edits per minute and then answers 429', function (): void {
+    $user = createUser();
+    $comment = createComment($user);
+
+    foreach (range(1, 10) as $attempt) {
+        updateCommentAs($this, $user, $comment)->assertRedirect();
+    }
+
+    updateCommentAs($this, $user, $comment)->assertTooManyRequests();
+});
+
+it('allows 10 deletions per minute and then answers 429', function (): void {
+    $user = createUser();
+    $comments = createCommentsOn(createPost(), 11, $user);
+
+    foreach (array_slice($comments, 0, 10) as $comment) {
+        destroyCommentAs($this, $user, $comment)->assertRedirect();
+    }
+
+    destroyCommentAs($this, $user, $comments[10])->assertTooManyRequests();
+
+    expect(Comment::query()->count())->toBe(1);
+});
+
+it('lets the user edit again once the minute has passed', function (): void {
+    $user = createUser();
+    $comment = createComment($user);
+
+    foreach (range(1, 10) as $attempt) {
+        updateCommentAs($this, $user, $comment);
+    }
+
+    updateCommentAs($this, $user, $comment)->assertTooManyRequests();
+
+    $this->travel(61)->seconds();
+
+    updateCommentAs($this, $user, $comment)->assertRedirect();
+});
+
+it('throttles editing and deleting each user independently', function (): void {
+    $comment = createComment($user = createUser());
+    $bystander = createUser();
+    $bystanderComment = createComment($bystander);
+
+    foreach (range(1, 11) as $attempt) {
+        updateCommentAs($this, $user, $comment);
+    }
+
+    updateCommentAs($this, $user, $comment)->assertTooManyRequests();
+    updateCommentAs($this, $bystander, $bystanderComment)->assertRedirect();
+});
+
+it('does not share the editing budget with deleting, publishing or liking', function (): void {
+    $user = createUser();
+    $comment = createComment($user);
+    $commentToDelete = createComment($user);
+
+    foreach (range(1, 10) as $attempt) {
+        updateCommentAs($this, $user, $comment);
+    }
+
+    updateCommentAs($this, $user, $comment)->assertTooManyRequests();
+    destroyCommentAs($this, $user, $commentToDelete)->assertRedirect();
+    storeCommentAs($this, $user, createPost())->assertRedirect();
+    $this->actingAs($user)->postJson(route('comments.like', $comment))->assertOk();
+});
+
+it('does not share the deleting budget with editing', function (): void {
+    $user = createUser();
+    $comments = createCommentsOn(createPost(), 11, $user);
+
+    foreach (array_slice($comments, 0, 10) as $comment) {
+        destroyCommentAs($this, $user, $comment);
+    }
+
+    destroyCommentAs($this, $user, $comments[10])->assertTooManyRequests();
+    updateCommentAs($this, $user, $comments[10])->assertRedirect();
 });

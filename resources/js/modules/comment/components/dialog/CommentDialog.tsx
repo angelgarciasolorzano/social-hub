@@ -2,8 +2,6 @@ import type { JSX } from "react";
 
 import { RiArticleLine, RiWechatLine } from "react-icons/ri";
 
-import dayjs from "dayjs";
-
 import type { Post } from "@/modules/post";
 import { PostDetail } from "@/modules/post";
 
@@ -18,6 +16,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+
+import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
 import type { User } from "@/shared/types";
 
@@ -77,13 +77,11 @@ function CommentDialogPublication({ postDetail, user }: CommentDialogPublication
 type CommentDialogContentProps = CommentDialogProps;
 
 function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
-  const createdAt = dayjs(postDetail.createdAt);
-
   const previewContext: CommentContextPreview = {
     authorName: user.name,
     authorProfilePicture: user.profilePicture,
     content: postDetail.content,
-    createdAt: createdAt.fromNow() + " - " + createdAt.format("D [de] MMMM [del] YYYY"),
+    createdAt: fromNow(postDetail.createdAt) + " - " + formatFullDate(postDetail.createdAt),
     kind: CommentType.POST,
   };
 
