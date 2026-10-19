@@ -133,7 +133,7 @@ it('serializes each comment with the resource shape and nothing else', function 
     $firstPage = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
     $serializedComment = $firstPage->items()[0];
 
-    expect(array_keys($serializedComment))->toBe(['id', 'content', 'createdAt', 'user', 'repliedTo', 'repliesInfo', 'likesInfo'])
+    expect(array_keys($serializedComment))->toBe(['id', 'content', 'createdAt', 'editedAt', 'isDeleted', 'isMine', 'user', 'repliedTo', 'repliesInfo', 'likesInfo'])
         ->and($serializedComment['user'])->toHaveKeys(['id', 'name'])->toHaveCount(2)
         ->and($serializedComment['repliedTo'])->toBeNull()
         ->and($serializedComment['repliesInfo'])->toBe(['hasReplies' => true, 'repliesCount' => 1])

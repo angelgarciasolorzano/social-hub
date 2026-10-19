@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Comment\Database\Factories\CommentFactory;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Resources\CommentResource;
 use App\Modules\Post\Models\Post;
@@ -39,7 +40,7 @@ it('serializes only the public comment fields', function (): void {
 
     $payload = new CommentResource($comment)->resolve(request());
 
-    expect(array_keys($payload))->toBe(['id', 'content', 'createdAt', 'user', 'repliesInfo', 'likesInfo'])
+    expect(array_keys($payload))->toBe(['id', 'content', 'createdAt', 'editedAt', 'isDeleted', 'isMine', 'user', 'repliesInfo', 'likesInfo'])
         ->and($payload['id'])->toBe($comment->id)
         ->and($payload['content'])->toBe($comment->content)
         ->and($payload['createdAt'])->toBe($comment->created_at?->toIso8601String());
@@ -152,6 +153,87 @@ it('reuses the preloaded likes without running queries', function (): void {
     DB::disableQueryLog();
 
     expect($payload)->toMatchArray(['likesInfo' => ['count' => 1, 'likedByMe' => true]])
+        ->and($queries)->toBeEmpty();
+});
+
+it('reports null as the edited date of a comment that was never edited', function (): void {
+    expect(commentPayloadAs(createComment()))->toMatchArray(['editedAt' => null, 'isDeleted' => false]);
+});
+
+it('reports the edited date of an edited comment', function (): void {
+    $comment = CommentFactory::new()->edited()->createOne();
+
+    expect(commentPayloadAs($comment->fresh() ?? $comment)['editedAt'])->toBe($comment->edited_at?->toIso8601String());
+});
+
+it('marks the comment as mine for its author', function (): void {
+    $user = createUser();
+    $comment = createComment($user);
+
+    expect(commentPayloadAs($comment, $user))->toMatchArray(['isMine' => true]);
+});
+
+it('does not mark the comment as mine for another user', function (): void {
+    $comment = createComment(createUser());
+
+    expect(commentPayloadAs($comment, createUser()))->toMatchArray(['isMine' => false]);
+});
+
+it('does not mark the comment as mine for a guest', function (): void {
+    $comment = createComment(createUser());
+
+    expect(commentPayloadAs($comment))->toMatchArray(['isMine' => false]);
+});
+
+it('serializes a deleted comment as a tombstone without its text or author', function (): void {
+    $user = createUser();
+    $comment = CommentFactory::new()->for($user)->trashed()->createOne(['content' => 'Texto que debe desaparecer']);
+    createCommentOn($comment);
+
+    $payload = commentPayloadAs($comment, $user);
+
+    expect($payload)->toMatchArray([
+        'id' => $comment->id,
+        'content' => null,
+        'user' => null,
+        'isDeleted' => true,
+        'editedAt' => null,
+        'repliesInfo' => ['hasReplies' => true, 'repliesCount' => 1],
+        'likesInfo' => ['count' => 0, 'likedByMe' => false],
+        'isMine' => false,
+    ])
+        ->and(json_encode($payload))->not->toContain('Texto que debe desaparecer')
+        ->and(json_encode($payload))->not->toContain($user->name);
+});
+
+it('serializes a tombstone without running queries', function (): void {
+    $comment = CommentFactory::new()->trashed()->createOne();
+    createCommentOn($comment);
+    $loadedComment = Comment::withTrashed()->withCount('comments')->findOrFail($comment->id);
+
+    DB::enableQueryLog();
+    commentPayloadAs($loadedComment);
+    $queries = DB::connection()->getQueryLog();
+    DB::disableQueryLog();
+
+    expect($queries)->toBeEmpty();
+});
+
+it('serializes the author flag without running queries', function (): void {
+    $user = createUser();
+    $comment = createComment($user);
+    $loadedComment = Comment::query()
+        ->with('user')
+        ->withCount(['comments', 'likes'])
+        ->withExists(['likes as liked_by_me' => fn (Builder $builder): Builder => $builder->whereBelongsTo($user)])
+        ->findOrFail($comment->id);
+
+    DB::enableQueryLog();
+    $payload = commentPayloadAs($loadedComment, $user);
+    $queries = DB::connection()->getQueryLog();
+    DB::disableQueryLog();
+
+    expect($payload)->toMatchArray(['isMine' => true])
         ->and($queries)->toBeEmpty();
 });
 

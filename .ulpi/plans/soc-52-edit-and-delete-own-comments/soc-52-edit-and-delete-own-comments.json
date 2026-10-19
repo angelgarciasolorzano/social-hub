@@ -35,8 +35,8 @@
     "Edición: CommentUpdateRequest solo acepta content (obligatorio, máximo 1000) con la misma normalización que CommentStoreRequest (concern NormalizesCommentContent compartido); edited_at = now() solo si el contenido cambió.",
     "Borrado (DB::transaction): con respuestas → delete() lógico y likes conservados; sin respuestas → $comment->likes()->delete() y forceDelete(); si era una respuesta y su padre está eliminado lógicamente y no le quedan más respuestas → forceDelete del padre y de sus likes. El contenido de un tombstone permanece en la base pero nunca se serializa.",
     "Listados: CommentThreadProps lista los raíz con withTrashed() y busca el padre de las respuestas con withTrashed(); sigue habiendo un número constante de consultas. CommentStoreController da 404 al comentar sobre un tombstone y, al responder a una respuesta de un hilo con raíz eliminado, busca el padre con withTrashed().",
-    "Resource: CommentResource añade editedAt, abilities {canUpdate, canDelete}, isDeleted; un tombstone serializa content null, user null, likesInfo en cero, abilities en false y conserva id, createdAt y repliesInfo. Sin consultas adicionales.",
-    "Frontend: Comment.editedAt, Comment.abilities, Comment.isDeleted y content/user nullables; CommentActionsMenu (DropdownMenu), CommentEditDialog (PATCH con useForm) y CommentDeleteDialog (Dialog existente, router.delete) con acciones de Wayfinder (named imports de CommentController, p. ej. update y destroy); errores 429/red sin modal de Inertia (onHttpException/onNetworkError devuelven false); tras editar o eliminar se refresca el hilo con uploadedComments.",
+    "Resource: CommentResource añade editedAt, isDeleted e isMine (true solo si el usuario autenticado es el autor; false para invitados; se calcula comparando user_id, sin Gate ni consultas); un tombstone serializa content null, user null, isMine false, likesInfo en cero y conserva id, createdAt y repliesInfo. Cada bloque (author, repliedTo, repliesInfo, likesInfo, isMine) vive en un método privado. Sin consultas adicionales.",
+    "Frontend: Comment.editedAt, Comment.isMine, Comment.isDeleted y content/user nullables; CommentActionsMenu (DropdownMenu), CommentEditDialog (PATCH con useForm) y CommentDeleteDialog (Dialog existente, router.delete) con acciones de Wayfinder (named imports de CommentController, p. ej. update y destroy); errores 429/red sin modal de Inertia (onHttpException/onNetworkError devuelven false); tras editar o eliminar se refresca el hilo con uploadedComments.",
     "Protecciones previas intactas: throttle:6,1,comments.store, throttle de comments.like, normalización de content, profundidad de un nivel y consultas constantes."
   ],
   "existingCodeLeverage": [
@@ -57,7 +57,7 @@
     "Fuga de contenido: un tombstone conserva el texto en la base; la prueba de TASK-009 exige que ni el contenido ni el autor aparezcan en el JSON.",
     "Cambio global de SoftDeletes: Admin, Post::comments() y User::comments() dejan de ver los tombstones; se verifica con la suite completa y queda documentado.",
     "Doble envío o carrera al borrar o editar: el segundo borrado responde 404 y la edición repetida es idempotente; el botón se deshabilita mientras procesa.",
-    "N+1 en abilities y tombstones: la policy solo compara user_id sobre atributos cargados; CommentQueryCountTest lo vigila con tombstones y ediciones.",
+    "N+1 en isMine y tombstones: isMine solo compara user_id con el usuario autenticado, sin Gate ni consultas; CommentQueryCountTest lo vigila con tombstones y ediciones.",
     "Autor eliminado o comentario ajeno: 403 por policy sin tocar la fila; invitado al login; ids inexistentes 404.",
     "429 al editar o eliminar: los diálogos muestran un mensaje local y no abren el modal de errores de Inertia.",
     "Wayfinder desactualizado: sin regenerar tras las rutas, tsc falla en el import; TASK-013 lo regenera primero."
@@ -303,8 +303,8 @@
     },
     {
       "id": "TASK-009",
-      "title": "CommentResource: editedAt, abilities y carga útil de tombstone",
-      "description": "CommentResource añade editedAt (ISO 8601 o null) y abilities {canUpdate, canDelete} calculadas con la policy sobre atributos ya cargados (sin consultas). Para un comentario eliminado lógicamente (trashed) devuelve la forma de tombstone: id, createdAt, isDeleted true, repliesInfo, content null, user null, likesInfo en cero y abilities en false, sin exponer contenido ni autor. Para los demás isDeleted es false.",
+      "title": "CommentResource: editedAt, isMine y carga útil de tombstone",
+      "description": "CommentResource añade editedAt (ISO 8601 o null) e isMine (true solo si el usuario autenticado es el autor, sin Gate ni consultas; la autorización real sigue en CommentPolicy). Cada bloque del payload (author, repliedTo, repliesInfo, likesInfo, isMine) vive en un método privado. Para un comentario eliminado lógicamente (trashed) devuelve la forma de tombstone: id, createdAt, isDeleted true, repliesInfo, content null, user null, likesInfo en cero e isMine en false, sin exponer contenido ni autor. Para los demás isDeleted es false.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
@@ -315,7 +315,7 @@
         "TASK-003"
       ],
       "acceptanceCriteria": [
-        "Para el autor abilities es {canUpdate: true, canDelete: true} y para otro usuario o invitado ambas false; editedAt refleja edited_at (null si nunca se editó).",
+        "isMine es true para el autor y false para otro usuario o invitado; editedAt refleja edited_at (null si nunca se editó).",
         "Un comentario trashed serializa con content null, user null, isDeleted true y sin filtrar el texto original (json_encode no contiene el contenido ni el nombre del autor).",
         "Con los atributos precargados el Resource no ejecuta consultas adicionales, también para el tombstone."
       ],
@@ -422,7 +422,7 @@
     {
       "id": "TASK-013",
       "title": "Tipos de frontend y Wayfinder para editar y eliminar",
-      "description": "Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; está en .gitignore) y amplía types/comment.ts: Comment.editedAt, Comment.abilities {canUpdate, canDelete}, Comment.isDeleted, y content y user pasan a admitir null para el tombstone (con un tipo auxiliar si hace falta), de modo que tsc obligue a tratar el caso eliminado en los consumidores.",
+      "description": "Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; está en .gitignore) y amplía types/comment.ts: Comment.editedAt, Comment.isMine, Comment.isDeleted, y content y user pasan a admitir null para el tombstone (con un tipo auxiliar si hace falta), de modo que tsc obligue a tratar el caso eliminado en los consumidores.",
       "priority": "P1",
       "type": "feature",
       "effort": "S",
@@ -502,7 +502,7 @@
     {
       "id": "TASK-016",
       "title": "Menú de acciones del comentario (Editar / Eliminar)",
-      "description": "Crea components/CommentActionsMenu.tsx con el DropdownMenu de shadcn (trigger Button ghost de icono con aria-label) que ofrece Editar y Eliminar según comment.abilities, abre CommentEditDialog y CommentDeleteDialog y reenvía onUpdated/onDeleted. No se renderiza nada si ninguna habilidad está permitida.",
+      "description": "Crea components/CommentActionsMenu.tsx con el DropdownMenu de shadcn (trigger Button ghost de icono con aria-label) que ofrece Editar y Eliminar cuando comment.isMine es true, abre CommentEditDialog y CommentDeleteDialog y reenvía onUpdated/onDeleted. No se renderiza nada si isMine es false.",
       "priority": "P1",
       "type": "feature",
       "effort": "S",
@@ -512,7 +512,7 @@
         "TASK-015"
       ],
       "acceptanceCriteria": [
-        "Con canUpdate y canDelete en false el componente no renderiza nada; con solo una de ellas muestra solo esa opción.",
+        "Con isMine en false el componente no renderiza nada; con isMine en true ofrece Editar y Eliminar.",
         "Elegir Editar o Eliminar abre el diálogo correspondiente y el menú es operable con teclado (aria-label en el trigger, foco devuelto al cerrar).",
         "Usa solo componentes shadcn y tokens del tema; npm run types/lint/format pasan."
       ],
@@ -561,7 +561,7 @@
     {
       "id": "TASK-018",
       "title": "Documentación: CLAUDE.md, docs de arquitectura y skill de convenciones",
-      "description": "Actualiza CLAUDE.md (reglas del módulo Comment: SoftDeletes, borrado mixto, tombstone, policy, rutas comments.update/destroy con sus throttles, edited_at, abilities, frontend de edición y borrado), docs/architecture/backend.md y el skill .claude/skills/social-hub-conventions/SKILL.md (la regla de rutas del módulo cambia). Además corrige una omisión de SOC-51: docs/architecture/backend.md y el skill todavía dicen que Like vive en app/<Domain>/ (arquitectura vieja) cuando ya está en app/Modules/Like/.",
+      "description": "Actualiza CLAUDE.md (reglas del módulo Comment: SoftDeletes, borrado mixto, tombstone, policy, rutas comments.update/destroy con sus throttles, edited_at, isMine, frontend de edición y borrado), docs/architecture/backend.md y el skill .claude/skills/social-hub-conventions/SKILL.md (la regla de rutas del módulo cambia). Además corrige una omisión de SOC-51: docs/architecture/backend.md y el skill todavía dicen que Like vive en app/<Domain>/ (arquitectura vieja) cuando ya está en app/Modules/Like/.",
       "priority": "P3",
       "type": "docs",
       "effort": "S",
@@ -602,7 +602,7 @@
     "TASK-006": "CommentUpdateTest: autor, edited_at, 403, login, 404, validación.",
     "TASK-007": "CommentDestroyTest: borrado mixto, likes, limpieza del tombstone, 403/404, transacción.",
     "TASK-008": "CommentThrottleTest (update/destroy) y CommentSecurityAuditTest [H8].",
-    "TASK-009": "CommentResourceTest: editedAt, abilities, tombstone sin fuga y sin consultas.",
+    "TASK-009": "CommentResourceTest: editedAt, isMine, tombstone sin fuga y sin consultas.",
     "TASK-010": "CommentThreadPropsTest y CommentQueryCountTest: tombstones listados y consultas constantes.",
     "TASK-011": "CommentStoreTest: 404 sobre tombstone y aplanado con raíz eliminado.",
     "TASK-012": "CommentSeederTest: editados, tombstones con respuestas y límites previos.",
