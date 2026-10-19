@@ -132,7 +132,7 @@ Crea CommentPolicy en app/Modules/Comment/Policies/ con update y delete (true so
 
 ### TASK-004: Extraer la normalización del contenido a un concern compartido
 
-Mueve la normalización de prepareForValidation() de CommentStoreRequest (quitar caracteres de control conservando tabulaciones y saltos de línea, y trim) a un trait Concerns/NormalizesCommentContent.php, y hace que CommentStoreRequest lo use. Sin cambios de comportamiento: los tests existentes de CommentStoreRequest y de hardening lo demuestran.
+Mueve la normalización de prepareForValidation() de CommentStoreRequest (quitar caracteres de control conservando tabulaciones y saltos de línea, y trim) a un trait Concerns/NormalizesCommentContent.php en la raíz del módulo (como app/Auth/Modules/TrustedDevice/Concerns/), y hace que CommentStoreRequest lo use. Sin cambios de comportamiento: los tests existentes de CommentStoreRequest y de hardening lo demuestran.
 
 **Type:** refactor  
 **Priority:** P1  
@@ -149,7 +149,7 @@ Mueve la normalización de prepareForValidation() de CommentStoreRequest (quitar
 
 **writeScope:**
 
-- `app/Modules/Comment/Requests/Concerns/NormalizesCommentContent.php`
+- `app/Modules/Comment/Concerns/NormalizesCommentContent.php`
 - `app/Modules/Comment/Requests/CommentStoreRequest.php` (usa el trait)
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Requests/CommentStoreRequestTest.php app/Modules/Comment/Tests/Security/CommentValidationHardeningTest.php`
