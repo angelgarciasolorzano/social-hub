@@ -117,8 +117,7 @@ function CommentRepliesList({
             key={reply.id}
             onContentUpdated={updateCommentContent}
             onDeleted={() => {
-              reloadComments();
-              onReplyDeleted?.();
+              reloadComments(onReplyDeleted);
             }}
             onReplyCreated={onReplyCreated}
             setShowReplies={setShowReplies}

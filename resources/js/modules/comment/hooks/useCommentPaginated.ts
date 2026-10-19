@@ -16,7 +16,7 @@ interface UseCommentPaginatedReturn {
   isRefreshing: boolean;
   loadFailure: CommentsLoadFailure | null;
   loadMoreComments: () => void;
-  reloadComments: () => void;
+  reloadComments: (afterReload?: () => void) => void;
   retryLoad: () => void;
   updateCommentContent: (commentId: number, content: string) => void;
   uploadedComments: () => void;
@@ -47,7 +47,7 @@ export function useCommentPaginated(
   const hasMoreComments = nextCursor !== null;
 
   const sendRequest = useCallback(
-    (cursor: string | null, kind: CommentRequestKind) => {
+    (cursor: string | null, kind: CommentRequestKind, afterFinish?: () => void) => {
       if (isRequestInFlight.current) return;
 
       isRequestInFlight.current = true;
@@ -101,6 +101,8 @@ export function useCommentPaginated(
           setIsLoadingMore(false);
 
           if (!hasLoaded) setLoadFailure(kind === "reload" ? "refresh" : kind);
+
+          afterFinish?.();
         },
       });
     },
@@ -108,7 +110,7 @@ export function useCommentPaginated(
   );
 
   const startRequest = useCallback(
-    (cursor: string | null, kind: CommentRequestKind) => {
+    (cursor: string | null, kind: CommentRequestKind, afterFinish?: () => void) => {
       if (isRequestInFlight.current) return;
 
       setLoadFailure(null);
@@ -119,7 +121,7 @@ export function useCommentPaginated(
         setIsRefreshing(true);
       }
 
-      sendRequest(cursor, kind);
+      sendRequest(cursor, kind, afterFinish);
     },
     [sendRequest],
   );
@@ -128,9 +130,12 @@ export function useCommentPaginated(
     startRequest(null, "refresh");
   }, [startRequest]);
 
-  const reloadComments = useCallback(() => {
-    startRequest(null, "reload");
-  }, [startRequest]);
+  const reloadComments = useCallback(
+    (afterReload?: () => void) => {
+      startRequest(null, "reload", afterReload);
+    },
+    [startRequest],
+  );
 
   const loadMoreComments = useCallback(() => {
     if (nextCursor === null || loadFailure !== null) return;
