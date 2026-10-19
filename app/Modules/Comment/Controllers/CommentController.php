@@ -8,14 +8,16 @@ use App\Http\Controllers\Controller;
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Requests\CommentStoreRequest;
+use App\Modules\Comment\Requests\CommentUpdateRequest;
 use App\Modules\Post\Models\Post;
+use Illuminate\Routing\Attributes\Controllers\Authorize;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
-class CommentStoreController extends Controller
+class CommentController extends Controller
 {
-    public function __invoke(CommentStoreRequest $commentStoreRequest): RedirectResponse
+    public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
     {
         /** @var class-string<Post | Comment> $modelType */
         $modelType = CommentType::from($commentStoreRequest->string('commentable_type')->toString())->modelClass();
@@ -39,6 +41,21 @@ class CommentStoreController extends Controller
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Comentario publicado correctamente',
+        ])->back();
+    }
+
+    #[Authorize('update', 'comment')]
+    public function update(CommentUpdateRequest $commentUpdateRequest, Comment $comment): RedirectResponse
+    {
+        $content = $commentUpdateRequest->string('content')->toString();
+
+        if ($comment->content !== $content) {
+            $comment->update(['content' => $content, 'edited_at' => now()]);
+        }
+
+        return Inertia::flash([
+            'type' => 'success',
+            'message' => 'Comentario actualizado correctamente',
         ])->back();
     }
 }

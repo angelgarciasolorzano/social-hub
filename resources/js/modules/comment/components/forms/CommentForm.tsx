@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
-import CommentStoreController from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentStoreController";
+import { store as storeComment } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
 
 import { InputError } from "@/shared/components/form";
 import { Input } from "@/shared/components/shadcn/ui/input";
@@ -41,7 +41,7 @@ function CommentForm(props: CommentFormProps): JSX.Element {
     clearErrors();
     setServerError(null);
 
-    submit(CommentStoreController(), {
+    submit(storeComment(), {
       onHttpException: (response) => {
         setServerError(
           response.status === 429

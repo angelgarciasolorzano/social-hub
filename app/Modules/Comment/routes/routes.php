@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-use App\Modules\Comment\Controllers\CommentStoreController;
-use App\Modules\Comment\Controllers\CommentUpdateController;
+use App\Modules\Comment\Controllers\CommentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::post('comments', CommentStoreController::class)
-        ->middleware('throttle:6,1,comments.store')
-        ->name('comments.store');
+    Route::controller(CommentController::class)
+        ->prefix('comments')
+        ->name('comments.')
+        ->group(function (): void {
+            Route::post('', [CommentController::class, 'store'])
+                ->middleware('throttle:6,1,comments.store')
+                ->name('store');
 
-    Route::patch('comments/{comment}', CommentUpdateController::class)
-        ->middleware('throttle:10,1,comments.update')
-        ->name('comments.update');
+            Route::patch('{comment}', [CommentController::class, 'update'])
+                ->middleware('throttle:10,1,comments.update')
+                ->name('update');
+        });
 });

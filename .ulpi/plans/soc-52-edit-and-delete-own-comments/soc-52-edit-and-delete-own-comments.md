@@ -34,19 +34,19 @@ Modo HOLD con decisiones del usuario: (1) borrado mixto (lógico con respuestas,
 
 - Persistencia: comments.edited_at (timestamp nullable) y comments.deleted_at (softDeletes). Comment usa SoftDeletes, edited_at en #[Fillable] con cast a fecha. La clave de borrado: un comentario eliminado lógicamente siempre tuvo respuestas al borrarse y es siempre de primer nivel.
 - Policy: CommentPolicy::update/delete solo para el autor (user_id == id del usuario) y nunca sobre un comentario eliminado; registrada con #[UsePolicy] en Comment y aplicada en los controladores con #[Authorize('update'|'delete', 'comment')] (corre tras el route model binding y antes de la validación).
-- Rutas (auth + verified): PATCH comments/{comment} → comments.update, throttle:10,1,comments.update; DELETE comments/{comment} → comments.destroy, throttle:10,1,comments.destroy. Ambas responden Inertia::flash success y back() como comments.store; 403 si no es el autor, 404 si no existe o ya está eliminado, 429 al exceder. Controladores invocables CommentUpdateController y CommentDestroyController.
+- Rutas (auth + verified): PATCH comments/{comment} → comments.update, throttle:10,1,comments.update; DELETE comments/{comment} → comments.destroy, throttle:10,1,comments.destroy. Ambas responden Inertia::flash success y back() como comments.store; 403 si no es el autor, 404 si no existe o ya está eliminado, 429 al exceder. Un único CommentController con los métodos store, update y destroy (el invocable CommentStoreController se fusionó en él antes de SOC-52 TASK-007).
 - Edición: CommentUpdateRequest solo acepta content (obligatorio, máximo 1000) con la misma normalización que CommentStoreRequest (concern NormalizesCommentContent compartido); edited_at = now() solo si el contenido cambió.
 - Borrado (DB::transaction): con respuestas → delete() lógico y likes conservados; sin respuestas → $comment->likes()->delete() y forceDelete(); si era una respuesta y su padre está eliminado lógicamente y no le quedan más respuestas → forceDelete del padre y de sus likes. El contenido de un tombstone permanece en la base pero nunca se serializa.
 - Listados: CommentThreadProps lista los raíz con withTrashed() y busca el padre de las respuestas con withTrashed(); sigue habiendo un número constante de consultas. CommentStoreController da 404 al comentar sobre un tombstone y, al responder a una respuesta de un hilo con raíz eliminado, busca el padre con withTrashed().
 - Resource: CommentResource añade editedAt, abilities {canUpdate, canDelete}, isDeleted; un tombstone serializa content null, user null, likesInfo en cero, abilities en false y conserva id, createdAt y repliesInfo. Sin consultas adicionales.
-- Frontend: Comment.editedAt, Comment.abilities, Comment.isDeleted y content/user nullables; CommentActionsMenu (DropdownMenu), CommentEditDialog (PATCH con useForm) y CommentDeleteDialog (Dialog existente, router.delete) con acciones de Wayfinder; errores 429/red sin modal de Inertia (onHttpException/onNetworkError devuelven false); tras editar o eliminar se refresca el hilo con uploadedComments.
+- Frontend: Comment.editedAt, Comment.abilities, Comment.isDeleted y content/user nullables; CommentActionsMenu (DropdownMenu), CommentEditDialog (PATCH con useForm) y CommentDeleteDialog (Dialog existente, router.delete) con acciones de Wayfinder (named imports de CommentController, p. ej. update y destroy); errores 429/red sin modal de Inertia (onHttpException/onNetworkError devuelven false); tras editar o eliminar se refresca el hilo con uploadedComments.
 - Protecciones previas intactas: throttle:6,1,comments.store, throttle de comments.like, normalización de content, profundidad de un nivel y consultas constantes.
 
 ## Existing Code Leverage
 
 - app/Auth/Modules/TrustedDevice/Policies/TrustedDevicePolicy.php y #[UsePolicy]/#[Authorize] en TrustedDeviceController: patrón de la policy y de su aplicación.
 - app/Modules/Comment/Requests/CommentStoreRequest.php: normalización y reglas FluentRule que se comparten.
-- app/Modules/Comment/Controllers/CommentStoreController.php: patrón de controlador invocable con Inertia::flash()->back() y de aplanado de hilos.
+- app/Modules/Comment/Controllers/CommentController.php (antes CommentStoreController): store() con Inertia::flash()->back() y el aplanado de hilos.
 - app/Modules/Comment/routes/routes.php y Tests/Security/{CommentThrottleTest,CommentSecurityAuditTest,CommentQueryCountTest}.php: rutas con throttle de prefijo propio y pruebas de límites, [H8] y consultas constantes.
 - app/Modules/Comment/Props/CommentThreadProps.php y Resources/CommentResource.php: listados paginados y serialización con precarga de contadores.
 - app/Modules/Like/: Comment::likes() para borrar likes explícitamente.
@@ -178,9 +178,9 @@ Crea CommentUpdateRequest (HasFluentRules, NormalizesCommentContent) con solo co
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Requests/CommentUpdateRequestTest.php`
 
-### TASK-006: Ruta y controlador de edición (PATCH comments/{comment})
+### TASK-006: Ruta y método update() de edición (PATCH comments/{comment})
 
-Crea CommentUpdateController invocable con #[Authorize('update', 'comment')] (patrón de TrustedDeviceController) y añade a routes/routes.php PATCH comments/{comment} con nombre comments.update, grupo auth+verified y throttle:10,1,comments.update. Guarda content y marca edited_at = now() solo si el contenido cambió; responde Inertia::flash success y back(), como comments.store. El comentario eliminado lógicamente da 404 por el route model binding.
+Crea el método update() de CommentController (el controlador único del módulo, que agrupa store, update y destroy en vez de un invocable por acción; CommentStoreController se fusionó en él) con #[Authorize('update', 'comment')] (patrón de TrustedDeviceController) y añade a routes/routes.php PATCH comments/{comment} con nombre comments.update, grupo auth+verified y throttle:10,1,comments.update. Guarda content y marca edited_at = now() solo si el contenido cambió; responde Inertia::flash success y back(), como comments.store. El comentario eliminado lógicamente da 404 por el route model binding.
 
 **Type:** feature  
 **Priority:** P1  
@@ -197,15 +197,15 @@ Crea CommentUpdateController invocable con #[Authorize('update', 'comment')] (pa
 
 **writeScope:**
 
-- `app/Modules/Comment/Controllers/CommentUpdateController.php`
+- `app/Modules/Comment/Controllers/CommentController.php`
 - `app/Modules/Comment/routes/routes.php` (PATCH comments.update)
 - `app/Modules/Comment/Tests/Crud/CommentUpdateTest.php`
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Crud/CommentUpdateTest.php`
 
-### TASK-007: Ruta y controlador de borrado mixto (DELETE comments/{comment})
+### TASK-007: Ruta y método destroy() de borrado mixto (DELETE comments/{comment})
 
-Crea CommentDestroyController invocable con #[Authorize('delete', 'comment')] y añade a routes/routes.php DELETE comments/{comment} (comments.destroy, auth+verified, throttle:10,1,comments.destroy). Dentro de DB::transaction: si el comentario tiene respuestas, borrado lógico (delete()) conservando sus likes; si no tiene, borra sus likes ($comment->likes()->delete(), la tabla no tiene FK) y lo elimina de forma física (forceDelete()). Si era una respuesta y su padre ya estaba eliminado lógicamente y no le quedan más respuestas, elimina también al padre y sus likes de forma física para no dejar tombstones vacíos. Responde Inertia::flash success y back().
+Añade el método destroy() a CommentController con #[Authorize('delete', 'comment')] y añade a routes/routes.php DELETE comments/{comment} (comments.destroy, auth+verified, throttle:10,1,comments.destroy). Dentro de DB::transaction: si el comentario tiene respuestas, borrado lógico (delete()) conservando sus likes; si no tiene, borra sus likes ($comment->likes()->delete(), la tabla no tiene FK) y lo elimina de forma física (forceDelete()). Si era una respuesta y su padre ya estaba eliminado lógicamente y no le quedan más respuestas, elimina también al padre y sus likes de forma física para no dejar tombstones vacíos. Responde Inertia::flash success y back().
 
 **Type:** feature  
 **Priority:** P1  
@@ -222,7 +222,7 @@ Crea CommentDestroyController invocable con #[Authorize('delete', 'comment')] y 
 
 **writeScope:**
 
-- `app/Modules/Comment/Controllers/CommentDestroyController.php`
+- `app/Modules/Comment/Controllers/CommentController.php`
 - `app/Modules/Comment/routes/routes.php` (DELETE comments.destroy)
 - `app/Modules/Comment/Tests/Crud/CommentDestroyTest.php`
 
@@ -303,7 +303,7 @@ En CommentThreadProps los comentarios raíz de un post se listan con withTrashed
 
 ### TASK-011: Publicar comentarios respeta los tombstones
 
-CommentStoreController responde 404 al comentar sobre un comentario eliminado lógicamente (el findOrFail del destino ya excluye los trashed por SoftDeletes), pero al responder a una respuesta cuyo comentario raíz está eliminado lógicamente busca el padre con withTrashed() para que el hilo siga vivo y la respuesta se aplane al raíz.
+CommentController::store() responde 404 al comentar sobre un comentario eliminado lógicamente (el findOrFail del destino ya excluye los trashed por SoftDeletes), pero al responder a una respuesta cuyo comentario raíz está eliminado lógicamente busca el padre con withTrashed() para que el hilo siga vivo y la respuesta se aplane al raíz.
 
 **Type:** feature  
 **Priority:** P1  
@@ -320,7 +320,7 @@ CommentStoreController responde 404 al comentar sobre un comentario eliminado l�
 
 **writeScope:**
 
-- `app/Modules/Comment/Controllers/CommentStoreController.php`
+- `app/Modules/Comment/Controllers/CommentController.php`
 - `app/Modules/Comment/Tests/Crud/CommentStoreTest.php`
 
 **validateCommand:** `php artisan test --compact app/Modules/Comment/Tests/Crud/CommentStoreTest.php`
@@ -363,7 +363,7 @@ Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/
 **Acceptance Criteria:**
 
 - [ ] npm run types pasa y marca como error cualquier uso de comment.content o comment.user sin tratar el caso null (CommentItem se ajusta en TASK-017).
-- [ ] Las acciones de Wayfinder CommentUpdateController y CommentDestroyController existen tras regenerar y se importan desde @/shared/wayfinder/actions/App/Modules/Comment/Controllers/.
+- [ ] Las acciones update y destroy de CommentController existen tras regenerar y se importan desde @/shared/wayfinder/actions/App/Modules/Comment/Controllers/.
 - [ ] types/comment.ts no duplica la forma de likesInfo ni de repliesInfo ya existentes.
 
 **writeScope:**
@@ -374,7 +374,7 @@ Regenera Wayfinder (php artisan wayfinder:generate --with-form --path=resources/
 
 ### TASK-014: Diálogo de edición de comentario
 
-Crea components/dialog/CommentEditDialog.tsx: Dialog existente con un Textarea precargado con el contenido, contador/errores con InputError, envío PATCH con useForm y la acción de Wayfinder de CommentUpdateController, y errores de servidor (429 y red) con onHttpException/onNetworkError devolviendo false como CommentForm. Al guardar cierra el diálogo y llama a onUpdated para refrescar la lista del hilo. Limite de 1000 caracteres como en el backend. Colores solo con tokens del tema.
+Crea components/dialog/CommentEditDialog.tsx: Dialog existente con un Textarea precargado con el contenido, contador/errores con InputError, envío PATCH con useForm y la acción update de CommentController (Wayfinder), y errores de servidor (429 y red) con onHttpException/onNetworkError devolviendo false como CommentForm. Al guardar cierra el diálogo y llama a onUpdated para refrescar la lista del hilo. Limite de 1000 caracteres como en el backend. Colores solo con tokens del tema.
 
 **Type:** feature  
 **Priority:** P1  
@@ -397,7 +397,7 @@ Crea components/dialog/CommentEditDialog.tsx: Dialog existente con un Textarea p
 
 ### TASK-015: Diálogo de confirmación de borrado
 
-Crea components/dialog/CommentDeleteDialog.tsx con el Dialog existente (sin añadir @radix-ui/react-alert-dialog): texto de confirmación, botones Cancelar y Eliminar (variant destructive, deshabilitado mientras procesa), envío DELETE con router.delete y la acción de Wayfinder de CommentDestroyController, preserveScroll y manejo de 429/red como los demás formularios. Al terminar cierra y llama a onDeleted.
+Crea components/dialog/CommentDeleteDialog.tsx con el Dialog existente (sin añadir @radix-ui/react-alert-dialog): texto de confirmación, botones Cancelar y Eliminar (variant destructive, deshabilitado mientras procesa), envío DELETE con router.delete y la acción destroy de CommentController (Wayfinder), preserveScroll y manejo de 429/red como los demás formularios. Al terminar cierra y llama a onDeleted.
 
 **Type:** feature  
 **Priority:** P1  
