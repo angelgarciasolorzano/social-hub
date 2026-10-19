@@ -106,7 +106,7 @@ it('attaches a reply to a reply to the parent comment and mentions its author', 
 it('returns 404 and creates nothing when the parent of the replied comment no longer exists', function (): void {
     $comment = createComment();
     $reply = createCommentOn($comment);
-    $comment->delete();
+    $comment->forceDelete();
 
     $this->actingAs(createUser())
         ->post(route('comments.store'), [
@@ -196,3 +196,53 @@ it('returns 404 and creates nothing when the commentable does not exist', functi
 
     expect(Comment::query()->count())->toBe(0);
 })->with([Post::MORPH_NAME, Comment::MORPH_NAME]);
+
+it('returns 404 and creates nothing when commenting directly on a deleted comment', function (): void {
+    $deletedComment = createComment(null, ['deleted_at' => now()]);
+    createCommentOn($deletedComment);
+
+    $this->actingAs(createUser())
+        ->post(route('comments.store'), [
+            'content' => 'Una respuesta',
+            'commentable_type' => Comment::MORPH_NAME,
+            'commentable_id' => $deletedComment->id,
+        ])
+        ->assertNotFound();
+
+    expect(Comment::query()->count())->toBe(1);
+});
+
+it('replies to a reply of a deleted comment keeping the thread under the deleted root', function (): void {
+    $deletedComment = createComment(null, ['deleted_at' => now()]);
+    $replyAuthor = createUser();
+    $comment = createCommentOn($deletedComment, $replyAuthor);
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->post(route('comments.store'), [
+            'content' => 'Otra respuesta',
+            'commentable_type' => Comment::MORPH_NAME,
+            'commentable_id' => $comment->id,
+        ])
+        ->assertRedirect();
+
+    $newReply = Comment::query()->whereKeyNot($comment->id)->sole();
+
+    expect($newReply->commentable_id)->toBe($deletedComment->id)
+        ->and($newReply->user_id)->toBe($user->id)
+        ->and($newReply->replied_to_user_id)->toBe($replyAuthor->id);
+});
+
+it('comments on a comment that is not deleted exactly as before', function (): void {
+    $comment = createComment();
+
+    $this->actingAs(createUser())
+        ->post(route('comments.store'), [
+            'content' => 'Una respuesta',
+            'commentable_type' => Comment::MORPH_NAME,
+            'commentable_id' => $comment->id,
+        ])
+        ->assertRedirect();
+
+    expect($comment->comments()->count())->toBe(1);
+});

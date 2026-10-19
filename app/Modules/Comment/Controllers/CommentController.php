@@ -29,7 +29,7 @@ class CommentController extends Controller
         $repliedToUserId = null;
 
         if ($target instanceof Comment && $target->commentable_type === CommentType::COMMENT) {
-            $thread = Comment::query()->findOrFail($target->commentable_id);
+            $thread = Comment::withTrashed()->findOrFail($target->commentable_id);
             $repliedToUserId = $target->user_id;
         }
 
