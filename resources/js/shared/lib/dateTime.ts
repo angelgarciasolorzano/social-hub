@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 
 const LONG_DATE_FORMAT = "D [de] MMMM [del] YYYY, h:mm A";
 const SHORT_DATE_FORMAT = "D MMM YYYY";
+const FULL_DATE_FORMAT = "D [de] MMMM [del] YYYY";
 const ACTIVATION_DATE_FORMAT = "D [de] MMMM [de] YYYY";
 const ACTIVATION_TIME_FORMAT = "h:mm A";
 
@@ -27,6 +28,18 @@ export function formatShortDate(iso: string | null): string {
   }
 
   return dayjs(iso).format(SHORT_DATE_FORMAT);
+}
+
+/**
+ * Formats an ISO date string into a full Spanish date without the time.
+ * Example: "15 de enero del 2025". Returns "Nunca" if the date is null.
+ */
+export function formatFullDate(iso: string | null): string {
+  if (iso === null) {
+    return "Nunca";
+  }
+
+  return dayjs(iso).format(FULL_DATE_FORMAT);
 }
 
 /**

@@ -3,8 +3,6 @@ import { useState } from "react";
 
 import { IoMdTime } from "react-icons/io";
 
-import dayjs from "dayjs";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
@@ -12,6 +10,7 @@ import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { validImage } from "@/shared/lib";
+import { formatFullDate, formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { cn } from "@/shared/lib/utils";
 
 import type { User } from "@/shared/types";
@@ -68,14 +67,14 @@ function LiveCommentItem(props: LiveCommentItemProps): JSX.Element {
 
   const [repliesRefreshCounter, setRepliesRefreshCounter] = useState<number>(0);
 
-  const createdAt = dayjs(comment.createdAt).fromNow();
+  const createdAt = fromNow(comment.createdAt);
 
   const previewContext: CommentContextPreview = {
     authorName: comment.user.name,
     authorProfilePicture: comment.user.profilePicture,
     content: comment.content,
     kind: CommentType.COMMENT,
-    createdAt: createdAt + " - " + dayjs(comment.createdAt).format("D [de] MMMM [del] YYYY"),
+    createdAt: createdAt + " - " + formatFullDate(comment.createdAt),
   };
 
   return (
@@ -107,11 +106,7 @@ function LiveCommentItem(props: LiveCommentItemProps): JSX.Element {
                 </time>
 
                 {comment.editedAt && (
-                  <span
-                    title={`Editado el ${dayjs(comment.editedAt).format("D [de] MMMM [del] YYYY, HH:mm")}`}
-                  >
-                    · editado
-                  </span>
+                  <span title={`Editado el ${formatLongDate(comment.editedAt)}`}>· editado</span>
                 )}
               </div>
             </div>

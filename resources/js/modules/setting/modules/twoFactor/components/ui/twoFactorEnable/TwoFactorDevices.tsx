@@ -34,7 +34,6 @@ import {
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceOverview";
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevice/types/trustedDevicePreview";
-import { fromNow } from "@/modules/setting/shared/utils/dateTime";
 import {
   createDialogCloseHandler,
   type DialogClosingState,
@@ -60,6 +59,7 @@ import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import { useDialog } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
+import { fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";

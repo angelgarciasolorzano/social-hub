@@ -14,7 +14,6 @@ import type {
 } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import TwoFactorOtpField from "@/modules/setting/shared/components/TwoFactorOtpField";
-import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { renew as renewTrustedDevice } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
 
@@ -41,6 +40,7 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceRenewTrustDialogProps {

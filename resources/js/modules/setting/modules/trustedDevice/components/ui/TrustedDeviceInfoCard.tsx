@@ -4,9 +4,9 @@ import { CalendarRange, Clock4, Globe, MapPin } from "lucide-react";
 
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
-import { formatLongDate, formatTimeUntil, fromNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
+import { formatLongDate, formatTimeUntil, fromNow } from "@/shared/lib/dateTime";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 

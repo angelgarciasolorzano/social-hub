@@ -3,7 +3,6 @@ import type { JSX } from "react";
 import { Activity, CalendarDays, Clock, Mail } from "lucide-react";
 
 import type { AccountSettings } from "@/modules/setting/modules/accountSettings/types/accountSettings";
-import { formatActivationDate, formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 
 import { Avatar, AvatarFallback } from "@/shared/components/shadcn/ui/avatar";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -14,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
+
+import { formatActivationDate, formatLongDate } from "@/shared/lib/dateTime";
 
 interface AccountSettingsSummaryCardProps {
   accountSettings: AccountSettings;

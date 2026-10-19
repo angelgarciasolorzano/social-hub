@@ -14,7 +14,6 @@ import type { TrustedDevicePreview } from "@/modules/setting/modules/trustedDevi
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import TwoFactorOtpField from "@/modules/setting/shared/components/TwoFactorOtpField";
-import { formatShortDate, fromNow, valueOrNow } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { store } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -44,6 +43,7 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { formatShortDate, fromNow, valueOrNow } from "@/shared/lib/dateTime";
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 

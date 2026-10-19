@@ -17,7 +17,6 @@ import {
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { pickReloadKeys } from "@/modules/setting/modules/trustedDevice/utils/inertiaPageProps";
 import EmptyState from "@/modules/setting/shared/components/EmptyState";
-import { formatLongDate } from "@/modules/setting/shared/utils/dateTime";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { destroyAll as destroyAllTrustedDevices } from "@/shared/wayfinder/actions/App/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceController";
@@ -40,6 +39,7 @@ import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { formatLongDate } from "@/shared/lib/dateTime";
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 

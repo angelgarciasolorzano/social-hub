@@ -8,7 +8,6 @@ import TrustedDeviceSummaryCard, {
 import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import { useDialogFocusRestoration } from "@/modules/setting/shared/hooks/useDialogFocusRestoration";
-import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
 
 import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -22,6 +21,7 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 
 import { cn } from "@/shared/lib";
+import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceDetailsDialogProps {

@@ -5,8 +5,6 @@ import { usePage } from "@inertiajs/react";
 
 import { AlertTriangleIcon, ArrowDown, Check, Clock4, Copy, RotateCcw } from "lucide-react";
 
-import { formatLongDate, fromNow } from "@/modules/setting/shared/utils/dateTime";
-
 import AlertError from "@/shared/components/AlertError";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
@@ -23,6 +21,7 @@ import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import { useClipboard } from "@/shared/hooks/useClipboard";
 
 import { cn } from "@/shared/lib";
+import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
