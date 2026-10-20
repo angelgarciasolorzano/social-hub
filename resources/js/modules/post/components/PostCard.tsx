@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { useState } from "react";
 
 import { FaRegComment } from "react-icons/fa";
@@ -30,7 +31,7 @@ interface PostCardProps {
   user: User;
 }
 
-function PostCard({ post, user }: PostCardProps) {
+function PostCard({ post, user }: PostCardProps): JSX.Element {
   const createdAt = dayjs(post.createdAt);
 
   const [commentsCount, setCommentsCount] = useState<number>(post.commentsCount);

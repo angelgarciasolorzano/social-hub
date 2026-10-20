@@ -6,7 +6,7 @@ import { CommentType } from "../enums/commentType";
 import type { CommentTypeValues } from "../enums/commentType";
 import type { CommentsLoadFailure, PaginatedComments } from "../types/comment";
 
-type CommentRequestKind = CommentsLoadFailure | "reload";
+type CommentRequestKind = CommentsLoadFailure | "complete" | "reload";
 
 interface UseCommentPaginatedReturn {
   commentsPage: PaginatedComments | null;
@@ -19,11 +19,13 @@ interface UseCommentPaginatedReturn {
   reloadComments: (afterReload?: () => void) => void;
   retryLoad: () => void;
   updateCommentContent: (commentId: number, content: string) => void;
-  uploadedComments: () => void;
+  uploadedComments: (afterReload?: () => void) => void;
 }
 
 /**
  * Load, page and refresh the comments of a post or the replies of a comment.
+ * Replies are listed oldest first, so after publishing one `uploadedComments` loads every page up to the end (the new reply is the last one);
+ * the newest-first comments of a post only refresh the first page.
  * The target is fixed for the lifetime of the component that calls it: remount it (key) to change it.
  */
 export function useCommentPaginated(
@@ -36,6 +38,11 @@ export function useCommentPaginated(
   const [loadFailure, setLoadFailure] = useState<CommentsLoadFailure | null>(null);
 
   const isRequestInFlight = useRef<boolean>(false);
+  const completeBuffer = useRef<PaginatedComments | null>(null);
+
+  const continueComplete = useRef<((cursor: string, afterFinish?: () => void) => void) | null>(
+    null,
+  );
 
   const isPostThread = commentableType === CommentType.POST;
 
@@ -74,6 +81,26 @@ export function useCommentPaginated(
 
           hasLoaded = true;
 
+          if (kind === "complete") {
+            const bufferedPage = completeBuffer.current;
+
+            const bufferedIds = new Set<number>(
+              bufferedPage?.data.map((comment) => comment.id) ?? [],
+            );
+
+            completeBuffer.current = bufferedPage
+              ? {
+                  ...incomingPage,
+                  data: [
+                    ...bufferedPage.data,
+                    ...incomingPage.data.filter((comment) => !bufferedIds.has(comment.id)),
+                  ],
+                }
+              : incomingPage;
+
+            return;
+          }
+
           setCommentsPage((loadedPage) => {
             if (loadedPage === null || kind === "reload") return incomingPage;
 
@@ -97,10 +124,30 @@ export function useCommentPaginated(
         onFinish: () => {
           isRequestInFlight.current = false;
 
+          const bufferedPage = completeBuffer.current;
+
+          if (kind === "complete") {
+            if (hasLoaded && bufferedPage?.next_cursor) {
+              continueComplete.current?.(bufferedPage.next_cursor, afterFinish);
+
+              return;
+            }
+
+            completeBuffer.current = null;
+
+            if (bufferedPage) setCommentsPage(bufferedPage);
+          }
+
           setIsRefreshing(false);
           setIsLoadingMore(false);
 
-          if (!hasLoaded) setLoadFailure(kind === "reload" ? "refresh" : kind);
+          if (!hasLoaded) {
+            if (kind === "complete") {
+              setLoadFailure(bufferedPage ? "more" : "refresh");
+            } else {
+              setLoadFailure(kind === "reload" ? "refresh" : kind);
+            }
+          }
 
           afterFinish?.();
         },
@@ -126,9 +173,14 @@ export function useCommentPaginated(
     [sendRequest],
   );
 
-  const uploadedComments = useCallback(() => {
-    startRequest(null, "refresh");
-  }, [startRequest]);
+  const refreshKind: CommentRequestKind = isPostThread ? "refresh" : "complete";
+
+  const uploadedComments = useCallback(
+    (afterReload?: () => void) => {
+      startRequest(null, refreshKind, afterReload);
+    },
+    [refreshKind, startRequest],
+  );
 
   const reloadComments = useCallback(
     (afterReload?: () => void) => {
@@ -146,8 +198,11 @@ export function useCommentPaginated(
   const retryLoad = useCallback(() => {
     if (loadFailure === null) return;
 
-    startRequest(loadFailure === "refresh" ? null : nextCursor, loadFailure);
-  }, [loadFailure, nextCursor, startRequest]);
+    startRequest(
+      loadFailure === "refresh" ? null : nextCursor,
+      loadFailure === "refresh" ? refreshKind : loadFailure,
+    );
+  }, [loadFailure, nextCursor, refreshKind, startRequest]);
 
   const increaseRepliesCount = useCallback((commentId: number) => {
     setCommentsPage(
@@ -182,6 +237,12 @@ export function useCommentPaginated(
         },
     );
   }, []);
+
+  useEffect(() => {
+    continueComplete.current = (cursor, afterFinish) => {
+      sendRequest(cursor, "complete", afterFinish);
+    };
+  }, [sendRequest]);
 
   useEffect(() => {
     sendRequest(null, "refresh");
