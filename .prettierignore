@@ -1,3 +1,5 @@
+resources/js/blatui-core.js,
+resources/js/blatui.js,
 resources/js/shared/components/shadcn/ui/*
 resources/js/shared/components/reactBits/*
 resources/views/mail/*
