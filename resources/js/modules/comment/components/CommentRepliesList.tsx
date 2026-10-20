@@ -90,7 +90,7 @@ function CommentRepliesList({
   useEffect(() => {
     if (scrollToEndRequest === 0 || viewport === null) return;
 
-    viewport.scrollTo({ behavior: "smooth", top: viewport.scrollHeight });
+    viewport.scrollTo({ top: viewport.scrollHeight });
   }, [scrollToEndRequest, viewport]);
 
   if (isRefreshing && !commentsPage) {

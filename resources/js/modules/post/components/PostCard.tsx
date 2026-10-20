@@ -18,8 +18,6 @@ import { useLikeToggle } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
 
-import type { User } from "@/shared/types";
-
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import postPlaceholder from "../assets/post-placeholder.png";
@@ -28,10 +26,9 @@ import PostLikeButton from "./PostLikeButton";
 
 interface PostCardProps {
   post: Post;
-  user: User;
 }
 
-function PostCard({ post, user }: PostCardProps): JSX.Element {
+function PostCard({ post }: PostCardProps): JSX.Element {
   const createdAt = dayjs(post.createdAt);
 
   const [commentsCount, setCommentsCount] = useState<number>(post.commentsCount);
@@ -47,7 +44,7 @@ function PostCard({ post, user }: PostCardProps): JSX.Element {
         <Avatar>
           <AvatarImage
             alt="Foto de perfil"
-            src={validImage(user.profilePicture, profilePicturePlaceholder)}
+            src={validImage(post.user?.profilePicture, profilePicturePlaceholder)}
           />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
@@ -55,7 +52,9 @@ function PostCard({ post, user }: PostCardProps): JSX.Element {
 
         <div className="flex flex-col gap-0.5">
           <div className="flex items-baseline gap-1">
-            <h4 className="text-lg font-bold dark:text-white">{user.name}</h4>
+            <h4 className="text-lg font-bold dark:text-white">
+              {post.user?.name ?? "Usuario eliminado"}
+            </h4>
 
             <span className="text-sm font-medium text-muted-foreground">
               agregó una publicación
@@ -109,7 +108,6 @@ function PostCard({ post, user }: PostCardProps): JSX.Element {
             setCommentsCount((currentCount) => Math.max(0, currentCount + delta));
           }}
           postDetail={post}
-          user={user}
         />
       </footer>
     </article>

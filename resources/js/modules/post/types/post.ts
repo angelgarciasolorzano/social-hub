@@ -4,6 +4,12 @@ export interface PostCollection {
   data: Post[];
 }
 
+export interface PostAuthor {
+  id: number;
+  name: string;
+  profilePicture: string;
+}
+
 export interface Post {
   commentsCount: number;
   content: string;
@@ -11,6 +17,7 @@ export interface Post {
   id: number;
   image?: string;
   likesInfo: LikesInfo;
+  user: null | PostAuthor;
 }
 
 export type PostFormData = Pick<Post, "content"> & {

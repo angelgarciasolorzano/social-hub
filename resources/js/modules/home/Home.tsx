@@ -4,17 +4,14 @@ import { InfiniteScroll } from "@inertiajs/react";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 
-import type { User } from "@/shared/types";
-
 import { PostCard, type PostCollection } from "../post";
 import HomeLayout from "./layouts/HomeLayout";
 
 interface HomeProps {
   posts: PostCollection;
-  user: User;
 }
 
-function Home({ posts, user }: HomeProps) {
+function Home({ posts }: HomeProps) {
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -47,7 +44,7 @@ function Home({ posts, user }: HomeProps) {
                 }}
               >
                 <div className="pb-6">
-                  <PostCard post={post} user={user} />
+                  <PostCard post={post} />
                 </div>
               </div>
             );
