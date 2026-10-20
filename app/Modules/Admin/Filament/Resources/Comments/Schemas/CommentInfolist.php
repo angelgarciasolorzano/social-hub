@@ -24,6 +24,7 @@ class CommentInfolist
                             ->icon(Heroicon::OutlinedUser),
                         TextEntry::make('created_at')
                             ->label('Created at')
+                            ->icon(Heroicon::OutlinedCalendarDays)
                             ->dateTime(),
                     ])
                     ->columns([
@@ -36,6 +37,7 @@ class CommentInfolist
                     ->schema([
                         TextEntry::make('content')
                             ->label('Message')
+                            ->icon(Heroicon::OutlinedDocumentText)
                             ->prose()
                             ->columnSpanFull(),
                     ]),

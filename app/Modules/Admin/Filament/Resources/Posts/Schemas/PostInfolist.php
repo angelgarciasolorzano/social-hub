@@ -26,9 +26,11 @@ class PostInfolist
                             ->icon(Heroicon::OutlinedUser),
                         TextEntry::make('created_at')
                             ->label('Created at')
+                            ->icon(Heroicon::OutlinedCalendarDays)
                             ->dateTime(),
                         TextEntry::make('updated_at')
                             ->label('Updated at')
+                            ->icon(Heroicon::OutlinedPencilSquare)
                             ->dateTime(),
                     ])
                     ->columns([
@@ -41,6 +43,7 @@ class PostInfolist
                     ->schema([
                         TextEntry::make('content')
                             ->label('Message')
+                            ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
                             ->prose()
                             ->columnSpanFull(),
                         ImageEntry::make('post_image')

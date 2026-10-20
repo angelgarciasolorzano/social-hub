@@ -11,6 +11,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class UserInfolist
 {
@@ -20,6 +21,7 @@ class UserInfolist
             ->components([
                 Section::make('Profile')
                     ->description('Identity and profile images for this user.')
+                    ->icon(Heroicon::OutlinedUserCircle)
                     ->schema([
                         Grid::make([
                             'default' => 1,
@@ -35,9 +37,11 @@ class UserInfolist
                                 Grid::make(1)
                                     ->schema([
                                         TextEntry::make('name')
-                                            ->label('Full name'),
+                                            ->label('Full name')
+                                            ->icon(Heroicon::OutlinedUser),
                                         TextEntry::make('email')
-                                            ->label('Email address'),
+                                            ->label('Email address')
+                                            ->icon(Heroicon::OutlinedEnvelope),
                                     ])
                                     ->columnSpan([
                                         'default' => 1,
@@ -47,6 +51,7 @@ class UserInfolist
                         TextEntry::make('cover_image_status')
                             ->label('Cover image')
                             ->state(fn (User $record): string => $record->hasMedia(UserImageType::COVER_IMAGE->value()) ? 'Uploaded' : 'Not added')
+                            ->icon(Heroicon::OutlinedPhoto)
                             ->badge()
                             ->color(fn (string $state): string => $state === 'Uploaded' ? 'success' : 'gray')
                             ->visible(fn (User $record): bool => ! $record->hasMedia(UserImageType::COVER_IMAGE->value())),
@@ -61,22 +66,27 @@ class UserInfolist
                     ]),
                 Section::make('Account activity')
                     ->description('Email verification and sign-in history for this user.')
+                    ->icon(Heroicon::OutlinedShieldCheck)
                     ->schema([
                         TextEntry::make('email_verification_status')
                             ->label('Email verification')
                             ->state(fn (User $record): string => $record->hasVerifiedEmail() ? 'Verified' : 'Not verified')
+                            ->icon(Heroicon::OutlinedCheckBadge)
                             ->badge()
                             ->color(fn (string $state): string => $state === 'Verified' ? 'success' : 'warning'),
                         TextEntry::make('email_verified_at')
                             ->label('Verified at')
+                            ->icon(Heroicon::OutlinedCalendarDays)
                             ->dateTime()
                             ->visible(fn (User $record): bool => $record->hasVerifiedEmail()),
                         TextEntry::make('created_at')
                             ->label('Account created')
+                            ->icon(Heroicon::OutlinedCalendarDays)
                             ->since()
                             ->dateTimeTooltip(),
                         TextEntry::make('last_login_at')
                             ->label('Last sign-in')
+                            ->icon(Heroicon::OutlinedArrowRightOnRectangle)
                             ->since()
                             ->dateTimeTooltip()
                             ->placeholder('Never signed in'),
