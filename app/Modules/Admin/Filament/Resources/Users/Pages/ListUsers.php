@@ -14,6 +14,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
@@ -31,6 +32,7 @@ class ListUsers extends ListRecords
         return [
             Action::make('inviteAdmin')
                 ->label('Invite administrator')
+                ->icon(Heroicon::OutlinedUserPlus)
                 ->modalHeading('Invite administrator')
                 ->modalSubmitActionLabel('Send invitation')
                 ->successNotificationTitle('Invitation email queued')
