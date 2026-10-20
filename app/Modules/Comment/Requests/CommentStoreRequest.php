@@ -6,6 +6,7 @@ namespace App\Modules\Comment\Requests;
 
 use App\Modules\Comment\Concerns\NormalizesCommentContent;
 use App\Modules\Comment\Enums\CommentType;
+use App\Modules\Comment\Models\Comment;
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
@@ -34,7 +35,7 @@ class CommentStoreRequest extends FormRequest
         return [
             'content' => FluentRule::string()
                 ->required(message: 'El comentario es obligatorio')
-                ->max(1000),
+                ->max(Comment::CONTENT_MAX_LENGTH),
             'commentable_type' => FluentRule::string()->required()->enum(CommentType::class),
             'commentable_id' => FluentRule::integer()->required(),
         ];

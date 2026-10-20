@@ -1,3 +1,5 @@
+import type { JSX } from "react";
+
 import { InfiniteScroll, usePage } from "@inertiajs/react";
 
 import { GoPlus } from "react-icons/go";
@@ -23,7 +25,7 @@ interface ProfileProps {
   user: User;
 }
 
-function Profile({ posts, user }: ProfileProps) {
+function Profile({ posts, user }: ProfileProps): JSX.Element {
   const { open, setOpen } = useDialog();
   const { auth } = usePage<SharedData>().props;
 
@@ -68,7 +70,7 @@ function Profile({ posts, user }: ProfileProps) {
           {({ loadingNext }) => (
             <div className="flex flex-col gap-8">
               {posts.data.map((post) => (
-                <PostCard key={post.id} post={post} user={user} />
+                <PostCard key={post.id} post={post} />
               ))}
 
               {loadingNext && (

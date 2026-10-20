@@ -104,6 +104,8 @@ export default defineConfig([
     "public/build/**",
     "public/js/filament/**",
     "storage/**",
+    "resources/js/blatui-core.js",
+    "resources/js/blatui.js",
     "resources/js/shared/wayfinder/**",
     "resources/js/shared/components/shadcn/ui/**",
     "resources/js/shared/components/reactBits/**",

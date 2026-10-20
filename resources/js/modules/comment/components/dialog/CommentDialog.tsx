@@ -19,18 +19,20 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
-import type { User } from "@/shared/types";
-
 import { CommentType } from "../../enums/commentType";
 import type { CommentContextPreview } from "../../types/comment";
 import CommentList from "../CommentList";
 
+const DELETED_AUTHOR_NAME = "Usuario eliminado";
+
 interface CommentDialogProps {
+  onCommentsCountChange: (delta: number) => void;
   postDetail: Post;
-  user: User;
 }
 
-function CommentDialog({ postDetail, user }: CommentDialogProps): JSX.Element {
+function CommentDialog({ onCommentsCountChange, postDetail }: CommentDialogProps): JSX.Element {
+  const authorName = postDetail.user?.name ?? DELETED_AUTHOR_NAME;
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -43,7 +45,7 @@ function CommentDialog({ postDetail, user }: CommentDialogProps): JSX.Element {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RiArticleLine className="h-5 w-5 text-muted-foreground" />
-            Publicacion de {user.name}
+            Publicacion de {authorName}
           </DialogTitle>
 
           <DialogDescription>
@@ -54,21 +56,24 @@ function CommentDialog({ postDetail, user }: CommentDialogProps): JSX.Element {
         <Separator />
 
         <div className="flex flex-1 gap-4 overflow-hidden">
-          <CommentDialogPublication postDetail={postDetail} user={user} />
-          <CommentDialogContent postDetail={postDetail} user={user} />
+          <CommentDialogPublication postDetail={postDetail} />
+          <CommentDialogContent
+            onCommentsCountChange={onCommentsCountChange}
+            postDetail={postDetail}
+          />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-type CommentDialogPublicationProps = CommentDialogProps;
+type CommentDialogPublicationProps = Pick<CommentDialogProps, "postDetail">;
 
-function CommentDialogPublication({ postDetail, user }: CommentDialogPublicationProps) {
+function CommentDialogPublication({ postDetail }: CommentDialogPublicationProps) {
   return (
     <ScrollArea className="h-full w-1/2 border-r">
       <div className="pr-3">
-        <PostDetail post={postDetail} user={user} />
+        <PostDetail post={postDetail} />
       </div>
     </ScrollArea>
   );
@@ -76,10 +81,12 @@ function CommentDialogPublication({ postDetail, user }: CommentDialogPublication
 
 type CommentDialogContentProps = CommentDialogProps;
 
-function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
+function CommentDialogContent({ onCommentsCountChange, postDetail }: CommentDialogContentProps) {
+  const authorName = postDetail.user?.name ?? DELETED_AUTHOR_NAME;
+
   const previewContext: CommentContextPreview = {
-    authorName: user.name,
-    authorProfilePicture: user.profilePicture,
+    authorName,
+    authorProfilePicture: postDetail.user?.profilePicture,
     content: postDetail.content,
     createdAt: fromNow(postDetail.createdAt) + " - " + formatFullDate(postDetail.createdAt),
     kind: CommentType.POST,
@@ -91,7 +98,11 @@ function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
 
       <Separator />
 
-      <CommentList postId={postDetail.id} previewContext={previewContext} />
+      <CommentList
+        onCommentsCountChange={onCommentsCountChange}
+        postId={postDetail.id}
+        previewContext={previewContext}
+      />
     </div>
   );
 }

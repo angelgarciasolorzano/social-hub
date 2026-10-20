@@ -2,28 +2,25 @@ import { useState } from "react";
 
 import { useHttp } from "@inertiajs/react";
 
-import LikeCommentToggleController from "@/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeCommentToggleController";
-
-import type { CommentLikesInfo, CommentLikeToggleResponse } from "../types/comment";
+import type { LikesInfo, LikeToggleResponse } from "../types/likes";
 
 const TOO_MANY_REQUESTS_STATUS = 429;
 
-interface UseCommentLikeReturn {
+interface UseLikeToggleReturn {
   error: string | null;
   isPending: boolean;
-  likesInfo: CommentLikesInfo;
+  likesInfo: LikesInfo;
   toggleLike: () => void;
 }
 
 /**
- * Like or unlike a comment, updating the count and the state at once and reverting them if the request fails.
+ * Like or unlike a likeable (post or comment), updating the count and the state at once and reverting them if the request fails.
  * A repeated call while a request is pending is ignored.
  * The initial values are read once per mount; later toggles use the server response.
+ *
+ * @param toggleUrl URL of the toggle endpoint, e.g. `toggleComment(id).url`.
  */
-export function useCommentLike(
-  commentId: number,
-  initialLikesInfo: CommentLikesInfo,
-): UseCommentLikeReturn {
+export function useLikeToggle(toggleUrl: string, initialLikesInfo: LikesInfo): UseLikeToggleReturn {
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -31,14 +28,14 @@ export function useCommentLike(
     post,
     processing,
     setData,
-  } = useHttp<CommentLikesInfo, CommentLikeToggleResponse>(initialLikesInfo);
+  } = useHttp<LikesInfo, LikeToggleResponse>(initialLikesInfo);
 
   const toggleLike = () => {
     if (processing) return;
 
     setError(null);
 
-    post(LikeCommentToggleController.url(commentId), {
+    post(toggleUrl, {
       optimistic: (currentLikesInfo) => ({
         count: currentLikesInfo.count + (currentLikesInfo.likedByMe ? -1 : 1),
         likedByMe: !currentLikesInfo.likedByMe,

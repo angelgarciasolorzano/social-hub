@@ -16,9 +16,23 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    /**
+     * Get the authenticated user, who is the one that sees the engagement of the listed posts.
+     */
+    private function viewer(): User
+    {
+        $viewer = Auth::user();
+
+        abort_unless($viewer instanceof User, 401);
+
+        return $viewer;
+    }
+
     public function index(CommentThreadProps $commentThreadProps): Response
     {
         $cursorPaginator = Post::query()
+            ->with(['user.media', 'media'])
+            ->withEngagementFor($this->viewer())
             ->where('user_id', Auth::id())
             ->orderByDesc('id')
             ->cursorPaginate(10);
@@ -33,6 +47,8 @@ class ProfileController extends Controller
     public function show(User $user, CommentThreadProps $commentThreadProps): Response
     {
         $cursorPaginator = Post::query()
+            ->with(['user.media', 'media'])
+            ->withEngagementFor($this->viewer())
             ->where('user_id', $user->id)
             ->orderByDesc('id')
             ->cursorPaginate(10);

@@ -73,3 +73,29 @@ it('does not share its budget with publishing comments', function (): void {
         'commentable_id' => $comment->id,
     ])->assertRedirect();
 });
+
+it('throttles the likes of posts with their own budget of 30 per minute', function (): void {
+    $user = createUser();
+    $post = createPost();
+
+    foreach (range(1, 30) as $attempt) {
+        $this->actingAs($user)->postJson(route('posts.like', $post))->assertOk();
+    }
+
+    $this->actingAs($user)->postJson(route('posts.like', $post))
+        ->assertTooManyRequests()
+        ->assertHeader('Retry-After');
+});
+
+it('does not share its budget between liking posts and liking comments', function (): void {
+    $user = createUser();
+    $comment = createComment();
+    $post = createPost();
+
+    foreach (range(1, 30) as $attempt) {
+        throttledToggleAs($this, $user, $comment);
+    }
+
+    throttledToggleAs($this, $user, $comment)->assertTooManyRequests();
+    $this->actingAs($user)->postJson(route('posts.like', $post))->assertOk();
+});

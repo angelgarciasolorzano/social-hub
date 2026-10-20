@@ -19,11 +19,16 @@ import { CommentLoadError, CommentSkeletonList } from "./CommentLoadStates";
 import CommentInputDialog from "./dialog/CommentInputDialog";
 
 interface CommentListProps {
+  onCommentsCountChange: (delta: number) => void;
   postId: number;
   previewContext: CommentContextPreview;
 }
 
-function CommentList({ postId, previewContext }: CommentListProps): JSX.Element {
+function CommentList({
+  onCommentsCountChange,
+  postId,
+  previewContext,
+}: CommentListProps): JSX.Element {
   const [showReplies, setShowReplies] = useState<number | null>(null);
 
   const { scrollAreaRef, viewport } = useCommentScrollAreaViewport();
@@ -45,6 +50,21 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
     updateCommentContent,
     uploadedComments,
   } = useCommentPaginated(CommentType.POST, postId);
+
+  const handleCommentPublished = (): void => {
+    uploadedComments();
+    onCommentsCountChange(1);
+  };
+
+  const handleReplyCreated = (commentId: number): void => {
+    increaseRepliesCount(commentId);
+    onCommentsCountChange(1);
+  };
+
+  const handleCommentDeleted = (): void => {
+    reloadComments();
+    onCommentsCountChange(-1);
+  };
 
   const { isIntersecting, ref: sentinelRef } = useIntersectionObserver({
     threshold: 0,
@@ -84,7 +104,7 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
         postId={postId}
         previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
-        uploadedComments={uploadedComments}
+        uploadedComments={handleCommentPublished}
       />
     );
   }
@@ -97,7 +117,7 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
         postId={postId}
         previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
-        uploadedComments={uploadedComments}
+        uploadedComments={handleCommentPublished}
       />
     );
   }
@@ -109,7 +129,7 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
         postId={postId}
         previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
-        uploadedComments={uploadedComments}
+        uploadedComments={handleCommentPublished}
       />
     );
   }
@@ -121,8 +141,8 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
           {commentsPage.data.map((comment) => (
             <CommentItem
               onContentUpdated={updateCommentContent}
-              onDeleted={reloadComments}
-              onReplyCreated={increaseRepliesCount}
+              onDeleted={handleCommentDeleted}
+              onReplyCreated={handleReplyCreated}
               comment={comment}
               key={comment.id}
               setShowReplies={setShowReplies}
@@ -164,13 +184,13 @@ function CommentList({ postId, previewContext }: CommentListProps): JSX.Element 
         postId={postId}
         previewContext={previewContext}
         setOpenModalComment={setOpenModalComment}
-        uploadedComments={uploadedComments}
+        uploadedComments={handleCommentPublished}
       />
     </>
   );
 }
 
-type RenderCommentBaseProps = CommentListProps & {
+type RenderCommentBaseProps = Pick<CommentListProps, "postId" | "previewContext"> & {
   openModalComment: boolean;
   setOpenModalComment: Dispatch<SetStateAction<boolean>>;
   uploadedComments: (() => void) | undefined;

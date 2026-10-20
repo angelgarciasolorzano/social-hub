@@ -5,10 +5,11 @@ import type { InertiaFormProps } from "@inertiajs/react";
 
 import { store as storeComment } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
 
-import { InputError } from "@/shared/components/form";
+import { CharacterCounter, InputError } from "@/shared/components/form";
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Textarea } from "@/shared/components/shadcn/ui/textarea";
 
+import { COMMENT_CONTENT_MAX_LENGTH } from "../../constants/commentContent";
 import type { CommentTypeValues } from "../../enums/commentType";
 import type { CommentFormData } from "../../types/comment";
 
@@ -31,12 +32,16 @@ function CommentForm(props: CommentFormProps): JSX.Element {
     setOpenModalComment,
   } = props;
 
-  const { clearErrors, setData, errors, submit } = formComment;
+  const { clearErrors, data, setData, errors, submit } = formComment;
+
+  const counterId = `${formId}-count`;
 
   const [serverError, setServerError] = useState<null | string>(null);
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
+
+    if (data.content.length > COMMENT_CONTENT_MAX_LENGTH) return;
 
     clearErrors();
     setServerError(null);
@@ -74,11 +79,18 @@ function CommentForm(props: CommentFormProps): JSX.Element {
 
         <Textarea
           name="content"
+          aria-describedby={counterId}
           className="min-h-72 resize-none"
           onChange={(e) => {
             setData("content", e.target.value);
           }}
           placeholder="Escribe tu comentario"
+        />
+
+        <CharacterCounter
+          id={counterId}
+          current={data.content.length}
+          max={COMMENT_CONTENT_MAX_LENGTH}
         />
 
         <InputError className="mt-1" message={errors.content} />

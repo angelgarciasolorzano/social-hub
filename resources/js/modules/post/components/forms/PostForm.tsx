@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction, SubmitEvent } from "react";
+import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
@@ -19,7 +19,7 @@ interface PostFormtProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function PostForm({ form, setOpen }: PostFormtProps) {
+function PostForm({ form, setOpen }: PostFormtProps): JSX.Element {
   const { submit, errors, setData } = form;
 
   const { appearance } = useAppearance();

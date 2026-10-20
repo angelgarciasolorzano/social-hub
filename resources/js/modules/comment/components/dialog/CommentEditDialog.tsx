@@ -7,7 +7,7 @@ import { LuPencil } from "react-icons/lu";
 
 import { update as updateComment } from "@/shared/wayfinder/actions/App/Modules/Comment/Controllers/CommentController";
 
-import { InputError } from "@/shared/components/form";
+import { CharacterCounter, InputError } from "@/shared/components/form";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Dialog,
@@ -21,6 +21,8 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { Textarea } from "@/shared/components/shadcn/ui/textarea";
+
+import { COMMENT_CONTENT_MAX_LENGTH } from "../../constants/commentContent";
 
 interface CommentEditDialogProps {
   commentId: number;
@@ -58,9 +60,14 @@ function CommentEditDialogBody({
   const [serverError, setServerError] = useState<null | string>(null);
 
   const formId = `comment-edit-form-${String(commentId)}`;
+  const counterId = `${formId}-count`;
+
+  const isContentTooLong = data.content.length > COMMENT_CONTENT_MAX_LENGTH;
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>): void => {
     event.preventDefault();
+
+    if (isContentTooLong) return;
 
     clearErrors();
     setServerError(null);
@@ -106,6 +113,7 @@ function CommentEditDialogBody({
 
       <form className="flex flex-col gap-2" id={formId} onSubmit={handleSubmit}>
         <Textarea
+          aria-describedby={counterId}
           aria-label="Contenido del comentario"
           className="min-h-48 resize-none"
           name="content"
@@ -113,6 +121,12 @@ function CommentEditDialogBody({
             setData("content", event.target.value);
           }}
           value={data.content}
+        />
+
+        <CharacterCounter
+          id={counterId}
+          current={data.content.length}
+          max={COMMENT_CONTENT_MAX_LENGTH}
         />
 
         <InputError className="mt-1" message={errors.content} />
@@ -127,7 +141,12 @@ function CommentEditDialogBody({
           </Button>
         </DialogClose>
 
-        <Button className="cursor-pointer" disabled={processing} form={formId} type="submit">
+        <Button
+          className="cursor-pointer"
+          disabled={processing || isContentTooLong}
+          form={formId}
+          type="submit"
+        >
           {processing ? (
             <>
               <Spinner />

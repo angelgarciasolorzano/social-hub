@@ -1,38 +1,29 @@
-import { RiTimeZoneLine } from "react-icons/ri";
+import type { JSX } from "react";
 
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import relativeTime from "dayjs/plugin/relativeTime";
+import { RiTimeZoneLine } from "react-icons/ri";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 
 import { validImage } from "@/shared/lib";
-
-import type { User } from "@/shared/types";
+import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import postPlaceholder from "../assets/post-placeholder.png";
 import type { Post } from "../types/post";
 
-dayjs.extend(relativeTime);
-dayjs.locale("es");
-
 interface PostDetailProps {
   post: Omit<Post, "comments">;
-  user: User;
 }
 
-function PostDetail({ post, user }: PostDetailProps) {
-  const createdAt = dayjs(post.createdAt);
-
+function PostDetail({ post }: PostDetailProps): JSX.Element {
   return (
     <article className="grid gap-2">
       <header className="flex items-center gap-3">
         <Avatar>
           <AvatarImage
             alt="Foto de perfil"
-            src={validImage(user.profilePicture, profilePicturePlaceholder)}
+            src={validImage(post.user?.profilePicture, profilePicturePlaceholder)}
           />
 
           <AvatarFallback>Foto de perfil</AvatarFallback>
@@ -40,7 +31,10 @@ function PostDetail({ post, user }: PostDetailProps) {
 
         <div className="flex flex-col gap-0.5">
           <div className="flex items-baseline gap-1">
-            <h4 className="text-l font-bold dark:text-white">{user.name}</h4>
+            <h4 className="text-l font-bold dark:text-white">
+              {post.user?.name ?? "Usuario eliminado"}
+            </h4>
+
             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
               agregó una publicación
             </span>
@@ -48,7 +42,7 @@ function PostDetail({ post, user }: PostDetailProps) {
 
           <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <RiTimeZoneLine className="h-4 w-4 text-gray-600 dark:text-gray-500" />
-            {createdAt.fromNow()} - {createdAt.format("D [de] MMMM [del] YYYY")}
+            {fromNow(post.createdAt)} - {formatFullDate(post.createdAt)}
           </time>
         </div>
       </header>

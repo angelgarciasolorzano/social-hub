@@ -23,7 +23,7 @@ dataset('comment host pages', [
     "someone else's profile" => ['profile.show', 'profile/Profile'],
 ]);
 
-it('keeps comments and replies out of a normal visit and leaves posts and user untouched', function (string $routeName, string $component): void {
+it('keeps comments and replies out of a normal visit and leaves the posts untouched, and the profile owner on profile pages', function (string $routeName, string $component): void {
     $user = createUser();
     $post = createPost($user);
 
@@ -33,7 +33,7 @@ it('keeps comments and replies out of a normal visit and leaves posts and user u
         ->get(commentHostUrl($routeName, [CommentThreadProps::COMMENTS_PARAMETER => $post->id]))
         ->assertInertia(fn (Assert $assert): Assert => $assert
             ->component($component)
-            ->has('user')
+            ->when($component === 'profile/Profile', fn (Assert $assert): Assert => $assert->has('user'))
             ->has('posts')
             ->missing('comments')
             ->missing('replies')

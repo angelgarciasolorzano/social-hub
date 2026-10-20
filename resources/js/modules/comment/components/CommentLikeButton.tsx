@@ -2,20 +2,26 @@ import type { JSX } from "react";
 
 import { Heart } from "lucide-react";
 
+import { toggleComment } from "@/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeController";
+
 import { Button } from "@/shared/components/shadcn/ui/button";
+
+import { useLikeToggle } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib/utils";
 
-import { useCommentLike } from "../hooks/useCommentLike";
-import type { CommentLikesInfo } from "../types/comment";
+import type { LikesInfo } from "@/shared/types/likes";
 
 interface CommentLikeButtonProps {
   commentId: number;
-  initialLikesInfo: CommentLikesInfo;
+  initialLikesInfo: LikesInfo;
 }
 
 function CommentLikeButton({ commentId, initialLikesInfo }: CommentLikeButtonProps): JSX.Element {
-  const { error, isPending, likesInfo, toggleLike } = useCommentLike(commentId, initialLikesInfo);
+  const { error, isPending, likesInfo, toggleLike } = useLikeToggle(
+    toggleComment(commentId).url,
+    initialLikesInfo,
+  );
 
   return (
     <>

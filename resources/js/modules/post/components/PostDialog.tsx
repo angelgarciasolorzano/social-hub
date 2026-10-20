@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
 
 import { useForm } from "@inertiajs/react";
 
@@ -25,7 +25,7 @@ interface PostDialogProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function PostDialog({ open, setOpen }: PostDialogProps) {
+function PostDialog({ open, setOpen }: PostDialogProps): JSX.Element {
   const form = useForm<PostFormData>({
     content: "",
   });

@@ -60,7 +60,7 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
     }
 
     /**
-     * Build the cursor-paginated comments of the commentable named by the request.
+     * Build the cursor-paginated comments of the commentable named by the request: the newest comments of a post first, the replies of a comment oldest first.
      *
      * @param  class-string<Post|Comment>  $commentableClass
      * @return CursorPaginator<int, array<array-key, mixed>>
@@ -75,12 +75,14 @@ final readonly class CommentThreadProps implements ProvidesInertiaProperties
 
         $encodedCursor = $this->request->query($cursorName);
 
-        return $commentable->comments()
+        $comments = $commentable->comments()
             ->withTrashed()
             ->with(['user', 'repliedToUser:id,name'])
             ->withCount(['comments', 'likes'])
             ->withExists(['likes as liked_by_me' => fn (Builder $builder): Builder => $builder->whereBelongsTo($user)])
-            ->orderByDesc('id')
+            ->orderBy('id', $commentable instanceof Comment ? 'asc' : 'desc');
+
+        return $comments
             ->cursorPaginate(
                 perPage: self::PER_PAGE,
                 cursorName: $cursorName,
