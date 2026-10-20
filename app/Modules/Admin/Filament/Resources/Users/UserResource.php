@@ -8,13 +8,11 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\PostsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
+use App\Modules\Admin\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Modules\Admin\Filament\Resources\Users\Tables\UsersTable;
 use App\Modules\Admin\Filament\Widgets\RegistrationSummaryWidget;
-use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use BackedEnum;
-use Filament\Infolists\Components\ImageEntry;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationGroup;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -39,28 +37,7 @@ class UserResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                ImageEntry::make(UserImageType::PROFILE_PICTURE->value())
-                    ->label('Profile picture')
-                    ->state(fn (User $record): string => url($record->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value())))
-                    ->imageHeight(96)
-                    ->imageWidth(96)
-                    ->circular()
-                    ->alt('Profile picture'),
-                ImageEntry::make(UserImageType::COVER_IMAGE->value())
-                    ->label('Cover image')
-                    ->state(fn (User $record): string => url($record->getFirstMediaUrl(UserImageType::COVER_IMAGE->value())))
-                    ->imageHeight(200)
-                    ->imageWidth('100%')
-                    ->columnSpanFull()
-                    ->alt('Cover image'),
-                TextEntry::make('name'),
-                TextEntry::make('email'),
-                TextEntry::make('email_verified_at')->dateTime(),
-                TextEntry::make('created_at')->dateTime(),
-                TextEntry::make('last_login_at')->dateTime(),
-            ]);
+        return UserInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table

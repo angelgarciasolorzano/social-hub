@@ -8,8 +8,8 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
+use Filament\Infolists\Components\Entry;
 use Filament\Infolists\Components\ImageEntry;
-use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -26,7 +26,7 @@ beforeEach(function (): void {
 });
 
 /**
- * @return array{components: array<string, Component>, html: string}
+ * @return array{components: array<string, Entry>, html: string}
  */
 function renderUserDetailAsAuthorizedAdmin(TestCase $testCase, User $targetUser): array
 {
@@ -49,10 +49,10 @@ function renderUserDetailAsAuthorizedAdmin(TestCase $testCase, User $targetUser)
 
     throw_unless($infolist instanceof Schema, LogicException::class, 'The user detail page must expose its infolist schema.');
 
-    /** @var array<string, Component> $components */
+    /** @var array<string, Entry> $components */
     $components = array_filter(
         $infolist->getFlatComponents(withActions: false, withHidden: true),
-        static fn (mixed $component): bool => $component instanceof Component,
+        static fn (mixed $component): bool => $component instanceof Entry,
     );
 
     return [
@@ -66,9 +66,11 @@ it('limits the user detail to allowlisted fields', function (): void {
 
     expect(array_keys($detail['components']))->toBe([
         'profile_picture',
-        'cover_image',
         'name',
         'email',
+        'cover_image_status',
+        'cover_image',
+        'email_verification_status',
         'email_verified_at',
         'created_at',
         'last_login_at',
@@ -91,10 +93,11 @@ it('shows account timestamps in matching detail fields', function (): void {
 
     expect($components['email_verified_at']->getState())->toEqual($targetUser->email_verified_at)
         ->and($components['created_at']->getState())->toEqual($targetUser->created_at)
-        ->and($components['last_login_at']->getState())->toBe($targetUser->last_login_at);
+        ->and($components['last_login_at']->getState())->toBe($targetUser->last_login_at)
+        ->and($detail['html'])->toContain('Email verification and sign-in history for this user.');
 });
 
-it('uses the configured fallback images when profile and cover media are absent', function (): void {
+it('uses a compact profile fallback and explains when no cover image has been added', function (): void {
     Storage::fake((string) config('media-library.disk_name'));
 
     $targetUser = createUser();
@@ -107,7 +110,9 @@ it('uses the configured fallback images when profile and cover media are absent'
     expect($components['profile_picture'])->toBeInstanceOf(ImageEntry::class)
         ->and($components['profile_picture']->getState())->toBe(url(User::DEFAULT_PROFILE_PICTURE_PATH))
         ->and($components['cover_image'])->toBeInstanceOf(ImageEntry::class)
-        ->and($components['cover_image']->getState())->toBe(url(User::DEFAULT_COVER_IMAGE_PATH));
+        ->and($components['cover_image']->getState())->toBeNull()
+        ->and($components['cover_image_status']->getState())->toBe('Not added')
+        ->and($detail['html'])->not->toContain(url(User::DEFAULT_COVER_IMAGE_PATH));
 });
 
 it('does not expose two factor secrets on the user detail page', function (): void {

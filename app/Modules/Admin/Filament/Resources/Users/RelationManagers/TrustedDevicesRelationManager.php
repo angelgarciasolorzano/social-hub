@@ -64,7 +64,7 @@ class TrustedDevicesRelationManager extends RelationManager
                     ->color(fn (string $state): string => match ($state) {
                         self::ACTIVE_STATUS => 'success',
                         self::EXPIRED_STATUS => 'warning',
-                        self::REVOKED_STATUS => 'gray',
+                        self::REVOKED_STATUS => 'danger',
                         default => 'gray',
                     })
                     ->state(fn (TrustedDevice $trustedDevice): string => $this->getStatus($trustedDevice)),
