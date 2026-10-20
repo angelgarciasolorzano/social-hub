@@ -30,7 +30,6 @@ class HomeController extends Controller
             ->cursorPaginate(10);
 
         return Inertia::render('home/Home', [
-            'user' => Auth::user(),
             'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
             $commentThreadProps,
         ]);

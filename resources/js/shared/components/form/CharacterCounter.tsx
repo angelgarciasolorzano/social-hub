@@ -29,7 +29,7 @@ function CharacterCounter({
       id={id}
       className={cn(
         "text-xs text-muted-foreground",
-        isNearLimit && "text-warning",
+        isNearLimit && "text-amber-700 dark:text-amber-500",
         isOverLimit && "text-destructive",
         className,
       )}
