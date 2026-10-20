@@ -78,7 +78,7 @@
                                 autocomplete="name"
                                 wire:model="name"
                                 aria-invalid="{{ $errors->has('name') ? 'true' : 'false' }}"
-                                @if($errors->has('name')) aria-describedby="name-error" @endif
+                                :aria-describedby="$errors->has('name') ? 'name-error' : null"
                                 required
                             />
 
@@ -97,7 +97,7 @@
                                 autocomplete="new-password"
                                 wire:model="password"
                                 aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
-                                @if($errors->has('password')) aria-describedby="password-error" @endif
+                                :aria-describedby="$errors->has('password') ? 'password-error' : null"
                                 required
                             />
 
@@ -118,7 +118,7 @@
                                 autocomplete="new-password"
                                 wire:model="password_confirmation"
                                 aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
-                                @if($errors->has('password')) aria-describedby="password-error" @endif
+                                :aria-describedby="$errors->has('password') ? 'password-error' : null"
                                 required
                             />
                         </div>
