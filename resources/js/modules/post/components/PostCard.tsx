@@ -5,8 +5,6 @@ import { FaRegComment } from "react-icons/fa";
 import { FaRegHeart } from "react-icons/fa6";
 import { RiTimeZoneLine } from "react-icons/ri";
 
-import dayjs from "dayjs";
-
 import { CommentDialog } from "@/modules/comment";
 
 import { togglePost } from "@/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeController";
@@ -17,6 +15,7 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { useLikeToggle } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
+import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
@@ -29,8 +28,6 @@ interface PostCardProps {
 }
 
 function PostCard({ post }: PostCardProps): JSX.Element {
-  const createdAt = dayjs(post.createdAt);
-
   const [commentsCount, setCommentsCount] = useState<number>(post.commentsCount);
 
   const { error, isPending, likesInfo, toggleLike } = useLikeToggle(
@@ -63,7 +60,7 @@ function PostCard({ post }: PostCardProps): JSX.Element {
 
           <time className="flex items-center gap-1 text-xs text-muted-foreground">
             <RiTimeZoneLine className="h-4 w-4 text-gray-600 dark:text-gray-500" />
-            {createdAt.fromNow()} - {createdAt.format("D [de] MMMM [del] YYYY")}
+            {fromNow(post.createdAt)} - {formatFullDate(post.createdAt)}
           </time>
         </div>
       </header>

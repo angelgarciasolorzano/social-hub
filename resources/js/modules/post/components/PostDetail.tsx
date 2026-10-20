@@ -2,11 +2,10 @@ import type { JSX } from "react";
 
 import { RiTimeZoneLine } from "react-icons/ri";
 
-import dayjs from "dayjs";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 
 import { validImage } from "@/shared/lib";
+import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
@@ -18,8 +17,6 @@ interface PostDetailProps {
 }
 
 function PostDetail({ post }: PostDetailProps): JSX.Element {
-  const createdAt = dayjs(post.createdAt);
-
   return (
     <article className="grid gap-2">
       <header className="flex items-center gap-3">
@@ -45,7 +42,7 @@ function PostDetail({ post }: PostDetailProps): JSX.Element {
 
           <time className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <RiTimeZoneLine className="h-4 w-4 text-gray-600 dark:text-gray-500" />
-            {createdAt.fromNow()} - {createdAt.format("D [de] MMMM [del] YYYY")}
+            {fromNow(post.createdAt)} - {formatFullDate(post.createdAt)}
           </time>
         </div>
       </header>

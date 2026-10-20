@@ -3,6 +3,7 @@ import type {
   Dispatch,
   DragEvent,
   DragEventHandler,
+  JSX,
   MouseEvent,
   RefObject,
 } from "react";
@@ -33,7 +34,7 @@ interface PostImageCardProps {
   handleImageError: () => void;
 }
 
-function PostImageCard(props: PostImageCardProps) {
+function PostImageCard(props: PostImageCardProps): JSX.Element {
   const {
     handleRemoveImage,
     fileInputRef,
@@ -126,7 +127,7 @@ type ImageEmptyStateProps = Omit<
   | "handleImageBoxClick"
 >;
 
-function ImagePreview(props: ImageEmptyStateProps) {
+function ImagePreview(props: ImageEmptyStateProps): JSX.Element {
   const {
     appearance,
     isLoadingImage,
@@ -164,7 +165,7 @@ function ImagePreview(props: ImageEmptyStateProps) {
   );
 }
 
-function ImageLoadingOverlay() {
+function ImageLoadingOverlay(): JSX.Element {
   return (
     <div
       className={cn(
@@ -186,7 +187,7 @@ type ImageHoverOverlayProps = Pick<
   "appearance" | "handleRemoveImage" | "handleUpdateImage"
 >;
 
-function ImageHoverOverlay(props: ImageHoverOverlayProps) {
+function ImageHoverOverlay(props: ImageHoverOverlayProps): JSX.Element {
   const { appearance, handleRemoveImage, handleUpdateImage } = props;
 
   return (
@@ -221,7 +222,7 @@ function ImageHoverOverlay(props: ImageHoverOverlayProps) {
   );
 }
 
-function ImageEmptyState() {
+function ImageEmptyState(): JSX.Element {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="rounded-full bg-accent p-2">
