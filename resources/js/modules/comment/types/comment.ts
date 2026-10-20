@@ -1,15 +1,11 @@
 import type { User } from "@/shared/types";
+import type { LikesInfo } from "@/shared/types/likes";
 
 import type { CommentTypeValues } from "../enums/commentType";
 
 interface CommentReplies {
   hasReplies: boolean;
   repliesCount: number;
-}
-
-export interface CommentLikesInfo {
-  count: number;
-  likedByMe: boolean;
 }
 
 interface CommentRepliedTo {
@@ -24,7 +20,7 @@ export interface Comment {
   id: number;
   isDeleted: boolean;
   isMine: boolean;
-  likesInfo: CommentLikesInfo;
+  likesInfo: LikesInfo;
   repliedTo?: CommentRepliedTo | null;
   repliesInfo: CommentReplies;
   user: null | User;
@@ -44,11 +40,6 @@ export interface PaginatedComments {
   per_page: number;
   prev_cursor: string | null;
   prev_page_url: string | null;
-}
-
-export interface CommentLikeToggleResponse {
-  liked: boolean;
-  likesCount: number;
 }
 
 export type CommentsLoadFailure = "more" | "refresh";
