@@ -31,7 +31,7 @@ class ProfileController extends Controller
     public function index(CommentThreadProps $commentThreadProps): Response
     {
         $cursorPaginator = Post::query()
-            ->with('media')
+            ->with(['user.media', 'media'])
             ->withEngagementFor($this->viewer())
             ->where('user_id', Auth::id())
             ->orderByDesc('id')
@@ -47,7 +47,7 @@ class ProfileController extends Controller
     public function show(User $user, CommentThreadProps $commentThreadProps): Response
     {
         $cursorPaginator = Post::query()
-            ->with('media')
+            ->with(['user.media', 'media'])
             ->withEngagementFor($this->viewer())
             ->where('user_id', $user->id)
             ->orderByDesc('id')

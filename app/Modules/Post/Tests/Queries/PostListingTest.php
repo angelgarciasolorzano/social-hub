@@ -66,6 +66,19 @@ it('serves the real comments and likes of each post', function (string $routeNam
             ->where('posts.data.0.likesInfo', ['count' => 1, 'likedByMe' => true]));
 })->with('post listing pages');
 
+it('serves each post with its own author, not the authenticated user', function (): void {
+    $user = createUser();
+    $author = createUser();
+    createPost($author);
+
+    $this->actingAs($user)
+        ->get(route('home'))
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->where('posts.data.0.user.id', $author->id)
+            ->where('posts.data.0.user.name', $author->name)
+            ->missing('posts.data.0.user.email'));
+});
+
 it('counts zero comments and likes for a post without activity', function (string $routeName, string $component): void {
     $user = createUser();
     $profileOwner = $routeName === 'profile.index' ? $user : createUser();
@@ -90,6 +103,20 @@ it('counts only the replies of a deleted comment when the comment itself is dele
         ->get(route('home'))
         ->assertInertia(fn (Assert $assert): Assert => $assert
             ->where('posts.data.0.commentsCount', 3));
+});
+
+it('uses the same number of queries when the posts come from many different authors', function (): void {
+    $user = createUser();
+
+    createPost(createUser());
+    countListingQueries($this, route('home'), $user);
+    $queriesWithOneAuthor = countListingQueries($this, route('home'), $user);
+
+    foreach (range(1, 9) as $attempt) {
+        createPost(createUser());
+    }
+
+    expect(countListingQueries($this, route('home'), $user))->toBe($queriesWithOneAuthor);
 });
 
 it('uses the same number of queries however many posts the page lists', function (string $routeName): void {

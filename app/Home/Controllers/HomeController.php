@@ -23,7 +23,7 @@ class HomeController extends Controller
 
         abort_unless($viewer instanceof User, 401);
 
-        $cursorPaginator = Post::with(['user', 'media'])
+        $cursorPaginator = Post::with(['user.media', 'media'])
             ->withEngagementFor($viewer)
             // ->whereIn('user_id', $friendsId)
             ->orderByDesc('id')

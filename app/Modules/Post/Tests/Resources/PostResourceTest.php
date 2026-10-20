@@ -28,7 +28,7 @@ it('serializes only the public post fields', function (): void {
 
     $payload = new PostResource($post)->toArray(request());
 
-    expect(array_keys($payload))->toBe(['id', 'content', 'image', 'createdAt', 'commentsCount', 'likesInfo'])
+    expect(array_keys($payload))->toBe(['id', 'content', 'image', 'createdAt', 'commentsCount', 'likesInfo', 'user'])
         ->and($payload['id'])->toBe($post->id)
         ->and($payload['content'])->toBe($post->content)
         ->and($payload['createdAt'])->toBe($post->created_at?->toIso8601String());
@@ -107,4 +107,15 @@ it('serializes the engagement without querying comments or likes when it is prel
 
     expect($payload)->toMatchArray(['commentsCount' => 2, 'likesInfo' => ['count' => 1, 'likedByMe' => true]])
         ->and($engagementQueries)->toBeEmpty();
+});
+
+it('serializes the public data of the author and never the email', function (): void {
+    $user = createUser();
+    $post = createPost($user);
+
+    $payload = postPayloadAs($post->load('user'));
+
+    expect($payload['user'])->toMatchArray(['id' => $user->id, 'name' => $user->name])
+        ->and($payload['user'])->toHaveKeys(['id', 'name', 'profilePicture'])
+        ->and(json_encode($payload))->not->toContain($user->email);
 });
