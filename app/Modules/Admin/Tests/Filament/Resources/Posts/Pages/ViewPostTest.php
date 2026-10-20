@@ -77,6 +77,10 @@ it('renders a post author and timestamps on the detail page', function (): void 
 
     Livewire::test(ViewPost::class, ['record' => $post->getKey()])
         ->assertOk()
+        ->assertSeeText('Post information')
+        ->assertSeeText('Author and publication history for this post.')
+        ->assertSeeText('Post content')
+        ->assertSeeText('The complete message and image shared in this post.')
         ->assertSeeText('Post detail content sentinel')
         ->assertSeeText($user->name)
         ->assertSeeText('Created at')

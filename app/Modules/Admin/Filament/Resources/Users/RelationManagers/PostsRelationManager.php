@@ -68,7 +68,7 @@ class PostsRelationManager extends RelationManager
                     ->alt('Post image'),
                 TextColumn::make('content')
                     ->label('Post')
-                    ->limit(100)
+                    ->limit(70)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('created_at')

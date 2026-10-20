@@ -93,6 +93,18 @@ it('lists posts with pagination and content search', function (): void {
         );
 });
 
+it('truncates long post previews in the resource table', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $content = str_repeat('This post preview should stay concise in the table. ', 5);
+
+    createPost(attributes: ['content' => $content]);
+
+    Livewire::test(ListPosts::class)
+        ->assertSeeText(rtrim(mb_substr($content, 0, 70)))
+        ->assertDontSeeText($content);
+});
+
 it('denies the Posts index to users with only Users read access', function (): void {
     $authenticatedUser = createUser();
 

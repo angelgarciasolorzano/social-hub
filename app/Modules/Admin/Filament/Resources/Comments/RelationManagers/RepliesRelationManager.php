@@ -45,7 +45,8 @@ class RepliesRelationManager extends RelationManager
             ->recordTitleAttribute('content')
             ->columns([
                 TextColumn::make('content')
-                    ->label('Reply'),
+                    ->label('Reply')
+                    ->limit(70),
                 TextColumn::make('user.name')
                     ->label('Author'),
                 TextColumn::make('created_at')

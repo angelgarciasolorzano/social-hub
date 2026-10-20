@@ -52,6 +52,18 @@ it('renders only replies for the selected comment with their authors', function 
         ->toBe([FilamentTableRecords::recordKey($comment)]);
 });
 
+it('truncates long reply previews in the replies table', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $parentComment = createCommentOn(createPost());
+    $content = str_repeat('This reply preview should stay concise in the table. ', 5);
+    createCommentOn($parentComment, attributes: ['content' => $content]);
+
+    repliesRelationManagerFor($parentComment)
+        ->assertSeeText(rtrim(mb_substr($content, 0, 70)))
+        ->assertDontSeeText($content);
+});
+
 it('does not resolve a reply from another comment when its ID is supplied', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 

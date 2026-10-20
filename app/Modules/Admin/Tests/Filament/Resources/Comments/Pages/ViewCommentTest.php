@@ -30,6 +30,10 @@ it('renders the selected comment and its author for Posts readers', function ():
 
     $this->get(CommentResource::getUrl('view', ['record' => $comment]))
         ->assertOk()
+        ->assertSeeText('Comment details')
+        ->assertSeeText('Author and publication details for this comment.')
+        ->assertSeeText('Comment content')
+        ->assertSeeText('The complete message in this conversation.')
         ->assertSeeText('Selected comment detail sentinel')
         ->assertSeeText($user->name);
 });

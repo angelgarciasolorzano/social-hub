@@ -65,6 +65,18 @@ it('lists only the selected post comments with their author and creation date', 
         ->assertDontSeeText('Foreign post comment sentinel');
 });
 
+it('truncates long comment previews in the comments table', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $content = str_repeat('This comment preview should stay concise in the table. ', 5);
+    createCommentOn($post, attributes: ['content' => $content]);
+
+    commentsRelationManagerFor($post)
+        ->assertSeeText(rtrim(mb_substr($content, 0, 70)))
+        ->assertDontSeeText($content);
+});
+
 it('paginates only the selected posts comments', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 

@@ -34,7 +34,7 @@ class PostsTable
                     ->alt('Post image'),
                 TextColumn::make('content')
                     ->label('Post')
-                    ->limit(100)
+                    ->limit(70)
                     ->searchable(),
                 TextColumn::make('user.name')
                     ->label('Author')

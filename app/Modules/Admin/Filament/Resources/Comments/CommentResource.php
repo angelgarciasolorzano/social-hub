@@ -7,11 +7,11 @@ namespace App\Modules\Admin\Filament\Resources\Comments;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelationManager;
+use App\Modules\Admin\Filament\Resources\Comments\Schemas\CommentInfolist;
 use App\Modules\Comment\Models\Comment;
 use App\User\Models\User;
 use BackedEnum;
 use Filament\Facades\Filament;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
@@ -79,18 +79,7 @@ class CommentResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema
-            ->columns(2)
-            ->components([
-                TextEntry::make('user.name')
-                    ->label('Author'),
-                TextEntry::make('created_at')
-                    ->label('Created at')
-                    ->dateTime(),
-                TextEntry::make('content')
-                    ->label('Content')
-                    ->columnSpanFull(),
-            ]);
+        return CommentInfolist::configure($schema);
     }
 
     /**

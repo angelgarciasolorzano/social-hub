@@ -51,7 +51,7 @@ class CommentsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('content')
                     ->label('Content')
-                    ->limit(100),
+                    ->limit(70),
                 TextColumn::make('user.name')
                     ->label('Author'),
                 TextColumn::make('created_at')
