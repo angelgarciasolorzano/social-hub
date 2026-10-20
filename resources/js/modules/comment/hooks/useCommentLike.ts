@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { useHttp } from "@inertiajs/react";
 
-import LikeCommentToggleController from "@/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeCommentToggleController";
+import { toggleComment } from "@/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeController";
 
 import type { CommentLikesInfo, CommentLikeToggleResponse } from "../types/comment";
 
@@ -38,7 +38,7 @@ export function useCommentLike(
 
     setError(null);
 
-    post(LikeCommentToggleController.url(commentId), {
+    post(toggleComment(commentId).url, {
       optimistic: (currentLikesInfo) => ({
         count: currentLikesInfo.count + (currentLikesInfo.likedByMe ? -1 : 1),
         likedByMe: !currentLikesInfo.likedByMe,
