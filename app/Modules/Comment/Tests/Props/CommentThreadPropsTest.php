@@ -83,6 +83,31 @@ it('lists the comments of a post ten at a time in descending id order with their
         ->and($firstPage->nextCursor()?->encode())->toBeString();
 });
 
+it('lists the replies of a comment oldest first and pages them in ascending id order', function (): void {
+    $parentComment = createComment();
+    $replyIds = array_map(static fn (Comment $comment): int => $comment->id, createCommentsOn($parentComment, 12));
+    $user = createUser();
+
+    $firstPage = resolveCommentThread('replies', [CommentThreadProps::REPLIES_PARAMETER => $parentComment->id], $user);
+    $secondPage = resolveCommentThread('replies', [
+        CommentThreadProps::REPLIES_PARAMETER => $parentComment->id,
+        CommentThreadProps::REPLIES_CURSOR => $firstPage->nextCursor()?->encode(),
+    ], $user);
+
+    expect(array_column($firstPage->items(), 'id'))->toBe(array_slice($replyIds, 0, 10))
+        ->and(array_column($secondPage->items(), 'id'))->toBe(array_slice($replyIds, 10))
+        ->and($secondPage->hasMorePages())->toBeFalse();
+});
+
+it('keeps listing the comments of a post newest first', function (): void {
+    $post = createPost();
+    $commentIds = array_map(static fn (Comment $comment): int => $comment->id, createCommentsOn($post, 3));
+
+    $page = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
+
+    expect(array_column($page->items(), 'id'))->toBe(array_reverse($commentIds));
+});
+
 it('serves the next page from the comments cursor and ends without a further cursor', function (): void {
     $post = createPost();
 
