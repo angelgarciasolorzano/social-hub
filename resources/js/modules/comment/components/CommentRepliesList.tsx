@@ -1,5 +1,5 @@
 import type { Dispatch, JSX, SetStateAction } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useIntersectionObserver } from "usehooks-ts";
 
@@ -32,6 +32,8 @@ function CommentRepliesList({
   const { scrollAreaRef, viewport } = useCommentScrollAreaViewport();
 
   const loadMoreTimer = useRef<number | null>(null);
+
+  const [scrollToEndRequest, setScrollToEndRequest] = useState<number>(0);
 
   const {
     commentsPage,
@@ -80,8 +82,16 @@ function CommentRepliesList({
   useEffect(() => {
     if (refreshCounter === 0) return;
 
-    uploadedComments();
+    uploadedComments(() => {
+      setScrollToEndRequest((currentRequest) => currentRequest + 1);
+    });
   }, [refreshCounter, uploadedComments]);
+
+  useEffect(() => {
+    if (scrollToEndRequest === 0 || viewport === null) return;
+
+    viewport.scrollTo({ behavior: "smooth", top: viewport.scrollHeight });
+  }, [scrollToEndRequest, viewport]);
 
   if (isRefreshing && !commentsPage) {
     return (
