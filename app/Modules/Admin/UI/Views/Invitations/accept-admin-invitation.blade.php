@@ -134,7 +134,7 @@
                             {{ $requiresRegistration ? __('Create account and accept invitation') : __('Accept invitation') }}
                         </span>
 
-                        <span wire:loading wire:target="accept" class="inline-flex items-center gap-2">
+                        <span wire:loading.inline-flex wire:target="accept" class="items-center gap-2" role="status">
                             <x-lucide-loader-circle class="size-4 animate-spin" aria-hidden="true" />
                             {{ __('Processing invitation…') }}
                         </span>
