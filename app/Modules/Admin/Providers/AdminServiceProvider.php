@@ -15,6 +15,8 @@ class AdminServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
+        $this->loadRoutesFrom(__DIR__.'/../routes/invitations.php');
+
         $this->loadViewsFrom(__DIR__.'/../UI/Views', 'admin');
 
         if ($this->app->runningInConsole()) {
