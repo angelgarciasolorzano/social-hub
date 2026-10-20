@@ -24,6 +24,7 @@ import { validImage } from "@/shared/lib";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
+import { COMMENT_CONTENT_MAX_LENGTH } from "../../constants/commentContent";
 import type { CommentTypeValues } from "../../enums/commentType";
 import type { CommentContextPreview, CommentFormData } from "../../types/comment";
 import CommentForm from "../forms/CommentForm";
@@ -58,6 +59,8 @@ function CommentInputDialog(props: CommentInputDialogProps): JSX.Element {
   });
 
   const formId = `comment-form-${commentableType}-${commentableId}`;
+
+  const isContentTooLong = formComment.data.content.length > COMMENT_CONTENT_MAX_LENGTH;
 
   return (
     <Dialog onOpenChange={onOpenChange} open={openModalComment}>
@@ -117,7 +120,7 @@ function CommentInputDialog(props: CommentInputDialogProps): JSX.Element {
           <Button
             type="submit"
             className="cursor-pointer"
-            disabled={formComment.processing}
+            disabled={formComment.processing || isContentTooLong}
             form={formId}
           >
             {formComment.processing ? (
