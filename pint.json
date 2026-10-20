@@ -1,4 +1,7 @@
 {
+  "notPath": [
+    "app/Modules/Admin/UI/Views/Email/adminInvitation.blade.php"
+  ],
   "rules": {
     "Pint/laravel_blade": true
   }

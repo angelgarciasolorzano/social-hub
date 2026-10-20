@@ -12,7 +12,6 @@ use App\User\Models\User;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
@@ -40,25 +39,11 @@ class ListUsers extends ListRecords
                 ->schema([
                     Select::make('email')
                         ->label('Email address')
-                        ->helperText('Search for a registered user or enter a new email address.')
+                        ->helperText('Search by name or email. To invite someone new, enter their full email and select the invite option.')
                         ->required()
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search): array => $this->getInvitationUserSearchResults($search))
-                        ->getOptionLabelUsing(fn (?string $value): ?string => $this->getInvitationUserOptionLabel($value))
-                        ->createOptionModalHeading('Enter an unregistered email address')
-                        ->createOptionForm([
-                            TextInput::make('email')
-                                ->label('Email address')
-                                ->email()
-                                ->required()
-                                ->maxLength(255),
-                        ])
-                        ->createOptionUsing(static function (array $data): string {
-                            /** @var array{email: string} $validatedData */
-                            $validatedData = $data;
-
-                            return $validatedData['email'];
-                        }),
+                        ->getOptionLabelUsing(fn (?string $value): ?string => $this->getInvitationUserOptionLabel($value)),
                 ])
                 ->action(function (array $data, AdminInvitationService $adminInvitationService): void {
                     $inviter = Filament::auth()->user();
@@ -103,7 +88,7 @@ class ListUsers extends ListRecords
             return [];
         }
 
-        return User::query()
+        $searchResults = User::query()
             ->where(function (Builder $query) use ($search): void {
                 $query
                     ->where('email', 'like', "%{$search}%")
@@ -116,6 +101,24 @@ class ListUsers extends ListRecords
                 $user->email => "{$user->name} ({$user->email})",
             ])
             ->all();
+
+        if (filter_var($search, FILTER_VALIDATE_EMAIL) === false) {
+            return $searchResults;
+        }
+
+        $registeredUser = User::query()
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower($search)], 'and')
+            ->first(['email', 'name']);
+
+        if ($registeredUser instanceof User) {
+            $searchResults[$registeredUser->email] = "{$registeredUser->name} ({$registeredUser->email})";
+
+            return $searchResults;
+        }
+
+        $searchResults[$search] = "Invite new email address: {$search}";
+
+        return $searchResults;
     }
 
     private function getInvitationUserOptionLabel(?string $email): ?string
