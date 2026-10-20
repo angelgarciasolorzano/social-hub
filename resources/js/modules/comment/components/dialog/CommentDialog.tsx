@@ -26,11 +26,16 @@ import type { CommentContextPreview } from "../../types/comment";
 import CommentList from "../CommentList";
 
 interface CommentDialogProps {
+  onCommentsCountChange: (delta: number) => void;
   postDetail: Post;
   user: User;
 }
 
-function CommentDialog({ postDetail, user }: CommentDialogProps): JSX.Element {
+function CommentDialog({
+  onCommentsCountChange,
+  postDetail,
+  user,
+}: CommentDialogProps): JSX.Element {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -55,14 +60,18 @@ function CommentDialog({ postDetail, user }: CommentDialogProps): JSX.Element {
 
         <div className="flex flex-1 gap-4 overflow-hidden">
           <CommentDialogPublication postDetail={postDetail} user={user} />
-          <CommentDialogContent postDetail={postDetail} user={user} />
+          <CommentDialogContent
+            onCommentsCountChange={onCommentsCountChange}
+            postDetail={postDetail}
+            user={user}
+          />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-type CommentDialogPublicationProps = CommentDialogProps;
+type CommentDialogPublicationProps = Pick<CommentDialogProps, "postDetail" | "user">;
 
 function CommentDialogPublication({ postDetail, user }: CommentDialogPublicationProps) {
   return (
@@ -76,7 +85,11 @@ function CommentDialogPublication({ postDetail, user }: CommentDialogPublication
 
 type CommentDialogContentProps = CommentDialogProps;
 
-function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
+function CommentDialogContent({
+  onCommentsCountChange,
+  postDetail,
+  user,
+}: CommentDialogContentProps) {
   const previewContext: CommentContextPreview = {
     authorName: user.name,
     authorProfilePicture: user.profilePicture,
@@ -91,7 +104,11 @@ function CommentDialogContent({ postDetail, user }: CommentDialogContentProps) {
 
       <Separator />
 
-      <CommentList postId={postDetail.id} previewContext={previewContext} />
+      <CommentList
+        onCommentsCountChange={onCommentsCountChange}
+        postId={postDetail.id}
+        previewContext={previewContext}
+      />
     </div>
   );
 }

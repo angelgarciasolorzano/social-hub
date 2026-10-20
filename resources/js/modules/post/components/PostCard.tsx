@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { FaRegComment } from "react-icons/fa";
 import { FaRegHeart } from "react-icons/fa6";
 import { RiTimeZoneLine } from "react-icons/ri";
@@ -6,9 +8,12 @@ import dayjs from "dayjs";
 
 import { CommentDialog } from "@/modules/comment";
 
+import { togglePost } from "@/shared/wayfinder/actions/App/Modules/Like/Controllers/LikeController";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
-import { Button } from "@/shared/components/shadcn/ui/button";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
+
+import { useLikeToggle } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
 
@@ -18,6 +23,7 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 
 import postPlaceholder from "../assets/post-placeholder.png";
 import type { Post } from "../types/post";
+import PostLikeButton from "./PostLikeButton";
 
 interface PostCardProps {
   post: Post;
@@ -26,6 +32,13 @@ interface PostCardProps {
 
 function PostCard({ post, user }: PostCardProps) {
   const createdAt = dayjs(post.createdAt);
+
+  const [commentsCount, setCommentsCount] = useState<number>(post.commentsCount);
+
+  const { error, isPending, likesInfo, toggleLike } = useLikeToggle(
+    togglePost(post.id).url,
+    post.likesInfo,
+  );
 
   return (
     <article className="grid gap-2 rounded-xl border p-3 shadow-sm dark:border-[#343434] dark:bg-[#1D1D1D]/30">
@@ -71,23 +84,32 @@ function PostCard({ post, user }: PostCardProps) {
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span className="flex items-center gap-1">
           <FaRegHeart className="h-4 w-4" />
-          122 me gustas
+          {likesInfo.count} {likesInfo.count === 1 ? "me gusta" : "me gustas"}
         </span>
 
         <span className="flex items-center gap-1">
           <FaRegComment className="h-4 w-4" />
-          6000 comentarios
+          {commentsCount} {commentsCount === 1 ? "comentario" : "comentarios"}
         </span>
       </div>
 
       <Separator className="my-1" />
 
       <footer className="flex items-center justify-between">
-        <Button className="cursor-pointer" variant="outline">
-          Me gusta
-        </Button>
+        <PostLikeButton
+          error={error}
+          isPending={isPending}
+          likedByMe={likesInfo.likedByMe}
+          onToggle={toggleLike}
+        />
 
-        <CommentDialog postDetail={post} user={user} />
+        <CommentDialog
+          onCommentsCountChange={(delta) => {
+            setCommentsCount((currentCount) => Math.max(0, currentCount + delta));
+          }}
+          postDetail={post}
+          user={user}
+        />
       </footer>
     </article>
   );
