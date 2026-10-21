@@ -6,6 +6,9 @@ namespace App\User\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\User\Enums\UserImageType;
+use App\User\Events\AccountDeleted;
+use App\User\Events\AccountImageUpdated;
+use App\User\Events\AccountUpdated;
 use App\User\Models\User;
 use App\User\Requests\UserImageUpdateRequest;
 use App\User\Requests\UserUpdateRequest;
@@ -40,6 +43,10 @@ class UserController extends Controller
 
         $user->save();
 
+        if ($user->wasChanged()) {
+            event(AccountUpdated::fromSavedChanges($user));
+        }
+
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Datos actualizados correctamente.',
@@ -57,6 +64,8 @@ class UserController extends Controller
         Auth::logout();
 
         $user->delete();
+
+        event(new AccountDeleted($user));
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -76,6 +85,8 @@ class UserController extends Controller
                 'message' => $userImageType->errorMessage(),
             ])->back();
         }
+
+        event(new AccountImageUpdated($user, $userImageType));
 
         return Inertia::flash([
             'type' => 'success',

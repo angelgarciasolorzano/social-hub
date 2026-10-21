@@ -19,4 +19,12 @@ final readonly class AccountUpdated
         public User $user,
         public array $changedAttributes,
     ) {}
+
+    /**
+     * Build the event from the attributes the last save changed, leaving out the timestamp.
+     */
+    public static function fromSavedChanges(User $user): self
+    {
+        return new self($user, array_values(array_diff(array_keys($user->getChanges()), ['updated_at'])));
+    }
 }

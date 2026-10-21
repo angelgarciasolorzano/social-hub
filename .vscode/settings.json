@@ -42,5 +42,18 @@
   "[php]": {
     "editor.defaultFormatter": "laravel.vscode-laravel",
     "editor.formatOnSave": true
-  }
+  },
+  "intelephense.files.exclude": [
+    "**/.git/**",
+    "**/.svn/**",
+    "**/.hg/**",
+    "**/CVS/**",
+    "**/.DS_Store/**",
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**/{Tests,tests}/**",
+    "**/.history/**",
+    "**/vendor/**/vendor/**",
+    "**/vendor/_laravel_ide/**"
+  ]
 }

@@ -429,7 +429,7 @@ Crear en `app/User/Events/`: `AccountUpdated` (usuario y `list<string> $changedA
 
 ### TASK-018: Despachar los eventos de cuenta desde AccountSettings y UserController
 
-`AccountSettingsController::update()` y `UserController::update()` despachan `AccountUpdated` con las claves de `getChanges()` sin `updated_at`, solo si hubo cambios. `UserController::updateImage()` despacha `AccountImageUpdated` tras subir la imagen. `UserController::destroy()` despacha `AccountDeleted` antes de `delete()`.
+`AccountSettingsController::update()` y `UserController::update()` despachan `AccountUpdated` con las claves de `getChanges()` sin `updated_at`, solo si hubo cambios. `UserController::updateImage()` despacha `AccountImageUpdated` tras subir la imagen. `UserController::destroy()` despacha `AccountDeleted` después de `delete()`, solo si el borrado tuvo éxito (la instancia en memoria conserva su id). Las dos actualizaciones usan `AccountUpdated::fromSavedChanges($user)` cuando `$user->wasChanged()`; ese constructor se agregó al evento de TASK-017 para no repetir el cálculo en los dos controladores.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -442,6 +442,7 @@ Crear en `app/User/Events/`: `AccountUpdated` (usuario y `list<string> $changedA
 **writeScope:**
 - `app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php`
 - `app/User/Controllers/UserController.php`
+- `app/User/Events/AccountUpdated.php`
 
 **validateCommand:** `rtk php artisan test --compact app/User/Modules/AccountSettings/Tests`
 
