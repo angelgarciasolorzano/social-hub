@@ -9,15 +9,27 @@ use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
 use Filament\Panel;
 use Illuminate\Support\Facades\Artisan;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
+
+function runBootstrapAdmin(string $email, ?User $user = null): int
+{
+    $arguments = ['email' => $email];
+
+    if ($user instanceof User) {
+        $arguments['--actor'] = $user->email;
+    }
+
+    return Artisan::call('admin:bootstrap-admin', $arguments);
+}
 
 it('promotes a verified user to the base and all reader roles', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $user->email]);
+    $exitCode = runBootstrapAdmin($user->email, $user);
     $commandOutput = Artisan::output();
     $bootstrappedUser = $user->refresh();
 
@@ -41,7 +53,7 @@ it('promotes a verified user to the base and all reader roles', function (): voi
 it('rejects an email that does not belong to an existing user', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => 'missing@example.com']);
+    $exitCode = runBootstrapAdmin('missing@example.com', createUser());
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('No user was found with the email missing@example.com.')
@@ -53,7 +65,7 @@ it('rejects a user whose email has not been verified', function (): void {
 
     $user = UserFactory::new()->unverified()->createOne();
 
-    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $user->email]);
+    $exitCode = runBootstrapAdmin($user->email, createUser());
     $user->refresh();
 
     expect($exitCode)->toBe(Command::FAILURE)
@@ -70,20 +82,21 @@ it('refuses to bootstrap when a user already has admin.access', function (): voi
 
     $candidate = createUser();
 
-    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $candidate->email]);
+    $exitCode = runBootstrapAdmin($candidate->email, $candidate);
     $candidate->refresh();
     $user->refresh();
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('An administrator with admin.access already exists.')
         ->and($candidate->roles()->exists())->toBeFalse()
+        ->and(Activity::query()->exists())->toBeFalse()
         ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue();
 });
 
 it('requires the Admin authorization catalog to be seeded first', function (): void {
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $user->email]);
+    $exitCode = runBootstrapAdmin($user->email, $user);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::FAILURE)
@@ -101,10 +114,70 @@ it('requires every bootstrap role to exist in the Admin guard', function (): voi
 
     $user = createUser();
 
-    $exitCode = Artisan::call('admin:bootstrap-admin', ['email' => $user->email]);
+    $exitCode = runBootstrapAdmin($user->email, $user);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('Admin roles are not initialized.')
         ->and($user->roles()->exists())->toBeFalse();
+});
+
+it('records the bootstrap with the actor and the assigned roles', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $actor = createUser();
+    $user = createUser();
+
+    runBootstrapAdmin($user->email, $actor);
+
+    $activity = Activity::query()->where('event', 'admin.bootstrapped')->sole();
+
+    expect($activity)
+        ->log_name->toBe('admin')
+        ->subject_id->toBe($user->id)
+        ->causer_id->toBe($actor->id)
+        ->and($activity->properties?->get('roles'))->toBe([
+            AdminRole::Admin->value,
+            AdminRole::AdminDashboardReader->value,
+            AdminRole::AdminUsersReader->value,
+            AdminRole::AdminPostsReader->value,
+        ]);
+});
+
+it('accepts the promoted user as their own actor', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+
+    runBootstrapAdmin($user->email, $user);
+
+    expect(Activity::query()->where('event', 'admin.bootstrapped')->sole())
+        ->subject_id->toBe($user->id)
+        ->causer_id->toBe($user->id);
+});
+
+it('rejects the command without --actor and changes nothing', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+
+    $exitCode = runBootstrapAdmin($user->email);
+
+    expect($exitCode)->toBe(Command::INVALID)
+        ->and(Artisan::output())->toContain('The --actor option is required')
+        ->and($user->roles()->exists())->toBeFalse();
+});
+
+it('rejects an unverified actor and changes nothing', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $actor = UserFactory::new()->unverified()->createOne();
+
+    $exitCode = runBootstrapAdmin($user->email, $actor);
+
+    expect($exitCode)->toBe(Command::FAILURE)
+        ->and(Artisan::output())->toContain('must have a verified email')
+        ->and($user->roles()->exists())->toBeFalse()
+        ->and(Activity::query()->exists())->toBeFalse();
 });

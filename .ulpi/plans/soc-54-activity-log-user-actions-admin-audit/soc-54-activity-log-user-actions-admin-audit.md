@@ -521,7 +521,7 @@ En `InteractsWithAdminCatalog` agregar `actorEmail(mixed $actorOption): ?string`
 
 ### TASK-022: Agregar --actor y auditoría a admin:bootstrap-admin
 
-`admin:bootstrap-admin` exige `--actor`, resuelto con `requiresAdminAccess: false` (todavía no existe ningún administrador): debe existir y estar verificado y puede ser el mismo usuario promovido. Registra el arranque con causer el actor, subject el usuario promovido y propiedad `roles` con los cuatro roles asignados. Actualizar sus pruebas.
+`admin:bootstrap-admin` exige `--actor`, resuelto con `requiresAdminAccess: false` (todavía no existe ningún administrador): debe existir y estar verificado y puede ser el mismo usuario promovido. Registra el arranque con causer el actor, subject el usuario promovido y propiedad `roles` con los cuatro roles asignados. El comando pasa a usar `InteractsWithAdminCatalog` (para `actorEmail()`/`resolveActor()`), por lo que su constante privada `GUARD` se reemplaza por la del concern, con el mismo valor `admin`. Actualizar sus pruebas.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
