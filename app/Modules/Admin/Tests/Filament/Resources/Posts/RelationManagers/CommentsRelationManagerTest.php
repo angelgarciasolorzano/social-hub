@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Admin\Filament\Resources\Posts\RelationManagers\CommentsRelationManager;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
@@ -27,32 +28,6 @@ function commentsRelationManagerFor(Post $post): Testable
         'ownerRecord' => $post,
         'pageClass' => ViewPost::class,
     ]);
-}
-
-/**
- * @return array<string, mixed>
- */
-function mountedCommentViewActionData(CommentsRelationManager $commentsRelationManager): array
-{
-    $mountedAction = $commentsRelationManager->mountedActions[0] ?? null;
-
-    throw_unless(is_array($mountedAction), LogicException::class, 'The comments relation must mount a view action.');
-
-    /** @var array<int|string, mixed> $mountedAction */
-    $data = $mountedAction['data'] ?? null;
-
-    throw_unless(is_array($data), LogicException::class, 'The comment view action must include its record data.');
-
-    /** @var array<int|string, mixed> $data */
-    $stringKeyedData = [];
-
-    foreach ($data as $key => $value) {
-        if (is_string($key)) {
-            $stringKeyedData[$key] = $value;
-        }
-    }
-
-    return $stringKeyedData;
 }
 
 beforeEach(function (): void {
@@ -88,6 +63,18 @@ it('lists only the selected post comments with their author and creation date', 
         ->assertSeeText($user->name)
         ->assertSeeText($selectedComment->created_at?->format('M j, Y') ?? 'invalid creation date')
         ->assertDontSeeText('Foreign post comment sentinel');
+});
+
+it('truncates long comment previews in the comments table', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $content = str_repeat('This comment preview should stay concise in the table. ', 5);
+    createCommentOn($post, attributes: ['content' => $content]);
+
+    commentsRelationManagerFor($post)
+        ->assertSeeText(rtrim(mb_substr($content, 0, 70)))
+        ->assertDontSeeText($content);
 });
 
 it('paginates only the selected posts comments', function (): void {
@@ -148,43 +135,149 @@ it('paginates only the selected posts comments', function (): void {
         ->toBe([FilamentTableRecords::recordKey($firstTargetComment)]);
 });
 
-it('opens a comment with its author in the view action', function (): void {
+it('filters the selected posts comments by creation date', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $otherPost = createPost();
+    $commentInsideRange = createCommentOn($post, attributes: [
+        'content' => 'Comment inside date range sentinel',
+        'created_at' => '2026-01-15 12:00:00',
+    ]);
+    createCommentOn($post, attributes: [
+        'content' => 'Comment outside date range sentinel',
+        'created_at' => '2026-02-01 12:00:00',
+    ]);
+    createCommentOn($otherPost, attributes: [
+        'content' => 'Foreign post comment inside date range sentinel',
+        'created_at' => '2026-01-16 12:00:00',
+    ]);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.created_at.created_from', '2026-01-15')
+        ->set('tableFilters.created_at.created_until', '2026-01-20');
+    $table = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($table, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($commentInsideRange)]);
+});
+
+it('filters the selected posts comments by author', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $user = createUser();
+    $otherAuthor = createUser();
+    $post = createPost();
+    $otherPost = createPost();
+    $selectedComment = createCommentOn($post, $user, ['content' => 'Selected author comment sentinel']);
+    createCommentOn($post, $otherAuthor, ['content' => 'Other author comment sentinel']);
+    createCommentOn($otherPost, $user, ['content' => 'Foreign post author comment sentinel']);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.author.value', $user->getKey());
+    $table = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($table, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($selectedComment)]);
+});
+
+it('filters the selected posts comments by reply presence', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $post = createPost();
+    $commentWithReplies = createCommentOn($post, attributes: ['content' => 'Comment with replies sentinel']);
+    createCommentOn($commentWithReplies, attributes: ['content' => 'Reply for selected comment sentinel']);
+    $commentWithoutReplies = createCommentOn($post, attributes: ['content' => 'Comment without replies sentinel']);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.has_replies.value', true);
+    $withRepliesTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($withRepliesTable, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($commentWithReplies)]);
+
+    $testable->set('tableFilters.has_replies.value', false);
+    $withoutRepliesTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($withoutRepliesTable, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($commentWithoutReplies)]);
+});
+
+it('combines comment filters without showing other posts comments', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $user = createUser();
+    $otherAuthor = createUser();
+    $post = createPost();
+    $otherPost = createPost();
+
+    $matchingComment = createCommentOn($post, $user, [
+        'content' => 'Comment matching all filters sentinel',
+        'created_at' => '2026-01-15 12:00:00',
+    ]);
+    createCommentOn($matchingComment, attributes: ['content' => 'Reply for matching comment sentinel']);
+
+    createCommentOn($post, $otherAuthor, [
+        'content' => 'Comment with another author sentinel',
+        'created_at' => '2026-01-16 12:00:00',
+    ]);
+    createCommentOn($post, $user, [
+        'content' => 'Comment with no replies sentinel',
+        'created_at' => '2026-01-17 12:00:00',
+    ]);
+    createCommentOn($otherPost, $user, [
+        'content' => 'Foreign post matching comment filters sentinel',
+        'created_at' => '2026-01-18 12:00:00',
+    ]);
+
+    $testable = commentsRelationManagerFor($post)
+        ->set('tableFilters.created_at.created_from', '2026-01-15')
+        ->set('tableFilters.created_at.created_until', '2026-01-20')
+        ->set('tableFilters.author.value', $user->getKey())
+        ->set('tableFilters.has_replies.value', true);
+    $filteredTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($filteredTable, Comment::class))
+        ->toBe([FilamentTableRecords::recordKey($matchingComment)]);
+
+    $testable
+        ->set('tableFilters.created_at.created_from', '2026-03-01')
+        ->set('tableFilters.created_at.created_until', '2026-03-05');
+    $emptyTable = FilamentTableRecords::table($testable);
+
+    expect(FilamentTableRecords::visibleRecordKeys($emptyTable, Comment::class))
+        ->toBeEmpty();
+});
+
+it('links each comment to its dedicated detail page', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $user = createUser();
     $post = createPost();
+    $otherPost = createPost();
 
     $selectedComment = createComment($user, [
         'commentable_id' => $post->getKey(),
         'commentable_type' => $post->getMorphClass(),
         'content' => 'Selected root comment sentinel',
     ]);
-
-    $testable = commentsRelationManagerFor($post)
-        ->assertOk()
-        ->call('mountAction', 'view', [], [
-            'table' => true,
-            'recordKey' => $selectedComment->getKey(),
-        ]);
-
-    $component = $testable->instance();
-
-    throw_unless($component instanceof CommentsRelationManager, LogicException::class, 'The comments relation must expose its mounted view action.');
-
-    /** @var CommentsRelationManager $component */
-    $viewActionData = mountedCommentViewActionData($component);
-
-    expect($viewActionData)->toMatchArray([
-        'content' => 'Selected root comment sentinel',
-        'user' => ['name' => $user->name],
+    $foreignComment = createComment($user, [
+        'commentable_id' => $otherPost->getKey(),
+        'commentable_type' => $otherPost->getMorphClass(),
+        'content' => 'Foreign post comment sentinel',
     ]);
+
+    commentsRelationManagerFor($post)
+        ->assertOk()
+        ->assertSee(CommentResource::getUrl('view', ['record' => $selectedComment]), false)
+        ->assertDontSee(CommentResource::getUrl('view', ['record' => $foreignComment]), false);
 });
 
-it('opens a comment with its replies and their authors in the view action', function (): void {
-    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+it('loads the selected comment details after following its detail link', function (): void {
+    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+    $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
 
     $user = createUser();
-    $replyAuthor = createUser();
     $post = createPost();
 
     $selectedComment = createComment($user, [
@@ -193,39 +286,15 @@ it('opens a comment with its replies and their authors in the view action', func
         'content' => 'Selected root comment for replies sentinel',
     ]);
 
-    createComment($replyAuthor, [
-        'commentable_id' => $selectedComment->getKey(),
-        'commentable_type' => $selectedComment->getMorphClass(),
-        'content' => 'Selected reply sentinel',
-    ]);
+    $detailUrl = CommentResource::getUrl('view', ['record' => $selectedComment]);
 
-    $testable = commentsRelationManagerFor($post)
+    commentsRelationManagerFor($post)
         ->assertOk()
-        ->call('mountAction', 'view', [], [
-            'table' => true,
-            'recordKey' => $selectedComment->getKey(),
-        ]);
+        ->assertSee($detailUrl, false);
 
-    $component = $testable->instance();
-
-    throw_unless($component instanceof CommentsRelationManager, LogicException::class, 'The comments relation must expose its mounted view action.');
-
-    /** @var CommentsRelationManager $component */
-    $viewActionData = mountedCommentViewActionData($component);
-
-    $replies = $viewActionData['replies'] ?? null;
-    $replyData = is_array($replies) ? ($replies[0] ?? null) : null;
-
-    throw_unless(is_array($replies) && is_array($replyData), LogicException::class, 'The selected comment must include its reply data.');
-
-    /** @var array<int, mixed> $replies */
-    /** @var array<string, mixed> $replyData */
-    expect($replies)->toHaveCount(1)
-        ->and($replyData)
-        ->toMatchArray([
-            'content' => 'Selected reply sentinel',
-            'user' => ['name' => $replyAuthor->name],
-        ]);
+    $this->get($detailUrl)
+        ->assertOk()
+        ->assertSeeText('Selected root comment for replies sentinel');
 });
 
 it('does not load replies while listing comments', function (): void {
@@ -280,11 +349,12 @@ it('keeps the comment view action read only', function (): void {
 
     throw_unless($viewAction instanceof ViewAction, LogicException::class, 'The comments relation must expose its view action.');
 
-    /** @var ViewAction $viewAction */
     expect($recordActions)
         ->toHaveCount(1)
-        ->and($viewAction->getModalHeading())
-        ->toBe('Comment details')
+        ->and($viewAction->hasModal())
+        ->toBeFalse()
+        ->and($viewAction->hasUrl())
+        ->toBeTrue()
         ->and($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getToolbarActions())

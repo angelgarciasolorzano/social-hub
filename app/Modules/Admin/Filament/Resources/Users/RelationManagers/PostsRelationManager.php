@@ -14,6 +14,7 @@ use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -54,9 +55,20 @@ class PostsRelationManager extends RelationManager
                     'created_at',
                 ]))
             ->columns([
+                ImageColumn::make('post_image')
+                    ->label('Image')
+                    ->state(function (Post $record): ?string {
+                        $imageUrl = $record->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+                        return filled($imageUrl) ? url($imageUrl) : null;
+                    })
+                    ->defaultImageUrl(asset('default-cover.svg'))
+                    ->imageSize(64)
+                    ->square()
+                    ->alt('Post image'),
                 TextColumn::make('content')
                     ->label('Post')
-                    ->limit(100)
+                    ->limit(70)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('created_at')

@@ -16,17 +16,20 @@ use LogicException;
 final class FilamentTableRecords
 {
     /**
-     * @param  Testable<Component>  $testable
-     * @return HasTable&Component
+     * @template TComponent of Component
+     *
+     * @param  Testable<TComponent>  $testable
+     * @return HasTable&TComponent
      */
     public static function table(Testable $testable): HasTable
     {
         $component = $testable->instance();
 
-        throw_unless($component instanceof HasTable, LogicException::class, 'The Livewire component must expose a Filament table.');
+        if ($component instanceof HasTable) {
+            return $component;
+        }
 
-        /** @var HasTable&Component $component */
-        return $component;
+        throw new LogicException('The Livewire component must expose a Filament table.');
     }
 
     /**
@@ -49,7 +52,7 @@ final class FilamentTableRecords
             throw_unless(
                 $record instanceof $recordClass,
                 LogicException::class,
-                sprintf('The Filament table must only return [%s] records.', class_basename($recordClass)),
+                \sprintf('The Filament table must only return [%s] records.', class_basename($recordClass)),
             );
 
             return $record;
@@ -72,7 +75,7 @@ final class FilamentTableRecords
     {
         $key = $model->getKey();
 
-        throw_unless(is_int($key) || is_string($key), LogicException::class, 'Table records must use string or integer keys.');
+        throw_unless(\is_int($key) || \is_string($key), LogicException::class, 'Table records must use string or integer keys.');
 
         return (string) $key;
     }

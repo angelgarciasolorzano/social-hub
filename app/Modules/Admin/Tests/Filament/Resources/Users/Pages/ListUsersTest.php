@@ -5,13 +5,25 @@ declare(strict_types=1);
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
+use App\Modules\Admin\Mail\AdminInvitationMail;
+use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
 use Filament\Tables\Testing\TestsFilters;
+use Illuminate\Support\Facades\Mail;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use LogicException;
 use Tests\TestCase;
+
+/**
+ * @return Testable<ListUsers>
+ */
+function listUsersPageForTesting(): Testable
+{
+    return Livewire::test(ListUsers::class);
+}
 
 beforeEach(function (): void {
     /** @var TestCase $testCase */
@@ -264,4 +276,96 @@ it('denies the users list when the admin lacks users view any permission', funct
 
     Livewire::test(ListUsers::class)
         ->assertForbidden();
+});
+
+it('shows the invitation action only to users with the provisioner permission', function (): void {
+    Mail::fake();
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersProvisioner,
+    );
+
+    listUsersPageForTesting()
+        ->assertSee('Invite administrator');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersReader,
+    );
+
+    listUsersPageForTesting()
+        ->assertDontSee('Invite administrator')
+        ->call('mountAction', 'inviteAdmin')
+        ->call('callMountedAction');
+
+    expect(AdminInvitation::query()->exists())->toBeFalse();
+
+    Mail::assertNothingOutgoing();
+});
+
+it('invites a selected existing user without changing their credentials or roles', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersProvisioner,
+    );
+    $targetUser = createUser();
+    $targetUser->assignRole(AdminRole::AdminPostsReader->value);
+
+    $originalPassword = $targetUser->password;
+    Mail::fake();
+
+    listUsersPageForTesting()
+        ->call('mountAction', 'inviteAdmin')
+        ->set('mountedActions.0.data.email', $targetUser->email)
+        ->call('callMountedAction');
+
+    $adminInvitation = AdminInvitation::query()
+        ->where('email', $targetUser->email)
+        ->firstOrFail();
+    $targetUser->refresh();
+
+    expect($adminInvitation->target_user_id)
+        ->toBe($targetUser->getKey())
+        ->and($targetUser->password)
+        ->toBe($originalPassword)
+        ->and($targetUser->hasRole(AdminRole::AdminPostsReader->value, 'admin'))
+        ->toBeTrue()
+        ->and($targetUser->hasRole(AdminRole::Admin->value, 'admin'))
+        ->toBeFalse();
+
+    Mail::assertQueued(
+        AdminInvitationMail::class,
+        static fn (AdminInvitationMail $adminInvitationMail): bool => $adminInvitationMail->hasTo($targetUser->email),
+    );
+});
+
+it('invites a new email without creating its user account', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersProvisioner,
+    );
+    $newEmail = 'new-admin@example.test';
+    Mail::fake();
+
+    listUsersPageForTesting()
+        ->call('mountAction', 'inviteAdmin')
+        ->set('mountedActions.0.data.email', $newEmail)
+        ->call('callMountedAction');
+
+    $adminInvitation = AdminInvitation::query()
+        ->where('email', $newEmail)
+        ->firstOrFail();
+
+    expect($adminInvitation->target_user_id)->toBeNull()
+        ->and(User::query()->where('email', $newEmail)->exists())->toBeFalse();
+
+    Mail::assertQueued(
+        AdminInvitationMail::class,
+        static fn (AdminInvitationMail $adminInvitationMail): bool => $adminInvitationMail->hasTo($newEmail),
+    );
 });

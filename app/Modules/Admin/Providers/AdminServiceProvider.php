@@ -13,6 +13,12 @@ class AdminServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+
+        $this->loadRoutesFrom(__DIR__.'/../routes/invitations.php');
+
+        $this->loadViewsFrom(__DIR__.'/../UI/Views', 'admin');
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 AdminBootstrapCommand::class,

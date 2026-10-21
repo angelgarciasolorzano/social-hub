@@ -7,7 +7,8 @@ use App\Modules\Admin\Enums\AdminRole;
 
 it('redirects guests to the admin login page', function (): void {
     $this->get('/admin')
-        ->assertRedirect('/admin/login');
+        ->assertRedirect('/admin/login')
+        ->assertSessionHas('url.intended');
 });
 
 it('allows authorized administrators to enter the admin panel', function (): void {

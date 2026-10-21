@@ -127,7 +127,9 @@ it('derives active expired and revoked states including the expiry boundary', fu
         ->and($statusColumn->record($boundaryDevice)->getState())
         ->toBe('Expired')
         ->and($statusColumn->record($revokedDevice)->getState())
-        ->toBe('Revoked');
+        ->toBe('Revoked')
+        ->and($statusColumn->getColor('Revoked', $revokedDevice))
+        ->toBe('danger');
 });
 
 it('registers the trusted device relation on the user resource', function (): void {

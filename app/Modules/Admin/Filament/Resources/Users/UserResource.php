@@ -8,11 +8,11 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\PostsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
+use App\Modules\Admin\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Modules\Admin\Filament\Resources\Users\Tables\UsersTable;
 use App\Modules\Admin\Filament\Widgets\RegistrationSummaryWidget;
 use App\User\Models\User;
 use BackedEnum;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationGroup;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -37,14 +37,7 @@ class UserResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextEntry::make('name'),
-                TextEntry::make('email'),
-                TextEntry::make('email_verified_at')->dateTime(),
-                TextEntry::make('created_at')->dateTime(),
-                TextEntry::make('last_login_at')->dateTime(),
-            ]);
+        return UserInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table

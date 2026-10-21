@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Posts\RelationManagers;
 
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use DateTimeInterface;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
-use Filament\Infolists\Components\TextEntry;
+use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -49,12 +51,47 @@ class CommentsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('content')
                     ->label('Content')
-                    ->limit(100),
+                    ->limit(70),
                 TextColumn::make('user.name')
                     ->label('Author'),
                 TextColumn::make('created_at')
                     ->label('Created at')
                     ->dateTime(),
+            ])
+            ->filters([
+                Filter::make('created_at')
+                    ->label('Creation date')
+                    ->schema([
+                        DatePicker::make('created_from')->label('From'),
+                        DatePicker::make('created_until')->label('Until'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'] ?? null,
+                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
+                                ? $builder->whereDate('created_at', '>=', $date)
+                                : $builder,
+                        )
+                        ->when(
+                            $data['created_until'] ?? null,
+                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
+                                ? $builder->whereDate('created_at', '<=', $date)
+                                : $builder,
+                        )),
+                SelectFilter::make('author')
+                    ->label('Author')
+                    ->relationship('user', 'name')
+                    ->searchable(),
+                TernaryFilter::make('has_replies')
+                    ->label('Reply presence')
+                    ->placeholder('All comments')
+                    ->trueLabel('Has replies')
+                    ->falseLabel('No replies')
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereHas('comments'),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('comments'),
+                        blank: fn (Builder $query): Builder => $query,
+                    ),
             ])
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
@@ -62,66 +99,8 @@ class CommentsRelationManager extends RelationManager
             ->headerActions([])
             ->recordActions([
                 ViewAction::make()
-                    ->modalHeading('Comment details')
-                    ->mutateRecordDataUsing(function (array $data, Comment $comment): array {
-                        $comment->loadMissing('comments.user:id,name');
-
-                        $data['user'] = ['name' => $comment->user->name];
-
-                        $data['replies'] = $comment->comments
-                            ->map(static fn (Comment $comment): array => [
-                                'user' => ['name' => $comment->user->name],
-                                'created_at' => $comment->created_at?->toDateTimeString(),
-                                'content' => $comment->content,
-                            ])
-                            ->all();
-
-                        return $data;
-                    })
-                    ->schema([
-                        Section::make('Comment')
-                            ->columns(2)
-                            ->schema([
-                                TextEntry::make('user.name')
-                                    ->label('Author'),
-                                TextEntry::make('created_at')
-                                    ->label('Created at')
-                                    ->dateTime(),
-                                TextEntry::make('content')
-                                    ->label('Content')
-                                    ->columnSpanFull()
-                                    ->words(40)
-                                    ->tooltip(function (TextEntry $textEntry): ?string {
-                                        $state = $textEntry->getState();
-
-                                        return \is_string($state) ? $state : null;
-                                    }),
-                            ]),
-                        Section::make('Replies')
-                            ->schema([
-                                RepeatableEntry::make('replies')
-                                    ->table([
-                                        TableColumn::make('Author')->width('160px'),
-                                        TableColumn::make('Created at')->width('180px'),
-                                        TableColumn::make('Reply'),
-                                    ])
-                                    ->schema([
-                                        TextEntry::make('user.name')
-                                            ->label('Author'),
-                                        TextEntry::make('created_at')
-                                            ->label('Created at')
-                                            ->dateTime(),
-                                        TextEntry::make('content')
-                                            ->label('Reply')
-                                            ->words(40)
-                                            ->tooltip(function (TextEntry $textEntry): ?string {
-                                                $state = $textEntry->getState();
-
-                                                return \is_string($state) ? $state : null;
-                                            }),
-                                    ]),
-                            ]),
-                    ]),
+                    ->modal(false)
+                    ->url(fn (Comment $comment): string => CommentResource::getUrl('view', ['record' => $comment])),
             ])
             ->toolbarActions([]);
     }

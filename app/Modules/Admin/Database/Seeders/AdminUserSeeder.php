@@ -27,7 +27,12 @@ class AdminUserSeeder extends Seeder
             ->where('email', self::DEFAULT_ADMIN_EMAIL)
             ->firstOrFail();
 
-        $user->assignRole(...array_map($this->roleFor(...), AdminRole::cases()));
+        $user->assignRole(
+            $this->roleFor(AdminRole::Admin),
+            $this->roleFor(AdminRole::AdminDashboardReader),
+            $this->roleFor(AdminRole::AdminUsersReader),
+            $this->roleFor(AdminRole::AdminPostsReader),
+        );
 
         $this->promoteRandomAdmins();
     }
