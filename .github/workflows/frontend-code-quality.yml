@@ -42,10 +42,76 @@ jobs:
         run: php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder
 
       - name: Check format
-        run: npm run format:check
+        id: format
+        continue-on-error: true
+        run: npm run format:check 2>&1 | tee "$RUNNER_TEMP/frontend-format.log"
+        shell: bash
 
       - name: Check linting
-        run: npm run lint:check
+        id: lint
+        continue-on-error: true
+        run: npm run lint:check 2>&1 | tee "$RUNNER_TEMP/frontend-lint.log"
+        shell: bash
 
       - name: Check types
-        run: npm run types
+        id: types
+        continue-on-error: true
+        run: npm run types 2>&1 | tee "$RUNNER_TEMP/frontend-types.log"
+        shell: bash
+
+      - name: Summarize frontend checks
+        if: always()
+        env:
+          FORMAT_OUTCOME: ${{ steps.format.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          TYPES_OUTCOME: ${{ steps.types.outcome }}
+        run: |
+          {
+            echo "## Frontend quality checks"
+            echo
+            echo "| Check | Result |"
+            echo "| --- | --- |"
+            echo "| Format | $FORMAT_OUTCOME |"
+            echo "| Lint | $LINT_OUTCOME |"
+            echo "| Types | $TYPES_OUTCOME |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          failed=false
+
+          if [[ "$FORMAT_OUTCOME" == "failure" ]]; then
+            failed=true
+            {
+              echo
+              echo "### Format diagnostics (last 20 lines)"
+              echo '```text'
+              tail -n 20 "$RUNNER_TEMP/frontend-format.log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [[ "$LINT_OUTCOME" == "failure" ]]; then
+            failed=true
+            {
+              echo
+              echo "### Lint diagnostics (last 20 lines)"
+              echo '```text'
+              tail -n 20 "$RUNNER_TEMP/frontend-lint.log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [[ "$TYPES_OUTCOME" == "failure" ]]; then
+            failed=true
+            {
+              echo
+              echo "### Type diagnostics (last 20 lines)"
+              echo '```text'
+              tail -n 20 "$RUNNER_TEMP/frontend-types.log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [[ "$failed" == "true" ]]; then
+            echo "::error title=Frontend checks failed::Review the failure details in this job summary and the individual check logs."
+            exit 1
+          fi
