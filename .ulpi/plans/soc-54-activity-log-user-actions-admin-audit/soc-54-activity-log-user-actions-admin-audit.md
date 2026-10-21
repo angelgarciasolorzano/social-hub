@@ -584,7 +584,7 @@ En `AdminInvitationService`, dentro de cada transacción: `issue()` registra la 
 
 ### TASK-025: Pruebas transversales de privacidad y de frontera del paquete
 
-Una prueba de seguridad ejecuta los flujos registrados con valores centinela conocidos (texto de comentario y publicación, contraseña, OTP, código de recuperación, token de invitación) y comprueba que ninguna fila de `activity_log` (descripción ni propiedades) los contiene. Una prueba de arquitectura de Pest verifica que solo `App\Modules\ActivityLog` usa `Spatie\Activitylog` y que ningún controlador lo hace.
+Una prueba de seguridad ejecuta los flujos registrados con valores centinela conocidos (texto de comentario y publicación, contraseña, OTP, código de recuperación, token de invitación) y comprueba que ninguna fila de `activity_log` (descripción ni propiedades) los contiene. Una prueba de arquitectura de Pest verifica que solo `App\Modules\ActivityLog` usa `Spatie\Activitylog` (lo que incluye a los controladores), y una prueba con dataset exige que cada caso del catálogo aparezca en algún listener, comando o servicio, para que no queden eventos sin registrar. Ambas se comprobaron agregando temporalmente un caso sin uso y una clase que usa el paquete. La suite completa necesita `-d memory_limit=2G`, como ya hace `composer test`.
 
 **Type:** test · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -643,7 +643,7 @@ Añadir `SOCIALHUB_ACTIVITY_LOG_<LOG>_RETENTION_DAYS` para los seis logs con sus
 
 ### TASK-028: Pasar los gates de calidad y la suite completa
 
-Ejecutar el gate del proyecto: `composer rector-clear-cache` → `composer rector-dry` → `composer rector`, `vendor/bin/pint --dirty --format agent`, `composer phpstan` y `php artisan test --compact`. Solo corrige archivos ya tocados por tareas anteriores.
+Ejecutar el gate del proyecto: `composer rector-clear-cache` → `composer rector-dry` → `composer rector`, `vendor/bin/pint --dirty --format agent`, `composer phpstan` y `composer test` (que ya corre la suite con `-d memory_limit=2G`). Solo corrige archivos ya tocados por tareas anteriores.
 
 **Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -656,7 +656,7 @@ Ejecutar el gate del proyecto: `composer rector-clear-cache` → `composer recto
 **writeScope:**
 - Ninguno (solo verificación; corrige archivos de tareas previas)
 
-**validateCommand:** `rtk composer rector-dry && rtk composer phpstan && rtk php artisan test --compact`
+**validateCommand:** `rtk composer rector-dry && rtk composer phpstan && rtk composer test`
 
 **Review:** Claude
 

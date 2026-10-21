@@ -805,7 +805,7 @@
     {
       "id": "TASK-025",
       "title": "Pruebas transversales de privacidad y de frontera del paquete",
-      "description": "Una prueba de seguridad ejecuta los flujos registrados con valores centinela conocidos (texto de comentario y publicación, contraseña, OTP, código de recuperación, token de invitación) y comprueba que ninguna fila de `activity_log` (descripción ni propiedades) los contiene. Una prueba de arquitectura de Pest verifica que solo `App\\Modules\\ActivityLog` usa `Spatie\\Activitylog` y que ningún controlador lo hace.",
+      "description": "Una prueba de seguridad ejecuta los flujos registrados con valores centinela conocidos (texto de comentario y publicación, contraseña, OTP, código de recuperación, token de invitación) y comprueba que ninguna fila de `activity_log` (descripción ni propiedades) los contiene. Una prueba de arquitectura de Pest verifica que solo `App\\Modules\\ActivityLog` usa `Spatie\\Activitylog` (lo que incluye a los controladores), y una prueba con dataset exige que cada caso del catálogo aparezca en algún listener, comando o servicio, para que no queden eventos sin registrar. Ambas se comprobaron agregando temporalmente un caso sin uso y una clase que usa el paquete. La suite completa necesita `-d memory_limit=2G`, como ya hace `composer test`.",
       "priority": "P1",
       "type": "test",
       "effort": "M",
@@ -892,7 +892,7 @@
     {
       "id": "TASK-028",
       "title": "Pasar los gates de calidad y la suite completa",
-      "description": "Ejecutar el gate del proyecto: `composer rector-clear-cache` → `composer rector-dry` → `composer rector`, `vendor/bin/pint --dirty --format agent`, `composer phpstan` y `php artisan test --compact`. Solo corrige archivos ya tocados por tareas anteriores.",
+      "description": "Ejecutar el gate del proyecto: `composer rector-clear-cache` → `composer rector-dry` → `composer rector`, `vendor/bin/pint --dirty --format agent`, `composer phpstan` y `composer test` (que ya corre la suite con `-d memory_limit=2G`). Solo corrige archivos ya tocados por tareas anteriores.",
       "priority": "P1",
       "type": "chore",
       "effort": "S",
@@ -908,7 +908,7 @@
       "filesToCreate": [],
       "filesToModify": [],
       "writeScope": [],
-      "validateCommand": "rtk composer rector-dry && rtk composer phpstan && rtk php artisan test --compact",
+      "validateCommand": "rtk composer rector-dry && rtk composer phpstan && rtk composer test",
       "review": "claude"
     }
   ],
