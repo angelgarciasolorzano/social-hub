@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ActivityLog\Providers;
 
 use App\Modules\ActivityLog\Listeners\AuthActivitySubscriber;
+use App\Modules\ActivityLog\Listeners\ContentActivitySubscriber;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -29,5 +30,6 @@ class ActivityLogServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::subscribe(AuthActivitySubscriber::class);
+        Event::subscribe(ContentActivitySubscriber::class);
     }
 }
