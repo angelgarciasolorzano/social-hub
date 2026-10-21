@@ -25,13 +25,13 @@ EXPANSION confirmada. Además del alcance de Linear (publicaciones, comentarios 
 - Varias tablas de actividad por dominio; si un log (likes) crece demasiado, se separará más adelante con datos reales.
 - Enviar el registro a una cola: se escribe en la misma transacción para no perder atomicidad; se reevaluará si se mide latencia.
 - Registrar acciones del sistema (seeders, borrado automático del padre vacío de un comentario, purgas).
-- Suspensión y reactivación de cuentas (SOC-35), que solo añadirá sus casos de `ActivityEvent` y llamará a `ActivityLogger`.
+- Suspensión y reactivación de cuentas (SOC-35), que solo añadirá sus casos a `ActivityLogAccountEvent` (o un enum nuevo registrado en `ActivityLogEvent::ENUMS`) y llamará a `ActivityLogger`.
 - Migrar datos históricos: no hay registros previos que importar.
 
 ## Contracts
 
 - Solo `App\Modules\ActivityLog` usa `Spatie\Activitylog`; controladores, comandos y servicios de otros módulos llaman a `ActivityLogger` o despachan eventos de dominio.
-- `ActivityLogger::record(ActivityEvent, ?Model $subject, ?Model $causer, array $properties)` siempre fija el causer (o anónimo), deriva `log_name` del evento y rechaza claves prohibidas.
+- `ActivityLogger::record(ActivityLogEvent, ?Model $subject, ?Model $causer, array $properties)` siempre fija el causer (o anónimo), deriva `log_name` del evento y rechaza claves prohibidas.
 - Las acciones de usuario se registran con subscribers que escuchan eventos de dominio; la auditoría Admin (comandos e invitaciones) llama a `ActivityLogger` dentro de su transacción para que el registro sea atómico con el cambio.
 - `ActivityLogServiceProvider` es la única superficie de registro (config, subscribers, listener Eloquent de `TrustedDeviceEvent`, comando y schedule); las tareas que lo editan están encadenadas.
 - Morph map: se añaden `admin_invitation`, `trusted_device_event` y `role`; las claves existentes (`user`, `post`, `like`, `comment`) no cambian.
@@ -99,23 +99,30 @@ Publicar la migración del paquete (`--tag=activitylog-migrations`) en el direct
 
 **Review:** Claude
 
-### TASK-003: Crear los enums del módulo ActivityLog y su configuración de retención
+### TASK-003: Crear el catálogo de eventos por dominio y la configuración de retención
 
-Crear el módulo `app/Modules/ActivityLog/` (nueva arquitectura). `Enums/ActivityLogName` (backed string): `auth`, `content`, `likes`, `trusted_devices`, `account`, `admin`, con `retentionDays(): int` leído de `module.activity_log.retention_days.<log>`. `Enums/ActivityEvent` (backed string, valores `dominio.accion`): login/logout/login fallido, contraseña actualizada/restablecida, 2FA confirmado/desactivado, códigos regenerados, publicación creada, comentario creado/respondido/editado/eliminado, like dado/quitado, las seis acciones de TrustedDevice, cuenta actualizada/imagen actualizada/eliminada, rol concedido/revocado, permiso de rol concedido/revocado, administrador inicial, invitación emitida/aceptada; con `logName(): ActivityLogName`. `config/activity-log.php` define la retención por log con variables `SOCIALHUB_ACTIVITY_LOG_<LOG>_RETENTION_DAYS` (por defecto: auth 180, content 365, likes 30, trusted_devices 180, account 365, admin 730). El merge de la configuración lo hace TASK-004.
+Crear el módulo `app/Modules/ActivityLog/` (nueva arquitectura). `Enums/ActivityLogName` (backed string): `auth`, `content`, `likes`, `trusted_devices`, `account`, `admin`, con `retentionDays(): int` leído de `module.activity_log.retention_days.<log>`. Los eventos se dividen en un enum por dominio en `Enums/Events/` (`ActivityLogAuthEvent`, `ActivityLogContentEvent`, `ActivityLogLikeEvent`, `ActivityLogTrustedDeviceEvent`, `ActivityLogAccountEvent`, `ActivityLogAdminEvent`; valores `dominio.accion`), porque PHP no permite que un enum herede o reúna casos de otros. `Contracts/ActivityLogEvent` (interfaz que extiende `BackedEnum`) es el orquestador: declara `eventName(): string` y `logName(): ActivityLogName`, y su constante `ENUMS` lista los enums registrados; un dominio nuevo (por ejemplo SOC-35) crea su enum y lo agrega ahí. `config/activity-log.php` define la retención por log con variables `SOCIALHUB_ACTIVITY_LOG_<LOG>_RETENTION_DAYS` (por defecto: auth 180, content 365, likes 30, trusted_devices 180, account 365, admin 730). El merge de la configuración lo hace TASK-004. Durante la ejecución se añadió `app/Modules/ActivityLog/config` a `configDirectories` de `phpstan.neon` (como `app/Auth/config`) para que Larastan acepte `env()` en el config del módulo. Esta tarea excede el límite de 3 archivos por la división acordada con el usuario.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
 **Depends on:** Ninguna
 
 **Acceptance Criteria:**
-- Cada caso de `ActivityEvent` devuelve un `ActivityLogName` y ningún log queda sin al menos un evento.
-- La configuración define una retención entera positiva para cada caso de `ActivityLogName` y nada más.
-- PHPStan nivel max pasa sobre el módulo sin `mixed` ni supresiones.
+- Cada enum listado en `ActivityLogEvent::ENUMS` implementa el contrato, devuelve un único `ActivityLogName` y ningún log queda sin eventos.
+- Los valores de evento son únicos entre todos los enums del catálogo (31 hoy).
+- La configuración define una retención entera positiva para cada caso de `ActivityLogName`, y PHPStan nivel max pasa sin `mixed` ni supresiones.
 
 **writeScope:**
 - `app/Modules/ActivityLog/Enums/ActivityLogName.php` (nuevo)
-- `app/Modules/ActivityLog/Enums/ActivityEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Contracts/ActivityLogEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Enums/Events/ActivityLogAuthEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Enums/Events/ActivityLogContentEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Enums/Events/ActivityLogLikeEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Enums/Events/ActivityLogTrustedDeviceEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Enums/Events/ActivityLogAccountEvent.php` (nuevo)
+- `app/Modules/ActivityLog/Enums/Events/ActivityLogAdminEvent.php` (nuevo)
 - `app/Modules/ActivityLog/config/activity-log.php` (nuevo)
+- `phpstan.neon`
 
 **validateCommand:** `rtk vendor/bin/phpstan analyse app/Modules/ActivityLog`
 
@@ -123,7 +130,7 @@ Crear el módulo `app/Modules/ActivityLog/` (nueva arquitectura). `Enums/Activit
 
 ### TASK-004: Crear el servicio ActivityLogger y registrar el proveedor del módulo
 
-`Services/ActivityLogger::record(ActivityEvent $event, ?Model $subject = null, ?Model $causer = null, array $properties = []): void` es el único punto que usa `activity()`: fija `useLog($event->logName()->value)`, `event($event->value)`, `performedOn`, y `causedBy($causer)` o `causedByAnonymous()` cuando es null (para que el paquete no adivine un usuario de otro guard). Si hay una petición HTTP agrega `ip` y `user_agent` completos a las propiedades (decisión confirmada; la purga los elimina con el registro). Rechaza con `InvalidArgumentException` claves prohibidas en `properties` (`password`, `password_confirmation`, `current_password`, `token`, `token_hash`, `code`, `otp_code`, `recovery_code(s)`, `two_factor_secret`, `content`, `email`). `ActivityLogServiceProvider` hace `mergeConfigFrom` a `module.activity_log` y se registra en `bootstrap/providers.php`; es la superficie compartida donde las tareas posteriores suscriben sus listeners.
+`Services/ActivityLogger::record(ActivityLogEvent $event, ?Model $subject = null, ?Model $causer = null, array $properties = []): void` es el único punto que usa `activity()`: recibe el contrato `Contracts\ActivityLogEvent` (cualquier enum del catálogo), fija `useLog($event->logName()->value)`, `event($event->eventName())`, `performedOn`, y `causedBy($causer)` o `causedByAnonymous()` cuando es null (para que el paquete no adivine un usuario de otro guard). Si hay una petición HTTP agrega `ip` y `user_agent` completos a las propiedades (decisión confirmada; la purga los elimina con el registro). Rechaza con `InvalidArgumentException` claves prohibidas en `properties` (`password`, `password_confirmation`, `current_password`, `token`, `token_hash`, `code`, `otp_code`, `recovery_code(s)`, `two_factor_secret`, `content`, `email`). `ActivityLogServiceProvider` hace `mergeConfigFrom` a `module.activity_log` y se registra en `bootstrap/providers.php`; es la superficie compartida donde las tareas posteriores suscriben sus listeners.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -145,7 +152,7 @@ Crear el módulo `app/Modules/ActivityLog/` (nueva arquitectura). `Enums/Activit
 
 ### TASK-005: Probar ActivityLogger y registrar la carpeta de pruebas del módulo
 
-Registrar `app/Modules/ActivityLog/Tests` en `phpunit.xml` y en el bloque `pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in(...)` de `tests/Pest.php`. Probar el servicio: log y evento correctos, causer y subject que resuelven por el morph map (`user`, `post`), IP/UA presentes en HTTP y ausentes en consola, rechazo de claves prohibidas.
+Registrar `app/Modules/ActivityLog/Tests` en `phpunit.xml` y en el bloque `pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in(...)` de `tests/Pest.php`. Probar el servicio y el catálogo (todo enum de `ActivityLogEvent::ENUMS` implementa el contrato y los valores son únicos): log y evento correctos, causer y subject que resuelven por el morph map (`user`, `post`), IP/UA presentes en HTTP y ausentes en consola, rechazo de claves prohibidas.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -376,7 +383,7 @@ Crear `App\Modules\Like\Events\LikeToggled` (usuario, likeable y `bool $liked`) 
 
 ### TASK-016: Reflejar en el log general las acciones de dispositivos de confianza
 
-`Listeners/TrustedDeviceActivityMirror` se registra en `ActivityLogServiceProvider` sobre el evento Eloquent `created` de `TrustedDeviceEvent` (sin modificar el modelo ni `TrustedDeviceService`). Traduce cada `TrustedDeviceAction` a su `ActivityEvent` en el log `trusted_devices`, con sujeto la fila de `TrustedDeviceEvent` (morph `trusted_device_event`) y causer su usuario; no copia la instantánea del dispositivo. Al correr dentro de la transacción del servicio, un rollback descarta ambas filas.
+`Listeners/TrustedDeviceActivityMirror` se registra en `ActivityLogServiceProvider` sobre el evento Eloquent `created` de `TrustedDeviceEvent` (sin modificar el modelo ni `TrustedDeviceService`). Traduce cada `TrustedDeviceAction` a su caso de `ActivityLogTrustedDeviceEvent` en el log `trusted_devices`, con sujeto la fila de `TrustedDeviceEvent` (morph `trusted_device_event`) y causer su usuario; no copia la instantánea del dispositivo. Al correr dentro de la transacción del servicio, un rollback descarta ambas filas.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -586,7 +593,7 @@ Una prueba de seguridad ejecuta los flujos registrados con valores centinela con
 
 ### TASK-026: Documentar el módulo ActivityLog y la nueva firma de los comandos Admin
 
-Actualizar CLAUDE.md (dominio ActivityLog: decisión de usar el paquete con una tabla y `log_name`, enums, servicio, subscribers, morph map ampliado, política de privacidad, IP/UA, retención y purga, `--actor`), `docs/architecture/backend.md` y AGENTS.md donde mencionan `admin:user-role`, `admin:role-permissions` y `admin:bootstrap-admin`.
+Actualizar CLAUDE.md (dominio ActivityLog: decisión de usar el paquete con una tabla y `log_name`, contrato `ActivityLogEvent` con enums por dominio, servicio, subscribers, morph map ampliado, política de privacidad, IP/UA, retención y purga, `--actor`), `docs/architecture/backend.md` y AGENTS.md donde mencionan `admin:user-role`, `admin:role-permissions` y `admin:bootstrap-admin`.
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3
 
