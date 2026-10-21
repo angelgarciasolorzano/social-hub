@@ -6,12 +6,16 @@ namespace App\Modules\Comment\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Comment\Enums\CommentType;
+use App\Modules\Comment\Events\CommentCreated;
+use App\Modules\Comment\Events\CommentDeleted;
+use App\Modules\Comment\Events\CommentUpdated;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Requests\CommentStoreRequest;
 use App\Modules\Comment\Requests\CommentUpdateRequest;
 use App\Modules\Post\Models\Post;
+use App\User\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Attributes\Controllers\Authorize;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -20,6 +24,8 @@ class CommentController extends Controller
 {
     public function store(CommentStoreRequest $commentStoreRequest): RedirectResponse
     {
+        $user = $this->authenticatedUser($commentStoreRequest);
+
         /** @var class-string<Post | Comment> $modelType */
         $modelType = CommentType::from($commentStoreRequest->string('commentable_type')->toString())->modelClass();
 
@@ -33,11 +39,13 @@ class CommentController extends Controller
             $repliedToUserId = $target->user_id;
         }
 
-        $thread->comments()->create([
-            'user_id' => Auth::id(),
+        $comment = $thread->comments()->create([
+            'user_id' => $user->id,
             'replied_to_user_id' => $repliedToUserId,
             'content' => $commentStoreRequest->string('content')->toString(),
         ]);
+
+        event(new CommentCreated($comment, $user, $target instanceof Comment ? $target->id : null));
 
         return Inertia::flash([
             'type' => 'success',
@@ -52,6 +60,8 @@ class CommentController extends Controller
 
         if ($comment->content !== $content) {
             $comment->update(['content' => $content, 'edited_at' => now()]);
+
+            event(new CommentUpdated($comment, $this->authenticatedUser($commentUpdateRequest)));
         }
 
         return Inertia::flash([
@@ -61,24 +71,39 @@ class CommentController extends Controller
     }
 
     #[Authorize('delete', 'comment')]
-    public function destroy(Comment $comment): RedirectResponse
+    public function destroy(Request $request, Comment $comment): RedirectResponse
     {
-        DB::transaction(function () use ($comment): void {
+        $user = $this->authenticatedUser($request);
+
+        $deletedPermanently = DB::transaction(function () use ($comment): bool {
             if ($comment->comments()->exists()) {
                 $comment->delete();
 
-                return;
+                return false;
             }
 
             $this->forceDeleteWithLikes($comment);
 
             $this->forceDeleteEmptiedParent($comment);
+
+            return true;
         });
+
+        event(new CommentDeleted($comment, $user, $deletedPermanently));
 
         return Inertia::flash([
             'type' => 'success',
             'message' => 'Comentario eliminado correctamente',
         ])->back();
+    }
+
+    private function authenticatedUser(Request $request): User
+    {
+        $user = $request->user();
+
+        abort_unless($user instanceof User, 401);
+
+        return $user;
     }
 
     /**
