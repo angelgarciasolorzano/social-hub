@@ -6,6 +6,7 @@ namespace App\Modules\Like\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Like\Events\LikeToggled;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
@@ -56,6 +57,8 @@ class LikeController extends Controller
         if ($existingLike instanceof Like) {
             $existingLike->delete();
 
+            event(new LikeToggled($user, $likeable, liked: false));
+
             return false;
         }
 
@@ -64,6 +67,8 @@ class LikeController extends Controller
         } catch (UniqueConstraintViolationException) {
             return true;
         }
+
+        event(new LikeToggled($user, $likeable, liked: true));
 
         return true;
     }
