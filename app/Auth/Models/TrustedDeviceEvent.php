@@ -6,6 +6,7 @@ namespace App\Auth\Models;
 
 use App\Auth\Database\Factories\TrustedDeviceEventFactory;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\Auth\Modules\TrustedDevice\Events\TrustedDeviceEventRecorded;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -69,7 +70,8 @@ class TrustedDeviceEvent extends Model
 
     /**
      * Record a trusted device event. Centralised so every hook
-     * (controller actions, listeners) writes through a single factory.
+     * (controller actions, listeners) writes through a single factory,
+     * and announce it with TrustedDeviceEventRecorded.
      */
     public static function record(
         TrustedDevice $trustedDevice,
@@ -77,7 +79,7 @@ class TrustedDeviceEvent extends Model
         TrustedDeviceAction $trustedDeviceAction,
         Request $request,
     ): self {
-        return self::query()
+        $trustedDeviceEvent = self::query()
             ->create([
                 'user_id' => $user->getKey(),
                 'action' => $trustedDeviceAction,
@@ -87,6 +89,10 @@ class TrustedDeviceEvent extends Model
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
+
+        event(new TrustedDeviceEventRecorded($trustedDeviceEvent, $user));
+
+        return $trustedDeviceEvent;
     }
 
     /**

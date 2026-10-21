@@ -21,7 +21,7 @@ EXPANSION confirmada. Además del alcance de Linear (publicaciones, comentarios 
 ## Non-Goals
 
 - Registro de vistas visitadas, línea de tiempo diaria y recurso Filament de solo lectura, interacciones de React y correos de seguridad (parte 2).
-- Reemplazar o modificar `TrustedDeviceEvent` o `TrustedDeviceService`; el log general solo refleja sus filas.
+- Reemplazar `TrustedDeviceEvent` o cambiar `TrustedDeviceService`; el modelo solo gana el despacho de `TrustedDeviceEventRecorded` en `record()` (TASK-016) y el log general refleja sus filas.
 - Varias tablas de actividad por dominio; si un log (likes) crece demasiado, se separará más adelante con datos reales.
 - Enviar el registro a una cola: se escribe en la misma transacción para no perder atomicidad; se reevaluará si se mide latencia.
 - Registrar acciones del sistema (seeders, borrado automático del padre vacío de un comentario, purgas).
@@ -384,7 +384,7 @@ Crear `App\Modules\Like\Events\LikeToggled` (usuario, likeable y `bool $liked`) 
 
 ### TASK-016: Reflejar en el log general las acciones de dispositivos de confianza
 
-`Listeners/TrustedDeviceActivityMirror` se registra en `ActivityLogServiceProvider` sobre el evento Eloquent `created` de `TrustedDeviceEvent` (sin modificar el modelo ni `TrustedDeviceService`). Traduce cada `TrustedDeviceAction` a su caso de `ActivityLogTrustedDeviceEvent` en el log `trusted_devices`, con sujeto la fila de `TrustedDeviceEvent` (morph `trusted_device_event`) y causer su usuario; no copia la instantánea del dispositivo. Al correr dentro de la transacción del servicio, un rollback descarta ambas filas.
+Decisión tomada al ejecutar: escuchar el evento Eloquent `created` también reflejaba las filas de TrustedDeviceSeeder y de las factories, así que `TrustedDeviceEvent::record()` despacha un evento de dominio nuevo, `App\Auth\Modules\TrustedDevice\Events\TrustedDeviceEventRecorded` (fila y usuario), sin cambiar lo que guarda ni lo que devuelve. `Listeners/TrustedDeviceActivityMirror` escucha ese evento (`Event::listen` en `ActivityLogServiceProvider`) y traduce cada `TrustedDeviceAction` a su caso de `ActivityLogTrustedDeviceEvent` en el log `trusted_devices`, con sujeto la fila de `TrustedDeviceEvent` (morph `trusted_device_event`) y causer su usuario; no copia la instantánea del dispositivo. Al despacharse dentro de la transacción del servicio, un rollback descarta ambas filas. La tarea toca 5 archivos por este cambio.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -392,12 +392,14 @@ Crear `App\Modules\Like\Events\LikeToggled` (usuario, likeable y `bool $liked`) 
 
 **Acceptance Criteria:**
 - Cada `TrustedDeviceAction` (dataset) produce un registro con el evento correspondiente y un subject que resuelve a la fila de `TrustedDeviceEvent`.
-- Si la transacción de `TrustedDeviceService` falla después de registrar el evento, no queda ni el `TrustedDeviceEvent` ni el registro espejo.
+- Las filas creadas por factories o seeders no generan registro espejo, y un rollback de la transacción no deja ni el `TrustedDeviceEvent` ni el espejo.
 - La suite de TrustedDevice sigue verde sin cambios en sus pruebas.
 
 **writeScope:**
+- `app/Auth/Modules/TrustedDevice/Events/TrustedDeviceEventRecorded.php` (nuevo)
 - `app/Modules/ActivityLog/Listeners/TrustedDeviceActivityMirror.php` (nuevo)
 - `app/Modules/ActivityLog/Tests/Listeners/TrustedDeviceActivityMirrorTest.php` (nuevo)
+- `app/Auth/Models/TrustedDeviceEvent.php`
 - `app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php`
 
 **validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests/Listeners/TrustedDeviceActivityMirrorTest.php app/Auth/Modules/TrustedDevice/Tests`
