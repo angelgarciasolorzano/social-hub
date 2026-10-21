@@ -280,7 +280,7 @@ Crear `App\Modules\Post\Events\PostCreated` (lleva el `Post`) y despacharlo en `
 
 ### TASK-011: Crear los eventos de dominio de comentarios
 
-Crear en `app/Modules/Comment/Events/`: `CommentCreated` (comentario creado y `?int $repliedToCommentId`, el id que el cliente envió cuando es una respuesta), `CommentUpdated` (comentario) y `CommentDeleted` (comentario en memoria, autor y `bool $permanently`: true si se borró definitivamente, false si quedó como tombstone). Solo clases de evento; el despacho es de TASK-012.
+Crear en `app/Modules/Comment/Events/`: `CommentCreated` (comentario creado, usuario que actúa y `?int $repliedToCommentId`, el id que el cliente envió cuando es una respuesta), `CommentUpdated` (comentario y usuario) y `CommentDeleted` (comentario en memoria, usuario y `bool $permanently`: true si se borró definitivamente, false si quedó como tombstone). Los tres llevan el `User` que actúa para que el subscriber use un causer explícito sin consultar la relación. Solo clases de evento; el despacho es de TASK-012.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
