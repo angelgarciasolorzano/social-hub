@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\Password\Controllers;
 
+use App\Auth\Modules\Password\Events\PasswordUpdated;
 use App\Auth\Modules\Password\Requests\PasswordRequest;
 use App\Auth\Modules\Password\Services\PasswordTrustedDeviceRevoker;
 use App\Http\Controllers\Controller;
@@ -32,6 +33,8 @@ class PasswordController extends Controller
 
             $passwordTrustedDeviceRevoker->revokeAll($user, $passwordRequest);
         });
+
+        event(new PasswordUpdated($user));
 
         return Inertia::flash('success', 'Contraseña actualizada correctamente')->back();
     }
