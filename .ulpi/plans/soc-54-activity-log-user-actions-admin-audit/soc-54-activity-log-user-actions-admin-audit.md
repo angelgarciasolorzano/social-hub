@@ -450,7 +450,7 @@ Crear en `app/User/Events/`: `AccountUpdated` (usuario y `list<string> $changedA
 
 ### TASK-019: Registrar los cambios de cuenta con AccountActivitySubscriber
 
-`Listeners/AccountActivitySubscriber` registra en el log `account` la actualización (propiedad `changed_attributes` con nombres), el cambio de imagen (`image_type`) y la eliminación de la cuenta. Suscribirlo en `ActivityLogServiceProvider`.
+`Listeners/AccountActivitySubscriber` registra en el log `account` la actualización (propiedad `changed_attributes` con nombres), el cambio de imagen (`image_type`) y la eliminación de la cuenta. Suscribirlo en `ActivityLogServiceProvider`. Al escribir las pruebas apareció un fallo previo: `POST user/image/{type}` respondía 500 porque el controlador recibe `UserImageType $userImageType` y Laravel solo enlaza un enum cuyo parámetro de ruta tiene el mismo nombre, así que `UserImageUpdateRequest` recibía un string. Con aprobación del usuario se arregló aquí: la ruta pasa a `{userImageType}`, el request lee `route('userImageType')`, se regeneró Wayfinder, `useUserImageUpload.ts` usa `{ userImageType }`, y `app/User/Tests` (registrado en `phpunit.xml` y `tests/Pest.php`) gana `Crud/UserImageUpdateTest.php`.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -464,9 +464,15 @@ Crear en `app/User/Events/`: `AccountUpdated` (usuario y `list<string> $changedA
 **writeScope:**
 - `app/Modules/ActivityLog/Listeners/AccountActivitySubscriber.php` (nuevo)
 - `app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php` (nuevo)
+- `app/User/Tests/Crud/UserImageUpdateTest.php` (nuevo)
 - `app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php`
+- `app/User/routes/user.php`
+- `app/User/Requests/UserImageUpdateRequest.php`
+- `resources/js/modules/profile/hooks/useUserImageUpload.ts`
+- `phpunit.xml`
+- `tests/Pest.php`
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php app/User/Tests && rtk npm run types`
 
 **Review:** Claude
 

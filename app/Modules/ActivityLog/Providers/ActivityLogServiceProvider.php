@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ActivityLog\Providers;
 
 use App\Auth\Modules\TrustedDevice\Events\TrustedDeviceEventRecorded;
+use App\Modules\ActivityLog\Listeners\AccountActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\AuthActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\ContentActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\LikeActivitySubscriber;
@@ -35,6 +36,7 @@ class ActivityLogServiceProvider extends ServiceProvider
         Event::subscribe(AuthActivitySubscriber::class);
         Event::subscribe(ContentActivitySubscriber::class);
         Event::subscribe(LikeActivitySubscriber::class);
+        Event::subscribe(AccountActivitySubscriber::class);
         Event::listen(TrustedDeviceEventRecorded::class, TrustedDeviceActivityMirror::class);
     }
 }

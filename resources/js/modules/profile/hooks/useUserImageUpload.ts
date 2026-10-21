@@ -50,7 +50,7 @@ export function useUserImageUpload({ typeImage }: UpdateImageParams): UseImageUp
     if (!imageFile) return;
 
     router.post(
-      updateImage.url({ type: typeImage }),
+      updateImage.url({ userImageType: typeImage }),
       {
         [typeImage]: imageFile,
       },

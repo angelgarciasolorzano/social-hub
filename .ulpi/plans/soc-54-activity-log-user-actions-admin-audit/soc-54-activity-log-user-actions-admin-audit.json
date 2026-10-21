@@ -611,7 +611,7 @@
     {
       "id": "TASK-019",
       "title": "Registrar los cambios de cuenta con AccountActivitySubscriber",
-      "description": "`Listeners/AccountActivitySubscriber` registra en el log `account` la actualización (propiedad `changed_attributes` con nombres), el cambio de imagen (`image_type`) y la eliminación de la cuenta. Suscribirlo en `ActivityLogServiceProvider`.",
+      "description": "`Listeners/AccountActivitySubscriber` registra en el log `account` la actualización (propiedad `changed_attributes` con nombres), el cambio de imagen (`image_type`) y la eliminación de la cuenta. Suscribirlo en `ActivityLogServiceProvider`. Al escribir las pruebas apareció un fallo previo: `POST user/image/{type}` respondía 500 porque el controlador recibe `UserImageType $userImageType` y Laravel solo enlaza un enum cuyo parámetro de ruta tiene el mismo nombre, así que `UserImageUpdateRequest` recibía un string. Con aprobación del usuario se arregló aquí: la ruta pasa a `{userImageType}`, el request lee `route('userImageType')`, se regeneró Wayfinder, `useUserImageUpload.ts` usa `{ userImageType }`, y `app/User/Tests` (registrado en `phpunit.xml` y `tests/Pest.php`) gana `Crud/UserImageUpdateTest.php`.",
       "priority": "P2",
       "type": "feature",
       "effort": "S",
@@ -627,17 +627,29 @@
       ],
       "filesToCreate": [
         "app/Modules/ActivityLog/Listeners/AccountActivitySubscriber.php",
-        "app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php"
+        "app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php",
+        "app/User/Tests/Crud/UserImageUpdateTest.php"
       ],
       "filesToModify": [
-        "app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php"
+        "app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php",
+        "app/User/routes/user.php",
+        "app/User/Requests/UserImageUpdateRequest.php",
+        "resources/js/modules/profile/hooks/useUserImageUpload.ts",
+        "phpunit.xml",
+        "tests/Pest.php"
       ],
       "writeScope": [
         "app/Modules/ActivityLog/Listeners/AccountActivitySubscriber.php",
         "app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php",
-        "app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php"
+        "app/User/Tests/Crud/UserImageUpdateTest.php",
+        "app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php",
+        "app/User/routes/user.php",
+        "app/User/Requests/UserImageUpdateRequest.php",
+        "resources/js/modules/profile/hooks/useUserImageUpload.ts",
+        "phpunit.xml",
+        "tests/Pest.php"
       ],
-      "validateCommand": "rtk php artisan test --compact app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php",
+      "validateCommand": "rtk php artisan test --compact app/Modules/ActivityLog/Tests/Listeners/AccountActivitySubscriberTest.php app/User/Tests && rtk npm run types",
       "review": "claude"
     },
     {

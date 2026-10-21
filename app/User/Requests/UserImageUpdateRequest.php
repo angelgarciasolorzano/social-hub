@@ -17,7 +17,7 @@ class UserImageUpdateRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         /** @var UserImageType $type */
-        $type = $this->route('type');
+        $type = $this->route('userImageType');
 
         $this->field = $type;
     }

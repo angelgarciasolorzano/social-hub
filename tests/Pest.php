@@ -44,6 +44,7 @@ pest()->extend(TestCase::class)
         __DIR__.'/../app/Auth/Modules/Email/Tests',
         __DIR__.'/../app/User/Modules/TwoFactor/Tests',
         __DIR__.'/../app/User/Modules/AccountSettings/Tests',
+        __DIR__.'/../app/User/Tests',
     );
 
 /*
