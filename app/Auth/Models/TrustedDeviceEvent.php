@@ -47,6 +47,11 @@ class TrustedDeviceEvent extends Model
     use HasFactory;
 
     /**
+     * The morph name used for polymorphic relations.
+     */
+    public const string MORPH_NAME = 'trusted_device_event';
+
+    /**
      * The attributes that should be cast.
      *
      * @return array<string, string>

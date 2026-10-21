@@ -43,6 +43,11 @@ class AdminInvitation extends Model
     use HasFactory;
 
     /**
+     * The morph name used for polymorphic relations.
+     */
+    public const string MORPH_NAME = 'admin_invitation';
+
+    /**
      * Normalize invitation email addresses before storing them.
      *
      * @return Attribute<string, string>
