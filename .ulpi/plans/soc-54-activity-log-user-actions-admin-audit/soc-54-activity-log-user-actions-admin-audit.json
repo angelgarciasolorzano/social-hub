@@ -773,7 +773,7 @@
     {
       "id": "TASK-024",
       "title": "Crear y programar la purga por log con retención configurable",
-      "description": "`Console/Commands/ActivityLogPurgeCommand` (`activity-log:purge`) recorre `ActivityLogName::cases()` y ejecuta `activitylog:clean <log> --days=<retentionDays> --force` por cada log, informando cuántas filas borró. `ActivityLogServiceProvider` registra el comando (solo en consola, como `AuthServiceProvider`) y lo programa a diario a las 03:30 (después de `trusted-devices:purge`).",
+      "description": "`Console/Commands/ActivityLogPurgeCommand` (`activity-log:purge`) valida primero que todas las retenciones sean positivas (si no, `INVALID` sin borrar nada) y luego recorre `ActivityLogName::cases()` llamando a la acción del paquete `Config::cleanActivityLogAction()->execute(<retentionDays>, <log>)` (la misma que usa `activitylog:clean`, pero tipada y sin pasar por Artisan), informando cuántas filas borró por log. `boot()` del proveedor queda dividido en `registerListeners()` y `registerPurgeSchedule()`. `ActivityLogServiceProvider` registra el comando (solo en consola, como `AuthServiceProvider`) y lo programa a diario a las 03:30 (después de `trusted-devices:purge`).",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
