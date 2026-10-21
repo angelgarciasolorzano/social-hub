@@ -6,6 +6,7 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
@@ -358,4 +359,16 @@ function countTrustedDeviceEvents(User $user, TrustedDeviceAction $trustedDevice
         ->where('user_id', $user->id)
         ->where('action', $trustedDeviceAction)
         ->count();
+}
+
+/**
+ * Create a verified administrator to pass as `--actor` to the Admin console commands.
+ * The Admin authorization catalog must be seeded first.
+ */
+function createAdminCommandActor(): User
+{
+    $user = createUser();
+    $user->assignRole(AdminRole::Admin->value);
+
+    return $user;
 }

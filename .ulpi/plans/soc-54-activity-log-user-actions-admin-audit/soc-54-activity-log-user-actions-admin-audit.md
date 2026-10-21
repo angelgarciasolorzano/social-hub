@@ -478,7 +478,7 @@ Crear en `app/User/Events/`: `AccountUpdated` (usuario y `list<string> $changedA
 
 ### TASK-020: Agregar --actor y auditoría a admin:user-role
 
-En `InteractsWithAdminCatalog` agregar `resolveActor(?string $email, bool $requiresAdminAccess = true): ?User`, que informa el error y devuelve null si falta la opción, el usuario no existe, no está verificado o, cuando se exige, no tiene `admin.access`. `admin:user-role` exige `--actor=<email>` y, dentro de su transacción, llama a `ActivityLogger` (log `admin`) solo cuando el estado cambió: rol concedido o revocado, causer el actor, subject el usuario afectado, propiedad `role`. Actualizar sus pruebas.
+En `InteractsWithAdminCatalog` agregar `actorEmail(mixed $actorOption): ?string` (cada comando le pasa `$this->option('actor')`, así el concern no lee una opción que otro comando aún no declara) y `resolveActor(string $actorEmail, bool $requiresAdminAccess = true): ?User`, que informa el error y devuelve null si el usuario no existe, no está verificado o, cuando se exige, no tiene `admin.access`. El actor se resuelve dentro de la transacción, después de bloquear el catálogo. `tests/Pest.php` gana `createAdminCommandActor()`, que reutilizan las pruebas de los tres comandos. `admin:user-role` exige `--actor=<email>` y, dentro de su transacción, llama a `ActivityLogger` (log `admin`) solo cuando el estado cambió: rol concedido o revocado, causer el actor, subject el usuario afectado, propiedad `role`. Actualizar sus pruebas.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -493,6 +493,7 @@ En `InteractsWithAdminCatalog` agregar `resolveActor(?string $email, bool $requi
 - `app/Modules/Admin/Console/Concerns/InteractsWithAdminCatalog.php`
 - `app/Modules/Admin/Console/Commands/AdminUserRoleCommand.php`
 - `app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php`
+- `tests/Pest.php`
 
 **validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php`
 
