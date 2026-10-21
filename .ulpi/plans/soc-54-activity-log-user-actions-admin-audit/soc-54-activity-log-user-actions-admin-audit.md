@@ -152,7 +152,7 @@ Crear el módulo `app/Modules/ActivityLog/` (nueva arquitectura). `Enums/Activit
 
 ### TASK-005: Probar ActivityLogger y registrar la carpeta de pruebas del módulo
 
-Registrar `app/Modules/ActivityLog/Tests` en `phpunit.xml` y en el bloque `pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in(...)` de `tests/Pest.php`. Probar el servicio y el catálogo (todo enum de `ActivityLogEvent::ENUMS` implementa el contrato y los valores son únicos): log y evento correctos, causer y subject que resuelven por el morph map (`user`, `post`), IP/UA presentes en HTTP y ausentes en consola, rechazo de claves prohibidas.
+Registrar `app/Modules/ActivityLog/Tests` en `phpunit.xml` y en el bloque `pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in(...)` de `tests/Pest.php`. Probar el servicio y el catálogo (todo enum de `ActivityLogEvent::ENUMS` implementa el contrato y los valores son únicos): log y evento correctos, causer y subject que resuelven por el morph map (`user`, `post`), IP/UA presentes en HTTP y ausentes en consola, rechazo de claves prohibidas. El catálogo se prueba en su propio archivo (`Tests/Contracts/ActivityLogEventTest.php`, con una regla `arch()` que exige que todo enum de `Enums/Events` implemente el contrato), por eso la tarea toca 4 archivos.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -165,10 +165,11 @@ Registrar `app/Modules/ActivityLog/Tests` en `phpunit.xml` y en el bloque `pest(
 
 **writeScope:**
 - `app/Modules/ActivityLog/Tests/Services/ActivityLoggerTest.php` (nuevo)
+- `app/Modules/ActivityLog/Tests/Contracts/ActivityLogEventTest.php` (nuevo)
 - `phpunit.xml`
 - `tests/Pest.php`
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests/Services/ActivityLoggerTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests`
 
 **Review:** Claude
 
