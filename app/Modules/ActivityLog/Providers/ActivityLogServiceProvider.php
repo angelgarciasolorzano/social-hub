@@ -6,6 +6,7 @@ namespace App\Modules\ActivityLog\Providers;
 
 use App\Modules\ActivityLog\Listeners\AuthActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\ContentActivitySubscriber;
+use App\Modules\ActivityLog\Listeners\LikeActivitySubscriber;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Override;
@@ -31,5 +32,6 @@ class ActivityLogServiceProvider extends ServiceProvider
     {
         Event::subscribe(AuthActivitySubscriber::class);
         Event::subscribe(ContentActivitySubscriber::class);
+        Event::subscribe(LikeActivitySubscriber::class);
     }
 }
