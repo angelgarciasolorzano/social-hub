@@ -28,7 +28,7 @@ final class AdminInvitationMail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'admin::Email.adminInvitation',
+            markdown: 'admin::email.adminInvitation',
             with: [
                 'acceptUrl' => route('admin.invitations.accept', ['token' => $this->plainToken]),
                 'expiresAt' => $this->expiresAt,
