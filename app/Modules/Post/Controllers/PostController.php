@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Post\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Post\Events\PostCreated;
 use App\Modules\Post\Requests\PostRequest;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
@@ -27,6 +28,8 @@ class PostController extends Controller
         $post = $user->posts()->create([
             'content' => $postRequest->input('content'),
         ]);
+
+        event(new PostCreated($post));
 
         if ($postRequest->hasFile('image_file')) {
             try {
