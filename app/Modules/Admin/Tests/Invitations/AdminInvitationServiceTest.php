@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use LogicException;
 use Mockery;
 use RuntimeException;
+use Spatie\Activitylog\Models\Activity;
 
 const ADMIN_INVITATION_ACCEPT_ROUTE = 'admin.invitations.accept';
 
@@ -82,7 +83,7 @@ it('sends a one-time token to the selected user without granting admin before ac
     $targetUser = createUser();
     Mail::fake();
 
-    $adminInvitation = (new AdminInvitationService)->issue($invitedByUser, $targetUser->email, $targetUser);
+    $adminInvitation = resolve(AdminInvitationService::class)->issue($invitedByUser, $targetUser->email, $targetUser);
     $plainToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
 
     expect($adminInvitation->target_user_id)
@@ -99,7 +100,7 @@ it('matches a registered email to its existing account after normalization', fun
     $targetUser = createUser();
     Mail::fake();
 
-    $adminInvitation = (new AdminInvitationService)->issue(
+    $adminInvitation = resolve(AdminInvitationService::class)->issue(
         $invitedByUser,
         '  '.mb_strtoupper($targetUser->email).'  ',
     );
@@ -115,7 +116,7 @@ it('issues an invitation to an unregistered email without creating an account', 
     $newEmail = 'new-admin@example.com';
     Mail::fake();
 
-    $adminInvitation = (new AdminInvitationService)->issue($invitedByUser, $newEmail);
+    $adminInvitation = resolve(AdminInvitationService::class)->issue($invitedByUser, $newEmail);
 
     expect($adminInvitation->target_user_id)
         ->toBeNull()
@@ -127,7 +128,7 @@ it('invalidates the previous token when a new invitation is issued', function ()
     $invitedByUser = createUser();
     $targetUser = createUser();
     Mail::fake();
-    $adminInvitationService = new AdminInvitationService;
+    $adminInvitationService = resolve(AdminInvitationService::class);
 
     $adminInvitation = $adminInvitationService->issue($invitedByUser, $targetUser->email, $targetUser);
     $previousToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
@@ -155,7 +156,7 @@ it('keeps an invitation pending when queue dispatch fails', function (): void {
         ->with($targetUser->email)
         ->andReturn($mock);
 
-    expect(fn (): AdminInvitation => (new AdminInvitationService)->issue(
+    expect(fn (): AdminInvitation => resolve(AdminInvitationService::class)->issue(
         $invitedByUser,
         $targetUser->email,
         $targetUser,
@@ -177,9 +178,9 @@ it('accepts an invitation for an existing account without changing its credentia
     $targetUser->forceFill(['email_verified_at' => null])->save();
     Mail::fake();
 
-    $adminInvitation = (new AdminInvitationService)->issue($invitedByUser, $targetUser->email, $targetUser);
+    $adminInvitation = resolve(AdminInvitationService::class)->issue($invitedByUser, $targetUser->email, $targetUser);
     $plainToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
-    $acceptedUser = (new AdminInvitationService)->accept($plainToken, 'Ignored name', 'ignored password');
+    $acceptedUser = resolve(AdminInvitationService::class)->accept($plainToken, 'Ignored name', 'ignored password');
 
     expect($acceptedUser->getKey())
         ->toBe($targetUser->getKey())
@@ -200,9 +201,9 @@ it('creates and verifies a new account from the invited email and allowed regist
     $newEmail = 'new-admin@example.com';
     Mail::fake();
 
-    $adminInvitation = (new AdminInvitationService)->issue($invitedByUser, $newEmail);
+    $adminInvitation = resolve(AdminInvitationService::class)->issue($invitedByUser, $newEmail);
     $plainToken = adminInvitationTokenFromMail($newEmail, $adminInvitation->token_hash);
-    $newUser = (new AdminInvitationService)->accept($plainToken, 'New Administrator', 'strong-password-value');
+    $newUser = resolve(AdminInvitationService::class)->accept($plainToken, 'New Administrator', 'strong-password-value');
 
     expect($newUser->name)
         ->toBe('New Administrator')
@@ -222,7 +223,7 @@ it('requires registration fields before accepting a new user invitation', functi
     $invitedByUser = createUser();
     $newEmail = 'new-admin@example.com';
     Mail::fake();
-    $adminInvitationService = new AdminInvitationService;
+    $adminInvitationService = resolve(AdminInvitationService::class);
 
     $adminInvitation = $adminInvitationService->issue($invitedByUser, $newEmail);
     $plainToken = adminInvitationTokenFromMail($newEmail, $adminInvitation->token_hash);
@@ -240,7 +241,7 @@ it('rejects an altered invitation token without creating a user or assigning a r
     $invitedByUser = createUser();
     $newEmail = 'new-admin@example.com';
     Mail::fake();
-    $adminInvitationService = new AdminInvitationService;
+    $adminInvitationService = resolve(AdminInvitationService::class);
 
     $adminInvitation = $adminInvitationService->issue($invitedByUser, $newEmail);
     $plainToken = adminInvitationTokenFromMail($newEmail, $adminInvitation->token_hash);
@@ -258,7 +259,7 @@ it('rejects an expired invitation without creating a user', function (): void {
     $invitedByUser = createUser();
     $newEmail = 'new-admin@example.com';
     Mail::fake();
-    $adminInvitationService = new AdminInvitationService;
+    $adminInvitationService = resolve(AdminInvitationService::class);
 
     $adminInvitation = $adminInvitationService->issue($invitedByUser, $newEmail);
     $plainToken = adminInvitationTokenFromMail($newEmail, $adminInvitation->token_hash);
@@ -279,7 +280,7 @@ it('rejects a previously accepted invitation token', function (): void {
     $invitedByUser = createUser();
     $targetUser = createUser();
     Mail::fake();
-    $adminInvitationService = new AdminInvitationService;
+    $adminInvitationService = resolve(AdminInvitationService::class);
 
     $adminInvitation = $adminInvitationService->issue($invitedByUser, $targetUser->email, $targetUser);
     $plainToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
@@ -298,7 +299,7 @@ it('rejects an invitation if the existing user email no longer matches', functio
     $invitedByUser = createUser();
     $targetUser = createUser();
     Mail::fake();
-    $adminInvitationService = new AdminInvitationService;
+    $adminInvitationService = resolve(AdminInvitationService::class);
 
     $adminInvitation = $adminInvitationService->issue($invitedByUser, $targetUser->email, $targetUser);
     $plainToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
@@ -311,4 +312,82 @@ it('rejects an invitation if the existing user email no longer matches', functio
         ->toBeFalse()
         ->and($adminInvitation->refresh()->accepted_at)
         ->toBeNull();
+});
+
+it('records who issued the invitation and for which account without the email or token', function (): void {
+    $invitedByUser = createUser();
+    $targetUser = createUser();
+    Mail::fake();
+
+    $adminInvitation = resolve(AdminInvitationService::class)->issue($invitedByUser, $targetUser->email, $targetUser);
+    $plainToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
+
+    $activity = Activity::query()->where('event', 'admin.invitation_issued')->sole();
+    $storedActivity = $activity->withoutRelations()->toJson();
+
+    expect($activity)
+        ->log_name->toBe('admin')
+        ->subject_type->toBe('admin_invitation')
+        ->subject_id->toBe($adminInvitation->id)
+        ->causer_id->toBe($invitedByUser->id)
+        ->and($activity->properties?->get('target_user_id'))->toBe($targetUser->id)
+        ->and($storedActivity)->not->toContain($targetUser->email)
+        ->not->toContain($plainToken)
+        ->not->toContain($adminInvitation->token_hash);
+});
+
+it('records an invitation issued to an unregistered email without the email', function (): void {
+    Mail::fake();
+
+    resolve(AdminInvitationService::class)->issue(createUser(), 'new-admin@example.com');
+
+    $activity = Activity::query()->where('event', 'admin.invitation_issued')->sole();
+
+    expect($activity->properties?->get('target_user_id'))->toBeNull()
+        ->and($activity->withoutRelations()->toJson())->not->toContain('new-admin@example.com');
+});
+
+it('records an accepted invitation that created a new account without the password', function (): void {
+    $newEmail = 'new-admin@example.com';
+    Mail::fake();
+
+    $adminInvitation = resolve(AdminInvitationService::class)->issue(createUser(), $newEmail);
+    $plainToken = adminInvitationTokenFromMail($newEmail, $adminInvitation->token_hash);
+    $newUser = resolve(AdminInvitationService::class)->accept($plainToken, 'New Administrator', 'strong-password-value');
+
+    $activity = Activity::query()->where('event', 'admin.invitation_accepted')->sole();
+
+    expect($activity)
+        ->subject_id->toBe($adminInvitation->id)
+        ->causer_id->toBe($newUser->id)
+        ->and($activity->properties?->only(['account_created', 'roles_assigned'])->all())
+        ->toEqual(['account_created' => true, 'roles_assigned' => [AdminRole::Admin->value]])
+        ->and($activity->withoutRelations()->toJson())->not->toContain('strong-password-value')
+        ->not->toContain($plainToken);
+});
+
+it('records an accepted invitation for an existing administrator without assigned roles', function (): void {
+    $targetUser = createUser();
+    $targetUser->assignRole(AdminRole::Admin->value);
+    Mail::fake();
+
+    $adminInvitation = resolve(AdminInvitationService::class)->issue(createUser(), $targetUser->email, $targetUser);
+    $plainToken = adminInvitationTokenFromMail($targetUser->email, $adminInvitation->token_hash);
+    resolve(AdminInvitationService::class)->accept($plainToken);
+
+    expect(Activity::query()->where('event', 'admin.invitation_accepted')->sole()->properties?->only(['account_created', 'roles_assigned'])->all())
+        ->toEqual(['account_created' => false, 'roles_assigned' => []]);
+});
+
+it('does not record the acceptance of an altered token', function (): void {
+    $targetUser = createUser();
+    Mail::fake();
+
+    resolve(AdminInvitationService::class)->issue(createUser(), $targetUser->email, $targetUser);
+
+    expect(fn (): User => resolve(AdminInvitationService::class)->accept('altered-token'))
+        ->toThrow(ValidationException::class)
+        ->and(Activity::query()->where('event', 'admin.invitation_accepted')
+            ->exists())
+        ->toBeFalse();
 });
