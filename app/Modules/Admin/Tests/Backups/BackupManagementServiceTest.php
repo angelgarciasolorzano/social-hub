@@ -56,7 +56,7 @@ it('forbids listing backups without the view permission', function (): void {
     $user = createUser();
     Storage::fake('backups');
 
-    expect(fn () => resolve(BackupManagementService::class)->listBackups($user))
+    expect(fn () => resolve(BackupManagementService::class)->listBackupsData($user))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -76,18 +76,18 @@ it('lists available backup metadata newest first and reports healthy checks', fu
     $newerPath = storeBackupManagementArchive($newerFilename, 'newest');
     touch(Storage::disk('backups')->path($newerPath), now()->getTimestamp());
 
-    $backupListing = resolve(BackupManagementService::class)->listBackups($user);
+    $backupListingData = resolve(BackupManagementService::class)->listBackupsData($user);
 
-    expect(array_column($backupListing['backups'], 'filename'))
+    expect(array_column($backupListingData->backups, 'filename'))
         ->toBe([$newerFilename, $olderFilename])
-        ->and($backupListing['backups'][0])
+        ->and($backupListingData->backups[0])
         ->toMatchArray([
             'filename' => $newerFilename,
             'size_in_bytes' => 6.0,
             'disk' => 'backups',
             'available' => true,
         ])
-        ->and($backupListing['health'])
+        ->and($backupListingData->health)
         ->toBe([
             'healthy' => true,
             'failed_checks' => [],
@@ -106,10 +106,10 @@ it('reports the configured maximum backup age check as unhealthy', function (): 
     $path = storeBackupManagementArchive($filename, 'old archive');
     touch(Storage::disk('backups')->path($path), now()->subDays(2)->getTimestamp());
 
-    $backupListing = resolve(BackupManagementService::class)->listBackups($user);
+    $backupListingData = resolve(BackupManagementService::class)->listBackupsData($user);
 
-    expect($backupListing['health']['healthy'])->toBeFalse()
-        ->and($backupListing['health']['failed_checks'])->toContain('MaximumAgeInDays');
+    expect($backupListingData->health['healthy'])->toBeFalse()
+        ->and($backupListingData->health['failed_checks'])->toContain('MaximumAgeInDays');
 });
 
 it('reports the configured maximum storage check as unhealthy', function (): void {
@@ -128,10 +128,10 @@ it('reports the configured maximum storage check as unhealthy', function (): voi
     $path = storeBackupManagementArchive((new RunDatabaseBackup)->filename, 'non-empty archive');
     touch(Storage::disk('backups')->path($path), now()->getTimestamp());
 
-    $backupListing = resolve(BackupManagementService::class)->listBackups($user);
+    $backupListingData = resolve(BackupManagementService::class)->listBackupsData($user);
 
-    expect($backupListing['health']['healthy'])->toBeFalse()
-        ->and($backupListing['health']['failed_checks'])->toContain('MaximumStorageInMegabytes');
+    expect($backupListingData->health['healthy'])->toBeFalse()
+        ->and($backupListingData->health['failed_checks'])->toContain('MaximumStorageInMegabytes');
 });
 
 it('forbids queueing a backup without the create permission', function (): void {

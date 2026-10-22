@@ -457,13 +457,79 @@ Organize `BackupManagement` with Filament framework methods first and remove des
 
 **Review:** codex
 
+### TASK-021: Add a typed backup listing data contract
+
+Create `BackupListingData` in the Admin module and add a typed `listBackupsData()` method to `BackupManagementService`. Keep `listBackups()` as an array adapter during migration so the current Filament page remains functional, and cover the typed response in the service test.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-020
+
+**Acceptance Criteria:**
+- `BackupListingData` types the backup metadata list and health summary using the project's `laravel-data` convention.
+- `listBackupsData()` returns the Data object after the same authorization and destination checks as the current listing operation.
+- The service test verifies metadata ordering, health values, and the typed response while the current array adapter remains compatible.
+
+**Write scope:**
+- `app/Modules/Admin/Data/BackupListingData.php` — Define the typed backup listing and health payload.
+- `app/Modules/Admin/Services/BackupManagementService.php` — Expose the Data response while preserving the existing array method for the in-progress consumer migration.
+- `app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php` — Assert the Data response preserves backup ordering, metadata, health, and authorization.
+
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php`
+
+**Review:** codex
+
+### TASK-022: Use the backup listing data object in Filament
+
+Change the backup page cache and getter to use `BackupListingData`, then update the table and Blade view to read its properties. Keep `downloadBackup()` on the page because it performs the Livewire redirect that completes the action.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-021
+
+**Acceptance Criteria:**
+- `getBackupListing()` returns `BackupListingData` without an array-shape PHPDoc, and the page cache is typed to the Data class.
+- The table and Blade view read backup and health values from typed Data properties without changing the rendered content.
+- The page test still verifies health, archive metadata, and download flow, including password validation.
+
+**Write scope:**
+- `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php` — Cache and return the typed backup listing object.
+- `app/Modules/Admin/Filament/Pages/Backups/Tables/BackupsTable.php` — Read the Data object's backups property when supplying Filament table records.
+- `app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php` — Read the typed health object's properties in the backup health panel.
+
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php`
+
+**Review:** codex
+
+### TASK-023: Promote the typed backup listing service contract
+
+After the Filament consumer uses `listBackupsData()`, make the typed method the canonical `listBackups()` API and remove the temporary array adapter. Update the page and service tests to use the canonical method.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-022
+
+**Acceptance Criteria:**
+- `BackupManagementService::listBackups()` returns `BackupListingData` and no parallel array-returning listing method remains.
+- The page calls the canonical typed service method and no longer carries an array-shape PHPDoc for its cached listing.
+- Service tests verify typed listing fields and continue to reject users without backup view permission.
+
+**Write scope:**
+- `app/Modules/Admin/Services/BackupManagementService.php` — Promote the typed listing operation and remove the array adapter.
+- `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php` — Call the canonical `listBackups()` Data API.
+- `app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php` — Use typed properties in listing assertions and retain the unauthorized edge case.
+
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php`
+
+**Review:** codex
+
 ### TASK-017: Pasar los gates completos de calidad y pruebas
 
 Ejecutar los gates obligatorios del proyecto después de integrar los slices. Limpiar la caché de Rector, revisar el dry-run y aplicar Rector; después Pint, PHPStan, la suite completa y Laravel Doctor como última comprobación. Rector solo puede modificar código dentro de los scopes aprobados por las tareas previas; cualquier otra propuesta se detiene para revisión.
 
 **Type:** chore · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-019, TASK-020
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023
 
 **Acceptance Criteria:**
 - Rector clear-cache, dry-run y aplicación se ejecutan en ese orden; Rector no deja cambios fuera de los archivos ya aprobados.
@@ -504,9 +570,9 @@ SOC-55 no se considera completo sin cifrado y destino privado, permisos y audito
 
 ## Execution Summary
 
-- Tasks: 20.
-- Parallel layers: L0: TASK-001, TASK-003, TASK-008; L1: TASK-002, TASK-004; L2: TASK-005, TASK-006, TASK-007, TASK-009, TASK-018; L3: TASK-010, TASK-011; L4: TASK-012; L5: TASK-013, TASK-014, TASK-019; L6: TASK-015, TASK-020; L7: TASK-016; L8: TASK-017.
-- Critical path (9 tasks): TASK-001 → TASK-002 → TASK-009 → TASK-010 → TASK-012 → TASK-013 → TASK-015 → TASK-016 → TASK-017.
+- Tasks: 23.
+- Parallel layers: L0: TASK-001, TASK-003, TASK-008; L1: TASK-002, TASK-004; L2: TASK-005, TASK-006, TASK-007, TASK-009, TASK-018; L3: TASK-010, TASK-011; L4: TASK-012; L5: TASK-013, TASK-014, TASK-019; L6: TASK-015, TASK-020; L7: TASK-016, TASK-021; L8: TASK-022; L9: TASK-023; L10: TASK-017.
+- Critical path (11 tasks): TASK-001 → TASK-002 → TASK-009 → TASK-010 → TASK-012 → TASK-019 → TASK-020 → TASK-021 → TASK-022 → TASK-023 → TASK-017.
 - Tras completar una tarea atómica, detener la implementación para revisión del usuario.
 
 ## Task Dependencies
@@ -530,7 +596,10 @@ SOC-55 no se considera completo sin cifrado y destino privado, permisos y audito
 - **TASK-018** ← TASK-002
 - **TASK-019** ← TASK-012
 - **TASK-020** ← TASK-019
-- **TASK-017** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-019, TASK-020
+- **TASK-021** ← TASK-020
+- **TASK-022** ← TASK-021
+- **TASK-023** ← TASK-022
+- **TASK-017** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023
 
 ## References
 

@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Services;
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Data\BackupListingData;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use App\User\Models\User;
@@ -74,6 +75,17 @@ final readonly class BackupManagementService
             'backups' => $backups,
             'health' => $this->backupHealth($backupConfig),
         ];
+    }
+
+    /** Return the authorized listing as a typed Data object for Filament consumers. */
+    public function listBackupsData(User $user): BackupListingData
+    {
+        $backupListing = $this->listBackups($user);
+
+        return new BackupListingData(
+            backups: $backupListing['backups'],
+            health: $backupListing['health'],
+        );
     }
 
     /** Queue a database backup for an admin with permission to create backups. */

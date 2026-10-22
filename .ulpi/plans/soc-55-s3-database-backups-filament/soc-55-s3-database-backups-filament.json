@@ -763,6 +763,124 @@
       "review": "codex"
     },
     {
+      "id": "TASK-021",
+      "title": "Add a typed backup listing data contract",
+      "description": "Create `BackupListingData` in the Admin module and add a typed `listBackupsData()` method to `BackupManagementService`. Keep `listBackups()` as an array adapter during migration so the current Filament page remains functional, and cover the typed response in the service test.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "`BackupListingData` types the backup metadata list and health summary using the project's `laravel-data` convention.",
+        "`listBackupsData()` returns the Data object after the same authorization and destination checks as the current listing operation.",
+        "The service test verifies metadata ordering, health values, and the typed response while the current array adapter remains compatible."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Data/BackupListingData.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Services/BackupManagementService.php",
+        "app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php"
+      ],
+      "writeScope": [
+        {
+          "path": "app/Modules/Admin/Data/BackupListingData.php",
+          "role": "Define the typed backup listing and health payload."
+        },
+        {
+          "path": "app/Modules/Admin/Services/BackupManagementService.php",
+          "role": "Expose the Data response while preserving the existing array method for the in-progress consumer migration."
+        },
+        {
+          "path": "app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php",
+          "role": "Assert the Data response preserves backup ordering, metadata, health, and authorization."
+        }
+      ],
+      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Use the backup listing data object in Filament",
+      "description": "Change the backup page cache and getter to use `BackupListingData`, then update the table and Blade view to read its properties. Keep `downloadBackup()` on the page because it performs the Livewire redirect that completes the action.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "`getBackupListing()` returns `BackupListingData` without an array-shape PHPDoc, and the page cache is typed to the Data class.",
+        "The table and Blade view read backup and health values from typed Data properties without changing the rendered content.",
+        "The page test still verifies health, archive metadata, and download flow, including password validation."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php",
+        "app/Modules/Admin/Filament/Pages/Backups/Tables/BackupsTable.php",
+        "app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php"
+      ],
+      "writeScope": [
+        {
+          "path": "app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php",
+          "role": "Cache and return the typed backup listing object."
+        },
+        {
+          "path": "app/Modules/Admin/Filament/Pages/Backups/Tables/BackupsTable.php",
+          "role": "Read the Data object's backups property when supplying Filament table records."
+        },
+        {
+          "path": "app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php",
+          "role": "Read the typed health object's properties in the backup health panel."
+        }
+      ],
+      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Promote the typed backup listing service contract",
+      "description": "After the Filament consumer uses `listBackupsData()`, make the typed method the canonical `listBackups()` API and remove the temporary array adapter. Update the page and service tests to use the canonical method.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "`BackupManagementService::listBackups()` returns `BackupListingData` and no parallel array-returning listing method remains.",
+        "The page calls the canonical typed service method and no longer carries an array-shape PHPDoc for its cached listing.",
+        "Service tests verify typed listing fields and continue to reject users without backup view permission."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Services/BackupManagementService.php",
+        "app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php",
+        "app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php"
+      ],
+      "writeScope": [
+        {
+          "path": "app/Modules/Admin/Services/BackupManagementService.php",
+          "role": "Promote the typed listing operation and remove the array adapter."
+        },
+        {
+          "path": "app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php",
+          "role": "Call the canonical `listBackups()` Data API."
+        },
+        {
+          "path": "app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php",
+          "role": "Use typed properties in listing assertions and retain the unauthorized edge case."
+        }
+      ],
+      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php",
+      "review": "codex"
+    },
+    {
       "id": "TASK-017",
       "title": "Pasar los gates completos de calidad y pruebas",
       "description": "Ejecutar los gates obligatorios del proyecto después de integrar los slices. Limpiar la caché de Rector, revisar el dry-run y aplicar Rector; después Pint, PHPStan, la suite completa y Laravel Doctor como última comprobación. Rector solo puede modificar código dentro de los scopes aprobados por las tareas previas; cualquier otra propuesta se detiene para revisión.",
@@ -789,7 +907,10 @@
         "TASK-016",
         "TASK-018",
         "TASK-019",
-        "TASK-020"
+        "TASK-020",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023"
       ],
       "acceptanceCriteria": [
         "Rector clear-cache, dry-run y aplicación se ejecutan en ese orden; Rector no deja cambios fuera de los archivos ya aprobados.",
@@ -868,6 +989,15 @@
     "TASK-020": [
       "TASK-019"
     ],
+    "TASK-021": [
+      "TASK-020"
+    ],
+    "TASK-022": [
+      "TASK-021"
+    ],
+    "TASK-023": [
+      "TASK-022"
+    ],
     "TASK-017": [
       "TASK-001",
       "TASK-002",
@@ -887,11 +1017,14 @@
       "TASK-016",
       "TASK-018",
       "TASK-019",
-      "TASK-020"
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023"
     ]
   },
   "executionSummary": {
-    "taskCount": 20,
+    "taskCount": 23,
     "layers": [
       [
         "TASK-001",
@@ -926,7 +1059,14 @@
         "TASK-020"
       ],
       [
-        "TASK-016"
+        "TASK-016",
+        "TASK-021"
+      ],
+      [
+        "TASK-022"
+      ],
+      [
+        "TASK-023"
       ],
       [
         "TASK-017"
@@ -938,11 +1078,13 @@
       "TASK-009",
       "TASK-010",
       "TASK-012",
-      "TASK-013",
-      "TASK-015",
-      "TASK-016",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
       "TASK-017"
     ],
-    "criticalPathLength": 9
+    "criticalPathLength": 11
   }
 }

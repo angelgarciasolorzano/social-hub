@@ -2,7 +2,7 @@
 
 <x-filament-panels::page>
     <x-filament::section heading="Backup destination">
-        @if ($this->getBackupListing()['health']['healthy'])
+        @if ($this->getBackupListing()->health['healthy'])
             <div class="flex flex-wrap items-center gap-3">
                 <x-filament::badge color="success">Healthy</x-filament::badge>
                 <p class="text-sm text-gray-600 dark:text-gray-400">All configured backup health checks passed.</p>
@@ -15,9 +15,9 @@
                 </p>
             </div>
 
-            @if ($this->getBackupListing()['health']['failed_checks'] !== [])
+            @if ($this->getBackupListing()->health['failed_checks'] !== [])
                 <ul class="text-danger-600 dark:text-danger-400 mt-3 list-inside list-disc text-sm">
-                    @foreach ($this->getBackupListing()['health']['failed_checks'] as $failedCheck)
+                    @foreach ($this->getBackupListing()->health['failed_checks'] as $failedCheck)
                         <li>{{ str($failedCheck)->headline() }}</li>
                     @endforeach
                 </ul>

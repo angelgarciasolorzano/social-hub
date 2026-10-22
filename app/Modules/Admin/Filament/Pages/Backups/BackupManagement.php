@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Pages\Backups;
 
+use App\Modules\Admin\Data\BackupListingData;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Pages\Backups\Tables\BackupsTable;
 use App\Modules\Admin\Services\BackupManagementService;
@@ -38,19 +39,7 @@ class BackupManagement extends Page implements HasTable
     #[Override]
     protected string $view = 'admin::filament.backups.backup-management';
 
-    /**
-     * @var array{
-     *     backups: list<array{
-     *         filename: string,
-     *         created_at: string|null,
-     *         size_in_bytes: float|null,
-     *         disk: string,
-     *         available: bool
-     *     }>,
-     *     health: array{healthy: bool, failed_checks: list<string>}
-     * }|null
-     */
-    private ?array $backupListing = null;
+    private ?BackupListingData $backupListing = null;
 
     public static function canAccess(): bool
     {
@@ -103,21 +92,9 @@ class BackupManagement extends Page implements HasTable
         $this->redirect($temporaryUrl, navigate: false);
     }
 
-    /**
-     * @return array{
-     *     backups: list<array{
-     *         filename: string,
-     *         created_at: string|null,
-     *         size_in_bytes: float|null,
-     *         disk: string,
-     *         available: bool
-     *     }>,
-     *     health: array{healthy: bool, failed_checks: list<string>}
-     * }
-     */
-    public function getBackupListing(): array
+    public function getBackupListing(): BackupListingData
     {
-        return $this->backupListing ??= resolve(BackupManagementService::class)->listBackups($this->authenticatedUser());
+        return $this->backupListing ??= resolve(BackupManagementService::class)->listBackupsData($this->authenticatedUser());
     }
 
     public function hasPermission(AdminPermission $adminPermission): bool

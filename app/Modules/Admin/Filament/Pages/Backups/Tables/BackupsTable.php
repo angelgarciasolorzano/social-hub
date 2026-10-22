@@ -19,7 +19,7 @@ class BackupsTable
     {
         return $table
             ->heading('Backups')
-            ->records(fn (): Collection => collect($page->getBackupListing()['backups'])->keyBy('filename'))
+            ->records(fn (): Collection => collect($page->getBackupListing()->backups)->keyBy('filename'))
             ->columns([
                 TextColumn::make('filename')
                     ->label('Archive'),
