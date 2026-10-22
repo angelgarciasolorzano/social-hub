@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Jobs\RunBackupCleanup;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
@@ -26,7 +27,7 @@ beforeEach(function (): void {
     config()->set('backup.backup.password', 'test-backup-passphrase');
 });
 
-it('dispatches the backup job to the queue with the requesting actor', function (): void {
+it('queues the backup with its actor and cleanup chained after success', function (): void {
     Queue::fake();
     Artisan::expects('call')->never();
 
@@ -34,7 +35,11 @@ it('dispatches the backup job to the queue with the requesting actor', function 
 
     Queue::assertPushed(
         RunDatabaseBackup::class,
-        fn (RunDatabaseBackup $runDatabaseBackup): bool => $runDatabaseBackup->actorId === 42,
+        function (RunDatabaseBackup $runDatabaseBackup): bool {
+            $runDatabaseBackup->assertHasChain([new RunBackupCleanup]);
+
+            return $runDatabaseBackup->actorId === 42;
+        },
     );
 });
 

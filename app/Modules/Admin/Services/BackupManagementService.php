@@ -180,7 +180,7 @@ final readonly class BackupManagementService
         $pathPrefix = $backupName.'/';
 
         return str_starts_with($backupPath, $pathPrefix)
-            && ! str_contains(substr($backupPath, strlen($pathPrefix)), '/')
+            && ! str_contains(substr($backupPath, \strlen($pathPrefix)), '/')
             && str_ends_with($backupPath, '.zip');
     }
 

@@ -25,6 +25,7 @@ final class RunDatabaseBackup implements ShouldQueue
     public function __construct(public readonly ?int $actorId = null)
     {
         $this->filename = 'database-backup-'.Str::ulid().'.zip';
+        $this->chain([new RunBackupCleanup]);
     }
 
     public function handle(ActivityLogger $activityLogger): void

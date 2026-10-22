@@ -431,7 +431,7 @@
     {
       "id": "TASK-011",
       "title": "Programar backup, limpieza y monitoreo",
-      "description": "Usar el `AdminServiceProvider` ya registrado y el patrón de scheduling de `AuthServiceProvider`/`ActivityLogServiceProvider`. Programar el mismo job para el backup diario, seguido por `backup:clean` y `backup:monitor`; configurar horarios fuera de uso y sin solapamientos. El monitor envía las alertas configuradas por correo cuando la copia es antigua o excede el límite de almacenamiento.",
+      "description": "Usar el `AdminServiceProvider` ya registrado y el patrón de scheduling de `AuthServiceProvider`/`ActivityLogServiceProvider`. Programar el job de backup diario y un monitor independiente fuera de horas de uso. Solo después de que el backup finalice correctamente, encolar un job separado para ejecutar `backup:clean`; no programar la limpieza a una hora fija ni volver a ejecutar el backup si falla la limpieza. El monitor envía las alertas configuradas por correo cuando la copia es antigua o excede el límite de almacenamiento.",
       "priority": "P1",
       "type": "feature",
       "effort": "S",
@@ -440,27 +440,48 @@
         "TASK-009"
       ],
       "acceptanceCriteria": [
-        "El scheduler encola diariamente el job de backup y programa diariamente limpieza y monitoreo después de la creación.",
-        "La prueba inspecciona el schedule y falla si falta cualquiera de las tres operaciones o si limpieza/monitoreo preceden al backup.",
+        "La limpieza se ejecuta como job encadenado solo después del éxito del backup; un fallo de limpieza no vuelve a ejecutar el dump.",
+        "El scheduler conserva el backup diario y el monitor independiente, sin programar una limpieza por reloj fijo.",
+        "Las pruebas verifican el horario del backup y monitor, la cadena de limpieza y la propagación de fallos del backup y de limpieza.",
         "La configuración del monitor y del correo es explícita; la alerta cubre backup fuera de antigüedad o almacenamiento saludable."
       ],
       "filesToCreate": [
-        "app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php"
+        "app/Modules/Admin/Jobs/RunBackupCleanup.php",
+        "app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php",
+        "app/Modules/Admin/Tests/Backups/RunBackupCleanupTest.php"
       ],
       "filesToModify": [
-        "app/Modules/Admin/Providers/AdminServiceProvider.php"
+        "app/Modules/Admin/Providers/AdminServiceProvider.php",
+        "app/Modules/Admin/Jobs/RunDatabaseBackup.php",
+        "app/Modules/Admin/Tests/Backups/RunDatabaseBackupTest.php"
       ],
       "writeScope": [
         {
           "path": "app/Modules/Admin/Providers/AdminServiceProvider.php",
-          "role": "Registrar los horarios usando el job y los comandos Spatie."
+          "role": "Registrar el backup diario y el monitor independiente."
+        },
+        {
+          "path": "app/Modules/Admin/Jobs/RunDatabaseBackup.php",
+          "role": "Encadenar la limpieza para que corra solo después del éxito."
+        },
+        {
+          "path": "app/Modules/Admin/Jobs/RunBackupCleanup.php",
+          "role": "Ejecutar `backup:clean` como job independiente."
         },
         {
           "path": "app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php",
-          "role": "Verificar comandos, orden y frecuencia del schedule."
+          "role": "Verificar el horario diario del backup y el monitor independiente."
+        },
+        {
+          "path": "app/Modules/Admin/Tests/Backups/RunDatabaseBackupTest.php",
+          "role": "Verificar que la limpieza queda encadenada al job y que los fallos del backup se propagan."
+        },
+        {
+          "path": "app/Modules/Admin/Tests/Backups/RunBackupCleanupTest.php",
+          "role": "Verificar el comando de limpieza y la propagación de fallos."
         }
       ],
-      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php",
+      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php app/Modules/Admin/Tests/Backups/RunDatabaseBackupTest.php app/Modules/Admin/Tests/Backups/RunBackupCleanupTest.php",
       "review": "codex"
     },
     {

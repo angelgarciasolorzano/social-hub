@@ -265,22 +265,28 @@ Crear un servicio de administración que liste los objetos del destino de backup
 
 ### TASK-011: Programar backup, limpieza y monitoreo
 
-Usar el `AdminServiceProvider` ya registrado y el patrón de scheduling de `AuthServiceProvider`/`ActivityLogServiceProvider`. Programar el mismo job para el backup diario, seguido por `backup:clean` y `backup:monitor`; configurar horarios fuera de uso y sin solapamientos. El monitor envía las alertas configuradas por correo cuando la copia es antigua o excede el límite de almacenamiento.
+Usar el `AdminServiceProvider` ya registrado y el patrón de scheduling de `AuthServiceProvider`/`ActivityLogServiceProvider`. Programar el job de backup diario y un monitor independiente fuera de horas de uso. Solo después de que el backup finalice correctamente, encolar un job separado para ejecutar `backup:clean`; no programar la limpieza a una hora fija ni volver a ejecutar el backup si falla la limpieza. El monitor envía las alertas configuradas por correo cuando la copia es antigua o excede el límite de almacenamiento.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
 **Depends on:** TASK-009
 
 **Acceptance Criteria:**
-- El scheduler encola diariamente el job de backup y programa diariamente limpieza y monitoreo después de la creación.
-- La prueba inspecciona el schedule y falla si falta cualquiera de las tres operaciones o si limpieza/monitoreo preceden al backup.
+- El scheduler encola diariamente el job de backup y programa el monitoreo independiente.
+- La limpieza se ejecuta como job encadenado solo después del éxito del backup; un fallo de limpieza no vuelve a ejecutar el dump.
+- El scheduler conserva el backup diario y el monitor independiente, sin programar una limpieza por reloj fijo.
+- Las pruebas verifican el horario del backup y monitor, la cadena de limpieza y la propagación de fallos del backup y de limpieza.
 - La configuración del monitor y del correo es explícita; la alerta cubre backup fuera de antigüedad o almacenamiento saludable.
 
 **Write scope:**
-- `app/Modules/Admin/Providers/AdminServiceProvider.php` — Registrar los horarios usando el job y los comandos Spatie.
-- `app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php` — Verificar comandos, orden y frecuencia del schedule.
+- `app/Modules/Admin/Providers/AdminServiceProvider.php` — Registrar el backup diario y el monitor independiente.
+- `app/Modules/Admin/Jobs/RunDatabaseBackup.php` — Encadenar la limpieza para que corra solo después del éxito.
+- `app/Modules/Admin/Jobs/RunBackupCleanup.php` — Ejecutar `backup:clean` como job independiente.
+- `app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php` — Verificar el horario del backup y el monitor independiente.
+- `app/Modules/Admin/Tests/Backups/RunDatabaseBackupTest.php` — Verificar que la limpieza queda encadenada al job y que los fallos del backup se propagan.
+- `app/Modules/Admin/Tests/Backups/RunBackupCleanupTest.php` — Verificar el comando de limpieza y la propagación de fallos.
 
-**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php`
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/AdminBackupScheduleTest.php app/Modules/Admin/Tests/Backups/RunDatabaseBackupTest.php app/Modules/Admin/Tests/Backups/RunBackupCleanupTest.php`
 
 **Review:** codex
 
