@@ -19,11 +19,12 @@ it('backs up only the MySQL database and excludes files', function (): void {
 });
 
 it('uses a single transaction for MySQL dumps only', function (): void {
-    expect(config('database.connections.mysql.dump.useSingleTransaction'))->toBeTrue()
-        ->and(config('database.connections.sqlite.dump.useSingleTransaction'))->toBeNull()
-        ->and(config('database.connections.mariadb.dump.useSingleTransaction'))->toBeNull()
-        ->and(config('database.connections.pgsql.dump.useSingleTransaction'))->toBeNull()
-        ->and(config('database.connections.sqlsrv.dump.useSingleTransaction'))->toBeNull();
+    expect(config('database.connections.mysql.dump'))
+        ->toMatchArray(['useSingleTransaction' => true])
+        ->and(config('database.connections.sqlite'))->not->toHaveKey('dump')
+        ->and(config('database.connections.mariadb'))->not->toHaveKey('dump')
+        ->and(config('database.connections.pgsql'))->not->toHaveKey('dump')
+        ->and(config('database.connections.sqlsrv'))->not->toHaveKey('dump');
 });
 
 it('encrypts and verifies each backup archive', function (): void {
