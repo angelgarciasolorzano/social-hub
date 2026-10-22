@@ -37,6 +37,7 @@ function readerRoleNames(): array
         AdminRole::AdminDashboardReader->value,
         AdminRole::AdminUsersReader->value,
         AdminRole::AdminPostsReader->value,
+        AdminRole::AdminActivityReader->value,
     ];
 }
 
@@ -67,7 +68,7 @@ it('gives Angel the base role and every reader role', function (): void {
         ->toBe(collect([AdminRole::Admin->value, ...readerRoleNames()])->sort()->values()->all());
 });
 
-it('gives every random administrator the base role and between one and three reader roles', function (): void {
+it('gives every random administrator the base role and between one and four reader roles', function (): void {
     $user = seedAdminsForUsers($this, 30);
 
     $randomAdmins = usersWithAdminRole()->reject(fn (User $admin): bool => $admin->is($user));
@@ -77,7 +78,7 @@ it('gives every random administrator the base role and between one and three rea
     foreach ($randomAdmins as $randomAdmin) {
         $readerRoles = $randomAdmin->getRoleNames()->reject(fn (string $roleName): bool => $roleName === AdminRole::Admin->value);
 
-        expect($readerRoles->count())->toBeBetween(1, 3)
+        expect($readerRoles->count())->toBeBetween(1, \count(readerRoleNames()))
             ->and($readerRoles->diff(readerRoleNames()))->toBeEmpty();
     }
 });
