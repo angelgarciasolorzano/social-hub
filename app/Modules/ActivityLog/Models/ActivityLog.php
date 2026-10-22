@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\ActivityLog\Models;
 
 use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
+use App\Modules\ActivityLog\Policies\ActivityLogPolicy;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Activitylog\Models\Activity as SpatieActivity;
@@ -17,6 +19,7 @@ use Spatie\Activitylog\Models\Activity as SpatieActivity;
  * writes and reads through this class and the rest of the app never touches Spatie directly.
  */
 #[UseFactory(ActivityLogFactory::class)]
+#[UsePolicy(ActivityLogPolicy::class)]
 class ActivityLog extends SpatieActivity
 {
     /** @use HasFactory<ActivityLogFactory> */
