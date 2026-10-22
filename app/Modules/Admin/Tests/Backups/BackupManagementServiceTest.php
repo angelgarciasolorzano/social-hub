@@ -56,7 +56,7 @@ it('forbids listing backups without the view permission', function (): void {
     $user = createUser();
     Storage::fake('backups');
 
-    expect(fn () => resolve(BackupManagementService::class)->listBackupsData($user))
+    expect(fn () => resolve(BackupManagementService::class)->listBackups($user))
         ->toThrow(AuthorizationException::class);
 });
 
@@ -76,7 +76,7 @@ it('lists available backup metadata newest first and reports healthy checks', fu
     $newerPath = storeBackupManagementArchive($newerFilename, 'newest');
     touch(Storage::disk('backups')->path($newerPath), now()->getTimestamp());
 
-    $backupListingData = resolve(BackupManagementService::class)->listBackupsData($user);
+    $backupListingData = resolve(BackupManagementService::class)->listBackups($user);
 
     expect(array_column($backupListingData->backups, 'filename'))
         ->toBe([$newerFilename, $olderFilename])
@@ -106,7 +106,7 @@ it('reports the configured maximum backup age check as unhealthy', function (): 
     $path = storeBackupManagementArchive($filename, 'old archive');
     touch(Storage::disk('backups')->path($path), now()->subDays(2)->getTimestamp());
 
-    $backupListingData = resolve(BackupManagementService::class)->listBackupsData($user);
+    $backupListingData = resolve(BackupManagementService::class)->listBackups($user);
 
     expect($backupListingData->health['healthy'])->toBeFalse()
         ->and($backupListingData->health['failed_checks'])->toContain('MaximumAgeInDays');
@@ -128,7 +128,7 @@ it('reports the configured maximum storage check as unhealthy', function (): voi
     $path = storeBackupManagementArchive((new RunDatabaseBackup)->filename, 'non-empty archive');
     touch(Storage::disk('backups')->path($path), now()->getTimestamp());
 
-    $backupListingData = resolve(BackupManagementService::class)->listBackupsData($user);
+    $backupListingData = resolve(BackupManagementService::class)->listBackups($user);
 
     expect($backupListingData->health['healthy'])->toBeFalse()
         ->and($backupListingData->health['failed_checks'])->toContain('MaximumStorageInMegabytes');

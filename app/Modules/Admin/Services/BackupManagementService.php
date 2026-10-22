@@ -31,21 +31,8 @@ final readonly class BackupManagementService
 
     public function __construct(private ActivityLogger $activityLogger) {}
 
-    /**
-     * List configured backups and report destination health for the authorized user.
-     *
-     * @return array{
-     *     backups: list<array{
-     *         filename: string,
-     *         created_at: string|null,
-     *         size_in_bytes: float|null,
-     *         disk: string,
-     *         available: bool
-     *     }>,
-     *     health: array{healthy: bool, failed_checks: list<string>}
-     * }
-     */
-    public function listBackups(User $user): array
+    /** List configured backups and report destination health for the authorized user. */
+    public function listBackups(User $user): BackupListingData
     {
         $this->authorize($user, AdminPermission::AdminBackupsView);
 
@@ -71,20 +58,9 @@ final readonly class BackupManagementService
             ];
         }
 
-        return [
-            'backups' => $backups,
-            'health' => $this->backupHealth($backupConfig),
-        ];
-    }
-
-    /** Return the authorized listing as a typed Data object for Filament consumers. */
-    public function listBackupsData(User $user): BackupListingData
-    {
-        $backupListing = $this->listBackups($user);
-
         return new BackupListingData(
-            backups: $backupListing['backups'],
-            health: $backupListing['health'],
+            backups: $backups,
+            health: $this->backupHealth($backupConfig),
         );
     }
 

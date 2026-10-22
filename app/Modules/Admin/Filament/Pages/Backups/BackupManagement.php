@@ -94,7 +94,7 @@ class BackupManagement extends Page implements HasTable
 
     public function getBackupListing(): BackupListingData
     {
-        return $this->backupListing ??= resolve(BackupManagementService::class)->listBackupsData($this->authenticatedUser());
+        return $this->backupListing ??= resolve(BackupManagementService::class)->listBackups($this->authenticatedUser());
     }
 
     public function hasPermission(AdminPermission $adminPermission): bool
