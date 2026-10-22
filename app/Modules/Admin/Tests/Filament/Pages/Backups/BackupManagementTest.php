@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
-use App\Modules\Admin\Filament\Pages\BackupManagement;
+use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Models\User;

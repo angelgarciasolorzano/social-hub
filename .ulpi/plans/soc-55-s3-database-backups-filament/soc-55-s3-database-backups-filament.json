@@ -487,7 +487,7 @@
     {
       "id": "TASK-012",
       "title": "Crear la página Filament propia de backups",
-      "description": "Añadir una página en `app/Modules/Admin/Filament/Pages`, que ya es descubierta por `AdminPanelProvider`, y su vista Blade bajo el namespace existente `admin::`. Mostrar backups, tamaño, fecha, disco, disponibilidad y estado global del destino. Añadir acciones de crear y descargar con autorización del lado servidor; la descarga solicita confirmación de contraseña. No incluir borrado manual ni restauración desde el panel.",
+      "description": "Añadir la página en `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php`, dentro de una carpeta de funcionalidad bajo el directorio que `AdminPanelProvider` descubre recursivamente. Ubicar la vista Blade en `app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php`, referenciada como `admin::filament.backups.backup-management`. Mostrar backups, tamaño, fecha, disco, disponibilidad y estado global del destino. Añadir acciones de crear y descargar con autorización del lado servidor; la descarga solicita confirmación de contraseña. No incluir borrado manual ni restauración desde el panel.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
@@ -503,26 +503,26 @@
         "Crear encola el job; descargar exige contraseña confirmada y usa URL temporal; la página no presenta acciones de borrado o restauración."
       ],
       "filesToCreate": [
-        "app/Modules/Admin/Filament/Pages/BackupManagement.php",
-        "app/Modules/Admin/UI/Views/backups/backup-management.blade.php",
-        "app/Modules/Admin/Tests/Filament/Pages/BackupManagementTest.php"
+        "app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php",
+        "app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php",
+        "app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php"
       ],
       "filesToModify": [],
       "writeScope": [
         {
-          "path": "app/Modules/Admin/Filament/Pages/BackupManagement.php",
+          "path": "app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php",
           "role": "Implementar la página, navegación y acciones autorizadas."
         },
         {
-          "path": "app/Modules/Admin/UI/Views/backups/backup-management.blade.php",
+          "path": "app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php",
           "role": "Renderizar la tabla y estado del destino en el módulo Admin."
         },
         {
-          "path": "app/Modules/Admin/Tests/Filament/Pages/BackupManagementTest.php",
+          "path": "app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php",
           "role": "Probar acceso URL, permisos directos, confirmación, cola y descargas."
         }
       ],
-      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/BackupManagementTest.php",
+      "validateCommand": "rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php",
       "review": "codex"
     },
     {

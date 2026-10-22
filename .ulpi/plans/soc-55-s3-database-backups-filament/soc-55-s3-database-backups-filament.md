@@ -292,7 +292,7 @@ Usar el `AdminServiceProvider` ya registrado y el patrón de scheduling de `Auth
 
 ### TASK-012: Crear la página Filament propia de backups
 
-Añadir una página en `app/Modules/Admin/Filament/Pages`, que ya es descubierta por `AdminPanelProvider`, y su vista Blade bajo el namespace existente `admin::`. Mostrar backups, tamaño, fecha, disco, disponibilidad y estado global del destino. Añadir acciones de crear y descargar con autorización del lado servidor; la descarga solicita confirmación de contraseña. No incluir borrado manual ni restauración desde el panel.
+Añadir la página en `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php`, dentro de una carpeta de funcionalidad bajo el directorio que `AdminPanelProvider` descubre recursivamente. Ubicar la vista Blade en `app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php`, referenciada como `admin::filament.backups.backup-management`. Mostrar backups, tamaño, fecha, disco, disponibilidad y estado global del destino. Añadir acciones de crear y descargar con autorización del lado servidor; la descarga solicita confirmación de contraseña. No incluir borrado manual ni restauración desde el panel.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -304,11 +304,11 @@ Añadir una página en `app/Modules/Admin/Filament/Pages`, que ya es descubierta
 - Crear encola el job; descargar exige contraseña confirmada y usa URL temporal; la página no presenta acciones de borrado o restauración.
 
 **Write scope:**
-- `app/Modules/Admin/Filament/Pages/BackupManagement.php` — Implementar la página, navegación y acciones autorizadas.
-- `app/Modules/Admin/UI/Views/backups/backup-management.blade.php` — Renderizar la tabla y estado del destino en el módulo Admin.
-- `app/Modules/Admin/Tests/Filament/Pages/BackupManagementTest.php` — Probar acceso URL, permisos directos, confirmación, cola y descargas.
+- `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php` — Implementar la página, navegación y acciones autorizadas.
+- `app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php` — Renderizar la tabla y estado del destino en el módulo Admin.
+- `app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php` — Probar acceso URL, permisos directos, confirmación, cola y descargas.
 
-**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/BackupManagementTest.php`
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php`
 
 **Review:** codex
 

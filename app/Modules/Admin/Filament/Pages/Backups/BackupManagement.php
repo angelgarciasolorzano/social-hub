@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Admin\Filament\Pages;
+namespace App\Modules\Admin\Filament\Pages\Backups;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Services\BackupManagementService;
@@ -39,7 +39,7 @@ class BackupManagement extends Page implements HasTable
     protected static ?string $navigationLabel = 'Backups';
 
     #[Override]
-    protected string $view = 'admin::backups.backup-management';
+    protected string $view = 'admin::filament.backups.backup-management';
 
     /**
      * @var array{
