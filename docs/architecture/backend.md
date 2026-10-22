@@ -69,6 +69,8 @@ php artisan admin:bootstrap-admin admin@example.com --actor=admin@example.com
 
 Desde SOC-56 el panel Admin tiene un recurso de solo lectura, `ActivityLogs/ActivityLogResource` (`/admin/activity-logs`), sobre el modelo propio `App\Modules\ActivityLog\Models\ActivityLog` (al que apunta `activitylog.activity_model`) y autorizado por `ActivityLogPolicy`: listado con filtros por log, evento, causante y fechas, y un detalle con las propiedades guardadas, la IP y el user agent. Nunca muestra el contenido de publicaciones o comentarios.
 
+Para tener datos de prueba, `ActivityLogSeeder` (`app/Modules/ActivityLog/Database/Seeders/`) corre al final de `DatabaseSeeder` y genera la actividad a partir de lo ya sembrado: publicaciones, comentarios (creados, respuestas, editados y tombstones), likes, eventos de dispositivos de confianza, logins y auditoría Admin. Reparte las fechas en los últimos 60 días, nunca guarda contenido y no hace nada si la tabla ya tiene registros; el detalle está en CLAUDE.md.
+
 ## 1. Convención de nomenclatura
 
 Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del módulo.
