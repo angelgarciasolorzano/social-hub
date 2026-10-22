@@ -48,9 +48,13 @@ it('seeds each role with only its intended permissions', function (): void {
         ->where('name', AdminRole::AdminDashboardReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
+    $activityReaderRole = Role::query()
+        ->where('name', AdminRole::AdminActivityReader->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
 
-    $this->assertDatabaseCount('roles', 5);
-    $this->assertDatabaseCount('permissions', 7);
+    $this->assertDatabaseCount('roles', count(AdminRole::cases()));
+    $this->assertDatabaseCount('permissions', count(AdminPermission::cases()));
 
     foreach (AdminRole::cases() as $adminRoleCase) {
         $this->assertDatabaseHas('roles', [
@@ -84,7 +88,32 @@ it('seeds each role with only its intended permissions', function (): void {
         ->and($postsReaderRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([AdminPermission::AdminPostsView->value, AdminPermission::AdminPostsViewAny->value])
         ->and($dashboardReaderRole->permissions->pluck('name')->all())
-        ->toBe([AdminPermission::AdminDashboardView->value]);
+        ->toBe([AdminPermission::AdminDashboardView->value])
+        ->and($activityReaderRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([AdminPermission::AdminActivityView->value, AdminPermission::AdminActivityViewAny->value]);
+});
+
+it('gives the activity reader only the activity log permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminActivityReader->value);
+
+    expect($user->hasPermissionTo(AdminPermission::AdminActivityViewAny->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminActivityView->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAccess->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminPostsViewAny->value, 'admin'))->toBeFalse();
+});
+
+it('does not grant activity log access through admin.access alone', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::Admin->value);
+
+    expect($user->hasPermissionTo(AdminPermission::AdminActivityViewAny->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminActivityView->value, 'admin'))->toBeFalse();
 });
 
 it('allows the provisioner to list users and create invitations without other section access', function (): void {
@@ -119,8 +148,8 @@ it('preserves role assignments and revoked permissions when the seeder runs agai
 
     $remainingPermissions = usersReaderPermissionNames();
 
-    $this->assertDatabaseCount('roles', 5);
-    $this->assertDatabaseCount('permissions', 7);
+    $this->assertDatabaseCount('roles', count(AdminRole::cases()));
+    $this->assertDatabaseCount('permissions', count(AdminPermission::cases()));
     $this->assertDatabaseHas('model_has_roles', [
         'role_id' => $usersReaderRole->getKey(),
         'model_type' => $user->getMorphClass(),
@@ -161,7 +190,7 @@ it('renames the legacy users reader role without losing users or role permission
     $remainingPermissions = usersReaderPermissionNames();
     $user->refresh();
 
-    $this->assertDatabaseCount('roles', 5);
+    $this->assertDatabaseCount('roles', count(AdminRole::cases()));
     $this->assertDatabaseHas('roles', [
         'id' => $legacyUsersReaderRole->getKey(),
         'name' => AdminRole::AdminUsersReader->value,
@@ -219,7 +248,7 @@ it('renames legacy permissions in place while preserving role grants and revocat
         ->firstOrFail();
     $remainingPermissions = usersReaderPermissionNames();
 
-    $this->assertDatabaseCount('permissions', 7);
+    $this->assertDatabaseCount('permissions', count(AdminPermission::cases()));
     $this->assertDatabaseHas('permissions', [
         'id' => $legacyUsersViewAnyPermission->getKey(),
         'name' => AdminPermission::AdminUsersViewAny->value,

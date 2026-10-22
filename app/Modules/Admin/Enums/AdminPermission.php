@@ -19,4 +19,8 @@ enum AdminPermission: string
     case AdminPostsViewAny = 'admin.posts.viewAny';
 
     case AdminPostsView = 'admin.posts.view';
+
+    case AdminActivityViewAny = 'admin.activity.viewAny';
+
+    case AdminActivityView = 'admin.activity.view';
 }
