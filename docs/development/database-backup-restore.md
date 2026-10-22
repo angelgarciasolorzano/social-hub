@@ -7,8 +7,10 @@ Este procedimiento restaura un backup de SOC-55 en una instancia MySQL temporal 
 - Acceso al panel Admin y permiso `admin.backups.download`.
 - La passphrase `BACKUP_ARCHIVE_PASSWORD` del entorno que generó el archivo, disponible en el gestor de secretos aprobado.
 - Un cliente `mysql` compatible con la versión del servidor de destino.
-- Una instancia MySQL scratch separada de producción, con una base vacía y un usuario limitado a esa base.
+- Una instancia MySQL scratch temporal, separada del servidor fuente y ligada únicamente a loopback, con una base vacía.
 - Un extractor ZIP que soporte ZIP AES-256, como The Unarchiver o BetterZip. La utilidad Archive de macOS no puede extraer estos archivos según la [documentación de cifrado de Spatie Backup v10](https://spatie.be/docs/laravel-backup/v10/advanced-usage/encrypt-backup-archives).
+
+El dump actual incluye instrucciones `SQL_LOG_BIN` y `GTID_PURGED` que requieren privilegios de servidor. Para importarlo, usa una cuenta administradora de la instancia scratch desechable; una cuenta limitada a una sola base no puede ejecutar esas instrucciones. Nunca uses credenciales del servidor fuente ni producción. La instancia temporal debe estar aislada y no contener otras bases de datos de la aplicación.
 
 El disco S3 es privado. El panel genera una URL firmada de descarga por cinco minutos después de confirmar la contraseña actual del usuario Admin.
 
@@ -33,13 +35,13 @@ El ejemplo usa `127.0.0.1:3307` y la base `social_hub_restore`; reemplázalos po
 mysql \
   --host=127.0.0.1 \
   --port=3307 \
-  --user=scratch_restore \
+  --user=scratch_admin \
   --password \
   --database=social_hub_restore \
   < "/ruta/privada/extraida/db-dumps/mysql-<nombre-de-la-base>.sql"
 ```
 
-`mysql` solicita la contraseña porque `--password` no lleva un valor. No escribas la contraseña después de la opción: MySQL advierte que incluirla en la línea de comandos puede exponerla a otros procesos. La conexión debe apuntar al servidor scratch comprobado, y el archivo de entrada debe ser el dump extraído, nunca una ruta en producción. Consulta la [guía de conexión de MySQL](https://dev.mysql.com/doc/refman/8.4/en/connecting.html).
+`mysql` solicita la contraseña porque `--password` no lleva un valor. No escribas la contraseña después de la opción: MySQL advierte que incluirla en la línea de comandos puede exponerla a otros procesos. La conexión debe apuntar al servidor scratch comprobado, y el archivo de entrada debe ser el dump extraído, nunca una ruta en producción. La cuenta `scratch_admin` debe existir solo en la instancia temporal. Consulta la [guía de conexión de MySQL](https://dev.mysql.com/doc/refman/8.4/en/connecting.html).
 
 Si el cliente devuelve un error, detén el procedimiento y conserva el archivo original para investigar. No importes parcialmente el dump en otra base como forma de recuperación.
 
@@ -51,7 +53,7 @@ Con las mismas opciones de host, puerto y usuario scratch, verifica el esquema y
 mysql \
   --host=127.0.0.1 \
   --port=3307 \
-  --user=scratch_restore \
+  --user=scratch_admin \
   --password \
   --database=social_hub_restore \
   --execute='SHOW TABLES;'
@@ -60,3 +62,9 @@ mysql \
 Ejecuta además una consulta de solo lectura para comprobar el marcador o registro conocido acordado para ese backup. En un simulacro, crea el marcador en el entorno de prueba antes de generar el respaldo; no modifiques datos reales para añadirlo.
 
 Al terminar, cierra la sesión scratch y elimina el ZIP y el dump extraído según la política de manejo de datos del equipo. No subas archivos, salidas con datos ni capturas del proceso a tickets o logs. El simulacro de restauración y su resultado se documentan por separado en TASK-016.
+
+## Resultado del simulacro TASK-016
+
+- **Fecha:** 2026-10-22.
+- **Entorno:** local, con simulador S3 y una instancia MySQL scratch temporal aislada.
+- **Resultado:** exitoso. Sin la passphrase, el ZIP no pudo extraerse; con la passphrase configurada, el dump se extrajo y restauró. El esquema y una migración marcador conocida coincidieron con la base fuente, que permaneció sin cambios. Se retiraron la instancia scratch y los archivos temporales.
