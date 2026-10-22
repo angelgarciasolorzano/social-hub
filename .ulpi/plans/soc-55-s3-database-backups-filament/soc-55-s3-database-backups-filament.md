@@ -73,7 +73,7 @@ Instalar `spatie/laravel-backup` v10 y `league/flysystem-aws-s3-v3` como depende
 
 ### TASK-002: Configurar el disco S3 privado y los backups de base de datos
 
-Agregar un disco S3 dedicado, separado del disco S3 genérico y de los archivos de usuario, y publicar/configurar `config/backup.php`. El backup debe incluir solo MySQL, usar cifrado obligatorio y verificación del ZIP, configurar `mysqldump` con transacción única y fijar una retención explícita. Usar variables de entorno propias del backup en lugar de reutilizar inadvertidamente las credenciales genéricas.
+Agregar un disco S3 dedicado, separado del disco S3 genérico y de los archivos de usuario, y publicar/configurar `config/backup.php`. El backup debe incluir solo MySQL, usar cifrado obligatorio y verificación del ZIP, y fijar una retención explícita. Usar variables de entorno propias del backup en lugar de reutilizar inadvertidamente las credenciales genéricas. La opción de transacción única para mysqldump se separa en TASK-018 porque Spatie la obtiene de `config/database.php`.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -81,7 +81,7 @@ Agregar un disco S3 dedicado, separado del disco S3 genérico y de los archivos 
 
 **Acceptance Criteria:**
 - El disco dedicado usa `driver=s3`, credenciales y bucket de backup propios, y no configura visibilidad pública ni cambia `FILESYSTEM_DISK`.
-- La configuración Spatie apunta al disco dedicado, respalda únicamente la conexión MySQL (no la conexión SQLite local por defecto), excluye archivos, cifra y verifica el ZIP, y habilita `--single-transaction` para el dump.
+- La configuración Spatie apunta al disco dedicado, respalda únicamente la conexión MySQL (no la conexión SQLite local por defecto), excluye archivos, cifra y verifica el ZIP.
 - La política de limpieza define 7 copias diarias, 4 semanales y 6 mensuales; la prueba cubre que el disco público/local no quede como destino de backup.
 
 **Write scope:**
@@ -308,19 +308,19 @@ Añadir una página en `app/Modules/Admin/Filament/Pages`, que ya es descubierta
 
 ### TASK-013: Documentar variables y requisitos operativos para backups
 
-Añadir a `.env.example` las variables vacías para bucket/credenciales S3 de backups, contraseña de cifrado y destinatario de alertas. Actualizar README con requisitos de MySQL y `mysqldump`, worker no-sync y scheduler, y el contrato de bucket/IAM: privado, versionado, `ListBucket`, `PutObject`, `GetObject` y `DeleteObject` limitado al prefijo. Explicar que en un bucket versionado el borrado crea marcadores; una regla de ciclo de vida elimina versiones no actuales y marcadores vencidos después de 30 días.
+Añadir a `.env.example` las variables de backup `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`, `BACKUP_S3_DEFAULT_REGION`, `BACKUP_S3_BUCKET`, `BACKUP_S3_URL`, `BACKUP_S3_ENDPOINT`, `BACKUP_S3_USE_PATH_STYLE_ENDPOINT`, `BACKUP_ARCHIVE_PASSWORD` y `BACKUP_NOTIFICATION_EMAIL`, con valores vacíos o seguros de ejemplo y sin secretos reales. Actualizar README con requisitos de MySQL y `mysqldump`, worker no-sync y scheduler, y el contrato de bucket/IAM: privado, versionado, `ListBucket`, `PutObject`, `GetObject` y `DeleteObject` limitado al prefijo. Explicar que en un bucket versionado el borrado crea marcadores; una regla de ciclo de vida elimina versiones no actuales y marcadores vencidos después de 30 días.
 
 **Type:** docs · **Effort:** M · **Agent:** general-purpose · **Priority:** P2
 
 **Depends on:** TASK-002, TASK-011, TASK-012
 
 **Acceptance Criteria:**
-- `.env.example` documenta variables sin credenciales ni contraseñas reales, y README indica la instalación de `mysqldump`, el worker y el scheduler.
+- `.env.example` documenta las nueve variables `BACKUP_*` enumeradas en la tarea con valores vacíos o seguros, sin credenciales ni contraseñas reales; README indica la instalación de `mysqldump`, el worker y el scheduler.
 - README especifica permisos de lectura/escritura/listado/borrado, bucket privado versionado y ciclo de vida de versiones anteriores; la política no requiere `DeleteObjectVersion` si la expiración queda a cargo de S3 Lifecycle.
 - La documentación explica que la salud se mide con antigüedad y almacenamiento del destino, y que el monitor del mismo despliegue no detecta por sí solo una caída total de la aplicación.
 
 **Write scope:**
-- `.env.example` — Añadir nombres de variables de backup con valores vacíos o seguros de ejemplo.
+- `.env.example` — Añadir las nueve variables `BACKUP_*` enumeradas en la tarea con valores vacíos o seguros de ejemplo.
 - `README.md` — Documentar prerrequisitos, worker/scheduler, IAM, versionado y expiración de versiones no actuales.
 
 **Validate command:** `rtk git diff --check -- .env.example README.md`
@@ -388,13 +388,34 @@ Ejecutar el procedimiento de TASK-015 con credenciales de staging, un backup cif
 
 **Review:** codex
 
+### TASK-018: Configurar el dump MySQL con transacción única
+
+Agregar la opción de transacción única a la configuración `dump` de la conexión MySQL. Spatie Backup v10 lee esta opción desde `config/database.php` y la convierte en la llamada `useSingleTransaction()` de su dumper; mantenerla limitada a MySQL.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
+
+**Depends on:** TASK-002
+
+**Acceptance Criteria:**
+- La conexión `mysql` declara `dump.useSingleTransaction` como `true`, que Spatie Backup v10 convierte en la opción de mysqldump de transacción única.
+- La prueba de configuración confirma la opción para MySQL sin añadirla a conexiones distintas.
+- El resto de opciones y conexiones de base de datos conservan su configuración existente.
+
+**Write scope:**
+- `config/database.php` — Activar `useSingleTransaction` solamente para la conexión MySQL que se respaldará.
+- `app/Modules/Admin/Tests/Backups/BackupConfigurationTest.php` — Verificar que la opción de dump se aplica solo a MySQL.
+
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Backups/BackupConfigurationTest.php`
+
+**Review:** codex
+
 ### TASK-017: Pasar los gates completos de calidad y pruebas
 
 Ejecutar los gates obligatorios del proyecto después de integrar los slices. Limpiar la caché de Rector, revisar el dry-run y aplicar Rector; después Pint, PHPStan, la suite completa y Laravel Doctor como última comprobación. Rector solo puede modificar código dentro de los scopes aprobados por las tareas previas; cualquier otra propuesta se detiene para revisión.
 
 **Type:** chore · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018
 
 **Acceptance Criteria:**
 - Rector clear-cache, dry-run y aplicación se ejecutan en ese orden; Rector no deja cambios fuera de los archivos ya aprobados.
@@ -435,8 +456,8 @@ SOC-55 no se considera completo sin cifrado y destino privado, permisos y audito
 
 ## Execution Summary
 
-- Tasks: 17.
-- Parallel layers: L0: TASK-001, TASK-003, TASK-008; L1: TASK-002, TASK-004; L2: TASK-005, TASK-006, TASK-007, TASK-009; L3: TASK-010, TASK-011; L4: TASK-012; L5: TASK-013, TASK-014; L6: TASK-015; L7: TASK-016; L8: TASK-017.
+- Tasks: 18.
+- Parallel layers: L0: TASK-001, TASK-003, TASK-008; L1: TASK-002, TASK-004; L2: TASK-005, TASK-006, TASK-007, TASK-009, TASK-018; L3: TASK-010, TASK-011; L4: TASK-012; L5: TASK-013, TASK-014; L6: TASK-015; L7: TASK-016; L8: TASK-017.
 - Critical path (9 tasks): TASK-001 → TASK-002 → TASK-009 → TASK-010 → TASK-012 → TASK-013 → TASK-015 → TASK-016 → TASK-017.
 - Tras completar una tarea atómica, detener la implementación para revisión del usuario.
 
@@ -458,7 +479,8 @@ SOC-55 no se considera completo sin cifrado y destino privado, permisos y audito
 - **TASK-014** ← TASK-005, TASK-006, TASK-007, TASK-012
 - **TASK-015** ← TASK-002, TASK-010, TASK-012, TASK-013
 - **TASK-016** ← TASK-015
-- **TASK-017** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016
+- **TASK-018** ← TASK-002
+- **TASK-017** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018
 
 ## References
 
