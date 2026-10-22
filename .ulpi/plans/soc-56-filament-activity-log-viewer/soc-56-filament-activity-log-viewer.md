@@ -2,18 +2,18 @@
 
 ## Overview
 
-Agregar al panel Admin un recurso de solo lectura (`Activities`) para consultar el registro de actividad de SOC-54, protegido por los permisos nuevos `admin.activity.viewAny` y `admin.activity.view` y el rol `admin-activity-reader`, más una pestaña de actividad en el detalle de usuario.
+Agregar al panel Admin un recurso de solo lectura (`ActivityLogs`) para consultar el registro de actividad de SOC-54, protegido por los permisos nuevos `admin.activity.viewAny` y `admin.activity.view` y el rol `admin-activity-reader`, más una pestaña de actividad en el detalle de usuario.
 
 **Linear:** [SOC-56](https://linear.app/social-hub-ang/issue/SOC-56/feature-add-a-read-only-filament-activity-log-viewer-with-its-own) · **Modo:** HOLD · **Revisión predeterminada:** Claude
 
 ## Scope Challenge
 
-HOLD confirmado con revisión de Claude. Decisiones del usuario: la autorización vive en una `ActivityPolicy` asociada al modelo con `#[UsePolicy]`, como `UserPolicy` (primero se eligió el patrón de Posts/Comments, con overrides en el recurso, y luego se pidió agregar la policy); `admin:bootstrap-admin` asigna también el rol nuevo; se incluye la pestaña de actividad en el detalle de usuario. Ajustes técnicos propuestos: un modelo `Activity` propio del módulo ActivityLog, que además es donde se asocia la policy, porque la regla `arch()` de SOC-54 impide usar el modelo de Spatie desde Admin, y un catálogo central de etiquetas (`ActivityLogEventCatalog`) en lugar de agregar `label()` a los seis enums de eventos.
+HOLD confirmado con revisión de Claude. Decisiones del usuario: la autorización vive en una `ActivityLogPolicy` asociada al modelo con `#[UsePolicy]`, como `UserPolicy` (primero se eligió el patrón de Posts/Comments, con overrides en el recurso, y luego se pidió agregar la policy); `admin:bootstrap-admin` asigna también el rol nuevo; se incluye la pestaña de actividad en el detalle de usuario. Ajustes técnicos propuestos: un modelo `ActivityLog` propio del módulo ActivityLog, que además es donde se asocia la policy, porque la regla `arch()` de SOC-54 impide usar el modelo de Spatie desde Admin, y un catálogo central de etiquetas (`ActivityLogEventCatalog`) en lugar de agregar `label()` a los seis enums de eventos.
 
 ## Prerequisites
 
 - SOC-54 está en main: tabla `activity_log`, `ActivityLogger`, catálogo `ActivityLogEvent::ENUMS`, morph map con `user`, `post`, `comment`, `like`, `admin_invitation`, `trusted_device_event` y `role`, y la regla `arch()` que limita `Spatie\Activitylog` al módulo ActivityLog.
-- `AdminPanelProvider` descubre recursos en `app/Modules/Admin/Filament/Resources/`; `UserResource` se autoriza con `UserPolicy` (asociada con `#[UsePolicy]`) y sin overrides, el patrón que sigue el recurso Activities.
+- `AdminPanelProvider` descubre recursos en `app/Modules/Admin/Filament/Resources/`; `UserResource` se autoriza con `UserPolicy` (asociada con `#[UsePolicy]`) y sin overrides, el patrón que sigue el recurso ActivityLogs.
 - `AdminAuthorizationSeeder` crea todos los permisos de `AdminPermission::cases()` y solo asigna permisos a roles recién creados.
 - Las pruebas de Filament usan `AdminFilamentTestContext` y `FilamentTableRecords` (`app/Modules/Admin/Tests/Support/`).
 
@@ -28,8 +28,8 @@ HOLD confirmado con revisión de Claude. Decisiones del usuario: la autorizació
 ## Contracts
 
 - Permisos `admin.activity.viewAny` (listado y pestaña de usuario) y `admin.activity.view` (detalle), rol `admin-activity-reader`; `admin.access` por sí solo no da acceso.
-- El recurso usa `App\Modules\ActivityLog\Models\Activity`; `activitylog.activity_model` apunta a ese modelo, así que la escritura, la purga y la lectura usan la misma clase y la regla `arch()` sigue en verde.
-- Solo lectura: `ActivityPolicy` (`app/Modules/ActivityLog/Policies/`, registrada con `#[UsePolicy]` en el modelo) permite `viewAny`/`view` según los permisos y niega `create`, `update`, `delete`, `deleteAny`, `restore` y `forceDelete`; el recurso solo registra las páginas `index` y `view` y la pestaña del usuario consulta la misma policy.
+- El recurso usa `App\Modules\ActivityLog\Models\ActivityLog`; `activitylog.activity_model` apunta a ese modelo, así que la escritura, la purga y la lectura usan la misma clase y la regla `arch()` sigue en verde.
+- Solo lectura: `ActivityLogPolicy` (`app/Modules/ActivityLog/Policies/`, registrada con `#[UsePolicy]` en el modelo) permite `viewAny`/`view` según los permisos y niega `create`, `update`, `delete`, `deleteAny`, `restore` y `forceDelete`; el recurso solo registra las páginas `index` y `view` y la pestaña del usuario consulta la misma policy.
 - La vista nunca muestra contenido de publicaciones o comentarios: el sujeto se describe por tipo e id; las propiedades mostradas son las que ya se guardan.
 - Los enlaces a usuarios, publicaciones y comentarios solo aparecen si el administrador puede ver ese recurso y el registro existe.
 - El listado precarga causante y sujeto para que el número de consultas no dependa de la cantidad de filas.
@@ -116,22 +116,24 @@ Agregar `AdminRole::AdminActivityReader` a `$requiredRoleNames` de `AdminBootstr
 
 **Review:** Claude
 
-### TASK-004: Crear el modelo Activity propio del módulo ActivityLog
+### TASK-004: Crear el modelo ActivityLog propio del módulo ActivityLog
 
-La regla `arch()` de SOC-54 prohíbe usar `Spatie\Activitylog` fuera de `App\Modules\ActivityLog`, así que el recurso de Admin necesita un modelo del módulo. Crear `App\Modules\ActivityLog\Models\Activity extends Spatie\Activitylog\Models\Activity` con un scope `#[Scope] involvingUser(Builder, User)` (causante o sujeto es el usuario) y apuntar `activitylog.activity_model` a él en `config/activitylog.php`, para que `ActivityLogger` y la purga escriban y lean con el mismo modelo. La policy se le asocia en TASK-016.
+La regla `arch()` de SOC-54 prohíbe usar `Spatie\Activitylog` fuera de `App\Modules\ActivityLog`, así que el recurso de Admin necesita un modelo del módulo. Crear `App\Modules\ActivityLog\Models\ActivityLog extends Spatie\Activitylog\Models\ActivityLog` con un scope `#[Scope] involvingUser(Builder, User)` (causante o sujeto es el usuario) y apuntar `activitylog.activity_model` a él en `config/activitylog.php`, para que `ActivityLogger` y la purga escriban y lean con el mismo modelo. La policy se le asocia en TASK-016. Durante la ejecución, Rector exigió `HasFactory` en el modelo y PHPStan el tipo de su factory, así que se agregó `Database/Factories/ActivityLogFactory` (estado por defecto: evento anónimo sin sujeto) con `#[UseFactory]` y su prueba; sus estados (`forEvent`, `causedBy`, `performedOn`) se agregan en TASK-010, donde se usan con varios tipos, porque PHPStan exige que los parámetros sean tan estrechos como sus llamadas.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
 **Depends on:** Ninguna
 
 **Acceptance Criteria:**
-- `resolve(ActivityLogger::class)->record(...)` crea una instancia de `App\Modules\ActivityLog\Models\Activity`.
-- `Activity::query()->involvingUser($user)` devuelve los registros donde el usuario es causante o sujeto y excluye los de otros usuarios.
+- `resolve(ActivityLogger::class)->record(...)` crea una instancia de `App\Modules\ActivityLog\Models\ActivityLog`.
+- `ActivityLog::query()->involvingUser($user)` devuelve los registros donde el usuario es causante o sujeto y excluye los de otros usuarios.
 - Las 110 pruebas existentes del módulo ActivityLog siguen pasando.
 
 **writeScope:**
-- `app/Modules/ActivityLog/Models/Activity.php` (nuevo)
-- `app/Modules/ActivityLog/Tests/Models/ActivityTest.php` (nuevo)
+- `app/Modules/ActivityLog/Models/ActivityLog.php` (nuevo)
+- `app/Modules/ActivityLog/Tests/Models/ActivityLogTest.php` (nuevo)
+- `app/Modules/ActivityLog/Database/Factories/ActivityLogFactory.php` (nuevo)
+- `app/Modules/ActivityLog/Tests/Factories/ActivityLogFactoryTest.php` (nuevo)
 - `config/activitylog.php`
 
 **validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/ActivityLog/Tests`
@@ -158,31 +160,31 @@ Crear `App\Modules\ActivityLog\Support\ActivityLogEventCatalog` (decisión: un c
 
 **Review:** Claude
 
-### TASK-016: Crear ActivityPolicy y asociarla al modelo Activity
+### TASK-016: Crear ActivityLogPolicy y asociarla al modelo ActivityLog
 
-Crear `App\Modules\ActivityLog\Policies\ActivityPolicy` siguiendo `UserPolicy`: `viewAny()` exige `admin.activity.viewAny`, `view()` exige `admin.activity.view`, y `create`, `update`, `delete`, `deleteAny`, `restore` y `forceDelete` devuelven siempre `false`. Asociarla con `#[UsePolicy(ActivityPolicy::class)]` en el modelo `Activity` del módulo (TASK-004). La policy es la única fuente de autorización: el recurso (TASK-009) y la pestaña del usuario (TASK-012) la consultan en lugar de repetir la regla. Pedida por el usuario después de una primera versión sin policy.
+Crear `App\Modules\ActivityLog\Policies\ActivityLogPolicy` siguiendo `UserPolicy`: `viewAny()` exige `admin.activity.viewAny`, `view()` exige `admin.activity.view`, y `create`, `update`, `delete`, `deleteAny`, `restore` y `forceDelete` devuelven siempre `false`. Asociarla con `#[UsePolicy(ActivityLogPolicy::class)]` en el modelo `ActivityLog` del módulo (TASK-004). La policy es la única fuente de autorización: el recurso (TASK-009) y la pestaña del usuario (TASK-012) la consultan en lugar de repetir la regla. Pedida por el usuario después de una primera versión sin policy.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
 **Depends on:** TASK-001, TASK-004
 
 **Acceptance Criteria:**
-- `Gate::getPolicyFor(new Activity)` devuelve `ActivityPolicy`.
+- `Gate::getPolicyFor(new ActivityLog)` devuelve `ActivityLogPolicy`.
 - Con solo `admin.activity.viewAny` se permite `viewAny` pero no `view`; con `admin.access` solo, ninguna de las dos.
 - Ningún usuario, ni siquiera con todos los permisos, puede `create`, `update`, `delete`, `deleteAny`, `restore` ni `forceDelete`.
 
 **writeScope:**
-- `app/Modules/ActivityLog/Policies/ActivityPolicy.php` (nuevo)
-- `app/Modules/ActivityLog/Tests/Policies/ActivityPolicyTest.php` (nuevo)
-- `app/Modules/ActivityLog/Models/Activity.php`
+- `app/Modules/ActivityLog/Policies/ActivityLogPolicy.php` (nuevo)
+- `app/Modules/ActivityLog/Tests/Policies/ActivityLogPolicyTest.php` (nuevo)
+- `app/Modules/ActivityLog/Models/ActivityLog.php`
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests/Policies/ActivityPolicyTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/ActivityLog/Tests/Policies/ActivityLogPolicyTest.php`
 
 **Review:** Claude
 
 ### TASK-006: Crear el concern que describe causante y sujeto
 
-Crear `Filament/Concerns/DescribesActivityParties.php` (convención `Concerns/` de Admin), compartido por la tabla, el detalle y la pestaña del usuario: `causerLabel(Activity)` (nombre del usuario, 'Anonymous' sin causante, 'Deleted user #id' si ya no existe), `causerUrl(Activity)` (detalle en `UserResource` solo si `UserResource::canView()`), `subjectLabel(Activity)` (tipo legible e id, por ejemplo 'Post #12', nunca contenido) y `subjectUrl(Activity)` (solo para `user`, `post` y `comment` cuando su recurso permite verlo y el registro existe).
+Crear `Filament/Concerns/DescribesActivityLogParties.php` (convención `Concerns/` de Admin), compartido por la tabla, el detalle y la pestaña del usuario: `causerLabel(ActivityLog)` (nombre del usuario, 'Anonymous' sin causante, 'Deleted user #id' si ya no existe), `causerUrl(ActivityLog)` (detalle en `UserResource` solo si `UserResource::canView()`), `subjectLabel(ActivityLog)` (tipo legible e id, por ejemplo 'Post #12', nunca contenido) y `subjectUrl(ActivityLog)` (solo para `user`, `post` y `comment` cuando su recurso permite verlo y el registro existe).
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -194,7 +196,7 @@ Crear `Filament/Concerns/DescribesActivityParties.php` (convención `Concerns/` 
 - Ningún label incluye el texto de una publicación o comentario.
 
 **writeScope:**
-- `app/Modules/Admin/Filament/Concerns/DescribesActivityParties.php` (nuevo)
+- `app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php` (nuevo)
 
 **validateCommand:** `rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Concerns`
 
@@ -202,7 +204,7 @@ Crear `Filament/Concerns/DescribesActivityParties.php` (convención `Concerns/` 
 
 ### TASK-007: Definir la tabla de actividad
 
-`Tables/ActivitiesTable::configure()` (patrón de `PostsTable`): `modifyQueryUsing` con `with(['causer', 'subject'])`; columnas fecha (`created_at`, ordenable), log (etiqueta), evento (etiqueta del catálogo), causante y sujeto (con URL del concern); filtros `SelectFilter` de log y evento (opciones del catálogo), causante (búsqueda por usuario) y rango de fechas (como `PostsTable`); orden por `id` descendente, paginación 10/25/50, sin `recordActions` de edición ni `toolbarActions`.
+`Tables/ActivityLogsTable::configure()` (patrón de `PostsTable`): `modifyQueryUsing` con `with(['causer', 'subject'])`; columnas fecha (`created_at`, ordenable), log (etiqueta), evento (etiqueta del catálogo), causante y sujeto (con URL del concern); filtros `SelectFilter` de log y evento (opciones del catálogo), causante (búsqueda por usuario) y rango de fechas (como `PostsTable`); orden por `id` descendente, paginación 10/25/50, sin `recordActions` de edición ni `toolbarActions`.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -213,15 +215,15 @@ Crear `Filament/Concerns/DescribesActivityParties.php` (convención `Concerns/` 
 - Los filtros reducen el listado por log, evento, causante y fechas (comprobado en TASK-010).
 
 **writeScope:**
-- `app/Modules/Admin/Filament/Resources/Activities/Tables/ActivitiesTable.php` (nuevo)
+- `app/Modules/Admin/Filament/Resources/ActivityLogs/Tables/ActivityLogsTable.php` (nuevo)
 
-**validateCommand:** `rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Activities`
+**validateCommand:** `rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/ActivityLogs`
 
 **Review:** Claude
 
 ### TASK-008: Definir el detalle de una actividad
 
-`Schemas/ActivityInfolist::configure()` (patrón de `PostInfolist`): sección 'Activity' con fecha, log, evento, causante y sujeto (con enlaces del concern); sección 'Details' con las propiedades guardadas como pares clave-valor (listas unidas por comas, booleanos 'Yes'/'No'), excluyendo `ip` y `user_agent`; sección 'Request' con IP y user agent, o 'Not recorded' cuando la acción vino de consola.
+`Schemas/ActivityLogInfolist::configure()` (patrón de `PostInfolist`): sección 'Activity' con fecha, log, evento, causante y sujeto (con enlaces del concern); sección 'Details' con las propiedades guardadas como pares clave-valor (listas unidas por comas, booleanos 'Yes'/'No'), excluyendo `ip` y `user_agent`; sección 'Request' con IP y user agent, o 'Not recorded' cuando la acción vino de consola.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -232,36 +234,36 @@ Crear `Filament/Concerns/DescribesActivityParties.php` (convención `Concerns/` 
 - Una actividad de consola muestra 'Not recorded' en la sección de petición.
 
 **writeScope:**
-- `app/Modules/Admin/Filament/Resources/Activities/Schemas/ActivityInfolist.php` (nuevo)
+- `app/Modules/Admin/Filament/Resources/ActivityLogs/Schemas/ActivityLogInfolist.php` (nuevo)
 
-**validateCommand:** `rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Activities`
+**validateCommand:** `rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/ActivityLogs`
 
 **Review:** Claude
 
-### TASK-009: Crear el recurso Activities y sus páginas
+### TASK-009: Crear el recurso ActivityLogs y sus páginas
 
-`ActivityResource` (modelo `App\Modules\ActivityLog\Models\Activity`) con el patrón de `UserResource`: sin overrides `can*()`, porque Filament consulta la policy del modelo (`ActivityPolicy`, TASK-016) para listar, ver, crear, editar y borrar; solo registra las páginas `index` y `view`; ícono de navegación, etiqueta 'Activity log', `table()` e `infolist()` delegados a TASK-007/008. Páginas `Pages/ListActivities` (sin acciones de cabecera) y `Pages/ViewActivity` (sin acciones). El panel lo descubre solo (`discoverResources`).
+`ActivityLogResource` (modelo `App\Modules\ActivityLog\Models\ActivityLog`) con el patrón de `UserResource`: sin overrides `can*()`, porque Filament consulta la policy del modelo (`ActivityLogPolicy`, TASK-016) para listar, ver, crear, editar y borrar; solo registra las páginas `index` y `view`; ícono de navegación, etiqueta 'Activity log', `table()` e `infolist()` delegados a TASK-007/008. Páginas `Pages/ListActivityLogs` (sin acciones de cabecera) y `Pages/ViewActivityLog` (sin acciones). El panel lo descubre solo (`discoverResources`).
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
 **Depends on:** TASK-007, TASK-008, TASK-016
 
 **Acceptance Criteria:**
-- `php artisan route:list --name=filament.admin.resources.activities` muestra solo las rutas `index` y `view`.
+- `php artisan route:list --name=filament.admin.resources.activity-logs` muestra solo las rutas `index` y `view`.
 - Sin `admin.activity.viewAny` el recurso no aparece en la navegación (comprobado en TASK-010).
 
 **writeScope:**
-- `app/Modules/Admin/Filament/Resources/Activities/ActivityResource.php` (nuevo)
-- `app/Modules/Admin/Filament/Resources/Activities/Pages/ListActivities.php` (nuevo)
-- `app/Modules/Admin/Filament/Resources/Activities/Pages/ViewActivity.php` (nuevo)
+- `app/Modules/Admin/Filament/Resources/ActivityLogs/ActivityLogResource.php` (nuevo)
+- `app/Modules/Admin/Filament/Resources/ActivityLogs/Pages/ListActivityLogs.php` (nuevo)
+- `app/Modules/Admin/Filament/Resources/ActivityLogs/Pages/ViewActivityLog.php` (nuevo)
 
-**validateCommand:** `rtk php artisan route:list --name=activities`
+**validateCommand:** `rtk php artisan route:list --name=activity-logs`
 
 **Review:** Claude
 
 ### TASK-010: Probar el listado de actividad
 
-`ListActivitiesTest` con `AdminFilamentTestContext`: acceso (sin permiso 403 y fuera de la navegación; con `admin-activity-reader` lista), columnas y etiquetas, filtros por log, evento, causante y fechas, causante anónimo y causante/sujeto eliminados, y una prueba de conteo de consultas (la cantidad no crece al pasar de pocas a muchas filas con distintos tipos de sujeto).
+Agregar a `ActivityLogFactory` los estados `forEvent(ActivityLogEvent)`, `causedBy(Model)` y `performedOn(Model)` para crear actividad de distintos tipos. `ListActivityLogsTest` con `AdminFilamentTestContext`: acceso (sin permiso 403 y fuera de la navegación; con `admin-activity-reader` lista), columnas y etiquetas, filtros por log, evento, causante y fechas, causante anónimo y causante/sujeto eliminados, y una prueba de conteo de consultas (la cantidad no crece al pasar de pocas a muchas filas con distintos tipos de sujeto).
 
 **Type:** test · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -273,34 +275,35 @@ Crear `Filament/Concerns/DescribesActivityParties.php` (convención `Concerns/` 
 - Una actividad cuyo usuario y comentario ya fueron borrados se lista como 'Deleted user #id' y 'Comment #id'.
 
 **writeScope:**
-- `app/Modules/Admin/Tests/Filament/Resources/Activities/Pages/ListActivitiesTest.php` (nuevo)
+- `app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php` (nuevo)
+- `app/Modules/ActivityLog/Database/Factories/ActivityLogFactory.php`
 
-**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/Admin/Tests/Filament/Resources/Activities/Pages/ListActivitiesTest.php`
+**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php`
 
 **Review:** Claude
 
 ### TASK-011: Probar el detalle de actividad y su privacidad
 
-`ViewActivityTest`: con `admin.activity.view` se ve el detalle con propiedades, IP y user agent; sin él, 403 al abrir la URL directa; el recurso no tiene páginas de crear/editar y la policy niega esas acciones; y el detalle de una actividad cuyo sujeto es una publicación o comentario con texto centinela no muestra ese texto.
+`ViewActivityLogLogTest`: con `admin.activity.view` se ve el detalle con propiedades, IP y user agent; sin él, 403 al abrir la URL directa; el recurso no tiene páginas de crear/editar y la policy niega esas acciones; y el detalle de una actividad cuyo sujeto es una publicación o comentario con texto centinela no muestra ese texto.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
 **Depends on:** TASK-009
 
 **Acceptance Criteria:**
-- Sin `admin.activity.view` abrir `/admin/activities/{id}` responde 403.
+- Sin `admin.activity.view` abrir `/admin/activity-logs/{id}` responde 403.
 - El HTML del detalle no contiene el texto de la publicación ni del comentario que son sujeto.
 
 **writeScope:**
-- `app/Modules/Admin/Tests/Filament/Resources/Activities/Pages/ViewActivityTest.php` (nuevo)
+- `app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ViewActivityLogLogTest.php` (nuevo)
 
-**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/Admin/Tests/Filament/Resources/Activities/Pages/ViewActivityTest.php`
+**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ViewActivityLogLogTest.php`
 
 **Review:** Claude
 
 ### TASK-012: Agregar la pestaña de actividad al detalle de usuario
 
-Agregar a `User` la relación `causedActivities(): MorphMany` hacia el modelo `Activity` del módulo (morph `causer`), que Filament necesita como relación base. Crear `Users/RelationManagers/ActivitiesRelationManager` con `$relationship = 'causedActivities'` y una consulta propia (`->query()`, como hace `TrustedDevicesRelationManager`) basada en `Activity::query()->involvingUser($owner)` para incluir también las actividades donde el usuario es sujeto. `canViewForRecord()` exige `ViewUser`, que el administrador pueda ver al usuario y `Gate::allows('viewAny', Activity::class)` (la policy de TASK-016). Reutiliza `DescribesActivityParties` y el catálogo; sin acciones. Registrarlo en `UserResource::getRelations()`. Si al implementar Filament no respeta la consulta propia, limitarse a la relación de causante y anotarlo en el plan.
+Agregar a `User` la relación `causedActivityLogs(): MorphMany` hacia el modelo `ActivityLog` del módulo (morph `causer`), que Filament necesita como relación base. Crear `Users/RelationManagers/ActivityLogsRelationManager` con `$relationship = 'causedActivityLogs'` y una consulta propia (`->query()`, como hace `TrustedDevicesRelationManager`) basada en `ActivityLog::query()->involvingUser($owner)` para incluir también las actividades donde el usuario es sujeto. `canViewForRecord()` exige `ViewUser`, que el administrador pueda ver al usuario y `Gate::allows('viewAny', ActivityLog::class)` (la policy de TASK-016). Reutiliza `DescribesActivityLogParties` y el catálogo; sin acciones. Registrarlo en `UserResource::getRelations()`. Si al implementar Filament no respeta la consulta propia, limitarse a la relación de causante y anotarlo en el plan.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -311,7 +314,7 @@ Agregar a `User` la relación `causedActivities(): MorphMany` hacia el modelo `A
 - Sin `admin.activity.viewAny` la pestaña no se muestra aunque el administrador pueda ver el usuario.
 
 **writeScope:**
-- `app/Modules/Admin/Filament/Resources/Users/RelationManagers/ActivitiesRelationManager.php` (nuevo)
+- `app/Modules/Admin/Filament/Resources/Users/RelationManagers/ActivityLogsRelationManager.php` (nuevo)
 - `app/User/Models/User.php`
 - `app/Modules/Admin/Filament/Resources/Users/UserResource.php`
 
@@ -321,7 +324,7 @@ Agregar a `User` la relación `causedActivities(): MorphMany` hacia el modelo `A
 
 ### TASK-013: Probar la pestaña de actividad del usuario
 
-`ActivitiesRelationManagerTest` (patrón de `TrustedDevicesRelationManagerTest`): visibilidad según permiso, contenido limitado al usuario (causante o sujeto) y orden descendente.
+`ActivityLogsRelationManagerTest` (patrón de `TrustedDevicesRelationManagerTest`): visibilidad según permiso, contenido limitado al usuario (causante o sujeto) y orden descendente.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -332,15 +335,15 @@ Agregar a `User` la relación `causedActivities(): MorphMany` hacia el modelo `A
 - Un administrador sin `admin.activity.viewAny` no puede montar el relation manager.
 
 **writeScope:**
-- `app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/ActivitiesRelationManagerTest.php` (nuevo)
+- `app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/ActivityLogsRelationManagerTest.php` (nuevo)
 
-**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/ActivitiesRelationManagerTest.php`
+**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/ActivityLogsRelationManagerTest.php`
 
 **Review:** Claude
 
 ### TASK-014: Documentar el permiso, el rol y el recurso
 
-Actualizar CLAUDE.md (tabla del catálogo RBAC con `admin-activity-reader` y también `admin-users-provisioner`, que faltaba; el bootstrap asigna cuatro roles lectores; el recurso Activities y la pestaña del usuario; el modelo `Activity` propio, `activitylog.activity_model` y `ActivityPolicy`; el catálogo de etiquetas), AGENTS.md (roles y comandos) y `docs/architecture/backend.md` (sección Admin y la de ActivityLog). Corregir las menciones a 'tres roles lectores'.
+Actualizar CLAUDE.md (tabla del catálogo RBAC con `admin-activity-reader` y también `admin-users-provisioner`, que faltaba; el bootstrap asigna cuatro roles lectores; el recurso ActivityLogs y la pestaña del usuario; el modelo `ActivityLog` propio, `activitylog.activity_model` y `ActivityLogPolicy`; el catálogo de etiquetas), AGENTS.md (roles y comandos) y `docs/architecture/backend.md` (sección Admin y la de ActivityLog). Corregir las menciones a 'tres roles lectores'.
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3
 
@@ -380,7 +383,7 @@ Actualizar CLAUDE.md (tabla del catálogo RBAC con `admin-activity-reader` y tam
 
 ## Failure Modes
 
-- Un administrador sin permiso abre la URL directa: Filament consulta `ActivityPolicy` y responde 403.
+- Un administrador sin permiso abre la URL directa: Filament consulta `ActivityLogPolicy` y responde 403.
 - El causante o el sujeto ya no existen: el concern devuelve 'Deleted …' con el id y ninguna URL, sin romper el listado.
 - Un evento que ya no está en el catálogo (registro antiguo): el catálogo devuelve el valor crudo.
 - Muchos tipos de sujeto en una página: la carga `with(['causer', 'subject'])` hace una consulta por tipo, no por fila.
@@ -395,9 +398,9 @@ TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, poli
 
 - Catálogo RBAC y seeders: `AdminAuthorizationSeederTest`, `AdminUserSeederTest`, `AdminUserSeederRandomAdminsTest`.
 - Bootstrap: `AdminBootstrapCommandTest`.
-- Modelo, policy y catálogo de etiquetas: `ActivityTest`, `ActivityPolicyTest`, `ActivityLogEventCatalogTest`, más la suite existente de ActivityLog.
-- Recurso: `ListActivitiesTest` (acceso, columnas, filtros, borrados, conteo de consultas) y `ViewActivityTest` (detalle, 403, privacidad).
-- Pestaña de usuario: `ActivitiesRelationManagerTest`.
+- Modelo, policy y catálogo de etiquetas: `ActivityLogTest`, `ActivityLogPolicyTest`, `ActivityLogEventCatalogTest`, más la suite existente de ActivityLog.
+- Recurso: `ListActivityLogsTest` (acceso, columnas, filtros, borrados, conteo de consultas) y `ViewActivityLogLogTest` (detalle, 403, privacidad).
+- Pestaña de usuario: `ActivityLogsRelationManagerTest`.
 
 ## Execution Summary
 

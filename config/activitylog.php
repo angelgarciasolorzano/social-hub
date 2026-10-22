@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Modules\ActivityLog\Models\ActivityLog;
 use Spatie\Activitylog\Actions\CleanActivityLogAction;
 use Spatie\Activitylog\Actions\LogActivityAction;
-use Spatie\Activitylog\Models\Activity;
 
 return [
 
@@ -40,9 +40,10 @@ return [
     /*
      * This model will be used to log activity.
      * It should implement the Spatie\Activitylog\Contracts\Activity interface
-     * and extend Illuminate\Database\Eloquent\Model.
+     * and extend Illuminate\Database\Eloquent\Model. The application uses its
+     * own model in the ActivityLog module, which extends the package's one.
      */
-    'activity_model' => Activity::class,
+    'activity_model' => ActivityLog::class,
 
     /*
      * These attributes will be excluded from logging for all models.
