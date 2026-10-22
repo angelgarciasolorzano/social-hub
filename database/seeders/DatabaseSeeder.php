@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Auth\Database\Seeders\TrustedDeviceSeeder;
+use App\Modules\ActivityLog\Database\Seeders\ActivityLogSeeder;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
@@ -28,6 +29,7 @@ class DatabaseSeeder extends Seeder
             PostSeeder::class,
             CommentSeeder::class,
             LikeSeeder::class,
+            ActivityLogSeeder::class,
         ]);
     }
 }

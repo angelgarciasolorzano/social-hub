@@ -53,7 +53,7 @@
     "Filament no respeta la consulta propia del relation manager: la pestaña se limita a la actividad causada por el usuario y se anota en el plan.",
     "Bases existentes: correr `AdminAuthorizationSeeder` crea el rol y los permisos nuevos sin alterar los roles ya creados."
   ],
-  "shipCut": "TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, policy, recurso de solo lectura y sus pruebas. La pestaña del usuario (TASK-012/013) es independiente y puede cerrarse después; la tarea no se da por terminada sin la documentación y los gates.",
+  "shipCut": "Seeder de actividad (TASK-017 a TASK-020), agregado después de cerrar TASK-015: es independiente del recurso y solo afecta los datos de desarrollo. TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, policy, recurso de solo lectura y sus pruebas. La pestaña del usuario (TASK-012/013) es independiente y puede cerrarse después; la tarea no se da por terminada sin la documentación y los gates.",
   "testCoverageMap": [
     "Catálogo RBAC y seeders: `AdminAuthorizationSeederTest`, `AdminUserSeederTest`, `AdminUserSeederRandomAdminsTest`.",
     "Bootstrap: `AdminBootstrapCommandTest`.",
@@ -510,10 +510,112 @@
       "writeScope": [],
       "validateCommand": "rtk composer rector-dry && rtk composer phpstan && rtk composer test",
       "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Crear ActivityLogSeeder con actividad coherente con los datos sembrados",
+      "description": "Pedido después de cerrar TASK-015: datos de prueba para el registro de actividad. `Database/Seeders/ActivityLogSeeder` (módulo ActivityLog) deriva la actividad de lo que ya sembraron los demás seeders, para que cada registro apunte a algo real: `content.post_created` por publicación; `content.comment_created` o `content.comment_replied` por comentario (con `post_id` o `thread_comment_id`), `content.comment_updated` para los editados y `content.comment_deleted` (`permanently` false) para los tombstones; `likes.added` por like; un espejo `trusted_devices.*` por cada `TrustedDeviceEvent` (sujeto la fila, con su IP y user agent); para cada usuario, actividad de autenticación aleatoria con `SkewedRandom`/`WeightedRandom` (logins y logouts con `guard` web, algunos logins fallidos anónimos sobre su cuenta, cambios de contraseña ocasionales y `auth.two_factor_confirmed` para quien tiene 2FA confirmado); y la auditoría Admin (`admin.bootstrapped` de Angel y un `admin.role_granted` por cada rol de los demás administradores, con Angel como actor y sin IP). Como PostSeeder y CommentSeeder crean todo al momento de sembrar, las fechas se reparten en los últimos 60 días (los editados y borrados después de su creación) para que el listado y los filtros tengan variedad. Inserta por bloques con el modelo `ActivityLog`, nunca guarda contenido ni claves prohibidas, y no hace nada si la tabla ya tiene registros (correrlo dos veces no duplica). Se registra en `DatabaseSeeder` después de `LikeSeeder`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "Tras `php artisan migrate:fresh --seed` el listado `/admin/activity-logs` tiene registros de los seis logs, con fechas repartidas en los últimos 60 días.",
+        "Cada actividad de contenido, like o dispositivo apunta a un registro que existe (o a un tombstone en el caso de los comentarios borrados).",
+        "Correr el seeder de nuevo no agrega registros."
+      ],
+      "filesToCreate": [
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php"
+      ],
+      "filesToModify": [
+        "database/seeders/DatabaseSeeder.php"
+      ],
+      "writeScope": [
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php",
+        "database/seeders/DatabaseSeeder.php"
+      ],
+      "validateCommand": "rtk php artisan migrate:fresh --seed --env=testing --force",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Probar ActivityLogSeeder",
+      "description": "`Tests/Seeders/ActivityLogSeederTest` con datos pequeños creados por factories: una actividad de contenido por publicación y comentario (con la variante correcta de creado, respuesta, editado y borrado), un `likes.added` por like, un espejo por `TrustedDeviceEvent`, actividad de autenticación solo con claves permitidas, la auditoría Admin con Angel como actor, ningún texto de publicaciones o comentarios en la tabla, fechas dentro de los últimos 60 días y ninguna duplicación al correrlo dos veces. Como el seeder es aleatorio, las pruebas comprueban propiedades y conteos, no valores puntuales (convención de los seeders del proyecto).",
+      "priority": "P2",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-017"
+      ],
+      "acceptanceCriteria": [
+        "Con N publicaciones, M comentarios y L likes sembrados, hay exactamente N `content.post_created`, M actividades de comentario creado o respondido y L `likes.added`.",
+        "Ninguna fila de `activity_log` contiene el contenido de las publicaciones o comentarios sembrados.",
+        "Una segunda ejecución deja el mismo número de filas."
+      ],
+      "filesToCreate": [
+        "app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact -d memory_limit=2G app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Documentar el seeder de actividad",
+      "description": "Agregar `ActivityLogSeeder` al orden de `DatabaseSeeder` y describir qué genera en la sección de seeders de CLAUDE.md y en la del módulo ActivityLog; mencionarlo en `docs/architecture/backend.md`.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md lista `ActivityLogSeeder` después de `LikeSeeder` y explica de dónde salen sus datos y sus fechas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "CLAUDE.md",
+        "docs/architecture/backend.md"
+      ],
+      "writeScope": [
+        "CLAUDE.md",
+        "docs/architecture/backend.md"
+      ],
+      "validateCommand": "rtk grep -n \"ActivityLogSeeder\" CLAUDE.md docs/architecture/backend.md",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Pasar los gates de calidad y la suite completa tras el seeder",
+      "description": "Repetir el gate de TASK-015 con el seeder: Rector (clear, dry, apply), Pint, PHPStan, `composer test` y un `migrate:fresh --seed` local para ver el listado con datos.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-019"
+      ],
+      "acceptanceCriteria": [
+        "Rector, Pint y PHPStan pasan y `composer test` queda en verde.",
+        "`migrate:fresh --seed` termina sin errores."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "writeScope": [],
+      "validateCommand": "rtk composer rector-dry && rtk composer phpstan && rtk composer test",
+      "review": "claude"
     }
   ],
   "executionSummary": {
-    "taskCount": 16,
+    "taskCount": 20,
     "layers": [
       [
         "TASK-001",
@@ -544,6 +646,18 @@
       ],
       [
         "TASK-015"
+      ],
+      [
+        "TASK-017"
+      ],
+      [
+        "TASK-018"
+      ],
+      [
+        "TASK-019"
+      ],
+      [
+        "TASK-020"
       ]
     ],
     "criticalPath": [
@@ -553,9 +667,13 @@
       "TASK-009",
       "TASK-011",
       "TASK-014",
-      "TASK-015"
+      "TASK-015",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019",
+      "TASK-020"
     ],
-    "criticalPathLength": 7
+    "criticalPathLength": 11
   },
   "dependencyMap": {
     "TASK-001": [],
@@ -609,6 +727,18 @@
     ],
     "TASK-015": [
       "TASK-014"
+    ],
+    "TASK-017": [
+      "TASK-015"
+    ],
+    "TASK-018": [
+      "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-019"
     ]
   }
 }

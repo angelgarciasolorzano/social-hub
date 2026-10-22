@@ -381,6 +381,85 @@ Actualizar CLAUDE.md (tabla del catálogo RBAC con `admin-activity-reader` y tam
 
 **Review:** Claude
 
+### TASK-017: Crear ActivityLogSeeder con actividad coherente con los datos sembrados
+
+Pedido después de cerrar TASK-015: datos de prueba para el registro de actividad. `Database/Seeders/ActivityLogSeeder` (módulo ActivityLog) deriva la actividad de lo que ya sembraron los demás seeders, para que cada registro apunte a algo real: `content.post_created` por publicación; `content.comment_created` o `content.comment_replied` por comentario (con `post_id` o `thread_comment_id`), `content.comment_updated` para los editados y `content.comment_deleted` (`permanently` false) para los tombstones; `likes.added` por like; un espejo `trusted_devices.*` por cada `TrustedDeviceEvent` (sujeto la fila, con su IP y user agent); para cada usuario, actividad de autenticación aleatoria con `SkewedRandom`/`WeightedRandom` (logins y logouts con `guard` web, algunos logins fallidos anónimos sobre su cuenta, cambios de contraseña ocasionales y `auth.two_factor_confirmed` para quien tiene 2FA confirmado); y la auditoría Admin (`admin.bootstrapped` de Angel y un `admin.role_granted` por cada rol de los demás administradores, con Angel como actor y sin IP). Como PostSeeder y CommentSeeder crean todo al momento de sembrar, las fechas se reparten en los últimos 60 días (los editados y borrados después de su creación) para que el listado y los filtros tengan variedad. Inserta por bloques con el modelo `ActivityLog`, nunca guarda contenido ni claves prohibidas, y no hace nada si la tabla ya tiene registros (correrlo dos veces no duplica). Se registra en `DatabaseSeeder` después de `LikeSeeder`.
+
+**Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-015
+
+**Acceptance Criteria:**
+- Tras `php artisan migrate:fresh --seed` el listado `/admin/activity-logs` tiene registros de los seis logs, con fechas repartidas en los últimos 60 días.
+- Cada actividad de contenido, like o dispositivo apunta a un registro que existe (o a un tombstone en el caso de los comentarios borrados).
+- Correr el seeder de nuevo no agrega registros.
+
+**writeScope:**
+- `app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php` (nuevo)
+- `database/seeders/DatabaseSeeder.php`
+
+**validateCommand:** `rtk php artisan migrate:fresh --seed --env=testing --force`
+
+**Review:** Claude
+
+### TASK-018: Probar ActivityLogSeeder
+
+`Tests/Seeders/ActivityLogSeederTest` con datos pequeños creados por factories: una actividad de contenido por publicación y comentario (con la variante correcta de creado, respuesta, editado y borrado), un `likes.added` por like, un espejo por `TrustedDeviceEvent`, actividad de autenticación solo con claves permitidas, la auditoría Admin con Angel como actor, ningún texto de publicaciones o comentarios en la tabla, fechas dentro de los últimos 60 días y ninguna duplicación al correrlo dos veces. Como el seeder es aleatorio, las pruebas comprueban propiedades y conteos, no valores puntuales (convención de los seeders del proyecto).
+
+**Type:** test · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-017
+
+**Acceptance Criteria:**
+- Con N publicaciones, M comentarios y L likes sembrados, hay exactamente N `content.post_created`, M actividades de comentario creado o respondido y L `likes.added`.
+- Ninguna fila de `activity_log` contiene el contenido de las publicaciones o comentarios sembrados.
+- Una segunda ejecución deja el mismo número de filas.
+
+**writeScope:**
+- `app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php` (nuevo)
+
+**validateCommand:** `rtk php artisan test --compact -d memory_limit=2G app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php`
+
+**Review:** Claude
+
+### TASK-019: Documentar el seeder de actividad
+
+Agregar `ActivityLogSeeder` al orden de `DatabaseSeeder` y describir qué genera en la sección de seeders de CLAUDE.md y en la del módulo ActivityLog; mencionarlo en `docs/architecture/backend.md`.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3
+
+**Depends on:** TASK-018
+
+**Acceptance Criteria:**
+- CLAUDE.md lista `ActivityLogSeeder` después de `LikeSeeder` y explica de dónde salen sus datos y sus fechas.
+
+**writeScope:**
+- `CLAUDE.md`
+- `docs/architecture/backend.md`
+
+**validateCommand:** `rtk grep -n "ActivityLogSeeder" CLAUDE.md docs/architecture/backend.md`
+
+**Review:** Claude
+
+### TASK-020: Pasar los gates de calidad y la suite completa tras el seeder
+
+Repetir el gate de TASK-015 con el seeder: Rector (clear, dry, apply), Pint, PHPStan, `composer test` y un `migrate:fresh --seed` local para ver el listado con datos.
+
+**Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-019
+
+**Acceptance Criteria:**
+- Rector, Pint y PHPStan pasan y `composer test` queda en verde.
+- `migrate:fresh --seed` termina sin errores.
+
+**writeScope:**
+- Ninguno (solo verificación; corrige archivos de tareas previas)
+
+**validateCommand:** `rtk composer rector-dry && rtk composer phpstan && rtk composer test`
+
+**Review:** Claude
+
 ## Failure Modes
 
 - Un administrador sin permiso abre la URL directa: Filament consulta `ActivityLogPolicy` y responde 403.
@@ -392,7 +471,7 @@ Actualizar CLAUDE.md (tabla del catálogo RBAC con `admin-activity-reader` y tam
 
 ## Ship Cut
 
-TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, policy, recurso de solo lectura y sus pruebas. La pestaña del usuario (TASK-012/013) es independiente y puede cerrarse después; la tarea no se da por terminada sin la documentación y los gates.
+Seeder de actividad (TASK-017 a TASK-020), agregado después de cerrar TASK-015: es independiente del recurso y solo afecta los datos de desarrollo. TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, policy, recurso de solo lectura y sus pruebas. La pestaña del usuario (TASK-012/013) es independiente y puede cerrarse después; la tarea no se da por terminada sin la documentación y los gates.
 
 ## Test Coverage Map
 
@@ -404,9 +483,9 @@ TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, poli
 
 ## Execution Summary
 
-- Tareas: 16.
-- Capas paralelizables: L0: TASK-001, TASK-004, TASK-005; L1: TASK-002, TASK-003, TASK-016, TASK-006; L2: TASK-007, TASK-008, TASK-012; L3: TASK-009, TASK-013; L4: TASK-010, TASK-011; L5: TASK-014; L6: TASK-015.
-- Ruta crítica (7 tareas): TASK-004 → TASK-006 → TASK-007 → TASK-009 → TASK-011 → TASK-014 → TASK-015.
+- Tareas: 20.
+- Capas paralelizables: L0: TASK-001, TASK-004, TASK-005; L1: TASK-002, TASK-003, TASK-016, TASK-006; L2: TASK-007, TASK-008, TASK-012; L3: TASK-009, TASK-013; L4: TASK-010, TASK-011; L5: TASK-014; L6: TASK-015; L7: TASK-017; L8: TASK-018; L9: TASK-019; L10: TASK-020.
+- Ruta crítica (11 tareas): TASK-004 → TASK-006 → TASK-007 → TASK-009 → TASK-011 → TASK-014 → TASK-015 → TASK-017 → TASK-018 → TASK-019 → TASK-020.
 - Próxima ejecución: implementar solo la siguiente tarea atómica y detenerse para revisión.
 
 ## Task Dependencies
@@ -427,3 +506,7 @@ TASK-001 a TASK-011 y TASK-016 entregan lo que pide la tarea: permiso, rol, poli
 - **TASK-013** ← TASK-012
 - **TASK-014** ← TASK-003, TASK-011, TASK-013
 - **TASK-015** ← TASK-014
+- **TASK-017** ← TASK-015
+- **TASK-018** ← TASK-017
+- **TASK-019** ← TASK-018
+- **TASK-020** ← TASK-019
