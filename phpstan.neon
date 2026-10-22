@@ -23,6 +23,7 @@ parameters:
     configDirectories:
         - config
         - app/Auth/config
+        - app/Modules/ActivityLog/config
 
     type_coverage:
         return: 100

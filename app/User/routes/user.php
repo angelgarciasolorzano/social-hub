@@ -10,5 +10,5 @@ use Illuminate\Support\Facades\Route;
 Route::resource('user', UserController::class)->only(['update', 'destroy']);
 
 Route::controller(UserController::class)->prefix('user')->group(function (): void {
-    Route::post('image/{type}', 'updateImage')->name('user.update.image');
+    Route::post('image/{userImageType}', 'updateImage')->name('user.update.image');
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\Login\Requests;
 
 use App\User\Models\User;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -49,6 +50,8 @@ class LoginRequest extends FormRequest
 
         if ($user === null || ! Auth::getProvider()->validateCredentials($user, $this->only('password'))) {
             RateLimiter::hit($this->throttleKey());
+
+            event(new Failed('web', $user, $this->only('email')));
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),

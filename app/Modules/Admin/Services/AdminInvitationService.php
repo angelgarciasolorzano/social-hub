@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Services;
 
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
+use App\Modules\ActivityLog\Services\ActivityLogger;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Mail\AdminInvitationMail;
 use App\Modules\Admin\Models\AdminInvitation;
@@ -13,9 +15,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
-final class AdminInvitationService
+final readonly class AdminInvitationService
 {
     private const int INVITATION_EXPIRATION_DAYS = 7;
+
+    public function __construct(private ActivityLogger $activityLogger) {}
 
     public function issue(User $invitedByUser, string $email, ?User $targetUser = null): AdminInvitation
     {
@@ -77,7 +81,7 @@ final class AdminInvitationService
                 $pendingInvitation->save();
             }
 
-            return AdminInvitation::query()->create([
+            $adminInvitation = AdminInvitation::query()->create([
                 'email' => $normalizedEmail,
                 'invited_by_user_id' => $invitedByUser->getKey(),
                 'target_user_id' => $lockedTargetUser?->getKey(),
@@ -85,6 +89,15 @@ final class AdminInvitationService
                 'expires_at' => $expiresAt,
                 'accepted_at' => null,
             ]);
+
+            $this->activityLogger->record(
+                ActivityLogAdminEvent::InvitationIssued,
+                $adminInvitation,
+                $invitedByUser,
+                ['target_user_id' => $lockedTargetUser?->id],
+            );
+
+            return $adminInvitation;
         });
 
         Mail::to($adminInvitation->email)
@@ -106,6 +119,8 @@ final class AdminInvitationService
     public function accept(string $plainToken, ?string $name = null, ?string $password = null): User
     {
         return DB::transaction(function () use ($name, $password, $plainToken): User {
+            $accountCreated = false;
+
             $adminInvitation = AdminInvitation::query()
                 ->where('token_hash', hash('sha256', $plainToken))
                 ->lockForUpdate()
@@ -155,6 +170,7 @@ final class AdminInvitationService
                     }
 
                     $user = User::query()->create(['name' => trim($name), 'email' => $adminInvitation->email, 'password' => $password]);
+                    $accountCreated = true;
                 }
             }
 
@@ -162,12 +178,22 @@ final class AdminInvitationService
                 $user->markEmailAsVerified();
             }
 
+            $assignedRoles = [];
+
             if (! $user->hasRole(AdminRole::Admin->value, 'admin')) {
                 $user->assignRole(AdminRole::Admin->value);
+                $assignedRoles[] = AdminRole::Admin->value;
             }
 
             $adminInvitation->accepted_at = CarbonImmutable::now();
             $adminInvitation->save();
+
+            $this->activityLogger->record(
+                ActivityLogAdminEvent::InvitationAccepted,
+                $adminInvitation,
+                $user,
+                ['account_created' => $accountCreated, 'roles_assigned' => $assignedRoles],
+            );
 
             return $user;
         });

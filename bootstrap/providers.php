@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Auth\Providers\AuthServiceProvider;
 use App\Friendship\Providers\FriendshipServiceProvider;
 use App\Home\Providers\HomeServiceProvider;
+use App\Modules\ActivityLog\Providers\ActivityLogServiceProvider;
 use App\Modules\Admin\Providers\AdminPanelProvider;
 use App\Modules\Admin\Providers\AdminServiceProvider;
 use App\Modules\Comment\Providers\CommentServiceProvider;
@@ -24,6 +25,7 @@ return [
     PostServiceProvider::class,
     CommentServiceProvider::class,
     LikeServiceProvider::class,
+    ActivityLogServiceProvider::class,
     FriendshipServiceProvider::class,
     FortifyServiceProvider::class,
 ];

@@ -5,18 +5,26 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\User\Models\User;
 use Illuminate\Support\Facades\Artisan;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
-function runAdminRolePermissions(string $action, string $role, string $permission): int
+function runAdminRolePermissions(string $action, string $role, string $permission, ?User $user = null): int
 {
-    return Artisan::call('admin:role-permissions', [
+    $arguments = [
         'action' => $action,
         'role' => $role,
         'permission' => $permission,
-    ]);
+    ];
+
+    if ($user instanceof User) {
+        $arguments['--actor'] = $user->email;
+    }
+
+    return Artisan::call('admin:role-permissions', $arguments);
 }
 
 function adminRoleHasPermission(AdminRole $adminRole, AdminPermission $adminPermission): bool
@@ -33,7 +41,7 @@ it('grants a cataloged permission to a role and updates permission checks', func
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value);
 
-    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminUsersViewAny->value);
+    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminUsersViewAny->value, $user);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -48,7 +56,7 @@ it('revokes a cataloged permission without changing role assignments', function 
     $user = createUser();
     $user->assignRole(AdminRole::AdminUsersReader->value);
 
-    $exitCode = runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersViewAny->value);
+    $exitCode = runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersViewAny->value, createAdminCommandActor());
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
@@ -78,7 +86,7 @@ it('uses the admin guard when matching role and permission names exist in web', 
         ->where('guard_name', 'admin')
         ->firstOrFail();
 
-    $exitCode = runAdminRolePermissions('grant', AdminRole::AdminUsersReader->value, AdminPermission::AdminDashboardView->value);
+    $exitCode = runAdminRolePermissions('grant', AdminRole::AdminUsersReader->value, AdminPermission::AdminDashboardView->value, createAdminCommandActor());
 
     $adminRole->refresh();
     $webRole->refresh();
@@ -91,7 +99,7 @@ it('uses the admin guard when matching role and permission names exist in web', 
 it('rejects an unknown role without changing role permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $exitCode = runAdminRolePermissions('grant', 'unlisted-role', AdminPermission::AdminUsersViewAny->value);
+    $exitCode = runAdminRolePermissions('grant', 'unlisted-role', AdminPermission::AdminUsersViewAny->value, createAdminCommandActor());
 
     expect($exitCode)->toBe(Command::INVALID)
         ->and(Artisan::output())->toContain('Unknown Admin role "unlisted-role".')
@@ -103,7 +111,7 @@ it('rejects an unknown role without changing role permissions', function (): voi
 it('rejects an unknown permission without changing role permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, 'unlisted.permission');
+    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, 'unlisted.permission', createAdminCommandActor());
 
     expect($exitCode)->toBe(Command::INVALID)
         ->and(Artisan::output())->toContain('Unknown Admin permission "unlisted.permission".')
@@ -114,7 +122,7 @@ it('rejects an unknown permission without changing role permissions', function (
 it('rejects actions other than grant or revoke without changing role permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $exitCode = runAdminRolePermissions('replace', AdminRole::Admin->value, AdminPermission::AdminUsersViewAny->value);
+    $exitCode = runAdminRolePermissions('replace', AdminRole::Admin->value, AdminPermission::AdminUsersViewAny->value, createAdminCommandActor());
 
     expect($exitCode)->toBe(Command::INVALID)
         ->and(Artisan::output())->toContain('Action must be "grant" or "revoke".')
@@ -122,7 +130,7 @@ it('rejects actions other than grant or revoke without changing role permissions
 });
 
 it('requires the Admin authorization catalog to be seeded', function (): void {
-    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminAccess->value);
+    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminAccess->value, createUser());
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('Admin authorization is not initialized.')
@@ -136,7 +144,7 @@ it('prevents revoking admin.access when it would remove the last panel access', 
     $user = createUser();
     $user->assignRole(AdminRole::Admin->value);
 
-    $exitCode = runAdminRolePermissions('revoke', AdminRole::Admin->value, AdminPermission::AdminAccess->value);
+    $exitCode = runAdminRolePermissions('revoke', AdminRole::Admin->value, AdminPermission::AdminAccess->value, $user);
     $user->refresh();
 
     expect($exitCode)->toBe(Command::FAILURE)
@@ -159,7 +167,7 @@ it('allows revoking admin.access when a user retains it through another role', f
     $user = createUser();
     $user->assignRole(AdminRole::AdminUsersReader->value);
 
-    $exitCode = runAdminRolePermissions('revoke', AdminRole::Admin->value, AdminPermission::AdminAccess->value);
+    $exitCode = runAdminRolePermissions('revoke', AdminRole::Admin->value, AdminPermission::AdminAccess->value, $user);
     $targetUser->refresh();
     $user->refresh();
 
@@ -167,4 +175,70 @@ it('allows revoking admin.access when a user retains it through another role', f
         ->and($targetUser->can(AdminPermission::AdminAccess->value))->toBeFalse()
         ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue()
         ->and($targetUser->hasRole(AdminRole::Admin->value))->toBeTrue();
+});
+
+it('records who granted the permission and the role it was granted to', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createAdminCommandActor();
+
+    runAdminRolePermissions('grant', AdminRole::AdminPostsReader->value, AdminPermission::AdminDashboardView->value, $user);
+
+    $activity = Activity::query()->where('event', 'admin.role_permission_granted')->sole();
+
+    expect($activity)
+        ->log_name->toBe('admin')
+        ->subject_type->toBe('role')
+        ->causer_id->toBe($user->id)
+        ->and($activity->subject?->getAttribute('name'))->toBe(AdminRole::AdminPostsReader->value)
+        ->and($activity->properties?->get('permission'))->toBe(AdminPermission::AdminDashboardView->value);
+});
+
+it('records a revoked permission', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createAdminCommandActor();
+
+    runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersView->value, $user);
+
+    expect(Activity::query()->where('event', 'admin.role_permission_revoked')->sole()->causer_id)->toBe($user->id);
+});
+
+it('does not record granting a permission the role already has', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminAccess->value, createAdminCommandActor());
+
+    expect(Activity::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('does not record a revocation blocked to protect the last panel access', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createAdminCommandActor();
+
+    runAdminRolePermissions('revoke', AdminRole::Admin->value, AdminPermission::AdminAccess->value, $user);
+
+    expect(Activity::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('rejects the command without --actor and changes nothing', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminUsersViewAny->value);
+
+    expect($exitCode)->toBe(Command::INVALID)
+        ->and(Artisan::output())->toContain('The --actor option is required')
+        ->and(adminRoleHasPermission(AdminRole::Admin, AdminPermission::AdminUsersViewAny))->toBeFalse();
+});
+
+it('rejects an actor without admin.access and changes nothing', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $exitCode = runAdminRolePermissions('grant', AdminRole::Admin->value, AdminPermission::AdminUsersViewAny->value, createUser());
+
+    expect($exitCode)->toBe(Command::FAILURE)
+        ->and(Artisan::output())->toContain('must have admin.access')
+        ->and(adminRoleHasPermission(AdminRole::Admin, AdminPermission::AdminUsersViewAny))->toBeFalse()
+        ->and(Activity::query()->exists())->toBeFalse();
 });

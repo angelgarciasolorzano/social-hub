@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Console\Commands;
 
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
+use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Console\Concerns\InteractsWithAdminCatalog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
@@ -13,13 +16,13 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
-#[Signature('admin:bootstrap-admin {email : Verified email of the existing user to promote}')]
+#[Signature('admin:bootstrap-admin {email : Verified email of the existing user to promote} {--actor= : Verified email of the person running the command, which may be the promoted user}')]
 #[Description('Promote the first verified user to the administrator roles.')]
 class AdminBootstrapCommand extends Command
 {
-    private const string GUARD = 'admin';
+    use InteractsWithAdminCatalog;
 
-    public function handle(): int
+    public function handle(ActivityLogger $activityLogger): int
     {
         $email = $this->argument('email');
 
@@ -29,7 +32,13 @@ class AdminBootstrapCommand extends Command
             return self::INVALID;
         }
 
-        return DB::transaction(function () use ($email): int {
+        $actorEmail = $this->actorEmail($this->option('actor'));
+
+        if ($actorEmail === null) {
+            return self::INVALID;
+        }
+
+        return DB::transaction(function () use ($email, $actorEmail, $activityLogger): int {
             $requiredRoleNames = [
                 AdminRole::Admin->value,
                 AdminRole::AdminDashboardReader->value,
@@ -56,6 +65,12 @@ class AdminBootstrapCommand extends Command
                 return self::FAILURE;
             }
 
+            $actor = $this->resolveActor($actorEmail, requiresAdminAccess: false);
+
+            if (! $actor instanceof User) {
+                return self::FAILURE;
+            }
+
             $user = User::query()
                 ->where('email', $email)
                 ->lockForUpdate()
@@ -74,6 +89,8 @@ class AdminBootstrapCommand extends Command
             }
 
             $user->assignRole($roles->all());
+
+            $activityLogger->record(ActivityLogAdminEvent::AdminBootstrapped, $user, $actor, ['roles' => $requiredRoleNames]);
 
             $this->info("Promoted {$email} to these Admin roles: ".implode(', ', $requiredRoleNames).'.');
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Console\Commands;
 
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
+use App\Modules\ActivityLog\Services\ActivityLogger;
 use App\Modules\Admin\Console\Concerns\InteractsWithAdminCatalog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
@@ -16,13 +18,13 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-#[Signature('admin:role-permissions {action : grant or revoke} {role : Role name from the Admin catalog} {permission : Permission name from the Admin catalog}')]
+#[Signature('admin:role-permissions {action : grant or revoke} {role : Role name from the Admin catalog} {permission : Permission name from the Admin catalog} {--actor= : Email of the administrator running the command}')]
 #[Description('Grant or revoke a cataloged permission for an Admin role.')]
 class AdminRolePermissionsCommand extends Command
 {
     use InteractsWithAdminCatalog;
 
-    public function handle(): int
+    public function handle(ActivityLogger $activityLogger): int
     {
         $action = $this->argument('action');
         $roleName = $this->argument('role');
@@ -50,10 +52,22 @@ class AdminRolePermissionsCommand extends Command
             return self::INVALID;
         }
 
-        return DB::transaction(function () use ($action, $adminRole, $adminPermission): int {
+        $actorEmail = $this->actorEmail($this->option('actor'));
+
+        if ($actorEmail === null) {
+            return self::INVALID;
+        }
+
+        return DB::transaction(function () use ($action, $adminRole, $adminPermission, $actorEmail, $activityLogger): int {
             $lockedCatalog = $this->lockCatalogRole($adminRole);
 
             if ($lockedCatalog === null) {
+                return self::FAILURE;
+            }
+
+            $actor = $this->resolveActor($actorEmail);
+
+            if (! $actor instanceof User) {
                 return self::FAILURE;
             }
 
@@ -73,8 +87,17 @@ class AdminRolePermissionsCommand extends Command
                 return self::FAILURE;
             }
 
+            $roleHadPermission = $role->permissions()
+                ->whereKey($permission->getKey())
+                ->exists();
+            $auditProperties = ['role' => $adminRole->value, 'permission' => $adminPermission->value];
+
             if ($action === self::ACTION_GRANT) {
                 $role->givePermissionTo($permission);
+
+                if (! $roleHadPermission) {
+                    $activityLogger->record(ActivityLogAdminEvent::RolePermissionGranted, $role, $actor, $auditProperties);
+                }
 
                 $this->info("Permission {$adminPermission->value} is granted to role {$adminRole->value}.");
 
@@ -83,9 +106,7 @@ class AdminRolePermissionsCommand extends Command
 
             if (
                 $adminPermission === AdminPermission::AdminAccess
-                && $role->permissions()
-                    ->whereKey($permission->getKey())
-                    ->exists()
+                && $roleHadPermission
                 && ! $this->aUserRetainsAdminAccessAfterRevocation($role, $permission)
             ) {
                 $this->error('Cannot revoke admin.access because it would leave no user with panel access.');
@@ -94,6 +115,10 @@ class AdminRolePermissionsCommand extends Command
             }
 
             $role->revokePermissionTo($permission);
+
+            if ($roleHadPermission) {
+                $activityLogger->record(ActivityLogAdminEvent::RolePermissionRevoked, $role, $actor, $auditProperties);
+            }
 
             $this->info("Permission {$adminPermission->value} is revoked from role {$adminRole->value}.");
 

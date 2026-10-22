@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\Modules\AccountSettings\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\User\Events\AccountUpdated;
 use App\User\Models\User;
 use App\User\Modules\AccountSettings\Data\AccountSettingsUpdateData;
 use App\User\Modules\AccountSettings\Requests\AccountSettingsUpdateRequest;
@@ -43,6 +44,10 @@ class AccountSettingsController extends Controller
         );
 
         $user->fill($accountSettingsUpdateData->toUserAttributes())->save();
+
+        if ($user->wasChanged()) {
+            event(AccountUpdated::fromSavedChanges($user));
+        }
 
         return Inertia::flash([
             'type' => 'success',
