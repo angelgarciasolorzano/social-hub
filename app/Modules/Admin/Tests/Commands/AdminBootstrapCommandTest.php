@@ -41,6 +41,7 @@ it('promotes a verified user to the base and all reader roles', function (): voi
             AdminRole::AdminUsersReader->value,
             AdminRole::AdminPostsReader->value,
             AdminRole::AdminActivityReader->value,
+            AdminRole::AdminBackupsReader->value,
         ]))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminAccess->value))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminDashboardView->value))->toBeTrue()
@@ -50,6 +51,9 @@ it('promotes a verified user to the base and all reader roles', function (): voi
         ->and($bootstrappedUser->can(AdminPermission::AdminPostsView->value))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminActivityViewAny->value))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminActivityView->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminBackupsView->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminBackupsCreate->value))->toBeFalse()
+        ->and($bootstrappedUser->can(AdminPermission::AdminBackupsDownload->value))->toBeFalse()
         ->and($bootstrappedUser->canAccessPanel(Panel::make()->id('admin')))->toBeTrue();
 });
 
@@ -122,10 +126,12 @@ it('requires every bootstrap role to exist in the Admin guard', function (AdminR
 
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('Admin roles are not initialized.')
-        ->and($user->roles()->exists())->toBeFalse();
+        ->and($user->roles()->exists())->toBeFalse()
+        ->and(Activity::query()->exists())->toBeFalse();
 })->with([
     'posts reader' => [AdminRole::AdminPostsReader],
     'activity reader' => [AdminRole::AdminActivityReader],
+    'backups reader' => [AdminRole::AdminBackupsReader],
 ]);
 
 it('records the bootstrap with the actor and the assigned roles', function (): void {
@@ -148,6 +154,7 @@ it('records the bootstrap with the actor and the assigned roles', function (): v
             AdminRole::AdminUsersReader->value,
             AdminRole::AdminPostsReader->value,
             AdminRole::AdminActivityReader->value,
+            AdminRole::AdminBackupsReader->value,
         ]);
 });
 
