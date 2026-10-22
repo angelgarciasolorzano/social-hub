@@ -17,6 +17,8 @@ use Spatie\Activitylog\Models\Activity as SpatieActivity;
 /**
  * The application's activity record. `activitylog.activity_model` points here, so the package
  * writes and reads through this class and the rest of the app never touches Spatie directly.
+ *
+ * @mixin IdeHelperActivityLog
  */
 #[UseFactory(ActivityLogFactory::class)]
 #[UsePolicy(ActivityLogPolicy::class)]

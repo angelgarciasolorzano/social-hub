@@ -6,6 +6,7 @@ namespace App\User\Models;
 
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
+use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Events\RecoveryCodeReplaced;
@@ -233,5 +235,15 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function trustedDeviceEvents(): HasMany
     {
         return $this->hasMany(TrustedDeviceEvent::class);
+    }
+
+    /**
+     * Get the activity log records of the actions this user performed.
+     *
+     * @return MorphMany<ActivityLog, $this>
+     */
+    public function causedActivityLogs(): MorphMany
+    {
+        return $this->morphMany(ActivityLog::class, 'causer');
     }
 }
