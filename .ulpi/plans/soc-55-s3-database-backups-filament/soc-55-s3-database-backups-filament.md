@@ -415,13 +415,55 @@ Agregar la opción de transacción única a la configuración `dump` de la conex
 
 **Review:** codex
 
+### TASK-019: Extraer la tabla de backups a una clase dedicada
+
+Mover la configuración de la tabla de `BackupManagement` a `app/Modules/Admin/Filament/Pages/Backups/Tables/BackupsTable.php`, siguiendo el patrón `configure(Table $table): Table` de las tablas generadas por Filament. Mantener la página como componente Livewire que delega la configuración y conservar las acciones, autorización, validación de contraseña y presentación actuales.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-012
+
+**Acceptance Criteria:**
+- `BackupManagement::table()` delega en `BackupsTable::configure()` y la clase dedicada contiene la definición de columnas y acciones.
+- La prueba de la página sigue cubriendo las acciones de descarga/creación, y las llamadas directas sin permiso siguen siendo rechazadas.
+- La tabla conserva su estado vacío y no expone acciones de borrado ni restauración.
+
+**Write scope:**
+- `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php` — Delegar la configuración de tabla y ofrecer el chequeo de permiso de solo lectura que utiliza el configurador.
+- `app/Modules/Admin/Filament/Pages/Backups/Tables/BackupsTable.php` — Configurar columnas, estado vacío y acción de descarga.
+
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php`
+
+**Review:** codex
+
+### TASK-020: Refine backup page method structure and download action
+
+Organize `BackupManagement` with Filament framework methods first and remove descriptive method comments while preserving type annotations. Move the download action callback body into a private `handleDownload()` method in `BackupsTable.php`, and delegate to it from the action.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-019
+
+**Acceptance Criteria:**
+- `canAccess()`, `getHeaderActions()` and `table()` appear before backup operations and helper methods; explanatory method prose is removed while required PHPDoc type annotations remain.
+- The table download action delegates to a private method in `BackupsTable.php` and retains the existing permission and download flow.
+- The existing page test confirms that a missing password is rejected and an authorized download still redirects to its temporary URL.
+
+**Write scope:**
+- `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php` — Place Filament-provided methods first and remove descriptive method comments without dropping type annotations.
+- `app/Modules/Admin/Filament/Pages/Backups/Tables/BackupsTable.php` — Extract the download callback body into a private helper and preserve validation behavior.
+
+**Validate command:** `rtk php -d memory_limit=512M artisan test --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php`
+
+**Review:** codex
+
 ### TASK-017: Pasar los gates completos de calidad y pruebas
 
 Ejecutar los gates obligatorios del proyecto después de integrar los slices. Limpiar la caché de Rector, revisar el dry-run y aplicar Rector; después Pint, PHPStan, la suite completa y Laravel Doctor como última comprobación. Rector solo puede modificar código dentro de los scopes aprobados por las tareas previas; cualquier otra propuesta se detiene para revisión.
 
 **Type:** chore · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-019, TASK-020
 
 **Acceptance Criteria:**
 - Rector clear-cache, dry-run y aplicación se ejecutan en ese orden; Rector no deja cambios fuera de los archivos ya aprobados.
@@ -462,8 +504,8 @@ SOC-55 no se considera completo sin cifrado y destino privado, permisos y audito
 
 ## Execution Summary
 
-- Tasks: 18.
-- Parallel layers: L0: TASK-001, TASK-003, TASK-008; L1: TASK-002, TASK-004; L2: TASK-005, TASK-006, TASK-007, TASK-009, TASK-018; L3: TASK-010, TASK-011; L4: TASK-012; L5: TASK-013, TASK-014; L6: TASK-015; L7: TASK-016; L8: TASK-017.
+- Tasks: 20.
+- Parallel layers: L0: TASK-001, TASK-003, TASK-008; L1: TASK-002, TASK-004; L2: TASK-005, TASK-006, TASK-007, TASK-009, TASK-018; L3: TASK-010, TASK-011; L4: TASK-012; L5: TASK-013, TASK-014, TASK-019; L6: TASK-015, TASK-020; L7: TASK-016; L8: TASK-017.
 - Critical path (9 tasks): TASK-001 → TASK-002 → TASK-009 → TASK-010 → TASK-012 → TASK-013 → TASK-015 → TASK-016 → TASK-017.
 - Tras completar una tarea atómica, detener la implementación para revisión del usuario.
 
@@ -486,7 +528,9 @@ SOC-55 no se considera completo sin cifrado y destino privado, permisos y audito
 - **TASK-015** ← TASK-002, TASK-010, TASK-012, TASK-013
 - **TASK-016** ← TASK-015
 - **TASK-018** ← TASK-002
-- **TASK-017** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018
+- **TASK-019** ← TASK-012
+- **TASK-020** ← TASK-019
+- **TASK-017** ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-019, TASK-020
 
 ## References
 
