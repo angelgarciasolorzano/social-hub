@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\ActivityLogName;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAuthEvent;
 use App\Modules\ActivityLog\Support\ActivityLogEventCatalog;
 
 it('finds the cataloged event behind a stored event value', function (): void {
     expect(ActivityLogEventCatalog::find('auth.password_updated'))->toBe(ActivityLogAuthEvent::PasswordUpdated)
+        ->and(ActivityLogEventCatalog::find('admin.backup_created'))->toBe(ActivityLogAdminEvent::BackupCreated)
+        ->and(ActivityLogEventCatalog::find('admin.backup_downloaded'))->toBe(ActivityLogAdminEvent::BackupDownloaded)
         ->and(ActivityLogEventCatalog::find('legacy.unknown'))->toBeNull();
 });
 
 it('labels a stored event with its readable name', function (): void {
     expect(ActivityLogEventCatalog::label('auth.password_updated'))->toBe('Password Updated')
-        ->and(ActivityLogEventCatalog::label('admin.role_permission_granted'))->toBe('Role Permission Granted');
+        ->and(ActivityLogEventCatalog::label('admin.role_permission_granted'))->toBe('Role Permission Granted')
+        ->and(ActivityLogEventCatalog::label('admin.backup_created'))->toBe('Backup Created')
+        ->and(ActivityLogEventCatalog::label('admin.backup_downloaded'))->toBe('Backup Downloaded');
 });
 
 it('falls back to the raw value for an event that is no longer cataloged', function (): void {
@@ -35,7 +40,9 @@ it('offers one event option per cataloged event, grouped by log', function (): v
 
     expect(array_keys($eventOptions))->toEqualCanonicalizing(array_values(ActivityLogEventCatalog::logOptions()))
         ->and(array_sum(array_map(count(...), $eventOptions)))->toBe($catalogedEventCount)
-        ->and($eventOptions['Auth']['auth.login'])->toBe('User Logged In');
+        ->and($eventOptions['Auth']['auth.login'])->toBe('User Logged In')
+        ->and($eventOptions['Admin']['admin.backup_created'])->toBe('Backup Created')
+        ->and($eventOptions['Admin']['admin.backup_downloaded'])->toBe('Backup Downloaded');
 });
 
 it('offers one log option per log', function (): void {
