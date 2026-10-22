@@ -40,6 +40,7 @@ it('promotes a verified user to the base and all reader roles', function (): voi
             AdminRole::AdminDashboardReader->value,
             AdminRole::AdminUsersReader->value,
             AdminRole::AdminPostsReader->value,
+            AdminRole::AdminActivityReader->value,
         ]))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminAccess->value))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminDashboardView->value))->toBeTrue()
@@ -47,6 +48,8 @@ it('promotes a verified user to the base and all reader roles', function (): voi
         ->and($bootstrappedUser->can(AdminPermission::AdminUsersView->value))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminPostsViewAny->value))->toBeTrue()
         ->and($bootstrappedUser->can(AdminPermission::AdminPostsView->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminActivityViewAny->value))->toBeTrue()
+        ->and($bootstrappedUser->can(AdminPermission::AdminActivityView->value))->toBeTrue()
         ->and($bootstrappedUser->canAccessPanel(Panel::make()->id('admin')))->toBeTrue();
 });
 
@@ -104,11 +107,11 @@ it('requires the Admin authorization catalog to be seeded first', function (): v
         ->and($user->roles()->exists())->toBeFalse();
 });
 
-it('requires every bootstrap role to exist in the Admin guard', function (): void {
+it('requires every bootstrap role to exist in the Admin guard', function (AdminRole $missingAdminRole): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     Role::query()
-        ->where('name', AdminRole::AdminPostsReader->value)
+        ->where('name', $missingAdminRole->value)
         ->where('guard_name', 'admin')
         ->delete();
 
@@ -120,7 +123,10 @@ it('requires every bootstrap role to exist in the Admin guard', function (): voi
     expect($exitCode)->toBe(Command::FAILURE)
         ->and(Artisan::output())->toContain('Admin roles are not initialized.')
         ->and($user->roles()->exists())->toBeFalse();
-});
+})->with([
+    'posts reader' => [AdminRole::AdminPostsReader],
+    'activity reader' => [AdminRole::AdminActivityReader],
+]);
 
 it('records the bootstrap with the actor and the assigned roles', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
@@ -141,6 +147,7 @@ it('records the bootstrap with the actor and the assigned roles', function (): v
             AdminRole::AdminDashboardReader->value,
             AdminRole::AdminUsersReader->value,
             AdminRole::AdminPostsReader->value,
+            AdminRole::AdminActivityReader->value,
         ]);
 });
 

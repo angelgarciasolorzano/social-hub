@@ -29,9 +29,7 @@ class AdminUserSeeder extends Seeder
 
         $user->assignRole(
             $this->roleFor(AdminRole::Admin),
-            $this->roleFor(AdminRole::AdminDashboardReader),
-            $this->roleFor(AdminRole::AdminUsersReader),
-            $this->roleFor(AdminRole::AdminPostsReader),
+            ...array_map($this->roleFor(...), $this->readerRoles()),
         );
 
         $this->promoteRandomAdmins();
@@ -72,7 +70,12 @@ class AdminUserSeeder extends Seeder
      */
     private function readerRoles(): array
     {
-        return [AdminRole::AdminDashboardReader, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader];
+        return [
+            AdminRole::AdminDashboardReader,
+            AdminRole::AdminUsersReader,
+            AdminRole::AdminPostsReader,
+            AdminRole::AdminActivityReader,
+        ];
     }
 
     private function roleFor(AdminRole $adminRole): Role

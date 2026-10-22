@@ -35,6 +35,8 @@ it('assigns Angel all reader roles and preserves existing assignments', function
         AdminPermission::AdminPostsViewAny->value,
         AdminPermission::AdminUsersView->value,
         AdminPermission::AdminUsersViewAny->value,
+        AdminPermission::AdminActivityViewAny->value,
+        AdminPermission::AdminActivityView->value,
     ];
 
     $expectedRoleNames = [
@@ -42,6 +44,7 @@ it('assigns Angel all reader roles and preserves existing assignments', function
         AdminRole::AdminDashboardReader->value,
         AdminRole::AdminUsersReader->value,
         AdminRole::AdminPostsReader->value,
+        AdminRole::AdminActivityReader->value,
         $customAdminRole->name,
     ];
 
@@ -107,5 +110,7 @@ it('grants the complete admin permission set to Angel', function (): void {
         AdminPermission::AdminPostsViewAny->value,
         AdminPermission::AdminUsersView->value,
         AdminPermission::AdminUsersViewAny->value,
+        AdminPermission::AdminActivityViewAny->value,
+        AdminPermission::AdminActivityView->value,
     ]))->toBeTrue();
 });

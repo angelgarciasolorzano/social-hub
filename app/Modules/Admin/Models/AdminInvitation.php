@@ -27,6 +27,8 @@ use Override;
  * @property CarbonImmutable|null $updated_at
  * @property-read User $inviter
  * @property-read User|null $targetUser
+ *
+ * @mixin IdeHelperAdminInvitation
  */
 #[UseFactory(AdminInvitationFactory::class)]
 #[Fillable([

@@ -44,6 +44,7 @@ class AdminBootstrapCommand extends Command
                 AdminRole::AdminDashboardReader->value,
                 AdminRole::AdminUsersReader->value,
                 AdminRole::AdminPostsReader->value,
+                AdminRole::AdminActivityReader->value,
             ];
 
             $roles = Role::query()
