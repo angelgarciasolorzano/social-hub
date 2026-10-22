@@ -184,7 +184,7 @@ Crear `App\Modules\ActivityLog\Policies\ActivityLogPolicy` siguiendo `UserPolicy
 
 ### TASK-006: Crear el concern que describe causante y sujeto
 
-Crear `Filament/Concerns/DescribesActivityLogParties.php` (convención `Concerns/` de Admin), compartido por la tabla, el detalle y la pestaña del usuario: `causerLabel(ActivityLog)` (nombre del usuario, 'Anonymous' sin causante, 'Deleted user #id' si ya no existe), `causerUrl(ActivityLog)` (detalle en `UserResource` solo si `UserResource::canView()`), `subjectLabel(ActivityLog)` (tipo legible e id, por ejemplo 'Post #12', nunca contenido) y `subjectUrl(ActivityLog)` (solo para `user`, `post` y `comment` cuando su recurso permite verlo y el registro existe).
+Crear `Filament/Concerns/DescribesActivityLogParties.php` (convención `Concerns/` de Admin), compartido por la tabla, el detalle y la pestaña del usuario: `causerLabel(ActivityLog)` (nombre del usuario, 'Anonymous' sin causante, 'Deleted user #id' si ya no existe), `causerUrl(ActivityLog)` (detalle en `UserResource` solo si `UserResource::canView()`), `subjectLabel(ActivityLog)` (tipo legible e id, por ejemplo 'Post #12', nunca contenido) y `subjectUrl(ActivityLog)` (solo para `user`, `post` y `comment` cuando su recurso permite verlo y el registro existe; nunca para un comentario convertido en tombstone). Un sujeto que ya no existe se muestra como '<Tipo> #id (deleted)'. Se ejecutó junto con TASK-007: PHPStan no analiza un trait sin uso y lo marca como error, así que no se podía validar por separado.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -204,7 +204,7 @@ Crear `Filament/Concerns/DescribesActivityLogParties.php` (convención `Concerns
 
 ### TASK-007: Definir la tabla de actividad
 
-`Tables/ActivityLogsTable::configure()` (patrón de `PostsTable`): `modifyQueryUsing` con `with(['causer', 'subject'])`; columnas fecha (`created_at`, ordenable), log (etiqueta), evento (etiqueta del catálogo), causante y sujeto (con URL del concern); filtros `SelectFilter` de log y evento (opciones del catálogo), causante (búsqueda por usuario) y rango de fechas (como `PostsTable`); orden por `id` descendente, paginación 10/25/50, sin `recordActions` de edición ni `toolbarActions`.
+`Tables/ActivityLogsTable::configure()` (patrón de `PostsTable`): `modifyQueryUsing` con `with(['causer', 'subject'])`; columnas fecha (`created_at`, ordenable), log (etiqueta), evento (etiqueta del catálogo), causante y sujeto (con URL del concern); filtros `SelectFilter` de log y evento (opciones del catálogo, eventos agrupados por log), causante (un `Filter` con un `Select` buscable por nombre de usuario, porque `causer` es una relación polimórfica) y rango de fechas (como `PostsTable`); orden por `id` descendente, paginación 10/25/50, sin `recordActions` de edición ni `toolbarActions`.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -272,7 +272,7 @@ Agregar a `ActivityLogFactory` los estados `forEvent(ActivityLogEvent)`, `caused
 **Acceptance Criteria:**
 - Un administrador sin `admin.activity.viewAny` recibe 403 en el listado y no ve 'Activity log' en la navegación.
 - El número de consultas del listado es el mismo con 3 y con 30 actividades.
-- Una actividad cuyo usuario y comentario ya fueron borrados se lista como 'Deleted user #id' y 'Comment #id'.
+- Una actividad cuyo usuario y comentario ya fueron borrados se lista como 'Deleted user #id' y 'Comment #id (deleted)'.
 
 **writeScope:**
 - `app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php` (nuevo)
