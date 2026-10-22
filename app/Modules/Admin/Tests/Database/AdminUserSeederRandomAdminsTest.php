@@ -38,6 +38,7 @@ function readerRoleNames(): array
         AdminRole::AdminUsersReader->value,
         AdminRole::AdminPostsReader->value,
         AdminRole::AdminActivityReader->value,
+        AdminRole::AdminBackupsReader->value,
     ];
 }
 
@@ -78,7 +79,7 @@ it('gives every random administrator the base role and between one and four read
     foreach ($randomAdmins as $randomAdmin) {
         $readerRoles = $randomAdmin->getRoleNames()->reject(fn (string $roleName): bool => $roleName === AdminRole::Admin->value);
 
-        expect($readerRoles->count())->toBeBetween(1, \count(readerRoleNames()))
+        expect($readerRoles->count())->toBeBetween(1, 4)
             ->and($readerRoles->diff(readerRoleNames()))->toBeEmpty();
     }
 });
