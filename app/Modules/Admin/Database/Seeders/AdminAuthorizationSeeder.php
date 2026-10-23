@@ -55,6 +55,11 @@ class AdminAuthorizationSeeder extends Seeder
                     AdminPermission::AdminActivityView,
                 ],
                 AdminRole::AdminBackupsReader->value => [AdminPermission::AdminBackupsView],
+                AdminRole::AdminBackupsOperator->value => [
+                    AdminPermission::AdminBackupsView,
+                    AdminPermission::AdminBackupsCreate,
+                    AdminPermission::AdminBackupsDownload,
+                ],
             ];
 
             foreach ($permissionsByRole as $roleName => $adminPermissions) {

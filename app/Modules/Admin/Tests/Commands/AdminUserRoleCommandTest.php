@@ -93,6 +93,23 @@ it('grants the backups reader role from the admin guard', function (): void {
         ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
 });
 
+it('grants all backup operations through the backup operator role', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+
+    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::AdminBackupsOperator->value, createAdminCommandActor());
+    $user->refresh();
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($user->hasRole(AdminRole::AdminBackupsOperator->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminBackupsView->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminBackupsCreate->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminBackupsDownload->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse()
+        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
+});
+
 it('grants panel entry through the admin role', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 

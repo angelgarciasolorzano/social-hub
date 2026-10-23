@@ -56,21 +56,26 @@ it('assigns Angel all reader roles and preserves existing assignments', function
         ->toBe(collect($expectedPermissionNames)->sort()->values()->all());
 });
 
-it('does not assign an existing provisioner role to Angel automatically', function (): void {
+it('does not assign operational roles to Angel automatically', function (): void {
     $user = createUser();
     $user->forceFill(['email' => 'angel@gmail.com'])->save();
 
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $provisionerRole = Role::query()->firstOrCreate([
-        'name' => 'admin-users-provisioner',
-        'guard_name' => 'admin',
-    ]);
+    $provisionerRole = Role::query()
+        ->where('name', AdminRole::AdminUsersProvisioner->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $backupsOperatorRole = Role::query()
+        ->where('name', AdminRole::AdminBackupsOperator->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
 
     $this->seed(AdminUserSeeder::class);
 
     expect($user->refresh()->getRoleNames()->all())
-        ->not->toContain($provisionerRole->name);
+        ->not->toContain($provisionerRole->name)
+        ->not->toContain($backupsOperatorRole->name);
 });
 
 it('preserves the roles that other users already have', function (): void {
