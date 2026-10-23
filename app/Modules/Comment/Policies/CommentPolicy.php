@@ -4,11 +4,26 @@ declare(strict_types=1);
 
 namespace App\Modules\Comment\Policies;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Comment\Models\Comment;
 use App\User\Models\User;
 
+/**
+ * Authors change their own comments in the application; the Admin panel only reads them,
+ * with the posts permission, and keeps its write abilities denied in CommentResource.
+ */
 final class CommentPolicy
 {
+    public function viewAny(User $authenticatedUser): bool
+    {
+        return $authenticatedUser->can(AdminPermission::AdminPostsView->value);
+    }
+
+    public function view(User $authenticatedUser): bool
+    {
+        return $authenticatedUser->can(AdminPermission::AdminPostsView->value);
+    }
+
     public function update(User $user, Comment $comment): bool
     {
         return $this->isLiveCommentOf($user, $comment);
