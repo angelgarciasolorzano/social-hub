@@ -10,10 +10,12 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use LogicException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -100,8 +102,41 @@ it('renders the page and navigation to an authorized backup reader', function ()
         ->assertDontSee('archive-password-must-not-render')
         ->assertSeeText($filename)
         ->assertSeeText('14 bytes')
-        ->assertSeeText('backups')
+        ->assertDontSeeText('Disk')
         ->assertSeeText('Available');
+});
+
+it('paginates backup archives ten rows at a time by default', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    Storage::fake('backups');
+
+    foreach (range(1, 11) as $sequence) {
+        storeFilamentBackupArchive(
+            \sprintf('database-backup-%02d.zip', $sequence),
+            'backup archive',
+        );
+    }
+
+    $testable = backupManagementPageForTesting();
+    $firstPageRecords = $testable->instance()->getTableRecords();
+
+    throw_unless($firstPageRecords instanceof LengthAwarePaginator, LogicException::class, 'Backup records must use a length-aware paginator.');
+
+    expect($firstPageRecords->total())->toBe(11)
+        ->and($firstPageRecords->count())->toBe(10);
+
+    $testable->call('setPage', 2);
+
+    $secondPageRecords = $testable->instance()->getTableRecords();
+
+    throw_unless($secondPageRecords instanceof LengthAwarePaginator, LogicException::class, 'Backup records must use a length-aware paginator.');
+
+    expect($secondPageRecords->total())->toBe(11)
+        ->and($secondPageRecords->count())->toBe(1);
 });
 
 it('forbids an administrator without backup view permission from opening the page URL', function (): void {

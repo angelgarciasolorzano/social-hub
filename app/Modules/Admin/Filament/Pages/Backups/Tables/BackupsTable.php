@@ -10,16 +10,25 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
 class BackupsTable
 {
-    public static function configure(Table $table, BackupManagement $page): Table
+    public static function configure(Table $table, BackupManagement $backupManagementPage): Table
     {
         return $table
             ->heading('Backups')
-            ->records(fn (): Collection => collect($page->getBackupListing()->backups)->keyBy('filename'))
+            ->records(function (int $page, int $recordsPerPage) use ($backupManagementPage): LengthAwarePaginator {
+                $backups = collect($backupManagementPage->getBackupListing()->backups)->keyBy('filename');
+
+                return new LengthAwarePaginator(
+                    $backups->forPage($page, $recordsPerPage),
+                    $backups->count(),
+                    $recordsPerPage,
+                    $page,
+                );
+            })
             ->columns([
                 TextColumn::make('filename')
                     ->label('Archive'),
@@ -31,8 +40,6 @@ class BackupsTable
                     ->formatStateUsing(static fn (?float $state): string => $state === null
                         ? 'Unavailable'
                         : number_format($state, 0).' bytes'),
-                TextColumn::make('disk')
-                    ->label('Disk'),
                 TextColumn::make('available')
                     ->label('Availability')
                     ->badge()
@@ -51,20 +58,21 @@ class BackupsTable
                     ])
                     ->modalHeading('Confirm your password to download this backup')
                     ->modalSubmitActionLabel('Download backup')
-                    ->authorize(fn (): bool => $page->hasPermission(AdminPermission::AdminBackupsDownload))
+                    ->authorize(fn (): bool => $backupManagementPage->hasPermission(AdminPermission::AdminBackupsDownload))
                     ->visible(fn (array $record): bool => $record['available']
-                        && $page->hasPermission(AdminPermission::AdminBackupsDownload))
+                        && $backupManagementPage->hasPermission(AdminPermission::AdminBackupsDownload))
                     ->action(
                         /**
                          * @param  array{filename: string, created_at: string|null, size_in_bytes: float|null, disk: string, available: bool}  $record
                          * @param  array{current_password: string}  $data
                          */
-                        function (array $record, array $data) use ($page): void {
-                            self::handleDownload($page, $record, $data);
+                        function (array $record, array $data) use ($backupManagementPage): void {
+                            self::handleDownload($backupManagementPage, $record, $data);
                         },
                     ),
             ])
-            ->paginated(false)
+            ->paginated([10, 25, 50])
+            ->defaultPaginationPageOption(10)
             ->emptyStateHeading('No backups yet')
             ->emptyStateDescription('A database backup will appear here after the first run.');
     }
