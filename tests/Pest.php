@@ -238,6 +238,17 @@ function createTrustedDeviceEvent(?User $user = null, array $attributes = []): T
 }
 
 /**
+ * Create a persisted User whose account an administrator suspended.
+ */
+function createSuspendedUser(): User
+{
+    /** @var Factory<User> $factory */
+    $factory = User::factory();
+
+    return $factory->suspended()->createOne();
+}
+
+/**
  * Create a persisted User with confirmed two-factor authentication, using the
  * factory state: a real TOTP secret and Fortify-format recovery codes, so
  * tests can compute a genuinely valid code with validOtpFor().

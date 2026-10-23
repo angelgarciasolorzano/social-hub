@@ -512,11 +512,11 @@ Agregar `seedAccountStatusActivity()` a `ActivityLogSeeder`: por cada `AccountSt
 
 ### TASK-021: Actualizar CLAUDE.md y cerrar los gates
 
-Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tabla, servicio, bloqueo en login/2FA/dispositivos/panel, middleware, revocación de dispositivos), el rol `admin-users-moderator` y sus permisos en la tabla de roles y en la lista de los comandos, los eventos nuevos del activity log, la clave `account_status_change` de la morph map y `AccountStatusSeeder` en el orden de seeders. Correr Pint, Rector (clear-cache → dry → aplicar), PHPStan y la suite completa.
+Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tabla, servicio, bloqueo en login/2FA/dispositivos/panel, middleware, revocación de dispositivos), el rol `admin-users-moderator` y sus permisos en la tabla de roles y en la lista de los comandos (y que `AdminUserSeeder` se lo asigna a Angel en local), los eventos nuevos del activity log, la clave `account_status_change` de la morph map y `AccountStatusSeeder` en el orden de seeders. Correr Pint, Rector (clear-cache → dry → aplicar), PHPStan y la suite completa.
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3
 
-**Depends on:** TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-020
+**Depends on:** TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-020, TASK-022
 
 **Acceptance Criteria:**
 
@@ -528,6 +528,29 @@ Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tab
 - `CLAUDE.md`
 
 **validateCommand:** `rtk vendor/bin/pint --dirty --format agent && rtk composer rector-clear-cache && rtk composer rector-dry && rtk composer phpstan && rtk composer test`
+
+**Review:** claude
+
+### TASK-022: Asignar admin-users-moderator a Angel en local
+
+Seguimiento de TASK-005 pedido por el usuario (2026-10-23): `AdminUserSeeder` asigna a Angel, solo en `local` y `testing`, también `admin-users-moderator`, igual que ya hace con `admin-backups-operator`, para poder probar las suspensiones sin el comando. Los administradores aleatorios siguen recibiendo solo roles de lectura y `admin:bootstrap-admin` no cambia.
+
+**Type:** feature · **Effort:** XS · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-005
+
+**Acceptance Criteria:**
+
+1. Tras el seeder Angel tiene `admin-users-moderator` con `admin.users.suspend` y `admin.users.reactivate`, y correrlo dos veces no duplica nada.
+2. Ningún administrador aleatorio recibe el rol de moderador; fuera de `local`/`testing` el seeder no asigna nada.
+
+**writeScope:**
+
+- `app/Modules/Admin/Database/Seeders/AdminUserSeeder.php`
+- `app/Modules/Admin/Tests/Database/AdminUserSeederTest.php`
+- `app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Database`
 
 **Review:** claude
 
@@ -561,12 +584,12 @@ TASK-001..013 entregan el núcleo (persistencia, permisos, servicio y todos los 
 
 ## Execution Summary
 
-- Tareas: 21
+- Tareas: 22
 - Ruta crítica: TASK-001 → TASK-002 → TASK-003 → TASK-004 → TASK-011 → TASK-012 → TASK-021
 - Capas paralelas:
 
   1. TASK-001, TASK-005
-  2. TASK-002
+  2. TASK-002, TASK-022
   3. TASK-003
   4. TASK-004, TASK-007
   5. TASK-006, TASK-008, TASK-009, TASK-010, TASK-011, TASK-013, TASK-015, TASK-016, TASK-017, TASK-019
@@ -597,4 +620,5 @@ TASK-001..013 entregan el núcleo (persistencia, permisos, servicio y todos los 
 | TASK-018 | TASK-017 |
 | TASK-019 | TASK-003, TASK-004 |
 | TASK-020 | TASK-007, TASK-019 |
-| TASK-021 | TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-020 |
+| TASK-021 | TASK-008, TASK-009, TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-018, TASK-020, TASK-022 |
+| TASK-022 | TASK-005 |

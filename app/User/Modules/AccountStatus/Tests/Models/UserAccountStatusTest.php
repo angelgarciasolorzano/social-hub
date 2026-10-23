@@ -3,22 +3,10 @@
 declare(strict_types=1);
 
 use App\User\Database\Factories\AccountStatusChangeFactory;
-use App\User\Database\Factories\UserFactory;
 use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\MassAssignmentException;
-
-/**
- * Create a persisted suspended User.
- */
-function createSuspendedUser(): User
-{
-    /** @var UserFactory $factory */
-    $factory = User::factory();
-
-    return $factory->suspended()->createOne();
-}
 
 /**
  * Create a status change of the given account at the given time.

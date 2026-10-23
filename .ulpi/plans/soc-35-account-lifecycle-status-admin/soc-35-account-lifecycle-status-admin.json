@@ -680,7 +680,7 @@
     {
       "id": "TASK-021",
       "title": "Actualizar CLAUDE.md y cerrar los gates",
-      "description": "Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tabla, servicio, bloqueo en login/2FA/dispositivos/panel, middleware, revocación de dispositivos), el rol `admin-users-moderator` y sus permisos en la tabla de roles y en la lista de los comandos, los eventos nuevos del activity log, la clave `account_status_change` de la morph map y `AccountStatusSeeder` en el orden de seeders. Correr Pint, Rector (clear-cache → dry → aplicar), PHPStan y la suite completa.",
+      "description": "Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tabla, servicio, bloqueo en login/2FA/dispositivos/panel, middleware, revocación de dispositivos), el rol `admin-users-moderator` y sus permisos en la tabla de roles y en la lista de los comandos (y que `AdminUserSeeder` se lo asigna a Angel en local), los eventos nuevos del activity log, la clave `account_status_change` de la morph map y `AccountStatusSeeder` en el orden de seeders. Correr Pint, Rector (clear-cache → dry → aplicar), PHPStan y la suite completa.",
       "priority": "P3",
       "type": "docs",
       "effort": "S",
@@ -695,7 +695,8 @@
         "TASK-015",
         "TASK-016",
         "TASK-018",
-        "TASK-020"
+        "TASK-020",
+        "TASK-022"
       ],
       "acceptanceCriteria": [
         "CLAUDE.md describe el estado de cuenta, el rol nuevo, los eventos y el seeder, sin contradecir SOC-44/SOC-54 (que decían que el estado quedaba para SOC-35).",
@@ -710,17 +711,47 @@
       ],
       "validateCommand": "rtk vendor/bin/pint --dirty --format agent && rtk composer rector-clear-cache && rtk composer rector-dry && rtk composer phpstan && rtk composer test",
       "review": "claude"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Asignar admin-users-moderator a Angel en local",
+      "description": "Seguimiento de TASK-005 pedido por el usuario (2026-10-23): `AdminUserSeeder` asigna a Angel, solo en `local` y `testing`, también `admin-users-moderator`, igual que ya hace con `admin-backups-operator`, para poder probar las suspensiones sin el comando. Los administradores aleatorios siguen recibiendo solo roles de lectura y `admin:bootstrap-admin` no cambia.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Tras el seeder Angel tiene `admin-users-moderator` con `admin.users.suspend` y `admin.users.reactivate`, y correrlo dos veces no duplica nada.",
+        "Ningún administrador aleatorio recibe el rol de moderador; fuera de `local`/`testing` el seeder no asigna nada."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Database",
+      "review": "claude"
     }
   ],
   "executionSummary": {
-    "taskCount": 21,
+    "taskCount": 22,
     "layers": [
       [
         "TASK-001",
         "TASK-005"
       ],
       [
-        "TASK-002"
+        "TASK-002",
+        "TASK-022"
       ],
       [
         "TASK-003"
@@ -837,7 +868,11 @@
       "TASK-015",
       "TASK-016",
       "TASK-018",
-      "TASK-020"
+      "TASK-020",
+      "TASK-022"
+    ],
+    "TASK-022": [
+      "TASK-005"
     ]
   }
 }

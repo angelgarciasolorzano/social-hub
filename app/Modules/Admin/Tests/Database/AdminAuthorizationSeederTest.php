@@ -40,6 +40,10 @@ it('seeds each role with only its intended permissions', function (): void {
         ->where('name', AdminRole::AdminUsersProvisioner->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
+    $usersModeratorRole = Role::query()
+        ->where('name', AdminRole::AdminUsersModerator->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
     $postsReaderRole = Role::query()
         ->where('name', AdminRole::AdminPostsReader->value)
         ->where('guard_name', 'admin')
@@ -93,6 +97,13 @@ it('seeds each role with only its intended permissions', function (): void {
         ->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
         ->and($usersProvisionerRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([AdminPermission::AdminUsersCreate->value, AdminPermission::AdminUsersViewAny->value])
+        ->and($usersModeratorRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([
+            AdminPermission::AdminUsersReactivate->value,
+            AdminPermission::AdminUsersSuspend->value,
+            AdminPermission::AdminUsersView->value,
+            AdminPermission::AdminUsersViewAny->value,
+        ])
         ->and($postsReaderRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([AdminPermission::AdminPostsView->value, AdminPermission::AdminPostsViewAny->value])
         ->and($dashboardReaderRole->permissions->pluck('name')->all())
