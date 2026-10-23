@@ -6,6 +6,7 @@ use App\User\Database\Factories\AccountStatusChangeFactory;
 use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
  * The AccountStatusChange factory, typed because Larastan does not infer #[UseFactory].
@@ -55,4 +56,11 @@ it('stores only the creation time', function (): void {
 
     expect($accountStatusChange->created_at)->not->toBeNull()
         ->and($accountStatusChange->getAttributes())->not->toHaveKey('updated_at');
+});
+
+it('is registered in the morph map', function (): void {
+    $accountStatusChange = accountStatusChangeFactory()->createOne();
+
+    expect($accountStatusChange->getMorphClass())->toBe(AccountStatusChange::MORPH_NAME)
+        ->and(Relation::getMorphedModel(AccountStatusChange::MORPH_NAME))->toBe(AccountStatusChange::class);
 });

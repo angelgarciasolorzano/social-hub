@@ -10,6 +10,7 @@ use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
+use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use DeviceDetector\DeviceDetector;
 use Illuminate\Contracts\Foundation\Application;
@@ -57,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
             Comment::MORPH_NAME => Comment::class,
             AdminInvitation::MORPH_NAME => AdminInvitation::class,
             TrustedDeviceEvent::MORPH_NAME => TrustedDeviceEvent::class,
+            AccountStatusChange::MORPH_NAME => AccountStatusChange::class,
             self::ROLE_MORPH_NAME => Role::class,
         ]);
     }
