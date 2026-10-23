@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Comments\RelationManagers;
 
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Comment\Models\Comment;
 use App\User\Models\User;
@@ -18,6 +17,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Override;
 
 class RepliesRelationManager extends RelationManager
@@ -35,7 +35,7 @@ class RepliesRelationManager extends RelationManager
         $authenticatedUser = Filament::auth()->user();
 
         return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::AdminPostsView->value);
+            && Gate::forUser($authenticatedUser)->allows('viewAny', Comment::class);
     }
 
     #[Override]
