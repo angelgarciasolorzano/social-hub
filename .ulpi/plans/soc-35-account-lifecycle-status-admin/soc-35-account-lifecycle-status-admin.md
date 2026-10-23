@@ -512,7 +512,7 @@ Agregar `seedAccountStatusActivity()` a `ActivityLogSeeder`: por cada `AccountSt
 
 ### TASK-021: Actualizar CLAUDE.md y cerrar los gates
 
-Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tabla, servicio, bloqueo en login/2FA/dispositivos/panel, middleware, revocación de dispositivos), el rol `admin-users-moderator` y sus permisos en la tabla de roles y en la lista de los comandos (y que `AdminUserSeeder` se lo asigna a Angel en local), los eventos nuevos del activity log, la clave `account_status_change` de la morph map y `AccountStatusSeeder` en el orden de seeders. Correr Pint, Rector (clear-cache → dry → aplicar), PHPStan y la suite completa.
+Documentar en `CLAUDE.md`: el submódulo `User/Modules/AccountStatus` (enum, tabla, servicio, bloqueo en login/2FA/dispositivos/panel, middleware, revocación de dispositivos), el rol `admin-users-moderator` y sus permisos en la tabla de roles y en la lista de los comandos (y que `AdminUserSeeder` se lo asigna a Angel en local), los eventos nuevos del activity log, la clave `account_status_change` de la morph map y `AccountStatusSeeder` en el orden de seeders. Correr Pint, Rector (clear-cache → dry → aplicar), PHPStan y la suite completa. Al implementarla también se actualizaron `AGENTS.md`, `docs/architecture/backend.md` y `docs/architecture/frontend.md`, que seguían diciendo que el estado de cuenta estaba pendiente para SOC-35.
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3
 

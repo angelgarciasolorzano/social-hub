@@ -108,7 +108,7 @@ Cuando un módulo tiene **varias áreas grandes e independientes**, se subdivide
 
 La página de configuración de la cuenta vive en `resources/js/modules/setting/modules/accountSettings/`. `AccountSettings.tsx` compone el formulario (`AccountSettingsProfileForm`), el resumen (`AccountSettingsSummaryCard`), las acciones (`AccountActionsPanel`) y las secciones presentacionales de privacidad y preferencias de comunicación. Los arrays de privacidad y comunicación son estáticos y tipados en `data/accountSettingsSections.ts`; los switches y el botón “Ver actividad” son visuales y no ejecutan acciones. El perfil público conserva su ruta existente. El cambio de contraseña se inicia desde `AccountSettingsPasswordDialog`, componente de `AccountActionsPanel` que envía la actualización a `PUT /setting/password`; no hay una vista independiente ni un GET para cambiar la contraseña. `AccountSettingsDeleteDialog` confirma el borrado mediante `user.destroy`.
 
-El estado real de cuenta se difiere a SOC-35 y solo se debe implementar cuando el sistema tenga un panel administrativo y roles/permisos. La vista no infiere ese estado de la verificación del correo, del último acceso ni de la sesión activa.
+Desde SOC-35, `AccountSettingsSummaryCard` muestra “Estado de la cuenta” como un badge de solo lectura (“Activa” / “Suspendida”) a partir de `accountSettings.status`, tipado por `AccountStatus` en `types/accountSettings.ts`, espejo del enum del backend. La vista no infiere ese estado de la verificación del correo, del último acceso ni de la sesión activa, y no ofrece ningún control para cambiarlo.
 
 ### Cuándo subdividir
 
