@@ -70,6 +70,7 @@ it('limits the user detail to allowlisted fields', function (): void {
         'email',
         'cover_image_status',
         'cover_image',
+        'status',
         'email_verification_status',
         'email_verified_at',
         'created_at',

@@ -4,22 +4,33 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 
+use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
+use App\User\Enums\AccountStatus;
 use DateTimeInterface;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 class UsersTable
 {
+    use DescribesAccountStatus;
+
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('email')->searchable()->sortable(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn (AccountStatus $state): string => self::accountStatusLabel($state))
+                    ->color(fn (AccountStatus $state): string => self::accountStatusColor($state))
+                    ->sortable(),
                 TextColumn::make('email_verified_at')->dateTime()->sortable(),
                 TextColumn::make('created_at')->dateTime()->sortable(),
                 TextColumn::make('last_login_at')
@@ -32,6 +43,9 @@ class UsersTable
                     ->sortable(),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label('Account status')
+                    ->options(self::accountStatusOptions()),
                 TernaryFilter::make('email_verified_at')
                     ->label('Email verification')
                     ->nullable(),

@@ -375,7 +375,7 @@ En `ViewUser::getHeaderActions()` agregar 'Suspend account' y 'Reactivate accoun
 
 ### TASK-015: Columna, filtro y entrada de estado en Users
 
-En `UsersTable` agregar la columna 'Status' (badge con `AccountStatus::label()`, verde/rojo) y un `SelectFilter` por estado; en `UserInfolist` agregar la entrada 'Status'. Sin consultas extra: la columna está en `users`.
+En `UsersTable` agregar la columna 'Status' (badge con `AccountStatus::label()`, verde/rojo) y un `SelectFilter` por estado; en `UserInfolist` agregar la entrada 'Status'. Sin consultas extra: la columna está en `users`. Implementado con el trait `Admin/Filament/Concerns/DescribesAccountStatus` (etiqueta, color y opciones, que reutilizará TASK-016) y agregando `status` a la lista fija de campos de `ViewUserTest`.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
 
