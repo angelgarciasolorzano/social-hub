@@ -7,11 +7,13 @@ namespace App\Modules\Post\Models;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Database\Factories\PostFactory;
+use App\Modules\Post\Policies\PostPolicy;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,6 +40,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @mixin IdeHelperPost
  */
 #[UseFactory(PostFactory::class)]
+#[UsePolicy(PostPolicy::class)]
 #[Fillable([
     'content',
     'user_id',

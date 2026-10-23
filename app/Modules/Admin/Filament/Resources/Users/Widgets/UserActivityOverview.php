@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Widgets;
 
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 use Override;
 
 class UserActivityOverview extends StatsOverviewWidget
@@ -28,7 +28,7 @@ class UserActivityOverview extends StatsOverviewWidget
         $authenticatedUser = auth('admin')->user();
 
         return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::AdminUsersView->value);
+            && Gate::forUser($authenticatedUser)->allows('view', User::class);
     }
 
     /**

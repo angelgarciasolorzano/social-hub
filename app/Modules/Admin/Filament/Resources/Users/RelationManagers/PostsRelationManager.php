@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\RelationManagers;
 
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Post\Models\Post;
@@ -40,7 +39,7 @@ class PostsRelationManager extends RelationManager
 
         return $authenticatedUser instanceof User
             && Gate::forUser($authenticatedUser)->allows('view', $ownerRecord)
-            && $authenticatedUser->can(AdminPermission::AdminPostsViewAny->value);
+            && Gate::forUser($authenticatedUser)->allows('viewAny', Post::class);
     }
 
     #[Override]
