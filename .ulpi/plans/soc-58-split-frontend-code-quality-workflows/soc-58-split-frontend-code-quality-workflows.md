@@ -1,0 +1,245 @@
+# Plan: SOC-58: Separar los gates de calidad del frontend
+
+## Overview
+
+Crear workflows independientes de formato, lint y tipos, documentar los tres checks, verificar los status checks de las ramas antes de retirar el workflow combinado y eliminarlo solo cuando los reemplazos estén integrados. Los gates mantienen los mismos triggers y publican estados independientes.
+
+## Scope Challenge
+
+EXPANSION confirmada por el usuario. SOC-58 ya delimita tres gates: format, lint y types. El análisis encontró dos referencias de documentación al workflow actual, así que el plan también las sincroniza en README.md y docs/development/frontend-commands.md. Se conserva el comportamiento actual de Prettier: revisa resources/ completo y el workflow genera Wayfinder antes del check; como .prettierignore no excluye resources/js/shared/wayfinder, el workflow de formato también debe generar esos archivos. ESLint sí excluye esa ruta, por lo que lint no necesita PHP ni Composer. No se introducen composite actions: los workflows backend existentes duplican su preparación por gate. No se fijaron recortes adicionales.
+
+## Prerequisites
+
+- SOC-58 está en Backlog y especifica los comandos npm run format:check, npm run lint:check y npm run types, con push/pull_request a main y develop.
+- package.json define format:check como Prettier sobre resources/, lint:check como eslint ., types como tsc --noEmit e install:ci como npm ci --no-audit --no-fund.
+- La generación de Wayfinder usa php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; tsconfig.json incluye sus tipos generados, que Git ignora.
+- Prettier incluye actualmente Wayfinder porque .prettierignore no excluye esa ruta; ESLint sí ignora resources/js/shared/wayfinder/**.
+- GitHub API devolvió 403 al consultar la protección de main y develop. La lista de repository rulesets devuelve vacía, pero eso no confirma la ausencia de branch protection; hay que verificar los status checks con acceso de administrador antes de retirar el check anterior.
+
+## Non-Goals
+
+- No se fijaron recortes explícitos; la expansión se limita a los ajustes de documentación y verificación necesarios para separar los gates.
+
+## Contracts
+
+- Nomenclatura: archivos frontend-code-quality-<gate>.yml y nombres visibles Frontend Code Quality <Gate>, siguiendo el patrón backend-code-quality-<gate>.yml.
+- Los tres workflows conservan los triggers push y pull_request hacia main y develop.
+- Cada workflow ejecuta solo su gate y falla directamente si el comando falla; no conserva continue-on-error ni el resumen agregado de tres resultados.
+- Format conserva la cobertura actual de Prettier sobre resources/ y, por ello, genera Wayfinder en su propio runner antes de format:check.
+- Lint usa Node.js 22, caché npm y npm run install:ci; no prepara PHP porque ESLint ya ignora Wayfinder.
+- Types conserva PHP 8.5, Composer, .env.ci, key:generate, instalación npm y generación Wayfinder antes de tsc.
+- Los pasos comunes pueden repetirse entre workflows; no se agrega una composite action nueva.
+- La protección de ramas es una configuración externa a estos archivos. Cualquier check requerido que apunte al workflow/job antiguo debe migrarse a los tres checks nuevos antes de retirar el workflow combinado.
+
+## Existing Code Leverage
+
+- .github/workflows/frontend-code-quality.yml (triggers, versiones runtime, comandos, preparación de entorno y comportamiento actual de los tres gates).
+- .github/workflows/backend-code-quality-{pint,phpstan,rector,test,doctor}.yml (nombres, un gate por workflow y triggers).
+- package.json (scripts format:check, lint:check, types e install:ci).
+- vite.config.ts y .github/workflows/frontend-code-quality.yml (ruta y generación de Wayfinder con form variants).
+- .prettierignore, eslint.config.ts y tsconfig.json (alcance distinto de Prettier, ESLint y TypeScript sobre los archivos generados).
+- README.md y docs/development/frontend-commands.md (referencias vigentes al workflow combinado).
+
+## Tasks
+
+### TASK-001: Crear el workflow independiente de formato
+
+Crear `.github/workflows/frontend-code-quality-format.yml` con nombre `Frontend Code Quality Format` y un job enfocado en `npm run format:check`. Mantener los triggers actuales, Node.js 22, caché npm e instalación mediante `npm run install:ci`. Para conservar el alcance existente de Prettier sobre `resources/`, conservar también la preparación PHP 8.5/Composer, `.env.ci`, generación de APP_KEY y generación de Wayfinder antes del check: Wayfinder no está excluido en `.prettierignore` y el workflow actual lo genera antes de ejecutar Prettier. No incluir los gates de lint o tipos, el resumen conjunto ni `continue-on-error`.
+
+- **Type:** infra
+- **Priority:** P1
+- **Effort:** M
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** ninguna
+
+**Acceptance Criteria:**
+
+- El YAML parsea, el workflow se llama Frontend Code Quality Format y mantiene push/pull_request con ramas [main, develop].
+- El job genera Wayfinder en resources/js/shared/wayfinder con --with-form antes de npm run format:check y mantiene Node.js 22 más npm run install:ci.
+- Falla/borde: un exit code distinto de cero de npm run format:check hace fallar el workflow; el paso no usa continue-on-error.
+
+**writeScope:**
+
+- `.github/workflows/frontend-code-quality-format.yml`
+
+**validateCommand:** `rtk php -r "require 'vendor/autoload.php'; Symfony\\Component\\Yaml\\Yaml::parseFile('.github/workflows/frontend-code-quality-format.yml');" && rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder && rtk npm run format:check`
+
+### TASK-002: Crear el workflow independiente de lint
+
+Crear `.github/workflows/frontend-code-quality-lint.yml` con nombre `Frontend Code Quality Lint` y un job enfocado en `npm run lint:check`. Mantener los triggers actuales, Node.js 22, caché npm e instalación mediante `npm run install:ci`. No preparar PHP, Composer ni Wayfinder: `eslint.config.ts` ya ignora `resources/js/shared/wayfinder/**`. No incluir format, types, el resumen conjunto ni `continue-on-error`.
+
+- **Type:** infra
+- **Priority:** P1
+- **Effort:** S
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** ninguna
+
+**Acceptance Criteria:**
+
+- El YAML parsea, el workflow se llama Frontend Code Quality Lint y mantiene push/pull_request con ramas [main, develop].
+- El job configura Node.js 22, caché npm, npm run install:ci y ejecuta solo npm run lint:check, sin preparación PHP/Laravel.
+- Falla/borde: un error de ESLint hace fallar este workflow aunque los otros gates todavía no hayan terminado.
+
+**writeScope:**
+
+- `.github/workflows/frontend-code-quality-lint.yml`
+
+**validateCommand:** `rtk php -r "require 'vendor/autoload.php'; Symfony\\Component\\Yaml\\Yaml::parseFile('.github/workflows/frontend-code-quality-lint.yml');" && rtk npm run lint:check`
+
+### TASK-003: Crear el workflow independiente de tipos
+
+Crear `.github/workflows/frontend-code-quality-types.yml` con nombre `Frontend Code Quality Types` y un job enfocado en `npm run types`. Mantener los triggers actuales, Node.js 22, caché npm e instalación npm. Conservar la preparación PHP 8.5/Composer, `.env.ci`, key:generate y `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` antes de TypeScript, porque `tsconfig.json` incluye esos tipos generados y Git los ignora.
+
+- **Type:** infra
+- **Priority:** P1
+- **Effort:** M
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** ninguna
+
+**Acceptance Criteria:**
+
+- El YAML parsea, el workflow se llama Frontend Code Quality Types y mantiene push/pull_request con ramas [main, develop].
+- Wayfinder se genera en resources/js/shared/wayfinder con form variants antes de npm run types; el workflow prepara Node.js 22 y la configuración PHP/Laravel necesaria.
+- Falla/borde: si la generación de Wayfinder o tsc falla, el check de Types queda fallido y no se convierte en verde por continue-on-error.
+
+**writeScope:**
+
+- `.github/workflows/frontend-code-quality-types.yml`
+
+**validateCommand:** `rtk php -r "require 'vendor/autoload.php'; Symfony\\Component\\Yaml\\Yaml::parseFile('.github/workflows/frontend-code-quality-types.yml');" && rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder && rtk npm run types`
+
+### TASK-004: Sincronizar las referencias de CI frontend en la documentación
+
+Actualizar README.md y docs/development/frontend-commands.md para sustituir las referencias al workflow combinado por los tres workflows independientes. Documentar qué comando ejecuta cada workflow y aclarar los requisitos de generación de Wayfinder: format la necesita para conservar su alcance actual, lint no la necesita y types la necesita para tsc. Mantener la recomendación de ejecutar localmente los tres comandos npm.
+
+- **Type:** docs
+- **Priority:** P2
+- **Effort:** S
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** ninguna
+
+**Acceptance Criteria:**
+
+- README.md y docs/development/frontend-commands.md nombran los workflows de format, lint y types y ya no remiten al workflow combinado como el workflow frontend vigente.
+- La documentación distingue correctamente los requisitos PHP/Wayfinder de format y types frente al gate lint.
+- Falla/borde: no queda una referencia exacta a frontend-code-quality.yml en README.md ni docs/development/frontend-commands.md.
+
+**writeScope:**
+
+- `README.md`
+- `docs/development/frontend-commands.md`
+
+**validateCommand:** `rtk rg -n 'frontend-code-quality-(format|lint|types)\\.yml' README.md docs/development/frontend-commands.md && rtk git diff --check -- README.md docs/development/frontend-commands.md`
+
+### TASK-005: Verificar la migración de status checks requeridos
+
+Antes de retirar el workflow combinado, inspeccionar los checks requeridos por las protecciones de main y develop. Si existe un requisito para el workflow/job anterior, migrarlo a los tres contextos nuevos después de confirmar sus nombres en el PR. El repositorio no muestra rulesets, pero la integración GitHub actual recibió 403 al leer branch protection; usar una sesión autenticada con permisos de administración o pedir al administrador del repositorio que confirme y aplique el cambio. No dar esta tarea por completa si la protección no pudo verificarse.
+
+- **Type:** infra
+- **Priority:** P1
+- **Effort:** S
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** TASK-001, TASK-002, TASK-003
+
+**Acceptance Criteria:**
+
+- Se registran los required status checks de main y develop y se determina si alguno apunta al workflow/job frontend combinado.
+- Si un check antiguo está requerido, la regla de cada rama exige los nuevos checks Format, Lint y Types una vez que estén disponibles; si no hay checks requeridos, se deja constancia.
+- Falla/borde: si GitHub devuelve 403 o no se cuenta con permisos de administrador, la tarea queda pendiente y no se elimina el workflow combinado.
+
+**writeScope:**
+
+- (sin cambios de archivos)
+
+**validateCommand:** `rtk gh api repos/angelgarciasolorzano/social-hub/branches/main/protection/required_status_checks && rtk gh api repos/angelgarciasolorzano/social-hub/branches/develop/protection/required_status_checks`
+
+### TASK-006: Retirar el workflow combinado frontend
+
+Eliminar `.github/workflows/frontend-code-quality.yml` solo después de que los tres nuevos workflows estén incorporados al PR, la documentación esté sincronizada y los required status checks estén verificados/migrados. Así se evita perder el gate de calidad o bloquear el merge al retirar el check anterior.
+
+- **Type:** infra
+- **Priority:** P1
+- **Effort:** S
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005
+
+**Acceptance Criteria:**
+
+- frontend-code-quality.yml ya no existe y los tres workflows nuevos son los únicos que ejecutan format, lint y types.
+- README.md y docs/development/frontend-commands.md no contienen referencias al workflow retirado.
+- Falla/borde: si cualquiera de los nuevos workflows o la migración de required checks sigue pendiente, no se elimina el workflow combinado.
+
+**writeScope:**
+
+- `.github/workflows/frontend-code-quality.yml`
+
+**validateCommand:** `rtk test ! -e .github/workflows/frontend-code-quality.yml && rtk git diff --check -- .github/workflows/frontend-code-quality.yml`
+
+### TASK-007: Validar los tres checks en el pull request
+
+Sin cambios de archivos. Revisar el pull request después de retirar el workflow combinado y confirmar que GitHub ejecutó los workflows Format, Lint y Types como checks independientes. Revisar también los triggers push/pull_request hacia main y develop en los YAML. Si un check falta o falla, corregirlo en la tarea dueña del workflow y volver a ejecutar el PR antes de cerrar SOC-58.
+
+- **Type:** infra
+- **Priority:** P2
+- **Effort:** S
+- **Agent:** general-purpose
+- **Review:** codex
+- **Depends on:** TASK-006
+
+**Acceptance Criteria:**
+
+- El PR muestra tres checks separados para Frontend Code Quality Format, Lint y Types, y los tres terminan en verde.
+- Los tres YAML conservan push y pull_request hacia main y develop.
+- Falla/borde: si falta un check o alguno falla, SOC-58 permanece abierto y se corrige en el workflow correspondiente antes de repetir la validación.
+
+**writeScope:**
+
+- (sin cambios de archivos)
+
+**validateCommand:** `rtk gh pr checks --watch --repo angelgarciasolorzano/social-hub`
+
+## Failure Modes
+
+- Omitir Wayfinder en el workflow de formato reduciría silenciosamente el conjunto que Prettier revisa hoy.
+- Omitir generación Wayfinder en types puede dejar imports generados ausentes o desactualizados y hacer fallar tsc.
+- Al eliminar continue-on-error y el agregador, el resultado pasa a depender directamente del exit code de cada gate; conservar la máscara haría que el nuevo check aparezca verde ante errores.
+- Los nombres de los status checks cambian al crear workflows separados; una regla de rama que exija el check viejo puede bloquear el merge.
+- Los tres workflows repiten checkout, setup e instalación npm; la caché reduce descargas, pero no elimina el costo de instalar dependencias en cada runner.
+- La conexión GitHub disponible no permite leer la protección de ramas (403); si no se obtiene acceso administrativo, la migración de checks queda sin verificar y no debe considerarse completada.
+
+## Ship Cut
+
+El corte entregable es la eliminación del workflow combinado después de que los tres workflows nuevos hayan pasado en el PR, la documentación enumere los nuevos nombres y los status checks de main/develop estén verificados. Si la ejecución se detiene antes, conservar frontend-code-quality.yml para no perder el gate de calidad; los workflows nuevos pueden coexistir temporalmente y duplicar ejecuciones.
+
+## Test Coverage Map
+
+- **Workflow de formato** — TASK-001: Parseo del YAML, generación de Wayfinder y ejecución de npm run format:check con el alcance actual.
+- **Workflow de lint** — TASK-002: Parseo del YAML y ejecución de npm run lint:check; confirmar que el workflow no depende de PHP.
+- **Workflow de tipos** — TASK-003: Parseo del YAML, generación de Wayfinder y ejecución de npm run types.
+- **Documentación y referencias** — TASK-004: Búsqueda de referencias actuales y nuevas en README.md y docs/development/frontend-commands.md.
+- **Status checks y retiro del workflow combinado** — TASK-005, TASK-006: Consulta de protecciones de main/develop, ausencia del archivo anterior y diff sin errores de whitespace.
+- **Ejecución integrada** — TASK-007: Checks independientes de Format, Lint y Types en el pull request después de retirar el workflow viejo.
+
+## Execution Summary
+
+- **Planning mode:** EXPANSION
+- **Review default:** codex
+- **Task count:** 7
+- **Critical path:** TASK-001 → TASK-005 → TASK-006 → TASK-007
+- **Execution layers:** L1 (TASK-001, TASK-002, TASK-003, TASK-004); L2 (TASK-005); L3 (TASK-006); L4 (TASK-007)
+
+## Task Dependencies
+
+- TASK-001: ninguna
+- TASK-002: ninguna
+- TASK-003: ninguna
+- TASK-004: ninguna
+- TASK-005: TASK-001, TASK-002, TASK-003
+- TASK-006: TASK-001, TASK-002, TASK-003, TASK-004, TASK-005
+- TASK-007: TASK-006
