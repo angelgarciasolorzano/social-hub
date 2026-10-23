@@ -31,6 +31,7 @@ class AdminUserSeeder extends Seeder
 
         $user->assignRole(
             $this->roleFor(AdminRole::Admin),
+            $this->roleFor(AdminRole::AdminBackupsOperator),
             ...array_map($this->roleFor(...), $this->readerRoles()),
         );
 
