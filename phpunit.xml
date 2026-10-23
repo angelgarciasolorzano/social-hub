@@ -47,6 +47,9 @@
         <testsuite name="AccountSettings">
             <directory>app/User/Modules/AccountSettings/Tests</directory>
         </testsuite>
+        <testsuite name="AccountStatus">
+            <directory>app/User/Modules/AccountStatus/Tests</directory>
+        </testsuite>
         <testsuite name="User">
             <directory>app/User/Tests</directory>
         </testsuite>
