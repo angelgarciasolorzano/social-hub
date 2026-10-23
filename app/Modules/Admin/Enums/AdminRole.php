@@ -12,6 +12,8 @@ enum AdminRole: string
 
     case AdminUsersProvisioner = 'admin-users-provisioner';
 
+    case AdminUsersModerator = 'admin-users-moderator';
+
     case AdminPostsReader = 'admin-posts-reader';
 
     case AdminDashboardReader = 'admin-dashboard-reader';
