@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
 beforeEach(function (): void {
@@ -74,4 +75,23 @@ it('returns not found for a missing comment record', function (): void {
 
     $this->get(CommentResource::getUrl('view', ['record' => PHP_INT_MAX]))
         ->assertNotFound();
+});
+
+it('denies every comment mutation in the panel even to a posts reader who wrote the comment', function (): void {
+    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminPostsReader,
+    );
+    $comment = createComment($authenticatedUser);
+
+    expect(Gate::forUser($authenticatedUser)->allows('update', $comment))->toBeTrue()
+        ->and(CommentResource::canCreate())->toBeFalse()
+        ->and(CommentResource::canEdit($comment))->toBeFalse()
+        ->and(CommentResource::canDelete($comment))->toBeFalse()
+        ->and(CommentResource::canDeleteAny())->toBeFalse()
+        ->and(CommentResource::canRestore($comment))->toBeFalse()
+        ->and(CommentResource::canRestoreAny())->toBeFalse()
+        ->and(CommentResource::canForceDelete($comment))->toBeFalse()
+        ->and(CommentResource::canForceDeleteAny())->toBeFalse();
 });

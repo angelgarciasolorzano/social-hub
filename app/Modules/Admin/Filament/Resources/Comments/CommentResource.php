@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Comments;
 
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelationManager;
 use App\Modules\Admin\Filament\Resources\Comments\Schemas\CommentInfolist;
 use App\Modules\Comment\Models\Comment;
-use App\User\Models\User;
 use BackedEnum;
-use Filament\Facades\Filament;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
@@ -20,6 +17,11 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 
+/**
+ * Reading is authorized by CommentPolicy (viewAny/view). Its update/delete let authors change
+ * their own comments in the application, so every write ability is pinned to false here to
+ * keep the panel read-only, including for administrators who wrote the comment.
+ */
 class CommentResource extends Resource
 {
     #[Override]
@@ -30,28 +32,6 @@ class CommentResource extends Resource
 
     #[Override]
     protected static bool $shouldRegisterNavigation = false;
-
-    #[Override]
-    public static function canViewAny(): bool
-    {
-        $authenticatedUser = Filament::auth()->user();
-
-        return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::AdminPostsView->value);
-    }
-
-    #[Override]
-    public static function canView(Model $record): bool
-    {
-        if (! $record instanceof Comment) {
-            return false;
-        }
-
-        $authenticatedUser = Filament::auth()->user();
-
-        return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::AdminPostsView->value);
-    }
 
     #[Override]
     public static function canCreate(): bool
@@ -73,6 +53,30 @@ class CommentResource extends Resource
 
     #[Override]
     public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
+    #[Override]
+    public static function canRestore(Model $record): bool
+    {
+        return false;
+    }
+
+    #[Override]
+    public static function canRestoreAny(): bool
+    {
+        return false;
+    }
+
+    #[Override]
+    public static function canForceDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    #[Override]
+    public static function canForceDeleteAny(): bool
     {
         return false;
     }
