@@ -80,7 +80,7 @@ it('renders the page and navigation to an authorized backup reader', function ()
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
 
     $filename = (new RunDatabaseBackup)->filename;
-    storeFilamentBackupArchive($filename, 'backup archive');
+    storeFilamentBackupArchive($filename, str_repeat('a', (2 * 1024 * 1024) + (512 * 1024)));
 
     $this->get(BackupManagement::getUrl(isAbsolute: false))
         ->assertOk()
@@ -101,7 +101,7 @@ it('renders the page and navigation to an authorized backup reader', function ()
         ->assertDontSee('backup-secret-must-not-render')
         ->assertDontSee('archive-password-must-not-render')
         ->assertSeeText($filename)
-        ->assertSeeText('14 bytes')
+        ->assertSeeText('2.5 MB')
         ->assertDontSeeText('Disk')
         ->assertSeeText('Available');
 });

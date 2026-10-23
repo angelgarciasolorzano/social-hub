@@ -11,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Number;
 use Illuminate\Validation\ValidationException;
 
 class BackupsTable
@@ -39,7 +40,7 @@ class BackupsTable
                     ->label('Size')
                     ->formatStateUsing(static fn (?float $state): string => $state === null
                         ? 'Unavailable'
-                        : number_format($state, 0).' bytes'),
+                        : Number::fileSize($state, maxPrecision: 2)),
                 TextColumn::make('available')
                     ->label('Availability')
                     ->badge()
