@@ -9,11 +9,15 @@ use App\Modules\ActivityLog\Services\ActivityLogger;
 use App\User\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Attributes\Timeout;
+use Illuminate\Queue\Attributes\Tries;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 
+#[Timeout(80)]
+#[Tries(1)]
 final class RunDatabaseBackup implements ShouldQueue
 {
     use Queueable;

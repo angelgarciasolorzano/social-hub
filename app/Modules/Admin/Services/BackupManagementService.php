@@ -14,6 +14,7 @@ use App\User\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -30,6 +31,12 @@ final readonly class BackupManagementService
     private const string BACKUP_DISK = 'backups';
 
     private const int DOWNLOAD_URL_EXPIRATION_MINUTES = 5;
+
+    private const string DOWNLOAD_PASSWORD_THROTTLE_PREFIX = 'admin-backups:download-password:';
+
+    private const int DOWNLOAD_PASSWORD_MAX_ATTEMPTS = 5;
+
+    private const int DOWNLOAD_PASSWORD_DECAY_SECONDS = 60;
 
     public function __construct(private ActivityLogger $activityLogger) {}
 
@@ -75,7 +82,7 @@ final readonly class BackupManagementService
         dispatch(new RunDatabaseBackup($user->id));
     }
 
-    /** Create a short-lived download URL after authorization and password confirmation. */
+    /** Create a short-lived download URL after authorization and rate-limited password confirmation. */
     public function downloadBackup(User $user, string $filename, string $currentPassword): string
     {
         $this->authorize($user, AdminPermission::AdminBackupsDownload);
@@ -114,14 +121,28 @@ final readonly class BackupManagementService
         throw_unless($user->can($adminPermission->value), AuthorizationException::class);
     }
 
-    /** Reject downloads when the supplied password does not match the current password. */
+    /** Reject incorrect or rate-limited password confirmations for backup downloads. */
     private function assertCurrentPasswordIsValid(User $user, string $currentPassword): void
     {
+        $throttleKey = self::DOWNLOAD_PASSWORD_THROTTLE_PREFIX.$user->getKey();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::DOWNLOAD_PASSWORD_MAX_ATTEMPTS)) {
+            throw ValidationException::withMessages([
+                'current_password' => __('Too many password attempts. Please try again in :seconds seconds.', [
+                    'seconds' => RateLimiter::availableIn($throttleKey),
+                ]),
+            ]);
+        }
+
         if (! Hash::check($currentPassword, $user->password)) {
+            RateLimiter::hit($throttleKey, self::DOWNLOAD_PASSWORD_DECAY_SECONDS);
+
             throw ValidationException::withMessages([
                 'current_password' => __('The password is incorrect.'),
             ]);
         }
+
+        RateLimiter::clear($throttleKey);
     }
 
     /** Load the package configuration used by backup operations. */
