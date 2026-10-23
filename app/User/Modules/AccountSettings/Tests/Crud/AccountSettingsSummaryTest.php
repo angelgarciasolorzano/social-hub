@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\User\Enums\AccountStatus;
 use App\User\Resources\UserResource;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -44,6 +45,7 @@ it('renders the authenticated account timestamps without exposing another user',
         ->where('accountSettings.biography', 'Account owner biography.')
         ->where('accountSettings.createdAt', $user->created_at?->toIso8601String())
         ->where('accountSettings.lastLoginAt', $user->last_login_at?->toIso8601String())
+        ->where('accountSettings.status', AccountStatus::Active->value)
     );
 
     $testResponse->assertDontSee('other-account-private@example.test');
@@ -67,4 +69,25 @@ it('keeps private account fields out of the public user resource', function (): 
         ->not->toHaveKey('preferredLocale')
         ->not->toHaveKey('biography')
         ->not->toHaveKey('lastLoginAt');
+});
+
+it('does not let the account owner change their status from the settings form', function (): void {
+    $user = createUser();
+
+    $this->actingAs($user)
+        ->from(route('profile.edit'))
+        ->patch(route('profile.update'), [
+            'name' => $user->name,
+            'preferredLocale' => 'es',
+            'status' => AccountStatus::Suspended->value,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($user->refresh()->status)->toBe(AccountStatus::Active);
+});
+
+it('keeps the account status out of the public user resource', function (): void {
+    $publicUserResource = new UserResource(createUser())->resolve(request());
+
+    expect($publicUserResource)->not->toHaveKey('status');
 });
