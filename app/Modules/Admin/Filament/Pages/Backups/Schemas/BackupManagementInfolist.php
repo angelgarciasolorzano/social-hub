@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Pages\Backups\Schemas;
 
+use App\Modules\Admin\Data\BackupDestinationData;
 use App\Modules\Admin\Data\BackupListingData;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -15,39 +16,12 @@ class BackupManagementInfolist
     public static function configure(Schema $schema, BackupListingData $backupListingData): Schema
     {
         $destination = $backupListingData->destination;
-        $retention = $destination->retention;
 
         return $schema
             ->constantState([
-                'health_status' => $backupListingData->health['healthy'] ? 'Healthy' : 'Unhealthy',
-                'health_message' => $backupListingData->health['healthy']
-                    ? 'All configured backup health checks passed.'
-                    : 'One or more configured backup health checks failed.',
-                'failed_checks' => implode(', ', array_map(
-                    static fn (string $failedCheck): string => (string) str($failedCheck)->headline(),
-                    $backupListingData->health['failed_checks'],
-                )),
-                'provider' => $destination->provider,
-                'bucket' => $destination->bucket ?? 'Not configured',
-                'prefix' => $destination->prefix,
-                'region' => $destination->region ?? 'Not configured',
-                'visibility' => str($destination->visibility)->headline(),
-                'archive_encryption' => $destination->archiveEncryption ?? 'Disabled',
-                'all_backups_retention' => $retention['keep_all_backups_for_days'] > 0
-                    ? \sprintf('%d days', $retention['keep_all_backups_for_days'])
-                    : 'Disabled',
-                'daily_snapshots_retention' => $retention['keep_daily_backups_for_days'] > 0
-                    ? \sprintf('%d days', $retention['keep_daily_backups_for_days'])
-                    : 'Disabled',
-                'weekly_snapshots_retention' => $retention['keep_weekly_backups_for_weeks'] > 0
-                    ? \sprintf('%d weeks', $retention['keep_weekly_backups_for_weeks'])
-                    : 'Disabled',
-                'monthly_snapshots_retention' => $retention['keep_monthly_backups_for_months'] > 0
-                    ? \sprintf('%d months', $retention['keep_monthly_backups_for_months'])
-                    : 'Disabled',
-                'yearly_snapshots_retention' => $retention['keep_yearly_backups_for_years'] > 0
-                    ? \sprintf('%d years', $retention['keep_yearly_backups_for_years'])
-                    : 'Disabled',
+                ...self::healthState($backupListingData->health),
+                ...self::destinationState($destination),
+                ...self::retentionState($destination->retention),
             ])
             ->components([
                 Section::make('Backup destination')
@@ -121,5 +95,77 @@ class BackupManagementInfolist
                     ->columns(['default' => 1, 'sm' => 2, 'xl' => 1]),
             ])
             ->columns(['default' => 1, 'xl' => 3]);
+    }
+
+    /**
+     * @param  array{healthy: bool, failed_checks: list<string>}  $health
+     * @return array{health_status: string, health_message: string, failed_checks: string}
+     */
+    private static function healthState(array $health): array
+    {
+        return [
+            'health_status' => $health['healthy'] ? 'Healthy' : 'Unhealthy',
+            'health_message' => $health['healthy']
+                ? 'All configured backup health checks passed.'
+                : 'One or more configured backup health checks failed.',
+            'failed_checks' => implode(', ', array_map(
+                static fn (string $failedCheck): string => (string) str($failedCheck)->headline(),
+                $health['failed_checks'],
+            )),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     provider: string,
+     *     bucket: string,
+     *     prefix: string,
+     *     region: string,
+     *     visibility: string,
+     *     archive_encryption: string
+     * }
+     */
+    private static function destinationState(BackupDestinationData $destination): array
+    {
+        return [
+            'provider' => $destination->provider,
+            'bucket' => $destination->bucket ?? 'Not configured',
+            'prefix' => $destination->prefix,
+            'region' => $destination->region ?? 'Not configured',
+            'visibility' => (string) str($destination->visibility)->headline(),
+            'archive_encryption' => $destination->archiveEncryption ?? 'Disabled',
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     keep_all_backups_for_days: int,
+     *     keep_daily_backups_for_days: int,
+     *     keep_weekly_backups_for_weeks: int,
+     *     keep_monthly_backups_for_months: int,
+     *     keep_yearly_backups_for_years: int
+     * }  $retention
+     * @return array{
+     *     all_backups_retention: string,
+     *     daily_snapshots_retention: string,
+     *     weekly_snapshots_retention: string,
+     *     monthly_snapshots_retention: string,
+     *     yearly_snapshots_retention: string
+     * }
+     */
+    private static function retentionState(array $retention): array
+    {
+        return [
+            'all_backups_retention' => self::formatRetentionPeriod($retention['keep_all_backups_for_days'], 'days'),
+            'daily_snapshots_retention' => self::formatRetentionPeriod($retention['keep_daily_backups_for_days'], 'days'),
+            'weekly_snapshots_retention' => self::formatRetentionPeriod($retention['keep_weekly_backups_for_weeks'], 'weeks'),
+            'monthly_snapshots_retention' => self::formatRetentionPeriod($retention['keep_monthly_backups_for_months'], 'months'),
+            'yearly_snapshots_retention' => self::formatRetentionPeriod($retention['keep_yearly_backups_for_years'], 'years'),
+        ];
+    }
+
+    private static function formatRetentionPeriod(int $duration, string $unit): string
+    {
+        return $duration > 0 ? \sprintf('%d %s', $duration, $unit) : 'Disabled';
     }
 }
