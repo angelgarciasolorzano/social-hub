@@ -17,6 +17,8 @@ class AdminUserSeeder extends Seeder
 
     private const int ADMIN_SHARE_PERCENT = 20;
 
+    private const int MAX_RANDOM_READER_ROLES = 4;
+
     public function run(): void
     {
         if (! app()->environment(['local', 'testing'])) {
@@ -29,6 +31,7 @@ class AdminUserSeeder extends Seeder
 
         $user->assignRole(
             $this->roleFor(AdminRole::Admin),
+            $this->roleFor(AdminRole::AdminBackupsOperator),
             ...array_map($this->roleFor(...), $this->readerRoles()),
         );
 
@@ -59,7 +62,10 @@ class AdminUserSeeder extends Seeder
             ->limit($missingAdmins)
             ->get()
             ->each(function (User $user) use ($readerRoles): void {
-                $chosenReaderRoles = $readerRoles->shuffle()->take(random_int(1, $readerRoles->count()))->all();
+                $chosenReaderRoles = $readerRoles
+                    ->shuffle()
+                    ->take(random_int(1, self::MAX_RANDOM_READER_ROLES))
+                    ->all();
 
                 $user->assignRole($this->roleFor(AdminRole::Admin), ...$chosenReaderRoles);
             });
@@ -75,6 +81,7 @@ class AdminUserSeeder extends Seeder
             AdminRole::AdminUsersReader,
             AdminRole::AdminPostsReader,
             AdminRole::AdminActivityReader,
+            AdminRole::AdminBackupsReader,
         ];
     }
 

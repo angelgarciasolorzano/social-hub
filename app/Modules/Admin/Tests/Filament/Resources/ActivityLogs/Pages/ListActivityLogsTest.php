@@ -124,6 +124,7 @@ it('lists anonymous activities and deleted performers or subjects without failin
     Livewire::test(ListActivityLogs::class)
         ->assertOk()
         ->assertSeeText('Anonymous')
+        ->assertSeeText('None')
         ->assertSeeText('Deleted user #'.$deletedUserId)
         ->assertSeeText('Comment #'.$deletedCommentId.' (deleted)');
 });

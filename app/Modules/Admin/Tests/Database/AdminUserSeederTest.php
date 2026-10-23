@@ -10,7 +10,7 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Spatie\Permission\Models\Role;
 
-it('assigns Angel all reader roles and preserves existing assignments', function (): void {
+it('assigns Angel backup operations and all reader roles while preserving existing assignments', function (): void {
     $user = createUser();
     $user->forceFill(['email' => 'angel@gmail.com'])->save();
 
@@ -37,6 +37,9 @@ it('assigns Angel all reader roles and preserves existing assignments', function
         AdminPermission::AdminUsersViewAny->value,
         AdminPermission::AdminActivityViewAny->value,
         AdminPermission::AdminActivityView->value,
+        AdminPermission::AdminBackupsView->value,
+        AdminPermission::AdminBackupsCreate->value,
+        AdminPermission::AdminBackupsDownload->value,
     ];
 
     $expectedRoleNames = [
@@ -45,6 +48,8 @@ it('assigns Angel all reader roles and preserves existing assignments', function
         AdminRole::AdminUsersReader->value,
         AdminRole::AdminPostsReader->value,
         AdminRole::AdminActivityReader->value,
+        AdminRole::AdminBackupsReader->value,
+        AdminRole::AdminBackupsOperator->value,
         $customAdminRole->name,
     ];
 
@@ -54,16 +59,16 @@ it('assigns Angel all reader roles and preserves existing assignments', function
         ->toBe(collect($expectedPermissionNames)->sort()->values()->all());
 });
 
-it('does not assign an existing provisioner role to Angel automatically', function (): void {
+it('does not assign the user provisioner role to Angel automatically', function (): void {
     $user = createUser();
     $user->forceFill(['email' => 'angel@gmail.com'])->save();
 
     $this->seed(AdminAuthorizationSeeder::class);
 
-    $provisionerRole = Role::query()->firstOrCreate([
-        'name' => 'admin-users-provisioner',
-        'guard_name' => 'admin',
-    ]);
+    $provisionerRole = Role::query()
+        ->where('name', AdminRole::AdminUsersProvisioner->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
 
     $this->seed(AdminUserSeeder::class);
 
@@ -112,5 +117,8 @@ it('grants the complete admin permission set to Angel', function (): void {
         AdminPermission::AdminUsersViewAny->value,
         AdminPermission::AdminActivityViewAny->value,
         AdminPermission::AdminActivityView->value,
+        AdminPermission::AdminBackupsView->value,
+        AdminPermission::AdminBackupsCreate->value,
+        AdminPermission::AdminBackupsDownload->value,
     ]))->toBeTrue();
 });

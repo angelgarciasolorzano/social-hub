@@ -23,4 +23,10 @@ enum AdminPermission: string
     case AdminActivityViewAny = 'admin.activity.viewAny';
 
     case AdminActivityView = 'admin.activity.view';
+
+    case AdminBackupsView = 'admin.backups.view';
+
+    case AdminBackupsCreate = 'admin.backups.create';
+
+    case AdminBackupsDownload = 'admin.backups.download';
 }

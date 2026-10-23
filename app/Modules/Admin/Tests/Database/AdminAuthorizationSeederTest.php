@@ -52,6 +52,14 @@ it('seeds each role with only its intended permissions', function (): void {
         ->where('name', AdminRole::AdminActivityReader->value)
         ->where('guard_name', 'admin')
         ->firstOrFail();
+    $backupsReaderRole = Role::query()
+        ->where('name', AdminRole::AdminBackupsReader->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $backupsOperatorRole = Role::query()
+        ->where('name', AdminRole::AdminBackupsOperator->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
 
     $this->assertDatabaseCount('roles', count(AdminRole::cases()));
     $this->assertDatabaseCount('permissions', count(AdminPermission::cases()));
@@ -90,7 +98,15 @@ it('seeds each role with only its intended permissions', function (): void {
         ->and($dashboardReaderRole->permissions->pluck('name')->all())
         ->toBe([AdminPermission::AdminDashboardView->value])
         ->and($activityReaderRole->permissions->pluck('name')->sort()->values()->all())
-        ->toBe([AdminPermission::AdminActivityView->value, AdminPermission::AdminActivityViewAny->value]);
+        ->toBe([AdminPermission::AdminActivityView->value, AdminPermission::AdminActivityViewAny->value])
+        ->and($backupsReaderRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([AdminPermission::AdminBackupsView->value])
+        ->and($backupsOperatorRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([
+            AdminPermission::AdminBackupsCreate->value,
+            AdminPermission::AdminBackupsDownload->value,
+            AdminPermission::AdminBackupsView->value,
+        ]);
 });
 
 it('gives the activity reader only the activity log permissions', function (): void {

@@ -15,6 +15,9 @@ PHP closures, arrow functions, and `array_*` callbacks inherit the **no single-l
 ## Method docblock prose stays short
 Keep the prose summary inside a method docblock to **3 lines max**. Multi-line `@return`, `@param`, array-shape generics, and similar PHPDoc annotations are fine — the constraint applies only to the descriptive prose above them, not to the type annotations.
 
+## Document service methods
+Document every public and private method in service classes except constructors, whose purpose is self-evident. Keep summaries short and understandable, within the existing three-line maximum; retain type annotations such as `@return` where needed.
+
 ## Use Data for typed non-model structures
 Use spatie/laravel-data for typed request filters, input objects, and internal non-model data structures. When an input flow uses a FormRequest, keep request authorization and FluentRule validation in that FormRequest, then build the Data object from its validated data. Data classes may own type-safe input-to-model mapping and normalization, but must not define or return FluentRule rules.
 

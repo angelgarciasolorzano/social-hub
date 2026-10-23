@@ -17,4 +17,8 @@ enum AdminRole: string
     case AdminDashboardReader = 'admin-dashboard-reader';
 
     case AdminActivityReader = 'admin-activity-reader';
+
+    case AdminBackupsReader = 'admin-backups-reader';
+
+    case AdminBackupsOperator = 'admin-backups-operator';
 }

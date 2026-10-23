@@ -23,6 +23,10 @@ enum ActivityLogAdminEvent: string implements ActivityLogEvent
 
     case InvitationAccepted = 'admin.invitation_accepted';
 
+    case BackupCreated = 'admin.backup_created';
+
+    case BackupDownloaded = 'admin.backup_downloaded';
+
     public function eventName(): string
     {
         return $this->value;
