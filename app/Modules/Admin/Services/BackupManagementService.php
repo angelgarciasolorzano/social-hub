@@ -124,7 +124,7 @@ final readonly class BackupManagementService
     /** Reject incorrect or rate-limited password confirmations for backup downloads. */
     private function assertCurrentPasswordIsValid(User $user, string $currentPassword): void
     {
-        $throttleKey = self::DOWNLOAD_PASSWORD_THROTTLE_PREFIX.$user->getKey();
+        $throttleKey = self::DOWNLOAD_PASSWORD_THROTTLE_PREFIX.$user->id;
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::DOWNLOAD_PASSWORD_MAX_ATTEMPTS)) {
             throw ValidationException::withMessages([
