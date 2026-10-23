@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Posts\Widgets;
 
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
@@ -13,6 +12,7 @@ use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Gate;
 use Override;
 
 class PostsOverview extends StatsOverviewWidget
@@ -31,7 +31,7 @@ class PostsOverview extends StatsOverviewWidget
         $authenticatedUser = auth('admin')->user();
 
         return $authenticatedUser instanceof User
-            && $authenticatedUser->can(AdminPermission::AdminPostsViewAny->value);
+            && Gate::forUser($authenticatedUser)->allows('viewAny', Post::class);
     }
 
     /**
