@@ -154,6 +154,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     {
         return $panel->getId() === 'admin'
             && $this->hasVerifiedEmail()
+            && ! $this->isSuspended()
             && $this->can(AdminPermission::AdminAccess->value);
     }
 
