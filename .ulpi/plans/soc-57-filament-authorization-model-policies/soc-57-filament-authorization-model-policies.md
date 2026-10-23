@@ -82,9 +82,11 @@ Eliminar `canViewAny`, `canView`, `canCreate`, `canEdit`, `canDelete` y `canDele
 **Acceptance Criteria:**
 - `PostResource` no sobrescribe ningún `can*()`.
 - Las pruebas de listado y detalle de Posts pasan sin cambios, incluida la denegación sin permiso.
+- `ViewPostTest` prueba que ningún `can*()` de mutación de `PostResource` se permite, ni siquiera al lector que escribió la publicación.
 
 **writeScope:**
 - `app/Modules/Admin/Filament/Resources/Posts/PostResource.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php`
 
 **validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages`
 
