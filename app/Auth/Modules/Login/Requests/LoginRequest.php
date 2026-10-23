@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\Login\Requests;
 
+use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
@@ -38,6 +39,8 @@ class LoginRequest extends FormRequest
 
     /**
      * Validate the request's credentials and return the user without logging them in.
+     * A suspended account is rejected only after its password matched, so the
+     * message never reveals the status to someone who does not know the password.
      *
      * @throws ValidationException
      */
@@ -59,6 +62,12 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        if ($user->isSuspended()) {
+            throw ValidationException::withMessages([
+                'email' => AccountStatus::SUSPENDED_LOGIN_MESSAGE,
+            ]);
+        }
 
         return $user;
     }
