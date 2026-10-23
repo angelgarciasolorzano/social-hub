@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Services;
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Data\BackupDestinationData;
 use App\Modules\Admin\Data\BackupListingData;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
@@ -20,6 +21,7 @@ use Spatie\Backup\BackupDestination\Backup;
 use Spatie\Backup\BackupDestination\BackupDestination;
 use Spatie\Backup\BackupDestination\BackupDestinationFactory;
 use Spatie\Backup\Config\Config as SpatieBackupConfig;
+use Spatie\Backup\Enums\Encryption;
 use Spatie\Backup\Tasks\Monitor\BackupDestinationStatus;
 use Spatie\Backup\Tasks\Monitor\BackupDestinationStatusFactory;
 
@@ -61,6 +63,7 @@ final readonly class BackupManagementService
         return new BackupListingData(
             backups: $backups,
             health: $this->backupHealth($backupConfig),
+            destination: $this->backupDestinationSummary($backupConfig),
         );
     }
 
@@ -205,5 +208,45 @@ final readonly class BackupManagementService
             'healthy' => $healthy,
             'failed_checks' => $failedChecks,
         ];
+    }
+
+    /** Build a safe, display-ready summary of the configured backup destination. */
+    private function backupDestinationSummary(SpatieBackupConfig $spatieBackupConfig): BackupDestinationData
+    {
+        $diskConfiguration = config('filesystems.disks.'.self::BACKUP_DISK);
+
+        $endpoint = $diskConfiguration['endpoint'] ?? null;
+        $bucket = $diskConfiguration['bucket'] ?? null;
+        $region = $diskConfiguration['region'] ?? null;
+
+        $encryption = $spatieBackupConfig->backup->encryption;
+        $archiveEncryption = null;
+
+        if ($spatieBackupConfig->backup->password !== null && $encryption->shouldEncrypt()) {
+            $archiveEncryption = match ($encryption) {
+                Encryption::Aes128 => 'AES-128',
+                Encryption::Aes192 => 'AES-192',
+                Encryption::Default, Encryption::Aes256 => 'AES-256',
+                Encryption::None => null,
+            };
+        }
+
+        $retention = $spatieBackupConfig->cleanup->defaultStrategy;
+
+        return new BackupDestinationData(
+            provider: \is_string($endpoint) && $endpoint !== '' ? 'S3-compatible storage' : 'Amazon S3',
+            bucket: \is_string($bucket) ? $bucket : null,
+            prefix: $spatieBackupConfig->backup->name,
+            region: \is_string($region) ? $region : null,
+            visibility: $diskConfiguration['visibility'],
+            archiveEncryption: $archiveEncryption,
+            retention: [
+                'keep_all_backups_for_days' => $retention->keepAllBackupsForDays,
+                'keep_daily_backups_for_days' => $retention->keepDailyBackupsForDays,
+                'keep_weekly_backups_for_weeks' => $retention->keepWeeklyBackupsForWeeks,
+                'keep_monthly_backups_for_months' => $retention->keepMonthlyBackupsForMonths,
+                'keep_yearly_backups_for_years' => $retention->keepYearlyBackupsForYears,
+            ],
+        );
     }
 }

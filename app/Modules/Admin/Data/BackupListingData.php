@@ -21,5 +21,6 @@ final class BackupListingData extends Data
     public function __construct(
         public array $backups,
         public array $health,
+        public BackupDestinationData $destination,
     ) {}
 }

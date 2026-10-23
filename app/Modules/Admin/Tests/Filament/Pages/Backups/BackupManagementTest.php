@@ -68,6 +68,12 @@ it('renders the page and navigation to an authorized backup reader', function ()
         AdminRole::AdminBackupsReader,
     );
     $user->saveAppAuthenticationSecret('filament-test-secret');
+
+    config()->set('filesystems.disks.backups.bucket', 'social-hub-backups');
+    config()->set('filesystems.disks.backups.region', 'us-west-2');
+    config()->set('filesystems.disks.backups.endpoint', 'http://localhost:4566');
+    config()->set('filesystems.disks.backups.secret', 'backup-secret-must-not-render');
+    config()->set('backup.backup.password', 'archive-password-must-not-render');
     Storage::fake('backups');
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
 
@@ -79,6 +85,19 @@ it('renders the page and navigation to an authorized backup reader', function ()
         ->assertSeeText('Backups')
         ->assertSeeText('Backup destination')
         ->assertSeeText('Healthy')
+        ->assertSeeText('S3-compatible storage')
+        ->assertSeeText('social-hub-backups')
+        ->assertSeeText('social-hub-test')
+        ->assertSeeText('us-west-2')
+        ->assertSeeText('Private')
+        ->assertSeeText('AES-256')
+        ->assertSeeText('Retention policy')
+        ->assertSeeText('7 days')
+        ->assertSeeText('4 weeks')
+        ->assertSeeText('6 months')
+        ->assertDontSee('http://localhost:4566')
+        ->assertDontSee('backup-secret-must-not-render')
+        ->assertDontSee('archive-password-must-not-render')
         ->assertSeeText($filename)
         ->assertSeeText('14 bytes')
         ->assertSeeText('backups')
