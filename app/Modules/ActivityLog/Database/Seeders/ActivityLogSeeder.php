@@ -20,6 +20,8 @@ use App\Modules\Post\Models\Post;
 use App\Support\Seeding\SkewedRandom;
 use App\Support\Seeding\WeightedRandom;
 use App\User\Database\Seeders\UserSeeder;
+use App\User\Enums\AccountStatus;
+use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -64,6 +66,7 @@ class ActivityLogSeeder extends Seeder
         $this->seedTrustedDeviceActivity();
         $this->seedAuthActivity();
         $this->seedAdminActivity();
+        $this->seedAccountStatusActivity();
 
         $this->flush();
     }
@@ -207,6 +210,29 @@ class ActivityLogSeeder extends Seeder
                     $this->queue(ActivityLogAdminEvent::RoleGranted, $bootstrapAdmin->id, User::MORPH_NAME, $user->id, $this->dateAfter($bootstrappedAt), ['role' => $roleName]);
                 }
             });
+    }
+
+    /**
+     * Mirror every seeded suspension and reactivation with its own date, as made from the
+     * admin panel. Only the target user's id is stored, never the reason.
+     */
+    private function seedAccountStatusActivity(): void
+    {
+        AccountStatusChange::query()->chunkById(self::RECORDS_PER_CHUNK, function (Collection $accountStatusChanges): void {
+            foreach ($accountStatusChanges as $accountStatusChange) {
+                $this->queue(
+                    $accountStatusChange->status === AccountStatus::Suspended
+                        ? ActivityLogAdminEvent::AccountSuspended
+                        : ActivityLogAdminEvent::AccountReactivated,
+                    $accountStatusChange->changed_by,
+                    AccountStatusChange::MORPH_NAME,
+                    $accountStatusChange->id,
+                    $accountStatusChange->created_at ?? $this->randomPastDate(),
+                    ['target_user_id' => $accountStatusChange->user_id],
+                    web: true,
+                );
+            }
+        });
     }
 
     /**
