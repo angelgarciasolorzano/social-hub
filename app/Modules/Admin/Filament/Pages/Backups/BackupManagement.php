@@ -119,6 +119,7 @@ class BackupManagement extends Page implements HasTable
             ])
             ->components([
                 Section::make('Backup destination')
+                    ->columnSpan(['xl' => 2])
                     ->description('Storage target, availability, and protection for generated backup archives.')
                     ->icon(Heroicon::OutlinedCloudArrowUp)
                     ->schema([
@@ -165,6 +166,7 @@ class BackupManagement extends Page implements HasTable
                     ])
                     ->columns(['default' => 1, 'sm' => 2, 'xl' => 3]),
                 Section::make('Retention policy')
+                    ->columnSpan(['xl' => 1])
                     ->description('Automated cleanup schedule for backup archives.')
                     ->icon(Heroicon::OutlinedClock)
                     ->schema([
@@ -184,8 +186,9 @@ class BackupManagement extends Page implements HasTable
                             ->label('Yearly snapshots')
                             ->icon(Heroicon::OutlinedClock),
                     ])
-                    ->columns(['default' => 1, 'sm' => 2, 'xl' => 5]),
-            ]);
+                    ->columns(['default' => 1, 'sm' => 2, 'xl' => 1]),
+            ])
+            ->columns(['default' => 1, 'xl' => 3]);
     }
 
     public function createBackup(): void
