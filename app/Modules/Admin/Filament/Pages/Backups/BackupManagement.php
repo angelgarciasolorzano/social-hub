@@ -119,48 +119,70 @@ class BackupManagement extends Page implements HasTable
             ])
             ->components([
                 Section::make('Backup destination')
+                    ->description('Storage target, availability, and protection for generated backup archives.')
+                    ->icon(Heroicon::OutlinedCloudArrowUp)
                     ->schema([
                         TextEntry::make('health_status')
                             ->label('Health')
                             ->badge()
+                            ->icon(fn (string $state): Heroicon => match ($state) {
+                                'Healthy' => Heroicon::OutlinedCheckCircle,
+                                default => Heroicon::OutlinedExclamationTriangle,
+                            })
                             ->color(fn (string $state): string => match ($state) {
                                 'Healthy' => 'success',
                                 default => 'danger',
                             }),
                         TextEntry::make('health_message')
                             ->label('Health details')
+                            ->icon(Heroicon::OutlinedInformationCircle)
                             ->columnSpan(['default' => 1, 'xl' => 2]),
                         TextEntry::make('failed_checks')
                             ->label('Failed checks')
+                            ->icon(Heroicon::OutlinedExclamationTriangle)
+                            ->iconColor('danger')
                             ->color('danger')
                             ->visible(fn (mixed $state): bool => is_string($state) && $state !== '')
                             ->columnSpanFull(),
                         TextEntry::make('provider')
-                            ->label('Storage provider'),
+                            ->label('Storage provider')
+                            ->icon(Heroicon::OutlinedCloud),
                         TextEntry::make('bucket')
-                            ->label('Bucket'),
+                            ->label('Bucket')
+                            ->icon(Heroicon::OutlinedCircleStack),
                         TextEntry::make('prefix')
-                            ->label('Backup prefix'),
+                            ->label('Backup prefix')
+                            ->icon(Heroicon::OutlinedFolder),
                         TextEntry::make('region')
-                            ->label('Region'),
+                            ->label('Region')
+                            ->icon(Heroicon::OutlinedMapPin),
                         TextEntry::make('visibility')
-                            ->label('Access'),
+                            ->label('Access')
+                            ->icon(Heroicon::OutlinedLockClosed),
                         TextEntry::make('archive_encryption')
-                            ->label('Archive encryption'),
+                            ->label('Archive encryption')
+                            ->icon(Heroicon::OutlinedShieldCheck),
                     ])
                     ->columns(['default' => 1, 'sm' => 2, 'xl' => 3]),
                 Section::make('Retention policy')
+                    ->description('Automated cleanup schedule for backup archives.')
+                    ->icon(Heroicon::OutlinedClock)
                     ->schema([
                         TextEntry::make('all_backups_retention')
-                            ->label('All backups'),
+                            ->label('All backups')
+                            ->icon(Heroicon::OutlinedArchiveBox),
                         TextEntry::make('daily_snapshots_retention')
-                            ->label('Daily snapshots'),
+                            ->label('Daily snapshots')
+                            ->icon(Heroicon::OutlinedCalendar),
                         TextEntry::make('weekly_snapshots_retention')
-                            ->label('Weekly snapshots'),
+                            ->label('Weekly snapshots')
+                            ->icon(Heroicon::OutlinedCalendarDays),
                         TextEntry::make('monthly_snapshots_retention')
-                            ->label('Monthly snapshots'),
+                            ->label('Monthly snapshots')
+                            ->icon(Heroicon::OutlinedCalendarDateRange),
                         TextEntry::make('yearly_snapshots_retention')
-                            ->label('Yearly snapshots'),
+                            ->label('Yearly snapshots')
+                            ->icon(Heroicon::OutlinedClock),
                     ])
                     ->columns(['default' => 1, 'sm' => 2, 'xl' => 5]),
             ]);
