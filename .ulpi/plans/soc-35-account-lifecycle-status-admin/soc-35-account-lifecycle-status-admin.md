@@ -87,7 +87,7 @@ Una migración nueva en `app/User/Database/Migrations/` (la carga `UserServicePr
 
 **writeScope:**
 
-- `app/User/Database/Migrations/2026_10_23_000000_add_account_status_to_users_table.php` (nuevo)
+- `app/User/Database/Migrations/2026_10_23_204636_add_account_status_to_users_table.php` (nuevo)
 - `app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php` (nuevo)
 
 **validateCommand:** `rtk php artisan test --compact app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php`

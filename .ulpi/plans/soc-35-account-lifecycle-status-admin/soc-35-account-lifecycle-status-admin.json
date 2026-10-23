@@ -136,12 +136,12 @@
         "Insertar una fila sin `reason` falla con una violación de NOT NULL."
       ],
       "filesToCreate": [
-        "app/User/Database/Migrations/2026_10_23_000000_add_account_status_to_users_table.php",
+        "app/User/Database/Migrations/2026_10_23_204636_add_account_status_to_users_table.php",
         "app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php"
       ],
       "filesToModify": [],
       "writeScope": [
-        "app/User/Database/Migrations/2026_10_23_000000_add_account_status_to_users_table.php",
+        "app/User/Database/Migrations/2026_10_23_204636_add_account_status_to_users_table.php",
         "app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php"
       ],
       "validateCommand": "rtk php artisan test --compact app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php",
