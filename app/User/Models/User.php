@@ -12,6 +12,7 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
+use App\User\Enums\AccountStatus;
 use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Policies\UserPolicy;
@@ -43,6 +44,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonImmutable|null $created_at
  * @property string|null $phone
  * @property PreferredLocale $preferred_locale
+ * @property AccountStatus $status
  * @property string|null $biography
  * @property CarbonImmutable|null $last_login_at
  * @property CarbonImmutable|null $two_factor_confirmed_at
@@ -133,10 +135,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'email_verified_at' => 'datetime',
             'last_login_at' => 'immutable_datetime',
             'preferred_locale' => PreferredLocale::class,
+            'status' => AccountStatus::class,
             'two_factor_confirmed_at' => 'datetime',
             'recovery_codes_regenerated_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Whether an administrator suspended the account, which blocks every sign-in path.
+     */
+    public function isSuspended(): bool
+    {
+        return $this->status === AccountStatus::Suspended;
     }
 
     public function canAccessPanel(Panel $panel): bool
@@ -235,6 +246,16 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function trustedDeviceEvents(): HasMany
     {
         return $this->hasMany(TrustedDeviceEvent::class);
+    }
+
+    /**
+     * Get the suspensions and reactivations of the account, most recent first.
+     *
+     * @return HasMany<AccountStatusChange, $this>
+     */
+    public function accountStatusChanges(): HasMany
+    {
+        return $this->hasMany(AccountStatusChange::class)->latest()->latest('id');
     }
 
     /**
