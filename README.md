@@ -114,7 +114,7 @@ El monitoreo integrado comprueba la antigüedad y el almacenamiento de los backu
 
 ## Calidad de código
 
-Antes de abrir un PR, ejecuta los mismos checks que corre el CI. El backend tiene un workflow por gate en `.github/workflows/` (`backend-code-quality-test.yml`, `-pint.yml`, `-rector.yml`, `-phpstan.yml` y `-doctor.yml`) y el frontend usa `.github/workflows/frontend-code-quality.yml`. El detalle de cada comando está en [docs/development/backend-commands.md](docs/development/backend-commands.md).
+Antes de abrir un PR, ejecuta los mismos checks que corre el CI. El backend tiene un workflow por gate en `.github/workflows/` (`backend-code-quality-test.yml`, `-pint.yml`, `-rector.yml`, `-phpstan.yml` y `-doctor.yml`). El frontend también separa sus gates en [Format](.github/workflows/frontend-code-quality-format.yml), [Lint](.github/workflows/frontend-code-quality-lint.yml) y [Types](.github/workflows/frontend-code-quality-types.yml). El detalle de los comandos está en [docs/development/frontend-commands.md](docs/development/frontend-commands.md).
 
 **Backend**
 
@@ -134,6 +134,8 @@ npm run lint:check     # ESLint (usa `npm run lint` para autocorregir)
 npm run format:check   # Prettier (usa `npm run format` para formatear)
 npm run types          # TypeScript sin emitir archivos
 ```
+
+En CI, los tres gates generan Wayfinder antes de correr. Aunque ESLint excluye los archivos generados, Lint los necesita para resolver los imports del código fuente.
 
 En [docs/development/](docs/development) hay una referencia más completa de comandos para backend y frontend.
 
