@@ -135,7 +135,7 @@ npm run format:check   # Prettier (usa `npm run format` para formatear)
 npm run types          # TypeScript sin emitir archivos
 ```
 
-En CI, Format y Types generan los tipos de Wayfinder antes de correr; Lint solo requiere Node.js y npm porque ESLint ignora los archivos generados.
+En CI, los tres gates generan Wayfinder antes de correr. Aunque ESLint excluye los archivos generados, Lint los necesita para resolver los imports del código fuente.
 
 En [docs/development/](docs/development) hay una referencia más completa de comandos para backend y frontend.
 

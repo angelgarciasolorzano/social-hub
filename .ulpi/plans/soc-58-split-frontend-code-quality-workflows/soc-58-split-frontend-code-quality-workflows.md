@@ -6,15 +6,15 @@ Crear workflows independientes de formato, lint y tipos, documentar los tres che
 
 ## Scope Challenge
 
-EXPANSION confirmada por el usuario. SOC-58 ya delimita tres gates: format, lint y types. El análisis encontró dos referencias de documentación al workflow actual, así que el plan también las sincroniza en README.md y docs/development/frontend-commands.md. Se conserva el comportamiento actual de Prettier: revisa resources/ completo y el workflow genera Wayfinder antes del check; como .prettierignore no excluye resources/js/shared/wayfinder, el workflow de formato también debe generar esos archivos. ESLint sí excluye esa ruta, por lo que lint no necesita PHP ni Composer. No se introducen composite actions: los workflows backend existentes duplican su preparación por gate. No se fijaron recortes adicionales.
+EXPANSION confirmada por el usuario. SOC-58 ya delimita tres gates: format, lint y types. El análisis encontró dos referencias de documentación al workflow actual, así que el plan también las sincroniza en README.md y docs/development/frontend-commands.md. Se conserva el comportamiento actual de Prettier: revisa resources/ completo y el workflow genera Wayfinder antes del check; como .prettierignore no excluye resources/js/shared/wayfinder, el workflow de formato también debe generar esos archivos. La ejecución del PR #58 en un runner limpio mostró que lint también necesita Wayfinder para resolver imports y tipos, aunque ESLint excluya la carpeta generada de su análisis; por eso lint prepara PHP/Laravel y genera Wayfinder. No se introducen composite actions: los workflows backend existentes duplican su preparación por gate. No se fijaron recortes adicionales.
 
 ## Prerequisites
 
 - SOC-58 está en Backlog y especifica los comandos npm run format:check, npm run lint:check y npm run types, con push/pull_request a main y develop.
 - package.json define format:check como Prettier sobre resources/, lint:check como eslint ., types como tsc --noEmit e install:ci como npm ci --no-audit --no-fund.
 - La generación de Wayfinder usa php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder; tsconfig.json incluye sus tipos generados, que Git ignora.
-- Prettier incluye actualmente Wayfinder porque .prettierignore no excluye esa ruta; ESLint sí ignora resources/js/shared/wayfinder/**.
-- GitHub API devolvió 403 al consultar la protección de main y develop. La lista de repository rulesets devuelve vacía, pero eso no confirma la ausencia de branch protection; hay que verificar los status checks con acceso de administrador antes de retirar el check anterior.
+- Prettier incluye actualmente Wayfinder porque .prettierignore no excluye esa ruta; ESLint ignora resources/js/shared/wayfinder/** durante el análisis, pero las reglas de resolución de módulos/tipos necesitan que esos archivos existan.
+- La configuración actual de main requiere backend-test, backend-doctor, backend-phpstan, backend-pint, backend-rector, frontend-format, frontend-lint y frontend-types; no requiere el workflow frontend combinado. La rama develop no existe y el repositorio no tiene rulesets.
 
 ## Non-Goals
 
@@ -26,7 +26,7 @@ EXPANSION confirmada por el usuario. SOC-58 ya delimita tres gates: format, lint
 - Los tres workflows conservan los triggers push y pull_request hacia main y develop.
 - Cada workflow ejecuta solo su gate y falla directamente si el comando falla; no conserva continue-on-error ni el resumen agregado de tres resultados.
 - Format conserva la cobertura actual de Prettier sobre resources/ y, por ello, genera Wayfinder en su propio runner antes de format:check.
-- Lint usa Node.js 22, caché npm y npm run install:ci; no prepara PHP porque ESLint ya ignora Wayfinder.
+- Lint usa Node.js 22, caché npm y npm run install:ci; también prepara PHP 8.5/Composer, .env.ci y APP_KEY, y genera Wayfinder antes del gate para resolver los imports del código fuente.
 - Types conserva PHP 8.5, Composer, .env.ci, key:generate, instalación npm y generación Wayfinder antes de tsc.
 - Los pasos comunes pueden repetirse entre workflows; no se agrega una composite action nueva.
 - La protección de ramas es una configuración externa a estos archivos. Cualquier check requerido que apunte al workflow/job antiguo debe migrarse a los tres checks nuevos antes de retirar el workflow combinado.
@@ -67,7 +67,7 @@ Crear `.github/workflows/frontend-code-quality-format.yml` con nombre `Frontend 
 
 ### TASK-002: Crear el workflow independiente de lint
 
-Crear `.github/workflows/frontend-code-quality-lint.yml` con nombre `Frontend Code Quality Lint` y un job enfocado en `npm run lint:check`. Mantener los triggers actuales, Node.js 22, caché npm e instalación mediante `npm run install:ci`. No preparar PHP, Composer ni Wayfinder: `eslint.config.ts` ya ignora `resources/js/shared/wayfinder/**`. No incluir format, types, el resumen conjunto ni `continue-on-error`.
+Crear `.github/workflows/frontend-code-quality-lint.yml` con nombre `Frontend Code Quality Lint` y un job enfocado en `npm run lint:check`. Mantener los triggers actuales, Node.js 22, caché npm e instalación mediante `npm run install:ci`. Preparar PHP 8.5/Composer y Laravel, y generar Wayfinder antes del check: aunque `eslint.config.ts` excluye `resources/js/shared/wayfinder/**` del análisis, ESLint necesita resolver desde el código fuente los módulos generados que importa. No incluir format, types, el resumen conjunto ni `continue-on-error`.
 
 - **Type:** infra
 - **Priority:** P1
@@ -79,14 +79,14 @@ Crear `.github/workflows/frontend-code-quality-lint.yml` con nombre `Frontend Co
 **Acceptance Criteria:**
 
 - El YAML parsea, el workflow se llama Frontend Code Quality Lint y mantiene push/pull_request con ramas [main, develop].
-- El job configura Node.js 22, caché npm, npm run install:ci y ejecuta solo npm run lint:check, sin preparación PHP/Laravel.
+- El job prepara PHP 8.5/Composer y Laravel, configura Node.js 22 y caché npm, instala dependencias, genera Wayfinder y ejecuta solo npm run lint:check.
 - Falla/borde: un error de ESLint hace fallar este workflow aunque los otros gates todavía no hayan terminado.
 
 **writeScope:**
 
 - `.github/workflows/frontend-code-quality-lint.yml`
 
-**validateCommand:** `rtk php -r "require 'vendor/autoload.php'; Symfony\\Component\\Yaml\\Yaml::parseFile('.github/workflows/frontend-code-quality-lint.yml');" && rtk npm run lint:check`
+**validateCommand:** `rtk php -r "require 'vendor/autoload.php'; Symfony\\Component\\Yaml\\Yaml::parseFile('.github/workflows/frontend-code-quality-lint.yml');" && rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder && rtk npm run lint:check`
 
 ### TASK-003: Crear el workflow independiente de tipos
 
@@ -113,7 +113,7 @@ Crear `.github/workflows/frontend-code-quality-types.yml` con nombre `Frontend C
 
 ### TASK-004: Sincronizar las referencias de CI frontend en la documentación
 
-Actualizar README.md y docs/development/frontend-commands.md para sustituir las referencias al workflow combinado por los tres workflows independientes. Documentar qué comando ejecuta cada workflow y aclarar los requisitos de generación de Wayfinder: format la necesita para conservar su alcance actual, lint no la necesita y types la necesita para tsc. Mantener la recomendación de ejecutar localmente los tres comandos npm.
+Actualizar README.md y docs/development/frontend-commands.md para sustituir las referencias al workflow combinado por los tres workflows independientes. Documentar qué comando ejecuta cada workflow y aclarar los requisitos de generación de Wayfinder: format la necesita para conservar su alcance actual, lint para resolver imports de módulos generados, y types para tsc. Mantener la recomendación de ejecutar localmente los tres comandos npm.
 
 - **Type:** docs
 - **Priority:** P2
@@ -125,7 +125,7 @@ Actualizar README.md y docs/development/frontend-commands.md para sustituir las 
 **Acceptance Criteria:**
 
 - README.md y docs/development/frontend-commands.md nombran los workflows de format, lint y types y ya no remiten al workflow combinado como el workflow frontend vigente.
-- La documentación distingue correctamente los requisitos PHP/Wayfinder de format y types frente al gate lint.
+- La documentación explica que los tres gates generan Wayfinder y por qué Lint necesita esos módulos aunque ESLint excluya la carpeta generada del análisis.
 - Falla/borde: no queda una referencia exacta a frontend-code-quality.yml en README.md ni docs/development/frontend-commands.md.
 
 **writeScope:**
@@ -207,6 +207,7 @@ Sin cambios de archivos. Revisar el pull request después de retirar el workflow
 ## Failure Modes
 
 - Omitir Wayfinder en el workflow de formato reduciría silenciosamente el conjunto que Prettier revisa hoy.
+- Omitir Wayfinder en lint hace fallar la resolución de imports/tipos en un runner limpio, aunque eslint.config.ts ignore la carpeta generada.
 - Omitir generación Wayfinder en types puede dejar imports generados ausentes o desactualizados y hacer fallar tsc.
 - Al eliminar continue-on-error y el agregador, el resultado pasa a depender directamente del exit code de cada gate; conservar la máscara haría que el nuevo check aparezca verde ante errores.
 - Los nombres de los status checks cambian al crear workflows separados; una regla de rama que exija el check viejo puede bloquear el merge.
@@ -220,7 +221,7 @@ El corte entregable es la eliminación del workflow combinado después de que lo
 ## Test Coverage Map
 
 - **Workflow de formato** — TASK-001: Parseo del YAML, generación de Wayfinder y ejecución de npm run format:check con el alcance actual.
-- **Workflow de lint** — TASK-002: Parseo del YAML y ejecución de npm run lint:check; confirmar que el workflow no depende de PHP.
+- **Workflow de lint** — TASK-002: Parseo del YAML, generación de Wayfinder y ejecución de npm run lint:check en el estado limpio del runner.
 - **Workflow de tipos** — TASK-003: Parseo del YAML, generación de Wayfinder y ejecución de npm run types.
 - **Documentación y referencias** — TASK-004: Búsqueda de referencias actuales y nuevas en README.md y docs/development/frontend-commands.md.
 - **Status checks y retiro del workflow combinado** — TASK-005, TASK-006: Consulta de protecciones de main/develop, ausencia del archivo anterior y diff sin errores de whitespace.

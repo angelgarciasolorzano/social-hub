@@ -30,7 +30,7 @@ Wrapper de `npm ci --no-audit --no-fund`. Instala dependencias desde `package-lo
 Los tres workflows corren en `push` y `pull_request` hacia `main` y `develop`, y cada uno reporta su propio gate:
 
 - [Frontend Code Quality Format](../../.github/workflows/frontend-code-quality-format.yml) ejecuta `npm run format:check`. Prepara PHP y Laravel y genera Wayfinder porque Prettier revisa todo `resources/`, incluidos los archivos generados.
-- [Frontend Code Quality Lint](../../.github/workflows/frontend-code-quality-lint.yml) ejecuta `npm run lint:check`. Solo prepara Node.js e instala las dependencias npm; ESLint excluye los tipos generados de Wayfinder.
+- [Frontend Code Quality Lint](../../.github/workflows/frontend-code-quality-lint.yml) ejecuta `npm run lint:check`. Prepara PHP y Laravel, instala las dependencias npm y genera Wayfinder antes del gate. Aunque ESLint excluye los archivos generados del análisis, necesita esos módulos para resolver los imports del código fuente.
 - [Frontend Code Quality Types](../../.github/workflows/frontend-code-quality-types.yml) ejecuta `npm run types`. Prepara PHP y Laravel y genera Wayfinder, que TypeScript necesita para resolver esos tipos.
 
 ## 1. Comandos esenciales (antes de cada commit)## 1. Comandos esenciales (antes de cada commit)
