@@ -62,18 +62,6 @@ it('makes the expected share of the users administrators', function (int $userCo
     'thirty-one users, rounded up' => [31, 7],
 ]);
 
-it('gives Angel the base role, backup operator role, user moderator role, and every reader role', function (): void {
-    $user = seedAdminsForUsers($this, 10);
-
-    expect($user->refresh()->getRoleNames()->sort()->values()->all())
-        ->toBe(collect([
-            AdminRole::Admin->value,
-            AdminRole::AdminBackupsOperator->value,
-            AdminRole::AdminUsersModerator->value,
-            ...readerRoleNames(),
-        ])->sort()->values()->all());
-});
-
 it('gives every random administrator the base role and between one and four reader roles', function (): void {
     $user = seedAdminsForUsers($this, 30);
 

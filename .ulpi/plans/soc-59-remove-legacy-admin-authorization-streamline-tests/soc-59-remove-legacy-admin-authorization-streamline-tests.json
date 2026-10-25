@@ -457,7 +457,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
         "findings": "R1, R2, R3"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-013",
@@ -1598,7 +1599,8 @@
     "TASK-006": "Hecha: audit-content.md con 13 hallazgos redundantes (23 casos), 2 de setup y 8 grupos conservados; pendiente de aprobación antes de TASK-009.",
     "TASK-007": "Hecha: audit-auth-user.md con 8 hallazgos redundantes (15 casos), 3 de setup (incluye el código '000000' que puede ser válido y un test de default que no prueba el default) y 8 grupos conservados; pendiente de aprobación antes de TASK-009.",
     "TASK-008": "Hecha: audit-activitylog-global.md con 3 casos redundantes, 1 movimiento (PasswordConfirmationTest a Auth) y ningún helper sin uso; total de las cuatro auditorías: 59 casos a eliminar, 9 ajustes de setup y 4 casos a mover.",
-    "TASK-009": "Hecha: el usuario aprobó todos los hallazgos de las cuatro auditorías (2026-10-25); se agregaron 27 tareas de consolidación (TASK-012–TASK-038). No se descartó ningún hallazgo; S2 de audit-content.md (bajar los posts de CommentSeederTest) queda fuera por ser opcional y sin medir."
+    "TASK-009": "Hecha: el usuario aprobó todos los hallazgos de las cuatro auditorías (2026-10-25); se agregaron 27 tareas de consolidación (TASK-012–TASK-038). No se descartó ningún hallazgo; S2 de audit-content.md (bajar los posts de CommentSeederTest) queda fuera por ser opcional y sin medir.",
+    "TASK-012": "Hecha: 3 casos eliminados (AdminUserSeederTest 4→2, AdminUserSeederRandomAdminsTest 11→10 casos con dataset); 12/12 en verde, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
