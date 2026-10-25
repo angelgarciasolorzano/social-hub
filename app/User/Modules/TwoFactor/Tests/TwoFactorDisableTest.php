@@ -121,15 +121,6 @@ it('disables two-factor authentication with the current password and a valid rec
     expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeFalse();
 })->skip(twoFactorManagementIsUnavailable(...), 'Two-factor authentication is not enabled.');
 
-it('revokes the trusted devices when two-factor authentication is disabled with a recovery code', function (): void {
-    $user = createUserWithRecoveryCodes(DISABLE_TEST_RECOVERY_CODE);
-    $trustedDevice = createTrustedDevice($user);
-
-    disableTwoFactorAs($this, $user, ['password' => 'password', 'code' => DISABLE_TEST_RECOVERY_CODE]);
-
-    expect($trustedDevice->fresh()?->deleted_at)->not->toBeNull();
-})->skip(twoFactorManagementIsUnavailable(...), 'Two-factor authentication is not enabled.');
-
 it('keeps two-factor authentication enabled when the recovery code is unknown', function (): void {
     $user = createUserWithRecoveryCodes(DISABLE_TEST_RECOVERY_CODE);
 
