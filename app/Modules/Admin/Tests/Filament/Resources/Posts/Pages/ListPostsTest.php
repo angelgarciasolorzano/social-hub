@@ -219,7 +219,6 @@ it('shows the image from the posts_images collection', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
     $post = createPost();
-    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
     $post->addMedia(UploadedFile::fake()->image('post-image.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
@@ -232,10 +231,7 @@ it('shows the image from the posts_images collection', function (): void {
 });
 
 it('shows the fallback for posts without images while keeping them paginated', function (): void {
-    Storage::fake((string) config('media-library.disk_name'));
-
     $postWithoutImage = createPost(null, ['content' => 'Post without image sentinel']);
-    $postWithoutImage->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
     foreach (range(1, 10) as $sequence) {
         createPost(null, ['content' => 'Paginated post '.$sequence]);

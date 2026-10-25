@@ -65,7 +65,6 @@ it('shows the selected users post image from the posts_images collection', funct
 
     $targetUser = createUser();
     $targetPost = createPost($targetUser, ['content' => 'Post image relation sentinel']);
-    $targetPost->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
     $targetPost->addMedia(UploadedFile::fake()->image('relation-post-image.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
@@ -77,12 +76,10 @@ it('shows the selected users post image from the posts_images collection', funct
 });
 
 it('shows the fallback for selected users posts without images', function (): void {
-    Storage::fake((string) config('media-library.disk_name'));
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
     $targetUser = createUser();
     $postWithoutImage = createPost($targetUser, ['content' => 'Post without image relation sentinel']);
-    $postWithoutImage->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
     $testable = postsRelationManagerFor($targetUser)
         ->assertOk()

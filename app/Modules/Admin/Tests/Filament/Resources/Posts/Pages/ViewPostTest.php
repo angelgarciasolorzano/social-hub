@@ -100,7 +100,6 @@ it('shows the image from the posts_images collection on the post detail page', f
 
     $user = createUser();
     $post = createPost($user, ['content' => 'Post image detail content sentinel']);
-    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
     $post->addMedia(UploadedFile::fake()->image('post-detail-image.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
@@ -116,8 +115,6 @@ it('shows the image from the posts_images collection on the post detail page', f
 });
 
 it('shows the fallback when a post has no image on the detail page', function (): void {
-    Storage::fake((string) config('media-library.disk_name'));
-
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
@@ -126,7 +123,6 @@ it('shows the fallback when a post has no image on the detail page', function ()
     $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
 
     $post = createPost();
-    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
     $this->actingAs($authenticatedUser, 'admin');
 

@@ -663,7 +663,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
         "findings": "S1"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-019",
@@ -1610,7 +1611,8 @@
     "TASK-014": "Hecha: 4 casos eliminados (1 en AdminBootstrapCommandTest, dataset de 3 en AdminRolePermissionsCommandTest); 26/26 en verde, gates limpios.",
     "TASK-015": "Hecha: 6 casos eliminados de AdminUserRoleCommandTest (4 tests, dos con dataset de 2); 18/18 en verde, gates limpios.",
     "TASK-016": "Hecha: 2 casos eliminados (ViewPostTest y TrustedDevicesRelationManagerTest) y el import HasTable que quedó sin uso; 13/13 en verde, gates limpios.",
-    "TASK-017": "Hecha: 1 caso eliminado de UserRoleTest y el de serialización movido a app/User/Tests/Models/UserSerializationTest.php (suite User, 7/7); gates limpios."
+    "TASK-017": "Hecha: 1 caso eliminado de UserRoleTest y el de serialización movido a app/User/Tests/Models/UserSerializationTest.php (suite User, 7/7); gates limpios.",
+    "TASK-018": "Hecha: 6 llamadas a clearMediaCollection() y los 3 Storage::fake() de los tests del fallback eliminados en ListPostsTest, ViewPostTest y PostsRelationManagerTest; los tests que suben imagen conservan su fake; 28/28 en verde, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
