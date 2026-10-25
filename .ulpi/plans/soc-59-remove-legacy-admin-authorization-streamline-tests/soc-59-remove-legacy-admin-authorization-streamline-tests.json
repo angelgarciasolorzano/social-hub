@@ -591,7 +591,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
         "findings": "R10, R11"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-017",
@@ -1606,7 +1607,8 @@
     "TASK-012": "Hecha: 3 casos eliminados (AdminUserSeederTest 4→2, AdminUserSeederRandomAdminsTest 11→10 casos con dataset); 12/12 en verde, gates limpios.",
     "TASK-013": "Hecha: 2 casos eliminados; SuspendedAdminSessionTest usa AdminFilamentTestContext en lugar de signInPanelAdministrator(); panel 10/10 en verde, gates limpios.",
     "TASK-014": "Hecha: 4 casos eliminados (1 en AdminBootstrapCommandTest, dataset de 3 en AdminRolePermissionsCommandTest); 26/26 en verde, gates limpios.",
-    "TASK-015": "Hecha: 6 casos eliminados de AdminUserRoleCommandTest (4 tests, dos con dataset de 2); 18/18 en verde, gates limpios."
+    "TASK-015": "Hecha: 6 casos eliminados de AdminUserRoleCommandTest (4 tests, dos con dataset de 2); 18/18 en verde, gates limpios.",
+    "TASK-016": "Hecha: 2 casos eliminados (ViewPostTest y TrustedDevicesRelationManagerTest) y el import HasTable que quedó sin uso; 13/13 en verde, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",

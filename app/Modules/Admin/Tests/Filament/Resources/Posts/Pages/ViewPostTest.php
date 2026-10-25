@@ -199,21 +199,3 @@ it('denies post detail when the post has no existing owner', function (): void {
     Livewire::test(ViewPost::class, ['record' => $post->getKey()])
         ->assertForbidden();
 });
-
-it('denies every post mutation in the panel even to a posts reader who wrote the post', function (): void {
-    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles(
-        $this,
-        AdminRole::Admin,
-        AdminRole::AdminPostsReader,
-    );
-    $post = createPost($authenticatedUser);
-
-    expect(PostResource::canCreate())->toBeFalse()
-        ->and(PostResource::canEdit($post))->toBeFalse()
-        ->and(PostResource::canDelete($post))->toBeFalse()
-        ->and(PostResource::canDeleteAny())->toBeFalse()
-        ->and(PostResource::canRestore($post))->toBeFalse()
-        ->and(PostResource::canRestoreAny())->toBeFalse()
-        ->and(PostResource::canForceDelete($post))->toBeFalse()
-        ->and(PostResource::canForceDeleteAny())->toBeFalse();
-});
