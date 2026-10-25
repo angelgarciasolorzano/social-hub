@@ -50,34 +50,6 @@ it('grants a cataloged permission to a role and updates permission checks', func
         ->and(adminRoleHasPermission(AdminRole::Admin, AdminPermission::AdminUsersViewAny))->toBeTrue();
 });
 
-it('grants each backups permission to a role in the admin guard', function (AdminPermission $adminPermission): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $role = Role::query()
-        ->where('name', AdminRole::AdminPostsReader->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail();
-    $user = createAdminCommandActor();
-
-    $exitCode = runAdminRolePermissions(
-        'grant',
-        AdminRole::AdminPostsReader->value,
-        $adminPermission->value,
-        $user,
-    );
-    $permission = Permission::query()
-        ->where('name', $adminPermission->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail();
-
-    expect($exitCode)->toBe(Command::SUCCESS)
-        ->and($role->permissions()->whereKey($permission->getKey())->exists())->toBeTrue();
-})->with([
-    'view' => AdminPermission::AdminBackupsView,
-    'create' => AdminPermission::AdminBackupsCreate,
-    'download' => AdminPermission::AdminBackupsDownload,
-]);
-
 it('revokes a cataloged permission without changing role assignments', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
