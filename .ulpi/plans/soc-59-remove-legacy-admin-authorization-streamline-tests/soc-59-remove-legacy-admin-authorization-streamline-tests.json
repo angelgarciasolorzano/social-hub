@@ -1113,7 +1113,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
         "findings": "S3, R7, R8"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-032",
@@ -1677,7 +1678,8 @@
     "TASK-039": "Hecha: seedUsers() de UserSeederTwoFactorTest llama a Storage::fake('public') antes de sembrar; 7/7 en verde.",
     "TASK-028": "Hecha: 3 casos eliminados (2 en TrustedDeviceDestroyAllTest, 1 en TrustedDeviceReactivateTest); con TrustedDeviceServiceTest y el seeder, 61/61 en verde; gates limpios.",
     "TASK-029": "Hecha: 7 casos eliminados (4 ramas del listener de recordar y 3 variantes de verifyCode); con TrustedDeviceServiceTest, 57/57 en verde; gates limpios.",
-    "TASK-030": "Hecha: 3 casos eliminados (1 en TwoFactorDisableTest, 2 en TrustedDeviceIndexTest); con TwoFactorSettingsTest y TrustedDeviceInvalidateTest, 44/44 en verde; gates limpios."
+    "TASK-030": "Hecha: 3 casos eliminados (1 en TwoFactorDisableTest, 2 en TrustedDeviceIndexTest); con TwoFactorSettingsTest y TrustedDeviceInvalidateTest, 44/44 en verde; gates limpios.",
+    "TASK-031": "Hecha: 'creates new accounts as active when no status is given' ahora crea la cuenta con forceCreate() sin status y falla si se quita el default('active') de la columna (comprobado y restaurado); 2 casos eliminados (UserAccountStatusTest y AccountStatusChangeTest); AccountStatus 37/37, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
