@@ -233,7 +233,8 @@
         ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md"
       ],
       "validateCommand": "test -s .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
-      "review": "claude"
+      "review": "claude",
+      "status": "done"
     },
     {
       "id": "TASK-007",
@@ -449,7 +450,8 @@
     "TASK-002": "Hecha: suite completa 1209/1209 en 57.6 s en serie (línea base 74.2 s).",
     "TASK-003": "Hecha: suite completa 1211/1211 en 56.4 s en serie.",
     "TASK-004": "Hecha: composer test en paralelo, 1211/1211 en 13-25 s según la carga (3 ejecuciones directas estables más 4 vía composer), sin los 22 warnings.",
-    "TASK-005": "Hecha: audit-admin.md con 12 hallazgos redundantes (18 casos), 4 de setup, 1 de ubicación y 10 grupos conservados; pendiente de aprobación del usuario antes de TASK-009."
+    "TASK-005": "Hecha: audit-admin.md con 12 hallazgos redundantes (18 casos), 4 de setup, 1 de ubicación y 10 grupos conservados; pendiente de aprobación del usuario antes de TASK-009.",
+    "TASK-006": "Hecha: audit-content.md con 13 hallazgos redundantes (23 casos), 2 de setup y 8 grupos conservados; pendiente de aprobación antes de TASK-009."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
