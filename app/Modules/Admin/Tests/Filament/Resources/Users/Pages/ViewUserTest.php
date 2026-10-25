@@ -98,11 +98,7 @@ it('shows account timestamps in matching detail fields', function (): void {
 });
 
 it('uses a compact profile fallback and explains when no cover image has been added', function (): void {
-    Storage::fake((string) config('media-library.disk_name'));
-
     $targetUser = createUser();
-    $targetUser->clearMediaCollection(UserImageType::PROFILE_PICTURE->value());
-    $targetUser->clearMediaCollection(UserImageType::COVER_IMAGE->value());
 
     $detail = renderUserDetailAsAuthorizedAdmin($this, $targetUser);
     $components = $detail['components'];
