@@ -27,6 +27,10 @@ enum ActivityLogAdminEvent: string implements ActivityLogEvent
 
     case BackupDownloaded = 'admin.backup_downloaded';
 
+    case AccountSuspended = 'admin.account_suspended';
+
+    case AccountReactivated = 'admin.account_reactivated';
+
     public function eventName(): string
     {
         return $this->value;

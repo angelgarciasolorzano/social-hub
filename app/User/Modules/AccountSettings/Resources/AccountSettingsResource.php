@@ -23,7 +23,8 @@ class AccountSettingsResource extends JsonResource
      *     preferredLocale: string,
      *     biography: string|null,
      *     createdAt: string|null,
-     *     lastLoginAt: string|null
+     *     lastLoginAt: string|null,
+     *     status: string
      * }
      */
     #[Override]
@@ -38,6 +39,7 @@ class AccountSettingsResource extends JsonResource
             'biography' => $this->biography,
             'createdAt' => $this->created_at?->toIso8601String(),
             'lastLoginAt' => $this->last_login_at?->toIso8601String(),
+            'status' => $this->status->value,
         ];
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Schemas;
 
+use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
+use App\User\Enums\AccountStatus;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Filament\Infolists\Components\ImageEntry;
@@ -15,6 +17,8 @@ use Filament\Support\Icons\Heroicon;
 
 class UserInfolist
 {
+    use DescribesAccountStatus;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -68,6 +72,12 @@ class UserInfolist
                     ->description('Email verification and sign-in history for this user.')
                     ->icon(Heroicon::OutlinedShieldCheck)
                     ->schema([
+                        TextEntry::make('status')
+                            ->label('Account status')
+                            ->icon(Heroicon::OutlinedUserCircle)
+                            ->badge()
+                            ->formatStateUsing(fn (AccountStatus $state): string => self::accountStatusLabel($state))
+                            ->color(fn (AccountStatus $state): string => self::accountStatusColor($state)),
                         TextEntry::make('email_verification_status')
                             ->label('Email verification')
                             ->state(fn (User $record): string => $record->hasVerifiedEmail() ? 'Verified' : 'Not verified')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\User\Database\Factories\UserFactory;
+use App\User\Enums\AccountStatus;
 use Filament\Panel;
 
 it('allows verified users with admin.access into the admin panel', function (): void {
@@ -40,4 +41,23 @@ it('denies admin users from panel ids other than admin', function (): void {
     $user->assignRole(AdminRole::Admin->value);
 
     expect($user->canAccessPanel(Panel::make()->id('user-facing')))->toBeFalse();
+});
+
+it('denies a suspended administrator even with admin.access', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createSuspendedUser();
+    $user->assignRole(AdminRole::Admin->value);
+
+    expect($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
+});
+
+it('allows the administrator back into the panel once reactivated', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createSuspendedUser();
+    $user->assignRole(AdminRole::Admin->value);
+    $user->forceFill(['status' => AccountStatus::Active])->save();
+
+    expect($user->canAccessPanel(Panel::make()->id('admin')))->toBeTrue();
 });

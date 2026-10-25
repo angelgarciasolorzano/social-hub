@@ -45,6 +45,12 @@ class AdminAuthorizationSeeder extends Seeder
                     AdminPermission::AdminUsersViewAny,
                     AdminPermission::AdminUsersCreate,
                 ],
+                AdminRole::AdminUsersModerator->value => [
+                    AdminPermission::AdminUsersViewAny,
+                    AdminPermission::AdminUsersView,
+                    AdminPermission::AdminUsersSuspend,
+                    AdminPermission::AdminUsersReactivate,
+                ],
                 AdminRole::AdminPostsReader->value => [
                     AdminPermission::AdminPostsViewAny,
                     AdminPermission::AdminPostsView,

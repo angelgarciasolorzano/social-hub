@@ -11,6 +11,7 @@ use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
 use App\Modules\Like\Database\Seeders\LikeSeeder;
 use App\Modules\Post\Database\Seeders\PostSeeder;
+use App\User\Database\Seeders\AccountStatusSeeder;
 use App\User\Database\Seeders\UserSeeder;
 use Illuminate\Database\Seeder;
 
@@ -26,6 +27,7 @@ class DatabaseSeeder extends Seeder
             AdminAuthorizationSeeder::class,
             AdminUserSeeder::class,
             TrustedDeviceSeeder::class,
+            AccountStatusSeeder::class,
             PostSeeder::class,
             CommentSeeder::class,
             LikeSeeder::class,

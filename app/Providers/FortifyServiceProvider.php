@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Auth\Modules\Login\Requests\TwoFactorLoginRequest;
 use App\User\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\PasswordConfirmedResponse;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Requests\TwoFactorLoginRequest as FortifyTwoFactorLoginRequest;
 use Override;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -28,7 +30,7 @@ class FortifyServiceProvider extends ServiceProvider
     #[Override]
     public function register(): void
     {
-        //
+        $this->app->bind(FortifyTwoFactorLoginRequest::class, TwoFactorLoginRequest::class);
     }
 
     /**

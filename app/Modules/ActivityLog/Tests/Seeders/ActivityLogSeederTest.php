@@ -7,7 +7,9 @@ use App\Modules\ActivityLog\Database\Seeders\ActivityLogSeeder;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
+use App\User\Database\Factories\AccountStatusChangeFactory;
 use App\User\Database\Seeders\UserSeeder;
+use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -49,6 +51,21 @@ function seedActivityLogSourceData(TestCase $testCase): array
     createTrustedDeviceEvent($author, ['action' => TrustedDeviceAction::Revoked]);
 
     return ['angel' => $user, 'administrator' => $administrator];
+}
+
+/**
+ * Create a seeded-style status change of a new account, made by the given administrator.
+ */
+function createSeededStatusChange(User $user, bool $isSuspension, string $createdAt): AccountStatusChange
+{
+    /** @var AccountStatusChangeFactory $factory */
+    $factory = AccountStatusChange::factory();
+    $factory = $isSuspension ? $factory->suspended() : $factory->reactivated();
+
+    return $factory->changedBy($user)->createOne([
+        'reason' => ACTIVITY_LOG_SEEDER_SENTINEL_TEXT,
+        'created_at' => $createdAt,
+    ]);
 }
 
 /**
@@ -163,4 +180,31 @@ it('seeds nothing on an empty database', function (): void {
     $this->seed(ActivityLogSeeder::class);
 
     expect(ActivityLog::query()->exists())->toBeFalse();
+});
+
+it('mirrors every account status change with its event, subject, administrator and date', function (): void {
+    $user = createUser();
+    $accountStatusChange = createSeededStatusChange($user, isSuspension: true, createdAt: '2026-10-01 10:00:00');
+    $reactivation = createSeededStatusChange($user, isSuspension: false, createdAt: '2026-10-05 10:00:00');
+
+    $this->seed(ActivityLogSeeder::class);
+
+    $activityLog = ActivityLog::query()->where('event', 'admin.account_suspended')->sole();
+    $reactivationActivity = ActivityLog::query()->where('event', 'admin.account_reactivated')->sole();
+
+    expect($activityLog->subject?->is($accountStatusChange))->toBeTrue()
+        ->and($activityLog->causer?->is($user))->toBeTrue()
+        ->and($activityLog->properties?->get('target_user_id'))->toBe($accountStatusChange->user_id)
+        ->and($activityLog->created_at?->toDateTimeString())->toBe('2026-10-01 10:00:00')
+        ->and($reactivationActivity->subject?->is($reactivation))->toBeTrue();
+});
+
+it('never stores the reason of an account status change', function (): void {
+    createSeededStatusChange(createUser(), isSuspension: true, createdAt: '2026-10-01 10:00:00');
+
+    $this->seed(ActivityLogSeeder::class);
+
+    expect(ActivityLog::query()->where('event', 'admin.account_suspended')->sole()->properties?->keys()->all())
+        ->toEqualCanonicalizing(['target_user_id', 'ip', 'user_agent'])
+        ->and(DB::table('activity_log')->get()->toJson())->not->toContain(ACTIVITY_LOG_SEEDER_SENTINEL_TEXT);
 });

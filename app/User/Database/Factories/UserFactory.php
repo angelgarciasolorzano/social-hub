@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Database\Factories;
 
+use App\User\Enums\AccountStatus;
 use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
@@ -59,6 +60,7 @@ class UserFactory extends Factory
             'preferred_locale' => PreferredLocale::ENGLISH->value,
             'biography' => null,
             'last_login_at' => null,
+            'status' => AccountStatus::Active->value,
             'remember_token' => Str::random(10),
         ];
     }
@@ -70,6 +72,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes): array => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that an administrator suspended the account.
+     */
+    public function suspended(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => AccountStatus::Suspended->value,
         ]);
     }
 

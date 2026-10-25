@@ -19,6 +19,25 @@ final class UserPolicy
         return $authenticatedUser->can(AdminPermission::AdminUsersView->value);
     }
 
+    /**
+     * Suspend another active account; an administrator never suspends their own.
+     */
+    public function suspend(User $authenticatedUser, User $user): bool
+    {
+        return $authenticatedUser->can(AdminPermission::AdminUsersSuspend->value)
+            && $authenticatedUser->isNot($user)
+            && ! $user->isSuspended();
+    }
+
+    /**
+     * Reactivate a suspended account.
+     */
+    public function reactivate(User $authenticatedUser, User $user): bool
+    {
+        return $authenticatedUser->can(AdminPermission::AdminUsersReactivate->value)
+            && $user->isSuspended();
+    }
+
     public function create(): bool
     {
         return false;

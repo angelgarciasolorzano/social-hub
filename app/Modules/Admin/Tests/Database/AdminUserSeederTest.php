@@ -10,7 +10,7 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Spatie\Permission\Models\Role;
 
-it('assigns Angel backup operations and all reader roles while preserving existing assignments', function (): void {
+it('assigns Angel backup operations, user moderation and all reader roles while preserving existing assignments', function (): void {
     $user = createUser();
     $user->forceFill(['email' => 'angel@gmail.com'])->save();
 
@@ -40,6 +40,8 @@ it('assigns Angel backup operations and all reader roles while preserving existi
         AdminPermission::AdminBackupsView->value,
         AdminPermission::AdminBackupsCreate->value,
         AdminPermission::AdminBackupsDownload->value,
+        AdminPermission::AdminUsersSuspend->value,
+        AdminPermission::AdminUsersReactivate->value,
     ];
 
     $expectedRoleNames = [
@@ -50,6 +52,7 @@ it('assigns Angel backup operations and all reader roles while preserving existi
         AdminRole::AdminActivityReader->value,
         AdminRole::AdminBackupsReader->value,
         AdminRole::AdminBackupsOperator->value,
+        AdminRole::AdminUsersModerator->value,
         $customAdminRole->name,
     ];
 

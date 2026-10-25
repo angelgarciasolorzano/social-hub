@@ -10,6 +10,17 @@ use App\User\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Role;
 
+/**
+ * Create a user holding the account moderation role.
+ */
+function createUserModerator(): User
+{
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminUsersModerator->value);
+
+    return $user;
+}
+
 it('resolves UserPolicy from the User model attribute', function (): void {
     $user = createUser();
 
@@ -103,4 +114,57 @@ it('denies every user mutation ability directly through the gate', function (): 
         expect(Gate::forUser($authenticatedUser)->allows($ability, $authorizationSubject))
             ->toBeFalse();
     }
+});
+
+it('allows a moderator to suspend another active account', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    expect(Gate::forUser(createUserModerator())->allows('suspend', createUser()))->toBeTrue();
+});
+
+it('allows a moderator to reactivate a suspended account', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    expect(Gate::forUser(createUserModerator())->allows('reactivate', createSuspendedUser()))->toBeTrue();
+});
+
+it('denies suspending and reactivating without the moderation permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole([AdminRole::Admin->value, AdminRole::AdminUsersReader->value]);
+
+    expect(Gate::forUser($user)->allows('suspend', createUser()))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('reactivate', createSuspendedUser()))->toBeFalse();
+});
+
+it('denies a moderator suspending their own account', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUserModerator();
+
+    expect(Gate::forUser($user)->allows('suspend', $user))->toBeFalse();
+});
+
+it('denies suspending an account that is already suspended', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    expect(Gate::forUser(createUserModerator())->allows('suspend', createSuspendedUser()))->toBeFalse();
+});
+
+it('denies reactivating an account that is active', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    expect(Gate::forUser(createUserModerator())->allows('reactivate', createUser()))->toBeFalse();
+});
+
+it('keeps every other user mutation denied for a moderator', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUserModerator();
+    $targetUser = createUser();
+
+    expect(Gate::forUser($user)->allows('update', $targetUser))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('delete', $targetUser))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('forceDelete', $targetUser))->toBeFalse();
 });

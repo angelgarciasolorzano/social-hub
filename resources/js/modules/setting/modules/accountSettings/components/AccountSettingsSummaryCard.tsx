@@ -1,10 +1,14 @@
 import type { JSX } from "react";
 
-import { Activity, CalendarDays, Clock, Mail } from "lucide-react";
+import { Activity, CalendarDays, Clock, Mail, ShieldCheck } from "lucide-react";
 
-import type { AccountSettings } from "@/modules/setting/modules/accountSettings/types/accountSettings";
+import type {
+  AccountSettings,
+  AccountStatus,
+} from "@/modules/setting/modules/accountSettings/types/accountSettings";
 
 import { Avatar, AvatarFallback } from "@/shared/components/shadcn/ui/avatar";
+import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   Card,
@@ -15,6 +19,13 @@ import {
 } from "@/shared/components/shadcn/ui/card";
 
 import { formatActivationDate, formatLongDate } from "@/shared/lib/dateTime";
+import { badgeVariants } from "@/shared/lib/styling";
+import { cn } from "@/shared/lib/utils";
+
+const accountStatusBadges: Record<AccountStatus, { className: string; label: string }> = {
+  active: { className: badgeVariants.success, label: "Activa" },
+  suspended: { className: badgeVariants.red, label: "Suspendida" },
+};
 
 interface AccountSettingsSummaryCardProps {
   accountSettings: AccountSettings;
@@ -24,6 +35,7 @@ function AccountSettingsSummaryCard({
   accountSettings,
 }: AccountSettingsSummaryCardProps): JSX.Element {
   const userInitial = accountSettings.name.trim().charAt(0).toLocaleUpperCase("es");
+  const accountStatusBadge = accountStatusBadges[accountSettings.status];
 
   return (
     <Card className="gap-0 overflow-hidden py-0">
@@ -60,6 +72,18 @@ function AccountSettingsSummaryCard({
               Correo electrónico
             </dt>
             <dd className="text-sm break-all">{accountSettings.email}</dd>
+          </div>
+
+          <div className="space-y-1">
+            <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <ShieldCheck aria-hidden="true" className="shrink-0" size={14} />
+              Estado de la cuenta
+            </dt>
+            <dd>
+              <Badge className={cn(accountStatusBadge.className, "font-normal")}>
+                {accountStatusBadge.label}
+              </Badge>
+            </dd>
           </div>
 
           <div className="space-y-1">

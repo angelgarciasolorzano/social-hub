@@ -45,6 +45,7 @@ pest()->extend(TestCase::class)
         __DIR__.'/../app/Auth/Modules/Email/Tests',
         __DIR__.'/../app/User/Modules/TwoFactor/Tests',
         __DIR__.'/../app/User/Modules/AccountSettings/Tests',
+        __DIR__.'/../app/User/Modules/AccountStatus/Tests',
         __DIR__.'/../app/User/Tests',
     );
 
@@ -234,6 +235,17 @@ function createTrustedDeviceEvent(?User $user = null, array $attributes = []): T
     }
 
     return $trustedDeviceEvent;
+}
+
+/**
+ * Create a persisted User whose account an administrator suspended.
+ */
+function createSuspendedUser(): User
+{
+    /** @var Factory<User> $factory */
+    $factory = User::factory();
+
+    return $factory->suspended()->createOne();
 }
 
 /**
