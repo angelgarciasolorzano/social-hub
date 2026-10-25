@@ -113,24 +113,6 @@ it('answers a wrong code with a fixed message that does not echo the submitted c
     $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
 });
 
-it('rejects an incorrect otp code and keeps the device revoked', function (): void {
-    $user = createUserWithTwoFactor();
-    $trustedDevice = createTrustedDevice($user);
-    $trustedDevice->delete();
-
-    $validOtp = validOtpFor($user);
-    $wrongOtp = $validOtp === '000000' ? '000001' : '000000';
-
-    $testResponse = $this->actingAs($user)
-        ->post(route('user.trusted-devices.reactivate', $trustedDevice), [
-            'otp_code' => $wrongOtp,
-        ]);
-
-    $testResponse->assertSessionHasErrors('otp_code');
-
-    expect($trustedDevice->refresh()->deleted_at)->not->toBeNull();
-});
-
 it('rejects a malformed otp code', function (): void {
     $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user);

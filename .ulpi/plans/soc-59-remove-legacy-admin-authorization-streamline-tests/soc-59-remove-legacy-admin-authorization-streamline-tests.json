@@ -1009,7 +1009,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
         "findings": "R1, R2"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-029",
@@ -1378,7 +1379,8 @@
       "source": {
         "audit": "found while executing TASK-027",
         "findings": "S1 (audit-content.md), extended"
-      }
+      },
+      "status": "done"
     }
   ],
   "dependencies": {
@@ -1669,7 +1671,9 @@
     "TASK-024": "Hecha: 5 casos eliminados (3 en CommentModelTest, 2 en CommentResourceTest) más el helper commentsCursorPage() y sus imports; modelo, resource y factory 38/38, gates limpios.",
     "TASK-025": "Hecha: 5 casos eliminados (4 en CommentThreadPropsTest, 1 en CommentThrottleTest); props y seguridad de comentarios 79/79, gates limpios.",
     "TASK-026": "Hecha: 3 casos eliminados ([H3] respuesta a respuesta y [H7] en CommentSecurityAuditTest, 'never deletes a reply' en CommentSeederTest), más el encabezado vacío de H7 y el import de CommentResource; 23/23 en verde, gates limpios.",
-    "TASK-027": "Hecha: 4 casos eliminados (1 en LikeSeederTest, 3 en PostStoreTest) y Storage::fake('public') en los tests de PostSeederTest que siembran; 24/24 en verde, gates limpios. Al revisar quién más corre seeders con imágenes apareció UserSeederTwoFactorTest (TASK-039)."
+    "TASK-027": "Hecha: 4 casos eliminados (1 en LikeSeederTest, 3 en PostStoreTest) y Storage::fake('public') en los tests de PostSeederTest que siembran; 24/24 en verde, gates limpios. Al revisar quién más corre seeders con imágenes apareció UserSeederTwoFactorTest (TASK-039).",
+    "TASK-039": "Hecha: seedUsers() de UserSeederTwoFactorTest llama a Storage::fake('public') antes de sembrar; 7/7 en verde.",
+    "TASK-028": "Hecha: 3 casos eliminados (2 en TrustedDeviceDestroyAllTest, 1 en TrustedDeviceReactivateTest); con TrustedDeviceServiceTest y el seeder, 61/61 en verde; gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",

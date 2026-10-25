@@ -5,14 +5,18 @@ declare(strict_types=1);
 use App\User\Database\Seeders\UserSeeder;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Storage;
 
 const SEEDED_TEST_USER_EMAIL = 'angel@gmail.com';
 
 /**
  * Run the user seeder for a smaller number of users, so tests stay fast.
+ * The public disk is faked because the seeder attaches seeding images when they exist.
  */
 function seedUsers(int $userCount): void
 {
+    Storage::fake('public');
+
     new UserSeeder($userCount)->run();
 }
 
