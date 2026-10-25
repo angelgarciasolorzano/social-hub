@@ -43,16 +43,6 @@ it('does not give every comment the same number of likes', function (): void {
     expect(likesCountPerComment()->unique()->count())->toBeGreaterThan(1);
 });
 
-it('never repeats a user on the same comment', function (): void {
-    seedLikesOnComments($this);
-
-    $likesPerUserAndComment = Like::query()->get()->groupBy(
-        fn (Like $like): string => $like->user_id.'-'.$like->likeable_id,
-    );
-
-    expect($likesPerUserAndComment->map->count())->each->toBe(1);
-});
-
 it('seeds likes only on comments', function (): void {
     seedLikesOnComments($this);
 

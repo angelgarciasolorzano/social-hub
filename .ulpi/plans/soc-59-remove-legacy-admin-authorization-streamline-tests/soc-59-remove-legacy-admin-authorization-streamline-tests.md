@@ -219,7 +219,7 @@ Documentar los estados withImages()/withImage() de las factories (los tests ya n
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3 · **Review:** claude
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-009, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-009, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039
 
 **Acceptance Criteria:**
 
@@ -237,7 +237,7 @@ Ejecutar todos los gates backend, la suite completa en serie (para comparar con 
 
 **Type:** chore · **Effort:** S · **Agent:** general-purpose · **Priority:** P3 · **Review:** claude
 
-**Depends on:** TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038
+**Depends on:** TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039
 
 **Acceptance Criteria:**
 
@@ -735,6 +735,24 @@ Mover tests/Feature/Auth/PasswordConfirmationTest.php a app/Auth/Modules/Passwor
 
 **validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/Password/Tests/PasswordConfirmationTest.php`
 
+### TASK-039: Aislar UserSeederTwoFactorTest del disco público
+
+UserSeederTwoFactorTest ejecuta new UserSeeder($userCount)->run() sin Storage::fake('public'): en local, donde existen las imágenes de seeding no versionadas, copia la foto y la portada del usuario de prueba y, desde TASK-002, las de la mitad de los usuarios (withImages()). Agregar Storage::fake('public') en el helper que corre el seeder. Mismo hallazgo que S1 de audit-content.md, encontrado al ejecutar TASK-027.
+
+**Type:** test-refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2 · **Review:** claude
+
+**Depends on:** TASK-009
+
+**Acceptance Criteria:**
+
+- [ ] El helper que ejecuta UserSeeder en UserSeederTwoFactorTest llama a Storage::fake('public') antes de sembrar.
+- [ ] Los 7 casos de UserSeederTwoFactorTest siguen en verde y ningún test que corre UserSeeder o PostSeeder escribe en storage/app/public.
+- [ ] Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios.
+
+**writeScope:** `app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php`
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php`
+
 ## Failure Modes
 
 - Un test dependía en silencio de las imágenes aleatorias de las factories: se detecta al correr las suites Post/Admin/User en TASK-002/003 y se le da el estado explícito.
@@ -756,13 +774,13 @@ TASK-001 sola ya cumple los criterios del seeder. TASK-001 a TASK-004 entregan l
 
 ## Execution Summary
 
-- Tareas: 38
+- Tareas: 39
 - Camino crítico: TASK-001 → TASK-005 → TASK-009 → TASK-020 → TASK-022 → TASK-032 → TASK-033 → TASK-010 → TASK-011
 - Capas:
   1. TASK-001, TASK-002, TASK-003, TASK-006, TASK-007, TASK-008
   2. TASK-004, TASK-005
   3. TASK-009
-  4. TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-019, TASK-020, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-035, TASK-036, TASK-037, TASK-038
+  4. TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-019, TASK-020, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039
   5. TASK-018, TASK-021, TASK-022
   6. TASK-032
   7. TASK-033, TASK-034
@@ -782,8 +800,8 @@ TASK-001 sola ya cumple los criterios del seeder. TASK-001 a TASK-004 entregan l
 | TASK-007 | — |
 | TASK-008 | — |
 | TASK-009 | TASK-005, TASK-006, TASK-007, TASK-008 |
-| TASK-010 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-009, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038 |
-| TASK-011 | TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038 |
+| TASK-010 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-009, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039 |
+| TASK-011 | TASK-010, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039 |
 | TASK-012 | TASK-009 |
 | TASK-013 | TASK-009 |
 | TASK-014 | TASK-009 |
@@ -811,3 +829,4 @@ TASK-001 sola ya cumple los criterios del seeder. TASK-001 a TASK-004 entregan l
 | TASK-036 | TASK-009 |
 | TASK-037 | TASK-009 |
 | TASK-038 | TASK-009 |
+| TASK-039 | TASK-009 |

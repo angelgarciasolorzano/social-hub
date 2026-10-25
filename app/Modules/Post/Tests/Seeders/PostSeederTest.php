@@ -5,17 +5,21 @@ declare(strict_types=1);
 use App\Modules\Post\Database\Seeders\PostSeeder;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 const POST_SEEDER_SEED = 2024;
 
 /**
  * Seed posts for a few users with a fixed seed and return how many each got.
+ * The public disk is faked because the seeder attaches seeding images when they exist.
  *
  * @return list<int>
  */
 function seedPostCountsForUsers(TestCase $testCase, int $userCount): array
 {
+    Storage::fake('public');
+
     $users = array_map(createUser(...), range(1, $userCount));
 
     mt_srand(POST_SEEDER_SEED);
@@ -33,6 +37,7 @@ it('does not give every user the same number of posts', function (): void {
 });
 
 it('does not create posts without an owner', function (): void {
+    Storage::fake('public');
     createUser();
 
     $this->seed(PostSeeder::class);

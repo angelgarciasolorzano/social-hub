@@ -358,7 +358,8 @@
         "TASK-035",
         "TASK-036",
         "TASK-037",
-        "TASK-038"
+        "TASK-038",
+        "TASK-039"
       ],
       "acceptanceCriteria": [
         "CLAUDE.md describe los estados de imagen de las factories en las secciones de seeders y la ejecución paralela en la sección de tests.",
@@ -413,7 +414,8 @@
         "TASK-035",
         "TASK-036",
         "TASK-037",
-        "TASK-038"
+        "TASK-038",
+        "TASK-039"
       ],
       "acceptanceCriteria": [
         "Pint, PHPStan, Rector (caché limpia) y la suite completa pasan; si queda algún fallo se informa con su salida.",
@@ -973,7 +975,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
         "findings": "R12, R13, S1"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-028",
@@ -1345,6 +1348,37 @@
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
         "findings": "U1"
       }
+    },
+    {
+      "id": "TASK-039",
+      "title": "Aislar UserSeederTwoFactorTest del disco público",
+      "description": "UserSeederTwoFactorTest ejecuta new UserSeeder($userCount)->run() sin Storage::fake('public'): en local, donde existen las imágenes de seeding no versionadas, copia la foto y la portada del usuario de prueba y, desde TASK-002, las de la mitad de los usuarios (withImages()). Agregar Storage::fake('public') en el helper que corre el seeder. Mismo hallazgo que S1 de audit-content.md, encontrado al ejecutar TASK-027.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "El helper que ejecuta UserSeeder en UserSeederTwoFactorTest llama a Storage::fake('public') antes de sembrar.",
+        "Los 7 casos de UserSeederTwoFactorTest siguen en verde y ningún test que corre UserSeeder o PostSeeder escribe en storage/app/public.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios."
+      ],
+      "filesToModify": [
+        "app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/User/Modules/TwoFactor/Tests/Seeders/UserSeederTwoFactorTest.php",
+      "review": "claude",
+      "source": {
+        "audit": "found while executing TASK-027",
+        "findings": "S1 (audit-content.md), extended"
+      }
     }
   ],
   "dependencies": {
@@ -1399,7 +1433,8 @@
       "TASK-035",
       "TASK-036",
       "TASK-037",
-      "TASK-038"
+      "TASK-038",
+      "TASK-039"
     ],
     "TASK-011": [
       "TASK-010",
@@ -1429,7 +1464,8 @@
       "TASK-035",
       "TASK-036",
       "TASK-037",
-      "TASK-038"
+      "TASK-038",
+      "TASK-039"
     ],
     "TASK-012": [
       "TASK-009"
@@ -1519,6 +1555,9 @@
     ],
     "TASK-038": [
       "TASK-009"
+    ],
+    "TASK-039": [
+      "TASK-009"
     ]
   },
   "executionLayers": [
@@ -1558,7 +1597,8 @@
       "TASK-035",
       "TASK-036",
       "TASK-037",
-      "TASK-038"
+      "TASK-038",
+      "TASK-039"
     ],
     [
       "TASK-018",
@@ -1628,7 +1668,8 @@
     "TASK-023": "Hecha: 6 casos eliminados (4 en CommentStoreTest y 2 del dataset de CommentUpdateTest); el caso 'empty' que quedaba pasó a un test simple 'rejects an empty content and leaves the comment untouched'; CRUD y requests 39/39, gates limpios.",
     "TASK-024": "Hecha: 5 casos eliminados (3 en CommentModelTest, 2 en CommentResourceTest) más el helper commentsCursorPage() y sus imports; modelo, resource y factory 38/38, gates limpios.",
     "TASK-025": "Hecha: 5 casos eliminados (4 en CommentThreadPropsTest, 1 en CommentThrottleTest); props y seguridad de comentarios 79/79, gates limpios.",
-    "TASK-026": "Hecha: 3 casos eliminados ([H3] respuesta a respuesta y [H7] en CommentSecurityAuditTest, 'never deletes a reply' en CommentSeederTest), más el encabezado vacío de H7 y el import de CommentResource; 23/23 en verde, gates limpios."
+    "TASK-026": "Hecha: 3 casos eliminados ([H3] respuesta a respuesta y [H7] en CommentSecurityAuditTest, 'never deletes a reply' en CommentSeederTest), más el encabezado vacío de H7 y el import de CommentResource; 23/23 en verde, gates limpios.",
+    "TASK-027": "Hecha: 4 casos eliminados (1 en LikeSeederTest, 3 en PostStoreTest) y Storage::fake('public') en los tests de PostSeederTest que siembran; 24/24 en verde, gates limpios. Al revisar quién más corre seeders con imágenes apareció UserSeederTwoFactorTest (TASK-039)."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
