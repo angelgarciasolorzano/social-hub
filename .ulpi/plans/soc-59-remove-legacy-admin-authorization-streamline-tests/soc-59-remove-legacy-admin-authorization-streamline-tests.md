@@ -113,7 +113,7 @@ Mover el afterCreating de PostFactory::configure() a un estado withImage(int $ch
 
 ### TASK-004: Ejecutar la suite completa en paralelo
 
-Agregar --parallel al script composer test y documentarlo en docs/development/backend-commands.md (bases por proceso, cómo correr en serie para depurar). Depende de TASK-002/003 porque, con varias bases, los ids de media se repiten entre procesos y escribirían en las mismas carpetas del disco público.
+composer test pasa a php -d memory_limit=2G artisan test --parallel --passthru-php="'-d' 'memory_limit=1G'" (los workers de paratest no heredan el -d del padre y artisan test -d no existe con --parallel) y se documenta en docs/development/backend-commands.md. Para que paratest pudiera arrancar hubo que quitar 22 imports de clases globales (use LogicException; etc.) en 18 archivos de test sin namespace: PHP los ignoraba con un warning (los 22 warnings de la suite en serie), que en los workers Laravel convierte en ErrorException. Rector no los vuelve a agregar.
 
 **Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1 · **Review:** claude
 

@@ -101,10 +101,14 @@ composer phpstan   # Rector puede introducir issues de tipos, revalida
 composer test
 ```
 
-Limpia la config cacheada y ejecuta la suite completa de Pest con un límite de memoria de 2G (`artisan test -d memory_limit=2G`).
+Limpia la config cacheada y ejecuta la suite completa de Pest **en paralelo** (SOC-59): `php -d memory_limit=2G artisan test --parallel --passthru-php="'-d' 'memory_limit=1G'"`.
 
+- ⚡ Laravel reparte los archivos entre un proceso por núcleo y crea una base MySQL por proceso (`social-hub-testing_test_1`, `_test_2`, …) que reutiliza en las siguientes ejecuciones; el usuario de la base debe poder crear bases (en local y en el servicio MySQL del CI lo hace `root`). Para recrearlas tras cambiar migraciones añade `--recreate-databases`
+- 🧠 Cada worker de paratest es un proceso PHP nuevo que no hereda el `-d` del proceso padre, por eso el límite de 1G se le pasa con `--passthru-php`. `artisan test -d …` no sirve con `--parallel`: paratest no acepta esa opción
+- 🐞 Para depurar un fallo, córrelo en serie, donde el orden de los tests es estable: `php -d memory_limit=2G vendor/bin/pest --compact <ruta>` (la suite completa en serie necesita el límite de 2G)
+- ⚠️ Un archivo de test sin `namespace` no puede tener `use` de una clase global (`use LogicException;`): PHP lo ignora con un warning, que en los workers de paratest Laravel convierte en `ErrorException` y aborta la ejecución. Escribe la clase sin `use`
+- ⏱️ Referencia de SOC-59 en un equipo de 14 núcleos: 1211 tests en 13–25 s en paralelo (según la carga de la máquina) frente a ~56 s en serie
 - ⚠️ **No** usar para tests rápidos — limpia caché antes de correr
-- 🧠 El límite de 2G es necesario: con el `memory_limit` por defecto de PHP CLI (128M) la suite completa se queda sin memoria. `php artisan test` a secas sirve para archivos o filtros, pero no para la suite completa
 - 🚫 No acepta argumentos (`composer test -- <ruta>` falla porque Composer los reenvía también a `config:clear`); para filtrar usa `php artisan test --compact <ruta>`
 - ✅ Útil antes de abrir PR; es el comando que ejecuta el workflow de CI
 
@@ -277,7 +281,7 @@ Cada gate corre en su propio workflow de GitHub Actions, en paralelo, con los mi
 | `composer rector-clear-cache`  | Borrar la caché de Rector      | Antes de `rector-dry`           |
 | `composer rector-dry`          | Preview Rector                 | Después de cualquier cambio PHP |
 | `composer rector`              | Aplicar Rector                 | Después de `rector-dry`         |
-| `composer test`                | Suite completa Pest (2G)       | Antes de PR                     |
+| `composer test`                | Suite completa Pest (paralelo) | Antes de PR                     |
 | `composer pint-ci`             | Pint de solo lectura, todo el repo | Gate del workflow de CI     |
 | `composer doctor`              | Diagnósticos locales Laravel   | Último gate local de tarea backend |
 | `composer doctor-ci`           | Doctor con anotaciones GitHub  | Gate del workflow de CI         |

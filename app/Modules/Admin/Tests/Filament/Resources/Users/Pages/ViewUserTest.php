@@ -15,7 +15,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
-use LogicException;
 use Tests\TestCase;
 
 beforeEach(function (): void {

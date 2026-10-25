@@ -15,7 +15,6 @@ use Filament\Tables\Contracts\HasTable;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use LogicException;
 use Tests\TestCase;
 
 /**

@@ -13,7 +13,6 @@ use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Livewire\Livewire;
-use ReflectionMethod;
 use Tests\TestCase;
 
 function createDashboardRegistration(string $createdAt, bool $verified = true): User

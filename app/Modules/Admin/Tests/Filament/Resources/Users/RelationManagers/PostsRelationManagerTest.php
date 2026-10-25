@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use LogicException;
 use Tests\TestCase;
 
 beforeEach(function (): void {

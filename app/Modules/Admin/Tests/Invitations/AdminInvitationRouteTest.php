@@ -8,7 +8,6 @@ use App\Modules\Admin\Models\AdminInvitation;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use LogicException;
 
 /** @return array{invitation: AdminInvitation, token: string} */
 function createAdminInvitationForRoute(?User $targetUser = null): array

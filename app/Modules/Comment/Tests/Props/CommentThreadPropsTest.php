@@ -13,7 +13,6 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
 use Inertia\OptionalProp;
 use Inertia\RenderContext;
-use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**

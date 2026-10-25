@@ -7,7 +7,6 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 use Laravel\Fortify\TwoFactorAuthenticationProvider;
-use LogicException;
 use PragmaRX\Google2FA\Google2FA;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;

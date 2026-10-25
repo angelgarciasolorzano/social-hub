@@ -10,7 +10,6 @@ use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use LogicException;
 use Tests\TestCase;
 
 /**

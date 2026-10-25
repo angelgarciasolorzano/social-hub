@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
-use UnexpectedValueException;
 
 /**
  * @template TResponse of \Symfony\Component\HttpFoundation\Response
