@@ -903,7 +903,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
         "findings": "R5, R6, R7, R8, R9"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-026",
@@ -1624,7 +1625,8 @@
     "TASK-021": "Hecha: los 3 roles de prueba de UserPolicyTest usan grantAdminPermissionThroughTestRole(); se quitó el import de Role; 13/13 en verde, gates limpios.",
     "TASK-022": "Hecha: createAdminInvitationForAcceptance() y createAdminInvitationForRoute() reemplazados por createAdminInvitationWithToken(?User, ?string) en tests/Pest.php; invitaciones 28/28, suite completa 1193/1193 en paralelo, gates limpios.",
     "TASK-023": "Hecha: 6 casos eliminados (4 en CommentStoreTest y 2 del dataset de CommentUpdateTest); el caso 'empty' que quedaba pasó a un test simple 'rejects an empty content and leaves the comment untouched'; CRUD y requests 39/39, gates limpios.",
-    "TASK-024": "Hecha: 5 casos eliminados (3 en CommentModelTest, 2 en CommentResourceTest) más el helper commentsCursorPage() y sus imports; modelo, resource y factory 38/38, gates limpios."
+    "TASK-024": "Hecha: 5 casos eliminados (3 en CommentModelTest, 2 en CommentResourceTest) más el helper commentsCursorPage() y sus imports; modelo, resource y factory 38/38, gates limpios.",
+    "TASK-025": "Hecha: 5 casos eliminados (4 en CommentThreadPropsTest, 1 en CommentThrottleTest); props y seguridad de comentarios 79/79, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
