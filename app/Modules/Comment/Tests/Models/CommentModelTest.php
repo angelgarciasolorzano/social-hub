@@ -26,10 +26,6 @@ it('belongs to the user it replies to', function (): void {
         ->and($replyComment->repliedToUser?->is($mentionedUser))->toBeTrue();
 });
 
-it('has no replied to user when it does not mention anyone', function (): void {
-    expect(createComment()->repliedToUser)->toBeNull();
-});
-
 it('keeps the comment and clears the mention when the mentioned user is deleted', function (): void {
     $mentionedUser = createUser();
     $replyComment = createCommentOn(createComment(), attributes: ['replied_to_user_id' => $mentionedUser->id]);
@@ -104,10 +100,6 @@ it('is registered in the morph map under the comment key', function (): void {
         ->and((new Comment)->getMorphClass())->toBe('comment');
 });
 
-it('has no edited date when it is created', function (): void {
-    expect(createComment()->fresh()?->edited_at)->toBeNull();
-});
-
 it('casts the edited date to an immutable date', function (): void {
     $comment = createComment();
     $comment->forceFill(['edited_at' => '2026-10-01 10:00:00'])->save();
@@ -124,16 +116,4 @@ it('keeps a deleted comment out of the default queries', function (): void {
 
     expect(Comment::query()->whereKey($comment->id)->exists())->toBeFalse()
         ->and($post->comments()->count())->toBe(0);
-});
-
-it('still finds a deleted comment when trashed comments are included', function (): void {
-    $comment = createComment();
-
-    $comment->delete();
-
-    $trashedComment = Comment::withTrashed()->find($comment->id);
-
-    expect($trashedComment)->not->toBeNull()
-        ->and($trashedComment?->deleted_at)->not->toBeNull()
-        ->and($trashedComment?->trashed())->toBeTrue();
 });

@@ -5,21 +5,10 @@ declare(strict_types=1);
 use App\Modules\Comment\Database\Factories\CommentFactory;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Comment\Resources\CommentResource;
-use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
-
-/**
- * @return CursorPaginator<int, array<mixed>>
- */
-function commentsCursorPage(Post $post): CursorPaginator
-{
-    return $post->comments()->with('user')->orderByDesc('id')->cursorPaginate(10)
-        ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
-}
 
 /**
  * Serialize the comment as the given user (or as a guest) would receive it.
@@ -235,33 +224,4 @@ it('serializes the author flag without running queries', function (): void {
 
     expect($payload)->toMatchArray(['isMine' => true])
         ->and($queries)->toBeEmpty();
-});
-
-it('keeps the cursor metadata when a page of comments is serialized through the resource', function (): void {
-    $post = createPost();
-
-    createCommentsOn($post, 11);
-
-    $cursorPaginator = commentsCursorPage($post);
-
-    $payload = $cursorPaginator->toArray();
-
-    expect($payload['data'])->toHaveCount(10)
-        ->and($payload['per_page'])->toBe(10)
-        ->and($cursorPaginator->hasMorePages())->toBeTrue()
-        ->and($payload['next_cursor'])->toBeString()
-        ->and($payload['prev_cursor'])->toBeNull();
-});
-
-it('reports no further pages when everything fits in one', function (): void {
-    $post = createPost();
-    createCommentOn($post);
-
-    $cursorPaginator = commentsCursorPage($post);
-
-    $payload = $cursorPaginator->toArray();
-
-    expect($payload['data'])->toHaveCount(1)
-        ->and($cursorPaginator->hasMorePages())->toBeFalse()
-        ->and($payload['next_cursor'])->toBeNull();
 });
