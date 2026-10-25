@@ -56,60 +56,6 @@ it('grants a catalog role and exposes its permissions', function (): void {
         ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
 });
 
-it('grants Posts and Dashboard reader roles without panel entry', function (AdminRole $adminRole, AdminPermission $adminPermission): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $user = createUser();
-
-    $exitCode = runAdminUserRole('grant', $user->email, $adminRole->value, createAdminCommandActor());
-    $user->refresh();
-
-    expect($exitCode)->toBe(Command::SUCCESS)
-        ->and($user->hasRole($adminRole->value))->toBeTrue()
-        ->and($user->can($adminPermission->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse()
-        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
-})->with([
-    'Posts reader' => [AdminRole::AdminPostsReader, AdminPermission::AdminPostsViewAny],
-    'Dashboard reader' => [AdminRole::AdminDashboardReader, AdminPermission::AdminDashboardView],
-]);
-
-it('grants the backups reader role from the admin guard', function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $user = createUser();
-    $role = Role::query()
-        ->where('name', AdminRole::AdminBackupsReader->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail();
-
-    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::AdminBackupsReader->value, createAdminCommandActor());
-    $user->refresh();
-
-    expect($exitCode)->toBe(Command::SUCCESS)
-        ->and($user->roles()->whereKey($role->getKey())->exists())->toBeTrue()
-        ->and($user->can(AdminPermission::AdminBackupsView->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse()
-        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
-});
-
-it('grants all backup operations through the backup operator role', function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $user = createUser();
-
-    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::AdminBackupsOperator->value, createAdminCommandActor());
-    $user->refresh();
-
-    expect($exitCode)->toBe(Command::SUCCESS)
-        ->and($user->hasRole(AdminRole::AdminBackupsOperator->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminBackupsView->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminBackupsCreate->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminBackupsDownload->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse()
-        ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
-});
-
 it('grants panel entry through the admin role', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
@@ -139,25 +85,6 @@ it('revokes only the selected role and its permissions', function (): void {
         ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue()
         ->and($user->can(AdminPermission::AdminUsersViewAny->value))->toBeFalse();
 });
-
-it('revokes Posts and Dashboard reader roles without changing panel access', function (AdminRole $adminRole, AdminPermission $adminPermission): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $user = createUser();
-    $user->assignRole(AdminRole::Admin->value, $adminRole->value);
-
-    $exitCode = runAdminUserRole('revoke', $user->email, $adminRole->value, $user);
-    $user->refresh();
-
-    expect($exitCode)->toBe(Command::SUCCESS)
-        ->and($user->hasRole(AdminRole::Admin->value))->toBeTrue()
-        ->and($user->hasRole($adminRole->value))->toBeFalse()
-        ->and($user->can($adminPermission->value))->toBeFalse()
-        ->and($user->can(AdminPermission::AdminAccess->value))->toBeTrue();
-})->with([
-    'Posts reader' => [AdminRole::AdminPostsReader, AdminPermission::AdminPostsView],
-    'Dashboard reader' => [AdminRole::AdminDashboardReader, AdminPermission::AdminDashboardView],
-]);
 
 it('rejects an unknown role without changing existing assignments', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);

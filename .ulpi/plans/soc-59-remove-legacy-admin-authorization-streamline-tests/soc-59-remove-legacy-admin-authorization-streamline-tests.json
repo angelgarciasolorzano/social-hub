@@ -557,7 +557,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
         "findings": "R8, R9"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-016",
@@ -1604,7 +1605,8 @@
     "TASK-009": "Hecha: el usuario aprobó todos los hallazgos de las cuatro auditorías (2026-10-25); se agregaron 27 tareas de consolidación (TASK-012–TASK-038). No se descartó ningún hallazgo; S2 de audit-content.md (bajar los posts de CommentSeederTest) queda fuera por ser opcional y sin medir.",
     "TASK-012": "Hecha: 3 casos eliminados (AdminUserSeederTest 4→2, AdminUserSeederRandomAdminsTest 11→10 casos con dataset); 12/12 en verde, gates limpios.",
     "TASK-013": "Hecha: 2 casos eliminados; SuspendedAdminSessionTest usa AdminFilamentTestContext en lugar de signInPanelAdministrator(); panel 10/10 en verde, gates limpios.",
-    "TASK-014": "Hecha: 4 casos eliminados (1 en AdminBootstrapCommandTest, dataset de 3 en AdminRolePermissionsCommandTest); 26/26 en verde, gates limpios."
+    "TASK-014": "Hecha: 4 casos eliminados (1 en AdminBootstrapCommandTest, dataset de 3 en AdminRolePermissionsCommandTest); 26/26 en verde, gates limpios.",
+    "TASK-015": "Hecha: 6 casos eliminados de AdminUserRoleCommandTest (4 tests, dos con dataset de 2); 18/18 en verde, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
