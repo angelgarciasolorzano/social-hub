@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Database\Seeders;
 
+use App\Support\Seeding\WeightedRandom;
 use App\User\Database\Factories\UserFactory;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
@@ -18,6 +19,8 @@ class UserSeeder extends Seeder
     private const int CONFIRMED_TWO_FACTOR_SHARE_PERCENT = 25;
 
     private const int PENDING_TWO_FACTOR_SHARE_PERCENT = 5;
+
+    private const int WITH_IMAGES_SHARE_PERCENT = 50;
 
     public const string TEST_USER_EMAIL = 'angel@gmail.com';
 
@@ -60,11 +63,13 @@ class UserSeeder extends Seeder
 
     private function userFactoryFor(TwoFactorStatus $twoFactorStatus): UserFactory
     {
-        return match ($twoFactorStatus) {
+        $userFactory = match ($twoFactorStatus) {
             TwoFactorStatus::Confirmed => UserFactory::new()->twoFactorConfirmed(),
             TwoFactorStatus::Pending => UserFactory::new()->twoFactorPending(),
             TwoFactorStatus::Disabled => UserFactory::new(),
         };
+
+        return WeightedRandom::chance(self::WITH_IMAGES_SHARE_PERCENT) ? $userFactory->withImages() : $userFactory;
     }
 
     protected function createTestUserIfNotExists(): void

@@ -110,29 +110,30 @@ class UserFactory extends Factory
         ]);
     }
 
-    #[Override]
-    public function configure(): static
+    /**
+     * Attach a random seeding profile picture and cover image after creating the user.
+     * Opt-in, so tests never copy seeding images unless they ask for them.
+     */
+    public function withImages(): static
     {
         return $this->afterCreating(function (User $user): void {
-            if (random_int(0, 1) !== 0) {
-                $imagesProfile = glob(app_path(User::TEST_PROFILE_IMAGES_GLOB_PATH), GLOB_BRACE);
-                $imagesCover = glob(app_path(User::TEST_COVER_IMAGES_GLOB_PATH), GLOB_BRACE);
+            $imagesProfile = glob(app_path(User::TEST_PROFILE_IMAGES_GLOB_PATH), GLOB_BRACE);
+            $imagesCover = glob(app_path(User::TEST_COVER_IMAGES_GLOB_PATH), GLOB_BRACE);
 
-                if (\is_array($imagesProfile) && \is_array($imagesCover) && $imagesProfile !== [] && $imagesCover !== []) {
-                    $randomImageProfile = $imagesProfile[array_rand($imagesProfile)];
-                    $randomImageCover = $imagesCover[array_rand($imagesCover)];
+            if (\is_array($imagesProfile) && \is_array($imagesCover) && $imagesProfile !== [] && $imagesCover !== []) {
+                $randomImageProfile = $imagesProfile[array_rand($imagesProfile)];
+                $randomImageCover = $imagesCover[array_rand($imagesCover)];
 
-                    $mediaAdder = $user->addMedia($randomImageProfile);
-                    $mediaCoverAdder = $user->addMedia($randomImageCover);
+                $mediaAdder = $user->addMedia($randomImageProfile);
+                $mediaCoverAdder = $user->addMedia($randomImageCover);
 
-                    if (app()->environment(['local', 'testing'])) {
-                        $mediaAdder->preservingOriginal();
-                        $mediaCoverAdder->preservingOriginal();
-                    }
-
-                    $mediaAdder->toMediaCollection(UserImageType::PROFILE_PICTURE->value());
-                    $mediaCoverAdder->toMediaCollection(UserImageType::COVER_IMAGE->value());
+                if (app()->environment(['local', 'testing'])) {
+                    $mediaAdder->preservingOriginal();
+                    $mediaCoverAdder->preservingOriginal();
                 }
+
+                $mediaAdder->toMediaCollection(UserImageType::PROFILE_PICTURE->value());
+                $mediaCoverAdder->toMediaCollection(UserImageType::COVER_IMAGE->value());
             }
         });
     }

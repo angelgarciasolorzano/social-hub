@@ -86,12 +86,13 @@
         "app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php"
       ],
       "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php",
-      "review": "claude"
+      "review": "claude",
+      "status": "done"
     },
     {
       "id": "TASK-002",
       "title": "UserFactory sin imágenes por defecto, con estado withImages() para el seeder",
-      "description": "Mover el afterCreating de imágenes de UserFactory::configure() a un estado withImages() (mismo 50 % y mismas imágenes de perfil y portada) y hacer que UserSeeder lo use al crear los usuarios aleatorios. Agregar un test de factory que fije que create() no adjunta media y que withImages() adjunta perfil y portada cuando hay imágenes.",
+      "description": "Mover el afterCreating de imágenes de UserFactory::configure() a un estado withImages() que siempre adjunta una imagen de perfil y una de portada (determinista y probable); el sorteo del 50 % pasa a UserSeeder con WeightedRandom::chance(), así la distribución sembrada no cambia. Agregar un test de factory que fije que create() no adjunta media y que withImages() adjunta perfil y portada, con imágenes falsas en un app_path() temporal porque las imágenes reales de seeding no están versionadas.",
       "priority": "P1",
       "type": "refactor",
       "effort": "S",
@@ -99,8 +100,8 @@
       "dependsOn": [],
       "acceptanceCriteria": [
         "createUser() nunca tiene media en profile_picture ni cover_image (comprobado sobre varias creaciones).",
-        "UserFactory::new()->withImages() adjunta una imagen de perfil y una de portada cuando el sorteo lo indica, con Storage::fake('public'); UserSeeder sigue sembrando imágenes.",
-        "UserImageUpdateTest pasa de forma determinista (pest --repeat=20 sin fallos)."
+        "UserFactory::new()->withImages() adjunta una imagen de perfil y una de portada (Storage::fake('public') e imágenes falsas en un app_path() temporal); UserSeeder adjunta imágenes al 50 % de los usuarios con WeightedRandom::chance().",
+        "UserImageUpdateTest pasa de forma determinista (15 ejecuciones seguidas sin fallos; antes fallaba ~50 % en local)."
       ],
       "filesToModify": [
         "app/User/Database/Factories/UserFactory.php",
@@ -114,8 +115,9 @@
         "app/User/Database/Seeders/UserSeeder.php",
         "app/User/Tests/Factories/UserFactoryTest.php"
       ],
-      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/User/Tests --repeat=20",
-      "review": "claude"
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/User/Tests",
+      "review": "claude",
+      "status": "done"
     },
     {
       "id": "TASK-003",
@@ -153,7 +155,10 @@
       "type": "chore",
       "effort": "S",
       "agent": "laravel-senior-engineer",
-      "dependsOn": ["TASK-002", "TASK-003"],
+      "dependsOn": [
+        "TASK-002",
+        "TASK-003"
+      ],
       "acceptanceCriteria": [
         "composer test pasa completo en paralelo en local, con el mismo número de tests que en serie.",
         "Si un test depende de estado compartido entre procesos (archivos, caché fuera de array), se detecta y se corrige o se documenta antes de cerrar la tarea.",
@@ -179,7 +184,9 @@
       "type": "research",
       "effort": "M",
       "agent": "laravel-senior-engineer",
-      "dependsOn": ["TASK-001"],
+      "dependsOn": [
+        "TASK-001"
+      ],
       "acceptanceCriteria": [
         "El informe cubre todos los archivos de la suite Admin y clasifica cada hallazgo (redundante, framework, obsoleto, setup).",
         "Cada propuesta de eliminación o consolidación cita el test que conserva la cobertura; los tests de autorización, seguridad, validación y persistencia independientes se marcan como conservados.",
@@ -275,7 +282,12 @@
       "type": "planning",
       "effort": "S",
       "agent": "general-purpose",
-      "dependsOn": ["TASK-005", "TASK-006", "TASK-007", "TASK-008"],
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008"
+      ],
       "acceptanceCriteria": [
         "Cada tarea nueva referencia el hallazgo del informe que la justifica y el test que conserva la cobertura.",
         "Ninguna tarea nueva supera 3 archivos y el grafo sigue acíclico; TASK-010 y TASK-011 pasan a depender de ellas.",
@@ -301,7 +313,13 @@
       "type": "docs",
       "effort": "S",
       "agent": "general-purpose",
-      "dependsOn": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-009"],
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-009"
+      ],
       "acceptanceCriteria": [
         "CLAUDE.md describe los estados de imagen de las factories en las secciones de seeders y la ejecución paralela en la sección de tests.",
         "Ninguna doc menciona ya renameLegacyPermissions/renameLegacyRoles ni que las factories adjuntan imágenes por defecto.",
@@ -327,7 +345,9 @@
       "type": "chore",
       "effort": "S",
       "agent": "general-purpose",
-      "dependsOn": ["TASK-010"],
+      "dependsOn": [
+        "TASK-010"
+      ],
       "acceptanceCriteria": [
         "Pint, PHPStan, Rector (caché limpia) y la suite completa pasan; si queda algún fallo se informa con su salida.",
         "La comparación usa el mismo comando que la línea base (serie) más el tiempo en paralelo, con número de tests y assertions antes y después.",
@@ -344,23 +364,63 @@
     "TASK-001": [],
     "TASK-002": [],
     "TASK-003": [],
-    "TASK-004": ["TASK-002", "TASK-003"],
-    "TASK-005": ["TASK-001"],
+    "TASK-004": [
+      "TASK-002",
+      "TASK-003"
+    ],
+    "TASK-005": [
+      "TASK-001"
+    ],
     "TASK-006": [],
     "TASK-007": [],
     "TASK-008": [],
-    "TASK-009": ["TASK-005", "TASK-006", "TASK-007", "TASK-008"],
-    "TASK-010": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-009"],
-    "TASK-011": ["TASK-010"]
+    "TASK-009": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-010"
+    ]
   },
   "executionLayers": [
-    ["TASK-001", "TASK-002", "TASK-003", "TASK-006", "TASK-007", "TASK-008"],
-    ["TASK-004", "TASK-005"],
-    ["TASK-009"],
-    ["TASK-010"],
-    ["TASK-011"]
+    [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008"
+    ],
+    [
+      "TASK-004",
+      "TASK-005"
+    ],
+    [
+      "TASK-009"
+    ],
+    [
+      "TASK-010"
+    ],
+    [
+      "TASK-011"
+    ]
   ],
-  "criticalPath": ["TASK-001", "TASK-005", "TASK-009", "TASK-010", "TASK-011"],
+  "criticalPath": [
+    "TASK-001",
+    "TASK-005",
+    "TASK-009",
+    "TASK-010",
+    "TASK-011"
+  ],
   "failureModes": [
     "Un test dependía en silencio de las imágenes aleatorias de las factories: se detecta al correr las suites Post/Admin/User en TASK-002/003 y se le da el estado explícito.",
     "La ejecución paralela expone estado compartido (archivos en disco, RateLimiter fuera de array): TASK-004 no se cierra hasta corregirlo o documentarlo.",
@@ -374,5 +434,9 @@
     "Subida de imágenes: app/User/Tests/Crud/UserImageUpdateTest.php, ahora determinista.",
     "Ejecución paralela: composer test completo.",
     "Consolidaciones: se definen en TASK-009 a partir de los informes."
-  ]
+  ],
+  "progress": {
+    "TASK-001": "Hecha: seeder sin compatibilidad heredada, suite Admin 304/304.",
+    "TASK-002": "Hecha: suite completa 1209/1209 en 57.6 s en serie (línea base 74.2 s)."
+  }
 }

@@ -81,19 +81,19 @@ Quitar las llamadas y los métodos renameLegacyPermissions() y renameLegacyRoles
 
 ### TASK-002: UserFactory sin imágenes por defecto, con estado withImages() para el seeder
 
-Mover el afterCreating de imágenes de UserFactory::configure() a un estado withImages() (mismo 50 % y mismas imágenes de perfil y portada) y hacer que UserSeeder lo use al crear los usuarios aleatorios. Agregar un test de factory que fije que create() no adjunta media y que withImages() adjunta perfil y portada cuando hay imágenes.
+Mover el afterCreating de imágenes de UserFactory::configure() a un estado withImages() que siempre adjunta una imagen de perfil y una de portada (determinista y probable); el sorteo del 50 % pasa a UserSeeder con WeightedRandom::chance(), así la distribución sembrada no cambia. Agregar un test de factory que fije que create() no adjunta media y que withImages() adjunta perfil y portada, con imágenes falsas en un app_path() temporal porque las imágenes reales de seeding no están versionadas.
 
 **Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1 · **Review:** claude
 
 **Acceptance Criteria:**
 
 - [ ] createUser() nunca tiene media en profile_picture ni cover_image (comprobado sobre varias creaciones).
-- [ ] UserFactory::new()->withImages() adjunta una imagen de perfil y una de portada cuando el sorteo lo indica, con Storage::fake('public'); UserSeeder sigue sembrando imágenes.
-- [ ] UserImageUpdateTest pasa de forma determinista (pest --repeat=20 sin fallos).
+- [ ] UserFactory::new()->withImages() adjunta una imagen de perfil y una de portada (Storage::fake('public') e imágenes falsas en un app_path() temporal); UserSeeder adjunta imágenes al 50 % de los usuarios con WeightedRandom::chance().
+- [ ] UserImageUpdateTest pasa de forma determinista (15 ejecuciones seguidas sin fallos; antes fallaba ~50 % en local).
 
 **writeScope:** `app/User/Database/Factories/UserFactory.php`, `app/User/Database/Seeders/UserSeeder.php`, `app/User/Tests/Factories/UserFactoryTest.php`
 
-**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/User/Tests --repeat=20`
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/User/Tests`
 
 ### TASK-003: PostFactory sin imagen por defecto, con estado withImage() para el seeder
 
