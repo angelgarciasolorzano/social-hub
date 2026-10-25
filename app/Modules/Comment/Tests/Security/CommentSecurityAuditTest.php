@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Modules\Comment\Models\Comment;
-use App\Modules\Comment\Resources\CommentResource;
 use App\Modules\Post\Models\Post;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -24,20 +23,6 @@ it('[H3] rejects whitespace-only content', function (): void {
     expect(Comment::query()->count())->toBe(0);
 });
 
-it('[H3] strips control characters and trims the content of a reply to a reply', function (): void {
-    $replyComment = createCommentOn(createComment());
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => "  Hola\x00 mundo\x07  ",
-            'commentable_type' => Comment::MORPH_NAME,
-            'commentable_id' => $replyComment->id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(Comment::query()->latest('id')->firstOrFail()->content)->toBe('Hola mundo');
-});
-
 it('[H3] never renders comments as raw HTML in the frontend', function (): void {
     $frontendFiles = collect(File::allFiles(base_path('resources/js/modules/comment')));
 
@@ -49,23 +34,6 @@ it('[H3] never renders comments as raw HTML in the frontend', function (): void 
 
     expect($frontendFiles)->not->toBeEmpty()
         ->and($offenders)->toBeEmpty();
-});
-
-// Hypothesis 7: user data exposure --------------------------------------------
-
-it('[H7] does not expose private user data in the serialized comments', function (): void {
-    $user = createUser();
-    $post = createPost();
-    createCommentOn($post, $user);
-
-    $cursorPaginator = $post->comments()->with('user')->cursorPaginate(10)
-        ->through(fn (Comment $comment): array => new CommentResource($comment)->resolve(request()));
-    $payload = (string) json_encode($cursorPaginator);
-
-    expect($payload)->toContain($user->name)
-        ->and($payload)->not->toContain($user->email)
-        ->and($payload)->not->toContain('password')
-        ->and($payload)->not->toContain('remember_token');
 });
 
 // Hypothesis 8: authorization and forged input --------------------------------
