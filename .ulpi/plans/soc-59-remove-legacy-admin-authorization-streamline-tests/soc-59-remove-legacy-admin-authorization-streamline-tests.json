@@ -315,7 +315,8 @@
         ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/soc-59-remove-legacy-admin-authorization-streamline-tests.md"
       ],
       "validateCommand": "python3 -I -c \"import json,sys; json.load(open(sys.argv[1]))\" .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/soc-59-remove-legacy-admin-authorization-streamline-tests.json",
-      "review": "claude"
+      "review": "claude",
+      "status": "done"
     },
     {
       "id": "TASK-010",
@@ -330,7 +331,34 @@
         "TASK-002",
         "TASK-003",
         "TASK-004",
-        "TASK-009"
+        "TASK-009",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-019",
+        "TASK-020",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038"
       ],
       "acceptanceCriteria": [
         "CLAUDE.md describe los estados de imagen de las factories en las secciones de seeders y la ejecución paralela en la sección de tests.",
@@ -358,7 +386,34 @@
       "effort": "S",
       "agent": "general-purpose",
       "dependsOn": [
-        "TASK-010"
+        "TASK-010",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-019",
+        "TASK-020",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038"
       ],
       "acceptanceCriteria": [
         "Pint, PHPStan, Rector (caché limpia) y la suite completa pasan; si queda algún fallo se informa con su salida.",
@@ -370,6 +425,911 @@
       "writeScope": [],
       "validateCommand": "composer test",
       "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Quitar los tests repetidos de Angel en los seeders de Admin",
+      "description": "Eliminar 'grants the complete admin permission set to Angel' y 'does not assign the user provisioner role to Angel automatically' de AdminUserSeederTest, y 'gives Angel the base role, backup operator role, user moderator role, and every reader role' de AdminUserSeederRandomAdminsTest; los cubre la lista exacta de roles y permisos del primer test de AdminUserSeederTest. Hallazgos R1, R2, R3 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R1, R2, R3 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "El helper readerRoleNames() sigue en uso o se borra si queda sin uso.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Database/AdminUserSeederTest.php app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "R1, R2, R3"
+      }
+    },
+    {
+      "id": "TASK-013",
+      "title": "Quitar los tests repetidos de acceso al panel",
+      "description": "Eliminar 'keeps the panel session of an active administrator' de SuspendedAdminSessionTest y reemplazar signInPanelAdministrator() por AdminFilamentTestContext::actingAsAdminWithRoles() más el secreto MFA; eliminar 'allows the administrator back into the panel once reactivated' de UserPanelAccessTest. Hallazgos R4, S4, R5 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R4, S4, R5 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "'ends the panel session of an administrator suspended while signed in' sigue pasando con el contexto compartido.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Filament/SuspendedAdminSessionTest.php",
+        "app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/SuspendedAdminSessionTest.php",
+        "app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/SuspendedAdminSessionTest.php app/Modules/Admin/Tests/Policies/UserPanelAccessTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "R4, S4, R5"
+      }
+    },
+    {
+      "id": "TASK-014",
+      "title": "Quitar los tests repetidos de los comandos bootstrap y role-permissions",
+      "description": "Eliminar 'accepts the promoted user as their own actor' de AdminBootstrapCommandTest y el dataset 'grants each backups permission to a role in the admin guard' de AdminRolePermissionsCommandTest. Hallazgos R6, R7 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R6, R7 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'records the bootstrap with the actor and the assigned roles' y 'uses the admin guard when matching role and permission names exist in web'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php",
+        "app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php",
+        "app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Commands/AdminBootstrapCommandTest.php app/Modules/Admin/Tests/Commands/AdminRolePermissionsCommandTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "R6, R7"
+      }
+    },
+    {
+      "id": "TASK-015",
+      "title": "Quitar los grants y revokes repetidos del comando user-role",
+      "description": "Eliminar 'grants Posts and Dashboard reader roles without panel entry', 'grants the backups reader role from the admin guard', 'grants all backup operations through the backup operator role' y 'revokes Posts and Dashboard reader roles without changing panel access' de AdminUserRoleCommandTest. Hallazgos R8, R9 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R8, R9 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'grants a catalog role and exposes its permissions', 'grants panel entry through the admin role' y 'revokes only the selected role and its permissions'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Commands/AdminUserRoleCommandTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "R8, R9"
+      }
+    },
+    {
+      "id": "TASK-016",
+      "title": "Quitar el test de mutaciones de PostResource y el de paginación de dispositivos",
+      "description": "Eliminar 'denies every post mutation in the panel even to a posts reader who wrote the post' de ViewPostTest (lo cubre PostPolicyTest) y 'uses ten rows as the trusted device pagination default' de TrustedDevicesRelationManagerTest. Hallazgos R10, R11 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R10, R11 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "ViewCommentTest 'denies every comment mutation…' no se toca: CommentResource fija sus propios can*().",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/TrustedDevicesRelationManagerTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/TrustedDevicesRelationManagerTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/TrustedDevicesRelationManagerTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "R10, R11"
+      }
+    },
+    {
+      "id": "TASK-017",
+      "title": "Mover el test de serialización de User y quitar el de guard de UserRoleTest",
+      "description": "Eliminar 'assigns admin guard roles and resolves their permissions' de UserRoleTest y mover 'omits authentication secrets from array and json serialization' a un archivo nuevo del módulo User; UserRoleTest queda con 'does not assign roles or permissions through mass assignment'. Hallazgos R12, U1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R12, U1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "El test movido corre dentro de la suite User (app/User/Tests ya está registrada en phpunit.xml y tests/Pest.php).",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Models/UserRoleTest.php"
+      ],
+      "filesToCreate": [
+        "app/User/Tests/Models/UserSerializationTest.php"
+      ],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Models/UserRoleTest.php",
+        "app/User/Tests/Models/UserSerializationTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Models/UserRoleTest.php app/User/Tests/Models/UserSerializationTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "R12, U1"
+      }
+    },
+    {
+      "id": "TASK-018",
+      "title": "Quitar los parches de imágenes aleatorias en los tests de posts del panel",
+      "description": "Quitar las llamadas a clearMediaCollection() de ListPostsTest, ViewPostTest y PostsRelationManagerTest y el Storage::fake() que solo servía a los tests del fallback sin imagen. Hallazgos S1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-016"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Los tests que agregan una imagen conservan su Storage::fake() para no escribir en el disco real.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/PostsRelationManagerTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/PostsRelationManagerTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/PostsRelationManagerTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "S1"
+      }
+    },
+    {
+      "id": "TASK-019",
+      "title": "Quitar los parches de imágenes aleatorias en ViewUserTest",
+      "description": "Quitar las dos llamadas a clearMediaCollection() y el Storage::fake() del test 'uses a compact profile fallback…' de ViewUserTest. Hallazgos S1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Los tests que suben imágenes o cifran secretos conservan su Storage::fake().",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "S1"
+      }
+    },
+    {
+      "id": "TASK-020",
+      "title": "Unificar los helpers de permisos y archivos de backups",
+      "description": "Reemplazar grantBackupManagementPermission()/grantPermissionForBackupPage() por un helper compartido que crea un rol de prueba con un permiso de Admin, y storeBackupManagementArchive()/storeFilamentBackupArchive() por uno que guarda un archivo en el disco backups, los dos en tests/Pest.php. Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S2 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "No queda ninguna de las cuatro funciones antiguas y no cambia el número de casos.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php",
+        "app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php",
+        "tests/Pest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php",
+        "app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php",
+        "tests/Pest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Backups/BackupManagementServiceTest.php app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "S2"
+      }
+    },
+    {
+      "id": "TASK-021",
+      "title": "Usar el helper de permisos en UserPolicyTest",
+      "description": "Reemplazar los Role::findOrCreate de un solo permiso en UserPolicyTest por el helper de TASK-020. Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S2 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Los tests siguen comprobando que el permiso suelto concede solo su habilidad.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Policies/UserPolicyTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "S2"
+      }
+    },
+    {
+      "id": "TASK-022",
+      "title": "Unificar los helpers de invitaciones con token",
+      "description": "Reemplazar createAdminInvitationForAcceptance() y createAdminInvitationForRoute() por un helper en tests/Pest.php con email y usuario opcionales que devuelve la invitación y el token en claro. Hallazgos S3 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S3 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "createAdminInvitation() de AdminInvitationTest se deja: no crea token y solo la usa ese archivo.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Invitations/AcceptAdminInvitationTest.php",
+        "app/Modules/Admin/Tests/Invitations/AdminInvitationRouteTest.php",
+        "tests/Pest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Invitations/AcceptAdminInvitationTest.php",
+        "app/Modules/Admin/Tests/Invitations/AdminInvitationRouteTest.php",
+        "tests/Pest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Invitations/AcceptAdminInvitationTest.php app/Modules/Admin/Tests/Invitations/AdminInvitationRouteTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
+        "findings": "S3"
+      }
+    },
+    {
+      "id": "TASK-023",
+      "title": "Quitar la validación repetida en los tests HTTP de comentarios",
+      "description": "Eliminar de CommentStoreTest 'rejects content longer than 1000 characters', 'accepts content of exactly 1000 characters', 'rejects an unsupported commentable type' y 'rejects a non-integer commentable id'; quitar los casos 'only whitespace' y '1001 characters' del dataset de CommentUpdateTest. Hallazgos R1, R2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R1, R2 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'requires the content of the comment' y el caso 'empty' del dataset de edición como prueba de conexión ruta-request.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Tests/Crud/CommentStoreTest.php",
+        "app/Modules/Comment/Tests/Crud/CommentUpdateTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Crud/CommentStoreTest.php",
+        "app/Modules/Comment/Tests/Crud/CommentUpdateTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Comment/Tests/Crud/CommentStoreTest.php app/Modules/Comment/Tests/Crud/CommentUpdateTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
+        "findings": "R1, R2"
+      }
+    },
+    {
+      "id": "TASK-024",
+      "title": "Quitar los tests del modelo y del resource de Comment que prueban Laravel o repiten la factory",
+      "description": "Eliminar de CommentModelTest 'has no replied to user when it does not mention anyone', 'has no edited date when it is created' y 'still finds a deleted comment when trashed comments are included'; eliminar de CommentResourceTest 'keeps the cursor metadata…' y 'reports no further pages…' junto con el helper commentsCursorPage(). Hallazgos R3, R4 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R3, R4 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Sigue presente 'keeps a deleted comment out of the default queries'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Tests/Models/CommentModelTest.php",
+        "app/Modules/Comment/Tests/Resources/CommentResourceTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Models/CommentModelTest.php",
+        "app/Modules/Comment/Tests/Resources/CommentResourceTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Comment/Tests/Models/CommentModelTest.php app/Modules/Comment/Tests/Resources/CommentResourceTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
+        "findings": "R3, R4"
+      }
+    },
+    {
+      "id": "TASK-025",
+      "title": "Quitar los tests repetidos entre props, throttle y conteo de consultas de comentarios",
+      "description": "Eliminar de CommentThreadPropsTest 'allows 60 loads per minute and then answers 429', 'does not let reading comments consume the comment publishing budget', 'uses the same number of queries whether the thread has one or many comments and replies' y 'keeps listing the comments of a post newest first'; eliminar de CommentThrottleTest 'throttles the reading of comments per user'. Hallazgos R5, R6, R7, R8, R9 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R5, R6, R7, R8, R9 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'shares the read budget between comments and replies but keeps it per user' y 'allows 60 listings per minute and then answers 429'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php",
+        "app/Modules/Comment/Tests/Security/CommentThrottleTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php",
+        "app/Modules/Comment/Tests/Security/CommentThrottleTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Comment/Tests/Props/CommentThreadPropsTest.php app/Modules/Comment/Tests/Security/CommentThrottleTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
+        "findings": "R5, R6, R7, R8, R9"
+      }
+    },
+    {
+      "id": "TASK-026",
+      "title": "Quitar los tests repetidos de la auditoría de seguridad y del seeder de comentarios",
+      "description": "Eliminar '[H7] does not expose private user data in the serialized comments' y '[H3] strips control characters and trims the content of a reply to a reply' de CommentSecurityAuditTest, y 'never deletes a reply' de CommentSeederTest. Hallazgos R10, R11 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R10, R11 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Se conservan los demás [H3] y [H8], incluido 'never nests replies deeper than one level when replying in a chain'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php",
+        "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php",
+        "app/Modules/Comment/Tests/Seeders/CommentSeederTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Comment/Tests/Security/CommentSecurityAuditTest.php app/Modules/Comment/Tests/Seeders/CommentSeederTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
+        "findings": "R10, R11"
+      }
+    },
+    {
+      "id": "TASK-027",
+      "title": "Quitar los repetidos de LikeSeeder y PostStore y aislar PostSeederTest del disco",
+      "description": "Eliminar 'never repeats a user on the same comment' de LikeSeederTest y 'rejects content shorter than 10 characters', 'rejects an uploaded file that is not a png, jpg or webp image' y 'rejects an uploaded image larger than 5MB' de PostStoreTest; agregar Storage::fake('public') a los tests de PostSeederTest que siembran. Hallazgos R12, R13, S1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R12, R13, S1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'requires the content of the post' y 'flashes an error but keeps the post when the image is too big'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/Like/Tests/Seeders/LikeSeederTest.php",
+        "app/Modules/Post/Tests/Crud/PostStoreTest.php",
+        "app/Modules/Post/Tests/Seeders/PostSeederTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/Like/Tests/Seeders/LikeSeederTest.php",
+        "app/Modules/Post/Tests/Crud/PostStoreTest.php",
+        "app/Modules/Post/Tests/Seeders/PostSeederTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Like/Tests/Seeders/LikeSeederTest.php app/Modules/Post/Tests/Crud/PostStoreTest.php app/Modules/Post/Tests/Seeders/PostSeederTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-content.md",
+        "findings": "R12, R13, S1"
+      }
+    },
+    {
+      "id": "TASK-028",
+      "title": "Quitar los tests de revocar todos y de reactivar que repiten al servicio",
+      "description": "Eliminar \"does not touch another user's devices\" e 'invalidates the dashboard cache after revoking every device' de TrustedDeviceDestroyAllTest, y 'rejects an incorrect otp code and keeps the device revoked' de TrustedDeviceReactivateTest. Hallazgos R1, R2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R1, R2 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Sigue presente 'succeeds without events or cache invalidation when the user has no devices' (flash del controlador).",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyAllTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyAllTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceDestroyAllTest.php app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "R1, R2"
+      }
+    },
+    {
+      "id": "TASK-029",
+      "title": "Quitar las ramas del listener de recordar y las variantes de verifyCode",
+      "description": "Eliminar de TrustedDeviceRememberTest las cuatro ramas que prueba el servicio (revocado restaurado, evento Reactivated, expirado renovado y recordado dos veces); eliminar de TwoFactorCodeVerifierTest las variantes de verifyCode 'twice', 'another user' y 'empty'. Hallazgos R3, R4 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R3, R4 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'issues a cookie whose hash matches the restored device' y los tests de enrutado de verifyCode.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceRememberTest.php app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "R3, R4"
+      }
+    },
+    {
+      "id": "TASK-030",
+      "title": "Quitar el test de revocación al desactivar con código de recuperación y los estados 2FA repetidos",
+      "description": "Eliminar 'revokes the trusted devices when two-factor authentication is disabled with a recovery code' de TwoFactorDisableTest y 'reports two-factor as disabled…' y '… as pending…' de TrustedDeviceIndexTest. Hallazgos R5, R6 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R5, R6 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes en TrustedDeviceIndexTest 'reports two-factor as confirmed…' y 'never reports two-factor as confirmed when the secret is missing'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceIndexTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceIndexTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceIndexTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "R5, R6"
+      }
+    },
+    {
+      "id": "TASK-031",
+      "title": "Corregir el test del status por defecto y quitar los repetidos de estado de cuenta",
+      "description": "Reescribir 'creates new accounts as active when no status is given' para insertar una fila sin status; eliminar 'creates accounts as active' de UserAccountStatusTest y 'returns no administrator once the author account is deleted' de AccountStatusChangeTest. Hallazgos S3, R7, R8 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S3, R7, R8 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "El test reescrito falla si se quita el default('active') de la columna (comprobarlo temporalmente y restaurar).",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php",
+        "app/User/Modules/AccountStatus/Tests/Models/UserAccountStatusTest.php",
+        "app/User/Modules/AccountStatus/Tests/Models/AccountStatusChangeTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php",
+        "app/User/Modules/AccountStatus/Tests/Models/UserAccountStatusTest.php",
+        "app/User/Modules/AccountStatus/Tests/Models/AccountStatusChangeTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/User/Modules/AccountStatus/Tests/Database/AccountStatusMigrationTest.php app/User/Modules/AccountStatus/Tests/Models/UserAccountStatusTest.php app/User/Modules/AccountStatus/Tests/Models/AccountStatusChangeTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "S3, R7, R8"
+      }
+    },
+    {
+      "id": "TASK-032",
+      "title": "Agregar invalidOtpFor() y usarlo en store y renew",
+      "description": "Agregar invalidOtpFor(User $user): string a tests/Pest.php, que devuelve un código de seis dígitos distinto del válido actual, y usarlo en lugar de '000000' en TrustedDeviceStoreTest y TrustedDeviceRenewTest para usuarios con secreto TOTP. Hallazgos S1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Los '123456' de usuarios sin secreto se dejan como están.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "tests/Pest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "tests/Pest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "S1"
+      }
+    },
+    {
+      "id": "TASK-033",
+      "title": "Usar invalidOtpFor() en throttle, invalidate y servicio",
+      "description": "Reemplazar '000000' por invalidOtpFor() en TrustedDeviceCodeThrottleTest, TrustedDeviceInvalidateTest y TrustedDeviceServiceTest donde el usuario tiene secreto TOTP. Hallazgos S1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-032"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "El throttle sigue respondiendo 429 al sexto intento con códigos inválidos.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceCodeThrottleTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceCodeThrottleTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceCodeThrottleTest.php app/Auth/Modules/TrustedDevice/Tests/Listeners/TrustedDeviceInvalidateTest.php app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "S1"
+      }
+    },
+    {
+      "id": "TASK-034",
+      "title": "Usar invalidOtpFor() en reactivar, verificador y ActivityLog",
+      "description": "Reemplazar '000000' por invalidOtpFor() en TrustedDeviceReactivateTest (incluido el cálculo manual de $wrongOtp si sigue), TwoFactorCodeVerifierTest y TwoFactorActivityTest. Hallazgos S1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-032",
+        "TASK-028",
+        "TASK-029"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "No queda ningún '000000' enviado por un usuario con secreto TOTP real en las suites.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php",
+        "app/Modules/ActivityLog/Tests/Listeners/TwoFactorActivityTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php",
+        "app/Modules/ActivityLog/Tests/Listeners/TwoFactorActivityTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php app/Auth/Modules/TrustedDevice/Tests/Services/TwoFactorCodeVerifierTest.php app/Modules/ActivityLog/Tests/Listeners/TwoFactorActivityTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "S1"
+      }
+    },
+    {
+      "id": "TASK-035",
+      "title": "Usar los helpers de claves de caché en TrustedDeviceDashboardCacheTest",
+      "description": "Reemplazar las 8 claves 'trusted-device:dashboard:…' escritas a mano por trustedDeviceStatsCacheKey() y trustedDeviceRecentActivityCacheKey(). Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos S2 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "No queda ninguna clave literal en el archivo y no cambia el número de casos.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/TrustedDevice/Tests/Queries/TrustedDeviceDashboardCacheTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
+        "findings": "S2"
+      }
+    },
+    {
+      "id": "TASK-036",
+      "title": "Quitar el test de listeners de login repetido en ActivityLog",
+      "description": "Eliminar 'keeps the existing login listeners working' de AuthActivitySubscriberTest; lo cubre TrackLastLoginTest. Hallazgos R1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Sigue presente 'records a successful web login'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Tests/Listeners/AuthActivitySubscriberTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "app/Modules/ActivityLog/Tests/Listeners/AuthActivitySubscriberTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/ActivityLog/Tests/Listeners/AuthActivitySubscriberTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
+        "findings": "R1"
+      }
+    },
+    {
+      "id": "TASK-037",
+      "title": "Quitar los tests implicados de MediaStoragePathTest",
+      "description": "Eliminar 'keeps post and user files in different folders' y 'uses the custom path generator from App\\Support' de MediaStoragePathTest. Hallazgos R2, R3 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos R2, R3 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "Siguen presentes 'stores post images under posts/{media id}/' y 'stores user pictures under {media id}/ without a model folder'.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [
+        "tests/Feature/MediaLibrary/MediaStoragePathTest.php"
+      ],
+      "filesToCreate": [],
+      "filesToDelete": [],
+      "writeScope": [
+        "tests/Feature/MediaLibrary/MediaStoragePathTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/MediaLibrary/MediaStoragePathTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
+        "findings": "R2, R3"
+      }
+    },
+    {
+      "id": "TASK-038",
+      "title": "Mover PasswordConfirmationTest al módulo Password de Auth",
+      "description": "Mover tests/Feature/Auth/PasswordConfirmationTest.php a app/Auth/Modules/Password/Tests/PasswordConfirmationTest.php (suite Password, ya registrada) y borrar tests/Feature/Auth/, que queda vacía. Hallazgos U1 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md.",
+      "priority": "P2",
+      "type": "test-refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Los cambios de los hallazgos U1 están aplicados y los tests que el informe cita como cobertura siguen presentes y en verde.",
+        "La suite Password corre los 3 casos movidos y Feature ya no los incluye.",
+        "Pint, PHPStan y Rector (caché limpia, todo el proyecto) quedan limpios, sin imports ni helpers sin uso."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Auth/Modules/Password/Tests/PasswordConfirmationTest.php"
+      ],
+      "filesToDelete": [
+        "tests/Feature/Auth/PasswordConfirmationTest.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/Password/Tests/PasswordConfirmationTest.php",
+        "tests/Feature/Auth/PasswordConfirmationTest.php"
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Auth/Modules/Password/Tests/PasswordConfirmationTest.php",
+      "review": "claude",
+      "source": {
+        "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
+        "findings": "U1"
+      }
     }
   ],
   "dependencies": {
@@ -397,10 +1357,153 @@
       "TASK-002",
       "TASK-003",
       "TASK-004",
-      "TASK-009"
+      "TASK-009",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038"
     ],
     "TASK-011": [
-      "TASK-010"
+      "TASK-010",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038"
+    ],
+    "TASK-012": [
+      "TASK-009"
+    ],
+    "TASK-013": [
+      "TASK-009"
+    ],
+    "TASK-014": [
+      "TASK-009"
+    ],
+    "TASK-015": [
+      "TASK-009"
+    ],
+    "TASK-016": [
+      "TASK-009"
+    ],
+    "TASK-017": [
+      "TASK-009"
+    ],
+    "TASK-018": [
+      "TASK-009",
+      "TASK-016"
+    ],
+    "TASK-019": [
+      "TASK-009"
+    ],
+    "TASK-020": [
+      "TASK-009"
+    ],
+    "TASK-021": [
+      "TASK-009",
+      "TASK-020"
+    ],
+    "TASK-022": [
+      "TASK-009",
+      "TASK-020"
+    ],
+    "TASK-023": [
+      "TASK-009"
+    ],
+    "TASK-024": [
+      "TASK-009"
+    ],
+    "TASK-025": [
+      "TASK-009"
+    ],
+    "TASK-026": [
+      "TASK-009"
+    ],
+    "TASK-027": [
+      "TASK-009"
+    ],
+    "TASK-028": [
+      "TASK-009"
+    ],
+    "TASK-029": [
+      "TASK-009"
+    ],
+    "TASK-030": [
+      "TASK-009"
+    ],
+    "TASK-031": [
+      "TASK-009"
+    ],
+    "TASK-032": [
+      "TASK-009",
+      "TASK-022"
+    ],
+    "TASK-033": [
+      "TASK-009",
+      "TASK-032"
+    ],
+    "TASK-034": [
+      "TASK-009",
+      "TASK-032",
+      "TASK-028",
+      "TASK-029"
+    ],
+    "TASK-035": [
+      "TASK-009"
+    ],
+    "TASK-036": [
+      "TASK-009"
+    ],
+    "TASK-037": [
+      "TASK-009"
+    ],
+    "TASK-038": [
+      "TASK-009"
     ]
   },
   "executionLayers": [
@@ -420,6 +1523,41 @@
       "TASK-009"
     ],
     [
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-019",
+      "TASK-020",
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038"
+    ],
+    [
+      "TASK-018",
+      "TASK-021",
+      "TASK-022"
+    ],
+    [
+      "TASK-032"
+    ],
+    [
+      "TASK-033",
+      "TASK-034"
+    ],
+    [
       "TASK-010"
     ],
     [
@@ -430,6 +1568,10 @@
     "TASK-001",
     "TASK-005",
     "TASK-009",
+    "TASK-020",
+    "TASK-022",
+    "TASK-032",
+    "TASK-033",
     "TASK-010",
     "TASK-011"
   ],
@@ -439,7 +1581,7 @@
     "CI no puede crear las bases por proceso: el usuario root sin contraseña del servicio mysql:8.4 sí puede; si fallara, se revierte --parallel sin afectar el resto del plan.",
     "Una consolidación oculta un límite de seguridad: cada propuesta exige citar el test que conserva la cobertura y el usuario aprueba los hallazgos antes de TASK-009."
   ],
-  "shipCut": "TASK-001 sola ya cumple los criterios del seeder. TASK-001 a TASK-004 entregan la compatibilidad eliminada, el fallo intermitente corregido y la suite paralela aunque la auditoría quede para después. La consolidación de tests solo se ejecuta con hallazgos aprobados.",
+  "shipCut": "TASK-001 sola ya cumple los criterios del seeder. TASK-001 a TASK-004 entregan la compatibilidad eliminada, el fallo intermitente corregido y la suite paralela aunque la auditoría quede para después. La consolidación de tests solo se ejecuta con hallazgos aprobados. Las tareas de consolidación TASK-012–TASK-038 son independientes entre sí salvo por archivos compartidos; cualquier subconjunto deja la suite en verde.",
   "testCoverageMap": [
     "Seeder de autorización: AdminAuthorizationSeederTest (catálogo, bundles, re-ejecución).",
     "Factories: app/User/Tests/Factories/UserFactoryTest.php (nuevo) y app/Modules/Post/Tests/Factories/PostFactoryTest.php.",
@@ -455,7 +1597,8 @@
     "TASK-005": "Hecha: audit-admin.md con 12 hallazgos redundantes (18 casos), 4 de setup, 1 de ubicación y 10 grupos conservados; pendiente de aprobación del usuario antes de TASK-009.",
     "TASK-006": "Hecha: audit-content.md con 13 hallazgos redundantes (23 casos), 2 de setup y 8 grupos conservados; pendiente de aprobación antes de TASK-009.",
     "TASK-007": "Hecha: audit-auth-user.md con 8 hallazgos redundantes (15 casos), 3 de setup (incluye el código '000000' que puede ser válido y un test de default que no prueba el default) y 8 grupos conservados; pendiente de aprobación antes de TASK-009.",
-    "TASK-008": "Hecha: audit-activitylog-global.md con 3 casos redundantes, 1 movimiento (PasswordConfirmationTest a Auth) y ningún helper sin uso; total de las cuatro auditorías: 59 casos a eliminar, 9 ajustes de setup y 4 casos a mover."
+    "TASK-008": "Hecha: audit-activitylog-global.md con 3 casos redundantes, 1 movimiento (PasswordConfirmationTest a Auth) y ningún helper sin uso; total de las cuatro auditorías: 59 casos a eliminar, 9 ajustes de setup y 4 casos a mover.",
+    "TASK-009": "Hecha: el usuario aprobó todos los hallazgos de las cuatro auditorías (2026-10-25); se agregaron 27 tareas de consolidación (TASK-012–TASK-038). No se descartó ningún hallazgo; S2 de audit-content.md (bajar los posts de CommentSeederTest) queda fuera por ser opcional y sin medir."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
