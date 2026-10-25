@@ -6,18 +6,23 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use PragmaRX\Google2FA\Google2FA;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -417,4 +422,35 @@ function withTemporarySeedingImages(array $globPaths, Closure $callback): void
         $application->useAppPath($originalAppPath);
         File::deleteDirectory($root);
     }
+}
+
+/**
+ * Give the user a single Admin permission through a throwaway role on the admin guard,
+ * so a test can grant one ability without the bundles of the catalog roles.
+ * The Admin authorization catalog must be seeded first.
+ */
+function grantAdminPermissionThroughTestRole(User $user, AdminPermission $adminPermission): void
+{
+    $role = Role::query()->create([
+        'name' => 'test-permission-'.$adminPermission->value,
+        'guard_name' => 'admin',
+    ]);
+
+    $role->givePermissionTo(Permission::findByName($adminPermission->value, 'admin'));
+
+    $user->assignRole($role);
+}
+
+/**
+ * Store a backup archive in the configured destination of the `backups` disk and set
+ * its modification time (now by default), returning its path on the disk.
+ */
+function storeBackupArchive(string $filename, string $contents, ?CarbonInterface $modifiedAt = null): string
+{
+    $path = config('backup.backup.name').'/'.$filename;
+
+    Storage::disk('backups')->put($path, $contents);
+    touch(Storage::disk('backups')->path($path), ($modifiedAt ?? now())->getTimestamp());
+
+    return $path;
 }

@@ -8,7 +8,6 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use App\Modules\Admin\Services\BackupManagementService;
-use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -18,34 +17,6 @@ use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays;
 use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-
-function grantBackupManagementPermission(User $user, AdminPermission $adminPermission): void
-{
-    $permissionRecord = Permission::query()
-        ->where('name', $adminPermission->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail();
-
-    $role = Role::query()->create([
-        'name' => 'test-backup-management-'.$adminPermission->name,
-        'guard_name' => 'admin',
-    ]);
-
-    $role->givePermissionTo($permissionRecord);
-
-    $user->assignRole($role);
-}
-
-function storeBackupManagementArchive(string $filename, string $contents): string
-{
-    $path = config('backup.backup.name').'/'.$filename;
-
-    Storage::disk('backups')->put($path, $contents);
-
-    return $path;
-}
 
 beforeEach(function (): void {
     config()->set('backup.backup.name', 'social-hub-test');
@@ -69,12 +40,10 @@ it('lists available backup metadata newest first and reports healthy checks', fu
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
 
     $olderFilename = (new RunDatabaseBackup)->filename;
-    $olderPath = storeBackupManagementArchive($olderFilename, 'older');
-    touch(Storage::disk('backups')->path($olderPath), now()->subDays(2)->getTimestamp());
+    storeBackupArchive($olderFilename, 'older', now()->subDays(2));
 
     $newerFilename = (new RunDatabaseBackup)->filename;
-    $newerPath = storeBackupManagementArchive($newerFilename, 'newest');
-    touch(Storage::disk('backups')->path($newerPath), now()->getTimestamp());
+    storeBackupArchive($newerFilename, 'newest', now());
 
     $backupListingData = resolve(BackupManagementService::class)->listBackups($user);
 
@@ -103,8 +72,7 @@ it('reports the configured maximum backup age check as unhealthy', function (): 
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
 
     $filename = (new RunDatabaseBackup)->filename;
-    $path = storeBackupManagementArchive($filename, 'old archive');
-    touch(Storage::disk('backups')->path($path), now()->subDays(2)->getTimestamp());
+    storeBackupArchive($filename, 'old archive', now()->subDays(2));
 
     $backupListingData = resolve(BackupManagementService::class)->listBackups($user);
 
@@ -125,8 +93,7 @@ it('reports the configured maximum storage check as unhealthy', function (): voi
     Storage::fake('backups');
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
 
-    $path = storeBackupManagementArchive((new RunDatabaseBackup)->filename, 'non-empty archive');
-    touch(Storage::disk('backups')->path($path), now()->getTimestamp());
+    storeBackupArchive((new RunDatabaseBackup)->filename, 'non-empty archive');
 
     $backupListingData = resolve(BackupManagementService::class)->listBackups($user);
 
@@ -148,7 +115,7 @@ it('queues a backup with the requesting admin as actor', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    grantBackupManagementPermission($user, AdminPermission::AdminBackupsCreate);
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsCreate);
     Queue::fake([RunDatabaseBackup::class]);
 
     resolve(BackupManagementService::class)->queueBackup($user);
@@ -176,12 +143,12 @@ it('generates a five-minute URL and audits only the filename for a valid downloa
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    grantBackupManagementPermission($user, AdminPermission::AdminBackupsDownload);
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
     Storage::fake('backups');
     $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
 
     $filename = (new RunDatabaseBackup)->filename;
-    $path = storeBackupManagementArchive($filename, 'backup archive');
+    $path = storeBackupArchive($filename, 'backup archive');
 
     /** @var array{path: string, expiration_timestamp: int}|null $temporaryUrlRequest */
     $temporaryUrlRequest = null;
@@ -220,11 +187,11 @@ it('does not create a URL or audit a download with an incorrect password', funct
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    grantBackupManagementPermission($user, AdminPermission::AdminBackupsDownload);
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
     Storage::fake('backups');
 
     $filename = (new RunDatabaseBackup)->filename;
-    storeBackupManagementArchive($filename, 'backup archive');
+    storeBackupArchive($filename, 'backup archive');
     $temporaryUrlRequested = false;
 
     /** @var FilesystemAdapter $filesystem */
@@ -251,7 +218,7 @@ it('rejects backup paths outside the configured destination without creating a U
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    grantBackupManagementPermission($user, AdminPermission::AdminBackupsDownload);
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
     Storage::fake('backups');
 
     $filename = (new RunDatabaseBackup)->filename;
@@ -282,7 +249,7 @@ it('rejects a missing backup object without creating a URL or audit', function (
     $this->seed(AdminAuthorizationSeeder::class);
 
     $user = createUser();
-    grantBackupManagementPermission($user, AdminPermission::AdminBackupsDownload);
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
     Storage::fake('backups');
     $temporaryUrlRequested = false;
 

@@ -701,7 +701,7 @@
     {
       "id": "TASK-020",
       "title": "Unificar los helpers de permisos y archivos de backups",
-      "description": "Reemplazar grantBackupManagementPermission()/grantPermissionForBackupPage() por un helper compartido que crea un rol de prueba con un permiso de Admin, y storeBackupManagementArchive()/storeFilamentBackupArchive() por uno que guarda un archivo en el disco backups, los dos en tests/Pest.php. Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.",
+      "description": "Reemplazar grantBackupManagementPermission()/grantPermissionForBackupPage() por un helper compartido que crea un rol de prueba con un permiso de Admin, y storeBackupManagementArchive()/storeFilamentBackupArchive() por uno que guarda un archivo en el disco backups, los dos en tests/Pest.php. Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md. Implementado como grantAdminPermissionThroughTestRole() y storeBackupArchive($filename, $contents, ?$modifiedAt) en tests/Pest.php; el argumento de fecha reemplaza los touch() sueltos del test del servicio.",
       "priority": "P2",
       "type": "test-refactor",
       "effort": "S",
@@ -731,7 +731,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
         "findings": "S2"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-021",
@@ -1614,7 +1615,8 @@
     "TASK-016": "Hecha: 2 casos eliminados (ViewPostTest y TrustedDevicesRelationManagerTest) y el import HasTable que quedó sin uso; 13/13 en verde, gates limpios.",
     "TASK-017": "Hecha: 1 caso eliminado de UserRoleTest y el de serialización movido a app/User/Tests/Models/UserSerializationTest.php (suite User, 7/7); gates limpios.",
     "TASK-018": "Hecha: 6 llamadas a clearMediaCollection() y los 3 Storage::fake() de los tests del fallback eliminados en ListPostsTest, ViewPostTest y PostsRelationManagerTest; los tests que suben imagen conservan su fake; 28/28 en verde, gates limpios.",
-    "TASK-019": "Hecha: 2 llamadas a clearMediaCollection() y el Storage::fake() del test del fallback eliminados en ViewUserTest; 7/7 en verde, gates limpios."
+    "TASK-019": "Hecha: 2 llamadas a clearMediaCollection() y el Storage::fake() del test del fallback eliminados en ViewUserTest; 7/7 en verde, gates limpios.",
+    "TASK-020": "Hecha: 4 helpers locales reemplazados por 2 compartidos; 20/20 en verde; suite completa 1193/1193 en paralelo; gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",

@@ -395,7 +395,7 @@ Quitar las dos llamadas a clearMediaCollection() y el Storage::fake() del test '
 
 ### TASK-020: Unificar los helpers de permisos y archivos de backups
 
-Reemplazar grantBackupManagementPermission()/grantPermissionForBackupPage() por un helper compartido que crea un rol de prueba con un permiso de Admin, y storeBackupManagementArchive()/storeFilamentBackupArchive() por uno que guarda un archivo en el disco backups, los dos en tests/Pest.php. Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md.
+Reemplazar grantBackupManagementPermission()/grantPermissionForBackupPage() por un helper compartido que crea un rol de prueba con un permiso de Admin, y storeBackupManagementArchive()/storeFilamentBackupArchive() por uno que guarda un archivo en el disco backups, los dos en tests/Pest.php. Hallazgos S2 de .ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md. Implementado como grantAdminPermissionThroughTestRole() y storeBackupArchive($filename, $contents, ?$modifiedAt) en tests/Pest.php; el argumento de fecha reemplaza los touch() sueltos del test del servicio.
 
 **Type:** test-refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2 · **Review:** claude
 
