@@ -8,6 +8,7 @@ use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
@@ -453,4 +454,30 @@ function storeBackupArchive(string $filename, string $contents, ?CarbonInterface
     touch(Storage::disk('backups')->path($path), ($modifiedAt ?? now())->getTimestamp());
 
     return $path;
+}
+
+/**
+ * Create a pending Admin invitation and return it with its plain token, the value the
+ * invitation link carries (only its hash is stored). The invitation goes to the given
+ * email, or to the target user's email when none is given.
+ *
+ * @return array{invitation: AdminInvitation, token: string}
+ */
+function createAdminInvitationWithToken(?User $targetUser = null, ?string $email = null): array
+{
+    $plainToken = bin2hex(random_bytes(32));
+
+    /** @var Factory<AdminInvitation> $factory */
+    $factory = AdminInvitation::factory();
+
+    $adminInvitation = $factory->createOne([
+        'email' => $email ?? $targetUser?->email ?? fake()->unique()->safeEmail(),
+        'target_user_id' => $targetUser?->getKey(),
+        'token_hash' => hash('sha256', $plainToken),
+    ]);
+
+    return [
+        'invitation' => $adminInvitation,
+        'token' => $plainToken,
+    ];
 }

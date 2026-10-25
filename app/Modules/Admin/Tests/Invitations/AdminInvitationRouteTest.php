@@ -4,33 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
-use App\Modules\Admin\Models\AdminInvitation;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Factories\Factory;
-
-/** @return array{invitation: AdminInvitation, token: string} */
-function createAdminInvitationForRoute(?User $targetUser = null): array
-{
-    $plainToken = bin2hex(random_bytes(32));
-
-    /** @var Factory<AdminInvitation> $factory */
-    $factory = AdminInvitation::factory();
-
-    if ($targetUser instanceof User) {
-        $factory = $factory->for($targetUser, 'targetUser');
-    }
-
-    $adminInvitation = $factory->createOne([
-        'email' => $targetUser instanceof User ? $targetUser->email : 'new-admin@example.com',
-        'token_hash' => hash('sha256', $plainToken),
-    ]);
-
-    return [
-        'invitation' => $adminInvitation,
-        'token' => $plainToken,
-    ];
-}
 
 beforeEach(function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
@@ -40,7 +15,7 @@ it('serves a valid invitation to a guest without changing the account', function
     $targetUser = createUser();
     $originalName = $targetUser->name;
     $originalPassword = $targetUser->password;
-    $invitationData = createAdminInvitationForRoute($targetUser);
+    $invitationData = createAdminInvitationWithToken($targetUser);
 
     $this->assertGuest('admin');
 
@@ -74,7 +49,7 @@ it('shows expired and already accepted invitations as unavailable without mutati
     $targetUser->forceFill(['email_verified_at' => null])->save();
     $originalName = $targetUser->name;
     $originalPassword = $targetUser->password;
-    $invitationData = createAdminInvitationForRoute($targetUser);
+    $invitationData = createAdminInvitationWithToken($targetUser);
     $acceptedAt = null;
 
     if ($invitationState === 'expired') {

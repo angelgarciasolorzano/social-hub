@@ -801,7 +801,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-admin.md",
         "findings": "S3"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-023",
@@ -1618,7 +1619,8 @@
     "TASK-018": "Hecha: 6 llamadas a clearMediaCollection() y los 3 Storage::fake() de los tests del fallback eliminados en ListPostsTest, ViewPostTest y PostsRelationManagerTest; los tests que suben imagen conservan su fake; 28/28 en verde, gates limpios.",
     "TASK-019": "Hecha: 2 llamadas a clearMediaCollection() y el Storage::fake() del test del fallback eliminados en ViewUserTest; 7/7 en verde, gates limpios.",
     "TASK-020": "Hecha: 4 helpers locales reemplazados por 2 compartidos; 20/20 en verde; suite completa 1193/1193 en paralelo; gates limpios.",
-    "TASK-021": "Hecha: los 3 roles de prueba de UserPolicyTest usan grantAdminPermissionThroughTestRole(); se quitó el import de Role; 13/13 en verde, gates limpios."
+    "TASK-021": "Hecha: los 3 roles de prueba de UserPolicyTest usan grantAdminPermissionThroughTestRole(); se quitó el import de Role; 13/13 en verde, gates limpios.",
+    "TASK-022": "Hecha: createAdminInvitationForAcceptance() y createAdminInvitationForRoute() reemplazados por createAdminInvitationWithToken(?User, ?string) en tests/Pest.php; invitaciones 28/28, suite completa 1193/1193 en paralelo, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
