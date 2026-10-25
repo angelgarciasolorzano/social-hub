@@ -122,7 +122,7 @@
     {
       "id": "TASK-003",
       "title": "PostFactory sin imagen por defecto, con estado withImage() para el seeder",
-      "description": "Mover el afterCreating de PostFactory::configure() a un estado withImage() (mismo 60 % y misma colección posts_images) y usarlo en PostSeeder. Ajustar PostFactoryTest: create() no adjunta media y withImage() nunca adjunta más de una.",
+      "description": "Mover el afterCreating de PostFactory::configure() a un estado withImage(int $chancePercent = 100) que sortea por post con WeightedRandom::chance() (determinista por defecto); PostSeeder lo usa con 60 %, así la distribución sembrada no cambia. PostFactoryTest fija que create() no adjunta imagen, que withImage() adjunta exactamente una y que withImage(0) no adjunta ninguna. Alcance ampliado por la regla 'Reuse utility functions' (.ai/rules/app.md): el helper de imágenes falsas en un app_path() temporal pasó de UserFactoryTest a tests/Pest.php (withTemporarySeedingImages) y lo usan las dos factories.",
       "priority": "P1",
       "type": "refactor",
       "effort": "S",
@@ -130,22 +130,28 @@
       "dependsOn": [],
       "acceptanceCriteria": [
         "createPost() nunca tiene media en posts_images.",
-        "Post::factory()->withImage() adjunta como máximo una imagen y PostSeeder sigue sembrando imágenes.",
+        "PostFactory::new()->withImage() adjunta exactamente una imagen, withImage(0) ninguna, y PostSeeder siembra imágenes al 60 % de los posts.",
         "Las suites Post y Admin (que leen imágenes de posts en recursos y páginas de Filament) siguen en verde."
       ],
       "filesToModify": [
         "app/Modules/Post/Database/Factories/PostFactory.php",
         "app/Modules/Post/Database/Seeders/PostSeeder.php",
-        "app/Modules/Post/Tests/Factories/PostFactoryTest.php"
+        "app/Modules/Post/Tests/Factories/PostFactoryTest.php",
+        "tests/Pest.php",
+        "app/User/Tests/Factories/UserFactoryTest.php"
       ],
       "filesToCreate": [],
       "writeScope": [
         "app/Modules/Post/Database/Factories/PostFactory.php",
         "app/Modules/Post/Database/Seeders/PostSeeder.php",
-        "app/Modules/Post/Tests/Factories/PostFactoryTest.php"
+        "app/Modules/Post/Tests/Factories/PostFactoryTest.php",
+        "tests/Pest.php",
+        "app/User/Tests/Factories/UserFactoryTest.php"
       ],
       "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Post/Tests app/Modules/Admin/Tests/Filament/Resources/Posts",
-      "review": "claude"
+      "review": "claude",
+      "writeScopeNote": "Supera el límite de 3 archivos por reutilizar el helper de imágenes en tests/Pest.php en lugar de duplicarlo; los dos archivos extra solo mueven ese helper.",
+      "status": "done"
     },
     {
       "id": "TASK-004",
@@ -437,6 +443,11 @@
   ],
   "progress": {
     "TASK-001": "Hecha: seeder sin compatibilidad heredada, suite Admin 304/304.",
-    "TASK-002": "Hecha: suite completa 1209/1209 en 57.6 s en serie (línea base 74.2 s)."
-  }
+    "TASK-002": "Hecha: suite completa 1209/1209 en 57.6 s en serie (línea base 74.2 s).",
+    "TASK-003": "Hecha: suite completa 1211/1211 en 56.4 s en serie."
+  },
+  "auditNotes": [
+    "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
+    "TASK-006: PostSeederTest siembra con withImage(60) y, en local (donde existen las imágenes no versionadas), copia imágenes reales al disco público sin Storage::fake('public')."
+  ]
 }

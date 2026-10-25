@@ -14,7 +14,9 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -383,4 +385,36 @@ function createAdminCommandActor(): User
     $user->assignRole(AdminRole::Admin->value);
 
     return $user;
+}
+
+/**
+ * Run the callback with app_path() redirected to a temporary directory holding one fake
+ * image in the directory of each seeding glob, then restore it. The real seeding images
+ * are not versioned, so factory tests cannot rely on them.
+ *
+ * @param  list<string>  $globPaths  Seeding globs relative to app_path(), e.g. Post::TEST_IMAGES_GLOB_PATH.
+ * @param  Closure(): void  $callback
+ */
+function withTemporarySeedingImages(array $globPaths, Closure $callback): void
+{
+    $application = app();
+    $originalAppPath = $application->path();
+    $root = sys_get_temp_dir().'/seeding-images-'.uniqid('', true);
+    $file = UploadedFile::fake()->image('seed.jpg');
+
+    foreach ($globPaths as $globPath) {
+        $directory = $root.'/'.dirname($globPath);
+
+        File::makeDirectory($directory, 0755, true, true);
+        File::put($directory.'/seed.jpg', $file->getContent());
+    }
+
+    $application->useAppPath($root);
+
+    try {
+        $callback();
+    } finally {
+        $application->useAppPath($originalAppPath);
+        File::deleteDirectory($root);
+    }
 }

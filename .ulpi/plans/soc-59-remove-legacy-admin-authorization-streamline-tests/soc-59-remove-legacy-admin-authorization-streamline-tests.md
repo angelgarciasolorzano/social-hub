@@ -97,17 +97,17 @@ Mover el afterCreating de imágenes de UserFactory::configure() a un estado with
 
 ### TASK-003: PostFactory sin imagen por defecto, con estado withImage() para el seeder
 
-Mover el afterCreating de PostFactory::configure() a un estado withImage() (mismo 60 % y misma colección posts_images) y usarlo en PostSeeder. Ajustar PostFactoryTest: create() no adjunta media y withImage() nunca adjunta más de una.
+Mover el afterCreating de PostFactory::configure() a un estado withImage(int $chancePercent = 100) que sortea por post con WeightedRandom::chance() (determinista por defecto); PostSeeder lo usa con 60 %, así la distribución sembrada no cambia. PostFactoryTest fija que create() no adjunta imagen, que withImage() adjunta exactamente una y que withImage(0) no adjunta ninguna. Alcance ampliado por la regla 'Reuse utility functions' (.ai/rules/app.md): el helper de imágenes falsas en un app_path() temporal pasó de UserFactoryTest a tests/Pest.php (withTemporarySeedingImages) y lo usan las dos factories.
 
 **Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1 · **Review:** claude
 
 **Acceptance Criteria:**
 
 - [ ] createPost() nunca tiene media en posts_images.
-- [ ] Post::factory()->withImage() adjunta como máximo una imagen y PostSeeder sigue sembrando imágenes.
+- [ ] PostFactory::new()->withImage() adjunta exactamente una imagen, withImage(0) ninguna, y PostSeeder siembra imágenes al 60 % de los posts.
 - [ ] Las suites Post y Admin (que leen imágenes de posts en recursos y páginas de Filament) siguen en verde.
 
-**writeScope:** `app/Modules/Post/Database/Factories/PostFactory.php`, `app/Modules/Post/Database/Seeders/PostSeeder.php`, `app/Modules/Post/Tests/Factories/PostFactoryTest.php`
+**writeScope:** `app/Modules/Post/Database/Factories/PostFactory.php`, `app/Modules/Post/Database/Seeders/PostSeeder.php`, `app/Modules/Post/Tests/Factories/PostFactoryTest.php`, `tests/Pest.php`, `app/User/Tests/Factories/UserFactoryTest.php`
 
 **validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Post/Tests app/Modules/Admin/Tests/Filament/Resources/Posts`
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Post\Database\Factories;
 
 use App\Modules\Post\Models\Post;
+use App\Support\Seeding\WeightedRandom;
 use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -39,13 +40,13 @@ class PostFactory extends Factory
     }
 
     /**
-     * Configure the model factory.
+     * Attach a random seeding image to each created post with the given probability (0 to 100).
+     * Opt-in, so tests never copy seeding images unless they ask for them.
      */
-    #[Override]
-    public function configure(): static
+    public function withImage(int $chancePercent = 100): static
     {
-        return $this->afterCreating(function (Post $post): void {
-            if (random_int(1, 100) <= 60) {
+        return $this->afterCreating(function (Post $post) use ($chancePercent): void {
+            if (WeightedRandom::chance($chancePercent)) {
                 $images = glob(app_path(Post::TEST_IMAGES_GLOB_PATH), GLOB_BRACE);
 
                 if (is_array($images) && $images !== []) {
