@@ -6,8 +6,11 @@ namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\User\Enums\AccountStatus;
+use App\User\Enums\UserImageType;
+use App\User\Models\User;
 use DateTimeInterface;
 use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -22,7 +25,17 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('media'))
             ->columns([
+                ImageColumn::make('profile_picture')
+                    ->label('Profile picture')
+                    ->state(fn (User $record): string => url(
+                        $record->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+                    ))
+                    ->defaultImageUrl(asset(User::DEFAULT_PROFILE_PICTURE_PATH))
+                    ->imageSize(40)
+                    ->circular()
+                    ->alt(fn (User $record): string => "Profile picture of {$record->name}"),
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('email')->searchable()->sortable(),
                 TextColumn::make('status')

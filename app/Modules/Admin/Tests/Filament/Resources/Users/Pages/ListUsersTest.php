@@ -9,9 +9,14 @@ use App\Modules\Admin\Mail\AdminInvitationMail;
 use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Database\Factories\UserFactory;
+use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Filament\Tables\Testing\TestsFilters;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -111,6 +116,82 @@ it('renders the last login fallback in the active application locale', function 
     } finally {
         app()->setLocale($originalLocale);
     }
+});
+
+it('renders a users profile picture with descriptive alt text', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+    $targetUser->addMedia(UploadedFile::fake()->image('profile-picture.jpg'))
+        ->toMediaCollection(UserImageType::PROFILE_PICTURE->value());
+
+    $profilePictureUrl = url($targetUser->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()));
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(ListUsers::class)
+        ->assertSee($targetUser->name)
+        ->assertSeeHtml('src="'.$profilePictureUrl.'"')
+        ->assertSeeHtml('alt="Profile picture of '.$targetUser->name.'"');
+});
+
+it('uses the configured profile picture fallback with descriptive alt text', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(ListUsers::class)
+        ->assertSee($targetUser->name)
+        ->assertSeeHtml('src="'.url(User::DEFAULT_PROFILE_PICTURE_PATH).'"')
+        ->assertSeeHtml('alt="Profile picture of '.$targetUser->name.'"');
+});
+
+it('eager loads profile media in one query regardless of the user page size', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+    $mediaQueries = [];
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    DB::listen(static function (QueryExecuted $queryExecuted) use (&$mediaQueries): void {
+        $querySql = strtolower($queryExecuted->sql);
+
+        if (str_contains($querySql, 'media')) {
+            $mediaQueries[] = $queryExecuted->sql;
+        }
+    });
+
+    listUsersPageForTesting()->assertSee($targetUser->name);
+    $smallPageMediaQueries = $mediaQueries;
+    $mediaQueries = [];
+
+    for ($index = 0; $index < 8; $index++) {
+        createUser();
+    }
+
+    listUsersPageForTesting()->assertSee($targetUser->name);
+    $fullPageMediaQueries = $mediaQueries;
+
+    expect($smallPageMediaQueries)
+        ->toHaveCount(1)
+        ->and($fullPageMediaQueries)->toHaveCount(1);
 });
 
 it('filters users by verification status registration date and post presence alone and together', function (): void {
