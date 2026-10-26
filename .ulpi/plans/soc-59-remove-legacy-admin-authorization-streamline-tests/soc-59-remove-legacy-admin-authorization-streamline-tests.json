@@ -1290,7 +1290,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
         "findings": "R1"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-037",
@@ -1321,7 +1322,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
         "findings": "R2, R3"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-038",
@@ -1355,7 +1357,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-activitylog-global.md",
         "findings": "U1"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-039",
@@ -1687,7 +1690,10 @@
     "TASK-032": "Hecha: invalidOtpFor() en tests/Pest.php descarta los códigos de la ventana de Fortify más un periodo a cada lado; TrustedDeviceStoreTest y TrustedDeviceRenewTest ya no usan '000000' (el dataset indica el tipo de código y un match arma el payload; el brazo default lanza para valores desconocidos porque el plugin de Pest para PHPStan ignora el PHPDoc del closure). 24/24, suite completa 1155/1155 en paralelo, gates limpios.",
     "TASK-033": "Hecha: TrustedDeviceCodeThrottleTest, TrustedDeviceInvalidateTest y TrustedDeviceServiceTest usan invalidOtpFor() en lugar de '000000' (el dataset del servicio indica el tipo de código, como en TASK-032); 49/49, el throttle sigue respondiendo 429 al sexto intento; gates limpios.",
     "TASK-034": "Hecha: los últimos 4 '000000' (TrustedDeviceReactivateTest, TwoFactorCodeVerifierTest y 2 en TwoFactorActivityTest) usan invalidOtpFor(); además 'does not look for a six-digit code among the recovery codes' usaba '123456' como código de recuperación de un usuario con secreto TOTP real (podía ser el TOTP válido) y ahora usa un código de seis dígitos que no lo es. Ya no queda ningún código fijo enviado por un usuario con secreto TOTP; 35/35, gates limpios.",
-    "TASK-035": "Hecha: las 8 claves 'trusted-device:dashboard:…' de TrustedDeviceDashboardCacheTest usan trustedDeviceStatsCacheKey() y trustedDeviceRecentActivityCacheKey(); 8/8, gates limpios."
+    "TASK-035": "Hecha: las 8 claves 'trusted-device:dashboard:…' de TrustedDeviceDashboardCacheTest usan trustedDeviceStatsCacheKey() y trustedDeviceRecentActivityCacheKey(); 8/8, gates limpios.",
+    "TASK-036": "Hecha: 'keeps the existing login listeners working' eliminado de AuthActivitySubscriberTest; con TrackLastLoginTest, 11/11.",
+    "TASK-037": "Hecha: 2 casos eliminados de MediaStoragePathTest y el import del generador que quedó sin uso; Feature 25/25.",
+    "TASK-038": "Hecha: PasswordConfirmationTest movido a app/Auth/Modules/Password/Tests/ (suite Password 11 → 14) y borrada tests/Feature/Auth/. Suite completa 1152/1152 en paralelo: 1211 − 59 casos, exactamente el total de las cuatro auditorías; gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
