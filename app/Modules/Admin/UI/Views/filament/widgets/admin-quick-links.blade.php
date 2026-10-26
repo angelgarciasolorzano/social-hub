@@ -10,9 +10,11 @@
             <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 @foreach ($this->getQuickLinks() as $quickLink)
                     <li>
-                        <a
-                            href="{{ $quickLink['url'] }}"
-                            class="group hover:border-primary-300 hover:bg-primary-50/50 focus-visible:ring-primary-600 dark:hover:border-primary-700 flex h-full min-h-24 items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800/80"
+                        <x-filament::link
+                            :href="$quickLink['url']"
+                            color="gray"
+                            weight="normal"
+                            class="group flex h-full min-h-24 w-full items-center justify-start gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left text-gray-950 no-underline shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50/50 hover:no-underline focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:no-underline dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:border-primary-700 dark:hover:bg-gray-800/80 [&>.fi-link-label]:flex [&>.fi-link-label]:w-full [&>.fi-link-label]:items-center [&>.fi-link-label]:gap-4 [&>.fi-link-label]:self-stretch"
                         >
                             <span class="bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-300 flex size-11 shrink-0 items-center justify-center rounded-xl">
                                 <x-filament::icon :icon="$quickLink['icon']" class="size-5" aria-hidden="true" />
@@ -33,7 +35,7 @@
                                 class="group-hover:text-primary-600 size-4 shrink-0 text-gray-400 transition-colors dark:text-gray-500"
                                 aria-hidden="true"
                             />
-                        </a>
+                        </x-filament::link>
                     </li>
                 @endforeach
             </ul>
