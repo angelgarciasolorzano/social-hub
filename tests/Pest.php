@@ -309,6 +309,36 @@ function allowOtpReuse(string $otp): void
 }
 
 /**
+ * A six-digit code that the user's authenticator would not accept right now: it differs
+ * from every code of Fortify's verification window plus one period on each side, so a
+ * test that sends a wrong code can never send the valid one by chance (as '000000' could).
+ */
+function invalidOtpFor(User $user): string
+{
+    /** @var string $encryptedSecret */
+    $encryptedSecret = $user->two_factor_secret;
+    $secret = decrypt($encryptedSecret);
+
+    /** @var Google2FA $google2fa */
+    $google2fa = resolve(Google2FA::class);
+
+    $margin = $google2fa->getWindow() + 1;
+    $currentTimestamp = $google2fa->getTimestamp();
+    $acceptedCodes = array_map(
+        fn (int $offset): string => $google2fa->oathTotp($secret, $currentTimestamp + $offset),
+        range(-$margin, $margin),
+    );
+
+    $candidate = 0;
+
+    while (in_array(str_pad((string) $candidate, 6, '0', STR_PAD_LEFT), $acceptedCodes, true)) {
+        $candidate++;
+    }
+
+    return str_pad((string) $candidate, 6, '0', STR_PAD_LEFT);
+}
+
+/**
  * Cache key under which TrustedDeviceDashboardCache stores a user's stats.
  */
 function trustedDeviceStatsCacheKey(User $user): string

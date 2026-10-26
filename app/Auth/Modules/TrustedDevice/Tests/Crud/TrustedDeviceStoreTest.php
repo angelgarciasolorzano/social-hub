@@ -56,10 +56,16 @@ it('does not ask for the OTP code when two-factor is not confirmed', function ()
         ->assertSessionDoesntHaveErrors('otp_code');
 });
 
-it('rejects a missing, wrong or recovery-format OTP code without creating anything', function (?string $otp): void {
+it('rejects a missing, wrong or recovery-format OTP code without creating anything', function (string $submittedCode): void {
     $user = createUserWithTwoFactor();
+    $payload = match ($submittedCode) {
+        'missing' => [],
+        'wrong' => ['otp_code' => invalidOtpFor($user)],
+        'recovery-format' => ['otp_code' => 'abcde12345-fghij67890'],
+        default => throw new InvalidArgumentException("Unknown submitted code '{$submittedCode}'."),
+    };
 
-    $testResponse = storeTrustedDeviceAs($this, $user, $otp === null ? [] : ['otp_code' => $otp]);
+    $testResponse = storeTrustedDeviceAs($this, $user, $payload);
 
     $testResponse->assertSessionHasErrors('otp_code')
         ->assertCookieMissing('trusted_device');
@@ -67,15 +73,15 @@ it('rejects a missing, wrong or recovery-format OTP code without creating anythi
     expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->exists())->toBeFalse()
         ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
 })->with([
-    'missing code' => [null],
-    'wrong code' => ['000000'],
-    'recovery-format code' => ['abcde12345-fghij67890'],
+    'missing code' => ['missing'],
+    'wrong code' => ['wrong'],
+    'recovery-format code' => ['recovery-format'],
 ]);
 
 it('answers a wrong OTP code with a fixed message that does not echo the submitted code', function (): void {
     $user = createUserWithTwoFactor();
 
-    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => '000000']);
+    $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => invalidOtpFor($user)]);
 
     $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
 });
