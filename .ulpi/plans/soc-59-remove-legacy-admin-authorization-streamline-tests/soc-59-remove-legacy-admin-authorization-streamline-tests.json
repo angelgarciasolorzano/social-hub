@@ -427,7 +427,8 @@
       "filesToCreate": [],
       "writeScope": [],
       "validateCommand": "composer test",
-      "review": "claude"
+      "review": "claude",
+      "status": "awaiting-approval"
     },
     {
       "id": "TASK-012",
@@ -1695,7 +1696,8 @@
     "TASK-036": "Hecha: 'keeps the existing login listeners working' eliminado de AuthActivitySubscriberTest; con TrackLastLoginTest, 11/11.",
     "TASK-037": "Hecha: 2 casos eliminados de MediaStoragePathTest y el import del generador que quedó sin uso; Feature 25/25.",
     "TASK-038": "Hecha: PasswordConfirmationTest movido a app/Auth/Modules/Password/Tests/ (suite Password 11 → 14) y borrada tests/Feature/Auth/. Suite completa 1152/1152 en paralelo: 1211 − 59 casos, exactamente el total de las cuatro auditorías; gates limpios.",
-    "TASK-010": "Hecha: CLAUDE.md documenta composer test en paralelo (base por worker, --passthru-php, depuración en serie y la trampa de los use globales), los helpers nuevos de tests/Pest.php, los estados withImages()/withImage() y el Storage::fake de los tests que siembran, invalidOtpFor() en la sección SOC-45 y la nueva razón por la que los tests de seeders no pueden fijar valores con mt_srand; README.md actualiza la línea de composer test. AGENTS.md no cambia: ninguna de sus reglas quedó desactualizada. Ninguna doc cita tests o helpers eliminados."
+    "TASK-010": "Hecha: CLAUDE.md documenta composer test en paralelo (base por worker, --passthru-php, depuración en serie y la trampa de los use globales), los helpers nuevos de tests/Pest.php, los estados withImages()/withImage() y el Storage::fake de los tests que siembran, invalidOtpFor() en la sección SOC-45 y la nueva razón por la que los tests de seeders no pueden fijar valores con mt_srand; README.md actualiza la línea de composer test. AGENTS.md no cambia: ninguna de sus reglas quedó desactualizada. Ninguna doc cita tests o helpers eliminados.",
+    "TASK-011": "Gates en verde (Pint --test en todo el repo, PHPStan, Rector con caché limpia, Prettier, ESLint sin errores, tsc, composer doctor). Serie con el comando de la línea base: 1152 tests en 52,5–53,1 s (antes 1209 en 74,0 s); paralelo con composer test: 21,0–21,3 s en tres corridas. Borrador del comentario en linear-summary.md; se publica solo con la aprobación del usuario."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",
