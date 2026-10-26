@@ -173,7 +173,7 @@ Propuesta del usuario: en .env.example, las BACKUP_S3_* y MEDIA_S3_* de credenci
 
 **writeScope:** `.env.example`, `README.md`
 
-**validateCommand:** `grep -c 'MEDIA_S3_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"' .env.example`
+**validateCommand:** `grep -cF 'MEDIA_S3_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"' .env.example`
 
 ## Failure Modes
 
