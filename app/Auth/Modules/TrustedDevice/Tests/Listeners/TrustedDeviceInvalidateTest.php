@@ -186,7 +186,7 @@ it('does not revoke trusted devices when the 2FA confirmation code is invalid', 
 
     $this->actingAs($user)
         ->withSession(confirmedPasswordSession())
-        ->post(route('two-factor.confirm'), ['code' => '000000']);
+        ->post(route('two-factor.confirm'), ['code' => invalidOtpFor($user)]);
 
     expect($user->refresh()->two_factor_confirmed_at)->toBeNull()
         ->and($trustedDevice->fresh()?->deleted_at)->toBeNull();

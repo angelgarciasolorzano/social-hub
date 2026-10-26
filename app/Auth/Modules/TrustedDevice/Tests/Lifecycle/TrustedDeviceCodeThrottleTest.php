@@ -38,11 +38,13 @@ function sendCodeAttempt(TestCase $testCase, User $user, string $method, string 
  */
 function codeCheckingRequest(string $routeLabel, User $user): array
 {
+    $wrongCode = invalidOtpFor($user);
+
     return match ($routeLabel) {
-        'store' => ['POST', route('user.trusted-devices.store'), ['otp_code' => '000000']],
-        'renew' => ['POST', route('user.trusted-devices.renew', createTrustedDevice($user)), ['otp_code' => '000000']],
-        'reactivate' => ['POST', route('user.trusted-devices.reactivate', createTrustedDevice($user, ['deleted_at' => now()])), ['otp_code' => '000000']],
-        default => ['DELETE', route('setting.security.two-factor-authentication.destroy'), ['password' => 'password', 'code' => '000000']],
+        'store' => ['POST', route('user.trusted-devices.store'), ['otp_code' => $wrongCode]],
+        'renew' => ['POST', route('user.trusted-devices.renew', createTrustedDevice($user)), ['otp_code' => $wrongCode]],
+        'reactivate' => ['POST', route('user.trusted-devices.reactivate', createTrustedDevice($user, ['deleted_at' => now()])), ['otp_code' => $wrongCode]],
+        default => ['DELETE', route('setting.security.two-factor-authentication.destroy'), ['password' => 'password', 'code' => $wrongCode]],
     };
 }
 
@@ -58,9 +60,9 @@ it('answers 429 after five attempts on a route that checks a two-factor code', f
 it('shares one attempt budget across the routes that check a two-factor code', function (): void {
     $user = createUserWithTwoFactor();
 
-    exhaustCodeAttempts($this, $user, 'POST', route('user.trusted-devices.store'), ['otp_code' => '000000']);
+    exhaustCodeAttempts($this, $user, 'POST', route('user.trusted-devices.store'), ['otp_code' => invalidOtpFor($user)]);
 
-    sendCodeAttempt($this, $user, 'DELETE', route('setting.security.two-factor-authentication.destroy'), ['password' => 'password', 'code' => '000000'])
+    sendCodeAttempt($this, $user, 'DELETE', route('setting.security.two-factor-authentication.destroy'), ['password' => 'password', 'code' => invalidOtpFor($user)])
         ->assertTooManyRequests();
 });
 
@@ -68,8 +70,8 @@ it('does not limit another user because of the attempts of one user', function (
     $user = createUserWithTwoFactor();
     $otherUser = createUserWithTwoFactor();
 
-    exhaustCodeAttempts($this, $user, 'POST', route('user.trusted-devices.store'), ['otp_code' => '000000']);
+    exhaustCodeAttempts($this, $user, 'POST', route('user.trusted-devices.store'), ['otp_code' => invalidOtpFor($user)]);
 
-    sendCodeAttempt($this, $otherUser, 'POST', route('user.trusted-devices.store'), ['otp_code' => '000000'])
+    sendCodeAttempt($this, $otherUser, 'POST', route('user.trusted-devices.store'), ['otp_code' => invalidOtpFor($otherUser)])
         ->assertFound();
 });
