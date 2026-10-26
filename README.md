@@ -122,7 +122,7 @@ Antes de abrir un PR, ejecuta los mismos checks que corre el CI. El backend tien
 vendor/bin/pint --dirty --format agent   # formatea solo los archivos PHP modificados
 composer rector-dry                      # previsualiza las transformaciones de Rector
 composer phpstan                         # análisis estático (nivel máximo)
-composer test                            # suite de Pest (límite de memoria de 2G)
+composer test                            # suite de Pest en paralelo (una base por proceso)
 ```
 
 Si `composer rector-dry` propone cambios, aplícalos con `composer rector`.
