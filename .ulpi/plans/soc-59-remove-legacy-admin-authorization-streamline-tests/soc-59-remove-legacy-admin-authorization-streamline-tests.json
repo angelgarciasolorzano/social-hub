@@ -1226,7 +1226,8 @@
       "source": {
         "audit": ".ulpi/plans/soc-59-remove-legacy-admin-authorization-streamline-tests/audit-auth-user.md",
         "findings": "S1"
-      }
+      },
+      "status": "done"
     },
     {
       "id": "TASK-035",
@@ -1683,7 +1684,8 @@
     "TASK-030": "Hecha: 3 casos eliminados (1 en TwoFactorDisableTest, 2 en TrustedDeviceIndexTest); con TwoFactorSettingsTest y TrustedDeviceInvalidateTest, 44/44 en verde; gates limpios.",
     "TASK-031": "Hecha: 'creates new accounts as active when no status is given' ahora crea la cuenta con forceCreate() sin status y falla si se quita el default('active') de la columna (comprobado y restaurado); 2 casos eliminados (UserAccountStatusTest y AccountStatusChangeTest); AccountStatus 37/37, gates limpios.",
     "TASK-032": "Hecha: invalidOtpFor() en tests/Pest.php descarta los códigos de la ventana de Fortify más un periodo a cada lado; TrustedDeviceStoreTest y TrustedDeviceRenewTest ya no usan '000000' (el dataset indica el tipo de código y un match arma el payload; el brazo default lanza para valores desconocidos porque el plugin de Pest para PHPStan ignora el PHPDoc del closure). 24/24, suite completa 1155/1155 en paralelo, gates limpios.",
-    "TASK-033": "Hecha: TrustedDeviceCodeThrottleTest, TrustedDeviceInvalidateTest y TrustedDeviceServiceTest usan invalidOtpFor() en lugar de '000000' (el dataset del servicio indica el tipo de código, como en TASK-032); 49/49, el throttle sigue respondiendo 429 al sexto intento; gates limpios."
+    "TASK-033": "Hecha: TrustedDeviceCodeThrottleTest, TrustedDeviceInvalidateTest y TrustedDeviceServiceTest usan invalidOtpFor() en lugar de '000000' (el dataset del servicio indica el tipo de código, como en TASK-032); 49/49, el throttle sigue respondiendo 429 al sexto intento; gates limpios.",
+    "TASK-034": "Hecha: los últimos 4 '000000' (TrustedDeviceReactivateTest, TwoFactorCodeVerifierTest y 2 en TwoFactorActivityTest) usan invalidOtpFor(); además 'does not look for a six-digit code among the recovery codes' usaba '123456' como código de recuperación de un usuario con secreto TOTP real (podía ser el TOTP válido) y ahora usa un código de seis dígitos que no lo es. Ya no queda ningún código fijo enviado por un usuario con secreto TOTP; 35/35, gates limpios."
   },
   "auditNotes": [
     "TASK-005: las 8 llamadas a clearMediaCollection en ListPostsTest, ViewPostTest, PostsRelationManagerTest y ViewUserTest eran parches contra las imágenes aleatorias de las factories; tras TASK-002/003 son setup innecesario.",

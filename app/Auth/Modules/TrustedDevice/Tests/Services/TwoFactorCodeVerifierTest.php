@@ -54,7 +54,7 @@ it('accepts the current TOTP code', function (): void {
 it('rejects an invalid TOTP code', function (): void {
     $user = createUserWithTwoFactor();
 
-    expect(twoFactorCodeVerifier()->verifyTotp($user, '000000'))->toBeFalse();
+    expect(twoFactorCodeVerifier()->verifyTotp($user, invalidOtpFor($user)))->toBeFalse();
 });
 
 it('rejects a TOTP code for a user without a secret', function (): void {
@@ -162,12 +162,16 @@ it('accepts a valid recovery code as a verification code and consumes it', funct
 });
 
 it('does not look for a six-digit code among the recovery codes', function (): void {
-    $user = createUserWithRecoveryCodes('123456');
+    $user = createUserWithTwoFactor();
+    $sixDigitRecoveryCode = invalidOtpFor($user);
+    $user->forceFill([
+        'two_factor_recovery_codes' => encrypt(json_encode([$sixDigitRecoveryCode])),
+    ])->save();
 
-    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, '123456'));
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, $sixDigitRecoveryCode));
 
     expect($isValid)->toBeFalse()
-        ->and(storedRecoveryCodes($user))->toBe(['123456']);
+        ->and(storedRecoveryCodes($user))->toBe([$sixDigitRecoveryCode]);
 });
 
 it('does not check a recovery-format code as a TOTP code', function (): void {

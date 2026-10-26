@@ -108,7 +108,7 @@ it('answers a wrong code with a fixed message that does not echo the submitted c
     $trustedDevice->delete();
 
     $testResponse = $this->actingAs($user)
-        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => '000000']);
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => invalidOtpFor($user)]);
 
     $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
 });

@@ -64,7 +64,7 @@ it('records the confirmation of two-factor authentication', function (): void {
 it('does not record a confirmation with an invalid code', function (): void {
     $user = UserFactory::new()->twoFactorPending()->createOne();
 
-    confirmTwoFactorForActivityLog($this, $user, '000000');
+    confirmTwoFactorForActivityLog($this, $user, invalidOtpFor($user));
 
     expect(countOwnTwoFactorActivities($user, 'auth.two_factor_confirmed'))->toBe(0);
 })->skip(fn (): bool => ! Features::canManageTwoFactorAuthentication(), 'Two-factor authentication is not enabled.');
@@ -80,7 +80,7 @@ it('records disabling two-factor authentication', function (): void {
 it('does not record a disable attempt with an invalid code', function (): void {
     $user = createUserWithTwoFactor();
 
-    disableTwoFactorForActivityLog($this, $user, '000000')->assertRedirectBackWithErrors(['code']);
+    disableTwoFactorForActivityLog($this, $user, invalidOtpFor($user))->assertRedirectBackWithErrors(['code']);
 
     expect(countOwnTwoFactorActivities($user, 'auth.two_factor_disabled'))->toBe(0);
 })->skip(fn (): bool => ! Features::canManageTwoFactorAuthentication(), 'Two-factor authentication is not enabled.');
