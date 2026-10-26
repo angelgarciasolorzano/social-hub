@@ -8,7 +8,9 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\Livewire;
@@ -228,6 +230,36 @@ it('shows the image from the posts_images collection', function (): void {
     $imageUrl = url($post->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION));
 
     expect($testable->html())->toContain($imageUrl);
+});
+
+it('eager loads post media in one query at the default and larger page sizes', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    foreach (range(1, 25) as $sequence) {
+        createPost(attributes: ['content' => 'Post '.$sequence]);
+    }
+
+    $mediaQueries = [];
+
+    DB::listen(static function (QueryExecuted $queryExecuted) use (&$mediaQueries): void {
+        if (str_contains(strtolower($queryExecuted->sql), 'media')) {
+            $mediaQueries[] = $queryExecuted->sql;
+        }
+    });
+
+    $testable = Livewire::test(ListPosts::class)
+        ->assertOk();
+    $defaultPageMediaQueries = $mediaQueries;
+    $mediaQueries = [];
+
+    $testable
+        ->set('tableRecordsPerPage', 25)
+        ->assertOk();
+    $largerPageMediaQueries = $mediaQueries;
+
+    expect($defaultPageMediaQueries)
+        ->toHaveCount(1)
+        ->and($largerPageMediaQueries)->toHaveCount(1);
 });
 
 it('shows the fallback for posts without images while keeping them paginated', function (): void {

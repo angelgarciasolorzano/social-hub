@@ -19,7 +19,7 @@ class PostsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('user:id,name'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['user:id,name', 'media']))
             ->columns([
                 ImageColumn::make('post_image')
                     ->label('Image')
