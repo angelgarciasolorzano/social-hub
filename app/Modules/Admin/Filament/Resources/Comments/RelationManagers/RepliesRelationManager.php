@@ -46,6 +46,7 @@ class RepliesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->recordTitleAttribute('content')
             ->columns([
                 TextColumn::make('content')

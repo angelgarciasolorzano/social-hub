@@ -10,6 +10,7 @@ use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Pages\Backups\Widgets\BackupSummaryWidget;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use Carbon\CarbonImmutable;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -22,7 +23,7 @@ use Tests\TestCase;
 /** @return Testable<BackupManagement> */
 function backupManagementPageForTesting(): Testable
 {
-    return Livewire::test(BackupManagement::class);
+    return Livewire::test(BackupManagement::class)->call('loadTable');
 }
 
 /**
@@ -78,6 +79,20 @@ beforeEach(function (): void {
     config()->set('backup.monitor_backups.0.name', 'social-hub-test');
 });
 
+it('defers loading the backups table and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+
+    $testable = backupManagementPageForTesting()->assertOk();
+    $table = FilamentTableRecords::table($testable)->getTable();
+
+    expect($table->isLoadingDeferred())->toBeTrue()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('renders the page and navigation to an authorized backup reader', function (): void {
     $user = AdminFilamentTestContext::actingAsAdminWithRoles(
         $this,
@@ -115,6 +130,10 @@ it('renders the page and navigation to an authorized backup reader', function ()
         ->assertDontSee('http://localhost:4566')
         ->assertDontSee('backup-secret-must-not-render')
         ->assertDontSee('archive-password-must-not-render')
+        ->assertDontSeeText($filename);
+
+    backupManagementPageForTesting()
+        ->assertOk()
         ->assertSeeText($filename)
         ->assertSeeText('2.5 MB')
         ->assertDontSeeText('Disk')

@@ -21,10 +21,12 @@ class ActivityLogsTable
 {
     use DescribesActivityLogParties;
 
-    public static function configure(Table $table): Table
+    public static function configure(Table $table, bool $deferLoading = true): Table
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['causer', 'subject']))
+            ->deferLoading($deferLoading)
+            ->loadingSkeleton()
             ->columns([
                 TextColumn::make('created_at')
                     ->label('Date')

@@ -48,6 +48,16 @@ function createStatusHistoryEntry(User $user, ?User $administrator, string $crea
     ]);
 }
 
+it('loads account status history lazily and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $table = FilamentTableRecords::table(accountStatusChangesRelationManagerFor(createUser()))->getTable();
+
+    expect(AccountStatusChangesRelationManager::isLazy())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('lists the status changes of the user, most recent first, with reason and administrator', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -89,7 +99,10 @@ it('hides the tab from an administrator who cannot view users', function (): voi
 
     expect(AccountStatusChangesRelationManager::canViewForRecord($user, ViewUser::class))->toBeFalse();
 
-    accountStatusChangesRelationManagerFor($user)->assertForbidden();
+    Livewire::test(AccountStatusChangesRelationManager::class, [
+        'ownerRecord' => $user,
+        'pageClass' => ViewUser::class,
+    ])->assertForbidden();
 });
 
 it('offers no create, edit or delete actions', function (): void {

@@ -45,6 +45,7 @@ class AccountStatusChangesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->columns([
                 TextColumn::make('created_at')
                     ->label('Date')

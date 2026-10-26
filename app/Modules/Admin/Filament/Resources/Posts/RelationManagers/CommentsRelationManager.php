@@ -46,6 +46,7 @@ class CommentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->recordTitleAttribute('content')
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('user:id,name'))
             ->columns([

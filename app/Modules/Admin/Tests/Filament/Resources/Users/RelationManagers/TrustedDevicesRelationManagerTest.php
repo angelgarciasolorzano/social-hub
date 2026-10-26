@@ -40,6 +40,16 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
+it('loads trusted devices lazily and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $table = FilamentTableRecords::table(trustedDevicesRelationManagerFor(createUser()))->getTable();
+
+    expect(TrustedDevicesRelationManager::isLazy())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('shows only scoped trusted device details without exposing sensitive data', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
 

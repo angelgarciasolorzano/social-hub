@@ -20,6 +20,8 @@ class PostsTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['user:id,name', 'media']))
+            ->deferLoading()
+            ->loadingSkeleton()
             ->columns([
                 ImageColumn::make('post_image')
                     ->label('Image')

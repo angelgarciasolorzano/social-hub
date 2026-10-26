@@ -40,6 +40,16 @@ function postsRelationManagerFor(User $user): Testable
     ]);
 }
 
+it('loads the posts relation lazily and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
+
+    $table = FilamentTableRecords::table(postsRelationManagerFor(createUser()))->getTable();
+
+    expect(PostsRelationManager::isLazy())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('registers posts as a user resource relation', function (): void {
     expect(UserResource::getRelations())
         ->toContain(PostsRelationManager::class);

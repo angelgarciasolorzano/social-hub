@@ -61,6 +61,16 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
+it('loads replies lazily and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $table = FilamentTableRecords::table(repliesRelationManagerFor(createComment(createUser())))->getTable();
+
+    expect(RepliesRelationManager::isLazy())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('renders only replies for the selected comment with their authors', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 

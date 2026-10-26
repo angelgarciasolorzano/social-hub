@@ -26,6 +26,7 @@ class UsersTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('media'))
+            ->deferLoading()
             ->loadingSkeleton()
             ->columns([
                 ImageColumn::make('profile_picture')

@@ -73,7 +73,7 @@ function activityLogSummaryChartPayload(ActivityLogSummaryWidget $activityLogSum
  */
 function visibleActivityLogKeys(Testable $testable): array
 {
-    return FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), ActivityLog::class);
+    return FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable->call('loadTable')), ActivityLog::class);
 }
 
 /**
@@ -82,6 +82,12 @@ function visibleActivityLogKeys(Testable $testable): array
 function actingAsActivityLogReader(TestCase $testCase): User
 {
     return AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminActivityReader);
+}
+
+/** @return Testable<ListActivityLogs> */
+function activityLogsPageForTesting(): Testable
+{
+    return Livewire::test(ListActivityLogs::class)->call('loadTable');
 }
 
 /**
@@ -93,7 +99,7 @@ function countActivityLogListQueries(): int
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    Livewire::test(ListActivityLogs::class)->assertOk();
+    activityLogsPageForTesting()->assertOk();
 
     $listQueries = array_filter(
         array_column(DB::getQueryLog(), 'query'),
@@ -123,6 +129,16 @@ beforeEach(function (): void {
     $testCase = $this;
 
     AdminFilamentTestContext::configure($testCase);
+});
+
+it('defers loading the activity log table and displays a loading skeleton', function (): void {
+    actingAsActivityLogReader($this);
+
+    $testable = Livewire::test(ListActivityLogs::class)->assertOk();
+    $table = FilamentTableRecords::table($testable)->getTable();
+
+    expect($table->isLoadingDeferred())->toBeTrue()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
 });
 
 it('denies the list to an administrator without admin.activity.viewAny', function (): void {
@@ -212,7 +228,7 @@ it('does not render activity properties in the summary page', function (): void 
         'properties' => ['content' => $privateContent],
     ]);
 
-    Livewire::test(ListActivityLogs::class)
+    activityLogsPageForTesting()
         ->assertOk()
         ->assertDontSee($privateContent);
 });
@@ -223,7 +239,7 @@ it('lists each activity with readable log, event, performer and subject', functi
 
     ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->causedBy($user)->performedOn($target)->createOne();
 
-    Livewire::test(ListActivityLogs::class)
+    activityLogsPageForTesting()
         ->assertSeeText('Admin')
         ->assertSeeText('Role Granted')
         ->assertSeeText($user->name)
@@ -243,7 +259,7 @@ it('lists anonymous activities and deleted performers or subjects without failin
     $deletedComment->forceDelete();
     $deletedUser->delete();
 
-    Livewire::test(ListActivityLogs::class)
+    activityLogsPageForTesting()
         ->assertOk()
         ->assertSeeText('Anonymous')
         ->assertSeeText('None')
