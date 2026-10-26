@@ -7,6 +7,7 @@ use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\UploadedFile;
@@ -137,7 +138,7 @@ it('denies the Posts index to users with only Users read access', function (): v
         ->assertForbidden();
 });
 
-it('keeps the Posts resource index read only', function (): void {
+it('keeps the Posts resource index read only with a view action for each record', function (): void {
     $authenticatedUser = createUser();
 
     $authenticatedUser->assignRole([
@@ -153,10 +154,18 @@ it('keeps the Posts resource index read only', function (): void {
 
     /** @var HasTable&Component $tableComponent */
     $table = $tableComponent->getTable();
+    $recordActions = $table->getRecordActions();
+    $viewAction = $recordActions[0] ?? null;
 
-    expect($table->getHeaderActions())
-        ->toBeEmpty()
-        ->and($table->getRecordActions())
+    throw_unless($viewAction instanceof ViewAction, LogicException::class, 'The Posts table must expose its view action.');
+
+    expect($recordActions)
+        ->toHaveCount(1)
+        ->and($viewAction->hasModal())
+        ->toBeFalse()
+        ->and($viewAction->hasUrl())
+        ->toBeTrue()
+        ->and($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getToolbarActions())
         ->toBeEmpty();
