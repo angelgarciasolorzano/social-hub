@@ -135,6 +135,9 @@ it('opens a read only modal with the full reply and available context', function
     $testable = mountReplyViewAction(repliesRelationManagerFor($parentComment), $comment);
 
     assertMountedReplyModalSee($testable, [
+        'Reply content',
+        'Reply details',
+        'Message',
         $fullReply,
         $user->name,
         '2026-10-25 14:35',

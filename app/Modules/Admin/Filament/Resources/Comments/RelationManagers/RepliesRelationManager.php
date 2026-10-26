@@ -13,6 +13,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -95,22 +96,42 @@ class RepliesRelationManager extends RelationManager
                     ))
                     ->modalHeading('Reply details')
                     ->schema([
-                        TextEntry::make('content')
-                            ->label('Reply')
-                            ->columnSpanFull(),
-                        TextEntry::make('user.name')
-                            ->label('Author'),
-                        TextEntry::make('created_at')
-                            ->label('Created at')
-                            ->dateTime('Y-m-d H:i'),
-                        TextEntry::make('edited_at')
-                            ->label('Edited at')
-                            ->dateTime('Y-m-d H:i')
-                            ->visible(static fn (Comment $record): bool => $record->edited_at !== null),
-                        TextEntry::make('repliedToUser.name')
-                            ->label('Replying to')
-                            ->formatStateUsing(static fn (?string $state): ?string => filled($state) ? "@{$state}" : null)
-                            ->visible(static fn (Comment $record): bool => $record->repliedToUser instanceof User),
+                        Section::make('Reply content')
+                            ->description('The complete message in this conversation.')
+                            ->icon(Heroicon::OutlinedDocumentText)
+                            ->schema([
+                                TextEntry::make('content')
+                                    ->label('Message')
+                                    ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
+                                    ->prose()
+                                    ->columnSpanFull(),
+                            ]),
+                        Section::make('Reply details')
+                            ->description('Author and timeline for this reply.')
+                            ->icon(Heroicon::OutlinedUserCircle)
+                            ->schema([
+                                TextEntry::make('user.name')
+                                    ->label('Author')
+                                    ->icon(Heroicon::OutlinedUser),
+                                TextEntry::make('created_at')
+                                    ->label('Created at')
+                                    ->icon(Heroicon::OutlinedCalendarDays)
+                                    ->dateTime('Y-m-d H:i'),
+                                TextEntry::make('edited_at')
+                                    ->label('Edited at')
+                                    ->icon(Heroicon::OutlinedPencilSquare)
+                                    ->dateTime('Y-m-d H:i')
+                                    ->visible(static fn (Comment $record): bool => $record->edited_at !== null),
+                                TextEntry::make('repliedToUser.name')
+                                    ->label('Replying to')
+                                    ->icon(Heroicon::OutlinedUser)
+                                    ->formatStateUsing(static fn (?string $state): ?string => filled($state) ? "@{$state}" : null)
+                                    ->visible(static fn (Comment $record): bool => $record->repliedToUser instanceof User),
+                            ])
+                            ->columns([
+                                'default' => 1,
+                                'sm' => 2,
+                            ]),
                     ])
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Close'),
