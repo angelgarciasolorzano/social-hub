@@ -15,7 +15,7 @@ const MEDIA_DISK_ENVIRONMENT = [
 ];
 
 it('stores media in its own bucket and serves it from its own url', function (): void {
-    $disk = configWithEnvironment('filesystems', MEDIA_DISK_ENVIRONMENT)['disks']['media'];
+    $disk = filesystemDiskWithEnvironment('media', MEDIA_DISK_ENVIRONMENT);
 
     expect($disk)->toMatchArray([
         'bucket' => 'media-bucket',
@@ -24,7 +24,7 @@ it('stores media in its own bucket and serves it from its own url', function ():
 });
 
 it('connects to S3 with the general AWS credentials and endpoint', function (): void {
-    $disk = configWithEnvironment('filesystems', MEDIA_DISK_ENVIRONMENT)['disks']['media'];
+    $disk = filesystemDiskWithEnvironment('media', MEDIA_DISK_ENVIRONMENT);
 
     expect($disk)->toMatchArray([
         'key' => 'general-key',

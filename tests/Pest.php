@@ -551,3 +551,22 @@ function configWithEnvironment(string $configFile, array $variables): array
         }
     }
 }
+
+/**
+ * The configuration of one filesystem disk as config/filesystems.php builds it
+ * with the given environment variables (see configWithEnvironment()).
+ *
+ * @param  array<string, string|null>  $variables
+ * @return array<string, mixed>
+ */
+function filesystemDiskWithEnvironment(string $disk, array $variables): array
+{
+    $disks = configWithEnvironment('filesystems', $variables)['disks'] ?? null;
+
+    throw_unless(is_array($disks) && is_array($disks[$disk] ?? null), LogicException::class, "The filesystem disk '{$disk}' is not configured.");
+
+    /** @var array<string, mixed> $diskConfiguration */
+    $diskConfiguration = $disks[$disk];
+
+    return $diskConfiguration;
+}
