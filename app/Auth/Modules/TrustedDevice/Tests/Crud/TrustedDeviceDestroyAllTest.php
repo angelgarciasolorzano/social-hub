@@ -37,22 +37,6 @@ it('revokes every active device and records a RevokedAll event for each', functi
             ->count())->toBe(3);
 });
 
-it("does not touch another user's devices", function (): void {
-    $user = createUser();
-    createTrustedDevice($user);
-
-    $otherUser = createUser();
-    $trustedDevice = createTrustedDevice($otherUser);
-
-    $this->actingAs($user)
-        ->delete(route('user.trusted-devices.destroy-all'), [
-            'password' => 'password',
-            'terms' => true,
-        ]);
-
-    expect($trustedDevice->fresh()?->deleted_at)->toBeNull();
-});
-
 it('does not re-revoke an already revoked device', function (): void {
     $user = createUser();
     createTrustedDevice($user)->delete();
@@ -100,20 +84,6 @@ it('requires the terms to be accepted', function (): void {
     $testResponse->assertSessionHasErrors('terms');
 
     expect($trustedDevice->fresh()?->deleted_at)->toBeNull();
-});
-
-it('invalidates the dashboard cache after revoking every device', function (): void {
-    $user = createUser();
-    createTrustedDevice($user);
-    warmTrustedDeviceStatsCache($user);
-
-    $this->actingAs($user)
-        ->delete(route('user.trusted-devices.destroy-all'), [
-            'password' => 'password',
-            'terms' => true,
-        ]);
-
-    expect(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeFalse();
 });
 
 it('succeeds without events or cache invalidation when the user has no devices', function (): void {

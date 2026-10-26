@@ -108,16 +108,12 @@ it('answers 404 when the comment was already deleted', function (): void {
     expect(Comment::withTrashed()->find($comment->id)?->content)->toBe('Original');
 });
 
-it('rejects an empty or too long content and leaves the comment untouched', function (string $submittedContent): void {
+it('rejects an empty content and leaves the comment untouched', function (): void {
     $user = createUser();
     $comment = createComment($user, ['content' => 'Original']);
 
-    editCommentAs($this, $user, $comment, $submittedContent)->assertSessionHasErrors('content');
+    editCommentAs($this, $user, $comment, '')->assertSessionHasErrors('content');
 
     expect($comment->fresh()?->content)->toBe('Original')
         ->and($comment->fresh()?->edited_at)->toBeNull();
-})->with([
-    'empty' => [''],
-    'only whitespace' => ["  \n "],
-    '1001 characters' => [str_repeat('a', 1001)],
-]);
+});

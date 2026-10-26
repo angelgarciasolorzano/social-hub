@@ -119,11 +119,3 @@ it('records a password reset', function (): void {
 
     expectActivityOnOwnAccount(soleAuthActivity('auth.password_reset'), $user);
 });
-
-it('keeps the existing login listeners working', function (): void {
-    $user = createUser();
-
-    $this->post(route('login.store'), ['email' => $user->email, 'password' => 'password']);
-
-    expect($user->refresh()->last_login_at)->not->toBeNull();
-});

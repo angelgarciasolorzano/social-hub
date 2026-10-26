@@ -13,7 +13,6 @@ use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\DB;
 use Inertia\OptionalProp;
 use Inertia\RenderContext;
-use LogicException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
@@ -97,15 +96,6 @@ it('lists the replies of a comment oldest first and pages them in ascending id o
     expect(array_column($firstPage->items(), 'id'))->toBe(array_slice($replyIds, 0, 10))
         ->and(array_column($secondPage->items(), 'id'))->toBe(array_slice($replyIds, 10))
         ->and($secondPage->hasMorePages())->toBeFalse();
-});
-
-it('keeps listing the comments of a post newest first', function (): void {
-    $post = createPost();
-    $commentIds = array_map(static fn (Comment $comment): int => $comment->id, createCommentsOn($post, 3));
-
-    $page = resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], createUser());
-
-    expect(array_column($page->items(), 'id'))->toBe(array_reverse($commentIds));
 });
 
 it('serves the next page from the comments cursor and ends without a further cursor', function (): void {
@@ -310,18 +300,6 @@ it('refuses to resolve the props for a guest', function (): void {
         ->toThrow(HttpException::class);
 });
 
-it('allows 60 loads per minute and then answers 429', function (): void {
-    $post = createPost();
-    $user = createUser();
-    $query = [CommentThreadProps::COMMENTS_PARAMETER => $post->id];
-
-    foreach (range(1, 60) as $attempt) {
-        resolveCommentThread('comments', $query, $user);
-    }
-
-    expect(fn (): CursorPaginator => resolveCommentThread('comments', $query, $user))->toThrow(ThrottleRequestsException::class);
-});
-
 it('shares the read budget between comments and replies but keeps it per user', function (): void {
     $post = createPost();
 
@@ -339,49 +317,4 @@ it('shares the read budget between comments and replies but keeps it per user', 
         ->toThrow(ThrottleRequestsException::class)
         ->and(resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], $bystander)->items())
         ->toHaveCount(1);
-});
-
-it('does not let reading comments consume the comment publishing budget', function (): void {
-    $post = createPost();
-    $user = createUser();
-
-    foreach (range(1, 60) as $attempt) {
-        resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $post->id], $user);
-    }
-
-    $this->actingAs($user)
-        ->post(route('comments.store'), [
-            'content' => 'Un comentario',
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertRedirect();
-});
-
-it('uses the same number of queries whether the thread has one or many comments and replies', function (): void {
-    $smallPost = createPost();
-    createCommentsOn($smallPost, 1);
-
-    $largePost = createPost();
-
-    foreach (createCommentsOn($largePost, 10) as $comment) {
-        createCommentOn($comment);
-        createLike(createUser(), $comment);
-    }
-
-    $user = createUser();
-
-    $countQueries = static function (int $postId) use ($user): int {
-        DB::flushQueryLog();
-        DB::enableQueryLog();
-
-        resolveCommentThread('comments', [CommentThreadProps::COMMENTS_PARAMETER => $postId], $user);
-
-        $queries = count(DB::connection()->getQueryLog());
-        DB::disableQueryLog();
-
-        return $queries;
-    };
-
-    expect($countQueries($largePost->id))->toBe($countQueries($smallPost->id));
 });

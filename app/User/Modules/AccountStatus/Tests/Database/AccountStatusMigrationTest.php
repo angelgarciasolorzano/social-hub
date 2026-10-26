@@ -62,7 +62,11 @@ it('drops the status column and the history table on rollback', function (): voi
 });
 
 it('creates new accounts as active when no status is given', function (): void {
-    $user = createUser();
+    $user = User::query()->forceCreate([
+        'name' => 'Cuenta sin estado',
+        'email' => 'sin-estado@example.com',
+        'password' => 'password',
+    ]);
 
     expect($user->fresh()?->getRawOriginal('status'))->toBe('active');
 });

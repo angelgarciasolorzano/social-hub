@@ -21,9 +21,6 @@ class AdminAuthorizationSeeder extends Seeder
         $permissionRegistrar->forgetCachedPermissions();
 
         DB::transaction(function (): void {
-            $this->renameLegacyPermissions();
-            $this->renameLegacyRoles();
-
             /** @var array<string, Permission> $permissions */
             $permissions = [];
 
@@ -89,26 +86,5 @@ class AdminAuthorizationSeeder extends Seeder
         });
 
         $permissionRegistrar->forgetCachedPermissions();
-    }
-
-    private function renameLegacyPermissions(): void
-    {
-        foreach ([
-            'users.viewAny' => AdminPermission::AdminUsersViewAny,
-            'users.view' => AdminPermission::AdminUsersView,
-        ] as $legacyName => $adminPermission) {
-            Permission::query()
-                ->where('name', $legacyName)
-                ->where('guard_name', self::GUARD)
-                ->update(['name' => $adminPermission->value]);
-        }
-    }
-
-    private function renameLegacyRoles(): void
-    {
-        Role::query()
-            ->where('name', 'users-reader')
-            ->where('guard_name', self::GUARD)
-            ->update(['name' => AdminRole::AdminUsersReader->value]);
     }
 }

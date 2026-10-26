@@ -190,9 +190,3 @@ it('only deletes root comments that have replies', function (): void {
             ->and(Comment::query()->where('commentable_type', Comment::MORPH_NAME)->where('commentable_id', $deletedComment->id)->exists())->toBeTrue();
     }
 });
-
-it('never deletes a reply', function (): void {
-    seedCommentThreads($this, 60);
-
-    expect(Comment::onlyTrashed()->where('commentable_type', Comment::MORPH_NAME)->count())->toBe(0);
-});

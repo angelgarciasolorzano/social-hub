@@ -259,8 +259,13 @@ it('does not reactivate a device when two-factor was disabled after the user mod
         ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Reactivated))->toBe(0);
 });
 
-it('keeps the recovery codes and the revoked device untouched when the code is invalid', function (string $invalidCode): void {
+it('keeps the recovery codes and the revoked device untouched when the code is invalid', function (string $submittedCode): void {
     $user = createUserWithRecoveryCodes('abcde12345-fghij67890');
+    $invalidCode = match ($submittedCode) {
+        'wrong-totp' => invalidOtpFor($user),
+        'unknown-recovery-code' => 'zzzzz00000-yyyyy11111',
+        default => throw new InvalidArgumentException("Unknown submitted code '{$submittedCode}'."),
+    };
     $trustedDevice = createTrustedDevice($user, ['token_hash' => hash('sha256', 'old-token')]);
     $trustedDevice->delete();
 
@@ -270,8 +275,8 @@ it('keeps the recovery codes and the revoked device untouched when the code is i
         ->and($trustedDevice->refresh()->deleted_at)->not->toBeNull()
         ->and($trustedDevice->token_hash)->toBe(hash('sha256', 'old-token'));
 })->with([
-    'wrong TOTP' => ['000000'],
-    'unknown recovery code' => ['zzzzz00000-yyyyy11111'],
+    'wrong TOTP' => ['wrong-totp'],
+    'unknown recovery code' => ['unknown-recovery-code'],
 ]);
 
 it('gives the recovery code back when the reactivation fails after consuming it', function (): void {

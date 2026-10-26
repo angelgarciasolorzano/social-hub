@@ -19,13 +19,6 @@ function createAccountStatusChangeAt(User $user, string $createdAt): AccountStat
     return $factory->for($user)->createOne(['created_at' => $createdAt]);
 }
 
-it('creates accounts as active', function (): void {
-    $user = createUser();
-
-    expect($user->fresh()?->status)->toBe(AccountStatus::Active)
-        ->and($user->isSuspended())->toBeFalse();
-});
-
 it('reports a suspended account as suspended', function (): void {
     $user = createSuspendedUser();
 

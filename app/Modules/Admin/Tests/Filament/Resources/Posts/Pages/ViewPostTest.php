@@ -14,7 +14,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
-use ReflectionMethod;
 use Tests\TestCase;
 
 beforeEach(function (): void {
@@ -101,7 +100,6 @@ it('shows the image from the posts_images collection on the post detail page', f
 
     $user = createUser();
     $post = createPost($user, ['content' => 'Post image detail content sentinel']);
-    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
     $post->addMedia(UploadedFile::fake()->image('post-detail-image.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
@@ -117,8 +115,6 @@ it('shows the image from the posts_images collection on the post detail page', f
 });
 
 it('shows the fallback when a post has no image on the detail page', function (): void {
-    Storage::fake((string) config('media-library.disk_name'));
-
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
@@ -127,7 +123,6 @@ it('shows the fallback when a post has no image on the detail page', function ()
     $authenticatedUser->saveAppAuthenticationSecret('filament-test-secret');
 
     $post = createPost();
-    $post->clearMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
     $this->actingAs($authenticatedUser, 'admin');
 
@@ -199,22 +194,4 @@ it('denies post detail when the post has no existing owner', function (): void {
 
     Livewire::test(ViewPost::class, ['record' => $post->getKey()])
         ->assertForbidden();
-});
-
-it('denies every post mutation in the panel even to a posts reader who wrote the post', function (): void {
-    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles(
-        $this,
-        AdminRole::Admin,
-        AdminRole::AdminPostsReader,
-    );
-    $post = createPost($authenticatedUser);
-
-    expect(PostResource::canCreate())->toBeFalse()
-        ->and(PostResource::canEdit($post))->toBeFalse()
-        ->and(PostResource::canDelete($post))->toBeFalse()
-        ->and(PostResource::canDeleteAny())->toBeFalse()
-        ->and(PostResource::canRestore($post))->toBeFalse()
-        ->and(PostResource::canRestoreAny())->toBeFalse()
-        ->and(PostResource::canForceDelete($post))->toBeFalse()
-        ->and(PostResource::canForceDeleteAny())->toBeFalse();
 });

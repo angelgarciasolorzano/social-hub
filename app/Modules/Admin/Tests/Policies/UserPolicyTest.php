@@ -8,7 +8,6 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
 use App\User\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
 
 /**
  * Create a user holding the account moderation role.
@@ -31,10 +30,7 @@ it('allows listing users only with admin.users.viewAny', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
-    $listUsersRole = Role::findOrCreate('users-list-test', 'admin');
-    $listUsersRole->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
-
-    $authenticatedUser->assignRole($listUsersRole);
+    grantAdminPermissionThroughTestRole($authenticatedUser, AdminPermission::AdminUsersViewAny);
     $targetUser = createUser();
 
     expect(Gate::forUser($authenticatedUser)->allows('viewAny', User::class))->toBeTrue()
@@ -45,10 +41,7 @@ it('allows viewing a user only with admin.users.view', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
     $authenticatedUser = createUser();
-    $viewUsersRole = Role::findOrCreate('users-view-test', 'admin');
-    $viewUsersRole->givePermissionTo(AdminPermission::AdminUsersView->value);
-
-    $authenticatedUser->assignRole($viewUsersRole);
+    grantAdminPermissionThroughTestRole($authenticatedUser, AdminPermission::AdminUsersView);
     $targetUser = createUser();
 
     expect(Gate::forUser($authenticatedUser)->allows('view', $targetUser))->toBeTrue()
@@ -77,12 +70,7 @@ it('does not grant user access through posts or dashboard permissions', function
 
     foreach ($unrelatedPermissions as $unrelatedPermission) {
         $authenticatedUser = createUser();
-        $role = Role::findOrCreate(
-            "user-policy-{$unrelatedPermission->name}-test",
-            'admin',
-        );
-        $role->syncPermissions($unrelatedPermission->value);
-        $authenticatedUser->assignRole($role);
+        grantAdminPermissionThroughTestRole($authenticatedUser, $unrelatedPermission);
 
         expect(Gate::forUser($authenticatedUser)->allows('viewAny', User::class))
             ->toBeFalse()

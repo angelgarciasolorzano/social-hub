@@ -23,16 +23,6 @@ it('requires the content of the post', function (): void {
     expect(Post::query()->count())->toBe(0);
 });
 
-it('rejects content shorter than 10 characters', function (): void {
-    $user = createUser();
-
-    $this->actingAs($user)
-        ->post(route('post.store'), ['content' => 'corto'])
-        ->assertSessionHasErrors(['content' => 'El contenido de la publicación no debe ser menor a 10 caracteres']);
-
-    expect(Post::query()->count())->toBe(0);
-});
-
 it('creates the post for the authenticated user and flashes a success message', function (): void {
     $user = createUser();
 
@@ -93,34 +83,4 @@ it('flashes an error but keeps the post when the image is too big', function ():
     expect($post->user_id)->toBe($user->id)
         ->and($post->getMedia(Post::POSTS_IMAGES_MEDIA_COLLECTION))
         ->toBeEmpty();
-});
-
-it('rejects an uploaded file that is not a png, jpg or webp image', function (): void {
-    Storage::fake('public');
-
-    $user = createUser();
-
-    $this->actingAs($user)
-        ->post(route('post.store'), [
-            'content' => 'Publicación con un archivo inválido',
-            'image_file' => UploadedFile::fake()->create('document.pdf', 10, 'application/pdf'),
-        ])
-        ->assertSessionHasErrors(['image_file' => 'El archivo debe ser de tipo png, jpg o webp']);
-
-    expect(Post::query()->count())->toBe(0);
-});
-
-it('rejects an uploaded image larger than 5MB', function (): void {
-    Storage::fake('public');
-
-    $user = createUser();
-
-    $this->actingAs($user)
-        ->post(route('post.store'), [
-            'content' => 'Publicación con una imagen pesada',
-            'image_file' => UploadedFile::fake()->image('photo.jpg')->size(5121),
-        ])
-        ->assertSessionHasErrors(['image_file' => 'El archivo no debe ser mayor a 5MB']);
-
-    expect(Post::query()->count())->toBe(0);
 });

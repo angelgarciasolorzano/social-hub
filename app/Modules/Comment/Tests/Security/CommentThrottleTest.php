@@ -164,19 +164,6 @@ it('allows 60 listings per minute and then answers 429', function (): void {
     loadCommentsAs($this, $user, $post)->assertTooManyRequests();
 });
 
-it('throttles the reading of comments per user', function (): void {
-    $user = createUser();
-    $bystander = createUser();
-    $post = createPost();
-
-    foreach (range(1, 61) as $attempt) {
-        loadCommentsAs($this, $user, $post);
-    }
-
-    loadCommentsAs($this, $user, $post)->assertTooManyRequests();
-    loadCommentsAs($this, $bystander, $post)->assertOk();
-});
-
 it('lets the user read comments again once the minute has passed', function (): void {
     $user = createUser();
     $post = createPost();

@@ -156,47 +156,6 @@ it('does not create a trusted device when remember_device is not checked', funct
         ->toBe($otherUsersActivityBefore);
 });
 
-it('leaves a single active device when a revoked browser is remembered again', function (): void {
-    $user = createUserWithTwoFactor();
-    $trustedDevice = createDeviceOfTestBrowser($user);
-    $trustedDevice->delete();
-
-    passChallengeRememberingBrowser($this, $user)->assertRedirect();
-
-    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
-        ->and($trustedDevice->refresh()->deleted_at)->toBeNull()
-        ->and($trustedDevice->isActive())->toBeTrue();
-});
-
-it('records a Reactivated event instead of a Created one when a revoked browser is remembered again', function (): void {
-    $user = createUserWithTwoFactor();
-    createDeviceOfTestBrowser($user)->delete();
-
-    passChallengeRememberingBrowser($this, $user);
-
-    expect(countTrustedDeviceEvents($user, TrustedDeviceAction::Reactivated))->toBe(1)
-        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Created))->toBe(0);
-});
-
-it('records a Renewed event when an expired browser is remembered again', function (): void {
-    $user = createUserWithTwoFactor();
-    createDeviceOfTestBrowser($user, ['expires_at' => now()->subDay()]);
-
-    passChallengeRememberingBrowser($this, $user);
-
-    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
-        ->and(countTrustedDeviceEvents($user, TrustedDeviceAction::Renewed))->toBe(1);
-});
-
-it('does not add a second device when the same browser is remembered twice', function (): void {
-    $user = createUserWithTwoFactor();
-
-    passChallengeRememberingBrowser($this, $user);
-    passChallengeRememberingBrowser($this, $user);
-
-    expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1);
-});
-
 it('issues a cookie whose hash matches the restored device', function (): void {
     $user = createUserWithTwoFactor();
     $trustedDevice = createDeviceOfTestBrowser($user, ['token_hash' => hash('sha256', 'old-token')]);

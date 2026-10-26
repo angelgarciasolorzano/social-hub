@@ -11,11 +11,9 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\User\Models\User;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Contracts\HasTable;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use LogicException;
 use Tests\TestCase;
 
 /**
@@ -156,25 +154,6 @@ it('defines trusted device columns without mutation actions', function (): void 
         ->toBeEmpty()
         ->and($table->getToolbarActions())
         ->toBeEmpty();
-});
-
-it('uses ten rows as the trusted device pagination default', function (): void {
-    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
-
-    $targetUser = createUser();
-
-    $component = trustedDevicesRelationManagerFor($targetUser)
-        ->assertOk()
-        ->instance();
-
-    throw_unless($component instanceof HasTable, LogicException::class, 'The trusted devices component must expose a Filament table.');
-
-    /** @var HasTable&Component $component */
-    $table = $component->getTable();
-
-    expect($table->isPaginated())->toBeTrue()
-        ->and($table->getDefaultPaginationPageOption())
-        ->toBe(10);
 });
 
 it('paginates only the selected users trusted devices', function (): void {

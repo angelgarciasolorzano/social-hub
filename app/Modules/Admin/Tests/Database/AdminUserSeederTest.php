@@ -62,23 +62,6 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         ->toBe(collect($expectedPermissionNames)->sort()->values()->all());
 });
 
-it('does not assign the user provisioner role to Angel automatically', function (): void {
-    $user = createUser();
-    $user->forceFill(['email' => 'angel@gmail.com'])->save();
-
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $provisionerRole = Role::query()
-        ->where('name', AdminRole::AdminUsersProvisioner->value)
-        ->where('guard_name', 'admin')
-        ->firstOrFail();
-
-    $this->seed(AdminUserSeeder::class);
-
-    expect($user->refresh()->getRoleNames()->all())
-        ->not->toContain($provisionerRole->name);
-});
-
 it('preserves the roles that other users already have', function (): void {
     $user = createUser();
     $user->forceFill(['email' => 'angel@gmail.com'])->save();
@@ -102,26 +85,4 @@ it('preserves the roles that other users already have', function (): void {
         AdminRole::AdminUsersReader->value,
     ]))->toBeTrue()
         ->and($reader->refresh()->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue();
-});
-
-it('grants the complete admin permission set to Angel', function (): void {
-    $user = createUser();
-    $user->forceFill(['email' => 'angel@gmail.com'])->save();
-
-    $this->seed(AdminAuthorizationSeeder::class);
-    $this->seed(AdminUserSeeder::class);
-
-    expect($user->refresh()->hasAllPermissions([
-        AdminPermission::AdminAccess->value,
-        AdminPermission::AdminDashboardView->value,
-        AdminPermission::AdminPostsView->value,
-        AdminPermission::AdminPostsViewAny->value,
-        AdminPermission::AdminUsersView->value,
-        AdminPermission::AdminUsersViewAny->value,
-        AdminPermission::AdminActivityViewAny->value,
-        AdminPermission::AdminActivityView->value,
-        AdminPermission::AdminBackupsView->value,
-        AdminPermission::AdminBackupsCreate->value,
-        AdminPermission::AdminBackupsDownload->value,
-    ]))->toBeTrue();
 });

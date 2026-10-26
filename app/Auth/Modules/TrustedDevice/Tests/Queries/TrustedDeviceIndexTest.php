@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Date;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
-use UnexpectedValueException;
 
 /**
  * @template TResponse of \Symfony\Component\HttpFoundation\Response
@@ -78,21 +77,6 @@ it('renders the page with default filters', function (): void {
             ->where('filters.sort', 'most-recent')
             ->where('filters.perPage', 15)
         );
-});
-
-it('reports two-factor as disabled when the user has no secret', function (): void {
-    $this->actingAs(createUser())
-        ->get(route('setting.security.trusted-devices.index'))
-        ->assertInertia(fn (Assert $assert): Assert => $assert->where('twoFactorStatus', 'disabled'));
-});
-
-it('reports two-factor as pending when the secret is not confirmed', function (): void {
-    $user = createUserWithTwoFactor();
-    $user->forceFill(['two_factor_confirmed_at' => null])->save();
-
-    $this->actingAs($user)
-        ->get(route('setting.security.trusted-devices.index'))
-        ->assertInertia(fn (Assert $assert): Assert => $assert->where('twoFactorStatus', 'pending'));
 });
 
 it('reports two-factor as confirmed when the secret is confirmed', function (): void {

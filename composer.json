@@ -106,7 +106,7 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test -d memory_limit=2G"
+            "@php -d memory_limit=2G artisan test --parallel --passthru-php=\"'-d' 'memory_limit=1G'\""
         ],
         "doctor": "@php artisan doctor",
         "doctor-ci": "@php artisan doctor --format=github --no-interaction",
@@ -127,7 +127,7 @@
     },
     "script-descriptions": {
         "dev": "Start the development environment with hot reloading and concurrent processes.",
-        "test": "Run the test suite with a 2G memory limit.",
+        "test": "Run the whole test suite in parallel (one database per process, 1G memory limit per worker).",
         "pint-ci": "Run Laravel Pint in CI mode to check code style across the whole codebase.",
         "pint-fix": "Run Laravel Pint to fix code style issues.",
         "pint-dirty": "Run Laravel Pint only on changed files.",

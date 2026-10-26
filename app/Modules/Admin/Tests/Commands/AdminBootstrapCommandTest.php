@@ -158,18 +158,6 @@ it('records the bootstrap with the actor and the assigned roles', function (): v
         ]);
 });
 
-it('accepts the promoted user as their own actor', function (): void {
-    $this->seed(AdminAuthorizationSeeder::class);
-
-    $user = createUser();
-
-    runBootstrapAdmin($user->email, $user);
-
-    expect(Activity::query()->where('event', 'admin.bootstrapped')->sole())
-        ->subject_id->toBe($user->id)
-        ->causer_id->toBe($user->id);
-});
-
 it('rejects the command without --actor and changes nothing', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 

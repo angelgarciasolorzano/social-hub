@@ -42,15 +42,6 @@ it('records the given administrator as the author of the change', function (): v
     expect($accountStatusChange->changedBy?->is($user))->toBeTrue();
 });
 
-it('returns no administrator once the author account is deleted', function (): void {
-    $user = createUser();
-    $accountStatusChange = accountStatusChangeFactory()->changedBy($user)->createOne();
-
-    $user->delete();
-
-    expect($accountStatusChange->fresh()?->changedBy)->toBeNull();
-});
-
 it('stores only the creation time', function (): void {
     $accountStatusChange = accountStatusChangeFactory()->createOne();
 

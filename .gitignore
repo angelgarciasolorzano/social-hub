@@ -34,5 +34,6 @@ yarn-error.log
 /.zed
 /_ide_helper.php
 /_ide_helper_models.php
-/app/Post/Seeders/Images/*
-/app/User/Seeders/Images/*
+/app/Modules/Post/Database/Seeders/Images/*
+/app/Modules/User/Database/Seeders/Images/*
+/app/User/Database/Seeders/Images/*

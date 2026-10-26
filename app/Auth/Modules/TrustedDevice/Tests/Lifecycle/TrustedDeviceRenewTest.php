@@ -36,22 +36,28 @@ it('extends the expiration and records a Renewed event when the OTP is valid', f
         ->toBeTrue();
 });
 
-it('does not extend the trust when the OTP is missing, wrong or in recovery-code format', function (?string $otp): void {
+it('does not extend the trust when the OTP is missing, wrong or in recovery-code format', function (string $submittedCode): void {
     $user = createUserWithTwoFactor();
     $trustedDevice = createTrustedDevice($user, ['expires_at' => Date::now()->addDay()]);
     $expiresAt = $trustedDevice->refresh()->expires_at;
+    $payload = match ($submittedCode) {
+        'missing' => [],
+        'wrong' => ['otp_code' => invalidOtpFor($user)],
+        'recovery-format' => ['otp_code' => 'abcde12345-fghij67890'],
+        default => throw new InvalidArgumentException("Unknown submitted code '{$submittedCode}'."),
+    };
 
     $testResponse = $this->actingAs($user)
-        ->post(route('user.trusted-devices.renew', $trustedDevice), $otp === null ? [] : ['otp_code' => $otp]);
+        ->post(route('user.trusted-devices.renew', $trustedDevice), $payload);
 
     $testResponse->assertSessionHasErrors('otp_code');
 
     expect($trustedDevice->refresh()->expires_at->equalTo($expiresAt))->toBeTrue()
         ->and(TrustedDeviceEvent::query()->where('user_id', $user->id)->exists())->toBeFalse();
 })->with([
-    'missing code' => [null],
-    'wrong code' => ['000000'],
-    'recovery-format code' => ['abcde12345-fghij67890'],
+    'missing code' => ['missing'],
+    'wrong code' => ['wrong'],
+    'recovery-format code' => ['recovery-format'],
 ]);
 
 it('answers a wrong OTP code with a fixed message that does not echo the submitted code', function (): void {
@@ -59,7 +65,7 @@ it('answers a wrong OTP code with a fixed message that does not echo the submitt
     $trustedDevice = createTrustedDevice($user);
 
     $testResponse = $this->actingAs($user)
-        ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => '000000']);
+        ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => invalidOtpFor($user)]);
 
     $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
 });

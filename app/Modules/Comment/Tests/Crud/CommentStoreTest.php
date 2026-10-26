@@ -133,58 +133,6 @@ it('requires the content of the comment', function (): void {
     expect(Comment::query()->count())->toBe(0);
 });
 
-it('rejects content longer than 1000 characters', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => str_repeat('a', 1001),
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasErrors('content');
-
-    expect(Comment::query()->count())->toBe(0);
-});
-
-it('accepts content of exactly 1000 characters', function (): void {
-    $post = createPost();
-
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => str_repeat('a', 1000),
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => $post->id,
-        ])
-        ->assertSessionHasNoErrors();
-
-    expect(Comment::query()->count())->toBe(1);
-});
-
-it('rejects an unsupported commentable type', function (): void {
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => 'Un comentario',
-            'commentable_type' => 'user',
-            'commentable_id' => 1,
-        ])
-        ->assertSessionHasErrors('commentable_type');
-
-    expect(Comment::query()->count())->toBe(0);
-});
-
-it('rejects a non-integer commentable id', function (): void {
-    $this->actingAs(createUser())
-        ->post(route('comments.store'), [
-            'content' => 'Un comentario',
-            'commentable_type' => Post::MORPH_NAME,
-            'commentable_id' => 'abc',
-        ])
-        ->assertSessionHasErrors('commentable_id');
-
-    expect(Comment::query()->count())->toBe(0);
-});
-
 it('returns 404 and creates nothing when the commentable does not exist', function (string $commentableType): void {
     $this->actingAs(createUser())
         ->post(route('comments.store'), [

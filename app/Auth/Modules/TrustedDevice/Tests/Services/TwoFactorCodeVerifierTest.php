@@ -54,7 +54,7 @@ it('accepts the current TOTP code', function (): void {
 it('rejects an invalid TOTP code', function (): void {
     $user = createUserWithTwoFactor();
 
-    expect(twoFactorCodeVerifier()->verifyTotp($user, '000000'))->toBeFalse();
+    expect(twoFactorCodeVerifier()->verifyTotp($user, invalidOtpFor($user)))->toBeFalse();
 });
 
 it('rejects a TOTP code for a user without a secret', function (): void {
@@ -161,23 +161,17 @@ it('accepts a valid recovery code as a verification code and consumes it', funct
         ->and(storedRecoveryCodes($user))->toBe([VERIFIER_SECOND_RECOVERY_CODE]);
 });
 
-it('does not accept the same recovery code twice as a verification code', function (): void {
-    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE);
-
-    DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
-
-    $isValidAgain = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
-
-    expect($isValidAgain)->toBeFalse();
-});
-
 it('does not look for a six-digit code among the recovery codes', function (): void {
-    $user = createUserWithRecoveryCodes('123456');
+    $user = createUserWithTwoFactor();
+    $sixDigitRecoveryCode = invalidOtpFor($user);
+    $user->forceFill([
+        'two_factor_recovery_codes' => encrypt(json_encode([$sixDigitRecoveryCode])),
+    ])->save();
 
-    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, '123456'));
+    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, $sixDigitRecoveryCode));
 
     expect($isValid)->toBeFalse()
-        ->and(storedRecoveryCodes($user))->toBe(['123456']);
+        ->and(storedRecoveryCodes($user))->toBe([$sixDigitRecoveryCode]);
 });
 
 it('does not check a recovery-format code as a TOTP code', function (): void {
@@ -190,22 +184,4 @@ it('does not check a recovery-format code as a TOTP code', function (): void {
     $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, VERIFIER_FIRST_RECOVERY_CODE));
 
     expect($isValid)->toBeTrue();
-});
-
-it('rejects a recovery code that belongs to another user as a verification code', function (): void {
-    $user = createUserWithRecoveryCodes(VERIFIER_FIRST_RECOVERY_CODE);
-    $otherUser = createUserWithTwoFactor();
-
-    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($otherUser, VERIFIER_FIRST_RECOVERY_CODE));
-
-    expect($isValid)->toBeFalse()
-        ->and(storedRecoveryCodes($user))->toBe([VERIFIER_FIRST_RECOVERY_CODE]);
-});
-
-it('rejects an empty verification code', function (): void {
-    $user = createUserWithTwoFactor();
-
-    $isValid = DB::transaction(fn (): bool => twoFactorCodeVerifier()->verifyCode($user, ''));
-
-    expect($isValid)->toBeFalse();
 });

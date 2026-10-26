@@ -14,7 +14,6 @@ use Filament\Tables\Testing\TestsFilters;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use LogicException;
 use Tests\TestCase;
 
 /**

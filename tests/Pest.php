@@ -6,16 +6,24 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use PragmaRX\Google2FA\Google2FA;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -301,6 +309,36 @@ function allowOtpReuse(string $otp): void
 }
 
 /**
+ * A six-digit code that the user's authenticator would not accept right now: it differs
+ * from every code of Fortify's verification window plus one period on each side, so a
+ * test that sends a wrong code can never send the valid one by chance (as '000000' could).
+ */
+function invalidOtpFor(User $user): string
+{
+    /** @var string $encryptedSecret */
+    $encryptedSecret = $user->two_factor_secret;
+    $secret = decrypt($encryptedSecret);
+
+    /** @var Google2FA $google2fa */
+    $google2fa = resolve(Google2FA::class);
+
+    $margin = $google2fa->getWindow() + 1;
+    $currentTimestamp = $google2fa->getTimestamp();
+    $acceptedCodes = array_map(
+        fn (int $offset): string => $google2fa->oathTotp($secret, $currentTimestamp + $offset),
+        range(-$margin, $margin),
+    );
+
+    $candidate = 0;
+
+    while (in_array(str_pad((string) $candidate, 6, '0', STR_PAD_LEFT), $acceptedCodes, true)) {
+        $candidate++;
+    }
+
+    return str_pad((string) $candidate, 6, '0', STR_PAD_LEFT);
+}
+
+/**
  * Cache key under which TrustedDeviceDashboardCache stores a user's stats.
  */
 function trustedDeviceStatsCacheKey(User $user): string
@@ -383,4 +421,93 @@ function createAdminCommandActor(): User
     $user->assignRole(AdminRole::Admin->value);
 
     return $user;
+}
+
+/**
+ * Run the callback with app_path() redirected to a temporary directory holding one fake
+ * image in the directory of each seeding glob, then restore it. The real seeding images
+ * are not versioned, so factory tests cannot rely on them.
+ *
+ * @param  list<string>  $globPaths  Seeding globs relative to app_path(), e.g. Post::TEST_IMAGES_GLOB_PATH.
+ * @param  Closure(): void  $callback
+ */
+function withTemporarySeedingImages(array $globPaths, Closure $callback): void
+{
+    $application = app();
+    $originalAppPath = $application->path();
+    $root = sys_get_temp_dir().'/seeding-images-'.uniqid('', true);
+    $file = UploadedFile::fake()->image('seed.jpg');
+
+    foreach ($globPaths as $globPath) {
+        $directory = $root.'/'.dirname($globPath);
+
+        File::makeDirectory($directory, 0755, true, true);
+        File::put($directory.'/seed.jpg', $file->getContent());
+    }
+
+    $application->useAppPath($root);
+
+    try {
+        $callback();
+    } finally {
+        $application->useAppPath($originalAppPath);
+        File::deleteDirectory($root);
+    }
+}
+
+/**
+ * Give the user a single Admin permission through a throwaway role on the admin guard,
+ * so a test can grant one ability without the bundles of the catalog roles.
+ * The Admin authorization catalog must be seeded first.
+ */
+function grantAdminPermissionThroughTestRole(User $user, AdminPermission $adminPermission): void
+{
+    $role = Role::query()->create([
+        'name' => 'test-permission-'.$adminPermission->value,
+        'guard_name' => 'admin',
+    ]);
+
+    $role->givePermissionTo(Permission::findByName($adminPermission->value, 'admin'));
+
+    $user->assignRole($role);
+}
+
+/**
+ * Store a backup archive in the configured destination of the `backups` disk and set
+ * its modification time (now by default), returning its path on the disk.
+ */
+function storeBackupArchive(string $filename, string $contents, ?CarbonInterface $modifiedAt = null): string
+{
+    $path = config('backup.backup.name').'/'.$filename;
+
+    Storage::disk('backups')->put($path, $contents);
+    touch(Storage::disk('backups')->path($path), ($modifiedAt ?? now())->getTimestamp());
+
+    return $path;
+}
+
+/**
+ * Create a pending Admin invitation and return it with its plain token, the value the
+ * invitation link carries (only its hash is stored). The invitation goes to the given
+ * email, or to the target user's email when none is given.
+ *
+ * @return array{invitation: AdminInvitation, token: string}
+ */
+function createAdminInvitationWithToken(?User $targetUser = null, ?string $email = null): array
+{
+    $plainToken = bin2hex(random_bytes(32));
+
+    /** @var Factory<AdminInvitation> $factory */
+    $factory = AdminInvitation::factory();
+
+    $adminInvitation = $factory->createOne([
+        'email' => $email ?? $targetUser?->email ?? fake()->unique()->safeEmail(),
+        'target_user_id' => $targetUser?->getKey(),
+        'token_hash' => hash('sha256', $plainToken),
+    ]);
+
+    return [
+        'invitation' => $adminInvitation,
+        'token' => $plainToken,
+    ];
 }

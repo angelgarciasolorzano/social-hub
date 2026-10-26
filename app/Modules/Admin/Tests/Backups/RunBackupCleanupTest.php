@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Jobs\RunBackupCleanup;
 use Illuminate\Support\Facades\Artisan;
-use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 
 it('runs the backup cleanup command', function (): void {
