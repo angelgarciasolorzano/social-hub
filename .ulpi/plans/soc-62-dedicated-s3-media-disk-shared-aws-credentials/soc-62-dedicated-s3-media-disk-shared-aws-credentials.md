@@ -10,7 +10,7 @@ Agregar el disco `media` y el respaldo de credenciales del disco `backups` en co
 
 **Modo:** HOLD · **Revisión por defecto:** claude
 
-HOLD confirmado por el usuario: exactamente lo acordado en la conversación. Un disco `media` (driver s3, visibilidad pública) con bucket y URL propios (`MEDIA_S3_BUCKET`, `MEDIA_S3_URL`) que reutiliza las credenciales y la conexión `AWS_*`; y el disco `backups` con respaldo a `AWS_*` cuando faltan sus `BACKUP_S3_*`. Ningún código usa el disco `s3` ni el disco por defecto (búsqueda de `Storage::` sin disco y `->store()` en app/ y config/), así que no hay datos que migrar.
+HOLD confirmado por el usuario: exactamente lo acordado en la conversación. Un disco `media` (driver s3, visibilidad pública) con bucket y URL propios (`MEDIA_S3_BUCKET`, `MEDIA_S3_URL`) que reutiliza las credenciales y la conexión `AWS_*`; y el disco `backups` con respaldo a `AWS_*` cuando faltan sus `BACKUP_S3_*`. Ningún código usa el disco `s3` ni el disco por defecto (búsqueda de `Storage::` sin disco y `->store()` en app/ y config/), así que no hay datos que migrar. Ampliación posterior acordada con el usuario: credenciales y conexión opcionales para el disco media (TASK-006) e interpolación de AWS_* en .env.example (TASK-007).
 
 **Ejecución:** Implementar una tarea atómica por vez, revisar el diff con /code-review y pausar para revisión del usuario, según .ai/rules/linear.md.
 
@@ -105,11 +105,11 @@ En config/filesystems.php, que key, secret, region, endpoint y use_path_style_en
 
 ### TASK-004: Sincronizar CLAUDE.md
 
-Documentar en CLAUDE.md (sección Media uploads y párrafo de backups SOC-55) el disco media, el respaldo AWS_* de backups, que BACKUP_S3_URL no se usa y la regla de no dejar variables vacías.
+Documentar en CLAUDE.md (sección Media uploads y párrafo de backups SOC-55) el disco media, el respaldo AWS_* de backups, que BACKUP_S3_URL no se usa y la regla de no dejar variables vacías. Incluye las MEDIA_S3_* opcionales y la interpolación de .env.example (TASK-006/007).
 
 **Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3 · **Review:** claude
 
-**Depends on:** TASK-002
+**Depends on:** TASK-002, TASK-007
 
 **Acceptance Criteria:**
 
@@ -127,7 +127,7 @@ Ejecutar Pint, PHPStan, Rector (caché limpia), composer test y composer doctor;
 
 **Type:** chore · **Effort:** S · **Agent:** general-purpose · **Priority:** P3 · **Review:** claude
 
-**Depends on:** TASK-003, TASK-004
+**Depends on:** TASK-003, TASK-004, TASK-007
 
 **Acceptance Criteria:**
 
@@ -138,6 +138,42 @@ Ejecutar Pint, PHPStan, Rector (caché limpia), composer test y composer doctor;
 **writeScope:** ninguno (solo verificación y Linear)
 
 **validateCommand:** `composer test`
+
+### TASK-006: Credenciales y conexión opcionales del disco media
+
+Ampliación pedida por el usuario: que el disco media use MEDIA_S3_ACCESS_KEY_ID, MEDIA_S3_SECRET_ACCESS_KEY, MEDIA_S3_DEFAULT_REGION, MEDIA_S3_ENDPOINT y MEDIA_S3_USE_PATH_STYLE_ENDPOINT si existen y, si no, AWS_* (mismo patrón que backups). Útil si las imágenes viven en otro proveedor o cuenta (por ejemplo, Cloudflare R2). Ampliar MediaDiskConfigurationTest con el caso de prioridad.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1 · **Review:** claude
+
+**Depends on:** TASK-003
+
+**Acceptance Criteria:**
+
+- [ ] Sin MEDIA_S3_* de credenciales y conexión, el disco media usa las de AWS_*.
+- [ ] Si se definen MEDIA_S3_*, tienen prioridad sobre AWS_*; el bucket y la URL siguen siendo MEDIA_S3_BUCKET y MEDIA_S3_URL.
+- [ ] Pint, PHPStan y Rector limpios y composer test completo en verde.
+
+**writeScope:** `config/filesystems.php`, `tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php`
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php`
+
+### TASK-007: Interpolación de AWS_* en .env.example y mención de MiniStack
+
+Propuesta del usuario: en .env.example, las BACKUP_S3_* y MEDIA_S3_* de credenciales y conexión quedan activas con "${AWS_...}" (phpdotenv las resuelve porque el bloque AWS va antes), en lugar de comentadas; el respaldo de config/ se mantiene para entornos sin archivo .env, donde no hay interpolación. Los comentarios de .env.example y README.md hablan de un emulador S3 como LocalStack o MiniStack.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2 · **Review:** claude
+
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+
+- [ ] Copiar .env.example sin cambios deja los discos backups y media con las credenciales y la conexión de AWS_* (comprobado cargando el archivo con phpdotenv).
+- [ ] README.md explica la interpolación, el respaldo de config/ para producción y menciona MiniStack.
+- [ ] Las variables de almacenamiento de config/ y de .env.example siguen coincidiendo en ambos sentidos.
+
+**writeScope:** `.env.example`, `README.md`
+
+**validateCommand:** `grep -c 'MEDIA_S3_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"' .env.example`
 
 ## Failure Modes
 
@@ -158,13 +194,16 @@ TASK-001 sola ya permite enviar las imágenes a S3 local con MEDIA_DISK=media. T
 
 ## Execution Summary
 
-- Tareas: 5
-- Camino crítico: TASK-001 → TASK-002 → TASK-003 → TASK-005
+- Tareas: 7
+- Camino crítico: TASK-001 → TASK-002 → TASK-003 → TASK-006 → TASK-007 → TASK-004 → TASK-005
 - Capas:
   1. TASK-001
   2. TASK-002
-  3. TASK-003, TASK-004
-  4. TASK-005
+  3. TASK-003
+  4. TASK-006
+  5. TASK-007
+  6. TASK-004
+  7. TASK-005
 
 ## Task Dependencies
 
@@ -173,5 +212,7 @@ TASK-001 sola ya permite enviar las imágenes a S3 local con MEDIA_DISK=media. T
 | TASK-001 | — |
 | TASK-002 | TASK-001 |
 | TASK-003 | TASK-002 |
-| TASK-004 | TASK-002 |
-| TASK-005 | TASK-003, TASK-004 |
+| TASK-004 | TASK-002, TASK-007 |
+| TASK-005 | TASK-003, TASK-004, TASK-007 |
+| TASK-006 | TASK-003 |
+| TASK-007 | TASK-006 |

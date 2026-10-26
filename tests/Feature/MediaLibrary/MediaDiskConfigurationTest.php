@@ -12,6 +12,11 @@ const MEDIA_DISK_ENVIRONMENT = [
     'AWS_URL' => 'http://localhost:4566/general-bucket',
     'MEDIA_S3_BUCKET' => 'media-bucket',
     'MEDIA_S3_URL' => 'http://localhost:4566/media-bucket',
+    'MEDIA_S3_ACCESS_KEY_ID' => null,
+    'MEDIA_S3_SECRET_ACCESS_KEY' => null,
+    'MEDIA_S3_DEFAULT_REGION' => null,
+    'MEDIA_S3_ENDPOINT' => null,
+    'MEDIA_S3_USE_PATH_STYLE_ENDPOINT' => null,
 ];
 
 it('stores media in its own bucket and serves it from its own url', function (): void {
@@ -23,7 +28,7 @@ it('stores media in its own bucket and serves it from its own url', function ():
     ]);
 });
 
-it('connects to S3 with the general AWS credentials and endpoint', function (): void {
+it('falls back to the general AWS credentials and endpoint when no media ones are set', function (): void {
     $disk = filesystemDiskWithEnvironment('media', MEDIA_DISK_ENVIRONMENT);
 
     expect($disk)->toMatchArray([
@@ -32,6 +37,25 @@ it('connects to S3 with the general AWS credentials and endpoint', function (): 
         'region' => 'us-east-1',
         'endpoint' => 'http://localhost:4566',
         'use_path_style_endpoint' => true,
+    ]);
+});
+
+it('prefers its own media credentials and endpoint when they are set', function (): void {
+    $disk = filesystemDiskWithEnvironment('media', [
+        ...MEDIA_DISK_ENVIRONMENT,
+        'MEDIA_S3_ACCESS_KEY_ID' => 'media-key',
+        'MEDIA_S3_SECRET_ACCESS_KEY' => 'media-secret',
+        'MEDIA_S3_DEFAULT_REGION' => 'auto',
+        'MEDIA_S3_ENDPOINT' => 'https://media.example.test',
+        'MEDIA_S3_USE_PATH_STYLE_ENDPOINT' => 'false',
+    ]);
+
+    expect($disk)->toMatchArray([
+        'key' => 'media-key',
+        'secret' => 'media-secret',
+        'region' => 'auto',
+        'endpoint' => 'https://media.example.test',
+        'use_path_style_endpoint' => false,
     ]);
 });
 

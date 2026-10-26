@@ -64,13 +64,13 @@ return [
 
         'media' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
+            'key' => env('MEDIA_S3_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('MEDIA_S3_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('MEDIA_S3_DEFAULT_REGION', env('AWS_DEFAULT_REGION')),
             'bucket' => env('MEDIA_S3_BUCKET'),
             'url' => env('MEDIA_S3_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'endpoint' => env('MEDIA_S3_ENDPOINT', env('AWS_ENDPOINT')),
+            'use_path_style_endpoint' => env('MEDIA_S3_USE_PATH_STYLE_ENDPOINT', env('AWS_USE_PATH_STYLE_ENDPOINT', false)),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
