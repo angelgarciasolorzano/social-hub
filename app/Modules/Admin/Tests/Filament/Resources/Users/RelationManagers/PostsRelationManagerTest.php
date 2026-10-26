@@ -13,7 +13,9 @@ use App\Modules\Post\Models\Post;
 use App\User\Models\User;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
@@ -86,6 +88,47 @@ it('shows the fallback for selected users posts without images', function (): vo
         ->assertSeeText('Post without image relation sentinel');
 
     expect($testable->html())->toContain(asset('default-cover.svg'));
+});
+
+it('loads post images with one media query as the relation page size grows', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
+
+    $targetUser = createUser();
+
+    foreach (range(1, 24) as $sequence) {
+        createPost($targetUser, ['content' => 'Post without image '.$sequence]);
+    }
+
+    $postWithImage = createPost($targetUser, ['content' => 'Post with image']);
+    $postWithImage->addMedia(UploadedFile::fake()->image('relation-query-image.jpg'))
+        ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
+
+    $imageUrl = url($postWithImage->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION));
+    $mediaQueries = [];
+
+    DB::listen(static function (QueryExecuted $queryExecuted) use (&$mediaQueries): void {
+        if (str_contains(strtolower($queryExecuted->sql), 'media')) {
+            $mediaQueries[] = $queryExecuted->sql;
+        }
+    });
+
+    $testable = postsRelationManagerFor($targetUser)
+        ->assertOk()
+        ->assertSee(asset('default-cover.svg'), false);
+    $defaultPageMediaQueries = $mediaQueries;
+    $mediaQueries = [];
+
+    $testable
+        ->set('tableRecordsPerPage', 25)
+        ->assertOk()
+        ->assertSee($imageUrl, false)
+        ->assertSee(asset('default-cover.svg'), false);
+    $largerPageMediaQueries = $mediaQueries;
+
+    expect($defaultPageMediaQueries)
+        ->toHaveCount(1)
+        ->and($largerPageMediaQueries)->toHaveCount(1);
 });
 
 it('paginates only the selected users posts', function (): void {

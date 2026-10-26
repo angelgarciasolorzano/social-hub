@@ -52,7 +52,8 @@ class PostsRelationManager extends RelationManager
                     'user_id',
                     'content',
                     'created_at',
-                ]))
+                ])
+                ->with('media'))
             ->columns([
                 ImageColumn::make('post_image')
                     ->label('Image')
