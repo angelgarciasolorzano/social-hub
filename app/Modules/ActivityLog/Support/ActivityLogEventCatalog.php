@@ -6,6 +6,8 @@ namespace App\Modules\ActivityLog\Support;
 
 use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\ActivityLogName;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use Illuminate\Support\Str;
 
 /**
@@ -36,7 +38,7 @@ final class ActivityLogEventCatalog
         $activityLogEvent = self::find($eventName);
 
         return $activityLogEvent instanceof ActivityLogEvent
-            ? Str::headline($activityLogEvent->name)
+            ? self::eventLabel($activityLogEvent)
             : $eventName;
     }
 
@@ -62,7 +64,7 @@ final class ActivityLogEventCatalog
         $eventOptions = [];
 
         foreach (self::events() as $activityLogEvent) {
-            $eventOptions[self::logLabel($activityLogEvent->logName()->value)][$activityLogEvent->eventName()] = Str::headline($activityLogEvent->name);
+            $eventOptions[self::logLabel($activityLogEvent->logName()->value)][$activityLogEvent->eventName()] = self::eventLabel($activityLogEvent);
         }
 
         return $eventOptions;
@@ -100,5 +102,20 @@ final class ActivityLogEventCatalog
         }
 
         return $events;
+    }
+
+    private static function eventLabel(ActivityLogEvent $activityLogEvent): string
+    {
+        return match ($activityLogEvent) {
+            ActivityLogLikeEvent::Added => 'Like Added',
+            ActivityLogLikeEvent::Removed => 'Like Removed',
+            ActivityLogTrustedDeviceEvent::Created => 'Trusted Device Added',
+            ActivityLogTrustedDeviceEvent::Renamed => 'Trusted Device Renamed',
+            ActivityLogTrustedDeviceEvent::Renewed => 'Trusted Device Renewed',
+            ActivityLogTrustedDeviceEvent::Revoked => 'Trusted Device Revoked',
+            ActivityLogTrustedDeviceEvent::RevokedAll => 'All Trusted Devices Revoked',
+            ActivityLogTrustedDeviceEvent::Reactivated => 'Trusted Device Reactivated',
+            default => Str::headline($activityLogEvent->name),
+        };
     }
 }

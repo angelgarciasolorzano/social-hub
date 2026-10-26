@@ -7,10 +7,12 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAuthEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
+use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogOverview;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogSummaryWidget;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
@@ -166,7 +168,9 @@ it('registers the aggregate summary on the activity log page', function (): void
     $headerWidgets = $headerWidgetsMethod->invoke($component);
     throw_unless(is_array($headerWidgets), LogicException::class, 'The activity log page must return its header widgets.');
 
-    expect($headerWidgets)->toContain(ActivityLogSummaryWidget::class);
+    expect($headerWidgets)
+        ->toContain(ActivityLogOverview::class)
+        ->toContain(ActivityLogSummaryWidget::class);
 });
 
 it('summarizes event types inside the fixed seven-day window', function (): void {
@@ -182,6 +186,12 @@ it('summarizes event types inside the fixed seven-day window', function (): void
     ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::UserLoggedIn)->createOne([
         'created_at' => '2026-06-15 23:59:59',
     ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogLikeEvent::Added)->createOne([
+        'created_at' => '2026-06-15 12:00:00',
+    ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogTrustedDeviceEvent::Renamed)->createOne([
+        'created_at' => '2026-06-15 12:00:00',
+    ]);
     ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::LoginFailed)->createOne([
         'created_at' => '2026-06-08 23:59:59',
     ]);
@@ -189,14 +199,19 @@ it('summarizes event types inside the fixed seven-day window', function (): void
     $testable = Livewire::test(ActivityLogSummaryWidget::class)
         ->assertOk()
         ->assertSeeText('Activity events (last 7 days)')
-        ->assertSeeText('3 events in the last 7 days.')
-        ->assertSeeText('Event distribution: Role Granted: 2, User Logged In: 1.');
+        ->assertSeeText('5 events in the last 7 days.')
+        ->assertSeeText('Event distribution: Role Granted: 2, User Logged In: 1, Like Added: 1, Trusted Device Renamed: 1.');
     $component = $testable->instance();
     throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
     $chartData = activityLogSummaryChartPayload($component);
 
     expect(array_combine($chartData['labels'], $chartData['counts']))
-        ->toBe(['Role Granted' => 2, 'User Logged In' => 1]);
+        ->toBe([
+            'Role Granted' => 2,
+            'User Logged In' => 1,
+            'Like Added' => 1,
+            'Trusted Device Renamed' => 1,
+        ]);
 });
 
 it('shows an empty state when there are no recent activity events', function (): void {
