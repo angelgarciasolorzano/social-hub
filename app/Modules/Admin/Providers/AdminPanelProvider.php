@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Providers;
 
 use App\Http\Middleware\EnsureAccountIsActive;
+use App\Modules\Admin\Filament\Widgets\AdminQuickLinksWidget;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -15,7 +16,6 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -51,7 +51,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Modules/Admin/Filament/Widgets'), for: 'App\Modules\Admin\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
-                FilamentInfoWidget::class,
+                AdminQuickLinksWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
