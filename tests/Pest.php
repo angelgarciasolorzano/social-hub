@@ -511,3 +511,43 @@ function createAdminInvitationWithToken(?User $targetUser = null, ?string $email
         'token' => $plainToken,
     ];
 }
+
+/**
+ * Evaluate a config file (e.g. 'filesystems') with the given environment variables set,
+ * or removed when the value is null, and restore them afterwards. config() is already
+ * loaded when a test runs, so this is how a test checks what a config file reads from env.
+ *
+ * @param  array<string, string|null>  $variables
+ * @return array<string, mixed>
+ */
+function configWithEnvironment(string $configFile, array $variables): array
+{
+    $serverBefore = $_SERVER;
+    $environmentBefore = $_ENV;
+    $variableNames = array_keys($variables);
+    $getenvBefore = array_combine($variableNames, array_map(getenv(...), $variableNames));
+
+    $removedVariables = array_filter($variables, static fn (?string $value): bool => $value === null);
+    $assignedVariables = array_filter($variables, static fn (?string $value): bool => $value !== null);
+
+    try {
+        $_SERVER = [...array_diff_key($_SERVER, $removedVariables), ...$assignedVariables];
+        $_ENV = [...array_diff_key($_ENV, $removedVariables), ...$assignedVariables];
+
+        foreach ($variables as $name => $value) {
+            putenv($value === null ? $name : "{$name}={$value}");
+        }
+
+        /** @var array<string, mixed> $config */
+        $config = require config_path($configFile.'.php');
+
+        return $config;
+    } finally {
+        $_SERVER = $serverBefore;
+        $_ENV = $environmentBefore;
+
+        foreach ($getenvBefore as $name => $value) {
+            putenv($value === false ? $name : "{$name}={$value}");
+        }
+    }
+}
