@@ -86,6 +86,7 @@ class RepliesRelationManager extends RelationManager
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
+            ->recordAction('viewReply')
             ->recordActions([
                 Action::make('viewReply')
                     ->label('View reply')

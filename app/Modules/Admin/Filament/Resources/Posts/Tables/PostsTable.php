@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Posts\Tables;
 
+use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Post\Models\Post;
 use DateTimeInterface;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -80,7 +83,12 @@ class PostsTable
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
-            ->recordActions([])
+            ->recordActions([
+                ViewAction::make()
+                    ->icon(Heroicon::Eye)
+                    ->modal(false)
+                    ->url(fn (Post $post): string => PostResource::getUrl('view', ['record' => $post])),
+            ])
             ->toolbarActions([]);
     }
 }

@@ -13,6 +13,7 @@ use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -114,6 +115,7 @@ class PostsRelationManager extends RelationManager
             ->headerActions([])
             ->recordActions([
                 ViewAction::make()
+                    ->icon(Heroicon::Eye)
                     ->url(fn (Post $post): string => PostResource::getUrl('view', ['record' => $post])),
             ])
             ->toolbarActions([]);

@@ -7,10 +7,13 @@ namespace App\Modules\Admin\Filament\Resources\ActivityLogs\Tables;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\ActivityLog\Support\ActivityLogEventCatalog;
 use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
+use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\User\Models\User;
 use DateTimeInterface;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -96,7 +99,12 @@ class ActivityLogsTable
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
-            ->recordActions([])
+            ->recordActions([
+                ViewAction::make()
+                    ->icon(Heroicon::Eye)
+                    ->modal(false)
+                    ->url(fn (ActivityLog $activityLog): string => ActivityLogResource::getUrl('view', ['record' => $activityLog])),
+            ])
             ->toolbarActions([]);
     }
 

@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
+use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\User\Enums\AccountStatus;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use DateTimeInterface;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -93,6 +96,12 @@ class UsersTable
                         false: fn (Builder $builder): Builder => $builder->whereDoesntHave('posts'),
                         blank: fn (Builder $builder): Builder => $builder,
                     ),
+            ])
+            ->recordActions([
+                ViewAction::make()
+                    ->icon(Heroicon::Eye)
+                    ->modal(false)
+                    ->url(fn (User $user): string => UserResource::getUrl('view', ['record' => $user])),
             ]);
     }
 }
