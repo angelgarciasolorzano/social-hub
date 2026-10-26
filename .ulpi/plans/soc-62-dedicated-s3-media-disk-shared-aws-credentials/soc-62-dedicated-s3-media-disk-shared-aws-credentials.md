@@ -1,0 +1,218 @@
+# Plan: SOC-62: Disco S3 propio para las imágenes y credenciales AWS compartidas con los backups
+
+Linear: [SOC-62](https://linear.app/social-hub-ang/issue/SOC-62/chore-add-dedicated-s3-media-disk-and-share-aws-credentials-with) — Chore: Add dedicated S3 media disk and share AWS credentials with backups
+
+## Overview
+
+Agregar el disco `media` y el respaldo de credenciales del disco `backups` en config/filesystems.php con tests que fijen los dos comportamientos, y sincronizar .env.example, README.md y CLAUDE.md, incluida la advertencia de que una variable vacía anula el respaldo de env().
+
+## Scope Challenge
+
+**Modo:** HOLD · **Revisión por defecto:** claude
+
+HOLD confirmado por el usuario: exactamente lo acordado en la conversación. Un disco `media` (driver s3, visibilidad pública) con bucket y URL propios (`MEDIA_S3_BUCKET`, `MEDIA_S3_URL`) que reutiliza las credenciales y la conexión `AWS_*`; y el disco `backups` con respaldo a `AWS_*` cuando faltan sus `BACKUP_S3_*`. Ningún código usa el disco `s3` ni el disco por defecto (búsqueda de `Storage::` sin disco y `->store()` en app/ y config/), así que no hay datos que migrar. Ampliación posterior acordada con el usuario: credenciales y conexión opcionales para el disco media (TASK-006) e interpolación de AWS_* en .env.example (TASK-007).
+
+**Ejecución:** Implementar una tarea atómica por vez, revisar el diff con /code-review y pausar para revisión del usuario, según .ai/rules/linear.md.
+
+### Hallazgos de la exploración
+
+- config/media-library.php usa `env('MEDIA_DISK', 'public')`; .env.testing y .env.testing.example no definen MEDIA_DISK ni variables AWS/BACKUP, así que los tests siguen en el disco public.
+- config/filesystems.php tiene los discos local, public, s3 (AWS_*) y backups (BACKUP_S3_*, privado, throw y report en true).
+- BackupManagementService::downloadBackup() usa `temporaryUrl()`, que firma la URL con el endpoint del cliente; la clave `url` del disco solo la usa `->url()`. BACKUP_S3_URL no tiene efecto.
+- `env('A', env('B'))` solo usa el respaldo cuando A no existe: `A=` vacío devuelve string vacío. .env.example trae hoy las BACKUP_S3_* vacías, así que copiarlo anularía el respaldo; deben quedar comentadas.
+- README.md (sección de backups) pide configurar 'las nueve variables BACKUP_*' con una identidad IAM dedicada; hay que distinguir producción (recomendado) de local (opcional).
+- Los tests de configuración de backups viven en app/Modules/Admin/Tests/Backups/BackupConfigurationTest.php; los de MediaLibrary, infraestructura global, en tests/Feature/MediaLibrary/.
+
+## Prerequisites
+
+- SOC-59 está mergeada: composer test corre en paralelo y las factories no adjuntan imágenes por defecto.
+- El usuario tiene LocalStack en localhost:4566 con los buckets social-hub-local-media y social-hub-local-backups.
+- aws/aws-sdk-php y league/flysystem-aws-s3-v3 están instalados.
+
+## Non-Goals
+
+- No mover imágenes ya guardadas ni cambiar el path generator de MediaLibrary.
+- No cambiar el disco `s3` general ni el disco por defecto (FILESYSTEM_DISK).
+- No cambiar la lógica de backups, su cifrado, su programación ni sus permisos.
+- No editar el .env del usuario: el ejemplo se documenta en .env.example y README.md.
+
+## Contracts
+
+- Disco `media`: driver s3, `visibility` public, bucket MEDIA_S3_BUCKET, url MEDIA_S3_URL; key, secret, region, endpoint y use_path_style_endpoint salen de AWS_*. Nunca usa AWS_BUCKET ni AWS_URL.
+- Disco `backups`: driver s3, `visibility` private, bucket BACKUP_S3_BUCKET; key, secret, region, endpoint y use_path_style_endpoint usan BACKUP_S3_* si existen y AWS_* si no; throw y report siguen en true.
+- MEDIA_DISK sigue siendo opcional (por defecto public) y los tests no cambian de disco.
+
+## Existing Code Leverage
+
+- config/filesystems.php — disco `backups` como modelo del disco `media`.
+- app/Modules/Admin/Tests/Backups/BackupConfigurationTest.php — ya fija que backups es S3 privado y destino de Spatie Backup.
+- tests/Feature/MediaLibrary/ — tests de la integración global de MediaLibrary.
+- tests/Pest.php — lugar de los helpers compartidos (.ai/rules/app.md).
+
+## Tasks
+
+### TASK-001: Agregar el disco media y probar su configuración
+
+Agregar en config/filesystems.php el disco `media` (driver s3, visibility public) con MEDIA_S3_BUCKET y MEDIA_S3_URL y credenciales y conexión AWS_*. Agregar a tests/Pest.php un helper que evalúa config/filesystems.php con variables de entorno temporales (las define o las quita en $_ENV, $_SERVER y putenv, y las restaura al terminar), porque config() ya está cargado al arrancar el test. Crear tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0 · **Review:** claude
+
+**Acceptance Criteria:**
+
+- [ ] Con AWS_BUCKET y MEDIA_S3_BUCKET distintos, el disco media usa MEDIA_S3_BUCKET y MEDIA_S3_URL, y toma key, secret, region, endpoint y estilo de ruta de AWS_*.
+- [ ] El disco media es s3 con visibilidad public, y MEDIA_DISK sigue siendo public en testing (config('media-library.disk_name')).
+- [ ] El helper restaura las variables aunque el callback falle y la suite completa sigue en verde en paralelo.
+
+**writeScope:** `config/filesystems.php`, `tests/Pest.php`, `tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php`
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php`
+
+### TASK-002: Respaldo AWS_* en el disco backups
+
+En config/filesystems.php, que key, secret, region, endpoint y use_path_style_endpoint del disco backups usen BACKUP_S3_* y, si no existen, AWS_*. El bucket sigue siendo BACKUP_S3_BUCKET. Agregar a BackupConfigurationTest los casos de respaldo y de prioridad usando el helper de TASK-001.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1 · **Review:** claude
+
+**Depends on:** TASK-001
+
+**Acceptance Criteria:**
+
+- [ ] Sin variables BACKUP_S3_* de credenciales y conexión, el disco backups usa las de AWS_*, con su propio BACKUP_S3_BUCKET (nunca AWS_BUCKET).
+- [ ] Si se definen BACKUP_S3_*, tienen prioridad sobre AWS_* (credencial propia en producción).
+- [ ] El disco backups sigue siendo s3 privado con throw y report en true, y los tests existentes de BackupConfigurationTest siguen en verde.
+
+**writeScope:** `config/filesystems.php`, `app/Modules/Admin/Tests/Backups/BackupConfigurationTest.php`
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Backups`
+
+### TASK-003: Actualizar .env.example y README.md
+
+.env.example: agregar AWS_ENDPOINT y AWS_URL, un bloque de imágenes con MEDIA_DISK, MEDIA_S3_BUCKET y MEDIA_S3_URL, y dejar comentadas las BACKUP_S3_* de credenciales y conexión (con la explicación de que una línea vacía anula el respaldo), retirando BACKUP_S3_URL. README.md: explicar el disco media y cómo enviar las imágenes a S3 local, y matizar la sección de backups (identidad IAM dedicada recomendada en producción; en local solo hace falta BACKUP_S3_BUCKET).
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2 · **Review:** claude
+
+**Depends on:** TASK-002
+
+**Acceptance Criteria:**
+
+- [ ] Copiar .env.example sin cambios deja MEDIA_DISK en public (o comentado) y no anula el respaldo de credenciales de backups.
+- [ ] README.md ya no dice que las nueve variables BACKUP_* sean obligatorias y documenta la configuración local con LocalStack.
+- [ ] Ninguna variable documentada falta en config/ ni sobra (BACKUP_S3_URL deja de aparecer en .env.example).
+
+**writeScope:** `.env.example`, `README.md`
+
+**validateCommand:** `grep -c MEDIA_S3_BUCKET .env.example README.md`
+
+### TASK-004: Sincronizar CLAUDE.md
+
+Documentar en CLAUDE.md (sección Media uploads y párrafo de backups SOC-55) el disco media, el respaldo AWS_* de backups, que BACKUP_S3_URL no se usa y la regla de no dejar variables vacías. Incluye las MEDIA_S3_* opcionales y la interpolación de .env.example (TASK-006/007).
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P3 · **Review:** claude
+
+**Depends on:** TASK-002, TASK-007
+
+**Acceptance Criteria:**
+
+- [ ] CLAUDE.md describe el disco media y su activación con MEDIA_DISK=media.
+- [ ] El párrafo de backups explica el respaldo a AWS_* y que las BACKUP_S3_* definidas tienen prioridad.
+- [ ] Ninguna doc del repositorio contradice la nueva configuración (búsqueda de BACKUP_S3 y MEDIA_DISK).
+
+**writeScope:** `CLAUDE.md`
+
+**validateCommand:** `grep -c MEDIA_S3_BUCKET CLAUDE.md`
+
+### TASK-005: Gates finales y resumen en Linear
+
+Ejecutar Pint, PHPStan, Rector (caché limpia), composer test y composer doctor; preparar el resumen de SOC-62 y publicarlo solo con la aprobación del usuario.
+
+**Type:** chore · **Effort:** S · **Agent:** general-purpose · **Priority:** P3 · **Review:** claude
+
+**Depends on:** TASK-003, TASK-004, TASK-007
+
+**Acceptance Criteria:**
+
+- [ ] Todos los gates pasan; si alguno falla se informa con su salida.
+- [ ] composer test pasa completo en paralelo sin variables AWS ni MEDIA en .env.testing.
+- [ ] El comentario de Linear se publica solo con la aprobación explícita del usuario.
+
+**writeScope:** ninguno (solo verificación y Linear)
+
+**validateCommand:** `composer test`
+
+### TASK-006: Credenciales y conexión opcionales del disco media
+
+Ampliación pedida por el usuario: que el disco media use MEDIA_S3_ACCESS_KEY_ID, MEDIA_S3_SECRET_ACCESS_KEY, MEDIA_S3_DEFAULT_REGION, MEDIA_S3_ENDPOINT y MEDIA_S3_USE_PATH_STYLE_ENDPOINT si existen y, si no, AWS_* (mismo patrón que backups). Útil si las imágenes viven en otro proveedor o cuenta (por ejemplo, Cloudflare R2). Ampliar MediaDiskConfigurationTest con el caso de prioridad.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1 · **Review:** claude
+
+**Depends on:** TASK-003
+
+**Acceptance Criteria:**
+
+- [ ] Sin MEDIA_S3_* de credenciales y conexión, el disco media usa las de AWS_*.
+- [ ] Si se definen MEDIA_S3_*, tienen prioridad sobre AWS_*; el bucket y la URL siguen siendo MEDIA_S3_BUCKET y MEDIA_S3_URL.
+- [ ] Pint, PHPStan y Rector limpios y composer test completo en verde.
+
+**writeScope:** `config/filesystems.php`, `tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php`
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php`
+
+### TASK-007: Interpolación de AWS_* en .env.example y mención de MiniStack
+
+Propuesta del usuario: en .env.example, las BACKUP_S3_* y MEDIA_S3_* de credenciales y conexión quedan activas con "${AWS_...}" (phpdotenv las resuelve porque el bloque AWS va antes), en lugar de comentadas; el respaldo de config/ se mantiene para entornos sin archivo .env, donde no hay interpolación. Los comentarios de .env.example y README.md hablan de un emulador S3 como LocalStack o MiniStack.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2 · **Review:** claude
+
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+
+- [ ] Copiar .env.example sin cambios deja los discos backups y media con las credenciales y la conexión de AWS_* (comprobado cargando el archivo con phpdotenv).
+- [ ] README.md explica la interpolación, el respaldo de config/ para producción y menciona MiniStack.
+- [ ] Las variables de almacenamiento de config/ y de .env.example siguen coincidiendo en ambos sentidos.
+
+**writeScope:** `.env.example`, `README.md`
+
+**validateCommand:** `grep -cF 'MEDIA_S3_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"' .env.example`
+
+## Failure Modes
+
+- env() lee el repositorio de variables en vivo, pero config() ya está cargado: los tests deben evaluar config/filesystems.php de nuevo con variables temporales y restaurarlas, o contaminarían otros tests del mismo proceso.
+- Una línea `BACKUP_S3_ACCESS_KEY_ID=` vacía anula el respaldo y el backup se conecta sin credenciales: .env.example las deja comentadas y la documentación lo advierte.
+- Si MinIO bloquea la lectura anónima, las imágenes del disco media darán 403 en el navegador: se documenta la política de lectura pública del bucket.
+- Rector (rector-laravel) reescribe `$_ENV[...]` y `$_SERVER[...]` a Env::get()/Request::server(), también dentro de unset(), lo que produce PHP inválido: los helpers de test que manipulan el entorno deben trabajar con las superglobales completas.
+
+## Ship Cut
+
+TASK-001 sola ya permite enviar las imágenes a S3 local con MEDIA_DISK=media. TASK-002 agrega el respaldo de credenciales de backups sin cambiar su comportamiento cuando se definen BACKUP_S3_*. TASK-003 y TASK-004 son documentación.
+
+## Test Coverage Map
+
+- Disco media: tests/Feature/MediaLibrary/MediaDiskConfigurationTest.php.
+- Respaldo de credenciales de backups: app/Modules/Admin/Tests/Backups/BackupConfigurationTest.php.
+- Que los tests siguen en el disco public: MediaDiskConfigurationTest y composer test completo.
+
+## Execution Summary
+
+- Tareas: 7
+- Camino crítico: TASK-001 → TASK-002 → TASK-003 → TASK-006 → TASK-007 → TASK-004 → TASK-005
+- Capas:
+  1. TASK-001
+  2. TASK-002
+  3. TASK-003
+  4. TASK-006
+  5. TASK-007
+  6. TASK-004
+  7. TASK-005
+
+## Task Dependencies
+
+| Tarea | Depende de |
+| --- | --- |
+| TASK-001 | — |
+| TASK-002 | TASK-001 |
+| TASK-003 | TASK-002 |
+| TASK-004 | TASK-002, TASK-007 |
+| TASK-005 | TASK-003, TASK-004, TASK-007 |
+| TASK-006 | TASK-003 |
+| TASK-007 | TASK-006 |
