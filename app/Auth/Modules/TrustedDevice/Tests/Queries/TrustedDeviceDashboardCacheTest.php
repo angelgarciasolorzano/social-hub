@@ -124,8 +124,8 @@ it('uses warm per-user cache entries for stats and recent activity', function ()
             'ip',
             'createdAt',
         ])
-        ->and(Cache::has('trusted-device:dashboard:'.$user->id.':stats'))->toBeTrue()
-        ->and(Cache::has('trusted-device:dashboard:'.$user->id.':recent-activity'))->toBeTrue();
+        ->and(Cache::has(trustedDeviceStatsCacheKey($user)))->toBeTrue()
+        ->and(Cache::has(trustedDeviceRecentActivityCacheKey($user)))->toBeTrue();
 });
 
 it('keeps dashboard stats as the established deferred Inertia array', function (): void {
@@ -259,8 +259,8 @@ it('invalidates dashboard cache after every successful trusted device mutation',
         return $otp;
     };
 
-    $statsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $recentActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
+    $statsCacheKey = trustedDeviceStatsCacheKey($user);
+    $recentActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
 
     $assertInvalidatedAndRefreshed = function (
         Closure $mutation,
@@ -390,10 +390,10 @@ it('keeps cache entries isolated when mutations fail or make no changes', functi
     $trustedDeviceDashboardCache = resolve(TrustedDeviceDashboardCache::class);
     $request = request();
 
-    $userStatsCacheKey = 'trusted-device:dashboard:'.$user->id.':stats';
-    $userActivityCacheKey = 'trusted-device:dashboard:'.$user->id.':recent-activity';
-    $otherUserStatsCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':stats';
-    $otherUserActivityCacheKey = 'trusted-device:dashboard:'.$otherUser->id.':recent-activity';
+    $userStatsCacheKey = trustedDeviceStatsCacheKey($user);
+    $userActivityCacheKey = trustedDeviceRecentActivityCacheKey($user);
+    $otherUserStatsCacheKey = trustedDeviceStatsCacheKey($otherUser);
+    $otherUserActivityCacheKey = trustedDeviceRecentActivityCacheKey($otherUser);
 
     Cache::forget($userStatsCacheKey);
     Cache::forget($userActivityCacheKey);
