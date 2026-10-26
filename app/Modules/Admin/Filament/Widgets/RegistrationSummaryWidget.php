@@ -14,6 +14,8 @@ use UnexpectedValueException;
 
 class RegistrationSummaryWidget extends StatsOverviewWidget
 {
+    public bool $showPendingVerification = false;
+
     #[Override]
     protected ?string $heading = 'Account overview';
 
@@ -38,17 +40,27 @@ class RegistrationSummaryWidget extends StatsOverviewWidget
     protected function getStats(): array
     {
         $dailyRegistrationTrends = $this->getDailyRegistrationTrends();
+        $totalAccounts = User::query()->toBase()->count('*');
+        $verifiedAccounts = User::query()->toBase()->whereNotNull('email_verified_at')->count('*');
 
-        return [
-            Stat::make('Total accounts', User::query()->toBase()->count('*'))
+        $stats = [
+            Stat::make('Total accounts', $totalAccounts)
                 ->description('All registered user accounts')
                 ->color('primary')
                 ->chart($dailyRegistrationTrends['registrations']),
-            Stat::make('Verified accounts', User::query()->toBase()->whereNotNull('email_verified_at')->count('*'))
+            Stat::make('Verified accounts', $verifiedAccounts)
                 ->description('Accounts with a verified email address')
                 ->color('success')
                 ->chart($dailyRegistrationTrends['verifiedRegistrations']),
         ];
+
+        if ($this->showPendingVerification) {
+            $stats[] = Stat::make('Pending verification', $totalAccounts - $verifiedAccounts)
+                ->description('Accounts waiting to verify their email address')
+                ->color('warning');
+        }
+
+        return $stats;
     }
 
     /**

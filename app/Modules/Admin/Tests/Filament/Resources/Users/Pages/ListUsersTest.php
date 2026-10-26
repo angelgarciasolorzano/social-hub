@@ -194,6 +194,21 @@ it('eager loads profile media in one query regardless of the user page size', fu
         ->and($fullPageMediaQueries)->toHaveCount(1);
 });
 
+it('enables a loading skeleton for table updates on the users list', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersReader,
+    );
+
+    $componentTest = listUsersPageForTesting();
+    $listUsers = $componentTest->instance();
+    $table = $listUsers->getTable();
+
+    expect($table->hasLoadingSkeleton())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse();
+});
+
 it('filters users by verification status registration date and post presence alone and together', function (): void {
     $authenticatedUser = UserFactory::new()->unverified()->createOne();
     $authenticatedUser->forceFill(['created_at' => '2025-12-31 23:59:59'])->save();

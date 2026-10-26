@@ -26,6 +26,7 @@ class UsersTable
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('media'))
+            ->loadingSkeleton()
             ->columns([
                 ImageColumn::make('profile_picture')
                     ->label('Profile picture')
@@ -51,7 +52,7 @@ class UsersTable
                     ->placeholder(static function (): string {
                         $neverLabel = __('messages.Never');
 
-                        return is_string($neverLabel) ? $neverLabel : 'Never';
+                        return \is_string($neverLabel) ? $neverLabel : 'Never';
                     })
                     ->sortable(),
             ])
