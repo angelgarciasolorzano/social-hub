@@ -8,9 +8,12 @@ use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Comment\Models\Comment;
 use App\User\Models\User;
 use DateTimeInterface;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -81,8 +84,38 @@ class RepliesRelationManager extends RelationManager
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
+            ->recordActions([
+                Action::make('viewReply')
+                    ->label('View reply')
+                    ->icon(Heroicon::Eye)
+                    ->color('gray')
+                    ->authorize(fn (): bool => static::canViewForRecord(
+                        $this->getOwnerRecord(),
+                        ViewComment::class,
+                    ))
+                    ->modalHeading('Reply details')
+                    ->schema([
+                        TextEntry::make('content')
+                            ->label('Reply')
+                            ->columnSpanFull(),
+                        TextEntry::make('user.name')
+                            ->label('Author'),
+                        TextEntry::make('created_at')
+                            ->label('Created at')
+                            ->dateTime('Y-m-d H:i'),
+                        TextEntry::make('edited_at')
+                            ->label('Edited at')
+                            ->dateTime('Y-m-d H:i')
+                            ->visible(static fn (Comment $record): bool => $record->edited_at !== null),
+                        TextEntry::make('repliedToUser.name')
+                            ->label('Replying to')
+                            ->formatStateUsing(static fn (?string $state): ?string => filled($state) ? "@{$state}" : null)
+                            ->visible(static fn (Comment $record): bool => $record->repliedToUser instanceof User),
+                    ])
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close'),
+            ])
             ->headerActions([])
-            ->recordActions([])
             ->toolbarActions([]);
     }
 }

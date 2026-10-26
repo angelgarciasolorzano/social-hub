@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelati
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
+use Filament\Actions\Action;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -21,6 +22,36 @@ function repliesRelationManagerFor(Comment $comment): Testable
         'ownerRecord' => $comment,
         'pageClass' => ViewComment::class,
     ]);
+}
+
+/**
+ * @param  Testable<RepliesRelationManager>  $testable
+ * @return Testable<RepliesRelationManager>
+ */
+function mountReplyViewAction(Testable $testable, Comment $comment): Testable
+{
+    return $testable->call('mountAction', 'viewReply', [], [
+        'table' => true,
+        'recordKey' => FilamentTableRecords::recordKey($comment),
+    ]);
+}
+
+/**
+ * @param  Testable<RepliesRelationManager>  $testable
+ * @param  array<string>|string  $values
+ */
+function assertMountedReplyModalSee(Testable $testable, array|string $values): void
+{
+    $testable->__call('assertMountedActionModalSee', [$values]);
+}
+
+/**
+ * @param  Testable<RepliesRelationManager>  $testable
+ * @param  array<string>|string  $values
+ */
+function assertMountedReplyModalDoesNotSee(Testable $testable, array|string $values): void
+{
+    $testable->__call('assertMountedActionModalDontSee', [$values]);
 }
 
 beforeEach(function (): void {
@@ -75,6 +106,72 @@ it('does not resolve a reply from another comment when its ID is supplied', func
 
     expect($table->getTableRecord(FilamentTableRecords::recordKey($comment)))
         ->toBeNull();
+
+    $testable = repliesRelationManagerFor($selectedComment)
+        ->call('mountAction', 'viewReply', [], [
+            'table' => true,
+            'recordKey' => FilamentTableRecords::recordKey($comment),
+        ])
+        ->assertDontSeeText('Foreign reply by ID sentinel');
+
+    expect($testable->instance()->mountedActions)
+        ->toBeEmpty();
+});
+
+it('opens a read only modal with the full reply and available context', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $parentComment = createCommentOn(createPost());
+    $user = createUser();
+    $mentionedUser = createUser();
+    $fullReply = str_repeat('Full reply context sentinel ', 5);
+    $comment = createCommentOn($parentComment, $user, [
+        'content' => $fullReply,
+        'created_at' => '2026-10-25 14:35:00',
+        'edited_at' => '2026-10-26 08:45:00',
+        'replied_to_user_id' => $mentionedUser->getKey(),
+    ]);
+
+    $testable = mountReplyViewAction(repliesRelationManagerFor($parentComment), $comment);
+
+    assertMountedReplyModalSee($testable, [
+        $fullReply,
+        $user->name,
+        '2026-10-25 14:35',
+        '2026-10-26 08:45',
+        'Replying to',
+        "@{$mentionedUser->name}",
+    ]);
+});
+
+it('omits edited time and reply context when the reply has neither', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $parentComment = createCommentOn(createPost());
+    $comment = createCommentOn($parentComment, attributes: ['content' => 'Unedited standalone reply sentinel']);
+
+    $testable = mountReplyViewAction(repliesRelationManagerFor($parentComment), $comment);
+
+    assertMountedReplyModalSee($testable, 'Unedited standalone reply sentinel');
+    assertMountedReplyModalDoesNotSee($testable, ['Edited at', 'Replying to']);
+});
+
+it('opens the reply modal when its mentioned user has been deleted', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $parentComment = createCommentOn(createPost());
+    $mentionedUser = createUser();
+    $comment = createCommentOn($parentComment, attributes: [
+        'content' => 'Reply with deleted mention sentinel',
+        'replied_to_user_id' => $mentionedUser->getKey(),
+    ]);
+
+    $mentionedUser->delete();
+
+    $testable = mountReplyViewAction(repliesRelationManagerFor($parentComment), $comment);
+
+    assertMountedReplyModalSee($testable, 'Reply with deleted mention sentinel');
+    assertMountedReplyModalDoesNotSee($testable, 'Replying to');
 });
 
 it('paginates the selected comments replies', function (): void {
@@ -158,18 +255,25 @@ it('keeps the replies table read only', function (): void {
     $selectedComment = createCommentOn($post);
     createCommentOn($selectedComment);
 
-    $repliesRelationManager = repliesRelationManagerFor($selectedComment)
-        ->assertOk()
-        ->instance();
+    $testable = repliesRelationManagerFor($selectedComment)->assertOk();
+    $repliesRelationManager = $testable->instance();
 
     $table = $repliesRelationManager->getTable();
+    $recordActions = $table->getRecordActions();
 
-    expect($table->getHeaderActions())
-        ->toBeEmpty()
-        ->and($table->getRecordActions())
+    expect($recordActions)
+        ->toHaveCount(1)
+        ->and($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getToolbarActions())
         ->toBeEmpty();
+
+    $viewAction = $recordActions[0];
+
+    throw_unless($viewAction instanceof Action, LogicException::class, 'The replies table must expose a single read action.');
+
+    expect($viewAction->getName())
+        ->toBe('viewReply');
 });
 
 it('renders the replies manager on comment details', function (): void {
