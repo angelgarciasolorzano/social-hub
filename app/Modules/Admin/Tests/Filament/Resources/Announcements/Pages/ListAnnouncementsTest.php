@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
@@ -87,6 +88,17 @@ it('denies the list to an administrator without admin.announcements.viewAny', fu
     expect(AnnouncementResource::canAccess())->toBeFalse();
 });
 
+it('hides the create button from an administrator who can only list announcements', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin);
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminAnnouncementsViewAny);
+
+    Livewire::test(ListAnnouncements::class)
+        ->assertOk()
+        ->assertDontSee('New announcement');
+});
+
 describe('with the announcements manager role', function (): void {
     beforeEach(function (): void {
         /** @var TestCase $testCase */
@@ -103,6 +115,10 @@ describe('with the announcements manager role', function (): void {
             ->and($testable->get('activeTab'))->toBe('active')
             ->and($table->isLoadingDeferred())->toBeTrue()
             ->and($table->hasLoadingSkeleton())->toBeTrue();
+    });
+
+    it('shows the create button', function (): void {
+        Livewire::test(ListAnnouncements::class)->assertSee('New announcement');
     });
 
     it('shows on each tab only the announcements of that schedule', function (): void {

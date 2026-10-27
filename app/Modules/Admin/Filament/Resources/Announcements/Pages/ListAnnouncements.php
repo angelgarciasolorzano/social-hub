@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Pages;
 
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Models\Announcement;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,6 +30,17 @@ class ListAnnouncements extends ListRecords
             'active' => Tab::make('Active')->modifyQueryUsing($this->onlyRunning(...)),
             'expired' => Tab::make('Expired')->modifyQueryUsing($this->onlyEnded(...)),
             'all' => Tab::make('All'),
+        ];
+    }
+
+    /**
+     * @return CreateAction[]
+     */
+    #[Override]
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
         ];
     }
 
