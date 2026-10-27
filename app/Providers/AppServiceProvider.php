@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Console\Commands\MediaLibraryCleanFoldersCommand;
 use App\Modules\Admin\Models\AdminInvitation;
+use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
@@ -59,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
             AdminInvitation::MORPH_NAME => AdminInvitation::class,
             TrustedDeviceEvent::MORPH_NAME => TrustedDeviceEvent::class,
             AccountStatusChange::MORPH_NAME => AccountStatusChange::class,
+            Announcement::MORPH_NAME => Announcement::class,
             self::ROLE_MORPH_NAME => Role::class,
         ]);
     }
