@@ -1,0 +1,161 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
+use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
+use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
+use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementType;
+use App\Modules\Announcement\Models\Announcement;
+use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportTesting\Testable;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+/**
+ * The announcements list with its table loaded, on the given tab.
+ *
+ * @return Testable<ListAnnouncements>
+ */
+function announcementsListPage(string $activeTab = 'active'): Testable
+{
+    return Livewire::test(ListAnnouncements::class)
+        ->set('activeTab', $activeTab)
+        ->call('loadTable');
+}
+
+/**
+ * The keys of the announcements the list shows on the given tab.
+ *
+ * @return list<string>
+ */
+function listedAnnouncementKeys(string $activeTab = 'active'): array
+{
+    return FilamentTableRecords::visibleRecordKeys(
+        FilamentTableRecords::table(announcementsListPage($activeTab)),
+        Announcement::class,
+    );
+}
+
+/**
+ * The announcement factory, typed for static analysis.
+ */
+function listAnnouncementFactory(): AnnouncementFactory
+{
+    /** @var AnnouncementFactory $factory */
+    $factory = Announcement::factory();
+
+    return $factory;
+}
+
+/**
+ * Count the queries run while rendering the list; call it once first so permission
+ * and schema caches are warm and both measurements compare rows only.
+ */
+function countAnnouncementsListQueries(): int
+{
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    announcementsListPage('all');
+
+    $queryCount = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    return $queryCount;
+}
+
+beforeEach(function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::configure($testCase);
+});
+
+it('denies the list to an administrator without admin.announcements.viewAny', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
+
+    Livewire::test(ListAnnouncements::class)->assertForbidden();
+
+    expect(AnnouncementResource::canAccess())->toBeFalse();
+});
+
+describe('with the announcements manager role', function (): void {
+    beforeEach(function (): void {
+        /** @var TestCase $testCase */
+        $testCase = $this;
+
+        AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminAnnouncementsManager);
+    });
+
+    it('defers loading the table and opens on the active tab', function (): void {
+        $testable = Livewire::test(ListAnnouncements::class)->assertOk();
+        $table = FilamentTableRecords::table($testable)->getTable();
+
+        expect(AnnouncementResource::canAccess())->toBeTrue()
+            ->and($testable->get('activeTab'))->toBe('active')
+            ->and($table->isLoadingDeferred())->toBeTrue()
+            ->and($table->hasLoadingSkeleton())->toBeTrue();
+    });
+
+    it('shows on each tab only the announcements of that schedule', function (): void {
+        $announcement = listAnnouncementFactory()->scheduled()->createOne();
+        $active = listAnnouncementFactory()->active()->createOne();
+        $withoutEnd = listAnnouncementFactory()->createOne(['starts_at' => now()->subDay(), 'ends_at' => null]);
+        $expired = listAnnouncementFactory()->expired()->createOne();
+
+        expect(listedAnnouncementKeys('scheduled'))->toBe([FilamentTableRecords::recordKey($announcement)])
+            ->and(listedAnnouncementKeys('active'))->toEqualCanonicalizing([
+                FilamentTableRecords::recordKey($active),
+                FilamentTableRecords::recordKey($withoutEnd),
+            ])
+            ->and(listedAnnouncementKeys('expired'))->toBe([FilamentTableRecords::recordKey($expired)])
+            ->and(listedAnnouncementKeys('all'))->toHaveCount(4);
+    });
+
+    it('filters the list by type and by audience', function (): void {
+        $announcement = listAnnouncementFactory()->ofType(AnnouncementType::Critical)->createOne();
+        $withoutTwoFactor = listAnnouncementFactory()
+            ->ofType(AnnouncementType::Info)
+            ->forAudience(AnnouncementAudience::WithoutTwoFactor)
+            ->createOne();
+
+        $testable = announcementsListPage()->set('tableFilters.type', ['value' => AnnouncementType::Critical->value]);
+        $byAudience = announcementsListPage()->set('tableFilters.audience', ['value' => AnnouncementAudience::WithoutTwoFactor->value]);
+
+        expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), Announcement::class))
+            ->toBe([FilamentTableRecords::recordKey($announcement)])
+            ->and(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($byAudience), Announcement::class))
+            ->toBe([FilamentTableRecords::recordKey($withoutTwoFactor)]);
+    });
+
+    it('shows the type label, the author, a deleted author and a missing end date', function (): void {
+        $user = createUser();
+        listAnnouncementFactory()->ofType(AnnouncementType::Critical)->createdBy($user)->createOne();
+        listAnnouncementFactory()->createOne(['created_by' => null, 'ends_at' => null]);
+
+        announcementsListPage()
+            ->assertSee('Critical')
+            ->assertSee($user->name)
+            ->assertSee('Deleted user')
+            ->assertSee('No end date');
+    });
+
+    it('does not add queries per row', function (): void {
+        listAnnouncementFactory()->count(3)->create();
+
+        countAnnouncementsListQueries();
+        $queriesWithFewAnnouncements = countAnnouncementsListQueries();
+
+        listAnnouncementFactory()->count(17)->create();
+
+        expect(countAnnouncementsListQueries())->toBe($queriesWithFewAnnouncements);
+    });
+});
