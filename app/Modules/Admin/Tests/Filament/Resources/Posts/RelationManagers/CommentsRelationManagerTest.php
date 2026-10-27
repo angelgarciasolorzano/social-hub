@@ -36,6 +36,16 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
+it('loads comments lazily and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $table = FilamentTableRecords::table(commentsRelationManagerFor(createPost(createUser())))->getTable();
+
+    expect(CommentsRelationManager::isLazy())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('lists only the selected post comments with their author and creation date', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 

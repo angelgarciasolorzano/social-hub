@@ -45,6 +45,7 @@ class TrustedDevicesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->columns([
                 TextColumn::make('name')
                     ->label('Device')
@@ -104,10 +105,12 @@ class TrustedDevicesRelationManager extends RelationManager
             $trustedDevice->browser,
             $trustedDevice->browser_version,
         ], static fn (?string $part): bool => $part !== null && $part !== ''));
+
         $operatingSystem = implode(' ', array_filter([
             $trustedDevice->os_name,
             $trustedDevice->os_version,
         ], static fn (?string $part): bool => $part !== null && $part !== ''));
+
         $summary = implode(' · ', array_filter([
             $browser,
             $operatingSystem,

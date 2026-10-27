@@ -45,6 +45,11 @@ class UserActivityOverview extends StatsOverviewWidget
 
         $startDate = CarbonImmutable::today()->subDays(6);
         $endDate = $startDate->addDays(7);
+        $statusChangesStartDate = CarbonImmutable::today()->subDays(29)->startOfDay();
+        $statusChangesEndDate = CarbonImmutable::today()->endOfDay();
+        $statusChangesCount = $record->accountStatusChanges()
+            ->whereBetween('created_at', [$statusChangesStartDate, $statusChangesEndDate])
+            ->count();
 
         return [
             Stat::make('Posts', $record->posts()->count())
@@ -62,6 +67,9 @@ class UserActivityOverview extends StatsOverviewWidget
                     ->where('expires_at', '>', now())
                     ->count(),
             )->description('Not revoked and not expired'),
+            Stat::make('Status changes (30 days)', $statusChangesCount)
+                ->description('Account suspensions and reactivations')
+                ->color('warning'),
         ];
     }
 }

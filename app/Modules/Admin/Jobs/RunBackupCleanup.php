@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Jobs;
 
+use App\Modules\Admin\Services\DashboardBackupSummaryCache;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Artisan;
@@ -14,9 +15,13 @@ final class RunBackupCleanup implements ShouldQueue
 {
     use Queueable;
 
-    public function handle(): void
+    public function handle(DashboardBackupSummaryCache $dashboardBackupSummaryCache): void
     {
-        $exitCode = Artisan::call('backup:clean');
+        try {
+            $exitCode = Artisan::call('backup:clean');
+        } finally {
+            $dashboardBackupSummaryCache->forget();
+        }
 
         throw_if($exitCode !== Command::SUCCESS, RuntimeException::class, 'The backup cleanup command failed.');
     }

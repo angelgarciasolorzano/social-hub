@@ -15,6 +15,7 @@ use Filament\Forms\Components\Select;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
+use Filament\Widgets\WidgetConfiguration;
 use Illuminate\Database\Eloquent\Builder;
 use Override;
 
@@ -59,13 +60,15 @@ class ListUsers extends ListRecords
     }
 
     /**
-     * @return array<class-string<Widget>>
+     * @return array<class-string<Widget> | WidgetConfiguration>
      */
     #[Override]
     protected function getHeaderWidgets(): array
     {
         return [
-            RegistrationSummaryWidget::class,
+            RegistrationSummaryWidget::make([
+                'showPendingVerification' => true,
+            ]),
         ];
     }
 

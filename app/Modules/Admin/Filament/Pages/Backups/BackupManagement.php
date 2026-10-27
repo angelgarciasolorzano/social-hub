@@ -8,6 +8,7 @@ use App\Modules\Admin\Data\BackupListingData;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Pages\Backups\Schemas\BackupManagementInfolist;
 use App\Modules\Admin\Filament\Pages\Backups\Tables\BackupsTable;
+use App\Modules\Admin\Filament\Pages\Backups\Widgets\BackupSummaryWidget;
 use App\Modules\Admin\Services\BackupManagementService;
 use App\User\Models\User;
 use BackedEnum;
@@ -19,6 +20,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Filament\Widgets\Widget;
 use Override;
 use UnitEnum;
 
@@ -70,6 +72,38 @@ class BackupManagement extends Page implements HasTable
                 ->action(function (): void {
                     $this->createBackup();
                 }),
+        ];
+    }
+
+    /**
+     * @return array<class-string<Widget>>
+     */
+    #[Override]
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            BackupSummaryWidget::class,
+        ];
+    }
+
+    /**
+     * @return array{
+     *     backupListingData: array{
+     *         backups: list<array{filename: string, created_at: string|null, size_in_bytes: float|null, disk: string, available: bool}>,
+     *         health: array{healthy: bool, failed_checks: list<string>}
+     *     }
+     * }
+     */
+    #[Override]
+    public function getWidgetData(): array
+    {
+        $backupListingData = $this->getBackupListing();
+
+        return [
+            'backupListingData' => [
+                'backups' => $backupListingData->backups,
+                'health' => $backupListingData->health,
+            ],
         ];
     }
 

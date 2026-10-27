@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
+use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\User\Enums\AccountStatus;
+use App\User\Enums\UserImageType;
+use App\User\Models\User;
 use DateTimeInterface;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -22,7 +28,19 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('media'))
+            ->deferLoading()
+            ->loadingSkeleton()
             ->columns([
+                ImageColumn::make('profile_picture')
+                    ->label('Profile picture')
+                    ->state(fn (User $record): string => url(
+                        $record->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+                    ))
+                    ->defaultImageUrl(asset(User::DEFAULT_PROFILE_PICTURE_PATH))
+                    ->imageSize(40)
+                    ->circular()
+                    ->alt(fn (User $record): string => "Profile picture of {$record->name}"),
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('email')->searchable()->sortable(),
                 TextColumn::make('status')
@@ -38,7 +56,7 @@ class UsersTable
                     ->placeholder(static function (): string {
                         $neverLabel = __('messages.Never');
 
-                        return is_string($neverLabel) ? $neverLabel : 'Never';
+                        return \is_string($neverLabel) ? $neverLabel : 'Never';
                     })
                     ->sortable(),
             ])
@@ -78,6 +96,12 @@ class UsersTable
                         false: fn (Builder $builder): Builder => $builder->whereDoesntHave('posts'),
                         blank: fn (Builder $builder): Builder => $builder,
                     ),
+            ])
+            ->recordActions([
+                ViewAction::make()
+                    ->icon(Heroicon::Eye)
+                    ->modal(false)
+                    ->url(fn (User $user): string => UserResource::getUrl('view', ['record' => $user])),
             ]);
     }
 }

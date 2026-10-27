@@ -20,6 +20,8 @@ class BackupsTable
     {
         return $table
             ->heading('Backups')
+            ->deferLoading()
+            ->loadingSkeleton()
             ->records(function (int $page, int $recordsPerPage) use ($backupManagementPage): LengthAwarePaginator {
                 $backups = collect($backupManagementPage->getBackupListing()->backups)->keyBy('filename');
 

@@ -7,18 +7,46 @@ use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Contracts\HasTable;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
+
+/** @return Testable<ListPosts> */
+function postsListPageForTesting(): Testable
+{
+    return Livewire::test(ListPosts::class)->call('loadTable');
+}
 
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
 
     AdminFilamentTestContext::configure($testCase);
+});
+
+it('defers loading the posts table and displays a loading skeleton', function (): void {
+    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminPostsReader,
+    );
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $component = Livewire::test(ListPosts::class)->instance();
+
+    throw_unless($component instanceof HasTable, LogicException::class, 'The Posts index must expose a Filament table.');
+
+    $table = $component->getTable();
+
+    expect($table->isLoadingDeferred())->toBeTrue()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
 });
 
 it('lists posts with pagination and content search', function (): void {
@@ -51,40 +79,31 @@ it('lists posts with pagination and content search', function (): void {
     /** @var Post $lastTargetPost */
     $this->actingAs($authenticatedUser, 'admin');
 
-    $testable = Livewire::test(ListPosts::class)
+    $testable = postsListPageForTesting()
         ->assertOk()
         ->assertSeeText('Target post 11')
         ->assertSeeText($user->name)
         ->assertSeeText('Other author post sentinel');
 
-    $component = $testable->instance();
+    $listPosts = $testable->instance();
 
-    throw_unless($component instanceof HasTable, LogicException::class, 'The Posts index must expose a Filament table.');
-
-    /** @var HasTable&Component $component */
-    expect($component->getAllTableRecordsCount())
+    expect($listPosts->getAllTableRecordsCount())
         ->toBe(12)
-        ->and(FilamentTableRecords::visibleRecordKeys($component, Post::class))
+        ->and(FilamentTableRecords::visibleRecordKeys($listPosts, Post::class))
         ->not->toContain(FilamentTableRecords::recordKey($firstTargetPost));
 
     $testable->call('setPage', 2);
 
     $secondPage = $testable->instance();
 
-    throw_unless($secondPage instanceof HasTable, LogicException::class, 'The Posts second page must expose a Filament table.');
-
-    /** @var HasTable&Component $secondPage */
     expect(FilamentTableRecords::visibleRecordKeys($secondPage, Post::class))
         ->toContain(FilamentTableRecords::recordKey($firstTargetPost));
 
-    $searchTest = Livewire::test(ListPosts::class)
+    $searchTest = postsListPageForTesting()
         ->set('tableSearch', 'Target post 01');
 
     $searchPage = $searchTest->instance();
 
-    throw_unless($searchPage instanceof HasTable, LogicException::class, 'The searched Posts page must expose a Filament table.');
-
-    /** @var HasTable&Component $searchPage */
     expect(FilamentTableRecords::visibleRecordKeys($searchPage, Post::class))
         ->toContain(FilamentTableRecords::recordKey($firstTargetPost))
         ->not->toContain(
@@ -100,7 +119,7 @@ it('truncates long post previews in the resource table', function (): void {
 
     createPost(attributes: ['content' => $content]);
 
-    Livewire::test(ListPosts::class)
+    postsListPageForTesting()
         ->assertSeeText(rtrim(mb_substr($content, 0, 70)))
         ->assertDontSeeText($content);
 });
@@ -119,7 +138,7 @@ it('denies the Posts index to users with only Users read access', function (): v
         ->assertForbidden();
 });
 
-it('keeps the Posts resource index read only', function (): void {
+it('keeps the Posts resource index read only with a view action for each record', function (): void {
     $authenticatedUser = createUser();
 
     $authenticatedUser->assignRole([
@@ -135,10 +154,18 @@ it('keeps the Posts resource index read only', function (): void {
 
     /** @var HasTable&Component $tableComponent */
     $table = $tableComponent->getTable();
+    $recordActions = $table->getRecordActions();
+    $viewAction = $recordActions[0] ?? null;
 
-    expect($table->getHeaderActions())
-        ->toBeEmpty()
-        ->and($table->getRecordActions())
+    throw_unless($viewAction instanceof ViewAction, LogicException::class, 'The Posts table must expose its view action.');
+
+    expect($recordActions)
+        ->toHaveCount(1)
+        ->and($viewAction->hasModal())
+        ->toBeFalse()
+        ->and($viewAction->hasUrl())
+        ->toBeTrue()
+        ->and($table->getHeaderActions())
         ->toBeEmpty()
         ->and($table->getToolbarActions())
         ->toBeEmpty();
@@ -151,11 +178,11 @@ it('filters posts by whether they have comments', function (): void {
     createCommentOn($postWithComments);
     $postWithoutComments = createPost();
 
-    $testable = Livewire::test(ListPosts::class)
+    $testable = postsListPageForTesting()
         ->set('tableFilters.has_comments.value', true);
-    $withComments = FilamentTableRecords::table($testable);
+    $listPosts = FilamentTableRecords::table($testable);
 
-    expect(FilamentTableRecords::visibleRecordKeys($withComments, Post::class))
+    expect(FilamentTableRecords::visibleRecordKeys($listPosts, Post::class))
         ->toBe([FilamentTableRecords::recordKey($postWithComments)]);
 
     $testable->set('tableFilters.has_comments.value', false);
@@ -173,7 +200,7 @@ it('filters posts by their creation date range', function (): void {
     $postOutsideRange = createPost();
     $postOutsideRange->forceFill(['created_at' => '2026-02-01 12:00:00'])->save();
 
-    $testable = Livewire::test(ListPosts::class)
+    $testable = postsListPageForTesting()
         ->set('tableFilters.created_at.created_from', '2026-01-15')
         ->set('tableFilters.created_at.created_until', '2026-01-20');
     $table = FilamentTableRecords::table($testable);
@@ -196,13 +223,13 @@ it('combines post date and comment filters and handles an empty result', functio
     $postWithoutCommentsInsideRange = createPost();
     $postWithoutCommentsInsideRange->forceFill(['created_at' => '2026-01-18 12:00:00'])->save();
 
-    $testable = Livewire::test(ListPosts::class)
+    $testable = postsListPageForTesting()
         ->set('tableFilters.created_at.created_from', '2026-01-15')
         ->set('tableFilters.created_at.created_until', '2026-01-20')
         ->set('tableFilters.has_comments.value', true);
-    $filteredTable = FilamentTableRecords::table($testable);
+    $listPosts = FilamentTableRecords::table($testable);
 
-    expect(FilamentTableRecords::visibleRecordKeys($filteredTable, Post::class))
+    expect(FilamentTableRecords::visibleRecordKeys($listPosts, Post::class))
         ->toBe([FilamentTableRecords::recordKey($postWithCommentsInsideRange)]);
 
     $testable
@@ -222,12 +249,42 @@ it('shows the image from the posts_images collection', function (): void {
     $post->addMedia(UploadedFile::fake()->image('post-image.jpg'))
         ->toMediaCollection(Post::POSTS_IMAGES_MEDIA_COLLECTION);
 
-    $testable = Livewire::test(ListPosts::class)
+    $testable = postsListPageForTesting()
         ->assertOk();
 
     $imageUrl = url($post->getFirstMediaUrl(Post::POSTS_IMAGES_MEDIA_COLLECTION));
 
     expect($testable->html())->toContain($imageUrl);
+});
+
+it('eager loads post media in one query at the default and larger page sizes', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    foreach (range(1, 25) as $sequence) {
+        createPost(attributes: ['content' => 'Post '.$sequence]);
+    }
+
+    $mediaQueries = [];
+
+    DB::listen(static function (QueryExecuted $queryExecuted) use (&$mediaQueries): void {
+        if (str_contains(strtolower($queryExecuted->sql), 'media')) {
+            $mediaQueries[] = $queryExecuted->sql;
+        }
+    });
+
+    $testable = postsListPageForTesting()
+        ->assertOk();
+    $defaultPageMediaQueries = $mediaQueries;
+    $mediaQueries = [];
+
+    $testable
+        ->set('tableRecordsPerPage', 25)
+        ->assertOk();
+    $largerPageMediaQueries = $mediaQueries;
+
+    expect($defaultPageMediaQueries)
+        ->toHaveCount(1)
+        ->and($largerPageMediaQueries)->toHaveCount(1);
 });
 
 it('shows the fallback for posts without images while keeping them paginated', function (): void {
@@ -239,7 +296,7 @@ it('shows the fallback for posts without images while keeping them paginated', f
 
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
 
-    $testable = Livewire::test(ListPosts::class)
+    $testable = postsListPageForTesting()
         ->assertOk();
     $table = FilamentTableRecords::table($testable);
 
@@ -247,9 +304,9 @@ it('shows the fallback for posts without images while keeping them paginated', f
 
     $testable->call('setPage', 2);
 
-    $secondPage = FilamentTableRecords::table($testable);
+    $listPosts = FilamentTableRecords::table($testable);
 
-    expect(FilamentTableRecords::visibleRecordKeys($secondPage, Post::class))
+    expect(FilamentTableRecords::visibleRecordKeys($listPosts, Post::class))
         ->toContain(FilamentTableRecords::recordKey($postWithoutImage))
         ->and($testable->html())
         ->toContain(asset('default-cover.svg'));

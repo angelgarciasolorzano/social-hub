@@ -7,17 +7,65 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAuthEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
+use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogOverview;
+use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogSummaryWidget;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\User\Models\User;
+use Carbon\CarbonImmutable;
+use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
+
+/**
+ * @return array{labels: list<string>, counts: list<int>}
+ */
+function activityLogSummaryChartPayload(ActivityLogSummaryWidget $activityLogSummaryWidget): array
+{
+    $cachedDataMethod = new ReflectionMethod(ChartWidget::class, 'getCachedData');
+    $chartData = $cachedDataMethod->invoke($activityLogSummaryWidget);
+    $labels = is_array($chartData) ? ($chartData['labels'] ?? null) : null;
+    $datasets = is_array($chartData) ? ($chartData['datasets'] ?? null) : null;
+    $firstDataset = is_array($datasets) ? ($datasets[0] ?? null) : null;
+    $counts = is_array($firstDataset) ? ($firstDataset['data'] ?? null) : null;
+
+    throw_unless(
+        is_array($labels)
+            && array_is_list($labels)
+            && is_array($counts)
+            && array_is_list($counts),
+        LogicException::class,
+        'The activity summary chart must return its chart data.',
+    );
+
+    /** @var list<mixed> $labels */
+    /** @var list<mixed> $counts */
+    $eventLabels = [];
+
+    foreach ($labels as $label) {
+        throw_unless(is_string($label), LogicException::class, 'The activity chart labels must be strings.');
+        $eventLabels[] = $label;
+    }
+
+    $eventCounts = [];
+
+    foreach ($counts as $count) {
+        throw_unless(is_int($count), LogicException::class, 'The activity chart counts must be integers.');
+        $eventCounts[] = $count;
+    }
+
+    return [
+        'labels' => $eventLabels,
+        'counts' => $eventCounts,
+    ];
+}
 
 /**
  * The keys of the activities shown on the current page of the list.
@@ -27,7 +75,7 @@ use Tests\TestCase;
  */
 function visibleActivityLogKeys(Testable $testable): array
 {
-    return FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), ActivityLog::class);
+    return FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable->call('loadTable')), ActivityLog::class);
 }
 
 /**
@@ -36,6 +84,12 @@ function visibleActivityLogKeys(Testable $testable): array
 function actingAsActivityLogReader(TestCase $testCase): User
 {
     return AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminActivityReader);
+}
+
+/** @return Testable<ListActivityLogs> */
+function activityLogsPageForTesting(): Testable
+{
+    return Livewire::test(ListActivityLogs::class)->call('loadTable');
 }
 
 /**
@@ -47,7 +101,7 @@ function countActivityLogListQueries(): int
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    Livewire::test(ListActivityLogs::class)->assertOk();
+    activityLogsPageForTesting()->assertOk();
 
     $listQueries = array_filter(
         array_column(DB::getQueryLog(), 'query'),
@@ -79,6 +133,16 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
+it('defers loading the activity log table and displays a loading skeleton', function (): void {
+    actingAsActivityLogReader($this);
+
+    $testable = Livewire::test(ListActivityLogs::class)->assertOk();
+    $table = FilamentTableRecords::table($testable)->getTable();
+
+    expect($table->isLoadingDeferred())->toBeTrue()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('denies the list to an administrator without admin.activity.viewAny', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
 
@@ -95,13 +159,102 @@ it('shows the list and its navigation item to an activity reader', function (): 
     expect(ActivityLogResource::canAccess())->toBeTrue();
 });
 
+it('registers the aggregate summary on the activity log page', function (): void {
+    actingAsActivityLogReader($this);
+
+    $component = Livewire::test(ListActivityLogs::class)->assertOk()->instance();
+    throw_unless($component instanceof ListActivityLogs, LogicException::class, 'The activity log page was not mounted.');
+    $headerWidgetsMethod = new ReflectionMethod(ListActivityLogs::class, 'getHeaderWidgets');
+    $headerWidgets = $headerWidgetsMethod->invoke($component);
+    throw_unless(is_array($headerWidgets), LogicException::class, 'The activity log page must return its header widgets.');
+
+    expect($headerWidgets)
+        ->toContain(ActivityLogOverview::class)
+        ->toContain(ActivityLogSummaryWidget::class);
+});
+
+it('summarizes event types inside the fixed seven-day window', function (): void {
+    $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
+    actingAsActivityLogReader($this);
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne([
+        'created_at' => '2026-06-09 00:00:00',
+    ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne([
+        'created_at' => '2026-06-15 12:00:00',
+    ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::UserLoggedIn)->createOne([
+        'created_at' => '2026-06-15 23:59:59',
+    ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogLikeEvent::Added)->createOne([
+        'created_at' => '2026-06-15 12:00:00',
+    ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogTrustedDeviceEvent::Renamed)->createOne([
+        'created_at' => '2026-06-15 12:00:00',
+    ]);
+    ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::LoginFailed)->createOne([
+        'created_at' => '2026-06-08 23:59:59',
+    ]);
+
+    $testable = Livewire::test(ActivityLogSummaryWidget::class)
+        ->assertOk()
+        ->assertSeeText('Activity events (last 7 days)')
+        ->assertSeeText('5 events in the last 7 days.')
+        ->assertSeeText('Event distribution: Role Granted: 2, User Logged In: 1, Like Added: 1, Trusted Device Renamed: 1.');
+    $component = $testable->instance();
+    throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
+    $chartData = activityLogSummaryChartPayload($component);
+
+    expect(array_combine($chartData['labels'], $chartData['counts']))
+        ->toBe([
+            'Role Granted' => 2,
+            'User Logged In' => 1,
+            'Like Added' => 1,
+            'Trusted Device Renamed' => 1,
+        ]);
+});
+
+it('shows an empty state when there are no recent activity events', function (): void {
+    actingAsActivityLogReader($this);
+
+    $testable = Livewire::test(ActivityLogSummaryWidget::class)
+        ->assertOk()
+        ->assertSeeText('0 events in the last 7 days.')
+        ->assertSeeText('No activity in the last 7 days')
+        ->assertSeeText('There are no activity events to summarize for this period.');
+
+    $component = $testable->instance();
+    throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
+
+    expect($component->isEmpty())->toBeTrue();
+});
+
+it('denies the summary widget to an administrator without activity access', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    Livewire::test(ActivityLogSummaryWidget::class)->assertForbidden();
+});
+
+it('does not render activity properties in the summary page', function (): void {
+    actingAsActivityLogReader($this);
+    $privateContent = 'private-comment-content-91b63e';
+
+    ActivityLogFactory::new()->forEvent(ActivityLogContentEvent::CommentCreated)->createOne([
+        'properties' => ['content' => $privateContent],
+    ]);
+
+    activityLogsPageForTesting()
+        ->assertOk()
+        ->assertDontSee($privateContent);
+});
+
 it('lists each activity with readable log, event, performer and subject', function (): void {
     $user = actingAsActivityLogReader($this);
     $target = createUser();
 
     ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->causedBy($user)->performedOn($target)->createOne();
 
-    Livewire::test(ListActivityLogs::class)
+    activityLogsPageForTesting()
         ->assertSeeText('Admin')
         ->assertSeeText('Role Granted')
         ->assertSeeText($user->name)
@@ -121,7 +274,7 @@ it('lists anonymous activities and deleted performers or subjects without failin
     $deletedComment->forceDelete();
     $deletedUser->delete();
 
-    Livewire::test(ListActivityLogs::class)
+    activityLogsPageForTesting()
         ->assertOk()
         ->assertSeeText('Anonymous')
         ->assertSeeText('None')

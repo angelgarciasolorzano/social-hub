@@ -9,9 +9,14 @@ use App\Modules\Admin\Mail\AdminInvitationMail;
 use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Database\Factories\UserFactory;
+use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Filament\Tables\Testing\TestsFilters;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -21,7 +26,7 @@ use Tests\TestCase;
  */
 function listUsersPageForTesting(): Testable
 {
-    return Livewire::test(ListUsers::class);
+    return Livewire::test(ListUsers::class)->call('loadTable');
 }
 
 beforeEach(function (): void {
@@ -62,19 +67,19 @@ it('allows admins with the users reader role to list and search users by name an
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->assertSuccessful()
         ->assertSee($user->name)
         ->assertSee($emailMatch->email)
         ->assertSee($nonMatch->email);
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableSearch', 'Searchable Name Sentinel')
         ->assertSee($user->name)
         ->assertDontSee($emailMatch->email)
         ->assertDontSee($nonMatch->email);
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableSearch', 'searchable-email@example.test')
         ->assertSee($emailMatch->email)
         ->assertDontSee($user->name)
@@ -99,18 +104,109 @@ it('renders the last login fallback in the active application locale', function 
     try {
         app()->setLocale('en');
 
-        Livewire::test(ListUsers::class)
+        listUsersPageForTesting()
             ->assertSee($targetUser->name)
             ->assertSee('Never');
 
         app()->setLocale('es');
 
-        Livewire::test(ListUsers::class)
+        listUsersPageForTesting()
             ->assertSee($targetUser->name)
             ->assertSee('Nunca');
     } finally {
         app()->setLocale($originalLocale);
     }
+});
+
+it('renders a users profile picture with descriptive alt text', function (): void {
+    Storage::fake((string) config('media-library.disk_name'));
+
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+    $targetUser->addMedia(UploadedFile::fake()->image('profile-picture.jpg'))
+        ->toMediaCollection(UserImageType::PROFILE_PICTURE->value());
+
+    $profilePictureUrl = url($targetUser->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()));
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    listUsersPageForTesting()
+        ->assertSee($targetUser->name)
+        ->assertSeeHtml('src="'.$profilePictureUrl.'"')
+        ->assertSeeHtml('alt="Profile picture of '.$targetUser->name.'"');
+});
+
+it('uses the configured profile picture fallback with descriptive alt text', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    listUsersPageForTesting()
+        ->assertSee($targetUser->name)
+        ->assertSeeHtml('src="'.url(User::DEFAULT_PROFILE_PICTURE_PATH).'"')
+        ->assertSeeHtml('alt="Profile picture of '.$targetUser->name.'"');
+});
+
+it('eager loads profile media in one query regardless of the user page size', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+    $mediaQueries = [];
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    DB::listen(static function (QueryExecuted $queryExecuted) use (&$mediaQueries): void {
+        $querySql = strtolower($queryExecuted->sql);
+
+        if (str_contains($querySql, 'media')) {
+            $mediaQueries[] = $queryExecuted->sql;
+        }
+    });
+
+    listUsersPageForTesting()->assertSee($targetUser->name);
+    $smallPageMediaQueries = $mediaQueries;
+    $mediaQueries = [];
+
+    for ($index = 0; $index < 8; $index++) {
+        createUser();
+    }
+
+    listUsersPageForTesting()->assertSee($targetUser->name);
+    $fullPageMediaQueries = $mediaQueries;
+
+    expect($smallPageMediaQueries)
+        ->toHaveCount(1)
+        ->and($fullPageMediaQueries)->toHaveCount(1);
+});
+
+it('defers loading the users table and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersReader,
+    );
+
+    $componentTest = listUsersPageForTesting();
+    $listUsers = $componentTest->instance();
+    $table = $listUsers->getTable();
+
+    expect($table->hasLoadingSkeleton())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeTrue();
 });
 
 it('filters users by verification status registration date and post presence alone and together', function (): void {
@@ -144,7 +240,7 @@ it('filters users by verification status registration date and post presence alo
         'until' => '2026-01-20',
     ];
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableFilters.email_verified_at', ['value' => true])
         ->assertSee([
             $user->name,
@@ -153,10 +249,7 @@ it('filters users by verification status registration date and post presence alo
         ])
         ->assertDontSee([$authenticatedUser->name, $unverifiedWithPost->name]);
 
-    $testable = Livewire::test(ListUsers::class);
-    $component = $testable->instance();
-
-    throw_unless($component instanceof ListUsers, LogicException::class, 'The registration-date filter test must resolve the user list page.');
+    $testable = listUsersPageForTesting();
 
     $filterTable = (new TestsFilters)->filterTable();
     $filterTable->call($testable, 'registration_date', $dateRange);
@@ -169,7 +262,7 @@ it('filters users by verification status registration date and post presence alo
         ])
         ->assertDontSee([$authenticatedUser->name, $verifiedOutsideDateRangeWithPost->name]);
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableFilters.has_posts', ['value' => true])
         ->assertSee([
             $user->name,
@@ -178,7 +271,7 @@ it('filters users by verification status registration date and post presence alo
         ])
         ->assertDontSee([$authenticatedUser->name, $verifiedWithoutPost->name]);
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableFilters.email_verified_at', ['value' => true])
         ->set('tableFilters.registration_date.from', $dateRange['from'])
         ->set('tableFilters.registration_date.until', $dateRange['until'])
@@ -191,7 +284,7 @@ it('filters users by verification status registration date and post presence alo
             $unverifiedWithPost->name,
         ]);
 
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableFilters.email_verified_at', ['value' => true])
         ->set('tableFilters.registration_date.from', '2026-03-01')
         ->set('tableFilters.registration_date.until', '2026-03-02')
@@ -248,7 +341,7 @@ it('preserves search sorting and pagination when user filters are active', funct
     throw_unless($lastUser instanceof User, LogicException::class, 'The filtered user fixture must exist.');
 
     /** @var User $lastUser */
-    Livewire::test(ListUsers::class)
+    listUsersPageForTesting()
         ->set('tableFilters.email_verified_at', ['value' => true])
         ->set('tableFilters.has_posts', ['value' => false])
         ->call('sortTable', 'name', 'asc')

@@ -48,6 +48,7 @@ it('allows Posts readers to open post details without Users access', function ()
         ->assertOk();
 
     Livewire::test(ListPosts::class)
+        ->call('loadTable')
         ->assertSee(PostResource::getUrl('view', ['record' => $post]), false);
 });
 

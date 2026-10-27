@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Data\BackupDestinationData;
+use App\Modules\Admin\Data\BackupListingData;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
+use App\Modules\Admin\Filament\Pages\Backups\Widgets\BackupSummaryWidget;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use Carbon\CarbonImmutable;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -19,7 +23,50 @@ use Tests\TestCase;
 /** @return Testable<BackupManagement> */
 function backupManagementPageForTesting(): Testable
 {
-    return Livewire::test(BackupManagement::class);
+    return Livewire::test(BackupManagement::class)->call('loadTable');
+}
+
+/**
+ * @param  list<array{filename: string, created_at: string|null, size_in_bytes: float|null, disk: string, available: bool}>  $backups
+ */
+function backupListingDataForSummary(array $backups, bool $healthy = true): BackupListingData
+{
+    return new BackupListingData(
+        backups: $backups,
+        health: [
+            'healthy' => $healthy,
+            'failed_checks' => $healthy ? [] : ['MaximumAgeInDays'],
+        ],
+        destination: new BackupDestinationData(
+            provider: 'Test storage',
+            bucket: null,
+            prefix: 'social-hub-test',
+            region: null,
+            visibility: 'private',
+            archiveEncryption: null,
+            retention: [
+                'keep_all_backups_for_days' => 0,
+                'keep_daily_backups_for_days' => 0,
+                'keep_weekly_backups_for_weeks' => 0,
+                'keep_monthly_backups_for_months' => 0,
+                'keep_yearly_backups_for_years' => 0,
+            ],
+        ),
+    );
+}
+
+/**
+ * @return array{
+ *     backups: list<array{filename: string, created_at: string|null, size_in_bytes: float|null, disk: string, available: bool}>,
+ *     health: array{healthy: bool, failed_checks: list<string>}
+ * }
+ */
+function backupListingWidgetData(BackupListingData $backupListingData): array
+{
+    return [
+        'backups' => $backupListingData->backups,
+        'health' => $backupListingData->health,
+    ];
 }
 
 beforeEach(function (): void {
@@ -30,6 +77,20 @@ beforeEach(function (): void {
 
     config()->set('backup.backup.name', 'social-hub-test');
     config()->set('backup.monitor_backups.0.name', 'social-hub-test');
+});
+
+it('defers loading the backups table and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+
+    $testable = backupManagementPageForTesting()->assertOk();
+    $table = FilamentTableRecords::table($testable)->getTable();
+
+    expect($table->isLoadingDeferred())->toBeTrue()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
 });
 
 it('renders the page and navigation to an authorized backup reader', function (): void {
@@ -69,10 +130,118 @@ it('renders the page and navigation to an authorized backup reader', function ()
         ->assertDontSee('http://localhost:4566')
         ->assertDontSee('backup-secret-must-not-render')
         ->assertDontSee('archive-password-must-not-render')
+        ->assertDontSeeText($filename);
+
+    backupManagementPageForTesting()
+        ->assertOk()
         ->assertSeeText($filename)
         ->assertSeeText('2.5 MB')
         ->assertDontSeeText('Disk')
         ->assertSeeText('Available');
+});
+
+it('renders backup summary counts, latest age, and total size', function (): void {
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $user->saveAppAuthenticationSecret('filament-test-secret');
+    Storage::fake('backups');
+    $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
+
+    $olderFilename = (new RunDatabaseBackup)->filename;
+    storeBackupArchive($olderFilename, str_repeat('a', 1024 * 1024), now()->subHour());
+    $latestFilename = (new RunDatabaseBackup)->filename;
+    storeBackupArchive($latestFilename, str_repeat('b', (1024 * 1024) + (512 * 1024)), now()->subMinutes(30));
+
+    $this->get(BackupManagement::getUrl(isAbsolute: false))
+        ->assertOk()
+        ->assertSeeText('Backup summary')
+        ->assertSeeText('Available backups')
+        ->assertSeeText('2')
+        ->assertSeeText('Missing backups')
+        ->assertSeeText('0')
+        ->assertSeeText('Latest available backup')
+        ->assertSeeText('30 minutes ago')
+        ->assertSeeText('Oct 22, 2026 11:30')
+        ->assertSeeText('Total backup size')
+        ->assertSeeText('2.5 MB')
+        ->assertSeeText('Destination healthy.');
+});
+
+it('passes the cached backup listing to the page widget', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    Storage::fake('backups');
+
+    $testable = backupManagementPageForTesting();
+    $backupManagement = $testable->instance();
+    $backupListingData = $backupManagement->getBackupListing();
+
+    expect($backupManagement->getWidgetData()['backupListingData'])
+        ->toBe(backupListingWidgetData($backupListingData))
+        ->and($backupManagement->getBackupListing())->toBe($backupListingData);
+});
+
+it('shows an explicit empty and unhealthy destination state', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $backupListingData = backupListingDataForSummary([], healthy: false);
+
+    Livewire::test(BackupSummaryWidget::class, ['backupListingData' => backupListingWidgetData($backupListingData)])
+        ->assertOk()
+        ->assertSeeText('Destination needs attention. No backups found.')
+        ->assertSeeText('No available backups')
+        ->assertSeeText('No backups stored');
+});
+
+it('shows missing archives and withholds an incomplete total size', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $backupListingData = backupListingDataForSummary([
+        [
+            'filename' => 'available.zip',
+            'created_at' => '2026-10-21T12:00:00-06:00',
+            'size_in_bytes' => 1024.0,
+            'disk' => 'backups',
+            'available' => true,
+        ],
+        [
+            'filename' => 'missing.zip',
+            'created_at' => null,
+            'size_in_bytes' => null,
+            'disk' => 'backups',
+            'available' => false,
+        ],
+    ]);
+
+    Livewire::test(BackupSummaryWidget::class, ['backupListingData' => backupListingWidgetData($backupListingData)])
+        ->assertOk()
+        ->assertSeeText('Available backups')
+        ->assertSeeText('1')
+        ->assertSeeText('Missing backups')
+        ->assertSeeText('1')
+        ->assertSeeText('Archives not found in storage')
+        ->assertSeeText('Oct 21, 2026 12:00')
+        ->assertSeeText('One or more archive sizes are unavailable');
+});
+
+it('does not expose the backup summary without view permission', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin);
+    $backupListingData = backupListingDataForSummary([]);
+
+    Livewire::test(BackupSummaryWidget::class, ['backupListingData' => backupListingWidgetData($backupListingData)])
+        ->assertForbidden();
 });
 
 it('paginates backup archives ten rows at a time by default', function (): void {

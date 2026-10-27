@@ -29,7 +29,7 @@ function countUsersListQueries(): int
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    Livewire::test(ListUsers::class);
+    Livewire::test(ListUsers::class)->call('loadTable');
 
     $queryCount = count(DB::getQueryLog());
     DB::disableQueryLog();
@@ -41,6 +41,7 @@ it('shows each account status as a badge in the users list', function (): void {
     createSuspendedUser();
 
     Livewire::test(ListUsers::class)
+        ->call('loadTable')
         ->assertSee('Active')
         ->assertSee('Suspended');
 });
@@ -50,6 +51,7 @@ it('filters the users list by suspended accounts', function (): void {
     createUser();
 
     $testable = Livewire::test(ListUsers::class)
+        ->call('loadTable')
         ->set('tableFilters.status', ['value' => 'suspended']);
 
     expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
@@ -60,6 +62,7 @@ it('filters the users list by active accounts', function (): void {
     $suspendedUser = createSuspendedUser();
 
     $testable = Livewire::test(ListUsers::class)
+        ->call('loadTable')
         ->set('tableFilters.status', ['value' => 'active']);
 
     expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))

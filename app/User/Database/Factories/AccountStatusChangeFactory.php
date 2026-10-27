@@ -8,12 +8,21 @@ use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Override;
 
 /**
  * @extends Factory<AccountStatusChange>
  */
 class AccountStatusChangeFactory extends Factory
 {
+    /**
+     * The name of the factory's corresponding model.
+     *
+     * @var class-string<AccountStatusChange>
+     */
+    #[Override]
+    protected $model = AccountStatusChange::class;
+
     /**
      * Define the model's default state: a suspension made by another account.
      *

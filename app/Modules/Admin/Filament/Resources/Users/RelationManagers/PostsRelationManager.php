@@ -13,6 +13,7 @@ use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -46,13 +47,15 @@ class PostsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
                 ->select([
                     'id',
                     'user_id',
                     'content',
                     'created_at',
-                ]))
+                ])
+                ->with('media'))
             ->columns([
                 ImageColumn::make('post_image')
                     ->label('Image')
@@ -95,13 +98,13 @@ class PostsRelationManager extends RelationManager
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(
                             $data['created_from'] ?? null,
-                            fn (Builder $builder, mixed $date): Builder => (is_string($date) || $date instanceof DateTimeInterface)
+                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
                                 ? $builder->whereDate('created_at', '>=', $date)
                                 : $builder,
                         )
                         ->when(
                             $data['created_until'] ?? null,
-                            fn (Builder $builder, mixed $date): Builder => (is_string($date) || $date instanceof DateTimeInterface)
+                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
                                 ? $builder->whereDate('created_at', '<=', $date)
                                 : $builder,
                         )),
@@ -112,6 +115,7 @@ class PostsRelationManager extends RelationManager
             ->headerActions([])
             ->recordActions([
                 ViewAction::make()
+                    ->icon(Heroicon::Eye)
                     ->url(fn (Post $post): string => PostResource::getUrl('view', ['record' => $post])),
             ])
             ->toolbarActions([]);

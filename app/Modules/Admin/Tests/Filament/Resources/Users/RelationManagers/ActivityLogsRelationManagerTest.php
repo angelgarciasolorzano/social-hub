@@ -35,6 +35,16 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
+it('loads the activity relation lazily and displays a loading skeleton', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminActivityReader);
+
+    $table = FilamentTableRecords::table(activityLogsRelationManagerFor(createUser()))->getTable();
+
+    expect(ActivityLogsRelationManager::isLazy())->toBeTrue()
+        ->and($table->isLoadingDeferred())->toBeFalse()
+        ->and($table->hasLoadingSkeleton())->toBeTrue();
+});
+
 it('lists the activity the user performed and the activity performed on them, newest first', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminActivityReader);
     $user = createUser();
@@ -59,7 +69,10 @@ it('hides the tab from an administrator without admin.activity.viewAny', functio
 
     expect(ActivityLogsRelationManager::canViewForRecord($user, ViewUser::class))->toBeFalse();
 
-    activityLogsRelationManagerFor($user)->assertForbidden();
+    Livewire::test(ActivityLogsRelationManager::class, [
+        'ownerRecord' => $user,
+        'pageClass' => ViewUser::class,
+    ])->assertForbidden();
 });
 
 it('hides the tab from an activity reader who cannot view users', function (): void {

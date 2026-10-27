@@ -14,6 +14,7 @@ use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -46,6 +47,7 @@ class CommentsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->recordTitleAttribute('content')
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('user:id,name'))
             ->columns([
@@ -99,6 +101,7 @@ class CommentsRelationManager extends RelationManager
             ->headerActions([])
             ->recordActions([
                 ViewAction::make()
+                    ->icon(Heroicon::Eye)
                     ->modal(false)
                     ->url(fn (Comment $comment): string => CommentResource::getUrl('view', ['record' => $comment])),
             ])

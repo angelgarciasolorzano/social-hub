@@ -8,9 +8,13 @@ use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Comment\Models\Comment;
 use App\User\Models\User;
 use DateTimeInterface;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -42,6 +46,7 @@ class RepliesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->loadingSkeleton()
             ->recordTitleAttribute('content')
             ->columns([
                 TextColumn::make('content')
@@ -81,8 +86,59 @@ class RepliesRelationManager extends RelationManager
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
+            ->recordAction('viewReply')
+            ->recordActions([
+                Action::make('viewReply')
+                    ->label('View reply')
+                    ->icon(Heroicon::Eye)
+                    ->color('gray')
+                    ->authorize(fn (): bool => static::canViewForRecord(
+                        $this->getOwnerRecord(),
+                        ViewComment::class,
+                    ))
+                    ->modalHeading('Reply details')
+                    ->schema([
+                        Section::make('Reply content')
+                            ->description('The complete message in this conversation.')
+                            ->icon(Heroicon::OutlinedDocumentText)
+                            ->schema([
+                                TextEntry::make('content')
+                                    ->label('Message')
+                                    ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
+                                    ->prose()
+                                    ->columnSpanFull(),
+                            ]),
+                        Section::make('Reply details')
+                            ->description('Author and timeline for this reply.')
+                            ->icon(Heroicon::OutlinedUserCircle)
+                            ->schema([
+                                TextEntry::make('user.name')
+                                    ->label('Author')
+                                    ->icon(Heroicon::OutlinedUser),
+                                TextEntry::make('created_at')
+                                    ->label('Created at')
+                                    ->icon(Heroicon::OutlinedCalendarDays)
+                                    ->dateTime('Y-m-d H:i'),
+                                TextEntry::make('edited_at')
+                                    ->label('Edited at')
+                                    ->icon(Heroicon::OutlinedPencilSquare)
+                                    ->dateTime('Y-m-d H:i')
+                                    ->visible(static fn (Comment $record): bool => $record->edited_at !== null),
+                                TextEntry::make('repliedToUser.name')
+                                    ->label('Replying to')
+                                    ->icon(Heroicon::OutlinedUser)
+                                    ->formatStateUsing(static fn (?string $state): ?string => filled($state) ? "@{$state}" : null)
+                                    ->visible(static fn (Comment $record): bool => $record->repliedToUser instanceof User),
+                            ])
+                            ->columns([
+                                'default' => 1,
+                                'sm' => 2,
+                            ]),
+                    ])
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close'),
+            ])
             ->headerActions([])
-            ->recordActions([])
             ->toolbarActions([]);
     }
 }

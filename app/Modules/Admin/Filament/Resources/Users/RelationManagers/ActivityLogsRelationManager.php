@@ -45,7 +45,7 @@ class ActivityLogsRelationManager extends RelationManager
     #[Override]
     public function table(Table $table): Table
     {
-        return ActivityLogsTable::configure($table)
+        return ActivityLogsTable::configure($table, deferLoading: false)
             ->query(function (): Builder {
                 $model = $this->getOwnerRecord();
 
