@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Jobs;
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Services\DashboardBackupSummaryCache;
 use App\User\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -32,7 +33,7 @@ final class RunDatabaseBackup implements ShouldQueue
         $this->chain([new RunBackupCleanup]);
     }
 
-    public function handle(ActivityLogger $activityLogger): void
+    public function handle(ActivityLogger $activityLogger, DashboardBackupSummaryCache $dashboardBackupSummaryCache): void
     {
         $this->assertArchivePasswordIsConfigured();
 
@@ -40,11 +41,15 @@ final class RunDatabaseBackup implements ShouldQueue
             ? null
             : User::query()->findOrFail($this->actorId);
 
-        $exitCode = Artisan::call('backup:run', [
-            '--only-db' => true,
-            '--only-to-disk' => self::BACKUP_DISK,
-            '--filename' => $this->filename,
-        ]);
+        try {
+            $exitCode = Artisan::call('backup:run', [
+                '--only-db' => true,
+                '--only-to-disk' => self::BACKUP_DISK,
+                '--filename' => $this->filename,
+            ]);
+        } finally {
+            $dashboardBackupSummaryCache->forget();
+        }
 
         throw_if($exitCode !== Command::SUCCESS, RuntimeException::class, 'The database backup command failed.');
 

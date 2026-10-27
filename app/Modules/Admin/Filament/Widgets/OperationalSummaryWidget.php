@@ -12,6 +12,7 @@ use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Services\BackupManagementService;
+use App\Modules\Admin\Services\DashboardBackupSummaryCache;
 use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
@@ -24,10 +25,6 @@ use Throwable;
 
 class OperationalSummaryWidget extends StatsOverviewWidget
 {
-    private const string BACKUP_SUMMARY_CACHE_KEY = 'admin:dashboard:backup-summary:v1';
-
-    private const int BACKUP_SUMMARY_CACHE_TTL_MINUTES = 5;
-
     #[Override]
     protected ?string $heading = 'Operational summary';
 
@@ -74,7 +71,9 @@ class OperationalSummaryWidget extends StatsOverviewWidget
                     ->description("{$accountStatusSummary['recent_status_changes']} status changes in the last 7 days")
                     ->color('primary')
                     ->url($usersUrl);
-            } catch (Throwable) {
+            } catch (Throwable $throwable) {
+                report($throwable);
+
                 $stats[] = Stat::make('Account status', 'Unavailable')
                     ->description('Account metrics could not be loaded')
                     ->color('warning')
@@ -93,7 +92,9 @@ class OperationalSummaryWidget extends StatsOverviewWidget
                     ->description('Recorded events in the activity log')
                     ->color('primary')
                     ->url($activityLogUrl);
-            } catch (Throwable) {
+            } catch (Throwable $throwable) {
+                report($throwable);
+
                 $stats[] = Stat::make('Activity (7 days)', 'Unavailable')
                     ->description('Activity metrics could not be loaded')
                     ->color('warning')
@@ -112,7 +113,9 @@ class OperationalSummaryWidget extends StatsOverviewWidget
                     ->description($this->formatBackupDescription($backupSummary))
                     ->color($this->backupSummaryColor($backupSummary))
                     ->url($backupsUrl);
-            } catch (Throwable) {
+            } catch (Throwable $throwable) {
+                report($throwable);
+
                 $stats[] = Stat::make('Latest backup', 'Unavailable')
                     ->description('Backup summary could not be loaded')
                     ->color('warning')
@@ -165,8 +168,8 @@ class OperationalSummaryWidget extends StatsOverviewWidget
     private function backupSummary(User $authenticatedUser): DashboardBackupSummaryData
     {
         return Cache::remember(
-            self::BACKUP_SUMMARY_CACHE_KEY,
-            now()->addMinutes(self::BACKUP_SUMMARY_CACHE_TTL_MINUTES),
+            DashboardBackupSummaryCache::KEY,
+            now()->addMinutes(DashboardBackupSummaryCache::TTL_MINUTES),
             function () use ($authenticatedUser): DashboardBackupSummaryData {
                 $backupListingData = resolve(BackupManagementService::class)->listBackups($authenticatedUser);
 

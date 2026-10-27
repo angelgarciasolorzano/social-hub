@@ -13,6 +13,7 @@ use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Widgets\OperationalSummaryWidget;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
+use App\Modules\Admin\Services\DashboardBackupSummaryCache;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Database\Factories\AccountStatusChangeFactory;
 use App\User\Enums\AccountStatus;
@@ -22,6 +23,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -66,7 +68,7 @@ beforeEach(function (): void {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
     config()->set('backup.backup.name', 'social-hub-test');
     config()->set('backup.monitor_backups.0.name', 'social-hub-test');
-    Cache::forget('admin:dashboard:backup-summary:v1');
+    Cache::forget(DashboardBackupSummaryCache::KEY);
 
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -107,6 +109,38 @@ it('shows the activity count for the seven-day window', function (): void {
         ->assertSee(ActivityLogResource::getUrl('index', panel: 'admin'));
 });
 
+it('reports account metric query failures while showing the fallback', function (): void {
+    $authenticatedUser = createOperationalDashboardAdmin(AdminPermission::AdminUsersViewAny);
+    $this->actingAs($authenticatedUser, 'admin');
+    Exceptions::fake();
+
+    DB::listen(static function (QueryExecuted $queryExecuted): void {
+        throw_if(str_contains(strtolower($queryExecuted->sql), 'account_status_changes'), RuntimeException::class, 'Account status metrics query failed.');
+    });
+
+    Livewire::test(OperationalSummaryWidget::class)
+        ->assertSeeText('Account status')
+        ->assertSeeText('Account metrics could not be loaded');
+
+    Exceptions::assertReported(static fn (RuntimeException $runtimeException): bool => $runtimeException->getMessage() === 'Account status metrics query failed.');
+});
+
+it('reports activity metric query failures while showing the fallback', function (): void {
+    $authenticatedUser = createOperationalDashboardAdmin(AdminPermission::AdminActivityViewAny);
+    $this->actingAs($authenticatedUser, 'admin');
+    Exceptions::fake();
+
+    DB::listen(static function (QueryExecuted $queryExecuted): void {
+        throw_if(str_contains(strtolower($queryExecuted->sql), 'activity_log'), RuntimeException::class, 'Activity metrics query failed.');
+    });
+
+    Livewire::test(OperationalSummaryWidget::class)
+        ->assertSeeText('Activity (7 days)')
+        ->assertSeeText('Activity metrics could not be loaded');
+
+    Exceptions::assertReported(static fn (RuntimeException $runtimeException): bool => $runtimeException->getMessage() === 'Activity metrics query failed.');
+});
+
 it('shows the age and availability of the newest backup', function (): void {
     $authenticatedUser = createOperationalDashboardAdmin(AdminPermission::AdminBackupsView);
     $this->actingAs($authenticatedUser, 'admin');
@@ -135,7 +169,7 @@ it('does not render or cache backup filenames', function (): void {
     Livewire::test(OperationalSummaryWidget::class)
         ->assertDontSeeText($backupFilename);
 
-    $cachedBackupSummary = Cache::get('admin:dashboard:backup-summary:v1');
+    $cachedBackupSummary = Cache::get(DashboardBackupSummaryCache::KEY);
     throw_unless($cachedBackupSummary instanceof DashboardBackupSummaryData, LogicException::class, 'The cached backup summary must contain aggregate data.');
 
     expect(serialize($cachedBackupSummary))->not->toContain($backupFilename);
@@ -160,7 +194,7 @@ it('shows only account metrics when the user has no activity or backup permissio
 
     expect(array_filter($queries, static fn (string $query): bool => str_contains($query, 'activity_log')))
         ->toBeEmpty()
-        ->and(Cache::has('admin:dashboard:backup-summary:v1'))
+        ->and(Cache::has(DashboardBackupSummaryCache::KEY))
         ->toBeFalse();
 });
 
@@ -192,7 +226,7 @@ it('shows only recent activity when the user has no account or backup permission
             || (str_contains($query, 'count(*)') && str_contains($query, 'users')),
     ))
         ->toBeEmpty()
-        ->and(Cache::has('admin:dashboard:backup-summary:v1'))
+        ->and(Cache::has(DashboardBackupSummaryCache::KEY))
         ->toBeFalse();
 });
 
@@ -278,12 +312,15 @@ it('keeps activity metrics available when the backup source fails', function ():
     createDashboardActivityEvent(ActivityLogAuthEvent::UserLoggedIn, '2026-06-15 11:00:00');
     config()->set('backup.backup.destination.disks', []);
     Storage::fake('backups');
+    Exceptions::fake();
 
     Livewire::test(OperationalSummaryWidget::class)
         ->assertSeeText('Activity (7 days)')
         ->assertSeeText('1')
         ->assertSeeText('Latest backup')
         ->assertSeeText('Backup summary could not be loaded');
+
+    Exceptions::assertReported(static fn (RuntimeException $runtimeException): bool => $runtimeException->getMessage() === 'The dedicated backup disk is not configured as a backup destination.');
 });
 
 it('forbids the operational widget when the user has no source permissions', function (): void {
