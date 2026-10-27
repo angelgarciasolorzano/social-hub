@@ -33,4 +33,14 @@ enum AdminPermission: string
     case AdminBackupsCreate = 'admin.backups.create';
 
     case AdminBackupsDownload = 'admin.backups.download';
+
+    case AdminAnnouncementsViewAny = 'admin.announcements.viewAny';
+
+    case AdminAnnouncementsView = 'admin.announcements.view';
+
+    case AdminAnnouncementsCreate = 'admin.announcements.create';
+
+    case AdminAnnouncementsUpdate = 'admin.announcements.update';
+
+    case AdminAnnouncementsDelete = 'admin.announcements.delete';
 }

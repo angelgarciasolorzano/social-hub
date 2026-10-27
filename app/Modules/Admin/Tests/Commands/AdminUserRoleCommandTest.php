@@ -56,6 +56,21 @@ it('grants a catalog role and exposes its permissions', function (): void {
         ->and($user->canAccessPanel(Panel::make()->id('admin')))->toBeFalse();
 });
 
+it('grants the announcements manager role and its permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+
+    $exitCode = runAdminUserRole('grant', $user->email, AdminRole::AdminAnnouncementsManager->value, createAdminCommandActor());
+    $user->refresh();
+
+    expect($exitCode)->toBe(Command::SUCCESS)
+        ->and($user->hasRole(AdminRole::AdminAnnouncementsManager->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminAnnouncementsCreate->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminAnnouncementsDelete->value))->toBeTrue()
+        ->and($user->can(AdminPermission::AdminAccess->value))->toBeFalse();
+});
+
 it('grants panel entry through the admin role', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
