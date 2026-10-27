@@ -10,7 +10,9 @@ use App\Modules\Announcement\Enums\AnnouncementType;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -82,6 +84,11 @@ class Announcement extends Model implements HasMedia
     public const int BUTTON_LABEL_MAX_LENGTH = 40;
 
     /**
+     * The maximum number of announcements shown at the same time.
+     */
+    public const int MAX_VISIBLE = 3;
+
+    /**
      * The attributes that should be cast.
      *
      * @return array<string, string>
@@ -125,5 +132,64 @@ class Announcement extends Model implements HasMedia
     {
         return $this->belongsToMany(User::class, 'announcement_dismissals')
             ->withPivot('created_at');
+    }
+
+    /**
+     * Limit the query to the announcements the given visitor should see now, the most severe first:
+     * started and not ended, meant for their audience and not dismissed by them.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, ?User $user): void
+    {
+        $now = now();
+
+        $query
+            ->where('starts_at', '<=', $now)
+            ->where(fn (Builder $builder): Builder => $builder
+                ->whereNull('ends_at')
+                ->orWhere('ends_at', '>', $now))
+            ->whereIn('audience', array_map(
+                fn (AnnouncementAudience $announcementAudience): string => $announcementAudience->value,
+                $this->audiencesFor($user),
+            ));
+
+        if ($user instanceof User) {
+            $query->whereDoesntHave('dismissedBy', fn (Builder $builder): Builder => $builder->whereKey($user->getKey()));
+        }
+
+        $severityCases = [];
+        $severityBindings = [];
+
+        foreach (AnnouncementType::cases() as $announcementType) {
+            $severityCases[] = 'when ? then ?';
+            $severityBindings[] = $announcementType->value;
+            $severityBindings[] = $announcementType->severity();
+        }
+
+        $query
+            ->orderByRaw('case type '.implode(' ', $severityCases).' else 0 end desc', $severityBindings)
+            ->latest('starts_at')
+            ->orderByDesc('id')
+            ->limit(self::MAX_VISIBLE);
+    }
+
+    /**
+     * The audiences that include the given visitor; a guest only belongs to everyone.
+     *
+     * @return list<AnnouncementAudience>
+     */
+    private function audiencesFor(?User $user): array
+    {
+        if (! $user instanceof User) {
+            return [AnnouncementAudience::All];
+        }
+
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            return [AnnouncementAudience::All, AnnouncementAudience::Authenticated];
+        }
+
+        return AnnouncementAudience::cases();
     }
 }
