@@ -8,6 +8,7 @@ use App\Home\Providers\HomeServiceProvider;
 use App\Modules\ActivityLog\Providers\ActivityLogServiceProvider;
 use App\Modules\Admin\Providers\AdminPanelProvider;
 use App\Modules\Admin\Providers\AdminServiceProvider;
+use App\Modules\Announcement\Providers\AnnouncementServiceProvider;
 use App\Modules\Comment\Providers\CommentServiceProvider;
 use App\Modules\Like\Providers\LikeServiceProvider;
 use App\Modules\Post\Providers\PostServiceProvider;
@@ -25,6 +26,7 @@ return [
     PostServiceProvider::class,
     CommentServiceProvider::class,
     LikeServiceProvider::class,
+    AnnouncementServiceProvider::class,
     ActivityLogServiceProvider::class,
     FriendshipServiceProvider::class,
     FortifyServiceProvider::class,
