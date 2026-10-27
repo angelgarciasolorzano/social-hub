@@ -4,14 +4,24 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 
+use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementType;
+use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Services\AnnouncementService;
+use App\User\Models\User;
+use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use LogicException;
 
 class AnnouncementsTable
 {
@@ -59,6 +69,11 @@ class AnnouncementsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                ActionGroup::make([
+                    self::previewAction(),
+                    self::duplicateAction(),
+                    self::unpublishAction(),
+                ]),
             ]);
     }
 
@@ -72,6 +87,81 @@ class AnnouncementsTable
             AnnouncementType::Warning => 'warning',
             AnnouncementType::Critical => 'danger',
         };
+    }
+
+    /**
+     * Show the banner as users would see it, with its body sanitized.
+     */
+    private static function previewAction(): Action
+    {
+        return Action::make('preview')
+            ->label('Preview')
+            ->icon(Heroicon::OutlinedEye)
+            ->authorize('view')
+            ->modalHeading('Banner preview')
+            ->modalContent(fn (Announcement $record): View => view('admin::filament.announcements.preview', [
+                'announcement' => $record,
+                'typeColor' => self::typeColor($record->type),
+            ]))
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close');
+    }
+
+    /**
+     * Copy the announcement as a new one scheduled for tomorrow, then open the copy to review it.
+     */
+    private static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon(Heroicon::OutlinedSquare2Stack)
+            ->authorize('replicate')
+            ->requiresConfirmation()
+            ->modalDescription('The copy starts tomorrow and has no end date, so it is not shown before you review it.')
+            ->successNotificationTitle('Announcement duplicated')
+            ->action(function (Action $action, Announcement $record): void {
+                $announcement = resolve(AnnouncementService::class)->duplicate($record, self::administrator());
+
+                $action->success();
+                $action->redirect(AnnouncementResource::getUrl('edit', ['record' => $announcement]));
+            });
+    }
+
+    /**
+     * End a running announcement now, so users stop seeing it.
+     */
+    private static function unpublishAction(): Action
+    {
+        return Action::make('unpublish')
+            ->label('Unpublish now')
+            ->icon(Heroicon::OutlinedNoSymbol)
+            ->color('warning')
+            ->visible(fn (Announcement $record): bool => $record->isRunning())
+            ->authorize('update')
+            ->requiresConfirmation()
+            ->modalDescription('Users stop seeing this announcement right away.')
+            ->successNotificationTitle('Announcement unpublished')
+            ->failureNotificationTitle('The announcement is no longer running.')
+            ->action(function (Action $action, Announcement $record): void {
+                try {
+                    resolve(AnnouncementService::class)->unpublish($record, self::administrator());
+                } catch (LogicException) {
+                    $action->failure();
+
+                    return;
+                }
+
+                $action->success();
+            });
+    }
+
+    private static function administrator(): User
+    {
+        $authenticatedUser = Filament::auth()->user();
+
+        throw_unless($authenticatedUser instanceof User, LogicException::class, 'Only a signed-in administrator can change announcements.');
+
+        return $authenticatedUser;
     }
 
     /**

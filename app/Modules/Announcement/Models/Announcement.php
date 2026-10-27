@@ -118,6 +118,17 @@ class Announcement extends Model implements HasMedia
     }
 
     /**
+     * Whether the announcement is running now, the in-memory twin of the `running` scope.
+     */
+    public function isRunning(): bool
+    {
+        $now = now();
+
+        return ! $this->starts_at->isAfter($now)
+            && ($this->ends_at === null || $this->ends_at->isAfter($now));
+    }
+
+    /**
      * The body as HTML that is safe to render: the rich editor output passed through Filament's
      * renderer, which drops unknown markup and sanitizes scripts, handlers and unsafe links.
      */
