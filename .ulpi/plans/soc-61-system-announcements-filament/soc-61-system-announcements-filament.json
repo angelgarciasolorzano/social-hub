@@ -1,0 +1,1162 @@
+{
+  "id": "soc-61-system-announcements-filament",
+  "title": "SOC-61: Anuncios del sistema gestionados desde el panel de Filament",
+  "issue": {
+    "identifier": "SOC-61",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-61/feature-add-system-announcements-managed-from-the-filament-admin-panel"
+  },
+  "mode": "HOLD",
+  "reviewDefault": "claude",
+  "date": "2026-10-27",
+  "overview": "Módulo nuevo `app/Modules/Announcement/`: los administradores con el rol `admin-announcements-manager` crean, programan, editan, duplican, despublican y borran anuncios desde `/admin/announcements` (primer CRUD real del panel), y la app React los muestra como banner a la audiencia que corresponde, con descarte persistente por usuario. Todo cambio administrativo queda en el activity log sin el texto del anuncio.",
+  "scopeChallenge": "HOLD con revisión de Claude. Decisión del usuario (2026-10-27): se aprueba la dependencia nueva `filament/spatie-laravel-media-library-plugin` para la imagen con `SpatieMediaLibraryFileUpload` (no estaba instalada). Hallazgos: `symfony/html-sanitizer` ya llega con Filament y `RichContentRenderer` sanea el HTML, así que no hace falta otra librería; `HandleInertiaRequests` está excluido de PHPStan, por eso la regla de visibilidad vive en el scope `visibleTo` y la serialización en `AnnouncementBannerResource`, ambos analizados; `FlashToaster` ya lee props desde los eventos del router dentro de `withApp`, el mismo mecanismo sirve para mostrar el banner en todas las páginas, incluidas las de invitado. Las notificaciones en tiempo real siguen fuera, como pidió el usuario.",
+  "prerequisites": [
+    "Panel Filament 5 con autorización en policies de modelo (SOC-44, SOC-57).",
+    "`ActivityLogger` y `ActivityLogAdminEvent` (SOC-54).",
+    "`spatie/laravel-medialibrary` 11 y la morph map forzada en `AppServiceProvider`.",
+    "Aprobación de la dependencia `filament/spatie-laravel-media-library-plugin` (dada el 2026-10-27)."
+  ],
+  "nonGoals": [
+    "Notificaciones en tiempo real (Reverb, campana del panel).",
+    "Correo o push.",
+    "Traducciones del mensaje por idioma.",
+    "Estadísticas de vistas o descartes.",
+    "Reflejar los anuncios sembrados en `ActivityLogSeeder`."
+  ],
+  "contracts": [
+    "`Announcement::visibleTo(?User)` es la única regla de qué anuncio ve quién; el listado del panel, la prop compartida y la policy `dismiss` la reutilizan.",
+    "Toda escritura desde el panel pasa por `AnnouncementService`, que registra la auditoría en la misma transacción; el activity log nunca guarda título ni cuerpo.",
+    "El HTML del cuerpo solo llega al navegador saneado por `RichContentRenderer` (`bodyHtml`); el frontend nunca recibe el HTML crudo.",
+    "`AnnouncementBannerResource` no expone autor, audiencia ni fechas.",
+    "La prop `announcements` tiene un costo fijo de consultas y es perezosa.",
+    "El tipo del frontend es espejo de `AnnouncementType`: se cambian juntos."
+  ],
+  "shipCut": "TASK-001..016 entregan la creación desde el panel con auditoría. TASK-021..026 son la mitad visible para los usuarios y pueden ir en paralelo con edición y detalle. TASK-027..029 son extras independientes; TASK-030..031 cierran.",
+  "failureModes": [
+    "HTML malicioso en el cuerpo: lo sanea `RichContentRenderer` en el servidor (TASK-021, TASK-018, TASK-020) y se prueba con `<script>` y `onerror`.",
+    "Doble clic o dos pestañas al cerrar: `insertOrIgnore` + índice único (TASK-005, TASK-023).",
+    "Anuncio editado o despublicado mientras otro administrador lo tiene abierto: el servicio relee dentro de la transacción y `unpublish` rechaza uno ya vencido.",
+    "Prop compartida cara en cada página: perezosa, limitada a 3 y con prueba de conteo de consultas (TASK-022).",
+    "La morph map forzada rompe MediaLibrary si falta el alias: TASK-007 va antes de cualquier subida."
+  ],
+  "testCoverageMap": {
+    "Migración y modelo": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007"
+    ],
+    "Visibilidad y audiencias": [
+      "TASK-008",
+      "TASK-022"
+    ],
+    "Autorización": [
+      "TASK-010",
+      "TASK-014",
+      "TASK-016",
+      "TASK-017",
+      "TASK-019",
+      "TASK-020"
+    ],
+    "Servicio y auditoría": [
+      "TASK-012"
+    ],
+    "Formulario y validación": [
+      "TASK-016",
+      "TASK-017"
+    ],
+    "Saneamiento del HTML": [
+      "TASK-019",
+      "TASK-020",
+      "TASK-021"
+    ],
+    "Descarte": [
+      "TASK-024"
+    ],
+    "Seeders y dashboard": [
+      "TASK-027",
+      "TASK-028",
+      "TASK-029"
+    ]
+  },
+  "existingCodeLeverage": [
+    "`LikeServiceProvider` / `LikeRouteServiceProvider`: patrón de proveedores del módulo.",
+    "`AccountStatusService` (SOC-35): servicio con transacción y auditoría.",
+    "`UserPolicy`, `PostPolicy` y `#[UsePolicy]`: policies que Filament consulta.",
+    "`ListUsersAccountStatusTest`: prueba de conteo de consultas con cachés calientes.",
+    "`FlashToaster`: leer props compartidas desde los eventos del router dentro de `withApp`.",
+    "`useLikeToggle`: `useHttp` con actualización optimista y errores locales.",
+    "`Post::registerMediaCollections()`: colección `singleFile()`."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Instalar el plugin oficial de MediaLibrary para Filament",
+      "description": "Dependencia aprobada por el usuario (2026-10-27): `composer require filament/spatie-laravel-media-library-plugin` en la versión compatible con `filament/filament` 5.10. Aporta `SpatieMediaLibraryFileUpload` y `SpatieMediaLibraryImageEntry`, que usan las colecciones de `spatie/laravel-medialibrary` ya instalado. No se publica configuración.",
+      "priority": "P0",
+      "type": "chore",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`composer show filament/spatie-laravel-media-library-plugin` muestra una versión 5.x.",
+        "`composer test` sigue verde y PHPStan no reporta errores nuevos tras la instalación."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "composer.json",
+        "composer.lock"
+      ],
+      "writeScope": [
+        "composer.json",
+        "composer.lock"
+      ],
+      "validateCommand": "rtk composer show filament/spatie-laravel-media-library-plugin && rtk composer phpstan",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Proveedor del módulo Announcement",
+      "description": "Crear `App\\Modules\\Announcement\\Providers\\AnnouncementServiceProvider` (patrón de `LikeServiceProvider`): `boot()` llama a `loadMigrationsFrom(__DIR__.'/../Database/Migrations')`. Registrarlo en `bootstrap/providers.php` después de `LikeServiceProvider`. El proveedor de rutas lo agrega TASK-023.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`php artisan about` lista el proveedor sin errores.",
+        "Sin carpeta de migraciones todavía, `php artisan migrate:status` no falla."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Providers/AnnouncementServiceProvider.php"
+      ],
+      "filesToModify": [
+        "bootstrap/providers.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Providers/AnnouncementServiceProvider.php",
+        "bootstrap/providers.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Announcement/Providers/AnnouncementServiceProvider.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Registrar la suite de pruebas Announcement",
+      "description": "Agregar `app/Modules/Announcement/Tests` como suite `Announcement` en `phpunit.xml` y en el `->in(...)` de `tests/Pest.php` (TestCase + RefreshDatabase), igual que SOC-35 con `AccountStatus`.",
+      "priority": "P0",
+      "type": "chore",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Una prueba colocada en esa carpeta recibe `RefreshDatabase`.",
+        "La suite completa sigue corriendo aunque la carpeta todavía no exista."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "phpunit.xml",
+        "tests/Pest.php"
+      ],
+      "writeScope": [
+        "phpunit.xml",
+        "tests/Pest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact --testsuite=Unit",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Enums AnnouncementType y AnnouncementAudience",
+      "description": "`AnnouncementType` (`info`, `warning`, `critical`) con `label()` en inglés para el panel y `severity()` para ordenar (crítico primero). `AnnouncementAudience` (`all`, `authenticated`, `without_two_factor`) con `label()`. Prueba de los valores y del orden de severidad.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Los valores exactos de ambos enums quedan fijados por la prueba.",
+        "`severity()` ordena critical > warning > info; un valor desconocido en `tryFrom` es `null`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Enums/AnnouncementType.php",
+        "app/Modules/Announcement/Enums/AnnouncementAudience.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Enums/AnnouncementType.php",
+        "app/Modules/Announcement/Enums/AnnouncementAudience.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Migración de announcements y announcement_dismissals",
+      "description": "Una migración en `app/Modules/Announcement/Database/Migrations/`: `announcements` (`id`, `title` string 120, `body` text con el HTML del RichEditor, `type`, `audience`, `starts_at`, `ends_at` nullable, `button_label` nullable 40, `button_url` nullable 2048, `is_dismissible` bool default true, `created_by` FK nullable `nullOnDelete`, timestamps, índice `(starts_at, ends_at)`) y `announcement_dismissals` (`id`, `announcement_id` FK `cascadeOnDelete`, `user_id` FK `cascadeOnDelete`, `created_at`, único `(announcement_id, user_id)`). `down()` borra ambas.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Rollback y migrate dejan las dos tablas con sus índices.",
+        "Insertar dos descartes del mismo usuario y anuncio viola el índice único; borrar el anuncio o el usuario borra sus descartes; borrar al autor deja `created_by` en null."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Database/Migrations/2026_10_27_000000_create_announcements_tables.php",
+        "app/Modules/Announcement/Tests/Database/AnnouncementMigrationTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Database/Migrations/2026_10_27_000000_create_announcements_tables.php",
+        "app/Modules/Announcement/Tests/Database/AnnouncementMigrationTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Database/AnnouncementMigrationTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Modelo Announcement y su factory",
+      "description": "`App\\Modules\\Announcement\\Models\\Announcement` (`HasMedia` + `InteractsWithMedia`, colección `announcement_image` `singleFile()`, `MORPH_NAME = 'announcement'`, `TITLE_MAX_LENGTH`, `BUTTON_LABEL_MAX_LENGTH`), casts de `type`, `audience`, fechas inmutables e `is_dismissible`; relaciones `creator()` y `dismissedBy()` (BelongsToMany a `User` vía `announcement_dismissals`). `AnnouncementFactory` completa con estados `scheduled()`, `active()`, `expired()`, `withButton()`, `notDismissible()`, `forAudience()` y `createdBy(User)`.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "La factory crea anuncios válidos en cada estado con fechas coherentes.",
+        "`dismissedBy()` devuelve solo los usuarios que descartaron ese anuncio.",
+        "Un anuncio cuyo autor fue borrado devuelve `creator = null` sin error."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Models/Announcement.php",
+        "app/Modules/Announcement/Database/Factories/AnnouncementFactory.php",
+        "app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Models/Announcement.php",
+        "app/Modules/Announcement/Database/Factories/AnnouncementFactory.php",
+        "app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Morph map de Announcement",
+      "description": "Registrar `Announcement::MORPH_NAME` en `AppServiceProvider::registerMorphMap()`: la morph map está forzada y la necesitan tanto MediaLibrary (`media.model_type`) como el activity log (sujeto). Prueba propia.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "`Relation::getMorphedModel('announcement')` devuelve `Announcement`.",
+        "Adjuntar una imagen a `announcement_image` guarda `model_type = 'announcement'` (con `Storage::fake`)."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Tests/Models/AnnouncementMorphMapTest.php"
+      ],
+      "filesToModify": [
+        "app/Providers/AppServiceProvider.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Models/AnnouncementMorphMapTest.php",
+        "app/Providers/AppServiceProvider.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Models/AnnouncementMorphMapTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Scope de visibilidad: anuncios vigentes para un usuario",
+      "description": "Agregar a `Announcement` el scope `#[Scope] visibleTo(?User $user)`: `starts_at <= now`, `ends_at` nulo o futuro; audiencia `all` para todos, `authenticated` solo con usuario, `without_two_factor` solo con usuario sin 2FA confirmado (`two_factor_confirmed_at` nulo); excluye los descartados por ese usuario; ordena por severidad del tipo y luego `starts_at` descendente, y limita a `MAX_VISIBLE` (3). Es la única fuente de qué se muestra.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Un invitado ve solo anuncios `all` vigentes; programados y vencidos nunca aparecen.",
+        "Un usuario con 2FA confirmado no ve `without_two_factor`; uno descartado ya no aparece para ese usuario pero sí para otros.",
+        "Con más de 3 vigentes devuelve 3, críticos primero."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Tests/Queries/AnnouncementVisibilityTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Announcement/Models/Announcement.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Queries/AnnouncementVisibilityTest.php",
+        "app/Modules/Announcement/Models/Announcement.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Queries/AnnouncementVisibilityTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Permisos y rol admin-announcements-manager",
+      "description": "Agregar a `AdminPermission` `admin.announcements.viewAny`, `view`, `create`, `update` y `delete`; a `AdminRole` `AdminAnnouncementsManager = 'admin-announcements-manager'`; y en `AdminAuthorizationSeeder` el paquete del rol con los cinco permisos. No se asigna automáticamente (TASK-031 lo da a Angel en local).",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Tras el seeder existen el rol y los cinco permisos bajo el guard `admin`.",
+        "Las pruebas existentes del seeder y de los comandos Admin siguen verdes; `admin:user-role grant <email> admin-announcements-manager` funciona."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Enums/AdminPermission.php",
+        "app/Modules/Admin/Enums/AdminRole.php",
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Enums/AdminPermission.php",
+        "app/Modules/Admin/Enums/AdminRole.php",
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php app/Modules/Admin/Tests/Commands",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "AnnouncementPolicy",
+      "description": "Crear `App\\Modules\\Announcement\\Policies\\AnnouncementPolicy` y asociarla con `#[UsePolicy]`: `viewAny`/`view`/`create`/`update`/`delete` con sus permisos; `replicate` con `create`; `deleteAny`, `restore`, `restoreAny`, `forceDelete` y `forceDeleteAny` en `false` (Filament permite lo que la policy no define). Además `dismiss(User, Announcement)` para la app: el usuario puede descartarlo solo si `is_dismissible` y le es visible (`visibleTo`). Prueba de la policy y fijar el paquete del rol en `AdminAuthorizationSeederTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Cada habilidad del panel se permite solo con su permiso; las de borrado masivo y restauración se niegan siempre.",
+        "`dismiss` se niega para un anuncio no cerrable, vencido o de otra audiencia."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Policies/AnnouncementPolicy.php",
+        "app/Modules/Announcement/Tests/Policies/AnnouncementPolicyTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Announcement/Models/Announcement.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Policies/AnnouncementPolicy.php",
+        "app/Modules/Announcement/Tests/Policies/AnnouncementPolicyTest.php",
+        "app/Modules/Announcement/Models/Announcement.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Policies/AnnouncementPolicyTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "AnnouncementData: entrada tipada del formulario",
+      "description": "`App\\Modules\\Announcement\\Data\\AnnouncementData` (spatie/laravel-data, regla del proyecto): título recortado, cuerpo, `AnnouncementType`, `AnnouncementAudience`, fechas, `isDismissible`, y botón: si `hasButton` es falso, `buttonLabel` y `buttonUrl` quedan en null aunque vengan con valor. `toModelAttributes()` mapea a columnas. Las reglas de validación viven en el formulario de Filament (TASK-015), no aquí.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "Se construye desde el estado del formulario con los enums tipados.",
+        "Con `hasButton = false` el botón se guarda vacío aunque lleguen texto y enlace."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Data/AnnouncementData.php",
+        "app/Modules/Announcement/Tests/Data/AnnouncementDataTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Data/AnnouncementData.php",
+        "app/Modules/Announcement/Tests/Data/AnnouncementDataTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Data/AnnouncementDataTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "AnnouncementService con auditoría",
+      "description": "`App\\Modules\\Announcement\\Services\\AnnouncementService`: `create(AnnouncementData, User $administrator)`, `update(Announcement, AnnouncementData, User)`, `unpublish(Announcement, User)` (fija `ends_at = now`; `LogicException` si ya venció), `duplicate(Announcement, User)` (copia el contenido y la imagen; queda programada para `now()->addDay()` y sin `ends_at`, así no se publica sola antes de revisarla) y `delete(Announcement, User)`. Cada uno en `DB::transaction` y registra con `ActivityLogger` `admin.announcement_created|updated|unpublished|duplicated|deleted` (nuevos casos de `ActivityLogAdminEvent`), con el anuncio como sujeto y solo ids o `changed_attributes` (nunca título ni cuerpo).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007",
+        "TASK-008",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Crear guarda `created_by` y registra `admin.announcement_created`; actualizar sin cambios no registra nada.",
+        "Despublicar un anuncio vencido lanza `LogicException` sin escribir; ningún registro contiene el texto del anuncio.",
+        "`ActivityLogPrivacyTest` pasa con los eventos nuevos."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Services/AnnouncementService.php",
+        "app/Modules/Announcement/Tests/Services/AnnouncementServiceTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Enums/Events/ActivityLogAdminEvent.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Services/AnnouncementService.php",
+        "app/Modules/Announcement/Tests/Services/AnnouncementServiceTest.php",
+        "app/Modules/ActivityLog/Enums/Events/ActivityLogAdminEvent.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Services/AnnouncementServiceTest.php app/Modules/ActivityLog/Tests/Security/ActivityLogPrivacyTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Recurso Filament: listado con pestañas y tabla",
+      "description": "Crear con `make:filament-resource` (moviendo a la jerarquía del módulo Admin) `Announcements/AnnouncementResource.php` (modelo `Announcement`, etiqueta 'Announcements', solo la página `index` por ahora), `Pages/ListAnnouncements.php` con `getTabs()`: Scheduled, Active, Expired, All; y `Tables/AnnouncementsTable.php`: título, tipo (badge), audiencia, rango de fechas, autor ('Deleted user' si es null), filtros por tipo y audiencia, `creator` precargado.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "`/admin/announcements` existe y la policy decide el acceso (sin `can*()` en el recurso).",
+        "Las pestañas separan programados, activos y vencidos según la misma regla de fechas que `visibleTo`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ListAnnouncements.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ListAnnouncements.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php"
+      ],
+      "validateCommand": "rtk php artisan route:list --name=filament.admin.resources.announcements && rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Announcements",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Pruebas del listado",
+      "description": "`ListAnnouncementsTest`: acceso con y sin permiso, pestañas, filtros, 'Deleted user' y número constante de consultas con 3 y 20 anuncios (calentar cachés antes de medir, como `ListUsersAccountStatusTest`).",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "Sin `admin.announcements.viewAny` el listado responde 403.",
+        "Cada pestaña muestra solo sus anuncios; la tabla no agrega consultas por fila."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Formulario y página de creación",
+      "description": "`Schemas/AnnouncementForm.php`: `TextInput` título (requerido, max), `RichEditor` cuerpo (requerido; barra sin adjuntos ni HTML crudo), `Select` tipo y audiencia (enums), `DateTimePicker` desde (requerido) y hasta (`after:starts_at`), `Toggle` 'Has button' con `live()` que muestra texto y enlace (`requiredIf`, enlace URL https o ruta interna `/...`), `Toggle` dismissible, `SpatieMediaLibraryFileUpload` en `announcement_image` (imagen, máx. 2 MB). `Pages/CreateAnnouncement.php` sobrescribe `handleRecordCreation()` para llamar a `AnnouncementService::create` con `AnnouncementData` y el administrador autenticado; la imagen la guarda el componente tras crear. Registrar `create` en `getPages()`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-012",
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "El formulario oculta los campos del botón mientras 'Has button' está apagado.",
+        "Crear pasa por el servicio (queda `created_by` y su registro de actividad)."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementForm.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/CreateAnnouncement.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementForm.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/CreateAnnouncement.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Announcements",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Pruebas de creación y validación",
+      "description": "`CreateAnnouncementTest` con `mountAction`/`set`/`call` o `fillForm` según lo que PHPStan acepte (en SOC-35 se evitaron los macros dinámicos): creación válida con imagen (`Storage::fake`), título vacío, 'hasta' anterior a 'desde', botón activo sin texto o con `javascript:` como enlace, y sin permiso `create`.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "Un anuncio válido se guarda con su imagen en `announcement_image`.",
+        "Cada regla inválida devuelve su error y no crea nada; sin permiso la página responde 403."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Página de edición con borrado",
+      "description": "`Pages/EditAnnouncement.php`: reutiliza `AnnouncementForm`, `handleRecordUpdate()` llama a `AnnouncementService::update`, y la cabecera tiene `DeleteAction` que usa `AnnouncementService::delete`. Registrar `edit` en `getPages()`. Prueba `EditAnnouncementTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-016"
+      ],
+      "acceptanceCriteria": [
+        "Editar guarda los cambios y registra solo los nombres de atributos cambiados.",
+        "Sin `update` la página responde 403; sin `delete` la acción de borrar no aparece y el borrado se rechaza."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/EditAnnouncement.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/EditAnnouncementTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/EditAnnouncement.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/EditAnnouncementTest.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/EditAnnouncementTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Página de detalle con infolist",
+      "description": "`Schemas/AnnouncementInfolist.php` (título, tipo, audiencia, fechas, botón, dismissible, imagen con `SpatieMediaLibraryImageEntry`, autor y el cuerpo renderizado con `RichContentRenderer`, que sanea el HTML) y `Pages/ViewAnnouncement.php`; registrar `view` en `getPages()`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-017"
+      ],
+      "acceptanceCriteria": [
+        "`/admin/announcements/{id}` muestra los datos y el cuerpo sin ejecutar HTML peligroso.",
+        "Sin `view` responde 403."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementInfolist.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ViewAnnouncement.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementInfolist.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ViewAnnouncement.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Announcements",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Pruebas del detalle",
+      "description": "`ViewAnnouncementTest`: campos visibles, un `<script>` del cuerpo no aparece en el HTML, 'Deleted user' para un autor borrado y 403 sin permiso.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "El detalle muestra los datos del anuncio.",
+        "El HTML peligroso del cuerpo no llega a la página."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Acciones de la tabla: duplicar, despublicar y vista previa",
+      "description": "En `AnnouncementsTable`: `ReplicateAction` 'Duplicate' que llama a `AnnouncementService::duplicate` (autorizada con `replicate`), 'Unpublish now' con confirmación, visible solo para anuncios activos y `->authorize('update')`, y 'Preview' que abre un modal con la vista Blade `app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php` (carpetas en minúscula, regla del backend) con el banner como lo vería el usuario. Prueba `AnnouncementTableActionsTest`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014",
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "Duplicar crea una copia programada sin `ends_at`; despublicar mueve el anuncio a la pestaña Expired.",
+        "Sin `update` 'Unpublish now' no aparece y su llamada directa no cambia nada; la vista previa no ejecuta el HTML del cuerpo."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-021",
+      "title": "AnnouncementBannerResource",
+      "description": "`App\\Modules\\Announcement\\Resources\\AnnouncementBannerResource` (JsonResource, regla del proyecto): `id`, `title`, `bodyHtml` (renderizado y saneado con `RichContentRenderer`), `type`, `buttonLabel`, `buttonUrl`, `isDismissible`, `imageUrl` (o null). Nunca expone autor, audiencia ni fechas.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "El shape exacto queda fijado por la prueba.",
+        "Un `<script>` u `onerror=` del cuerpo no sobrevive en `bodyHtml`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Resources/AnnouncementBannerResource.php",
+        "app/Modules/Announcement/Tests/Resources/AnnouncementBannerResourceTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Resources/AnnouncementBannerResource.php",
+        "app/Modules/Announcement/Tests/Resources/AnnouncementBannerResourceTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Resources/AnnouncementBannerResourceTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Prop compartida announcements",
+      "description": "En `HandleInertiaRequests::share()` agregar `'announcements' => fn () => AnnouncementBannerResource::collection(Announcement::query()->visibleTo($request->user())->with('media')->get())->resolve($request)` (lazy, como `notification`). Prueba `SharedAnnouncementsTest` contra una página real (home para usuario, login para invitado).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "Un invitado en `/login` recibe solo anuncios `all`; un usuario sin 2FA recibe también los `without_two_factor`.",
+        "Un anuncio descartado no llega; la prop cuesta un número fijo de consultas sin importar cuántos anuncios haya."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php"
+      ],
+      "filesToModify": [
+        "app/Http/Middleware/HandleInertiaRequests.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php",
+        "app/Http/Middleware/HandleInertiaRequests.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Endpoint de descarte",
+      "description": "`Controllers/AnnouncementDismissalController.php` (invocable, `#[Authorize('dismiss', 'announcement')]`): inserta en `announcement_dismissals` con `insertOrIgnore` (idempotente ante doble clic o dos pestañas) y responde JSON `{dismissed: true}`. `routes/routes.php`: `POST announcements/{announcement}/dismiss` (`announcements.dismiss`, `auth` + `verified`, `throttle:20,1,announcements.dismiss`). `Providers/AnnouncementRouteServiceProvider.php` carga las rutas bajo `web`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Las tres piezas existen y PHPStan pasa.",
+        "El registro del proveedor de rutas lo hace TASK-024 para no tocar el mismo archivo dos veces."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Controllers/AnnouncementDismissalController.php",
+        "app/Modules/Announcement/routes/routes.php",
+        "app/Modules/Announcement/Providers/AnnouncementRouteServiceProvider.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Controllers/AnnouncementDismissalController.php",
+        "app/Modules/Announcement/routes/routes.php",
+        "app/Modules/Announcement/Providers/AnnouncementRouteServiceProvider.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Announcement/Controllers app/Modules/Announcement/Providers",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Registrar las rutas y probar el descarte",
+      "description": "`AnnouncementServiceProvider::register()` registra `AnnouncementRouteServiceProvider`. Prueba `AnnouncementDismissTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-023"
+      ],
+      "acceptanceCriteria": [
+        "Descartar un anuncio cerrable lo oculta de la prop para ese usuario y repetirlo no duplica filas.",
+        "Un invitado recibe 401/redirección; un anuncio no cerrable, vencido o de otra audiencia responde 403; el throttle responde 429."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Tests/Crud/AnnouncementDismissTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Announcement/Providers/AnnouncementServiceProvider.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Crud/AnnouncementDismissTest.php",
+        "app/Modules/Announcement/Providers/AnnouncementServiceProvider.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Crud/AnnouncementDismissTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Tipos y componente AnnouncementBanner",
+      "description": "`types/announcement.ts` (`Announcement`, `AnnouncementType`, espejo del enum del backend: cambiar ambos juntos) y `announcements: Announcement[]` en `SharedData`. `components/AnnouncementBanner.tsx`: una franja por anuncio con `Alert` de shadcn, color por tipo con tokens del tema (modo claro y oscuro), título, cuerpo con `dangerouslySetInnerHTML` solo sobre `bodyHtml` ya saneado en el servidor, imagen opcional, botón (`Button` + `Link` interno o `<a>` externo con `rel=\"noopener\"`) y la ✕ con `aria-label` solo si `isDismissible`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "`npm run types`, ESLint y Prettier pasan.",
+        "Sin anuncios no renderiza nada; sin `isDismissible` no hay botón de cerrar."
+      ],
+      "filesToCreate": [
+        "resources/js/modules/announcement/types/announcement.ts",
+        "resources/js/modules/announcement/components/AnnouncementBanner.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/announcement/types/announcement.ts",
+        "resources/js/modules/announcement/components/AnnouncementBanner.tsx",
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/announcement && rtk npx prettier --check resources/js/modules/announcement",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Descarte en el frontend y montaje global",
+      "description": "`hooks/useAnnouncementDismiss.ts`: `useHttp` contra la acción Wayfinder de `AnnouncementDismissalController`, actualización optimista (oculta al instante y revierte si falla), y 429/red como mensaje local (`onHttpException`/`onNetworkError` devuelven `false`). Montar el banner en `withApp` de `app/app.tsx`, leyendo `page.props.announcements` del evento `navigate` del router como hace `FlashToaster`, para que aparezca en todas las páginas, incluidas las de invitado. Revisión en el navegador en modo claro y oscuro.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-022",
+        "TASK-024",
+        "TASK-025"
+      ],
+      "acceptanceCriteria": [
+        "El banner aparece en home, configuración y login según la audiencia, y desaparece al cerrarlo sin recargar.",
+        "Si el descarte falla el banner vuelve a mostrarse con un mensaje; los checks de frontend pasan."
+      ],
+      "filesToCreate": [
+        "resources/js/modules/announcement/hooks/useAnnouncementDismiss.ts"
+      ],
+      "filesToModify": [
+        "resources/js/app/app.tsx",
+        "resources/js/modules/announcement/components/AnnouncementBanner.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/announcement/hooks/useAnnouncementDismiss.ts",
+        "resources/js/app/app.tsx",
+        "resources/js/modules/announcement/components/AnnouncementBanner.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npm run lint:check && rtk npm run format:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-027",
+      "title": "AnnouncementSeeder",
+      "description": "`Database/Seeders/AnnouncementSeeder.php`: anuncios de ejemplo en español en cada estado (programado, dos activos de tipos y audiencias distintas, uno con botón a `/setting/two-factor` para `without_two_factor`, uno no cerrable, uno vencido), autor un administrador sembrado. Escribe con la factory, sin el servicio, para no llenar `activity_log` antes de `ActivityLogSeeder`. Registrarlo en `DatabaseSeeder` después de `AccountStatusSeeder`. No hace nada si ya hay anuncios.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Tras sembrar hay al menos un anuncio en cada pestaña y no hay filas en `activity_log` escritas por este seeder.",
+        "Correrlo dos veces no duplica anuncios."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Database/Seeders/AnnouncementSeeder.php",
+        "app/Modules/Announcement/Tests/Seeders/AnnouncementSeederTest.php"
+      ],
+      "filesToModify": [
+        "database/seeders/DatabaseSeeder.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Database/Seeders/AnnouncementSeeder.php",
+        "app/Modules/Announcement/Tests/Seeders/AnnouncementSeederTest.php",
+        "database/seeders/DatabaseSeeder.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Seeders/AnnouncementSeederTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Accesos rápidos del dashboard",
+      "description": "Agregar 'Announcements' a `AdminQuickLinksWidget` cuando la policy permite `viewAny` (Gate, no el permiso directo). Ampliar `AdminQuickLinksWidgetTest`.",
+      "priority": "P3",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "Con `admin-announcements-manager` aparece el enlace a `/admin/announcements`.",
+        "Sin el permiso no aparece."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Widgets/AdminQuickLinksWidget.php",
+        "app/Modules/Admin/Tests/Filament/Widgets/AdminQuickLinksWidgetTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Widgets/AdminQuickLinksWidget.php",
+        "app/Modules/Admin/Tests/Filament/Widgets/AdminQuickLinksWidgetTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Widgets/AdminQuickLinksWidgetTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Angel recibe el rol de anuncios en local",
+      "description": "Como hizo SOC-35 con el moderador: `AdminUserSeeder` da a Angel `admin-announcements-manager` en `local`/`testing`; los administradores aleatorios no lo reciben. Actualizar las dos pruebas que fijan los roles de Angel.",
+      "priority": "P3",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Angel tiene el rol tras sembrar y correrlo dos veces no duplica nada.",
+        "Ningún administrador aleatorio recibe el rol."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Database",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-030",
+      "title": "Documentación: CLAUDE.md y AGENTS.md",
+      "description": "Documentar el módulo Announcement (estructura, modelo, scope `visibleTo`, servicio, auditoría, prop compartida, endpoint de descarte, seeder), la morph map `announcement`, el rol y los permisos nuevos (tabla de roles y listas de los comandos), el plugin de MediaLibrary para Filament y el banner del frontend.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-012",
+        "TASK-020",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md y AGENTS.md describen el módulo sin contradecir SOC-35, SOC-54 ni SOC-57.",
+        "Las listas de roles y permisos coinciden con los enums."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "writeScope": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "validateCommand": "rtk grep -n 'admin-announcements-manager' CLAUDE.md AGENTS.md",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-031",
+      "title": "Documentación de arquitectura y gates finales",
+      "description": "Actualizar `docs/architecture/backend.md` (tabla de roles, módulo) y `docs/architecture/frontend.md` (banner). Correr todos los gates: Pint, Rector (clear-cache → dry → aplicar), PHPStan, `composer test`, Prettier, ESLint, tsc, `npm run build` y `npm run build:ssr`.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-030"
+      ],
+      "acceptanceCriteria": [
+        "Los documentos de arquitectura mencionan el módulo y el rol.",
+        "Todos los gates pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/backend.md",
+        "docs/architecture/frontend.md"
+      ],
+      "writeScope": [
+        "docs/architecture/backend.md",
+        "docs/architecture/frontend.md"
+      ],
+      "validateCommand": "rtk vendor/bin/pint --dirty --format agent && rtk composer rector-clear-cache && rtk composer rector-dry && rtk composer phpstan && rtk composer test && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr",
+      "review": "claude"
+    }
+  ],
+  "executionSummary": {
+    "taskCount": 31,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-009"
+      ],
+      [
+        "TASK-004",
+        "TASK-005",
+        "TASK-029"
+      ],
+      [
+        "TASK-006",
+        "TASK-011"
+      ],
+      [
+        "TASK-007",
+        "TASK-008",
+        "TASK-027"
+      ],
+      [
+        "TASK-010",
+        "TASK-012",
+        "TASK-021"
+      ],
+      [
+        "TASK-013",
+        "TASK-022",
+        "TASK-023",
+        "TASK-025"
+      ],
+      [
+        "TASK-014",
+        "TASK-015",
+        "TASK-024",
+        "TASK-028"
+      ],
+      [
+        "TASK-016",
+        "TASK-026"
+      ],
+      [
+        "TASK-017"
+      ],
+      [
+        "TASK-018"
+      ],
+      [
+        "TASK-019",
+        "TASK-020"
+      ],
+      [
+        "TASK-030"
+      ],
+      [
+        "TASK-031"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-003",
+      "TASK-004",
+      "TASK-006",
+      "TASK-008",
+      "TASK-010",
+      "TASK-013",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-020",
+      "TASK-030",
+      "TASK-031"
+    ]
+  },
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [],
+    "TASK-004": [
+      "TASK-003"
+    ],
+    "TASK-005": [
+      "TASK-002",
+      "TASK-003"
+    ],
+    "TASK-006": [
+      "TASK-004",
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-006"
+    ],
+    "TASK-009": [],
+    "TASK-010": [
+      "TASK-008",
+      "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-004"
+    ],
+    "TASK-012": [
+      "TASK-007",
+      "TASK-008",
+      "TASK-011"
+    ],
+    "TASK-013": [
+      "TASK-010"
+    ],
+    "TASK-014": [
+      "TASK-013"
+    ],
+    "TASK-015": [
+      "TASK-001",
+      "TASK-012",
+      "TASK-013"
+    ],
+    "TASK-016": [
+      "TASK-015"
+    ],
+    "TASK-017": [
+      "TASK-016"
+    ],
+    "TASK-018": [
+      "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-014",
+      "TASK-018"
+    ],
+    "TASK-021": [
+      "TASK-007"
+    ],
+    "TASK-022": [
+      "TASK-008",
+      "TASK-021"
+    ],
+    "TASK-023": [
+      "TASK-010"
+    ],
+    "TASK-024": [
+      "TASK-002",
+      "TASK-023"
+    ],
+    "TASK-025": [
+      "TASK-021"
+    ],
+    "TASK-026": [
+      "TASK-022",
+      "TASK-024",
+      "TASK-025"
+    ],
+    "TASK-027": [
+      "TASK-006",
+      "TASK-009"
+    ],
+    "TASK-028": [
+      "TASK-013"
+    ],
+    "TASK-029": [
+      "TASK-009"
+    ],
+    "TASK-030": [
+      "TASK-012",
+      "TASK-020",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029"
+    ],
+    "TASK-031": [
+      "TASK-030"
+    ]
+  }
+}
