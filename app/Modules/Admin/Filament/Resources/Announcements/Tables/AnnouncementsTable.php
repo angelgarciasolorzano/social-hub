@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementType;
+use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -53,6 +54,9 @@ class AnnouncementsTable
                 SelectFilter::make('audience')
                     ->label('Audience')
                     ->options(self::audienceOptions()),
+            ])
+            ->recordActions([
+                EditAction::make(),
             ]);
     }
 

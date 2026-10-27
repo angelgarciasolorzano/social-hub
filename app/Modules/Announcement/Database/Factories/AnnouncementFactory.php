@@ -99,13 +99,13 @@ class AnnouncementFactory extends Factory
     }
 
     /**
-     * An announcement with a call-to-action button.
+     * An announcement with a call-to-action button whose link passes the admin form rules.
      */
     public function withButton(): static
     {
         return $this->state(fn (): array => [
             'button_label' => 'Más información',
-            'button_url' => fake()->url(),
+            'button_url' => 'https://'.fake()->domainName().'/'.fake()->slug(),
         ]);
     }
 

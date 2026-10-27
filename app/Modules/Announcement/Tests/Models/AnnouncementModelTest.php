@@ -54,7 +54,7 @@ it('applies the button, dismissible, audience, type and author states', function
         ->refresh();
 
     expect($announcement->button_label)->not->toBeNull()
-        ->and($announcement->button_url)->toStartWith('http')
+        ->and($announcement->button_url)->toStartWith('https://')
         ->and($announcement->is_dismissible)->toBeFalse()
         ->and($announcement->audience)->toBe(AnnouncementAudience::WithoutTwoFactor)
         ->and($announcement->type)->toBe(AnnouncementType::Critical)

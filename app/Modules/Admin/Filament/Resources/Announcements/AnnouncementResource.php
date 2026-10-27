@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Announcements;
 
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\CreateAnnouncement;
+use App\Modules\Admin\Filament\Resources\Announcements\Pages\EditAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
 use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementForm;
 use App\Modules\Admin\Filament\Resources\Announcements\Tables\AnnouncementsTable;
@@ -55,6 +56,7 @@ class AnnouncementResource extends Resource
         return [
             'index' => ListAnnouncements::route('/'),
             'create' => CreateAnnouncement::route('/create'),
+            'edit' => EditAnnouncement::route('/{record}/edit'),
         ];
     }
 }
