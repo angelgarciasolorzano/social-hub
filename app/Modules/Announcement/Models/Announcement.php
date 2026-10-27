@@ -7,11 +7,13 @@ namespace App\Modules\Announcement\Models;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementType;
+use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -44,6 +46,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @mixin IdeHelperAnnouncement
  */
 #[UseFactory(AnnouncementFactory::class)]
+#[UsePolicy(AnnouncementPolicy::class)]
 #[Fillable([
     'title',
     'body',
@@ -135,13 +138,13 @@ class Announcement extends Model implements HasMedia
     }
 
     /**
-     * Limit the query to the announcements the given visitor should see now, the most severe first:
-     * started and not ended, meant for their audience and not dismissed by them.
+     * Limit the query to the announcements running now for the given visitor's audience,
+     * whether or not they dismissed them.
      *
      * @param  Builder<static>  $query
      */
     #[Scope]
-    protected function visibleTo(Builder $query, ?User $user): void
+    protected function availableTo(Builder $query, ?User $user): void
     {
         $now = now();
 
@@ -154,6 +157,18 @@ class Announcement extends Model implements HasMedia
                 fn (AnnouncementAudience $announcementAudience): string => $announcementAudience->value,
                 $this->audiencesFor($user),
             ));
+    }
+
+    /**
+     * Limit the query to the announcements the given visitor should see now, the most severe first:
+     * available to them and not dismissed by them.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, ?User $user): void
+    {
+        $this->availableTo($query, $user);
 
         if ($user instanceof User) {
             $query->whereDoesntHave('dismissedBy', fn (Builder $builder): Builder => $builder->whereKey($user->getKey()));
