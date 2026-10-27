@@ -138,13 +138,23 @@ class Announcement extends Model implements HasMedia
     }
 
     /**
-     * Limit the query to the announcements running now for the given visitor's audience,
-     * whether or not they dismissed them.
+     * Limit the query to the announcements that start in the future.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function scheduled(Builder $builder): void
+    {
+        $builder->where('starts_at', '>', now());
+    }
+
+    /**
+     * Limit the query to the announcements running now: started, and without end or ending later.
      *
      * @param  Builder<static>  $query
      */
     #[Scope]
-    protected function availableTo(Builder $query, ?User $user): void
+    protected function running(Builder $query): void
     {
         $now = now();
 
@@ -152,7 +162,32 @@ class Announcement extends Model implements HasMedia
             ->where('starts_at', '<=', $now)
             ->where(fn (Builder $builder): Builder => $builder
                 ->whereNull('ends_at')
-                ->orWhere('ends_at', '>', $now))
+                ->orWhere('ends_at', '>', $now));
+    }
+
+    /**
+     * Limit the query to the announcements whose end date already passed.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function ended(Builder $builder): void
+    {
+        $builder->where('ends_at', '<=', now());
+    }
+
+    /**
+     * Limit the query to the announcements running now for the given visitor's audience,
+     * whether or not they dismissed them.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function availableTo(Builder $builder, ?User $user): void
+    {
+        $this->running($builder);
+
+        $builder
             ->whereIn('audience', array_map(
                 fn (AnnouncementAudience $announcementAudience): string => $announcementAudience->value,
                 $this->audiencesFor($user),
