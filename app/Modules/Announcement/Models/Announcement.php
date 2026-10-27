@@ -10,6 +10,7 @@ use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -114,6 +115,15 @@ class Announcement extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection(self::IMAGE_MEDIA_COLLECTION)->singleFile();
+    }
+
+    /**
+     * The body as HTML that is safe to render: the rich editor output passed through Filament's
+     * renderer, which drops unknown markup and sanitizes scripts, handlers and unsafe links.
+     */
+    public function safeBodyHtml(): string
+    {
+        return RichContentRenderer::make($this->body)->toHtml();
     }
 
     /**

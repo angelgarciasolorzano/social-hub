@@ -7,7 +7,9 @@ namespace App\Modules\Admin\Filament\Resources\Announcements;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\CreateAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\EditAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
+use App\Modules\Admin\Filament\Resources\Announcements\Pages\ViewAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementForm;
+use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementInfolist;
 use App\Modules\Admin\Filament\Resources\Announcements\Tables\AnnouncementsTable;
 use App\Modules\Announcement\Models\Announcement;
 use BackedEnum;
@@ -43,6 +45,11 @@ class AnnouncementResource extends Resource
         return AnnouncementForm::configure($schema);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return AnnouncementInfolist::configure($schema);
+    }
+
     public static function table(Table $table): Table
     {
         return AnnouncementsTable::configure($table);
@@ -56,6 +63,7 @@ class AnnouncementResource extends Resource
         return [
             'index' => ListAnnouncements::route('/'),
             'create' => CreateAnnouncement::route('/create'),
+            'view' => ViewAnnouncement::route('/{record}'),
             'edit' => EditAnnouncement::route('/{record}/edit'),
         ];
     }
