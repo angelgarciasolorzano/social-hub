@@ -89,7 +89,7 @@ it('deletes the dismissals together with the announcement or the user', function
     insertAnnouncementDismissal($keptAnnouncementId, $user);
 
     DB::table('announcements')->where('id', $deletedAnnouncementId)->delete();
-    $user->delete('*');
+    $user->delete();
 
     expect(DB::table('announcement_dismissals')->count())->toBe(0);
 });
@@ -98,7 +98,7 @@ it('keeps the announcement when its author is deleted', function (): void {
     $user = createUser();
     $announcementId = insertAnnouncement(['created_by' => $user->id]);
 
-    $user->delete('*');
+    $user->delete();
 
     expect(DB::table('announcements')->where('id', $announcementId)->exists())->toBeTrue()
         ->and(DB::table('announcements')->where('id', $announcementId)->value('created_by'))->toBeNull();
