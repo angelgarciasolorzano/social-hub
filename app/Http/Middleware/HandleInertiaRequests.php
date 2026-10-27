@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Resources\AnnouncementBannerResource;
+use App\User\Models\User;
 use App\User\Resources\UserResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -55,6 +58,25 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'notification' => fn () => $request->session()->get('notification'),
             'search_results' => fn () => $request->session()->get('search_results'),
+            'announcements' => fn (): array => $this->sharedAnnouncements($request),
         ];
+    }
+
+    /**
+     * The system announcements the visitor should see now, serialized for the banner. The
+     * visibility rule lives in Announcement::visibleTo(); this only loads and serializes.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function sharedAnnouncements(Request $request): array
+    {
+        $user = $request->user();
+
+        $announcements = Announcement::query()
+            ->visibleTo($user instanceof User ? $user : null)
+            ->with('media')
+            ->get();
+
+        return AnnouncementBannerResource::collection($announcements)->resolve($request);
     }
 }
