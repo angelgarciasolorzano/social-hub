@@ -14,7 +14,7 @@
                             :href="$quickLink['url']"
                             color="gray"
                             weight="normal"
-                            class="group flex h-full min-h-24 w-full items-center justify-start gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left text-gray-950 no-underline shadow-sm transition-colors hover:border-primary-300 hover:bg-primary-50/50 hover:no-underline focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 focus-visible:no-underline dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:border-primary-700 dark:hover:bg-gray-800/80 [&>.fi-link-label]:flex [&>.fi-link-label]:w-full [&>.fi-link-label]:items-center [&>.fi-link-label]:gap-4 [&>.fi-link-label]:self-stretch"
+                            class="group hover:border-primary-300 hover:bg-primary-50/50 focus-visible:ring-primary-600 dark:hover:border-primary-700 [&>.fi-link-label]:flex [&>.fi-link-label]:w-full [&>.fi-link-label]:items-center [&>.fi-link-label]:gap-4 [&>.fi-link-label]:self-stretch flex h-full min-h-24 w-full items-center justify-start gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left text-gray-950 no-underline shadow-sm transition-colors hover:no-underline focus-visible:no-underline focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800/80"
                         >
                             <span class="bg-primary-50 text-primary-600 dark:bg-primary-400/10 dark:text-primary-300 flex size-11 shrink-0 items-center justify-center rounded-xl">
                                 <x-filament::icon :icon="$quickLink['icon']" class="size-5" aria-hidden="true" />
