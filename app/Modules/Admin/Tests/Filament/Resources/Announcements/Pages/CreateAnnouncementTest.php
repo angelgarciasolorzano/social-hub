@@ -8,7 +8,9 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\CreateAnnouncement;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use Illuminate\Http\UploadedFile;
@@ -174,5 +176,56 @@ describe('with the announcements manager role', function (): void {
 
         expect($announcement->button_label)->toBeNull()
             ->and($announcement->button_url)->toBeNull();
+    });
+
+    it('saves a toast when the presentation is not touched', function (): void {
+        filledCreateAnnouncementPage()
+            ->call('create')
+            ->assertHasNoErrors();
+
+        expect(Announcement::query()->sole()->display)->toBe(AnnouncementDisplay::Toast);
+    });
+
+    it('suggests a dialog for a critical announcement and a toast again for any other type', function (): void {
+        $testable = Livewire::test(CreateAnnouncement::class)
+            ->set('data.type', AnnouncementType::Critical->value)
+            ->assertSet('data.display', AnnouncementDisplay::Dialog->value);
+
+        $testable->set('data.type', AnnouncementType::Info->value)
+            ->assertSet('data.display', AnnouncementDisplay::Toast->value);
+    });
+
+    it('keeps the presentation the administrator picked when the type changes', function (): void {
+        filledCreateAnnouncementPage()
+            ->set('data.display', AnnouncementDisplay::Toast->value)
+            ->set('data.type', AnnouncementType::Critical->value)
+            ->assertSet('data.display', AnnouncementDisplay::Toast->value)
+            ->call('create')
+            ->assertHasNoErrors();
+
+        expect(Announcement::query()->sole()->display)->toBe(AnnouncementDisplay::Toast);
+    });
+
+    it('warns about another dialog in the same period without blocking the save', function (): void {
+        /** @var AnnouncementFactory $factory */
+        $factory = Announcement::factory();
+        $factory->asDialog()->active()->createOne(['ends_at' => null]);
+
+        filledCreateAnnouncementPage(['display' => AnnouncementDisplay::Dialog->value])
+            ->assertSee('1 other dialog is shown in the same period.')
+            ->call('create')
+            ->assertHasNoErrors();
+
+        expect(Announcement::query()->where('display', AnnouncementDisplay::Dialog)->count())->toBe(2);
+    });
+
+    it('does not warn when no other dialog shares the period', function (): void {
+        /** @var AnnouncementFactory $factory */
+        $factory = Announcement::factory();
+        $factory->asDialog()->expired()->createOne();
+        $factory->active()->createOne(['ends_at' => null]);
+
+        filledCreateAnnouncementPage(['display' => AnnouncementDisplay::Dialog->value])
+            ->assertDontSee('other dialog');
     });
 });

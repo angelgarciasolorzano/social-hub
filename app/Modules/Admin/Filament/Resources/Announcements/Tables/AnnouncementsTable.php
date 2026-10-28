@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Services\AnnouncementService;
@@ -45,6 +46,12 @@ class AnnouncementsTable
                 TextColumn::make('audience')
                     ->label('Audience')
                     ->formatStateUsing(fn (AnnouncementAudience $state): string => $state->label()),
+                TextColumn::make('display')
+                    ->label('Shown as')
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn (AnnouncementDisplay $state): string => $state->label())
+                    ->icon(fn (AnnouncementDisplay $state): Heroicon => self::displayIcon($state)),
                 TextColumn::make('starts_at')
                     ->label('Starts')
                     ->dateTime()
@@ -65,6 +72,9 @@ class AnnouncementsTable
                 SelectFilter::make('audience')
                     ->label('Audience')
                     ->options(self::audienceOptions()),
+                SelectFilter::make('display')
+                    ->label('Shown as')
+                    ->options(self::displayOptions()),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -86,6 +96,17 @@ class AnnouncementsTable
             AnnouncementType::Info => 'info',
             AnnouncementType::Warning => 'warning',
             AnnouncementType::Critical => 'danger',
+        };
+    }
+
+    /**
+     * The icon of each presentation, shared by the table and the detail.
+     */
+    public static function displayIcon(AnnouncementDisplay $announcementDisplay): Heroicon
+    {
+        return match ($announcementDisplay) {
+            AnnouncementDisplay::Toast => Heroicon::OutlinedChatBubbleBottomCenterText,
+            AnnouncementDisplay::Dialog => Heroicon::OutlinedWindow,
         };
     }
 
@@ -176,6 +197,20 @@ class AnnouncementsTable
         }
 
         return $typeOptions;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function displayOptions(): array
+    {
+        $displayOptions = [];
+
+        foreach (AnnouncementDisplay::cases() as $announcementDisplay) {
+            $displayOptions[$announcementDisplay->value] = $announcementDisplay->label();
+        }
+
+        return $displayOptions;
     }
 
     /**

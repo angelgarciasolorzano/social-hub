@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 
@@ -18,10 +19,11 @@ function announcementFactory(): AnnouncementFactory
     return $factory;
 }
 
-it('creates a dismissible announcement for everyone that is active now by default', function (): void {
+it('creates a dismissible toast for everyone that is active now by default', function (): void {
     $announcement = announcementFactory()->createOne();
 
     expect($announcement->audience)->toBe(AnnouncementAudience::All)
+        ->and($announcement->display)->toBe(AnnouncementDisplay::Toast)
         ->and($announcement->is_dismissible)->toBeTrue()
         ->and($announcement->button_label)->toBeNull()
         ->and($announcement->starts_at->isPast())->toBeTrue()
@@ -59,6 +61,22 @@ it('applies the button, dismissible, audience, type and author states', function
         ->and($announcement->audience)->toBe(AnnouncementAudience::WithoutTwoFactor)
         ->and($announcement->type)->toBe(AnnouncementType::Critical)
         ->and($announcement->creator?->is($user))->toBeTrue();
+});
+
+it('shows an announcement as a dialog with the asDialog state', function (): void {
+    expect(announcementFactory()->asDialog()->createOne()->refresh()->display)->toBe(AnnouncementDisplay::Dialog);
+});
+
+it('reads an announcement created without display as a toast', function (): void {
+    $attributes = announcementFactory()->makeOne()->only(['title', 'body', 'type', 'audience', 'starts_at', 'ends_at', 'is_dismissible']);
+
+    expect(Announcement::query()->create($attributes)->refresh()->display)->toBe(AnnouncementDisplay::Toast);
+});
+
+it('rejects a display outside the enum', function (): void {
+    $announcement = announcementFactory()->createOne();
+
+    expect(fn (): bool => $announcement->forceFill(['display' => 'popup'])->save())->toThrow(ValueError::class);
 });
 
 it('lists only the users who dismissed the announcement', function (): void {

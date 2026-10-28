@@ -55,7 +55,7 @@ it('shares only the announcements for everyone with a guest on the login page', 
             ->has('announcements', 1)
             ->where('announcements.0.id', $announcement->id)
             ->has('announcements.0', fn (Assert $assert): Assert => $assert
-                ->hasAll(['id', 'title', 'bodyHtml', 'type', 'buttonLabel', 'buttonUrl', 'isDismissible', 'imageUrl'])
+                ->hasAll(['id', 'title', 'bodyHtml', 'type', 'display', 'buttonLabel', 'buttonUrl', 'isDismissible', 'imageUrl'])
             )
         );
 });

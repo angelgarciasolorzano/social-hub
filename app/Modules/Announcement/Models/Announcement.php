@@ -6,6 +6,7 @@ namespace App\Modules\Announcement\Models;
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
@@ -33,6 +34,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $body
  * @property AnnouncementType $type
  * @property AnnouncementAudience $audience
+ * @property AnnouncementDisplay $display
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable|null $ends_at
  * @property string|null $button_label
@@ -53,6 +55,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
     'body',
     'type',
     'audience',
+    'display',
     'starts_at',
     'ends_at',
     'button_label',
@@ -103,6 +106,7 @@ class Announcement extends Model implements HasMedia
         return [
             'type' => AnnouncementType::class,
             'audience' => AnnouncementAudience::class,
+            'display' => AnnouncementDisplay::class,
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
             'is_dismissible' => 'boolean',
@@ -198,6 +202,46 @@ class Announcement extends Model implements HasMedia
     }
 
     /**
+     * Limit the query to the announcements shown as a dialog.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function dialogs(Builder $builder): void
+    {
+        $builder->where('display', AnnouncementDisplay::Dialog);
+    }
+
+    /**
+     * Limit the query to the dialogs whose schedule crosses the given one (a missing end runs forever), leaving out
+     * the ones that already ended and the given announcement. Audiences are not compared: every pair of audiences
+     * shares viewers, since a signed-in user sees the announcements for everyone, for signed-in users and, without
+     * two-factor authentication, for users without it.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function dialogsOverlapping(
+        Builder $builder,
+        CarbonImmutable $startsAt,
+        ?CarbonImmutable $endsAt,
+        ?int $exceptId = null,
+    ): void {
+        $now = now();
+
+        $this->dialogs($builder);
+
+        $builder
+            ->where(fn (Builder $builder): Builder => $builder
+                ->whereNull('ends_at')
+                ->orWhere(fn (Builder $builder): Builder => $builder
+                    ->where('ends_at', '>', $startsAt)
+                    ->where('ends_at', '>', $now)))
+            ->when($endsAt instanceof CarbonImmutable, fn (Builder $builder): Builder => $builder->where('starts_at', '<', $endsAt))
+            ->when($exceptId !== null, fn (Builder $builder): Builder => $builder->whereKeyNot($exceptId));
+    }
+
+    /**
      * Limit the query to the announcements running now for the given visitor's audience,
      * whether or not they dismissed them.
      *
@@ -213,6 +257,19 @@ class Announcement extends Model implements HasMedia
                 fn (AnnouncementAudience $announcementAudience): string => $announcementAudience->value,
                 $this->audiencesFor($user),
             ));
+    }
+
+    /**
+     * Limit the query to the announcements the given user may dismiss: dismissible and available to them.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function dismissibleBy(Builder $builder, User $user): void
+    {
+        $this->availableTo($builder, $user);
+
+        $builder->where('is_dismissible', true);
     }
 
     /**

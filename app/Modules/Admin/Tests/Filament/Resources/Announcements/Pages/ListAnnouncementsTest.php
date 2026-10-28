@@ -10,6 +10,7 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use Illuminate\Support\Facades\DB;
@@ -173,5 +174,37 @@ describe('with the announcements manager role', function (): void {
         listAnnouncementFactory()->count(17)->create();
 
         expect(countAnnouncementsListQueries())->toBe($queriesWithFewAnnouncements);
+    });
+
+    it('lists only the running dialogs on the active dialogs tab and counts them on its badge', function (): void {
+        $announcement = listAnnouncementFactory()->asDialog()->active()->createOne();
+        $withoutEnd = listAnnouncementFactory()->asDialog()->createOne(['starts_at' => now()->subDay(), 'ends_at' => null]);
+        listAnnouncementFactory()->asDialog()->scheduled()->createOne();
+        listAnnouncementFactory()->asDialog()->expired()->createOne();
+        listAnnouncementFactory()->active()->createOne();
+
+        $testable = announcementsListPage('active_dialogs');
+
+        expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), Announcement::class))
+            ->toEqualCanonicalizing([FilamentTableRecords::recordKey($announcement), FilamentTableRecords::recordKey($withoutEnd)])
+            ->and($testable->instance()->getCachedTabs()['active_dialogs']->getBadge())->toBe('2');
+    });
+
+    it('filters the list by how announcements are shown', function (): void {
+        $announcement = listAnnouncementFactory()->asDialog()->createOne();
+        listAnnouncementFactory()->createOne();
+
+        $testable = announcementsListPage()->set('tableFilters.display', ['value' => AnnouncementDisplay::Dialog->value]);
+
+        expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), Announcement::class))
+            ->toBe([FilamentTableRecords::recordKey($announcement)]);
+    });
+
+    it('shows how each announcement is shown', function (): void {
+        listAnnouncementFactory()->asDialog()->createOne();
+
+        announcementsListPage()
+            ->assertSee('Shown as')
+            ->assertSee('Dialog');
     });
 });

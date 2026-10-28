@@ -1,9 +1,11 @@
-import { type CSSProperties, type JSX, useEffect, useRef } from "react";
+import { type CSSProperties, type JSX, useEffect, useMemo, useRef } from "react";
 
 import { toast } from "sonner";
 
+import AnnouncementDialog from "@/modules/announcement/components/AnnouncementDialog";
 import AnnouncementToast from "@/modules/announcement/components/AnnouncementToast";
 import { useAnnouncementDismiss } from "@/modules/announcement/hooks/useAnnouncementDismiss";
+import { useGuestDismissalSync } from "@/modules/announcement/hooks/useGuestDismissalSync";
 import type { Announcement } from "@/modules/announcement/types/announcement";
 
 import { Toaster } from "@/shared/components/shadcn/ui/sonner";
@@ -16,16 +18,40 @@ const announcementToasterStyle = { "--width": "min(40rem, calc(100vw - 2rem))" }
 
 interface SystemAnnouncementsProps {
   initialAnnouncements: Announcement[];
+  initialIsAuthenticated: boolean;
 }
 
-function SystemAnnouncements({ initialAnnouncements }: SystemAnnouncementsProps): JSX.Element {
-  const { dismissAnnouncement, dismissingAnnouncementIds, visibleAnnouncements } =
-    useAnnouncementDismiss(initialAnnouncements);
+/**
+ * The system announcements of every page: toasts stacked in their own collapsed toaster, separate from the flash
+ * toaster, and dialogs one at a time in the server's order (the most severe first); closing one shows the next.
+ * Toasts wait while a dialog is open, since the toaster would otherwise be drawn above the dialog's backdrop.
+ */
+function SystemAnnouncements({
+  initialAnnouncements,
+  initialIsAuthenticated,
+}: SystemAnnouncementsProps): JSX.Element {
+  const {
+    closeAnnouncement,
+    dialogAnnouncements,
+    dismissingAnnouncementIds,
+    isAuthenticated,
+    toastAnnouncements,
+  } = useAnnouncementDismiss(initialAnnouncements, initialIsAuthenticated);
+
+  const shownDialogAnnouncement = dialogAnnouncements.at(0);
+
+  const shownToastAnnouncements = useMemo<Announcement[]>(
+    () => (shownDialogAnnouncement === undefined ? toastAnnouncements : []),
+    [shownDialogAnnouncement, toastAnnouncements],
+  );
+
+  useGuestDismissalSync(isAuthenticated);
+
   const shownToastIdsRef = useRef<Set<string>>(new Set<string>());
 
   useEffect(() => {
     const visibleToastIds = new Set<string>(
-      visibleAnnouncements.map((announcement) => announcementToastId(announcement)),
+      shownToastAnnouncements.map((announcement) => announcementToastId(announcement)),
     );
 
     for (const shownToastId of shownToastIdsRef.current) {
@@ -34,13 +60,13 @@ function SystemAnnouncements({ initialAnnouncements }: SystemAnnouncementsProps)
       }
     }
 
-    for (const announcement of [...visibleAnnouncements].reverse()) {
+    for (const announcement of [...shownToastAnnouncements].reverse()) {
       toast.custom(
         () => (
           <AnnouncementToast
             announcement={announcement}
             isDismissing={dismissingAnnouncementIds.includes(announcement.id)}
-            onDismiss={dismissAnnouncement}
+            onDismiss={closeAnnouncement}
           />
         ),
         {
@@ -53,18 +79,28 @@ function SystemAnnouncements({ initialAnnouncements }: SystemAnnouncementsProps)
     }
 
     shownToastIdsRef.current = visibleToastIds;
-  }, [dismissAnnouncement, dismissingAnnouncementIds, visibleAnnouncements]);
+  }, [closeAnnouncement, dismissingAnnouncementIds, shownToastAnnouncements]);
 
   return (
-    <Toaster
-      containerAriaLabel="Avisos del sistema"
-      expand
-      id={ANNOUNCEMENT_TOASTER_ID}
-      position="top-center"
-      style={announcementToasterStyle}
-      toastOptions={{ className: "w-(--width)", unstyled: true }}
-      visibleToasts={MAX_VISIBLE_ANNOUNCEMENTS}
-    />
+    <>
+      <Toaster
+        containerAriaLabel="Avisos del sistema"
+        expand={false}
+        id={ANNOUNCEMENT_TOASTER_ID}
+        position="top-center"
+        style={announcementToasterStyle}
+        toastOptions={{ className: "w-(--width)", unstyled: true }}
+        visibleToasts={MAX_VISIBLE_ANNOUNCEMENTS}
+      />
+
+      {shownDialogAnnouncement !== undefined && (
+        <AnnouncementDialog
+          announcement={shownDialogAnnouncement}
+          key={shownDialogAnnouncement.id}
+          onClose={closeAnnouncement}
+        />
+      )}
+    </>
   );
 }
 

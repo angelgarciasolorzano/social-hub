@@ -149,4 +149,25 @@ describe('with the announcements manager role', function (): void {
         $testable->__call('assertMountedActionModalSeeHtml', ['<strong>importante</strong>']);
         $testable->__call('assertMountedActionModalDontSeeHtml', [['<script>alert("preview")', 'onerror=']]);
     });
+
+    it('previews a toast as a floating notice without the dialog button', function (): void {
+        $announcement = tableActionAnnouncementFactory()->createOne();
+
+        $testable = mountAnnouncementRowAction('preview', $announcement);
+
+        $testable->__call('assertMountedActionModalSee', [['Shown as toast', $announcement->title]]);
+        $testable->__call('assertMountedActionModalDontSee', ['Entendido']);
+    });
+
+    it('previews a dialog with its close button and without dangerous HTML', function (): void {
+        $announcement = tableActionAnnouncementFactory()->asDialog()->withButton()->notDismissible()->createOne([
+            'body' => '<p>Aviso <strong>urgente</strong></p><script>alert("dialog")</script>',
+        ]);
+
+        $testable = mountAnnouncementRowAction('preview', $announcement);
+
+        $testable->__call('assertMountedActionModalSee', [['Shown as dialog', 'Entendido', (string) $announcement->button_label, 'comes back in the next session']]);
+        $testable->__call('assertMountedActionModalSeeHtml', ['<strong>urgente</strong>']);
+        $testable->__call('assertMountedActionModalDontSeeHtml', ['<script>alert("dialog")']);
+    });
 });

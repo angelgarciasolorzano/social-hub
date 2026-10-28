@@ -7,6 +7,7 @@ namespace App\Modules\Announcement\Database\Seeders;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Support\Seeding\WeightedRandom;
@@ -115,6 +116,7 @@ class AnnouncementSeeder extends Seeder
         $this->announcementFactory($administrators)
             ->ofType(AnnouncementType::Critical)
             ->forAudience(AnnouncementAudience::WithoutTwoFactor)
+            ->asDialog()
             ->createOne([
                 'title' => self::TWO_FACTOR_TITLE,
                 'body' => '<p>Protege tu cuenta con un segundo factor: aunque alguien conozca tu contraseña, no podrá entrar sin tu teléfono.</p>',
@@ -153,8 +155,8 @@ class AnnouncementSeeder extends Seeder
     }
 
     /**
-     * One sample announcement with a random schedule; an unpublished one keeps `ends_at` equal to `updated_at`,
-     * as AnnouncementService::unpublish() leaves it, and some of the others were edited after being created.
+     * One sample announcement with a random schedule, shown as a dialog when it is critical; an unpublished one keeps
+     * `ends_at` equal to `updated_at`, as AnnouncementService::unpublish() leaves it, and some others were edited.
      *
      * @param  array{title: string, body: string, type: string, audience: string, button?: array{label: string, url: string}}  $sampleAnnouncement
      * @param  Collection<int, User>  $administrators
@@ -171,6 +173,7 @@ class AnnouncementSeeder extends Seeder
         };
 
         $updatedAt = $createdAt;
+        $announcementType = AnnouncementType::from($sampleAnnouncement['type']);
 
         if ($schedule === 'unpublished') {
             $endsAt = $startsAt->addHours(random_int(12, 5 * 24));
@@ -180,9 +183,10 @@ class AnnouncementSeeder extends Seeder
         }
 
         return $this->announcementFactory($administrators)
-            ->ofType(AnnouncementType::from($sampleAnnouncement['type']))
+            ->ofType($announcementType)
             ->forAudience(AnnouncementAudience::from($sampleAnnouncement['audience']))
             ->createOne([
+                'display' => $announcementType === AnnouncementType::Critical ? AnnouncementDisplay::Dialog : AnnouncementDisplay::Toast,
                 'title' => $sampleAnnouncement['title'],
                 'body' => $sampleAnnouncement['body'],
                 'button_label' => $sampleAnnouncement['button']['label'] ?? null,
@@ -214,7 +218,7 @@ class AnnouncementSeeder extends Seeder
             $copiedAt = $this->momentBetween($source->created_at ?? $now, $now->subDay());
 
             $this->announcementFactory($administrators)->createOne([
-                ...$source->only(['title', 'body', 'type', 'audience', 'button_label', 'button_url', 'is_dismissible']),
+                ...$source->only(['title', 'body', 'type', 'audience', 'display', 'button_label', 'button_url', 'is_dismissible']),
                 'starts_at' => $copiedAt->addDay(),
                 'ends_at' => null,
                 'created_at' => $copiedAt,

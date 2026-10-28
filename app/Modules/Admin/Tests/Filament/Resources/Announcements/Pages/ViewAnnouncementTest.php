@@ -86,6 +86,18 @@ describe('with the announcements manager role', function (): void {
             ->assertDontSee('No image');
     });
 
+    it('shows how the announcement is presented', function (string $display, string $label, string $otherLabel): void {
+        $announcement = viewAnnouncementFactory()->createOne(['display' => $display]);
+
+        viewAnnouncementPage($announcement)
+            ->assertSee('Shown as')
+            ->assertSee($label)
+            ->assertDontSee($otherLabel);
+    })->with([
+        'toast' => ['toast', 'Toast', 'Dialog'],
+        'dialog' => ['dialog', 'Dialog', 'Toast'],
+    ]);
+
     it('shows placeholders for a deleted author, no end date, no button and no image', function (): void {
         $announcement = viewAnnouncementFactory()->createOne(['created_by' => null, 'ends_at' => null]);
 

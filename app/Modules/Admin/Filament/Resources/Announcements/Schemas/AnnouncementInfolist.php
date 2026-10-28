@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Schemas;
 
 use App\Modules\Admin\Filament\Resources\Announcements\Tables\AnnouncementsTable;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use Filament\Infolists\Components\IconEntry;
@@ -52,6 +53,12 @@ class AnnouncementInfolist
                         TextEntry::make('audience')
                             ->label('Audience')
                             ->formatStateUsing(fn (AnnouncementAudience $state): string => $state->label()),
+                        TextEntry::make('display')
+                            ->label('Shown as')
+                            ->badge()
+                            ->color('gray')
+                            ->formatStateUsing(fn (AnnouncementDisplay $state): string => $state->label())
+                            ->icon(fn (AnnouncementDisplay $state): Heroicon => AnnouncementsTable::displayIcon($state)),
                         IconEntry::make('is_dismissible')
                             ->label('Users can dismiss it')
                             ->boolean(),

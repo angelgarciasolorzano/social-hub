@@ -1,0 +1,777 @@
+{
+  "id": "soc-63-announcement-display-toast-or-dialog",
+  "title": "SOC-63: Elegir cómo se presenta cada anuncio del sistema (toast o dialog)",
+  "issue": {
+    "identifier": "SOC-63",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-63/feature-let-administrators-choose-how-each-system-announcement-is"
+  },
+  "mode": "EXPANSION",
+  "reviewDefault": "claude",
+  "date": "2026-10-28",
+  "overview": "Cada anuncio guarda cómo se presenta (`display`: `toast` o `dialog`) y el administrador lo elige en el formulario; al elegir Critical el campo pasa solo a Dialog. La app muestra los toasts en una pila colapsada y los dialogs de uno en uno, el más grave primero. Todo anuncio se puede cerrar: con sesión y descartable en el servidor, como invitado en `localStorage` (y se sincroniza al iniciar sesión), y uno no descartable en `sessionStorage`, así que vuelve en la siguiente sesión.",
+  "scopeChallenge": "EXPANSION con revisión de Claude (2026-10-28). Decisiones del usuario: el campo es explícito en el formulario (no se deduce del tipo); elegir Critical cambia la presentación a Dialog mientras el administrador no la haya elegido a mano; la vista previa del panel dibuja una maqueta de dialog en Blade. Extras incluidos: sincronizar los cierres del invitado al iniciar sesión, la pestaña 'Active dialogs' con su contador, el aviso de dialogs solapados al guardar y que el botón de acción del dialog también lo cierre. El usuario pidió además que al terminar se le recomienden más mejoras para el módulo. Hallazgos: `AnnouncementService::update()` ya audita los atributos sucios y `duplicate()` usa `replicate()`, así que la auditoría y el duplicado cubren `display` sin cambios; el `Dialog` de shadcn ya está instalado; `withApp` recibe `page` con `auth.user`, el mismo mecanismo que ya trae los anuncios.",
+  "prerequisites": [
+    "SOC-61 completo: módulo Announcement, `AnnouncementService`, `AnnouncementPolicy::dismiss`, `AnnouncementBannerResource` y `SystemAnnouncements` con su `Toaster` propio.",
+    "El arreglo de Pullfrog en `AnnouncementForm::isAllowedButtonUrl()` (caracteres de control) ya está en la rama.",
+    "Sin dependencias nuevas: `Dialog` de shadcn, Sonner, Filament `ToggleButtons` y `useHttp` ya existen."
+  ],
+  "nonGoals": [
+    "Notificaciones en tiempo real.",
+    "Otras presentaciones (banner en el flujo, sheet, página completa).",
+    "Presentación distinta según la audiencia.",
+    "Estadísticas de vistas o cierres.",
+    "Mostrar dialogs en el panel de Filament (solo la vista previa)."
+  ],
+  "contracts": [
+    "`announcements.display` es `toast` o `dialog` (`AnnouncementDisplay`), por defecto `toast`; el tipo del frontend es su espejo y se cambian juntos.",
+    "`AnnouncementBannerResource` agrega `display` y envía `isDismissible` tal como está guardado; el frontend decide dónde guardar cada cierre.",
+    "Reglas de cierre: con sesión y descartable → `POST announcements/{announcement}/dismiss` (no vuelve en ningún dispositivo); invitado y descartable → `localStorage` (no vuelve en ese navegador); no descartable → `sessionStorage` (vuelve en la siguiente sesión). Todo toast y todo dialog se puede cerrar.",
+    "`POST announcements/dismissals` (`announcements.dismissals.sync`) recibe `{announcement_ids: int[]}` (1 a 20), guarda solo los que la policy `dismiss` permite y responde `{dismissed: int[]}`; nunca falla por un id que ya no se puede descartar.",
+    "Nunca hay más de un dialog visible; el orden es el del servidor (`visibleTo`: gravedad y luego el inicio más reciente).",
+    "El botón de acción de un dialog cuenta como cerrarlo.",
+    "Cambiar la presentación queda en la auditoría como `changed_attributes` con `display`, nunca con el texto."
+  ],
+  "shipCut": "TASK-001..007 dejan el dato guardado y servido con auditoría. TASK-010..013 completan el panel y TASK-014..017 la app; las dos mitades avanzan en paralelo después de TASK-007/008. TASK-018 es independiente; TASK-019..020 cierran.",
+  "failureModes": [
+    "`localStorage` o `sessionStorage` bloqueados (navegación privada, cuota): cada acceso va en `try/catch` y devuelve una lista vacía; el anuncio solo vuelve a mostrarse (TASK-014).",
+    "Un id guardado por el invitado venció o dejó de ser descartable antes de iniciar sesión: el endpoint lo ignora y responde solo los aceptados (TASK-008, TASK-009).",
+    "StrictMode monta dos veces el efecto de sincronización: una referencia evita enviar dos veces (TASK-016).",
+    "Dos dialogs vigentes a la vez: se muestran de uno en uno y el formulario avisa al programarlos (TASK-010, TASK-017).",
+    "El cambio automático pisa una elección manual: el campo oculto `display_was_chosen` lo impide (TASK-010)."
+  ],
+  "testCoverageMap": {
+    "Enum, migración y modelo": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003"
+    ],
+    "Solapamiento de dialogs": [
+      "TASK-004",
+      "TASK-010"
+    ],
+    "Data, servicio y auditoría": [
+      "TASK-005",
+      "TASK-006"
+    ],
+    "Resource y prop compartida": [
+      "TASK-007"
+    ],
+    "Sincronización de cierres": [
+      "TASK-009"
+    ],
+    "Panel (formulario, tabla, vista previa, detalle)": [
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013"
+    ],
+    "Seeders": [
+      "TASK-018"
+    ],
+    "Frontend (tsc, ESLint, Prettier, navegador)": [
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017"
+    ]
+  },
+  "existingCodeLeverage": [
+    "`AnnouncementDismissalController` y `AnnouncementPolicy::dismiss`: la acción `sync` vive en el mismo controlador y repite la autorización por anuncio.",
+    "`AnnouncementService::update()` y `duplicate()`: ya cubren `display` sin cambios.",
+    "`AnnouncementToast` y `useAnnouncementDismiss` (SOC-61): base del contenido compartido y de las reglas de cierre.",
+    "`Dialog` de shadcn (`resources/js/shared/components/shadcn/ui/dialog.tsx`).",
+    "`useLikeToggle`: `useHttp` con errores locales y sin el modal de Inertia.",
+    "`ListAnnouncements::getTabs()` con los scopes de fechas: la pestaña nueva suma `dialogs()`.",
+    "El `afterStateHydrated` de 'Has button': patrón para inicializar `display_was_chosen` al editar."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Enum AnnouncementDisplay",
+      "description": "`App\\Modules\\Announcement\\Enums\\AnnouncementDisplay` (`Toast = 'toast'`, `Dialog = 'dialog'`) con `label()` en inglés para el panel ('Toast', 'Dialog') y `description()` con una frase de cuándo usar cada uno. Se agregan sus casos a `AnnouncementEnumsTest`.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los valores exactos `toast` y `dialog` quedan fijados por la prueba, y un valor desconocido se rechaza con `ValueError`.",
+        "`label()` y `description()` devuelven un texto no vacío para cada caso."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Enums/AnnouncementDisplay.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Enums/AnnouncementDisplay.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Migración de la columna display",
+      "description": "Migración nueva `app/Modules/Announcement/Database/Migrations/2026_10_28_000000_add_display_to_announcements_table.php` (la de SOC-61 no se toca): `display` string(20) con valor por defecto `'toast'`, después de `audience`. `down()` la elimina. `AnnouncementServiceProvider` ya carga la carpeta, no hace falta registrarla.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Un anuncio que existía antes de la migración queda con `display = 'toast'`.",
+        "Rollback elimina solo la columna y vuelve a migrar sin errores; las tablas de SOC-61 siguen intactas."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Database/Migrations/2026_10_28_000000_add_display_to_announcements_table.php",
+        "app/Modules/Announcement/Tests/Database/AnnouncementDisplayMigrationTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Database/Migrations/2026_10_28_000000_add_display_to_announcements_table.php",
+        "app/Modules/Announcement/Tests/Database/AnnouncementDisplayMigrationTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Database/AnnouncementDisplayMigrationTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Modelo y factory con display",
+      "description": "`Announcement`: `display` en `#[Fillable]`, cast a `AnnouncementDisplay` y `@property`. `AnnouncementFactory`: `display` en la definición (`Toast`) y estado `asDialog()`. Se amplía `AnnouncementModelTest`. Regenerar el IDE helper y revertir el ruido en otros modelos.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "Un anuncio nuevo sin `display` se lee como `AnnouncementDisplay::Toast`; `asDialog()` lo deja en `Dialog`.",
+        "Asignar un valor fuera del enum lanza `ValueError` al leer el atributo."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Models/Announcement.php",
+        "app/Modules/Announcement/Database/Factories/AnnouncementFactory.php",
+        "app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Models/Announcement.php",
+        "app/Modules/Announcement/Database/Factories/AnnouncementFactory.php",
+        "app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Scopes de dialogs y solapamiento",
+      "description": "En `Announcement`: `#[Scope] dialogs()` (`display = dialog`) y `#[Scope] dialogsOverlapping(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt, ?int $exceptId)`: dialogs cuya ventana `[starts_at, ends_at)` se cruza con la dada (un `ends_at` nulo es infinito), sin el anuncio `exceptId` y sin los ya vencidos. No filtra por audiencia: todo par de audiencias comparte usuarios (un usuario con sesión ve `all`, `authenticated` y, sin 2FA, `without_two_factor`), así que cualquier dialog que se cruza puede mostrarse a la misma persona. Lo usan el aviso del formulario (TASK-010) y la pestaña del listado (TASK-011).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Dos dialogs con ventanas que se cruzan se encuentran; uno que terminó antes de que empiece el otro, no.",
+        "`ends_at` nulo en cualquiera de los dos cuenta como solapado; el propio anuncio (`exceptId`) y los toasts nunca se cuentan."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Tests/Queries/AnnouncementDialogOverlapTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Announcement/Models/Announcement.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Queries/AnnouncementDialogOverlapTest.php",
+        "app/Modules/Announcement/Models/Announcement.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Queries/AnnouncementDialogOverlapTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "AnnouncementData con display",
+      "description": "`AnnouncementData` agrega `public AnnouncementDisplay $display`; `fromFormState()` lo lee con el mismo `enumFrom()` (acepta el valor o el caso) y usa `Toast` cuando falta; `toModelAttributes()` incluye `display`. Se amplía `AnnouncementDataTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "`fromFormState(['display' => 'dialog', ...])` y con el caso `AnnouncementDisplay::Dialog` dan `Dialog`; sin la clave da `Toast`.",
+        "Un valor desconocido (`'popup'`) lanza `InvalidArgumentException`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Data/AnnouncementData.php",
+        "app/Modules/Announcement/Tests/Data/AnnouncementDataTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Data/AnnouncementData.php",
+        "app/Modules/Announcement/Tests/Data/AnnouncementDataTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Data/AnnouncementDataTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Auditoría y duplicado con display",
+      "description": "`AnnouncementService` no necesita cambios: `update()` ya audita los atributos sucios y `duplicate()` usa `replicate()`. Esta tarea fija ese comportamiento en `AnnouncementServiceTest`.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Cambiar solo la presentación registra `admin.announcement_updated` con `changed_attributes = ['display']`.",
+        "Duplicar un dialog crea una copia que también es dialog; guardar sin cambios sigue sin registrar nada."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Tests/Services/AnnouncementServiceTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Services/AnnouncementServiceTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Services/AnnouncementServiceTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Resource del banner con display y cierre para invitados",
+      "description": "`AnnouncementBannerResource` agrega `display` (`'toast'|'dialog'`) y envía `isDismissible` tal como está guardado, sin depender de la sesión: el frontend decide dónde guardar el cierre (TASK-016). Se actualizan la prueba del resource (forma exacta, invitado con `isDismissible: true`) y `SharedAnnouncementsTest` (claves de la prop).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "La forma exacta del payload incluye `display` y sigue sin autor, audiencia ni fechas.",
+        "Un invitado recibe `isDismissible: true` en un anuncio descartable y `false` en uno no descartable."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Resources/AnnouncementBannerResource.php",
+        "app/Modules/Announcement/Tests/Resources/AnnouncementBannerResourceTest.php",
+        "app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Resources/AnnouncementBannerResource.php",
+        "app/Modules/Announcement/Tests/Resources/AnnouncementBannerResourceTest.php",
+        "app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Resources/AnnouncementBannerResourceTest.php app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Endpoint para sincronizar los cierres del invitado",
+      "description": "`POST announcements/dismissals` (`announcements.dismissals.sync`, `auth` + `verified`, `throttle:10,1,announcements.dismissals.sync`) servido por el método `sync` de `AnnouncementDismissalController`, que pasa a tener dos acciones (`dismiss` y `sync`) en lugar de ser invocable, como `CommentController`; `routes/routes.php` agrupa ambas rutas con `Route::controller()->prefix('announcements')->name('announcements.')` y conserva sus nombres. `AnnouncementDismissalSyncRequest` (`HasFluentRules`): `announcement_ids` obligatorio, arreglo de 1 a 20 enteros positivos distintos. El controlador carga esos anuncios, se queda solo con los que `Gate::allows('dismiss', $announcement)` (descartables y vigentes para ese usuario), los guarda con `insertOrIgnore` y responde JSON `{dismissed: int[]}` con los ids aceptados; los demás se ignoran sin error, porque pudieron vencer o cambiar desde que el invitado los cerró.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "`route:list` muestra `announcements.dismissals.sync` con `auth`, `verified` y su throttle propio.",
+        "PHPStan pasa sobre las tres piezas; el FormRequest no acepta un arreglo vacío ni más de 20 ids."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Requests/AnnouncementDismissalSyncRequest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Announcement/Controllers/AnnouncementDismissalController.php",
+        "app/Modules/Announcement/routes/routes.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Requests/AnnouncementDismissalSyncRequest.php",
+        "app/Modules/Announcement/Controllers/AnnouncementDismissalController.php",
+        "app/Modules/Announcement/routes/routes.php"
+      ],
+      "validateCommand": "rtk php artisan route:list --name=announcements.dismissals && rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Announcement/Requests app/Modules/Announcement/Controllers",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Pruebas del endpoint de sincronización",
+      "description": "`AnnouncementDismissalSyncTest` en `Tests/Crud/`.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Con sesión, guarda solo los ids descartables y vigentes para ese usuario y responde exactamente esos en `dismissed`; repetir la petición no duplica filas.",
+        "Un invitado recibe 401; ids vacíos, repetidos, no numéricos o más de 20 dan 422; la petición 11 en un minuto da 429."
+      ],
+      "filesToCreate": [
+        "app/Modules/Announcement/Tests/Crud/AnnouncementDismissalSyncTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Announcement/Tests/Crud/AnnouncementDismissalSyncTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Crud/AnnouncementDismissalSyncTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Campo 'Show as' en el formulario",
+      "description": "En la sección Display de `AnnouncementForm`: `ToggleButtons::make('display')` ('Show as') con las opciones de `AnnouncementDisplay`, sus descripciones e íconos, por defecto `toast`. Un `Hidden` `display_was_chosen` (no se guarda) se pone en `true` cuando el administrador toca el campo y, al editar, desde el inicio. `type` pasa a `live()` y su `afterStateUpdated` cambia `display` a `dialog` al elegir Critical, y de vuelta a `toast` al salir de Critical, solo mientras `display_was_chosen` sea falso. Un aviso (`hint` o `helperText` reactivo, no bloquea) dice cuántos dialogs se solapan con las fechas del formulario, usando `dialogsOverlapping()` sin contar el registro editado. Se amplían `CreateAnnouncementTest` y `EditAnnouncementTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Crear sin tocar el campo guarda `toast`; elegir Critical lo cambia a `dialog`, y volver a Info lo devuelve a `toast`.",
+        "Si el administrador eligió Toast a mano, elegir Critical no lo cambia; al editar un dialog, cambiar el tipo no altera la presentación.",
+        "Con otro dialog solapado aparece el aviso con su número, y aun así el anuncio se guarda; sin solapamiento no aparece."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementForm.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/EditAnnouncementTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementForm.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/EditAnnouncementTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/EditAnnouncementTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Presentación en la tabla y contador de dialogs",
+      "description": "`AnnouncementsTable`: columna 'Shown as' (badge con ícono) y `SelectFilter` por `display`. `ListAnnouncements`: pestaña nueva 'Active dialogs' (anuncios `running()->dialogs()`) con `badge()` del número, para ver de un vistazo cuántos dialogs están interrumpiendo a los usuarios. Se amplía `ListAnnouncementsTest`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "La pestaña 'Active dialogs' muestra solo los dialogs vigentes y su badge coincide con ese número; los toasts y los dialogs vencidos o programados no cuentan.",
+        "El filtro por presentación devuelve solo ese tipo, y la tabla sigue sin agregar consultas por fila."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ListAnnouncements.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ListAnnouncements.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Vista previa como dialog",
+      "description": "`preview.blade.php` dibuja, cuando el anuncio es dialog, una maqueta de dialog (fondo atenuado, tarjeta centrada con título, mensaje saneado, imagen, botón del anuncio y 'Entendido') en lugar del toast, y una línea que dice cómo se mostrará. Los toasts se ven como hoy. Usa `@use` para las clases (regla de `.ai/rules/backend.md`). Se amplía `AnnouncementTableActionsTest`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "La vista previa de un dialog muestra 'Entendido' y la de un toast no.",
+        "En ambos casos el HTML peligroso del cuerpo no llega al modal."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Presentación en el detalle",
+      "description": "`AnnouncementInfolist` muestra 'Shown as' con su badge en la sección Display. Se amplía `ViewAnnouncementTest`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "El detalle de un dialog muestra 'Dialog' y el de un toast 'Toast'."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Tipos y almacenamiento local de los cierres",
+      "description": "`types/announcement.ts`: `AnnouncementDisplay` (espejo del enum del backend, cambiar ambos juntos) y `display` en `Announcement`. `utils/announcementDismissalStorage.ts` (nuevo): leer y agregar ids en `localStorage` (`social-hub.announcements.dismissed`, cierres del invitado) y en `sessionStorage` (`social-hub.announcements.dismissed-this-session`, anuncios no descartables), y vaciar la lista local tras sincronizarla. Cada acceso va en `try/catch` y devuelve una lista vacía si el almacenamiento no existe o tiene basura.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "`npm run types`, ESLint y Prettier pasan.",
+        "Con `localStorage` bloqueado o un valor que no es un arreglo de números, las funciones devuelven `[]` y no lanzan."
+      ],
+      "filesToCreate": [
+        "resources/js/modules/announcement/utils/announcementDismissalStorage.ts"
+      ],
+      "filesToModify": [
+        "resources/js/modules/announcement/types/announcement.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/announcement/utils/announcementDismissalStorage.ts",
+        "resources/js/modules/announcement/types/announcement.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/announcement/types/announcement.ts resources/js/modules/announcement/utils/announcementDismissalStorage.ts && rtk npx prettier --check resources/js/modules/announcement/types/announcement.ts resources/js/modules/announcement/utils/announcementDismissalStorage.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Contenido compartido, toast y dialog",
+      "description": "`components/AnnouncementContent.tsx` (nuevo): el mensaje saneado, la imagen y el botón del anuncio (con `onAction` opcional), extraídos de `AnnouncementToast` para no duplicarlos. `AnnouncementToast` lo reutiliza y muestra la ✕ siempre (todos se pueden cerrar). `components/AnnouncementDialog.tsx` (nuevo): `Dialog` de shadcn con el ícono y el color del tipo, `DialogTitle`/`DialogDescription` enlazados, el contenido y un botón 'Entendido'; cerrar con 'Entendido', `Esc`, el fondo o el botón del anuncio llama a `onClose`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "`npm run types`, ESLint y Prettier pasan.",
+        "El botón del anuncio en el dialog llama a `onClose` antes de navegar; un anuncio sin botón muestra solo 'Entendido'.",
+        "El toast conserva su aspecto, su `role` por tipo y el enlace interno con `Link` o externo con `rel=\"noopener noreferrer\"`."
+      ],
+      "filesToCreate": [
+        "resources/js/modules/announcement/components/AnnouncementContent.tsx",
+        "resources/js/modules/announcement/components/AnnouncementDialog.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/announcement/components/AnnouncementToast.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/announcement/components/AnnouncementContent.tsx",
+        "resources/js/modules/announcement/components/AnnouncementDialog.tsx",
+        "resources/js/modules/announcement/components/AnnouncementToast.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/announcement/components/AnnouncementContent.tsx resources/js/modules/announcement/components/AnnouncementDialog.tsx resources/js/modules/announcement/components/AnnouncementToast.tsx && rtk npx prettier --check resources/js/modules/announcement/components/AnnouncementContent.tsx resources/js/modules/announcement/components/AnnouncementDialog.tsx resources/js/modules/announcement/components/AnnouncementToast.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Reglas de cierre y sincronización al iniciar sesión",
+      "description": "`useAnnouncementDismiss` recibe si hay sesión (de `auth.user` de la página inicial y de cada evento `navigate`) y cierra según la tabla de la tarea: con sesión y descartable, el endpoint actual con `optimistic`; invitado y descartable, `localStorage`; no descartable, `sessionStorage`. Los anuncios cerrados localmente se filtran antes de mostrarse. Devuelve `toastAnnouncements` y `dialogAnnouncements` (en el orden del servidor). `hooks/useGuestDismissalSync.ts` (nuevo): cuando hay sesión y `localStorage` tiene ids, los envía una vez con `useHttp` al endpoint de TASK-008 (acción de Wayfinder) y vacía la lista si responde bien; si falla, la deja para el siguiente intento, sin toast.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "`npm run types`, ESLint y Prettier pasan.",
+        "Un invitado que cierra un anuncio no hace ninguna petición; uno no descartable nunca llama al endpoint.",
+        "La sincronización se envía una sola vez por inicio de sesión aunque StrictMode monte el efecto dos veces."
+      ],
+      "filesToCreate": [
+        "resources/js/modules/announcement/hooks/useGuestDismissalSync.ts"
+      ],
+      "filesToModify": [
+        "resources/js/modules/announcement/hooks/useAnnouncementDismiss.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/announcement/hooks/useGuestDismissalSync.ts",
+        "resources/js/modules/announcement/hooks/useAnnouncementDismiss.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/announcement/hooks/useAnnouncementDismiss.ts resources/js/modules/announcement/hooks/useGuestDismissalSync.ts && rtk npx prettier --check resources/js/modules/announcement/hooks/useAnnouncementDismiss.ts resources/js/modules/announcement/hooks/useGuestDismissalSync.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Toasts colapsados y cola de dialogs",
+      "description": "`SystemAnnouncements`: el `Toaster` pasa a pila colapsada (`expand={false}`) solo con `toastAnnouncements`, y se monta un único `AnnouncementDialog` con el primero de `dialogAnnouncements`; al cerrarlo aparece el siguiente. `app.tsx` pasa también si hay sesión desde el `page` de `withApp`. Comprobar en el navegador (invitado y Angel, modo claro y oscuro): la pila colapsada, un dialog a la vez, el cierre del invitado que sobrevive a recargar, el no descartable que vuelve en otra sesión, el botón del dialog que lo cierra y la sincronización al iniciar sesión.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-015",
+        "TASK-016"
+      ],
+      "acceptanceCriteria": [
+        "`npm run types`, ESLint, Prettier y `npm run build` pasan.",
+        "Con dos dialogs vigentes se ve uno; al cerrarlo aparece el otro, y nunca dos a la vez.",
+        "Un invitado que cerró un toast y luego inicia sesión no lo vuelve a ver, y la fila queda en `announcement_dismissals`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/announcement/components/SystemAnnouncements.tsx",
+        "resources/js/app/app.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/announcement/components/SystemAnnouncements.tsx",
+        "resources/js/app/app.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/announcement/components/SystemAnnouncements.tsx resources/js/app/app.tsx && rtk npx prettier --check resources/js/modules/announcement/components/SystemAnnouncements.tsx resources/js/app/app.tsx && rtk npm run build",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Seeders con dialogs",
+      "description": "`AnnouncementSeeder`: el anuncio fijo de 2FA (`TWO_FACTOR_TITLE`) y los críticos de muestra pasan a `dialog`, y los duplicados copian `display`. `ActivityLogSeeder`: agrega `['display']` a `ANNOUNCEMENT_CHANGED_ATTRIBUTES`. Se amplía `AnnouncementSeederTest`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Tras sembrar, el anuncio de 2FA es dialog y hay al menos un toast vigente.",
+        "Correrlo dos veces no duplica, y el activity log sembrado sigue sin texto de anuncios."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Database/Seeders/AnnouncementSeeder.php",
+        "app/Modules/Announcement/Tests/Seeders/AnnouncementSeederTest.php",
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Database/Seeders/AnnouncementSeeder.php",
+        "app/Modules/Announcement/Tests/Seeders/AnnouncementSeederTest.php",
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Announcement/Tests/Seeders/AnnouncementSeederTest.php app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "CLAUDE.md y AGENTS.md",
+      "description": "Documentar en la entrada Announcement: la columna y el enum, el campo del formulario con su cambio automático y su aviso, la pestaña 'Active dialogs', el endpoint de sincronización, `display` e `isDismissible` en el resource, la tabla de reglas de cierre, la cola de dialogs y los componentes del frontend. Actualizar el seeder. En AGENTS.md, la regla de cierre en el párrafo de SOC-61.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-017",
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md y AGENTS.md describen el campo, el enum, el endpoint, la cola de dialogs y las reglas de cierre sin contradecir SOC-61.",
+        "Ya no dicen que `isDismissible` es falso para invitados ni que los toasts se muestran desplegados."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "writeScope": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "validateCommand": "rtk grep -n \"AnnouncementDisplay\\|announcements.dismissals.sync\" CLAUDE.md AGENTS.md",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Docs de arquitectura y gates finales",
+      "description": "`docs/architecture/backend.md` y `frontend.md`: la presentación, el endpoint y las reglas de cierre. Correr todos los gates: Pint, Rector (clear-cache → dry → aplicar), PHPStan, `composer test`, Prettier, ESLint, tsc, `npm run build` y `npm run build:ssr`.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-019"
+      ],
+      "acceptanceCriteria": [
+        "Los documentos de arquitectura mencionan la presentación y las reglas de cierre.",
+        "Todos los gates pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/backend.md",
+        "docs/architecture/frontend.md"
+      ],
+      "writeScope": [
+        "docs/architecture/backend.md",
+        "docs/architecture/frontend.md"
+      ],
+      "validateCommand": "rtk vendor/bin/pint --dirty --format agent && rtk composer rector-clear-cache && rtk composer rector-dry && rtk composer phpstan && rtk composer test && rtk npm run format:check && rtk npm run lint:check && rtk npm run types && rtk npm run build && rtk npm run build:ssr",
+      "review": "claude"
+    }
+  ],
+  "executionSummary": {
+    "taskCount": 20,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002"
+      ],
+      [
+        "TASK-003",
+        "TASK-005"
+      ],
+      [
+        "TASK-004",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-012",
+        "TASK-013",
+        "TASK-018"
+      ],
+      [
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-014"
+      ],
+      [
+        "TASK-015",
+        "TASK-016"
+      ],
+      [
+        "TASK-017"
+      ],
+      [
+        "TASK-019"
+      ],
+      [
+        "TASK-020"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-003",
+      "TASK-007",
+      "TASK-014",
+      "TASK-015",
+      "TASK-017",
+      "TASK-019",
+      "TASK-020"
+    ]
+  },
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [
+      "TASK-001",
+      "TASK-002"
+    ],
+    "TASK-004": [
+      "TASK-003"
+    ],
+    "TASK-005": [
+      "TASK-001"
+    ],
+    "TASK-006": [
+      "TASK-003",
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-003"
+    ],
+    "TASK-008": [
+      "TASK-003"
+    ],
+    "TASK-009": [
+      "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-004",
+      "TASK-005"
+    ],
+    "TASK-011": [
+      "TASK-004"
+    ],
+    "TASK-012": [
+      "TASK-003"
+    ],
+    "TASK-013": [
+      "TASK-003"
+    ],
+    "TASK-014": [
+      "TASK-007"
+    ],
+    "TASK-015": [
+      "TASK-014"
+    ],
+    "TASK-016": [
+      "TASK-008",
+      "TASK-014"
+    ],
+    "TASK-017": [
+      "TASK-015",
+      "TASK-016"
+    ],
+    "TASK-018": [
+      "TASK-003"
+    ],
+    "TASK-019": [
+      "TASK-006",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-017",
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-019"
+    ]
+  }
+}

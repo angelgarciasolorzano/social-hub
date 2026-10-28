@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Data\AnnouncementData;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 
 /**
@@ -19,6 +20,7 @@ function announcementFormState(array $overrides = []): array
         'body' => '<p>El sitio estará en mantenimiento.</p>',
         'type' => 'warning',
         'audience' => 'authenticated',
+        'display' => 'dialog',
         'starts_at' => '2026-11-01 08:00:00',
         'ends_at' => '2026-11-02 08:00:00',
         'is_dismissible' => false,
@@ -37,6 +39,7 @@ it('builds typed data from the form state and maps it to the model columns', fun
         'body' => '<p>El sitio estará en mantenimiento.</p>',
         'type' => AnnouncementType::Warning,
         'audience' => AnnouncementAudience::Authenticated,
+        'display' => AnnouncementDisplay::Dialog,
         'is_dismissible' => false,
         'button_label' => 'Ver detalles',
         'button_url' => 'https://example.com/estado',
@@ -49,10 +52,12 @@ it('accepts enum cases when the form was filled from an existing announcement', 
     $announcementData = AnnouncementData::fromFormState(announcementFormState([
         'type' => AnnouncementType::Critical,
         'audience' => AnnouncementAudience::All,
+        'display' => AnnouncementDisplay::Toast,
     ]));
 
     expect($announcementData->type)->toBe(AnnouncementType::Critical)
-        ->and($announcementData->audience)->toBe(AnnouncementAudience::All);
+        ->and($announcementData->audience)->toBe(AnnouncementAudience::All)
+        ->and($announcementData->display)->toBe(AnnouncementDisplay::Toast);
 });
 
 it('drops the button when has_button is off even if its fields keep a value', function (): void {
@@ -72,10 +77,18 @@ it('treats a missing end date as an announcement without end and defaults to dis
         ->and($announcementData->isDismissible)->toBeTrue();
 });
 
-it('rejects an unknown type or a missing start date', function (string $field, ?string $value): void {
+it('treats a missing display as a toast', function (): void {
+    $state = announcementFormState();
+    unset($state['display']);
+
+    expect(AnnouncementData::fromFormState($state)->display)->toBe(AnnouncementDisplay::Toast);
+});
+
+it('rejects an unknown type or display, or a missing start date', function (string $field, ?string $value): void {
     expect(fn (): AnnouncementData => AnnouncementData::fromFormState(announcementFormState([$field => $value])))
         ->toThrow(InvalidArgumentException::class);
 })->with([
     'unknown type' => ['type', 'danger'],
     'missing start date' => ['starts_at', null],
+    'unknown display' => ['display', 'popup'],
 ]);
