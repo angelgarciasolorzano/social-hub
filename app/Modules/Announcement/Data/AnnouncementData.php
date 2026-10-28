@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Announcement\Data;
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -28,11 +29,12 @@ final class AnnouncementData extends Data
         public bool $isDismissible,
         public ?string $buttonLabel,
         public ?string $buttonUrl,
+        public AnnouncementDisplay $display = AnnouncementDisplay::Toast,
     ) {}
 
     /**
      * Build the data from the admin form state. The button is dropped when `has_button` is off,
-     * even if its fields still hold text from before it was switched off.
+     * even if its fields still hold text from before it was switched off; a missing display is a toast.
      *
      * @param  array<string, mixed>  $state
      *
@@ -54,13 +56,16 @@ final class AnnouncementData extends Data
             isDismissible: $fluent->boolean('is_dismissible', true),
             buttonLabel: $hasButton ? self::nullableString($fluent, 'button_label') : null,
             buttonUrl: $hasButton ? self::nullableString($fluent, 'button_url') : null,
+            display: blank($fluent->get('display'))
+                ? AnnouncementDisplay::Toast
+                : self::enumFrom($fluent, 'display', AnnouncementDisplay::class),
         );
     }
 
     /**
      * The model columns this data fills.
      *
-     * @return array{title: string, body: string, type: AnnouncementType, audience: AnnouncementAudience, starts_at: CarbonImmutable, ends_at: CarbonImmutable|null, is_dismissible: bool, button_label: string|null, button_url: string|null}
+     * @return array{title: string, body: string, type: AnnouncementType, audience: AnnouncementAudience, display: AnnouncementDisplay, starts_at: CarbonImmutable, ends_at: CarbonImmutable|null, is_dismissible: bool, button_label: string|null, button_url: string|null}
      */
     public function toModelAttributes(): array
     {
@@ -69,6 +74,7 @@ final class AnnouncementData extends Data
             'body' => $this->body,
             'type' => $this->type,
             'audience' => $this->audience,
+            'display' => $this->display,
             'starts_at' => $this->startsAt,
             'ends_at' => $this->endsAt,
             'is_dismissible' => $this->isDismissible,
