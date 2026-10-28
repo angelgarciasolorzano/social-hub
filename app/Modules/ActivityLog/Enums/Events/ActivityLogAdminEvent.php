@@ -31,6 +31,16 @@ enum ActivityLogAdminEvent: string implements ActivityLogEvent
 
     case AccountReactivated = 'admin.account_reactivated';
 
+    case AnnouncementCreated = 'admin.announcement_created';
+
+    case AnnouncementUpdated = 'admin.announcement_updated';
+
+    case AnnouncementUnpublished = 'admin.announcement_unpublished';
+
+    case AnnouncementDuplicated = 'admin.announcement_duplicated';
+
+    case AnnouncementDeleted = 'admin.announcement_deleted';
+
     public function eventName(): string
     {
         return $this->value;

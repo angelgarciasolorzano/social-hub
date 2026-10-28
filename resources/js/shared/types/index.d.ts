@@ -1,3 +1,5 @@
+import type { Announcement } from "@/modules/announcement/types/announcement";
+
 import type { Auth, User } from "./user";
 
 export interface BreadcrumbItem {
@@ -7,6 +9,7 @@ export interface BreadcrumbItem {
 
 export interface SharedData {
   [key: string]: unknown;
+  announcements: Announcement[];
   auth: Auth;
   name: string;
   quote: { message: string; author: string };

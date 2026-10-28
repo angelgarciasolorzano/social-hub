@@ -13,6 +13,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
@@ -29,7 +30,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Builds activity from the data the other seeders created, so every record points to
- * something real. Dates are spread over the last days because the content seeders
+ * something real (announcements included). Dates are spread over the last days because the content seeders
  * create everything at seeding time. It does nothing when activity already exists.
  */
 class ActivityLogSeeder extends Seeder
@@ -45,6 +46,19 @@ class ActivityLogSeeder extends Seeder
     private const float LOGINS_SKEW = 2.0;
 
     private const int USER_AGENT_MAX_LENGTH = 512;
+
+    /**
+     * Plausible sets of attribute names for a seeded announcement edit.
+     *
+     * @var list<list<string>>
+     */
+    private const array ANNOUNCEMENT_CHANGED_ATTRIBUTES = [
+        ['body'],
+        ['title'],
+        ['title', 'body'],
+        ['ends_at'],
+        ['button_label', 'button_url'],
+    ];
 
     /**
      * @var list<array<string, string|int|null>>
@@ -67,6 +81,7 @@ class ActivityLogSeeder extends Seeder
         $this->seedAuthActivity();
         $this->seedAdminActivity();
         $this->seedAccountStatusActivity();
+        $this->seedAnnouncementActivity();
 
         $this->flush();
     }
@@ -233,6 +248,48 @@ class ActivityLogSeeder extends Seeder
                 );
             }
         });
+    }
+
+    /**
+     * Derive the audit of every seeded announcement from its own dates, as AnnouncementService records it:
+     * a copy (same title and body as an earlier announcement) is duplicated, any other one created; one whose
+     * `ends_at` equals `updated_at` was unpublished, and one saved after being created was updated. The author
+     * is the causer and the title or body is never stored.
+     */
+    private function seedAnnouncementActivity(): void
+    {
+        $sourceIdsByContent = [];
+
+        Announcement::query()
+            ->select(['id', 'title', 'body', 'created_by', 'ends_at', 'created_at', 'updated_at'])
+            ->oldest()
+            ->orderBy('id')
+            ->each(function (Announcement $announcement) use (&$sourceIdsByContent): void {
+                $createdAt = $announcement->created_at ?? $this->randomPastDate();
+                $updatedAt = $announcement->updated_at ?? $createdAt;
+                $contentKey = hash('xxh128', $announcement->title."\0".$announcement->body);
+                $sourceId = $sourceIdsByContent[$contentKey] ?? null;
+
+                $this->queue(
+                    $sourceId === null ? ActivityLogAdminEvent::AnnouncementCreated : ActivityLogAdminEvent::AnnouncementDuplicated,
+                    $announcement->created_by,
+                    Announcement::MORPH_NAME,
+                    $announcement->id,
+                    $createdAt,
+                    $sourceId === null ? [] : ['source_announcement_id' => $sourceId],
+                    web: true,
+                );
+
+                $sourceIdsByContent[$contentKey] ??= $announcement->id;
+
+                if ($announcement->ends_at !== null && $announcement->ends_at->equalTo($updatedAt)) {
+                    $this->queue(ActivityLogAdminEvent::AnnouncementUnpublished, $announcement->created_by, Announcement::MORPH_NAME, $announcement->id, $updatedAt, web: true);
+                } elseif ($updatedAt->isAfter($createdAt)) {
+                    $this->queue(ActivityLogAdminEvent::AnnouncementUpdated, $announcement->created_by, Announcement::MORPH_NAME, $announcement->id, $updatedAt, [
+                        'changed_attributes' => self::ANNOUNCEMENT_CHANGED_ATTRIBUTES[array_rand(self::ANNOUNCEMENT_CHANGED_ATTRIBUTES)],
+                    ], web: true);
+                }
+            });
     }
 
     /**

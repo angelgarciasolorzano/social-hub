@@ -8,6 +8,7 @@ use App\Auth\Database\Seeders\TrustedDeviceSeeder;
 use App\Modules\ActivityLog\Database\Seeders\ActivityLogSeeder;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
+use App\Modules\Announcement\Database\Seeders\AnnouncementSeeder;
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
 use App\Modules\Like\Database\Seeders\LikeSeeder;
 use App\Modules\Post\Database\Seeders\PostSeeder;
@@ -28,6 +29,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             TrustedDeviceSeeder::class,
             AccountStatusSeeder::class,
+            AnnouncementSeeder::class,
             PostSeeder::class,
             CommentSeeder::class,
             LikeSeeder::class,

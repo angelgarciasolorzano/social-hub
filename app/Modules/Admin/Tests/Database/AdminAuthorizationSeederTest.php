@@ -119,6 +119,28 @@ it('seeds each role with only its intended permissions', function (): void {
         ]);
 });
 
+it('gives the announcements manager only the announcement permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $announcementsManagerRole = Role::query()
+        ->where('name', AdminRole::AdminAnnouncementsManager->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $user = createUser();
+    $user->assignRole($announcementsManagerRole);
+
+    expect($announcementsManagerRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([
+            AdminPermission::AdminAnnouncementsCreate->value,
+            AdminPermission::AdminAnnouncementsDelete->value,
+            AdminPermission::AdminAnnouncementsUpdate->value,
+            AdminPermission::AdminAnnouncementsView->value,
+            AdminPermission::AdminAnnouncementsViewAny->value,
+        ])
+        ->and($user->hasPermissionTo(AdminPermission::AdminAccess->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse();
+});
+
 it('gives the activity reader only the activity log permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 

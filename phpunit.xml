@@ -26,6 +26,9 @@
         <testsuite name="ActivityLog">
             <directory>app/Modules/ActivityLog/Tests</directory>
         </testsuite>
+        <testsuite name="Announcement">
+            <directory>app/Modules/Announcement/Tests</directory>
+        </testsuite>
         <testsuite name="Login">
             <directory>app/Auth/Modules/Login/Tests</directory>
         </testsuite>

@@ -25,6 +25,7 @@ Documento de referencia para crear y mantener módulos del frontend en este proy
 resources/js/
 ├── app.tsx                                ← entrypoint Inertia + React
 ├── modules/                               ← features por dominio
+│   ├── announcement/                      ← anuncios del sistema (toasts persistentes)
 │   ├── auth/
 │   ├── comment/
 │   ├── home/
@@ -559,6 +560,16 @@ Para variantes de Button, Alert, Badge, etc., usá las variantes predefinidas de
   - `@/shared/wayfinder/actions/...` para controllers.
 - **No edites** nada en `shared/wayfinder/`. Se regenera con el plugin de Vite.
 - Para hacer `POST/PUT/DELETE`, usá los helpers `.form()` (auto-incluye CSRF) o `useHttp()` (peticiones standalone v3).
+- **Componentes globales fuera de la página.** Lo que se monta en `withApp` de `app.tsx` (`FlashToaster`, `SystemAnnouncements`) queda fuera del contexto que necesita `usePage()`. Leé las props iniciales del segundo argumento de `withApp` (`{ page }`) y las siguientes de los eventos del router (`router.on("navigate", …)` o `router.on("flash", …)`), y limpiá la suscripción devolviendo el resultado de `router.on` desde el `useEffect`.
+
+### Anuncios del sistema (SOC-61)
+
+`modules/announcement/` muestra la prop compartida `announcements` como toasts persistentes de un `Toaster` de Sonner propio (`id="announcements"`, arriba al centro), separado del de `FlashToaster`: Sonner solo muestra en cada `Toaster` los toasts con su mismo `toasterId`. Se eligió un toast y no una franja dentro del flujo porque flota sobre cualquier layout, incluido el sidebar fijo de `SettingLayout`.
+
+- `SystemAnnouncements` sincroniza la lista: crea o actualiza un toast por anuncio con un id fijo (`duration: Infinity`, sin descartar por arrastre), cierra los que salen de la lista y deja el más grave arriba.
+- `AnnouncementToast` pinta cada anuncio: color por tipo con la paleta de Tailwind y variantes `dark:`, `role="alert"` solo para los críticos, `bodyHtml` (ya saneado en el servidor) con `dangerouslySetInnerHTML`, `Link` de Inertia para rutas internas y una pestaña nueva con `rel="noopener noreferrer"` para enlaces externos, y la ✕ solo si `isDismissible`.
+- `useAnnouncementDismiss` descarta con `useHttp` y `optimistic`: el aviso desaparece al instante y vuelve si la petición falla, con un toast de error en español en lugar del modal de Inertia.
+- `types/announcement.ts` replica el enum `AnnouncementType` del backend: cambialos juntos.
 
 ## 11. TypeScript estricto
 

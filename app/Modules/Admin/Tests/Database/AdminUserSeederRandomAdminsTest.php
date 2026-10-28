@@ -77,6 +77,18 @@ it('gives every random administrator the base role and between one and four read
     }
 });
 
+it('never gives the announcements manager role to a random administrator', function (): void {
+    $user = seedAdminsForUsers($this, 30);
+
+    $announcementManagerIds = User::query()
+        ->role(AdminRole::AdminAnnouncementsManager->value, 'admin')
+        ->pluck('id')
+        ->all();
+
+    expect(usersWithAdminRole())->toHaveCount(6)
+        ->and($announcementManagerIds)->toBe([$user->id]);
+});
+
 it('gives different reader roles to different random administrators', function (): void {
     $user = seedAdminsForUsers($this, 60);
 

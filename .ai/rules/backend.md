@@ -9,6 +9,9 @@ paths:
 ## Keep module UI view directories lowercase
 Name every directory below a module's `UI/Views/` root in lowercase, and keep namespaced Blade view references consistent with the directory names. Do not rely on macOS case-insensitive filesystem behavior: Linux CI resolves these paths case-sensitively.
 
+## Import classes in Blade views with @use
+In Blade views, import the classes, functions and constants a view references with the `@use` directive (for example `@use('App\Modules\Announcement\Models\Announcement')`, or grouped `@use('App\Models\{Flight, Airport}')`) placed at the top of the file, and refer to them by their short name. Do not write fully qualified names such as `\App\...\Announcement::CONSTANT` inside `@php` blocks or echo statements.
+
 ## PHP closures follow the no-single-letter rule
 PHP closures, arrow functions, and `array_*` callbacks inherit the **no single-letter variable names** rule from `.ai/rules/app.md`. Variables in closures (`$candidate`, `$deviceFilter`, `$index`, etc.) must be full descriptive words — never `$v`, `$i`, `$e`, `$x`. The numeric `for` loop counter (`for ($i = 0; ...)`) is the only acceptable exception, and `foreach` is preferred over indexed `for` whenever possible.
 

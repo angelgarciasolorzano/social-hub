@@ -8,6 +8,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import relativeTime from "dayjs/plugin/relativeTime";
 
+import SystemAnnouncements from "@/modules/announcement/components/SystemAnnouncements";
+import { sharedAnnouncementsOf } from "@/modules/announcement/hooks/useAnnouncementDismiss";
 import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
 import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
@@ -56,9 +58,10 @@ void createInertiaApp({
         return undefined;
     }
   },
-  withApp(app) {
+  withApp(app, { page }) {
     return (
       <TooltipProvider>
+        <SystemAnnouncements initialAnnouncements={sharedAnnouncementsOf(page.props)} />
         {app}
         <FlashToaster />
         <TanStackDevtools plugins={[tableDevtoolsPlugin(), hotkeysDevtoolsPlugin()]} />

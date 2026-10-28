@@ -17,4 +17,5 @@ yarn.lock
 /public/storage
 /node_modules/*
 /vendor/*
+/docs/*
 tsconfig.json
