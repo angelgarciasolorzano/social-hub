@@ -96,3 +96,37 @@ it('falls back to the default language for an unsupported locale, even over the 
     expect(renderedPanelLocale($this->get('/admin?locale=fr')))->toBe('en')
         ->and(renderedPanelLocale($this->get('/admin')))->toBe('es');
 });
+
+it('shows the switch on the sign-in page and translates it', function (): void {
+    $this->get('/admin/login')
+        ->assertOk()
+        ->assertSee('Español');
+
+    $this->get('/admin/login?locale=es')
+        ->assertOk()
+        ->assertSee('Entre a su cuenta');
+});
+
+it('shows the switch on the MFA set-up and profile pages', function (): void {
+    $user = createUser();
+    $user->assignRole(AdminRole::Admin->value);
+
+    $this->actingAs($user, 'admin')
+        ->get(route('filament.admin.auth.multi-factor-authentication.set-up-required'))
+        ->assertOk()
+        ->assertSee('Español');
+
+    $user->saveAppAuthenticationSecret('filament-test-secret');
+
+    $this->get(route('filament.admin.auth.profile'))
+        ->assertOk()
+        ->assertSee('Español');
+});
+
+it('does not show the switch on the invitation acceptance page', function (): void {
+    ['token' => $token] = createAdminInvitationWithToken();
+
+    $this->get(route('admin.invitations.accept', ['token' => $token]))
+        ->assertOk()
+        ->assertDontSee('Español');
+});
