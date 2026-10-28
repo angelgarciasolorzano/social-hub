@@ -8,11 +8,22 @@ use App\Modules\Admin\Console\Commands\AdminBootstrapCommand;
 use App\Modules\Admin\Console\Commands\AdminRolePermissionsCommand;
 use App\Modules\Admin\Console\Commands\AdminUserRoleCommand;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
+use App\User\Enums\PreferredLocale;
+use App\User\Models\User;
+use BezhanSalleh\LanguageSwitch\LanguageSwitch;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
 
 class AdminServiceProvider extends ServiceProvider
 {
+    /**
+     * Languages offered by the panel's switch, Spanish first.
+     *
+     * @var list<PreferredLocale>
+     */
+    public const array SWITCH_LOCALES = [PreferredLocale::SPANISH, PreferredLocale::ENGLISH];
+
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
@@ -30,6 +41,33 @@ class AdminServiceProvider extends ServiceProvider
         }
 
         $this->registerBackupSchedule();
+
+        $this->configureLanguageSwitch();
+    }
+
+    /**
+     * Offer Spanish and English in the panel. The plugin resolves the locale from the session, the
+     * `locale` query parameter, the administrator's saved preference, the browser and finally `app.locale`.
+     */
+    private function configureLanguageSwitch(): void
+    {
+        LanguageSwitch::configureUsing(static function (LanguageSwitch $languageSwitch): void {
+            $languageSwitch
+                ->locales(array_map(
+                    static fn (PreferredLocale $preferredLocale): string => $preferredLocale->value,
+                    self::SWITCH_LOCALES,
+                ))
+                ->labels([
+                    PreferredLocale::SPANISH->value => 'Español',
+                    PreferredLocale::ENGLISH->value => 'English',
+                ])
+                ->visible(insidePanels: true, outsidePanels: false)
+                ->userPreferredLocale(static function (): ?string {
+                    $user = Filament::auth()->user();
+
+                    return $user instanceof User ? $user->preferred_locale->value : null;
+                });
+        });
     }
 
     /** Schedule daily backups and independent health checks during low-traffic hours. */
