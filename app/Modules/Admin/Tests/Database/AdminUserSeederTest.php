@@ -42,6 +42,11 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         AdminPermission::AdminBackupsDownload->value,
         AdminPermission::AdminUsersSuspend->value,
         AdminPermission::AdminUsersReactivate->value,
+        AdminPermission::AdminAnnouncementsViewAny->value,
+        AdminPermission::AdminAnnouncementsView->value,
+        AdminPermission::AdminAnnouncementsCreate->value,
+        AdminPermission::AdminAnnouncementsUpdate->value,
+        AdminPermission::AdminAnnouncementsDelete->value,
     ];
 
     $expectedRoleNames = [
@@ -53,6 +58,7 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         AdminRole::AdminBackupsReader->value,
         AdminRole::AdminBackupsOperator->value,
         AdminRole::AdminUsersModerator->value,
+        AdminRole::AdminAnnouncementsManager->value,
         $customAdminRole->name,
     ];
 
