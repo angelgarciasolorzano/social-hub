@@ -6,6 +6,7 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
+use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Widgets\AdminQuickLinksWidget;
@@ -88,6 +89,27 @@ it('does not show links for sections without view permission', function (): void
         ->assertDontSee(PostResource::getUrl('index', panel: 'admin'))
         ->assertDontSee(ActivityLogResource::getUrl('index', panel: 'admin'))
         ->assertDontSee(BackupManagement::getUrl(panel: 'admin'));
+});
+
+it('shows the announcements link to an administrator who can list announcements', function (): void {
+    $user = adminQuickLinksUser(AdminPermission::AdminAnnouncementsViewAny);
+    $this->actingAs($user, 'admin');
+
+    Livewire::test(AdminQuickLinksWidget::class)
+        ->assertOk()
+        ->assertSeeText('Announcements')
+        ->assertSee(AnnouncementResource::getUrl('index', panel: 'admin'))
+        ->assertDontSee(UserResource::getUrl('index', panel: 'admin'));
+});
+
+it('hides the announcements link without admin.announcements.viewAny', function (): void {
+    $user = adminQuickLinksUser(AdminPermission::AdminUsersViewAny);
+    $this->actingAs($user, 'admin');
+
+    Livewire::test(AdminQuickLinksWidget::class)
+        ->assertOk()
+        ->assertDontSeeText('Announcements')
+        ->assertDontSee(AnnouncementResource::getUrl('index', panel: 'admin'));
 });
 
 it('denies the widget to administrators without section access', function (): void {
