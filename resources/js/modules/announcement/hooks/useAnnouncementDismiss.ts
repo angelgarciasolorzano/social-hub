@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import type { Announcement } from "@/modules/announcement/types/announcement";
 
-import AnnouncementDismissalController from "@/shared/wayfinder/actions/App/Modules/Announcement/Controllers/AnnouncementDismissalController";
+import { dismiss } from "@/shared/wayfinder/actions/App/Modules/Announcement/Controllers/AnnouncementDismissalController";
 
 const TOO_MANY_REQUESTS_STATUS = 429;
 
@@ -47,7 +47,7 @@ export function useAnnouncementDismiss(
 
       setPendingAnnouncementId(announcement.id);
 
-      post(AnnouncementDismissalController.url(announcement.id), {
+      post(dismiss(announcement.id).url, {
         optimistic: (currentData) => ({
           dismissedAnnouncementIds: [...currentData.dismissedAnnouncementIds, announcement.id],
         }),

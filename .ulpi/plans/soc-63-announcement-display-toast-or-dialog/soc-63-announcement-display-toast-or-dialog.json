@@ -76,7 +76,7 @@
     ]
   },
   "existingCodeLeverage": [
-    "`AnnouncementDismissalController` y `AnnouncementPolicy::dismiss`: el endpoint de sincronización repite su autorización por anuncio.",
+    "`AnnouncementDismissalController` y `AnnouncementPolicy::dismiss`: la acción `sync` vive en el mismo controlador y repite la autorización por anuncio.",
     "`AnnouncementService::update()` y `duplicate()`: ya cubren `display` sin cambios.",
     "`AnnouncementToast` y `useAnnouncementDismiss` (SOC-61): base del contenido compartido y de las reglas de cierre.",
     "`Dialog` de shadcn (`resources/js/shared/components/shadcn/ui/dialog.tsx`).",
@@ -279,7 +279,7 @@
     {
       "id": "TASK-008",
       "title": "Endpoint para sincronizar los cierres del invitado",
-      "description": "`POST announcements/dismissals` (`announcements.dismissals.sync`, `auth` + `verified`, `throttle:10,1,announcements.dismissals.sync`) servido por el invocable `AnnouncementDismissalSyncController`. `AnnouncementDismissalSyncRequest` (`HasFluentRules`): `announcement_ids` obligatorio, arreglo de 1 a 20 enteros positivos distintos. El controlador carga esos anuncios, se queda solo con los que `Gate::allows('dismiss', $announcement)` (descartables y vigentes para ese usuario), los guarda con `insertOrIgnore` y responde JSON `{dismissed: int[]}` con los ids aceptados; los demás se ignoran sin error, porque pudieron vencer o cambiar desde que el invitado los cerró. Se agrega la ruta a `routes/routes.php`.",
+      "description": "`POST announcements/dismissals` (`announcements.dismissals.sync`, `auth` + `verified`, `throttle:10,1,announcements.dismissals.sync`) servido por el método `sync` de `AnnouncementDismissalController`, que pasa a tener dos acciones (`dismiss` y `sync`) en lugar de ser invocable, como `CommentController`; `routes/routes.php` agrupa ambas rutas con `Route::controller()->prefix('announcements')->name('announcements.')` y conserva sus nombres. `AnnouncementDismissalSyncRequest` (`HasFluentRules`): `announcement_ids` obligatorio, arreglo de 1 a 20 enteros positivos distintos. El controlador carga esos anuncios, se queda solo con los que `Gate::allows('dismiss', $announcement)` (descartables y vigentes para ese usuario), los guarda con `insertOrIgnore` y responde JSON `{dismissed: int[]}` con los ids aceptados; los demás se ignoran sin error, porque pudieron vencer o cambiar desde que el invitado los cerró.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
@@ -292,15 +292,15 @@
         "PHPStan pasa sobre las tres piezas; el FormRequest no acepta un arreglo vacío ni más de 20 ids."
       ],
       "filesToCreate": [
-        "app/Modules/Announcement/Requests/AnnouncementDismissalSyncRequest.php",
-        "app/Modules/Announcement/Controllers/AnnouncementDismissalSyncController.php"
+        "app/Modules/Announcement/Requests/AnnouncementDismissalSyncRequest.php"
       ],
       "filesToModify": [
+        "app/Modules/Announcement/Controllers/AnnouncementDismissalController.php",
         "app/Modules/Announcement/routes/routes.php"
       ],
       "writeScope": [
         "app/Modules/Announcement/Requests/AnnouncementDismissalSyncRequest.php",
-        "app/Modules/Announcement/Controllers/AnnouncementDismissalSyncController.php",
+        "app/Modules/Announcement/Controllers/AnnouncementDismissalController.php",
         "app/Modules/Announcement/routes/routes.php"
       ],
       "validateCommand": "rtk php artisan route:list --name=announcements.dismissals && rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Announcement/Requests app/Modules/Announcement/Controllers",
