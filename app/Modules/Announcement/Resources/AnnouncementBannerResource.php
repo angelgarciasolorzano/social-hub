@@ -11,7 +11,8 @@ use Override;
 
 /**
  * An announcement as the application banner shows it: only what the user sees, with the body
- * already sanitized. The author, audience and dates stay on the server.
+ * already sanitized. The author, audience and dates stay on the server, and a guest can never
+ * dismiss because dismissing needs a session.
  *
  * @mixin Announcement
  */
@@ -43,7 +44,7 @@ class AnnouncementBannerResource extends JsonResource
             'type' => $this->type->value,
             'buttonLabel' => $this->button_label,
             'buttonUrl' => $this->button_url,
-            'isDismissible' => $this->is_dismissible,
+            'isDismissible' => $this->is_dismissible && $request->user() !== null,
             'imageUrl' => $imageUrl === '' ? null : $imageUrl,
         ];
     }

@@ -99,7 +99,7 @@ class AnnouncementForm
                             ->visible(fn (Get $get): bool => $get->boolean('has_button')),
                         TextInput::make('button_url')
                             ->label('Button link')
-                            ->helperText('An https:// address or a path of this site, such as /setting/two-factor.')
+                            ->helperText('An https:// address or a path of this site, such as /setting/two-factor-authentication.')
                             ->required()
                             ->maxLength(self::BUTTON_URL_MAX_LENGTH)
                             ->rule(fn (): Closure => self::buttonUrlRule())

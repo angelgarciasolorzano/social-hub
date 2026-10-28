@@ -127,12 +127,12 @@ describe('with the announcements manager role', function (): void {
         filledCreateAnnouncementPage([
             'has_button' => true,
             'button_label' => 'Activar 2FA',
-            'button_url' => '/setting/two-factor',
+            'button_url' => '/setting/two-factor-authentication',
         ])
             ->call('create')
             ->assertHasNoErrors();
 
-        expect(Announcement::query()->sole()->button_url)->toBe('/setting/two-factor');
+        expect(Announcement::query()->sole()->button_url)->toBe('/setting/two-factor-authentication');
     });
 
     it('rejects an invalid announcement without creating anything', function (string $invalidCase, string $errorField): void {

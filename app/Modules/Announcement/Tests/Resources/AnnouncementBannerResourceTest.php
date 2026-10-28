@@ -6,6 +6,8 @@ use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Resources\AnnouncementBannerResource;
+use App\User\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,13 +23,16 @@ function bannerAnnouncementFactory(): AnnouncementFactory
 }
 
 /**
- * Serialize the announcement as the application banner receives it.
+ * Serialize the announcement as the application banner receives it, for the given user or a guest.
  *
  * @return array<mixed>
  */
-function announcementBannerPayload(Announcement $announcement): array
+function announcementBannerPayload(Announcement $announcement, ?User $user = null): array
 {
-    return new AnnouncementBannerResource($announcement)->resolve(request());
+    $request = Request::create('/');
+    $request->setUserResolver(static fn (): ?User => $user);
+
+    return new AnnouncementBannerResource($announcement)->resolve($request);
 }
 
 it('serializes exactly the fields the banner shows', function (): void {
@@ -47,6 +52,13 @@ it('serializes exactly the fields the banner shows', function (): void {
         'isDismissible' => false,
         'imageUrl' => null,
     ]);
+});
+
+it('lets a signed-in user dismiss a dismissible announcement but never a guest', function (): void {
+    $announcement = bannerAnnouncementFactory()->createOne();
+
+    expect(announcementBannerPayload($announcement, createUser())['isDismissible'])->toBeTrue()
+        ->and(announcementBannerPayload($announcement)['isDismissible'])->toBeFalse();
 });
 
 it('never exposes the author, audience or dates', function (): void {
