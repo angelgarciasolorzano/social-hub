@@ -40,6 +40,7 @@ it('serializes exactly the fields the banner shows', function (): void {
         ->ofType(AnnouncementType::Warning)
         ->withButton()
         ->notDismissible()
+        ->asDialog()
         ->createOne(['body' => '<p>Mantenimiento a las <strong>22:00</strong>.</p>']);
 
     expect(announcementBannerPayload($announcement))->toBe([
@@ -47,6 +48,7 @@ it('serializes exactly the fields the banner shows', function (): void {
         'title' => $announcement->title,
         'bodyHtml' => '<p>Mantenimiento a las <strong>22:00</strong>.</p>',
         'type' => 'warning',
+        'display' => 'dialog',
         'buttonLabel' => $announcement->button_label,
         'buttonUrl' => $announcement->button_url,
         'isDismissible' => false,
@@ -54,11 +56,18 @@ it('serializes exactly the fields the banner shows', function (): void {
     ]);
 });
 
-it('lets a signed-in user dismiss a dismissible announcement but never a guest', function (): void {
+it('sends the stored dismissible flag to guests and signed-in users alike', function (): void {
     $announcement = bannerAnnouncementFactory()->createOne();
+    $notDismissible = bannerAnnouncementFactory()->notDismissible()->createOne();
 
-    expect(announcementBannerPayload($announcement, createUser())['isDismissible'])->toBeTrue()
-        ->and(announcementBannerPayload($announcement)['isDismissible'])->toBeFalse();
+    expect(announcementBannerPayload($announcement)['isDismissible'])->toBeTrue()
+        ->and(announcementBannerPayload($announcement, createUser())['isDismissible'])->toBeTrue()
+        ->and(announcementBannerPayload($notDismissible)['isDismissible'])->toBeFalse()
+        ->and(announcementBannerPayload($notDismissible, createUser())['isDismissible'])->toBeFalse();
+});
+
+it('sends a toast by default', function (): void {
+    expect(announcementBannerPayload(bannerAnnouncementFactory()->createOne())['display'])->toBe('toast');
 });
 
 it('never exposes the author, audience or dates', function (): void {
