@@ -7,6 +7,7 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Announcement\Data\AnnouncementData;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Services\AnnouncementService;
@@ -38,8 +39,10 @@ function serviceAnnouncementFactory(): AnnouncementFactory
 /**
  * Announcement data as the admin form would submit it.
  */
-function announcementDataForService(string $title = ANNOUNCEMENT_TITLE_SENTINEL): AnnouncementData
-{
+function announcementDataForService(
+    string $title = ANNOUNCEMENT_TITLE_SENTINEL,
+    AnnouncementDisplay $announcementDisplay = AnnouncementDisplay::Toast,
+): AnnouncementData {
     return new AnnouncementData(
         title: $title,
         body: '<p>'.ANNOUNCEMENT_BODY_SENTINEL.'</p>',
@@ -50,6 +53,7 @@ function announcementDataForService(string $title = ANNOUNCEMENT_TITLE_SENTINEL)
         isDismissible: true,
         buttonLabel: null,
         buttonUrl: null,
+        display: $announcementDisplay,
     );
 }
 
@@ -86,6 +90,27 @@ it('records only the names of the changed attributes when updating', function ()
     expect($announcement->refresh()->title)->toBe('Otro título')
         ->and($activities)->toHaveCount(1)
         ->and($activities[0]->properties?->get('changed_attributes'))->toBe(['title']);
+});
+
+it('records the display as the only changed attribute when only the presentation changes', function (): void {
+    $this->freezeSecond();
+    $user = createUser();
+    $announcement = announcementService()->create(announcementDataForService(), $user);
+
+    announcementService()->update($announcement, announcementDataForService(announcementDisplay: AnnouncementDisplay::Dialog), $user);
+    $activities = announcementActivities(ActivityLogAdminEvent::AnnouncementUpdated);
+
+    expect($announcement->refresh()->display)->toBe(AnnouncementDisplay::Dialog)
+        ->and($activities)->toHaveCount(1)
+        ->and($activities[0]->properties?->get('changed_attributes'))->toBe(['display']);
+});
+
+it('keeps the presentation when duplicating a dialog', function (): void {
+    $announcement = serviceAnnouncementFactory()->asDialog()->createOne();
+
+    $copy = announcementService()->duplicate($announcement, createUser());
+
+    expect($copy->refresh()->display)->toBe(AnnouncementDisplay::Dialog);
 });
 
 it('records nothing when an update changes nothing', function (): void {
