@@ -562,14 +562,16 @@ Para variantes de Button, Alert, Badge, etc., usá las variantes predefinidas de
 - Para hacer `POST/PUT/DELETE`, usá los helpers `.form()` (auto-incluye CSRF) o `useHttp()` (peticiones standalone v3).
 - **Componentes globales fuera de la página.** Lo que se monta en `withApp` de `app.tsx` (`FlashToaster`, `SystemAnnouncements`) queda fuera del contexto que necesita `usePage()`. Leé las props iniciales del segundo argumento de `withApp` (`{ page }`) y las siguientes de los eventos del router (`router.on("navigate", …)` o `router.on("flash", …)`), y limpiá la suscripción devolviendo el resultado de `router.on` desde el `useEffect`.
 
-### Anuncios del sistema (SOC-61)
+### Anuncios del sistema (SOC-61, SOC-63)
 
-`modules/announcement/` muestra la prop compartida `announcements` como toasts persistentes de un `Toaster` de Sonner propio (`id="announcements"`, arriba al centro), separado del de `FlashToaster`: Sonner solo muestra en cada `Toaster` los toasts con su mismo `toasterId`. Se eligió un toast y no una franja dentro del flujo porque flota sobre cualquier layout, incluido el sidebar fijo de `SettingLayout`.
+`modules/announcement/` muestra la prop compartida `announcements` según su `display`. Los toasts van a un `Toaster` de Sonner propio (`id="announcements"`, arriba al centro, colapsado), separado del de `FlashToaster`: Sonner solo muestra en cada `Toaster` los toasts con su mismo `toasterId`. Se eligió un toast y no una franja dentro del flujo porque flota sobre cualquier layout, incluido el sidebar fijo de `SettingLayout`. Los dialogs se muestran de uno en uno.
 
-- `SystemAnnouncements` sincroniza la lista: crea o actualiza un toast por anuncio con un id fijo (`duration: Infinity`, sin descartar por arrastre), cierra los que salen de la lista y deja el más grave arriba.
-- `AnnouncementToast` pinta cada anuncio: color por tipo con la paleta de Tailwind y variantes `dark:`, `role="alert"` solo para los críticos, `bodyHtml` (ya saneado en el servidor) con `dangerouslySetInnerHTML`, `Link` de Inertia para rutas internas y una pestaña nueva con `rel="noopener noreferrer"` para enlaces externos, y la ✕ solo si `isDismissible`.
-- `useAnnouncementDismiss` descarta con `useHttp` y `optimistic`: el aviso desaparece al instante y vuelve si la petición falla, con un toast de error en español en lugar del modal de Inertia.
-- `types/announcement.ts` replica el enum `AnnouncementType` del backend: cambialos juntos.
+- `SystemAnnouncements` sincroniza la lista: crea o actualiza un toast por anuncio con un id fijo (`duration: Infinity`, sin descartar por arrastre), cierra los que salen de la lista y deja el más grave arriba. Muestra un solo `AnnouncementDialog` con el primero de la cola, y mientras está abierto retiene los toasts, porque el z-index de Sonner los dibujaría encima del fondo del dialog.
+- `AnnouncementContent.tsx` reúne lo que comparten el toast y el dialog: el cuerpo (`bodyHtml`, ya saneado en el servidor, con `dangerouslySetInnerHTML`), el botón (`Link` de Inertia para rutas internas, una pestaña nueva con `rel="noopener noreferrer"` para enlaces externos, y un `onAction` que el dialog usa para contarlo como cerrado) y los colores e íconos por tipo con la paleta de Tailwind y variantes `dark:`.
+- `AnnouncementToast` usa `role="alert"` solo para los críticos y siempre muestra la ✕. `AnnouncementDialog` es el `Dialog` de shadcn teñido por tipo; 'Entendido', `Esc`, el fondo y el botón del anuncio lo cierran, y el cuerpo va en `DialogDescription asChild` sobre un `<div>` porque trae sus propios `<p>` y listas.
+- `useAnnouncementDismiss` decide dónde se guarda cada cierre: en el servidor con `useHttp` y `optimistic` (vuelve si falla, con un toast de error en español en lugar del modal de Inertia), en `localStorage` para un invitado o en `sessionStorage` para un anuncio no descartable. `useGuestDismissalSync` envía los cierres del invitado una vez al iniciar sesión y los borra si salen bien.
+- `utils/announcementDismissalStorage.ts` protege cada acceso al almacenamiento (sin `window`, bloqueado o con un valor alterado); sus funciones de escritura devuelven si guardaron, así que ningún `catch` queda vacío.
+- `types/announcement.ts` replica los enums `AnnouncementType` y `AnnouncementDisplay` del backend: cambialos juntos.
 
 ## 11. TypeScript estricto
 
