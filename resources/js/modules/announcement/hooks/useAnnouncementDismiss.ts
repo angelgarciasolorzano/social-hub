@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { router, useHttp } from "@inertiajs/react";
 
@@ -22,7 +22,7 @@ interface UseAnnouncementDismissReturn {
 
 /**
  * Keep the shared announcements in sync across visits and dismiss one at a time: it disappears at once and comes back
- * with an error toast if the request fails. The banner lives outside the page, so the props come from the first page
+ * with an error toast if the request fails. The announcements live outside the page, so the props come from the first page
  * and then from each `navigate` event instead of `usePage()`.
  */
 export function useAnnouncementDismiss(
@@ -41,42 +41,52 @@ export function useAnnouncementDismiss(
     });
   }, []);
 
-  const dismissAnnouncement = (announcement: Announcement): void => {
-    if (processing) return;
+  const dismissAnnouncement = useCallback<(announcement: Announcement) => void>(
+    (announcement) => {
+      if (processing) return;
 
-    setPendingAnnouncementId(announcement.id);
+      setPendingAnnouncementId(announcement.id);
 
-    post(AnnouncementDismissalController.url(announcement.id), {
-      optimistic: (currentData) => ({
-        dismissedAnnouncementIds: [...currentData.dismissedAnnouncementIds, announcement.id],
-      }),
-      onFinish: () => {
-        setPendingAnnouncementId(null);
-      },
-      onHttpException: (response) => {
-        toast.error(
-          response.status === TOO_MANY_REQUESTS_STATUS
-            ? "Demasiados intentos, espera un momento."
-            : "No se pudo cerrar el aviso.",
-        );
+      post(AnnouncementDismissalController.url(announcement.id), {
+        optimistic: (currentData) => ({
+          dismissedAnnouncementIds: [...currentData.dismissedAnnouncementIds, announcement.id],
+        }),
+        onFinish: () => {
+          setPendingAnnouncementId(null);
+        },
+        onHttpException: (response) => {
+          toast.error(
+            response.status === TOO_MANY_REQUESTS_STATUS
+              ? "Demasiados intentos, espera un momento."
+              : "No se pudo cerrar el aviso.",
+          );
 
-        return false;
-      },
-      onNetworkError: () => {
-        toast.error("No se pudo cerrar el aviso.");
+          return false;
+        },
+        onNetworkError: () => {
+          toast.error("No se pudo cerrar el aviso.");
 
-        return false;
-      },
-    }).catch(() => undefined);
-  };
+          return false;
+        },
+      }).catch(() => undefined);
+    },
+    [post, processing],
+  );
 
-  return {
-    dismissAnnouncement,
-    dismissingAnnouncementIds: pendingAnnouncementId === null ? [] : [pendingAnnouncementId],
-    visibleAnnouncements: announcements.filter(
-      (announcement) => !data.dismissedAnnouncementIds.includes(announcement.id),
-    ),
-  };
+  const dismissingAnnouncementIds = useMemo<number[]>(
+    () => (pendingAnnouncementId === null ? [] : [pendingAnnouncementId]),
+    [pendingAnnouncementId],
+  );
+
+  const visibleAnnouncements = useMemo<Announcement[]>(
+    () =>
+      announcements.filter(
+        (announcement) => !data.dismissedAnnouncementIds.includes(announcement.id),
+      ),
+    [announcements, data.dismissedAnnouncementIds],
+  );
+
+  return { dismissAnnouncement, dismissingAnnouncementIds, visibleAnnouncements };
 }
 
 /**
