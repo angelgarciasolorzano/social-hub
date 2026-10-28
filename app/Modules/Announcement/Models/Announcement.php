@@ -6,6 +6,7 @@ namespace App\Modules\Announcement\Models;
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
@@ -33,6 +34,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string $body
  * @property AnnouncementType $type
  * @property AnnouncementAudience $audience
+ * @property AnnouncementDisplay $display
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable|null $ends_at
  * @property string|null $button_label
@@ -53,6 +55,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
     'body',
     'type',
     'audience',
+    'display',
     'starts_at',
     'ends_at',
     'button_label',
@@ -103,6 +106,7 @@ class Announcement extends Model implements HasMedia
         return [
             'type' => AnnouncementType::class,
             'audience' => AnnouncementAudience::class,
+            'display' => AnnouncementDisplay::class,
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
             'is_dismissible' => 'boolean',

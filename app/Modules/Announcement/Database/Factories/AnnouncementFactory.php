@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Announcement\Database\Factories;
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\User\Models\User;
@@ -25,7 +26,7 @@ class AnnouncementFactory extends Factory
     protected $model = Announcement::class;
 
     /**
-     * Define the model's default state: an active, dismissible announcement for everyone, without a button.
+     * Define the model's default state: an active, dismissible toast for everyone, without a button.
      *
      * @return array<string, mixed>
      *
@@ -38,6 +39,7 @@ class AnnouncementFactory extends Factory
             'body' => '<p>'.fake()->paragraph().'</p>',
             'type' => fake()->randomElement(AnnouncementType::cases()),
             'audience' => AnnouncementAudience::All,
+            'display' => AnnouncementDisplay::Toast,
             'starts_at' => now()->subDays(random_int(1, 5)),
             'ends_at' => now()->addDays(random_int(1, 10)),
             'button_label' => null,
@@ -116,6 +118,16 @@ class AnnouncementFactory extends Factory
     {
         return $this->state(fn (): array => [
             'is_dismissible' => false,
+        ]);
+    }
+
+    /**
+     * An announcement shown as a dialog instead of a toast.
+     */
+    public function asDialog(): static
+    {
+        return $this->state(fn (): array => [
+            'display' => AnnouncementDisplay::Dialog,
         ]);
     }
 
