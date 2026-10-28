@@ -652,7 +652,7 @@ Estadísticas y descripciones del widget de actividad de usuarios a `admin/users
 
 ### TASK-028: Traducir la página de respaldos
 
-`BackupManagement`: título, navegación, encabezado, acciones de crear y descargar, la confirmación de contraseña y las notificaciones a `admin/backups.*` (con `getTitle()`/`getNavigationLabel()`). La vista `backup-management.blade.php` solo si tiene texto propio. Se agrega a la prueba un caso con `app()->setLocale('es')` que comprueba los textos en español; las aserciones en inglés existentes siguen pasando sin cambios.
+`BackupManagement`: título, grupo y etiqueta de navegación (con `getTitle()`, `getNavigationGroup()`, `getNavigationLabel()`) y la acción de crear respaldo a `admin/backups.*`. `BackupManagementService`: los errores de la descarga (respaldo no disponible, contraseña incorrecta, demasiados intentos) pasan de claves en inglés con `__()` a `admin/backups.errors.*`; el servicio solo lo usa esta página. La vista `backup-management.blade.php` no tiene texto propio y no se toca. Se agrega a la prueba un caso con `app()->setLocale('es')` que comprueba los textos en español; las aserciones en inglés existentes siguen pasando sin cambios.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -666,7 +666,7 @@ Estadísticas y descripciones del widget de actividad de usuarios a `admin/users
 **writeScope:**
 
 - `app/Modules/Admin/Filament/Pages/Backups/BackupManagement.php`
-- `app/Modules/Admin/UI/Views/filament/backups/backup-management.blade.php`
+- `app/Modules/Admin/Services/BackupManagementService.php`
 - `app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php`
 
 **validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Pages/Backups/BackupManagementTest.php`
