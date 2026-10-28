@@ -18,7 +18,8 @@ class ListAnnouncements extends ListRecords
     protected static string $resource = AnnouncementResource::class;
 
     /**
-     * Split the announcements by their schedule, with the same date rule the application uses to show them.
+     * Split the announcements by their schedule, with the same date rule the application uses to show them,
+     * plus the running dialogs with their count, so administrators notice how many interrupt users at once.
      *
      * @return array<string, Tab>
      */
@@ -29,6 +30,11 @@ class ListAnnouncements extends ListRecords
             'scheduled' => Tab::make('Scheduled')->modifyQueryUsing($this->onlyScheduled(...)),
             'active' => Tab::make('Active')->modifyQueryUsing($this->onlyRunning(...)),
             'expired' => Tab::make('Expired')->modifyQueryUsing($this->onlyEnded(...)),
+            'active_dialogs' => Tab::make('Active dialogs')
+                ->modifyQueryUsing($this->onlyRunningDialogs(...))
+                ->badge(Announcement::query()->running()->dialogs()->count())
+                ->badgeColor('warning')
+                ->badgeTooltip('Dialogs interrupt users until they close them'),
             'all' => Tab::make('All'),
         ];
     }
@@ -66,6 +72,15 @@ class ListAnnouncements extends ListRecords
     private function onlyRunning(Builder $query): Builder
     {
         return $query->running();
+    }
+
+    /**
+     * @param  Builder<Announcement>  $query
+     * @return Builder<Announcement>
+     */
+    private function onlyRunningDialogs(Builder $query): Builder
+    {
+        return $query->running()->dialogs();
     }
 
     /**
