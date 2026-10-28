@@ -202,6 +202,46 @@ class Announcement extends Model implements HasMedia
     }
 
     /**
+     * Limit the query to the announcements shown as a dialog.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function dialogs(Builder $builder): void
+    {
+        $builder->where('display', AnnouncementDisplay::Dialog);
+    }
+
+    /**
+     * Limit the query to the dialogs whose schedule crosses the given one (a missing end runs forever), leaving out
+     * the ones that already ended and the given announcement. Audiences are not compared: every pair of audiences
+     * shares viewers, since a signed-in user sees the announcements for everyone, for signed-in users and, without
+     * two-factor authentication, for users without it.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function dialogsOverlapping(
+        Builder $builder,
+        CarbonImmutable $startsAt,
+        ?CarbonImmutable $endsAt,
+        ?int $exceptId = null,
+    ): void {
+        $now = now();
+
+        $this->dialogs($builder);
+
+        $builder
+            ->where(fn (Builder $builder): Builder => $builder
+                ->whereNull('ends_at')
+                ->orWhere(fn (Builder $builder): Builder => $builder
+                    ->where('ends_at', '>', $startsAt)
+                    ->where('ends_at', '>', $now)))
+            ->when($endsAt instanceof CarbonImmutable, fn (Builder $builder): Builder => $builder->where('starts_at', '<', $endsAt))
+            ->when($exceptId !== null, fn (Builder $builder): Builder => $builder->whereKeyNot($exceptId));
+    }
+
+    /**
      * Limit the query to the announcements running now for the given visitor's audience,
      * whether or not they dismissed them.
      *
