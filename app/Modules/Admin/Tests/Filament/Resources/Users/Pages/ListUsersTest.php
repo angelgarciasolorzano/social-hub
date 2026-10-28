@@ -138,7 +138,7 @@ it('renders a users profile picture with descriptive alt text', function (): voi
     listUsersPageForTesting()
         ->assertSee($targetUser->name)
         ->assertSeeHtml('src="'.$profilePictureUrl.'"')
-        ->assertSeeHtml('alt="Profile picture of '.$targetUser->name.'"');
+        ->assertSeeHtml('alt="Profile picture of '.e($targetUser->name).'"');
 });
 
 it('uses the configured profile picture fallback with descriptive alt text', function (): void {
@@ -155,7 +155,7 @@ it('uses the configured profile picture fallback with descriptive alt text', fun
     listUsersPageForTesting()
         ->assertSee($targetUser->name)
         ->assertSeeHtml('src="'.url(User::DEFAULT_PROFILE_PICTURE_PATH).'"')
-        ->assertSeeHtml('alt="Profile picture of '.$targetUser->name.'"');
+        ->assertSeeHtml('alt="Profile picture of '.e($targetUser->name).'"');
 });
 
 it('eager loads profile media in one query regardless of the user page size', function (): void {
