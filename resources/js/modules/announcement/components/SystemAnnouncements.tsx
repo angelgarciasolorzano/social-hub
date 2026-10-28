@@ -16,16 +16,20 @@ const announcementToasterStyle = { "--width": "min(40rem, calc(100vw - 2rem))" }
 
 interface SystemAnnouncementsProps {
   initialAnnouncements: Announcement[];
+  initialIsAuthenticated: boolean;
 }
 
-function SystemAnnouncements({ initialAnnouncements }: SystemAnnouncementsProps): JSX.Element {
-  const { dismissAnnouncement, dismissingAnnouncementIds, visibleAnnouncements } =
-    useAnnouncementDismiss(initialAnnouncements);
+function SystemAnnouncements({
+  initialAnnouncements,
+  initialIsAuthenticated,
+}: SystemAnnouncementsProps): JSX.Element {
+  const { closeAnnouncement, dismissingAnnouncementIds, toastAnnouncements } =
+    useAnnouncementDismiss(initialAnnouncements, initialIsAuthenticated);
   const shownToastIdsRef = useRef<Set<string>>(new Set<string>());
 
   useEffect(() => {
     const visibleToastIds = new Set<string>(
-      visibleAnnouncements.map((announcement) => announcementToastId(announcement)),
+      toastAnnouncements.map((announcement) => announcementToastId(announcement)),
     );
 
     for (const shownToastId of shownToastIdsRef.current) {
@@ -34,13 +38,13 @@ function SystemAnnouncements({ initialAnnouncements }: SystemAnnouncementsProps)
       }
     }
 
-    for (const announcement of [...visibleAnnouncements].reverse()) {
+    for (const announcement of [...toastAnnouncements].reverse()) {
       toast.custom(
         () => (
           <AnnouncementToast
             announcement={announcement}
             isDismissing={dismissingAnnouncementIds.includes(announcement.id)}
-            onDismiss={dismissAnnouncement}
+            onDismiss={closeAnnouncement}
           />
         ),
         {
@@ -53,7 +57,7 @@ function SystemAnnouncements({ initialAnnouncements }: SystemAnnouncementsProps)
     }
 
     shownToastIdsRef.current = visibleToastIds;
-  }, [dismissAnnouncement, dismissingAnnouncementIds, visibleAnnouncements]);
+  }, [closeAnnouncement, dismissingAnnouncementIds, toastAnnouncements]);
 
   return (
     <Toaster
