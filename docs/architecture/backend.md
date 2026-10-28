@@ -87,7 +87,7 @@ Para tener datos de prueba, `ActivityLogSeeder` (`app/Modules/ActivityLog/Databa
 - **Aplicación.** `HandleInertiaRequests` comparte la prop `announcements` (lazy, serializada por `AnnouncementBannerResource`, sin autor, audiencia ni fechas), y `POST announcements/{announcement}/dismiss` guarda el descarte con `insertOrIgnore`, autorizado por la policy y con throttle propio.
 - **Panel.** `Filament/Resources/Announcements/` tiene listado con pestañas, creación, detalle y edición, más las acciones de vista previa, duplicar y despublicar; la imagen usa el plugin oficial `filament/spatie-laravel-media-library-plugin`.
 
-`AnnouncementSeeder` siembra cinco anuncios de ejemplo con la factory, sin pasar por el servicio para no escribir en `activity_log` antes de `ActivityLogSeeder`. El detalle completo está en CLAUDE.md.
+`AnnouncementSeeder` siembra con la factory unos 23 anuncios con historia en los últimos días: cinco fijos que cubren cada caso del banner, quince de ejemplo con un estado al azar (vigente, programado, vencido o despublicado), algunos editados, y tres duplicados. No pasa por el servicio para no escribir en `activity_log` antes de tiempo: `ActivityLogSeeder` deriva después la auditoría (`created`, `duplicated`, `updated` y `unpublished`) de las fechas de cada fila, como hace con las suspensiones. El detalle completo está en CLAUDE.md.
 
 ## 1. Convención de nomenclatura
 

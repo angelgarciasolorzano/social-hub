@@ -17,16 +17,27 @@ it('seeds at least one scheduled, one running and one expired announcement', fun
         ->and(Announcement::query()->ended()->count())->toBeGreaterThanOrEqual(1);
 });
 
-it('seeds a running announcement with a working button for users without two-factor', function (): void {
+it('seeds the running announcement for users without two-factor with a button', function (): void {
     $this->seed(AnnouncementSeeder::class);
 
-    $announcement = Announcement::query()
-        ->running()
-        ->where('audience', AnnouncementAudience::WithoutTwoFactor)
-        ->whereNotNull('button_url')
-        ->sole();
+    $announcement = Announcement::query()->where('title', AnnouncementSeeder::TWO_FACTOR_TITLE)->sole();
 
-    $this->actingAs(createUser())->get((string) $announcement->button_url)->assertRedirect();
+    expect($announcement->isRunning())->toBeTrue()
+        ->and($announcement->audience)->toBe(AnnouncementAudience::WithoutTwoFactor)
+        ->and($announcement->button_url)->toBe('/setting/two-factor-authentication');
+});
+
+it('points every internal button to an existing page', function (): void {
+    $this->seed(AnnouncementSeeder::class);
+    $this->actingAs(createUser());
+
+    $announcements = Announcement::query()->where('button_url', 'like', '/%')->get();
+
+    expect($announcements)->not->toBeEmpty();
+
+    foreach ($announcements as $announcement) {
+        expect($this->get((string) $announcement->button_url)->status())->not->toBe(404);
+    }
 });
 
 it('seeds a running announcement that users cannot dismiss', function (): void {
