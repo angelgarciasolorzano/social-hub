@@ -43,10 +43,12 @@ export function useAnnouncementDismiss(
 ): UseAnnouncementDismissReturn {
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(initialIsAuthenticated);
+
   const [locallyClosedIds, setLocallyClosedIds] = useState<number[]>(() => [
     ...readGuestDismissedIds(),
     ...readSessionDismissedIds(),
   ]);
+
   const [pendingAnnouncementId, setPendingAnnouncementId] = useState<null | number>(null);
 
   const { data, post, processing } = useHttp<DismissedAnnouncements, { dismissed: boolean }>({

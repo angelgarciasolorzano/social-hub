@@ -58,6 +58,7 @@ class ActivityLogSeeder extends Seeder
         ['title', 'body'],
         ['ends_at'],
         ['button_label', 'button_url'],
+        ['display'],
     ];
 
     /**

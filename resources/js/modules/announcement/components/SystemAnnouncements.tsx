@@ -92,6 +92,7 @@ function SystemAnnouncements({
         toastOptions={{ className: "w-(--width)", unstyled: true }}
         visibleToasts={MAX_VISIBLE_ANNOUNCEMENTS}
       />
+
       {shownDialogAnnouncement !== undefined && (
         <AnnouncementDialog
           announcement={shownDialogAnnouncement}

@@ -7,6 +7,8 @@ use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Database\Seeders\AnnouncementSeeder;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 
 it('seeds at least one scheduled, one running and one expired announcement', function (): void {
@@ -25,6 +27,23 @@ it('seeds the running announcement for users without two-factor with a button', 
     expect($announcement->isRunning())->toBeTrue()
         ->and($announcement->audience)->toBe(AnnouncementAudience::WithoutTwoFactor)
         ->and($announcement->button_url)->toBe('/setting/two-factor-authentication');
+});
+
+it('shows the announcement for users without two-factor as a dialog and keeps running toasts', function (): void {
+    $this->seed(AnnouncementSeeder::class);
+
+    expect(Announcement::query()->where('title', AnnouncementSeeder::TWO_FACTOR_TITLE)->sole()->display)->toBe(AnnouncementDisplay::Dialog)
+        ->and(Announcement::query()->running()->where('display', AnnouncementDisplay::Toast)->exists())->toBeTrue();
+});
+
+it('shows every critical sample as a dialog and every other one as a toast', function (): void {
+    $this->seed(AnnouncementSeeder::class);
+
+    $mismatched = Announcement::query()
+        ->get()
+        ->filter(fn (Announcement $announcement): bool => ($announcement->type === AnnouncementType::Critical) !== ($announcement->display === AnnouncementDisplay::Dialog));
+
+    expect($mismatched)->toBeEmpty();
 });
 
 it('points every internal button to an existing page', function (): void {
