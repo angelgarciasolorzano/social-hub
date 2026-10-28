@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Announcements\Schemas;
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use Carbon\CarbonImmutable;
 use Closure;
+use DateTimeInterface;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -16,7 +21,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 
 class AnnouncementForm
 {
@@ -64,20 +71,47 @@ class AnnouncementForm
                             ->label('Type')
                             ->options(self::typeOptions())
                             ->default(AnnouncementType::Info->value)
-                            ->required(),
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set, mixed $state): void {
+                                if (! $get->boolean('display_was_chosen')) {
+                                    $set('display', self::suggestedDisplay($state)->value);
+                                }
+                            }),
                         Select::make('audience')
                             ->label('Audience')
                             ->options(self::audienceOptions())
                             ->default(AnnouncementAudience::All->value)
                             ->required(),
+                        Radio::make('display')
+                            ->label('Show as')
+                            ->options(self::displayOptions())
+                            ->descriptions(self::displayDescriptions())
+                            ->default(AnnouncementDisplay::Toast->value)
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function (Set $set): void {
+                                $set('display_was_chosen', true);
+                            })
+                            ->hint(fn (Get $get, ?Announcement $record): ?string => self::overlappingDialogsHint($get, $record))
+                            ->hintIcon(fn (Get $get, ?Announcement $record): ?Heroicon => self::overlappingDialogsHint($get, $record) === null ? null : Heroicon::ExclamationTriangle)
+                            ->hintColor('warning'),
+                        Hidden::make('display_was_chosen')
+                            ->default(false)
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function (Hidden $hidden, ?Announcement $record): void {
+                                $hidden->state($record instanceof Announcement);
+                            }),
                         DateTimePicker::make('starts_at')
                             ->label('Starts at')
                             ->default(now())
-                            ->required(),
+                            ->required()
+                            ->live(onBlur: true),
                         DateTimePicker::make('ends_at')
                             ->label('Ends at')
                             ->helperText('Leave empty to keep it until it is unpublished.')
-                            ->after('starts_at'),
+                            ->after('starts_at')
+                            ->live(onBlur: true),
                         Toggle::make('is_dismissible')
                             ->label('Users can dismiss it')
                             ->default(true),
@@ -137,6 +171,79 @@ class AnnouncementForm
                 $fail('The link must start with https:// or be a path of this site starting with /.');
             }
         };
+    }
+
+    /**
+     * The presentation suggested for a type until the administrator picks one: a dialog for critical
+     * announcements, a toast for the rest.
+     */
+    private static function suggestedDisplay(mixed $type): AnnouncementDisplay
+    {
+        $announcementType = $type instanceof AnnouncementType ? $type : AnnouncementType::tryFrom(\is_string($type) ? $type : '');
+
+        return $announcementType === AnnouncementType::Critical ? AnnouncementDisplay::Dialog : AnnouncementDisplay::Toast;
+    }
+
+    /**
+     * A warning about the other dialogs whose schedule crosses this one, so administrators avoid stacking
+     * interruptions; it never blocks saving.
+     */
+    private static function overlappingDialogsHint(Get $get, ?Announcement $record): ?string
+    {
+        $display = $get('display');
+        $isDialog = $display === AnnouncementDisplay::Dialog || $display === AnnouncementDisplay::Dialog->value;
+        $startsAt = self::dateFrom($get('starts_at'));
+
+        if (! $isDialog || ! $startsAt instanceof CarbonImmutable) {
+            return null;
+        }
+
+        $overlappingDialogs = Announcement::query()
+            ->dialogsOverlapping($startsAt, self::dateFrom($get('ends_at')), $record?->id)
+            ->count();
+
+        return match ($overlappingDialogs) {
+            0 => null,
+            1 => '1 other dialog is shown in the same period.',
+            default => "{$overlappingDialogs} other dialogs are shown in the same period.",
+        };
+    }
+
+    private static function dateFrom(mixed $value): ?CarbonImmutable
+    {
+        if ($value instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($value);
+        }
+
+        return \is_string($value) && $value !== '' ? CarbonImmutable::parse($value) : null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function displayOptions(): array
+    {
+        $displayOptions = [];
+
+        foreach (AnnouncementDisplay::cases() as $announcementDisplay) {
+            $displayOptions[$announcementDisplay->value] = $announcementDisplay->label();
+        }
+
+        return $displayOptions;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function displayDescriptions(): array
+    {
+        $displayDescriptions = [];
+
+        foreach (AnnouncementDisplay::cases() as $announcementDisplay) {
+            $displayDescriptions[$announcementDisplay->value] = $announcementDisplay->description();
+        }
+
+        return $displayDescriptions;
     }
 
     /**

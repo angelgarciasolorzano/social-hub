@@ -10,6 +10,7 @@ use App\Modules\Admin\Filament\Resources\Announcements\Pages\EditAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use Livewire\Features\SupportTesting\Testable;
@@ -171,5 +172,25 @@ describe('with the announcements manager role', function (): void {
 
         expect(Announcement::query()->whereKey($announcement->id)->exists())->toBeFalse()
             ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementDeleted))->toHaveCount(1);
+    });
+
+    it('keeps the saved presentation when the type changes while editing', function (): void {
+        $announcement = editAnnouncementFactory()->asDialog()->ofType(AnnouncementType::Critical)->createOne();
+
+        editAnnouncementPage($announcement)
+            ->assertSet('data.display', AnnouncementDisplay::Dialog->value)
+            ->set('data.type', AnnouncementType::Info->value)
+            ->assertSet('data.display', AnnouncementDisplay::Dialog->value)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($announcement->refresh()->display)->toBe(AnnouncementDisplay::Dialog)
+            ->and($announcement->type)->toBe(AnnouncementType::Info);
+    });
+
+    it('does not count the announcement being edited as an overlapping dialog', function (): void {
+        $announcement = editAnnouncementFactory()->asDialog()->createOne(['ends_at' => null]);
+
+        editAnnouncementPage($announcement)->assertDontSee('other dialog');
     });
 });
