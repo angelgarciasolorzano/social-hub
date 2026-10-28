@@ -12,7 +12,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Attributes\Controllers\Authorize;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 
 class AnnouncementDismissalController extends Controller
 {
@@ -41,18 +40,19 @@ class AnnouncementDismissalController extends Controller
 
     /**
      * Store the announcements a guest closed in this browser before signing in. Only the ones the user may still
-     * dismiss are kept; the rest may have ended or changed since, so they are skipped without an error.
+     * dismiss are kept, in one query with the same rule as `AnnouncementPolicy::dismiss`; the rest may have ended or
+     * changed since, so they are skipped without an error.
      */
     public function sync(AnnouncementDismissalSyncRequest $announcementDismissalSyncRequest): JsonResponse
     {
         $user = $this->authenticatedUser($announcementDismissalSyncRequest);
 
         $dismissedIds = Announcement::query()
+            ->dismissibleBy($user)
             ->whereKey($announcementDismissalSyncRequest->announcementIds())
-            ->get()
-            ->filter(fn (Announcement $announcement): bool => Gate::forUser($user)->allows('dismiss', $announcement))
+            ->orderBy('id')
+            ->get(['id'])
             ->map(fn (Announcement $announcement): int => $announcement->id)
-            ->values()
             ->all();
 
         $this->storeDismissals($user, $dismissedIds);

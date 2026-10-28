@@ -3,8 +3,8 @@ import { useEffect, useRef } from "react";
 import { useHttp } from "@inertiajs/react";
 
 import {
-  clearGuestDismissedIds,
   readGuestDismissedIds,
+  removeGuestDismissedIds,
 } from "@/modules/announcement/utils/announcementDismissalStorage";
 
 import { sync } from "@/shared/wayfinder/actions/App/Modules/Announcement/Controllers/AnnouncementDismissalController";
@@ -17,7 +17,8 @@ interface DismissalSync {
 
 /**
  * Once a guest signs in, send the announcements they closed in this browser so they stay closed on every device.
- * It runs once per sign-in, and a failed request keeps the list for the next page load without bothering the user.
+ * It runs once per sign-in with at most 20 ids; any beyond them stay stored for the next sign-in, and a failed request
+ * keeps the list for the next page load without bothering the user.
  *
  * @param isAuthenticated Whether the current page has a signed-in user.
  */
@@ -46,7 +47,7 @@ export function useGuestDismissalSync(isAuthenticated: boolean): void {
 
     post(sync().url, {
       onSuccess: () => {
-        clearGuestDismissedIds();
+        removeGuestDismissedIds(guestDismissedIds);
       },
       onHttpException: () => false,
       onNetworkError: () => false,

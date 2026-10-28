@@ -8,6 +8,7 @@ use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Requests\AnnouncementDismissalSyncRequest;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -83,6 +84,27 @@ it('stores only the announcements the user may still dismiss and answers their i
         ->assertExactJson(['dismissed' => [$announcement->id]]);
 
     expect(dismissedAnnouncementIdsOf($user))->toBe([$announcement->id]);
+});
+
+it('filters every synced announcement in a single query', function (): void {
+    $user = createUser();
+    $announcementIds = syncAnnouncementFactory()
+        ->createMany(AnnouncementDismissalSyncRequest::MAX_ANNOUNCEMENT_IDS)
+        ->map(fn (Announcement $announcement): int => $announcement->id)
+        ->all();
+    $announcementQueries = 0;
+
+    DB::listen(function (QueryExecuted $queryExecuted) use (&$announcementQueries): void {
+        if (str_contains($queryExecuted->sql, 'from `announcements`')) {
+            $announcementQueries++;
+        }
+    });
+
+    syncDismissalsAs($this, $user, ['announcement_ids' => $announcementIds])
+        ->assertOk()
+        ->assertExactJson(['dismissed' => $announcementIds]);
+
+    expect($announcementQueries)->toBe(1);
 });
 
 it('keeps a single dismissal when the sync is repeated or the announcement was already dismissed', function (): void {

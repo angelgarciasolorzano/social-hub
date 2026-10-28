@@ -260,6 +260,19 @@ class Announcement extends Model implements HasMedia
     }
 
     /**
+     * Limit the query to the announcements the given user may dismiss: dismissible and available to them.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function dismissibleBy(Builder $builder, User $user): void
+    {
+        $this->availableTo($builder, $user);
+
+        $builder->where('is_dismissible', true);
+    }
+
+    /**
      * Limit the query to the announcements the given visitor should see now, the most severe first:
      * available to them and not dismissed by them.
      *

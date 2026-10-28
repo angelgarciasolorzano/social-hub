@@ -27,15 +27,24 @@ export function addGuestDismissedId(announcementId: number): boolean {
 }
 
 /**
- * Forget the guest's closes once the server has stored them.
+ * Forget the guest's closes the server has stored, keeping any that were not sent yet.
  *
- * @returns Whether the list was removed.
+ * @param announcementIds Ids that were sent to the server.
+ * @returns Whether the stored list was updated.
  */
-export function clearGuestDismissedIds(): boolean {
+export function removeGuestDismissedIds(announcementIds: number[]): boolean {
+  const pendingIds = readGuestDismissedIds().filter(
+    (storedId) => !announcementIds.includes(storedId),
+  );
+
   try {
     const storage = storageOf("local");
 
-    storage?.removeItem(GUEST_DISMISSED_KEY);
+    if (pendingIds.length === 0) {
+      storage?.removeItem(GUEST_DISMISSED_KEY);
+    } else {
+      storage?.setItem(GUEST_DISMISSED_KEY, JSON.stringify(pendingIds));
+    }
 
     return storage !== null;
   } catch {

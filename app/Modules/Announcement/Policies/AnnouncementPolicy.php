@@ -80,6 +80,6 @@ final class AnnouncementPolicy
     public function dismiss(User $authenticatedUser, Announcement $announcement): bool
     {
         return $announcement->is_dismissible
-            && Announcement::query()->availableTo($authenticatedUser)->whereKey($announcement->getKey())->exists();
+            && Announcement::query()->dismissibleBy($authenticatedUser)->whereKey($announcement->getKey())->exists();
     }
 }
