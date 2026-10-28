@@ -8,10 +8,13 @@ use App\Modules\Admin\Console\Commands\AdminBootstrapCommand;
 use App\Modules\Admin\Console\Commands\AdminRolePermissionsCommand;
 use App\Modules\Admin\Console\Commands\AdminUserRoleCommand;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
+use App\Modules\Admin\Listeners\StoreAdminPreferredLocale;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
+use BezhanSalleh\LanguageSwitch\Events\LocaleChanged;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
 
@@ -43,6 +46,8 @@ class AdminServiceProvider extends ServiceProvider
         $this->registerBackupSchedule();
 
         $this->configureLanguageSwitch();
+
+        Event::listen(LocaleChanged::class, StoreAdminPreferredLocale::class);
     }
 
     /**
