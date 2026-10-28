@@ -109,11 +109,16 @@ class AnnouncementForm
     }
 
     /**
-     * Whether the link is an https address or a path of this site; anything else, such as
-     * `javascript:` or a protocol-relative `//host`, could send users somewhere unsafe.
+     * Whether the link is an https address or a path of this site without spaces or control characters;
+     * anything else, such as `javascript:`, `//host` or `/\t/host`, could send users somewhere unsafe.
      */
     public static function isAllowedButtonUrl(string $url): bool
     {
+        // Browsers drop tabs and line breaks while parsing a URL, so `/\t/evil.com` would become `//evil.com`.
+        if (preg_match('/[\x00-\x20\x7F]/', $url) === 1) {
+            return false;
+        }
+
         if (str_starts_with($url, '/')) {
             return ! str_starts_with($url, '//') && ! str_contains($url, '\\');
         }

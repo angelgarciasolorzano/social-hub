@@ -63,6 +63,10 @@ function invalidAnnouncementFormOverrides(string $invalidCase): array
         'javascript link' => [...$withButton, 'button_url' => 'javascript:alert(1)'],
         'http link' => [...$withButton, 'button_url' => 'http://example.com'],
         'protocol-relative link' => [...$withButton, 'button_url' => '//evil.example.com'],
+        'tab inside a path' => [...$withButton, 'button_url' => "/\t/evil.example.com"],
+        'line break inside a path' => [...$withButton, 'button_url' => "/\n/evil.example.com"],
+        'space inside a path' => [...$withButton, 'button_url' => '/ /evil.example.com'],
+        'tab inside an https link' => [...$withButton, 'button_url' => "https://example.com/\testado"],
         default => throw new InvalidArgumentException("Unknown invalid case {$invalidCase}."),
     };
 }
@@ -150,6 +154,10 @@ describe('with the announcements manager role', function (): void {
         'javascript link' => ['javascript link', 'button_url'],
         'http link' => ['http link', 'button_url'],
         'protocol-relative link' => ['protocol-relative link', 'button_url'],
+        'tab inside a path' => ['tab inside a path', 'button_url'],
+        'line break inside a path' => ['line break inside a path', 'button_url'],
+        'space inside a path' => ['space inside a path', 'button_url'],
+        'tab inside an https link' => ['tab inside an https link', 'button_url'],
     ]);
 
     it('ignores the button fields once has button is switched off', function (): void {
