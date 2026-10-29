@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Announcement\Enums;
 
+use App\Support\Translation\TranslatedText;
+
 enum AnnouncementType: string
 {
     case Info = 'info';
@@ -13,15 +15,11 @@ enum AnnouncementType: string
     case Critical = 'critical';
 
     /**
-     * Readable name shown in the admin panel.
+     * Readable name shown in the admin panel, in the panel's current language.
      */
     public function label(): string
     {
-        return match ($this) {
-            self::Info => 'Information',
-            self::Warning => 'Warning',
-            self::Critical => 'Critical',
-        };
+        return TranslatedText::of('admin/announcements.options.type.'.$this->value);
     }
 
     /**

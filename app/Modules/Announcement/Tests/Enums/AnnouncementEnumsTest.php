@@ -42,3 +42,41 @@ it('gives every case a readable label', function (AnnouncementType|AnnouncementA
     'toast' => [AnnouncementDisplay::Toast, 'Toast'],
     'dialog' => [AnnouncementDisplay::Dialog, 'Dialog'],
 ]);
+
+it('returns announcement type labels in the selected locale', function (string $locale, AnnouncementType $announcementType, string $label): void {
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        expect($announcementType->label())->toBe($label);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'info in English' => ['en', AnnouncementType::Info, 'Information'],
+    'warning in English' => ['en', AnnouncementType::Warning, 'Warning'],
+    'critical in English' => ['en', AnnouncementType::Critical, 'Critical'],
+    'info in Spanish' => ['es', AnnouncementType::Info, 'Información'],
+    'warning in Spanish' => ['es', AnnouncementType::Warning, 'Advertencia'],
+    'critical in Spanish' => ['es', AnnouncementType::Critical, 'Crítico'],
+]);
+
+it('returns announcement audience labels in the selected locale', function (string $locale, AnnouncementAudience $announcementAudience, string $label): void {
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        expect($announcementAudience->label())->toBe($label);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'everyone in English' => ['en', AnnouncementAudience::All, 'Everyone'],
+    'signed-in users in English' => ['en', AnnouncementAudience::Authenticated, 'Signed-in users'],
+    'users without two-factor in English' => ['en', AnnouncementAudience::WithoutTwoFactor, 'Users without two-factor authentication'],
+    'everyone in Spanish' => ['es', AnnouncementAudience::All, 'Todos'],
+    'signed-in users in Spanish' => ['es', AnnouncementAudience::Authenticated, 'Usuarios con sesión iniciada'],
+    'users without two-factor in Spanish' => ['es', AnnouncementAudience::WithoutTwoFactor, 'Usuarios sin autenticación en dos pasos'],
+]);
