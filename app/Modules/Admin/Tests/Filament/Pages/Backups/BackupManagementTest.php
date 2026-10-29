@@ -445,3 +445,72 @@ it('rejects an incorrect download password with a Spanish message', function ():
     expect(fn () => resolve(BackupManagementService::class)->downloadBackup($user, $filename, 'not-the-password'))
         ->toThrow(ValidationException::class, 'La contraseña es incorrecta.');
 });
+
+it('shows the destination, retention and backups table in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $user->saveAppAuthenticationSecret('filament-test-secret');
+
+    config()->set('filesystems.disks.backups.bucket', 'social-hub-backups');
+    config()->set('filesystems.disks.backups.endpoint', 'http://localhost:4566');
+    Storage::fake('backups');
+
+    storeBackupArchive((new RunDatabaseBackup)->filename, 'backup archive');
+
+    $this->get(BackupManagement::getUrl(isAbsolute: false).'?locale=es')
+        ->assertOk()
+        ->assertSeeText('Destino de los respaldos')
+        ->assertSeeText('Estado')
+        ->assertSeeText('En buen estado')
+        ->assertSeeText('Proveedor de almacenamiento')
+        ->assertSeeText('Almacenamiento compatible con S3')
+        ->assertSeeText('Privado')
+        ->assertSeeText('Política de retención')
+        ->assertSeeText('Todos los respaldos')
+        ->assertSeeText('7 días')
+        ->assertSeeText('4 semanas')
+        ->assertSeeText('6 meses')
+        ->assertDontSeeText('Backup destination');
+
+    backupManagementPageForTesting()
+        ->assertSeeText('Respaldos')
+        ->assertSeeText('Archivo')
+        ->assertSeeText('Tamaño')
+        ->assertSeeText('Disponibilidad')
+        ->assertSeeText('Disponible')
+        ->assertDontSeeText('Availability');
+});
+
+it('shows the empty backups table and the download password prompt in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
+    Storage::fake('backups');
+
+    backupManagementPageForTesting()
+        ->assertSeeText('Aún no hay respaldos')
+        ->assertSeeText('Un respaldo de la base de datos aparecerá aquí después de la primera ejecución.');
+
+    $filename = (new RunDatabaseBackup)->filename;
+    storeBackupArchive($filename, 'backup archive');
+
+    $testable = backupManagementPageForTesting()
+        ->assertSeeText('Descargar')
+        ->call('mountTableAction', 'downloadBackup', $filename);
+
+    $testable->__call('assertMountedActionModalSee', [[
+        'Confirma tu contraseña para descargar este respaldo',
+        'Contraseña actual',
+        'Descargar respaldo',
+    ]]);
+});

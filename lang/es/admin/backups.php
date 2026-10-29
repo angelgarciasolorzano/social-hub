@@ -67,6 +67,13 @@ return [
         'all_checks_passed' => 'Todas las comprobaciones configuradas de los respaldos pasaron.',
         'checks_failed' => 'Una o más comprobaciones configuradas de los respaldos fallaron.',
         'not_configured' => 'Sin configurar',
+        'providers' => [
+            's3_compatible' => 'Almacenamiento compatible con S3',
+        ],
+        'visibilities' => [
+            'private' => 'Privado',
+            'public' => 'Público',
+        ],
     ],
 
     'retention' => [

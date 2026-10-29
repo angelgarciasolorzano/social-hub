@@ -67,6 +67,13 @@ return [
         'all_checks_passed' => 'All configured backup health checks passed.',
         'checks_failed' => 'One or more configured backup health checks failed.',
         'not_configured' => 'Not configured',
+        'providers' => [
+            's3_compatible' => 'S3-compatible storage',
+        ],
+        'visibilities' => [
+            'private' => 'Private',
+            'public' => 'Public',
+        ],
     ],
 
     'retention' => [

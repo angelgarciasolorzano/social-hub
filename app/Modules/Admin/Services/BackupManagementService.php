@@ -256,7 +256,7 @@ final readonly class BackupManagementService
         $retention = $spatieBackupConfig->cleanup->defaultStrategy;
 
         return new BackupDestinationData(
-            provider: \is_string($endpoint) && $endpoint !== '' ? 'S3-compatible storage' : 'Amazon S3',
+            provider: \is_string($endpoint) && $endpoint !== '' ? TranslatedText::of('admin/backups.destination.providers.s3_compatible') : 'Amazon S3',
             bucket: \is_string($bucket) ? $bucket : null,
             prefix: $spatieBackupConfig->backup->name,
             region: \is_string($region) ? $region : null,
