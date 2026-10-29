@@ -10,6 +10,7 @@ use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Filament\Infolists\Components\Entry;
 use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -109,6 +110,37 @@ it('uses a compact profile fallback and explains when no cover image has been ad
         ->and($components['cover_image']->getState())->toBeNull()
         ->and($components['cover_image_status']->getState())->toBe('Not added')
         ->and($detail['html'])->not->toContain(url(User::DEFAULT_COVER_IMAGE_PATH));
+});
+
+it('shows the user detail in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $targetUser = createUser();
+    $targetUser->forceFill(['last_login_at' => null])->save();
+
+    $detail = renderUserDetailAsAuthorizedAdmin($this, $targetUser);
+    $components = $detail['components'];
+    $emailVerificationEntry = $components['email_verification_status'];
+
+    throw_unless($emailVerificationEntry instanceof TextEntry, LogicException::class, 'The email verification entry must be a text entry.');
+
+    expect($components['cover_image_status']->getState())->toBe('Sin agregar')
+        ->and($emailVerificationEntry->getState())->toBe('Verificado')
+        ->and($emailVerificationEntry->getColor($emailVerificationEntry->getState()))->toBe('success')
+        ->and($detail['html'])
+        ->toContain('Perfil')
+        ->toContain('Identidad e imágenes de perfil de este usuario.')
+        ->toContain('Nombre completo')
+        ->toContain('Correo electrónico')
+        ->toContain('Imagen de portada')
+        ->toContain('Actividad de la cuenta')
+        ->toContain('Estado de la cuenta')
+        ->toContain('Activa')
+        ->toContain('Verificación del correo')
+        ->toContain('Cuenta creada')
+        ->toContain('Último inicio de sesión')
+        ->toContain('Nunca ha iniciado sesión')
+        ->not->toContain('Account activity');
 });
 
 it('does not expose two factor secrets on the user detail page', function (): void {
