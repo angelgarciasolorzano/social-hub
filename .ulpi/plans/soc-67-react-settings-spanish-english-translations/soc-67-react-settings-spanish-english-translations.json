@@ -962,7 +962,7 @@
     {
       "id": "TASK-013",
       "title": "Registrar los catálogos en las páginas de Perfil, Dispositivos y Apariencia",
-      "description": "Inyectar `FrontendTranslations` en `TrustedDeviceIndexController` (`setting/common`, `setting/trusted-devices`, `setting/trusted-device-dialogs`), `AccountSettingsController::edit` (`setting/common`, `setting/account-settings`) y `PreferenceController` (`setting/common`, solo para el sidebar; la página Apariencia sigue fuera de alcance).",
+      "description": "Inyectar `FrontendTranslations` en `TrustedDeviceIndexController` (`setting/common`, `setting/trusted-devices`, `setting/trusted-device-dialogs`), `AccountSettingsController::edit` (`setting/common`, `setting/account-settings`; además su flash de `update()`, 'Datos actualizados correctamente.', pasa a `TranslatedText::of('setting/account-settings.messages.profile_updated')`) y `PreferenceController` (`setting/common`, solo para el sidebar; la página Apariencia sigue fuera de alcance).",
       "priority": "P1",
       "type": "feature",
       "effort": "S",

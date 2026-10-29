@@ -304,7 +304,7 @@ Crear `lang/en/validation.php` (copia del de `laravel/framework` de la versión 
 
 ### TASK-013: Registrar los catálogos en las páginas de Perfil, Dispositivos y Apariencia
 
-Inyectar `FrontendTranslations` en `TrustedDeviceIndexController` (`setting/common`, `setting/trusted-devices`, `setting/trusted-device-dialogs`), `AccountSettingsController::edit` (`setting/common`, `setting/account-settings`) y `PreferenceController` (`setting/common`, solo para el sidebar; la página Apariencia sigue fuera de alcance).
+Inyectar `FrontendTranslations` en `TrustedDeviceIndexController` (`setting/common`, `setting/trusted-devices`, `setting/trusted-device-dialogs`), `AccountSettingsController::edit` (`setting/common`, `setting/account-settings`; además su flash de `update()`, 'Datos actualizados correctamente.', pasa a `TranslatedText::of('setting/account-settings.messages.profile_updated')`) y `PreferenceController` (`setting/common`, solo para el sidebar; la página Apariencia sigue fuera de alcance).
 
 **Type:** feature · **Priority:** P1 · **Effort:** S · **Agent:** `laravel-senior-engineer` · **Review:** claude
 
