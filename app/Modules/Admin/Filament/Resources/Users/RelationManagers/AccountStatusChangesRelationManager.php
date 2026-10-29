@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\RelationManagers;
 
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Filament\Facades\Filament;
@@ -26,7 +27,10 @@ class AccountStatusChangesRelationManager extends RelationManager
     protected static string $relationship = 'accountStatusChanges';
 
     #[Override]
-    protected static ?string $title = 'Status history';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return TranslatedText::of('admin/users.relations.status_history.title');
+    }
 
     #[Override]
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
@@ -48,19 +52,19 @@ class AccountStatusChangesRelationManager extends RelationManager
             ->loadingSkeleton()
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('Date')
+                    ->label(TranslatedText::of('admin/common.fields.date'))
                     ->dateTime(),
                 TextColumn::make('status')
-                    ->label('Status')
+                    ->label(TranslatedText::of('admin/common.fields.status'))
                     ->badge()
                     ->formatStateUsing(fn (AccountStatus $state): string => self::accountStatusLabel($state))
                     ->color(fn (AccountStatus $state): string => self::accountStatusColor($state)),
                 TextColumn::make('reason')
-                    ->label('Reason')
+                    ->label(TranslatedText::of('admin/common.fields.reason'))
                     ->wrap(),
                 TextColumn::make('changedBy.name')
-                    ->label('Changed by')
-                    ->placeholder('Deleted user'),
+                    ->label(TranslatedText::of('admin/users.relations.status_history.changed_by'))
+                    ->placeholder(TranslatedText::of('admin/common.deleted_user')),
             ])
             ->query(function (): Builder {
                 $model = $this->getOwnerRecord();

@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Pages\Backups\Tables;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
+use App\Support\Translation\TranslatedText;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
@@ -19,7 +20,7 @@ class BackupsTable
     public static function configure(Table $table, BackupManagement $backupManagementPage): Table
     {
         return $table
-            ->heading('Backups')
+            ->heading(TranslatedText::of('admin/backups.table.heading'))
             ->deferLoading()
             ->loadingSkeleton()
             ->records(function (int $page, int $recordsPerPage) use ($backupManagementPage): LengthAwarePaginator {
@@ -34,33 +35,33 @@ class BackupsTable
             })
             ->columns([
                 TextColumn::make('filename')
-                    ->label('Archive'),
+                    ->label(TranslatedText::of('admin/backups.table.archive')),
                 TextColumn::make('created_at')
-                    ->label('Created')
-                    ->dateTime('M j, Y H:i'),
+                    ->label(TranslatedText::of('admin/backups.table.created'))
+                    ->dateTime(TranslatedText::of('admin/backups.date_format')),
                 TextColumn::make('size_in_bytes')
-                    ->label('Size')
+                    ->label(TranslatedText::of('admin/backups.table.size'))
                     ->formatStateUsing(static fn (?float $state): string => $state === null
-                        ? 'Unavailable'
+                        ? TranslatedText::of('admin/common.unavailable')
                         : Number::fileSize($state, maxPrecision: 2)),
                 TextColumn::make('available')
-                    ->label('Availability')
+                    ->label(TranslatedText::of('admin/backups.table.availability'))
                     ->badge()
-                    ->formatStateUsing(static fn (bool $state): string => $state ? 'Available' : 'Missing')
+                    ->formatStateUsing(static fn (bool $state): string => TranslatedText::of($state ? 'admin/backups.table.available' : 'admin/backups.table.missing'))
                     ->color(static fn (bool $state): string => $state ? 'success' : 'danger'),
             ])
             ->recordActions([
                 Action::make('downloadBackup')
-                    ->label('Download')
+                    ->label(TranslatedText::of('admin/backups.actions.download.label'))
                     ->schema([
                         TextInput::make('current_password')
-                            ->label('Current password')
+                            ->label(TranslatedText::of('admin/backups.actions.download.current_password'))
                             ->password()
                             ->autocomplete('current-password')
                             ->required(),
                     ])
-                    ->modalHeading('Confirm your password to download this backup')
-                    ->modalSubmitActionLabel('Download backup')
+                    ->modalHeading(TranslatedText::of('admin/backups.actions.download.modal_heading'))
+                    ->modalSubmitActionLabel(TranslatedText::of('admin/backups.actions.download.submit'))
                     ->authorize(fn (): bool => $backupManagementPage->hasPermission(AdminPermission::AdminBackupsDownload))
                     ->visible(fn (array $record): bool => $record['available']
                         && $backupManagementPage->hasPermission(AdminPermission::AdminBackupsDownload))
@@ -76,8 +77,8 @@ class BackupsTable
             ])
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
-            ->emptyStateHeading('No backups yet')
-            ->emptyStateDescription('A database backup will appear here after the first run.');
+            ->emptyStateHeading(TranslatedText::of('admin/backups.table.empty_heading'))
+            ->emptyStateDescription(TranslatedText::of('admin/backups.table.empty_description'));
     }
 
     /**
@@ -91,8 +92,8 @@ class BackupsTable
 
         if (! \is_string($filename) || ! \is_string($currentPassword)) {
             throw ValidationException::withMessages([
-                ...(! \is_string($filename) ? ['filename' => __('The selected backup is no longer available.')] : []),
-                ...(! \is_string($currentPassword) ? ['current_password' => __('The current password is required.')] : []),
+                ...(! \is_string($filename) ? ['filename' => TranslatedText::of('admin/backups.errors.backup_unavailable')] : []),
+                ...(! \is_string($currentPassword) ? ['current_password' => TranslatedText::of('admin/backups.errors.password_required')] : []),
             ]);
         }
 

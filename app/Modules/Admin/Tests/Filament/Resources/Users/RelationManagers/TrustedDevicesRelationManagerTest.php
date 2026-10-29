@@ -129,15 +129,46 @@ it('derives active expired and revoked states including the expiry boundary', fu
 
     /** @var TextColumn $statusColumn */
     expect($statusColumn->record($trustedDevice)->getState())
-        ->toBe('Active')
+        ->toBe('active')
         ->and($statusColumn->record($expiredDevice)->getState())
-        ->toBe('Expired')
+        ->toBe('expired')
         ->and($statusColumn->record($boundaryDevice)->getState())
-        ->toBe('Expired')
+        ->toBe('expired')
         ->and($statusColumn->record($revokedDevice)->getState())
-        ->toBe('Revoked')
-        ->and($statusColumn->getColor('Revoked', $revokedDevice))
+        ->toBe('revoked')
+        ->and($statusColumn->getColor('revoked', $revokedDevice))
         ->toBe('danger');
+});
+
+it('shows the trusted devices tab and device states in Spanish', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $targetUser = createUser();
+    createTrustedDevice($targetUser, ['expires_at' => now()->addDay()]);
+    createTrustedDevice($targetUser, ['expires_at' => now()->subDay(), 'last_used_at' => null]);
+    createTrustedDevice($targetUser, ['expires_at' => now()->subDay()])->delete();
+
+    $testable = trustedDevicesRelationManagerFor($targetUser)
+        ->assertOk()
+        ->assertSee('Dispositivo')
+        ->assertSee('Navegador / Sistema')
+        ->assertSee('Último uso')
+        ->assertSee('Vence')
+        ->assertSee('Estado')
+        ->assertSeeText('Activo')
+        ->assertSeeText('Vencido')
+        ->assertSeeText('Revocado')
+        ->assertSeeText('Nunca')
+        ->assertDontSeeText('Expired');
+
+    $statusColumn = FilamentTableRecords::table($testable)->getTable()->getColumn('status');
+
+    throw_unless($statusColumn instanceof TextColumn, LogicException::class, 'The trusted devices table must expose its status column.');
+
+    expect($statusColumn->getColor('expired'))->toBe('warning')
+        ->and(TrustedDevicesRelationManager::getTitle($targetUser, ViewUser::class))->toBe('Dispositivos de confianza');
 });
 
 it('registers the trusted device relation on the user resource', function (): void {

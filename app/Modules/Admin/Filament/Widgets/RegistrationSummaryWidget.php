@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Widgets;
 
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -17,10 +18,13 @@ class RegistrationSummaryWidget extends StatsOverviewWidget
     public bool $showPendingVerification = false;
 
     #[Override]
-    protected ?string $heading = 'Account overview';
+    protected ?string $pollingInterval = null;
 
     #[Override]
-    protected ?string $pollingInterval = null;
+    protected function getHeading(): string
+    {
+        return TranslatedText::of('admin/dashboard.registration_summary.heading');
+    }
 
     #[Override]
     public static function canView(): bool
@@ -44,19 +48,19 @@ class RegistrationSummaryWidget extends StatsOverviewWidget
         $verifiedAccounts = User::query()->toBase()->whereNotNull('email_verified_at')->count('*');
 
         $stats = [
-            Stat::make('Total accounts', $totalAccounts)
-                ->description('All registered user accounts')
+            Stat::make(TranslatedText::of('admin/dashboard.registration_summary.total.label'), $totalAccounts)
+                ->description(TranslatedText::of('admin/dashboard.registration_summary.total.description'))
                 ->color('primary')
                 ->chart($dailyRegistrationTrends['registrations']),
-            Stat::make('Verified accounts', $verifiedAccounts)
-                ->description('Accounts with a verified email address')
+            Stat::make(TranslatedText::of('admin/dashboard.registration_summary.verified.label'), $verifiedAccounts)
+                ->description(TranslatedText::of('admin/dashboard.registration_summary.verified.description'))
                 ->color('success')
                 ->chart($dailyRegistrationTrends['verifiedRegistrations']),
         ];
 
         if ($this->showPendingVerification) {
-            $stats[] = Stat::make('Pending verification', $totalAccounts - $verifiedAccounts)
-                ->description('Accounts waiting to verify their email address')
+            $stats[] = Stat::make(TranslatedText::of('admin/dashboard.registration_summary.pending.label'), $totalAccounts - $verifiedAccounts)
+                ->description(TranslatedText::of('admin/dashboard.registration_summary.pending.description'))
                 ->color('warning');
         }
 

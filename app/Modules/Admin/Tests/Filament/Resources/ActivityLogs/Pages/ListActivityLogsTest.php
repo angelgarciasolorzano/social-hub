@@ -282,6 +282,40 @@ it('lists anonymous activities and deleted performers or subjects without failin
         ->assertSeeText('Comment #'.$deletedCommentId.' (deleted)');
 });
 
+it('shows the activity columns, filters and parties in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = actingAsActivityLogReader($this);
+    $target = createUser();
+    $deletedUser = createUser();
+    $deletedComment = createComment();
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->causedBy($user)->performedOn($target)->createOne();
+    ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::LoginFailed)->createOne();
+    ActivityLogFactory::new()->forEvent(ActivityLogContentEvent::CommentDeleted)->causedBy($deletedUser)->performedOn($deletedComment)->createOne();
+
+    $deletedUserId = $deletedUser->id;
+    $deletedCommentId = $deletedComment->id;
+    $deletedComment->forceDelete();
+    $deletedUser->delete();
+
+    activityLogsPageForTesting()
+        ->assertOk()
+        ->assertSee('Fecha')
+        ->assertSee('Registro')
+        ->assertSee('Evento')
+        ->assertSee('Realizado por')
+        ->assertSee('Sobre')
+        ->assertSee('Desde')
+        ->assertSee('Hasta')
+        ->assertSeeText('Usuario #'.$target->id)
+        ->assertSeeText('Anónimo')
+        ->assertSeeText('Ninguno')
+        ->assertSeeText('Usuario #'.$deletedUserId.' (ya no existe)')
+        ->assertSeeText('Comentario #'.$deletedCommentId.' (ya no existe)')
+        ->assertDontSeeText('Performed by');
+});
+
 it('orders the newest activity first', function (): void {
     actingAsActivityLogReader($this);
 

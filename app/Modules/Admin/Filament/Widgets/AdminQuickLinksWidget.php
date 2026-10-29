@@ -11,6 +11,7 @@ use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Announcement\Models\Announcement;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
@@ -55,8 +56,8 @@ class AdminQuickLinksWidget extends Widget
 
         if ($authenticatedUser->can(AdminPermission::AdminUsersViewAny->value)) {
             $quickLinks[] = [
-                'label' => 'Users',
-                'description' => 'Review accounts and account status',
+                'label' => $this->text('users.label'),
+                'description' => $this->text('users.description'),
                 'icon' => Heroicon::OutlinedUsers,
                 'url' => UserResource::getUrl('index', panel: 'admin'),
             ];
@@ -64,8 +65,8 @@ class AdminQuickLinksWidget extends Widget
 
         if ($authenticatedUser->can(AdminPermission::AdminPostsViewAny->value)) {
             $quickLinks[] = [
-                'label' => 'Posts',
-                'description' => 'Review posts and comments',
+                'label' => $this->text('posts.label'),
+                'description' => $this->text('posts.description'),
                 'icon' => Heroicon::OutlinedRectangleStack,
                 'url' => PostResource::getUrl('index', panel: 'admin'),
             ];
@@ -73,8 +74,8 @@ class AdminQuickLinksWidget extends Widget
 
         if ($authenticatedUser->can(AdminPermission::AdminActivityViewAny->value)) {
             $quickLinks[] = [
-                'label' => 'Activity log',
-                'description' => 'Review security and admin events',
+                'label' => $this->text('activity_log.label'),
+                'description' => $this->text('activity_log.description'),
                 'icon' => Heroicon::OutlinedClipboardDocumentList,
                 'url' => ActivityLogResource::getUrl('index', panel: 'admin'),
             ];
@@ -82,8 +83,8 @@ class AdminQuickLinksWidget extends Widget
 
         if ($authenticatedUser->can(AdminPermission::AdminBackupsView->value)) {
             $quickLinks[] = [
-                'label' => 'Backups',
-                'description' => 'Check backup availability',
+                'label' => $this->text('backups.label'),
+                'description' => $this->text('backups.description'),
                 'icon' => Heroicon::OutlinedCircleStack,
                 'url' => BackupManagement::getUrl(panel: 'admin'),
             ];
@@ -91,13 +92,21 @@ class AdminQuickLinksWidget extends Widget
 
         if (Gate::forUser($authenticatedUser)->allows('viewAny', Announcement::class)) {
             $quickLinks[] = [
-                'label' => 'Announcements',
-                'description' => 'Publish notices for application users',
+                'label' => $this->text('announcements.label'),
+                'description' => $this->text('announcements.description'),
                 'icon' => Heroicon::OutlinedMegaphone,
                 'url' => AnnouncementResource::getUrl('index', panel: 'admin'),
             ];
         }
 
         return $quickLinks;
+    }
+
+    /**
+     * A text of the quick links, from `admin/dashboard.quick_links.links`.
+     */
+    private function text(string $key): string
+    {
+        return TranslatedText::of('admin/dashboard.quick_links.links.'.$key);
     }
 }

@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\RelationManagers;
 
 use App\Auth\Models\TrustedDevice;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Facades\Filament;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -19,14 +20,23 @@ use Override;
 
 class TrustedDevicesRelationManager extends RelationManager
 {
-    private const string ACTIVE_STATUS = 'Active';
+    /**
+     * Status keys of a device; each one is also its key under `admin/users.relations.trusted_devices.statuses`.
+     */
+    private const string ACTIVE_STATUS = 'active';
 
-    private const string EXPIRED_STATUS = 'Expired';
+    private const string EXPIRED_STATUS = 'expired';
 
-    private const string REVOKED_STATUS = 'Revoked';
+    private const string REVOKED_STATUS = 'revoked';
 
     #[Override]
     protected static string $relationship = 'trustedDevices';
+
+    #[Override]
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return TranslatedText::of('admin/users.relations.trusted_devices.title');
+    }
 
     #[Override]
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
@@ -48,20 +58,22 @@ class TrustedDevicesRelationManager extends RelationManager
             ->loadingSkeleton()
             ->columns([
                 TextColumn::make('name')
-                    ->label('Device')
-                    ->placeholder('Unknown device'),
+                    ->label(TranslatedText::of('admin/users.relations.trusted_devices.device'))
+                    ->placeholder(TranslatedText::of('admin/users.relations.trusted_devices.unknown_device')),
                 TextColumn::make('device_summary')
-                    ->label('Browser / OS')
+                    ->label(TranslatedText::of('admin/users.relations.trusted_devices.browser_os'))
                     ->state(fn (TrustedDevice $trustedDevice): string => $this->getDeviceSummary($trustedDevice)),
                 TextColumn::make('last_used_at')
-                    ->label('Last used')
+                    ->label(TranslatedText::of('admin/users.relations.trusted_devices.last_used'))
                     ->dateTime()
-                    ->placeholder('Never'),
+                    ->placeholder(TranslatedText::of('admin/common.never')),
                 TextColumn::make('expires_at')
-                    ->label('Expires')
+                    ->label(TranslatedText::of('admin/users.relations.trusted_devices.expires'))
                     ->dateTime(),
                 TextColumn::make('status')
+                    ->label(TranslatedText::of('admin/common.fields.status'))
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => TranslatedText::of('admin/users.relations.trusted_devices.statuses.'.$state))
                     ->color(fn (string $state): string => match ($state) {
                         self::ACTIVE_STATUS => 'success',
                         self::EXPIRED_STATUS => 'warning',
@@ -116,7 +128,7 @@ class TrustedDevicesRelationManager extends RelationManager
             $operatingSystem,
         ], static fn (string $part): bool => $part !== ''));
 
-        return $summary !== '' ? $summary : 'Unknown';
+        return $summary !== '' ? $summary : TranslatedText::of('admin/users.relations.trusted_devices.unknown');
     }
 
     private function getStatus(TrustedDevice $trustedDevice): string

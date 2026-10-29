@@ -8,6 +8,7 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\ActivityLog\Support\ActivityLogEventCatalog;
 use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use DateTimeInterface;
 use Filament\Actions\ViewAction;
@@ -32,38 +33,38 @@ class ActivityLogsTable
             ->loadingSkeleton()
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('Date')
+                    ->label(TranslatedText::of('admin/common.fields.date'))
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('log_name')
-                    ->label('Log')
+                    ->label(TranslatedText::of('admin/activity-log.table.log'))
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => ActivityLogEventCatalog::logLabel($state)),
                 TextColumn::make('event')
-                    ->label('Event')
+                    ->label(TranslatedText::of('admin/activity-log.table.event'))
                     ->formatStateUsing(fn (string $state): string => ActivityLogEventCatalog::label($state)),
                 TextColumn::make('causer_label')
-                    ->label('Performed by')
+                    ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
                     ->state(fn (ActivityLog $activityLog): string => self::causerLabel($activityLog))
                     ->url(fn (ActivityLog $activityLog): ?string => self::causerUrl($activityLog)),
                 TextColumn::make('subject_label')
-                    ->label('Subject')
+                    ->label(TranslatedText::of('admin/activity-log.table.subject'))
                     ->state(fn (ActivityLog $activityLog): string => self::subjectLabel($activityLog))
                     ->url(fn (ActivityLog $activityLog): ?string => self::subjectUrl($activityLog)),
             ])
             ->filters([
                 SelectFilter::make('log_name')
-                    ->label('Log')
+                    ->label(TranslatedText::of('admin/activity-log.table.log'))
                     ->options(ActivityLogEventCatalog::logOptions()),
                 SelectFilter::make('event')
-                    ->label('Event')
+                    ->label(TranslatedText::of('admin/activity-log.table.event'))
                     ->options(ActivityLogEventCatalog::eventOptions())
                     ->searchable(),
                 Filter::make('causer')
-                    ->label('Performed by')
+                    ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
                     ->schema([
                         Select::make('causer_id')
-                            ->label('Performed by')
+                            ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => User::query()
                                 ->whereLike('name', "%{$search}%")
@@ -77,10 +78,10 @@ class ActivityLogsTable
                     ])
                     ->query(fn (Builder $query, array $data): Builder => self::filterByCauser($query, $data)),
                 Filter::make('created_at')
-                    ->label('Date')
+                    ->label(TranslatedText::of('admin/common.fields.date'))
                     ->schema([
-                        DatePicker::make('created_from')->label('From'),
-                        DatePicker::make('created_until')->label('Until'),
+                        DatePicker::make('created_from')->label(TranslatedText::of('admin/common.filters.from')),
+                        DatePicker::make('created_until')->label(TranslatedText::of('admin/common.filters.until')),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(

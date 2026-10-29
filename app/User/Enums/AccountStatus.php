@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\User\Enums;
 
+use App\Support\Translation\TranslatedText;
+
 enum AccountStatus: string
 {
     /**
@@ -17,13 +19,10 @@ enum AccountStatus: string
     case Suspended = 'suspended';
 
     /**
-     * Readable name shown in the admin panel.
+     * Readable name shown in the admin panel, in the panel's current language.
      */
     public function label(): string
     {
-        return match ($this) {
-            self::Active => 'Active',
-            self::Suspended => 'Suspended',
-        };
+        return TranslatedText::of('admin/users.account_status.'.$this->value);
     }
 }

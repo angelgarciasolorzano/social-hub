@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Pages\Backups\Widgets;
 
 use App\Modules\Admin\Data\BackupSummaryData;
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -29,9 +30,6 @@ class BackupSummaryWidget extends StatsOverviewWidget
     public ?array $backupListingData = null;
 
     #[Override]
-    protected ?string $heading = 'Backup summary';
-
-    #[Override]
     protected ?string $pollingInterval = null;
 
     private ?BackupSummaryData $summary = null;
@@ -46,21 +44,27 @@ class BackupSummaryWidget extends StatsOverviewWidget
     }
 
     #[Override]
+    protected function getHeading(): string
+    {
+        return TranslatedText::of('admin/backups.widget.heading');
+    }
+
+    #[Override]
     protected function getDescription(): ?string
     {
         $backupSummaryData = $this->getSummary();
 
         if (! $backupSummaryData->listingAvailable) {
-            return 'Backup listing is unavailable.';
+            return TranslatedText::of('admin/backups.widget.listing_unavailable');
         }
 
-        $destinationHealth = $backupSummaryData->destinationHealthy
-            ? 'Destination healthy.'
-            : 'Destination needs attention.';
+        $destinationHealth = TranslatedText::of($backupSummaryData->destinationHealthy
+            ? 'admin/backups.widget.destination_healthy'
+            : 'admin/backups.widget.destination_needs_attention');
 
         return $backupSummaryData->hasBackups
             ? $destinationHealth
-            : $destinationHealth.' No backups found.';
+            : $destinationHealth.' '.TranslatedText::of('admin/backups.widget.no_backups_found');
     }
 
     /**
@@ -72,22 +76,24 @@ class BackupSummaryWidget extends StatsOverviewWidget
         $backupSummaryData = $this->getSummary();
 
         return [
-            Stat::make('Available backups', $backupSummaryData->availableCount)
-                ->description('Archives present in storage')
+            Stat::make(TranslatedText::of('admin/backups.widget.available.label'), $backupSummaryData->availableCount)
+                ->description(TranslatedText::of('admin/backups.widget.available.description'))
                 ->color('success'),
-            Stat::make('Missing backups', $backupSummaryData->missingCount)
-                ->description($backupSummaryData->missingCount === 0 ? 'No missing archives' : 'Archives not found in storage')
+            Stat::make(TranslatedText::of('admin/backups.widget.missing.label'), $backupSummaryData->missingCount)
+                ->description(TranslatedText::of($backupSummaryData->missingCount === 0 ? 'admin/backups.widget.missing.none' : 'admin/backups.widget.missing.description'))
                 ->color($backupSummaryData->missingCount === 0 ? 'success' : 'warning'),
-            Stat::make('Latest available backup', $backupSummaryData->latestBackupAge ?? 'Unavailable')
-                ->description($backupSummaryData->latestBackupCreatedAt ?? 'No available backups'),
+            Stat::make(TranslatedText::of('admin/backups.widget.latest.label'), $backupSummaryData->latestBackupAge ?? TranslatedText::of('admin/common.unavailable'))
+                ->description($backupSummaryData->latestBackupCreatedAt ?? TranslatedText::of('admin/backups.widget.latest.none')),
             Stat::make(
-                'Total backup size',
+                TranslatedText::of('admin/backups.widget.total_size.label'),
                 $backupSummaryData->totalSizeInBytes === null
-                    ? 'Unavailable'
+                    ? TranslatedText::of('admin/common.unavailable')
                     : Number::fileSize($backupSummaryData->totalSizeInBytes, maxPrecision: 2),
-            )->description($backupSummaryData->totalSizeInBytes === null
-                ? 'One or more archive sizes are unavailable'
-                : ($backupSummaryData->hasBackups ? 'Combined size of listed archives' : 'No backups stored')),
+            )->description(TranslatedText::of(match (true) {
+                $backupSummaryData->totalSizeInBytes === null => 'admin/backups.widget.total_size.sizes_unavailable',
+                $backupSummaryData->hasBackups => 'admin/backups.widget.total_size.description',
+                default => 'admin/backups.widget.total_size.none',
+            })),
         ];
     }
 
@@ -146,7 +152,7 @@ class BackupSummaryWidget extends StatsOverviewWidget
             hasBackups: $backupListingData['backups'] !== [],
             destinationHealthy: $backupListingData['health']['healthy'],
             latestBackupAge: $latestBackupDate?->diffForHumans(),
-            latestBackupCreatedAt: $latestBackupDate?->format('M j, Y H:i'),
+            latestBackupCreatedAt: $latestBackupDate?->translatedFormat(TranslatedText::of('admin/backups.date_format')),
             totalSizeInBytes: $allSizesAvailable ? $totalSizeInBytes : null,
         );
     }

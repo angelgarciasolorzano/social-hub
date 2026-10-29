@@ -69,6 +69,35 @@ php artisan admin:bootstrap-admin admin@example.com --actor=admin@example.com
 
 `admin:bootstrap-admin <email> --actor=<email>` solo permite el primer bootstrap: exige el catálogo inicializado, una cuenta existente con correo verificado y que todavía no haya un usuario con `admin.access`; asigna `admin` y los cinco roles lectores (actividad y respaldos incluidos desde SOC-56 y SOC-55). Después, `admin:user-role <grant|revoke> <email> <role> --actor=<admin-email>` modifica una asignación de rol y `admin:role-permissions <grant|revoke> <role> <permission> --actor=<admin-email>` modifica un bundle. Los tres comandos exigen `--actor` (SOC-54): la persona que ejecuta el cambio, que queda como causante en el log `admin` del registro de actividad. Debe ser una cuenta verificada y, salvo en el bootstrap (donde puede ser el mismo usuario promovido), tener `admin.access`. Solo se registran los cambios reales; un rechazo no cambia nada ni deja registro. El primer comando acepta cualquier caso de `AdminRole` y el segundo cualquier caso de `AdminPermission` (ver la tabla de arriba). Ambos rechazan valores fuera de los enums y protegen el último permiso `admin.access`. La gestión sigue siendo por consola; SOC-44 no agrega una pantalla administrativa para ello.
 
+### Idiomas del panel (SOC-65)
+
+El panel de administración está en español e inglés. Las traducciones viven en `lang/{en,es}/` en la raíz del proyecto, la convención de Laravel; `resources/lang/` se movió ahí y ya no existe. Cada sección del panel tiene su catálogo: `lang/{en,es}/admin/{common,dashboard,users,backups,activity-log}.php`. `common` guarda solo los textos que usan dos o más secciones.
+
+- **Claves con nombre**, nunca el texto en inglés como clave: `admin/users.table.status`. Los plurales van con `trans_choice` (`{1} :count día|[0,*] :count días`) y los valores con marcadores (`:name`, `:count`). `:Type` pone el valor con la primera letra en mayúscula.
+- **En PHP** todo texto pasa por `App\Support\Translation\TranslatedText::of($clave, $reemplazos)`. Es `__()` tipado como `string`: PHPStan no acepta el `array|string` de `__()` donde Filament espera un texto, y una clave que apunta a un grupo lanza `LogicException`. **En Blade** se usa `__()`.
+- **Propiedades de texto**: `$title`, `$heading`, `$navigationLabel`, `$navigationGroup` y el `$title` de un relation manager no pueden llamar a una función. Por eso la clase sobrescribe el getter correspondiente: `getTitle()`, `getHeading()`, `getNavigationLabel()`, `getNavigationGroup()`, `getModelLabel()`, `getPluralModelLabel()` o el estático `RelationManager::getTitle()`.
+- **Colores e íconos de badges**: nunca comparan la etiqueta traducida. Dependen del registro (`hasVerifiedEmail()`, el booleano de salud de los respaldos) o de una clave: `TrustedDevicesRelationManager` guarda `active`/`expired`/`revoked` como estado y solo traduce la etiqueta.
+- **Fechas**: se formatean con `translatedFormat()` y un formato del catálogo. En español salen como "5 oct.". Los textos propios de Filament (login, MFA, perfil, botones, paginación, filtros) ya vienen traducidos.
+- **Selector de idioma**: es el plugin `bezhansalleh/filament-language-switch` (5.x), configurado en `AdminServiceProvider::configureLanguageSwitch()`.
+  - Ofrece `en` y `es` (`SWITCH_LOCALES`, casos de `PreferredLocale`). El inglés va primero: si el navegador no pide un idioma ofrecido, el plugin elige el primero de la lista, que debe coincidir con `app.locale`.
+  - Aparece dentro del panel y en el login, la configuración obligatoria de MFA y el perfil. No aparece en la página de aceptar invitación.
+  - El idioma se resuelve en este orden: sesión, `?locale=`, `users.preferred_locale` del administrador (leído con `Filament::auth()`), `Accept-Language`, cookie y `app.locale`.
+  - Al elegir un idioma, `StoreAdminPreferredLocale` lo guarda en `preferred_locale` sin auditarlo. Es la misma columna que edita la configuración de cuenta de la aplicación.
+  - El middleware del plugin se registra también como middleware persistente de Livewire. Sin eso, cada actualización de un componente (filtrar, paginar, abrir un modal) respondería en `app.locale`.
+- **Qué está traducido**:
+  - Dashboard.
+  - Users, con `AccountStatus::label()`.
+  - Backups, con los errores de descarga de `BackupManagementService`.
+  - Del registro de actividad: su tabla, `DescribesActivityLogParties` y los nombres de eventos y logs. `ActivityLogEventCatalog` lee `admin/activity-log.events.<valor>` y, si falta la clave, usa el nombre en inglés.
+- **Qué sigue en inglés**:
+  - Announcements, Posts y Comments.
+  - El resto del registro de actividad.
+  - El correo y la página de invitación.
+  - Los nombres de las comprobaciones fallidas de Spatie Backup.
+- **Pruebas que lo protegen** (`app/Modules/Admin/Tests/Translations/`):
+  - `AdminTranslationKeysTest` exige las mismas claves, textos no vacíos y los mismos marcadores en `en` y `es`, además de un nombre para cada evento, log y tipo del morph map.
+  - `AdminHardcodedTextTest` falla si un archivo ya traducido pasa un literal a un método de texto de Filament o escribe texto suelto en Blade.
+
 ### Registro de actividad (ActivityLog)
 
 `app/Modules/ActivityLog/` (SOC-54) registra las acciones de los usuarios y la auditoría administrativa en una sola tabla `activity_log` de `spatie/laravel-activitylog`, separada por `log_name` (`auth`, `content`, `likes`, `trusted_devices`, `account`, `admin`), cada uno con su retención y una purga diaria (`activity-log:purge`). Ningún otro módulo usa el paquete: los módulos despachan eventos de dominio que escuchan los subscribers de `Listeners/`, y la auditoría Admin llama a `Services/ActivityLogger` dentro de su transacción. Nunca se guarda contenido, contraseñas, códigos, tokens ni correos. La decisión de diseño, el catálogo de eventos (`Contracts/ActivityLogEvent` con un enum por dominio en `Enums/Events/`) y la política de privacidad están documentados en CLAUDE.md.

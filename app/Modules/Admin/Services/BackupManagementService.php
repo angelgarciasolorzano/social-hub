@@ -10,6 +10,7 @@ use App\Modules\Admin\Data\BackupDestinationData;
 use App\Modules\Admin\Data\BackupListingData;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -94,7 +95,7 @@ final readonly class BackupManagementService
 
         if (! $backup instanceof Backup) {
             throw ValidationException::withMessages([
-                'filename' => __('The selected backup is no longer available.'),
+                'filename' => TranslatedText::of('admin/backups.errors.backup_unavailable'),
             ]);
         }
 
@@ -128,7 +129,7 @@ final readonly class BackupManagementService
 
         if (RateLimiter::tooManyAttempts($throttleKey, self::DOWNLOAD_PASSWORD_MAX_ATTEMPTS)) {
             throw ValidationException::withMessages([
-                'current_password' => __('Too many password attempts. Please try again in :seconds seconds.', [
+                'current_password' => TranslatedText::of('admin/backups.errors.too_many_attempts', [
                     'seconds' => RateLimiter::availableIn($throttleKey),
                 ]),
             ]);
@@ -138,7 +139,7 @@ final readonly class BackupManagementService
             RateLimiter::hit($throttleKey, self::DOWNLOAD_PASSWORD_DECAY_SECONDS);
 
             throw ValidationException::withMessages([
-                'current_password' => __('The password is incorrect.'),
+                'current_password' => TranslatedText::of('admin/backups.errors.password_incorrect'),
             ]);
         }
 
@@ -255,7 +256,7 @@ final readonly class BackupManagementService
         $retention = $spatieBackupConfig->cleanup->defaultStrategy;
 
         return new BackupDestinationData(
-            provider: \is_string($endpoint) && $endpoint !== '' ? 'S3-compatible storage' : 'Amazon S3',
+            provider: \is_string($endpoint) && $endpoint !== '' ? TranslatedText::of('admin/backups.destination.providers.s3_compatible') : 'Amazon S3',
             bucket: \is_string($bucket) ? $bucket : null,
             prefix: $spatieBackupConfig->backup->name,
             region: \is_string($region) ? $region : null,

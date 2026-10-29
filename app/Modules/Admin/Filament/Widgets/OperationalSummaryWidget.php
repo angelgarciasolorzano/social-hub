@@ -13,6 +13,7 @@ use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Services\BackupManagementService;
 use App\Modules\Admin\Services\DashboardBackupSummaryCache;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
@@ -26,10 +27,13 @@ use Throwable;
 class OperationalSummaryWidget extends StatsOverviewWidget
 {
     #[Override]
-    protected ?string $heading = 'Operational summary';
+    protected ?string $pollingInterval = null;
 
     #[Override]
-    protected ?string $pollingInterval = null;
+    protected function getHeading(): string
+    {
+        return TranslatedText::of('admin/dashboard.operational_summary.heading');
+    }
 
     #[Override]
     public static function canView(): bool
@@ -65,17 +69,18 @@ class OperationalSummaryWidget extends StatsOverviewWidget
                 $accountStatusSummary = $this->accountStatusSummary();
 
                 $stats[] = Stat::make(
-                    'Account status',
-                    "{$accountStatusSummary['active_accounts']} active · {$accountStatusSummary['suspended_accounts']} suspended",
+                    TranslatedText::of('admin/dashboard.operational_summary.account_status.label'),
+                    trans_choice('admin/dashboard.operational_summary.account_status.active', $accountStatusSummary['active_accounts'])
+                        .' · '.trans_choice('admin/dashboard.operational_summary.account_status.suspended', $accountStatusSummary['suspended_accounts']),
                 )
-                    ->description("{$accountStatusSummary['recent_status_changes']} status changes in the last 7 days")
+                    ->description(trans_choice('admin/dashboard.operational_summary.account_status.recent_changes', $accountStatusSummary['recent_status_changes']))
                     ->color('primary')
                     ->url($usersUrl);
             } catch (Throwable $throwable) {
                 report($throwable);
 
-                $stats[] = Stat::make('Account status', 'Unavailable')
-                    ->description('Account metrics could not be loaded')
+                $stats[] = Stat::make(TranslatedText::of('admin/dashboard.operational_summary.account_status.label'), TranslatedText::of('admin/common.unavailable'))
+                    ->description(TranslatedText::of('admin/dashboard.operational_summary.account_status.unavailable'))
                     ->color('warning')
                     ->url($usersUrl);
             }
@@ -88,15 +93,15 @@ class OperationalSummaryWidget extends StatsOverviewWidget
                 $activityLogUrl = ActivityLogResource::getUrl('index', panel: 'admin');
                 $recentActivityCount = $this->recentActivityCount();
 
-                $stats[] = Stat::make('Activity (7 days)', $recentActivityCount)
-                    ->description('Recorded events in the activity log')
+                $stats[] = Stat::make(TranslatedText::of('admin/dashboard.operational_summary.activity.label'), $recentActivityCount)
+                    ->description(TranslatedText::of('admin/dashboard.operational_summary.activity.description'))
                     ->color('primary')
                     ->url($activityLogUrl);
             } catch (Throwable $throwable) {
                 report($throwable);
 
-                $stats[] = Stat::make('Activity (7 days)', 'Unavailable')
-                    ->description('Activity metrics could not be loaded')
+                $stats[] = Stat::make(TranslatedText::of('admin/dashboard.operational_summary.activity.label'), TranslatedText::of('admin/common.unavailable'))
+                    ->description(TranslatedText::of('admin/dashboard.operational_summary.activity.unavailable'))
                     ->color('warning')
                     ->url($activityLogUrl);
             }
@@ -109,15 +114,15 @@ class OperationalSummaryWidget extends StatsOverviewWidget
                 $backupsUrl = BackupManagement::getUrl(panel: 'admin');
                 $backupSummary = $this->backupSummary($authenticatedUser);
 
-                $stats[] = Stat::make('Latest backup', $this->formatLatestBackupAge($backupSummary->latestCreatedAt))
+                $stats[] = Stat::make(TranslatedText::of('admin/dashboard.operational_summary.backups.label'), $this->formatLatestBackupAge($backupSummary->latestCreatedAt))
                     ->description($this->formatBackupDescription($backupSummary))
                     ->color($this->backupSummaryColor($backupSummary))
                     ->url($backupsUrl);
             } catch (Throwable $throwable) {
                 report($throwable);
 
-                $stats[] = Stat::make('Latest backup', 'Unavailable')
-                    ->description('Backup summary could not be loaded')
+                $stats[] = Stat::make(TranslatedText::of('admin/dashboard.operational_summary.backups.label'), TranslatedText::of('admin/common.unavailable'))
+                    ->description(TranslatedText::of('admin/dashboard.operational_summary.backups.unavailable'))
                     ->color('warning')
                     ->url($backupsUrl);
             }
@@ -214,17 +219,22 @@ class OperationalSummaryWidget extends StatsOverviewWidget
     private function formatLatestBackupAge(?string $latestBackupCreatedAt): string
     {
         return $latestBackupCreatedAt === null
-            ? 'Unavailable'
+            ? TranslatedText::of('admin/common.unavailable')
             : CarbonImmutable::parse($latestBackupCreatedAt)->diffForHumans();
     }
 
     private function formatBackupDescription(DashboardBackupSummaryData $backupSummary): string
     {
         $availability = $backupSummary->totalCount === 0
-            ? 'No backups found · 0/0 available'
-            : "{$backupSummary->availableCount}/{$backupSummary->totalCount} available";
+            ? TranslatedText::of('admin/dashboard.operational_summary.backups.none_found')
+            : trans_choice('admin/dashboard.operational_summary.backups.available', $backupSummary->availableCount, [
+                'available' => $backupSummary->availableCount,
+                'total' => $backupSummary->totalCount,
+            ]);
 
-        $destinationHealth = $backupSummary->healthy ? 'Destination healthy' : 'Destination needs attention';
+        $destinationHealth = TranslatedText::of($backupSummary->healthy
+            ? 'admin/dashboard.operational_summary.backups.destination_healthy'
+            : 'admin/dashboard.operational_summary.backups.destination_needs_attention');
 
         return "{$availability} · {$destinationHealth}";
     }

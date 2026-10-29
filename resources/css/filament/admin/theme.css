@@ -3,3 +3,4 @@
 @source "../../../../app/Modules/Admin/Filament/**/*";
 @source "../../../../app/Modules/Admin/UI/Views/**/*.blade.php";
 @source "../../../../resources/views/filament/admin/**/*";
+@source "../../../../vendor/bezhansalleh/filament-language-switch/**/*";

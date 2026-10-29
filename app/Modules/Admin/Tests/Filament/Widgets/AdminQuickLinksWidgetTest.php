@@ -75,6 +75,33 @@ it('shows links for each section the administrator can access', function (): voi
         ->assertSee('<svg', false);
 });
 
+it('shows the quick links in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = adminQuickLinksUser(
+        AdminPermission::AdminUsersViewAny,
+        AdminPermission::AdminPostsViewAny,
+        AdminPermission::AdminActivityViewAny,
+        AdminPermission::AdminBackupsView,
+        AdminPermission::AdminAnnouncementsViewAny,
+    );
+    $this->actingAs($user, 'admin');
+
+    Livewire::test(AdminQuickLinksWidget::class)
+        ->assertOk()
+        ->assertSeeText('Acceso rápido')
+        ->assertSeeText('Abre una sección a la que tienes acceso.')
+        ->assertSeeText('Usuarios')
+        ->assertSeeText('Revisa las cuentas y su estado')
+        ->assertSeeText('Publicaciones')
+        ->assertSeeText('Registro de actividad')
+        ->assertSeeText('Respaldos')
+        ->assertSeeText('Anuncios')
+        ->assertSee('aria-label="Accesos rápidos del panel"', false)
+        ->assertDontSeeText('Quick access')
+        ->assertSee(UserResource::getUrl('index', panel: 'admin'));
+});
+
 it('does not show links for sections without view permission', function (): void {
     $user = adminQuickLinksUser(AdminPermission::AdminUsersViewAny);
     $this->actingAs($user, 'admin');

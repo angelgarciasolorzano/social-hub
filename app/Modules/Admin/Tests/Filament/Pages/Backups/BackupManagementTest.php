@@ -9,13 +9,16 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Pages\Backups\Widgets\BackupSummaryWidget;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
+use App\Modules\Admin\Services\BackupManagementService;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use Carbon\CarbonImmutable;
+use Filament\Notifications\Notification;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -393,3 +396,186 @@ it('exposes only download actions for backup rows without delete or restore acti
         ->assertDontSeeText('Delete')
         ->assertDontSeeText('Restore');
 });
+
+it('shows the page title, navigation and create action in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsCreate);
+    Queue::fake([RunDatabaseBackup::class]);
+    Storage::fake('backups');
+
+    $testable = backupManagementPageForTesting()
+        ->assertSeeText('Gestión de respaldos')
+        ->assertSeeText('Crear respaldo')
+        ->call('mountAction', 'createBackup');
+
+    $testable->__call('assertMountedActionModalSee', [[
+        '¿Crear un respaldo de la base de datos?',
+        'El respaldo se pondrá en cola',
+        'Poner en cola',
+    ]]);
+
+    $testable->call('callMountedAction');
+
+    Notification::assertNotified('Respaldo de la base de datos en cola');
+
+    expect(BackupManagement::getNavigationLabel())->toBe('Respaldos')
+        ->and(BackupManagement::getNavigationGroup())->toBe('Administración');
+});
+
+it('rejects an incorrect download password with a Spanish message', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
+    Storage::fake('backups');
+
+    $filename = (new RunDatabaseBackup)->filename;
+    storeBackupArchive($filename, 'backup archive');
+
+    expect(fn () => resolve(BackupManagementService::class)->downloadBackup($user, $filename, 'not-the-password'))
+        ->toThrow(ValidationException::class, 'La contraseña es incorrecta.');
+});
+
+it('shows the destination, retention and backups table in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $user->saveAppAuthenticationSecret('filament-test-secret');
+
+    config()->set('filesystems.disks.backups.bucket', 'social-hub-backups');
+    config()->set('filesystems.disks.backups.endpoint', 'http://localhost:4566');
+    Storage::fake('backups');
+
+    storeBackupArchive((new RunDatabaseBackup)->filename, 'backup archive');
+
+    $this->get(BackupManagement::getUrl(isAbsolute: false).'?locale=es')
+        ->assertOk()
+        ->assertSeeText('Destino de los respaldos')
+        ->assertSeeText('Estado')
+        ->assertSeeText('En buen estado')
+        ->assertSeeText('Proveedor de almacenamiento')
+        ->assertSeeText('Almacenamiento compatible con S3')
+        ->assertSeeText('Privado')
+        ->assertSeeText('Política de retención')
+        ->assertSeeText('Todos los respaldos')
+        ->assertSeeText('7 días')
+        ->assertSeeText('4 semanas')
+        ->assertSeeText('6 meses')
+        ->assertDontSeeText('Backup destination');
+
+    backupManagementPageForTesting()
+        ->assertSeeText('Respaldos')
+        ->assertSeeText('Archivo')
+        ->assertSeeText('Tamaño')
+        ->assertSeeText('Disponibilidad')
+        ->assertSeeText('Disponible')
+        ->assertDontSeeText('Availability');
+});
+
+it('shows the empty backups table and the download password prompt in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
+    Storage::fake('backups');
+
+    backupManagementPageForTesting()
+        ->assertSeeText('Aún no hay respaldos')
+        ->assertSeeText('Un respaldo de la base de datos aparecerá aquí después de la primera ejecución.');
+
+    $filename = (new RunDatabaseBackup)->filename;
+    storeBackupArchive($filename, 'backup archive');
+
+    $testable = backupManagementPageForTesting()
+        ->assertSeeText('Descargar')
+        ->call('mountTableAction', 'downloadBackup', $filename);
+
+    $testable->__call('assertMountedActionModalSee', [[
+        'Confirma tu contraseña para descargar este respaldo',
+        'Contraseña actual',
+        'Descargar respaldo',
+    ]]);
+});
+
+it('renders the backup summary in Spanish', function (): void {
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $user->saveAppAuthenticationSecret('filament-test-secret');
+    Storage::fake('backups');
+    $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
+
+    storeBackupArchive((new RunDatabaseBackup)->filename, str_repeat('b', 1024 * 1024), now()->subMinutes(30));
+
+    $this->get(BackupManagement::getUrl(isAbsolute: false).'?locale=es')
+        ->assertOk()
+        ->assertSeeText('Resumen de respaldos')
+        ->assertSeeText('Respaldos disponibles')
+        ->assertSeeText('Archivos presentes en el almacenamiento')
+        ->assertSeeText('Respaldos faltantes')
+        ->assertSeeText('No faltan archivos')
+        ->assertSeeText('Último respaldo disponible')
+        ->assertSeeText('hace 30 minutos')
+        ->assertSeeText('22 oct. 2026, 11:30')
+        ->assertSeeText('Tamaño total de los respaldos')
+        ->assertSeeText('Destino en buen estado.')
+        ->assertDontSeeText('Backup summary');
+});
+
+it('shows the empty and unhealthy backup summary in Spanish', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $backupListingData = backupListingDataForSummary([], healthy: false);
+
+    Livewire::test(BackupSummaryWidget::class, ['backupListingData' => backupListingWidgetData($backupListingData)])
+        ->assertOk()
+        ->assertSeeText('El destino necesita atención. No hay respaldos.')
+        ->assertSeeText('No hay respaldos disponibles')
+        ->assertSeeText('No hay respaldos guardados')
+        ->assertSeeText('No disponible');
+});
+
+it('formats the backup creation date like the summary widget in each language', function (string $locale, string $expectedDate): void {
+    app()->setLocale($locale);
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    Storage::fake('backups');
+    $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
+
+    storeBackupArchive((new RunDatabaseBackup)->filename, 'backup archive', now()->subMinutes(30));
+
+    backupManagementPageForTesting()
+        ->assertSeeText($expectedDate);
+})->with([
+    'English' => ['en', 'Oct 22, 2026 11:30'],
+    'Spanish' => ['es', '22 oct. 2026, 11:30'],
+]);

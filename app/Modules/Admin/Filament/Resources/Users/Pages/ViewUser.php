@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\Pages;
 
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Resources\Users\Widgets\UserActivityOverview;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
@@ -23,45 +24,49 @@ class ViewUser extends ViewRecord
     #[Override]
     protected static string $resource = UserResource::class;
 
+    private const string SUSPEND_ACTION = 'suspendAccount';
+
+    private const string REACTIVATE_ACTION = 'reactivateAccount';
+
     /**
      * @return Action[]
      */
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('suspendAccount')
-                ->label('Suspend account')
+            Action::make(self::SUSPEND_ACTION)
+                ->label(TranslatedText::of('admin/users.actions.suspend.label'))
                 ->icon(Heroicon::OutlinedNoSymbol)
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalHeading('Suspend account')
-                ->modalDescription('The account is signed out everywhere, its trusted devices are revoked and it cannot sign in until it is reactivated. Its data is kept.')
-                ->modalSubmitActionLabel('Suspend')
-                ->successNotificationTitle('Account suspended')
-                ->failureNotificationTitle('The account was already suspended; reload the page to see its current status')
+                ->modalHeading(TranslatedText::of('admin/users.actions.suspend.modal_heading'))
+                ->modalDescription(TranslatedText::of('admin/users.actions.suspend.modal_description'))
+                ->modalSubmitActionLabel(TranslatedText::of('admin/users.actions.suspend.submit'))
+                ->successNotificationTitle(TranslatedText::of('admin/users.actions.suspend.success'))
+                ->failureNotificationTitle(TranslatedText::of('admin/users.actions.suspend.failure'))
                 ->authorize('suspend')
                 ->schema([
                     Textarea::make('reason')
-                        ->label('Reason')
+                        ->label(TranslatedText::of('admin/common.fields.reason'))
                         ->required()
                         ->maxLength(AccountStatusChange::REASON_MAX_LENGTH)
                         ->rows(4),
                 ])
                 ->action(fn (array $data, Action $action, AccountStatusService $accountStatusService) => $this->changeAccountStatus($data, $action, $accountStatusService, AccountStatus::Suspended)),
-            Action::make('reactivateAccount')
-                ->label('Reactivate account')
+            Action::make(self::REACTIVATE_ACTION)
+                ->label(TranslatedText::of('admin/users.actions.reactivate.label'))
                 ->icon(Heroicon::OutlinedCheckCircle)
                 ->color('success')
                 ->requiresConfirmation()
-                ->modalHeading('Reactivate account')
-                ->modalDescription('The account can sign in again. Trusted devices revoked by the suspension stay revoked.')
-                ->modalSubmitActionLabel('Reactivate')
-                ->successNotificationTitle('Account reactivated')
-                ->failureNotificationTitle('The account was already active; reload the page to see its current status')
+                ->modalHeading(TranslatedText::of('admin/users.actions.reactivate.modal_heading'))
+                ->modalDescription(TranslatedText::of('admin/users.actions.reactivate.modal_description'))
+                ->modalSubmitActionLabel(TranslatedText::of('admin/users.actions.reactivate.submit'))
+                ->successNotificationTitle(TranslatedText::of('admin/users.actions.reactivate.success'))
+                ->failureNotificationTitle(TranslatedText::of('admin/users.actions.reactivate.failure'))
                 ->authorize('reactivate')
                 ->schema([
                     Textarea::make('reason')
-                        ->label('Reason')
+                        ->label(TranslatedText::of('admin/common.fields.reason'))
                         ->required()
                         ->maxLength(AccountStatusChange::REASON_MAX_LENGTH)
                         ->rows(4),
@@ -70,12 +75,53 @@ class ViewUser extends ViewRecord
         ];
     }
 
+    /**
+     * Filament checks the action's authorization again before running it, and `UserPolicy` denies
+     * suspending a suspended account (or reactivating an active one), so when another tab changed the
+     * status while this modal was open the call would be dropped without a word. Tell the administrator
+     * instead, with the action's own failure notification, and close the modal without writing.
+     *
+     * @param  array<string, mixed>  $arguments
+     */
+    #[Override]
+    public function callMountedAction(array $arguments = []): mixed
+    {
+        $action = $this->getMountedAction();
+
+        if ($action instanceof Action && $this->accountAlreadyHasTargetStatus($action)) {
+            $action->sendFailureNotification();
+            $this->unmountAction();
+
+            return null;
+        }
+
+        return parent::callMountedAction($arguments);
+    }
+
     #[Override]
     protected function getHeaderWidgets(): array
     {
         return [
             UserActivityOverview::class,
         ];
+    }
+
+    /**
+     * Whether the action changes the account status and the account already has the status it sets.
+     */
+    private function accountAlreadyHasTargetStatus(Action $action): bool
+    {
+        $targetStatus = match ($action->getName()) {
+            self::SUSPEND_ACTION => AccountStatus::Suspended,
+            self::REACTIVATE_ACTION => AccountStatus::Active,
+            default => null,
+        };
+
+        $model = $this->getRecord();
+
+        return $targetStatus instanceof AccountStatus
+            && $model instanceof User
+            && $model->status === $targetStatus;
     }
 
     /**

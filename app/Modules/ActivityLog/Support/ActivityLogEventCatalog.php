@@ -8,6 +8,8 @@ use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\ActivityLogName;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
+use App\Support\Translation\TranslatedText;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 
 /**
@@ -50,7 +52,7 @@ final class ActivityLogEventCatalog
         $activityLogName = ActivityLogName::tryFrom($logName);
 
         return $activityLogName instanceof ActivityLogName
-            ? Str::headline($activityLogName->name)
+            ? self::activityLogNameLabel($activityLogName)
             : $logName;
     }
 
@@ -80,7 +82,7 @@ final class ActivityLogEventCatalog
         $logOptions = [];
 
         foreach (ActivityLogName::cases() as $activityLogName) {
-            $logOptions[$activityLogName->value] = Str::headline($activityLogName->name);
+            $logOptions[$activityLogName->value] = self::activityLogNameLabel($activityLogName);
         }
 
         return $logOptions;
@@ -104,7 +106,29 @@ final class ActivityLogEventCatalog
         return $events;
     }
 
+    /**
+     * The name of an event in the current language, from `admin/activity-log.events.<value>`; an event
+     * without a translation keeps its English name.
+     */
     private static function eventLabel(ActivityLogEvent $activityLogEvent): string
+    {
+        return self::translated('admin/activity-log.events.'.$activityLogEvent->eventName(), self::englishEventLabel($activityLogEvent));
+    }
+
+    /**
+     * The name of a log in the current language, from `admin/activity-log.logs.<log>`, or its headline.
+     */
+    private static function activityLogNameLabel(ActivityLogName $activityLogName): string
+    {
+        return self::translated('admin/activity-log.logs.'.$activityLogName->value, Str::headline($activityLogName->name));
+    }
+
+    private static function translated(string $key, string $fallback): string
+    {
+        return Lang::has($key) ? TranslatedText::of($key) : $fallback;
+    }
+
+    private static function englishEventLabel(ActivityLogEvent $activityLogEvent): string
     {
         return match ($activityLogEvent) {
             ActivityLogLikeEvent::Added => 'Like Added',

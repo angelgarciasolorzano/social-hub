@@ -121,3 +121,22 @@ it('offers no create, edit or delete actions', function (): void {
         ->and($table->getToolbarActions())
         ->toBeEmpty();
 });
+
+it('shows the status history in Spanish, with a deleted administrator', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+    $user = createUser();
+    createStatusHistoryEntry($user, null, '2026-10-01 10:00:00');
+
+    accountStatusChangesRelationManagerFor($user)
+        ->assertSee('Fecha')
+        ->assertSee('Estado')
+        ->assertSee('Motivo')
+        ->assertSee('Cambiado por')
+        ->assertSee('Suspendida')
+        ->assertSee('Usuario eliminado')
+        ->assertDontSee('Changed by');
+
+    expect(AccountStatusChangesRelationManager::getTitle($user, ViewUser::class))->toBe('Historial de estados');
+});

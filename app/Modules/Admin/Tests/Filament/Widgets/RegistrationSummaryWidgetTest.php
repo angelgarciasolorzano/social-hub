@@ -37,6 +37,26 @@ it('shows accurate total and verified account summaries', function (): void {
         ->assertSeeText('2');
 });
 
+it('shows the account summary in Spanish, including pending verification', function (): void {
+    app()->setLocale('es');
+
+    $authenticatedUser = RegistrationDashboardTestData::createDashboardReader();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    RegistrationDashboardTestData::createDashboardRegistration('2026-06-11 10:00:00', verified: false);
+
+    Livewire::test(RegistrationSummaryWidget::class, ['showPendingVerification' => true])
+        ->assertSeeText('Resumen de cuentas')
+        ->assertSeeText('Cuentas totales')
+        ->assertSeeText('Todas las cuentas de usuario registradas')
+        ->assertSeeText('Cuentas verificadas')
+        ->assertSeeText('Cuentas con el correo electrónico verificado')
+        ->assertSeeText('Verificación pendiente')
+        ->assertSeeText('Cuentas que aún no verifican su correo electrónico')
+        ->assertDontSeeText('Account overview');
+});
+
 it('shows seven day registration trends on the account summary cards', function (): void {
     $authenticatedUser = RegistrationDashboardTestData::createDashboardReader();
 

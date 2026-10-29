@@ -109,6 +109,29 @@ it('shows zero counts when the selected user has no activity', function (): void
         ->assertSeeText('0');
 });
 
+it('shows the activity stats in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $authenticatedUser = createUser();
+
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    Livewire::test(UserActivityOverview::class, ['record' => createUser()])
+        ->assertSeeText('Publicaciones')
+        ->assertSeeText('Publicaciones nuevas por día en los últimos 7 días')
+        ->assertSeeText('Comentarios')
+        ->assertSeeText('Dispositivos de confianza activos')
+        ->assertSeeText('Ni revocados ni vencidos')
+        ->assertSeeText('Cambios de estado (30 días)')
+        ->assertSeeText('Suspensiones y reactivaciones de la cuenta')
+        ->assertDontSeeText('Active trusted devices');
+});
+
 it('counts account status changes within the last 30 calendar days', function (): void {
     $authenticatedUser = createUser();
 

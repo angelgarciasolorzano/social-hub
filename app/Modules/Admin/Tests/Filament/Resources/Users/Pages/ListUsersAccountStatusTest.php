@@ -46,6 +46,30 @@ it('shows each account status as a badge in the users list', function (): void {
         ->assertSee('Suspended');
 });
 
+it('shows the account status badges and filter options in Spanish', function (): void {
+    app()->setLocale('es');
+    createSuspendedUser();
+
+    Livewire::test(ListUsers::class)
+        ->call('loadTable')
+        ->assertSee('Activa')
+        ->assertSee('Suspendida')
+        ->assertDontSee('Suspended');
+});
+
+it('still filters by the stored status value in Spanish', function (): void {
+    app()->setLocale('es');
+    $suspendedUser = createSuspendedUser();
+    createUser();
+
+    $testable = Livewire::test(ListUsers::class)
+        ->call('loadTable')
+        ->set('tableFilters.status', ['value' => 'suspended']);
+
+    expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
+        ->toBe([FilamentTableRecords::recordKey($suspendedUser)]);
+});
+
 it('filters the users list by suspended accounts', function (): void {
     $suspendedUser = createSuspendedUser();
     createUser();

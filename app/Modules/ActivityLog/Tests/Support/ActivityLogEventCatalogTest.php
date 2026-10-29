@@ -57,3 +57,26 @@ it('offers one log option per log', function (): void {
     expect(ActivityLogEventCatalog::logOptions())->toHaveSameSize(ActivityLogName::cases())
         ->toHaveKey('trusted_devices', 'Trusted Devices');
 });
+
+it('labels events and logs in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $eventOptions = ActivityLogEventCatalog::eventOptions();
+
+    expect(ActivityLogEventCatalog::label('auth.login'))->toBe('Inicio de sesión')
+        ->and(ActivityLogEventCatalog::label(ActivityLogTrustedDeviceEvent::Created->value))->toBe('Dispositivo de confianza agregado')
+        ->and(ActivityLogEventCatalog::logLabel('trusted_devices'))->toBe('Dispositivos de confianza')
+        ->and(ActivityLogEventCatalog::logOptions())->toHaveKey('admin', 'Administración')
+        ->and($eventOptions['Autenticación']['auth.login'])->toBe('Inicio de sesión')
+        ->and($eventOptions['Administración']['admin.backup_created'])->toBe('Respaldo creado')
+        ->and(ActivityLogEventCatalog::label('legacy.unknown'))->toBe('legacy.unknown');
+});
+
+it('keeps the English names when a language has no translations at all', function (): void {
+    app()->setLocale('xx');
+    resolve('translator')->setFallback('xx');
+
+    expect(ActivityLogEventCatalog::label('auth.password_updated'))->toBe('Password Updated')
+        ->and(ActivityLogEventCatalog::label(ActivityLogLikeEvent::Added->value))->toBe('Like Added')
+        ->and(ActivityLogEventCatalog::logLabel('trusted_devices'))->toBe('Trusted Devices');
+});
