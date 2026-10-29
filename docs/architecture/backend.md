@@ -71,7 +71,7 @@ php artisan admin:bootstrap-admin admin@example.com --actor=admin@example.com
 
 ### Idiomas del panel (SOC-65 y SOC-66)
 
-El panel de administración está en español e inglés. Las traducciones viven en `lang/{en,es}/` en la raíz del proyecto, la convención de Laravel; `resources/lang/` se movió ahí y ya no existe. Cada sección del panel tiene su catálogo: `lang/{en,es}/admin/{common,dashboard,users,backups,activity-log,announcements,posts}.php`. `common` guarda solo los textos que usan dos o más secciones.
+El panel de administración está en español e inglés. Las traducciones viven en `lang/{en,es}/` en la raíz del proyecto, la convención de Laravel; `resources/lang/` se movió ahí y ya no existe. Cada sección del panel tiene su catálogo: `lang/{en,es}/admin/{common,dashboard,users,backups,activity-log,announcements,posts,comments}.php`. `common` guarda solo los textos que usan dos o más secciones.
 
 - **Claves con nombre**, nunca el texto en inglés como clave: `admin/users.table.status`. Los plurales van con `trans_choice` (`{1} :count día|[0,*] :count días`) y los valores con marcadores (`:name`, `:count`). `:Type` pone el valor con la primera letra en mayúscula.
 - **En PHP** todo texto pasa por `App\Support\Translation\TranslatedText::of($clave, $reemplazos)`. Es `__()` tipado como `string`: PHPStan no acepta el `array|string` de `__()` donde Filament espera un texto, y una clave que apunta a un grupo lanza `LogicException`. **En Blade** se usa `__()`.
@@ -91,13 +91,14 @@ El panel de administración está en español e inglés. Las traducciones viven 
   - Activity Log: tabla, detalle, widgets, `DescribesActivityLogParties` y nombres de eventos y logs. `ActivityLogEventCatalog` lee `admin/activity-log.events.<valor>` y, si falta la clave, usa el nombre en inglés.
   - Announcements: recurso, formularios, lista, tabs, acciones, detalle, preview y etiquetas/descripciones de sus enums.
   - Posts: recurso, tabla, detalle, widgets y el gestor de Comments anidado en Posts.
+  - Comments independiente: recurso oculto sin listado; detalle, tabla/modal de respuestas y widget de actividad traducidos. Mantiene el acceso de solo lectura mediante `CommentPolicy` y `admin.posts.view`.
 - **Fuera del alcance de traducción**:
-  - El recurso independiente de Comments y el contenido authored de anuncios, publicaciones y comentarios. Ese contenido conserva el idioma usado por su autor.
+  - El contenido authored de anuncios, publicaciones y comentarios, que conserva el idioma usado por su autor.
   - El correo y la página de aceptación de invitaciones de administrador.
   - Los nombres de las comprobaciones fallidas de Spatie Backup.
 - **Pruebas que lo protegen** (`app/Modules/Admin/Tests/Translations/`):
   - `AdminTranslationKeysTest` exige las mismas claves, textos no vacíos y los mismos marcadores en `en` y `es`, además de claves para las opciones de enums de Announcements y nombres para cada evento, log y tipo del morph map.
-  - `AdminHardcodedTextTest` escanea Activity Log, Announcements, Posts y el preview de anuncios; detecta literales en métodos de texto, títulos de tabs, componentes de estadísticas/secciones y texto Blade. Excluye el recurso independiente de Comments y el contenido authored.
+  - `AdminHardcodedTextTest` escanea Activity Log, Announcements, Posts y el preview de anuncios; detecta literales en métodos de texto, títulos de tabs, componentes de estadísticas/secciones y texto Blade. Excluye solo el contenido authored.
 
 ### Registro de actividad (ActivityLog)
 
