@@ -8,6 +8,7 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\ActivityLog\Support\ActivityLogEventCatalog;
 use App\Modules\Admin\Data\ActivityLogSummaryData;
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -24,21 +25,30 @@ class ActivityLogSummaryWidget extends ChartWidget
     protected int|string|array $columnSpan = 'full';
 
     #[Override]
-    protected ?string $heading = 'Activity events (last 7 days)';
-
-    #[Override]
-    protected ?string $emptyStateHeading = 'No activity in the last 7 days';
-
-    #[Override]
-    protected ?string $emptyStateDescription = 'There are no activity events to summarize for this period.';
-
-    #[Override]
     protected ?string $maxHeight = '360px';
 
     #[Override]
     protected ?array $options = ['indexAxis' => 'y'];
 
     private ?ActivityLogSummaryData $summary = null;
+
+    #[Override]
+    public function getHeading(): ?string
+    {
+        return TranslatedText::of('admin/activity-log.summary.heading');
+    }
+
+    #[Override]
+    public function getEmptyStateHeading(): string
+    {
+        return TranslatedText::of('admin/activity-log.summary.empty_state_heading');
+    }
+
+    #[Override]
+    public function getEmptyStateDescription(): ?string
+    {
+        return TranslatedText::of('admin/activity-log.summary.empty_state_description');
+    }
 
     #[Override]
     public static function canView(): bool
@@ -63,10 +73,13 @@ class ActivityLogSummaryWidget extends ChartWidget
 
         return [
             'datasets' => [[
-                'label' => 'Events',
+                'label' => TranslatedText::of('admin/activity-log.summary.dataset_events'),
                 'data' => $activityLogSummaryData->eventCounts,
             ]],
-            'labels' => $activityLogSummaryData->eventLabels,
+            'labels' => array_map(
+                $this->displayEventLabel(...),
+                $activityLogSummaryData->eventLabels,
+            ),
         ];
     }
 
@@ -74,9 +87,8 @@ class ActivityLogSummaryWidget extends ChartWidget
     public function getDescription(): string
     {
         $totalEvents = $this->getSummary()->totalEvents;
-        $eventNoun = $totalEvents === 1 ? 'event' : 'events';
 
-        return "{$totalEvents} {$eventNoun} in the last 7 days.";
+        return trans_choice('admin/activity-log.summary.description', $totalEvents, ['count' => $totalEvents]);
     }
 
     #[Override]
@@ -85,16 +97,21 @@ class ActivityLogSummaryWidget extends ChartWidget
         $activityLogSummaryData = $this->getSummary();
 
         if ($activityLogSummaryData->totalEvents === 0) {
-            return 'There are no activity events to summarize for the last 7 days.';
+            return TranslatedText::of('admin/activity-log.summary.assistive_empty');
         }
 
         $eventCountsByLabel = array_map(
-            static fn (string $eventLabel, int $eventCount): string => "{$eventLabel}: {$eventCount}",
+            fn (string $eventLabel, int $eventCount): string => implode(': ', [
+                $this->displayEventLabel($eventLabel),
+                (string) $eventCount,
+            ]),
             $activityLogSummaryData->eventLabels,
             $activityLogSummaryData->eventCounts,
         );
 
-        return 'Event distribution: '.implode(', ', $eventCountsByLabel).'.';
+        return TranslatedText::of('admin/activity-log.summary.assistive_distribution', [
+            'distribution' => implode(', ', $eventCountsByLabel),
+        ]);
     }
 
     #[Override]
@@ -125,6 +142,13 @@ class ActivityLogSummaryWidget extends ChartWidget
         $this->summary = $this->buildSummary($activityCounts);
 
         return $this->summary;
+    }
+
+    private function displayEventLabel(string $eventLabel): string
+    {
+        return $eventLabel === self::UNKNOWN_EVENT_LABEL
+            ? TranslatedText::of('admin/activity-log.summary.unknown_event')
+            : $eventLabel;
     }
 
     /**

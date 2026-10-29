@@ -7,6 +7,7 @@ use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Admin\Filament\Resources\Comments\Widgets\CommentActivityOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Comment\Models\Comment;
+use App\User\Enums\PreferredLocale;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Livewire\Livewire;
@@ -38,6 +39,27 @@ function commentActivityStatsFor(Comment $comment): array
         'replies' => $stats[0],
         'likes' => $stats[1],
     ];
+}
+
+/**
+ * @return array{replies: string, replies_description: string, likes: string, likes_description: string}
+ */
+function expectedCommentActivityTexts(PreferredLocale $preferredLocale): array
+{
+    return match ($preferredLocale) {
+        PreferredLocale::ENGLISH => [
+            'replies' => 'Replies',
+            'replies_description' => 'Replies to this comment',
+            'likes' => 'Likes',
+            'likes_description' => 'Likes for this comment',
+        ],
+        PreferredLocale::SPANISH => [
+            'replies' => 'Respuestas',
+            'replies_description' => 'Respuestas a este comentario',
+            'likes' => 'Me gusta',
+            'likes_description' => 'Me gusta en este comentario',
+        ],
+    };
 }
 
 beforeEach(function (): void {
@@ -78,6 +100,41 @@ it('shows zero when the comment has no replies or likes', function (): void {
         ->toBe(0)
         ->and($stats['likes']->getValue())
         ->toBe(0);
+});
+
+it('localizes the reply and like stats in the active language', function (PreferredLocale $preferredLocale): void {
+    app()->setLocale($preferredLocale->value);
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $stats = commentActivityStatsFor(createCommentOn(createPost()));
+    $expectedTexts = expectedCommentActivityTexts($preferredLocale);
+
+    expect($stats['replies']->getLabel())
+        ->toBe($expectedTexts['replies'])
+        ->and($stats['replies']->getDescription())
+        ->toBe($expectedTexts['replies_description'])
+        ->and($stats['likes']->getLabel())
+        ->toBe($expectedTexts['likes'])
+        ->and($stats['likes']->getDescription())
+        ->toBe($expectedTexts['likes_description']);
+})->with([
+    'English' => PreferredLocale::ENGLISH,
+    'Spanish' => PreferredLocale::SPANISH,
+]);
+
+it('returns no stats when no comment record is available', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $testable = Livewire::test(CommentActivityOverview::class);
+    $component = $testable->instance();
+
+    throw_unless($component instanceof CommentActivityOverview, LogicException::class, 'The comment activity widget must be mounted.');
+
+    $statsMethod = new ReflectionMethod(StatsOverviewWidget::class, 'getCachedStats');
+
+    expect($statsMethod->invoke($component))
+        ->toBe([]);
 });
 
 it('denies the widget to admins without Posts view permission', function (): void {

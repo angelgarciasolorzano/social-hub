@@ -7,11 +7,15 @@ namespace App\Modules\Admin\Filament\Resources\ActivityLogs\Schemas;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\ActivityLog\Support\ActivityLogEventCatalog;
 use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
+use App\Support\Translation\TranslatedText;
+use Carbon\CarbonInterface;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
 
 class ActivityLogInfolist
 {
@@ -26,28 +30,36 @@ class ActivityLogInfolist
     {
         return $schema
             ->components([
-                Section::make('Activity')
-                    ->description('What happened, when, who did it and on what.')
+                Section::make(TranslatedText::of('admin/activity-log.infolist.activity.heading'))
+                    ->description(TranslatedText::of('admin/activity-log.infolist.activity.description'))
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->schema([
                         TextEntry::make('created_at')
-                            ->label('Date')
+                            ->label(TranslatedText::of('admin/common.fields.date'))
                             ->icon(Heroicon::OutlinedCalendarDays)
-                            ->dateTime(),
+                            ->dateTime()
+                            ->formatStateUsing(static function (TextEntry $component, CarbonInterface $state, ?Model $relatedRecord): string {
+                                $date = Date::parse($state)
+                                    ->setTimezone($component->getTimezone($state, $relatedRecord));
+
+                                $date->locale(app()->getLocale());
+
+                                return $date->isoFormat('LLL');
+                            }),
                         TextEntry::make('log_name')
-                            ->label('Log')
+                            ->label(TranslatedText::of('admin/activity-log.table.log'))
                             ->badge()
                             ->formatStateUsing(fn (string $state): string => ActivityLogEventCatalog::logLabel($state)),
                         TextEntry::make('event')
-                            ->label('Event')
+                            ->label(TranslatedText::of('admin/activity-log.table.event'))
                             ->formatStateUsing(fn (string $state): string => ActivityLogEventCatalog::label($state)),
                         TextEntry::make('causer_label')
-                            ->label('Performed by')
+                            ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
                             ->icon(Heroicon::OutlinedUser)
                             ->state(fn (ActivityLog $activityLog): string => self::causerLabel($activityLog))
                             ->url(fn (ActivityLog $activityLog): ?string => self::causerUrl($activityLog)),
                         TextEntry::make('subject_label')
-                            ->label('Subject')
+                            ->label(TranslatedText::of('admin/activity-log.table.subject'))
                             ->state(fn (ActivityLog $activityLog): string => self::subjectLabel($activityLog))
                             ->url(fn (ActivityLog $activityLog): ?string => self::subjectUrl($activityLog)),
                     ])
@@ -55,25 +67,26 @@ class ActivityLogInfolist
                         'default' => 1,
                         'sm' => 3,
                     ]),
-                Section::make('Details')
-                    ->description('The references stored with this activity. Content is never recorded.')
+                Section::make(TranslatedText::of('admin/activity-log.infolist.details.heading'))
+                    ->description(TranslatedText::of('admin/activity-log.infolist.details.description'))
                     ->icon(Heroicon::OutlinedListBullet)
                     ->schema([
                         KeyValueEntry::make('details')
+                            ->label(TranslatedText::of('admin/activity-log.infolist.details.heading'))
                             ->hiddenLabel()
                             ->state(fn (ActivityLog $activityLog): array => self::details($activityLog))
-                            ->placeholder('No details recorded'),
+                            ->placeholder(TranslatedText::of('admin/activity-log.infolist.details.empty')),
                     ]),
-                Section::make('Request')
-                    ->description('Where the action came from, when it was made through the web.')
+                Section::make(TranslatedText::of('admin/activity-log.infolist.request.heading'))
+                    ->description(TranslatedText::of('admin/activity-log.infolist.request.description'))
                     ->icon(Heroicon::OutlinedGlobeAlt)
                     ->schema([
                         TextEntry::make('properties.ip')
-                            ->label('IP address')
-                            ->placeholder('Not recorded'),
+                            ->label(TranslatedText::of('admin/activity-log.infolist.request.ip_address'))
+                            ->placeholder(TranslatedText::of('admin/activity-log.infolist.request.not_recorded')),
                         TextEntry::make('properties.user_agent')
-                            ->label('User agent')
-                            ->placeholder('Not recorded'),
+                            ->label(TranslatedText::of('admin/activity-log.infolist.request.user_agent'))
+                            ->placeholder(TranslatedText::of('admin/activity-log.infolist.request.not_recorded')),
                     ])
                     ->columns([
                         'default' => 1,
@@ -104,7 +117,9 @@ class ActivityLogInfolist
     private static function readableValue(mixed $propertyValue): string
     {
         return match (true) {
-            \is_bool($propertyValue) => $propertyValue ? 'Yes' : 'No',
+            \is_bool($propertyValue) => TranslatedText::of($propertyValue
+                ? 'admin/activity-log.infolist.values.yes'
+                : 'admin/activity-log.infolist.values.no'),
             \is_array($propertyValue) => implode(', ', array_map(self::readableValue(...), $propertyValue)),
             \is_scalar($propertyValue) => (string) $propertyValue,
             default => '—',

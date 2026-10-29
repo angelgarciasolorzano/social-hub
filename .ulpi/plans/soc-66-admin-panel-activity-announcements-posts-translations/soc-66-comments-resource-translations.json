@@ -1,0 +1,292 @@
+{
+  "id": "soc-66-comments-resource-translations",
+  "issue": {
+    "identifier": "SOC-66",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-66/feature-translate-activity-log-announcements-and-posts-into-spanish"
+  },
+  "title": "SOC-66: Traducir el recurso independiente de Comments en el panel Admin",
+  "date": "2026-10-29",
+  "mode": "EXPANSION",
+  "reviewDefault": "codex",
+  "overview": "Ampliar SOC-66 con la localización al español e inglés del recurso independiente de Comments que quedó fuera del alcance inicial. El recurso no tiene listado ni aparece en navegación: esta expansión cubre su página de detalle, la tabla/modal de respuestas y el widget de actividad, además de guardrails y sincronización de documentación.",
+  "scopeChallenge": "EXPANSION: el usuario limitó esta ampliación a Comments independiente dentro de SOC-66. El alcance real es la página de detalle existente y sus componentes asociados; no se agregará un listado ni navegación nueva. El gestor de comentarios anidado en Posts ya está traducido y no se vuelve a trabajar.",
+  "prerequisites": [
+    "La traducción base de SOC-66 ya cubre Activity Log, Announcements, Posts y Comments anidado en Posts; queda pendiente el recurso independiente `app/Modules/Admin/Filament/Resources/Comments/`.",
+    "`CommentResource` tiene navegación oculta y registra solo la ruta `view`; no existe página de listado. La lectura se autoriza con `CommentPolicy` y `admin.posts.view`.",
+    "Las superficies existentes son `CommentInfolist`, `RepliesRelationManager` y `CommentActivityOverview`, con pruebas dedicadas en `app/Modules/Admin/Tests/Filament/Resources/Comments/`.",
+    "`AdminTranslationKeysTest` detecta automáticamente los catálogos bajo `lang/en/admin/`; `AdminHardcodedTextTest` todavía excluye el recurso independiente de Comments.",
+    "No se requieren dependencias, rutas, permisos, cambios de esquema ni nuevas capacidades de escritura."
+  ],
+  "nonGoals": [
+    "Agregar un index/listado de Comments o mostrar el recurso en la navegación del panel.",
+    "Traducir o modificar mensajes, nombres, contenido de respuestas u otros datos escritos por usuarios.",
+    "Volver a traducir el gestor de Comments anidado dentro de Posts o el relation manager de Posts dentro de Users.",
+    "Cambiar políticas, permisos, auditoría, filtrado, paginación, relaciones o comportamiento de solo lectura.",
+    "Traducir la interfaz React, los correos de invitación u otras áreas pendientes fuera del recurso independiente de Comments."
+  ],
+  "contracts": [
+    "Todo texto fijo del recurso usa claves nombradas del nuevo catálogo `lang/{en,es}/admin/comments.php`; en PHP se usa `TranslatedText::of('admin/comments.<clave>')`.",
+    "Los catálogos inglés y español tienen las mismas claves, valores no vacíos y placeholders sincronizados.",
+    "El recurso permanece oculto de navegación y conserva únicamente su página directa de detalle, con autorización y mutaciones denegadas como ahora.",
+    "El texto del comentario y de sus respuestas, los nombres de autores y los datos de contexto permanecen como datos originales; solo se localiza copy de interfaz.",
+    "Las respuestas siguen restringidas al comentario seleccionado, con los filtros, la paginación y la visibilidad condicional existentes."
+  ],
+  "existingCodeLeverage": [
+    "`CommentResource` ya oculta la navegación y registra solamente `ViewComment`; `CommentInfolist` concentra las secciones del detalle.",
+    "`RepliesRelationManager` contiene las columnas, filtros, acciones y modal de solo lectura para replies.",
+    "`CommentActivityOverview` calcula replies y likes para el comentario seleccionado y conserva su autorización existente.",
+    "`ViewCommentTest`, `RepliesRelationManagerTest` y `CommentActivityOverviewTest` ya cubren contenido, permisos, filtros, paginación y estados opcionales.",
+    "`AdminTranslationKeysTest` autodetecta el catálogo nuevo; `AdminHardcodedTextTest` puede incluir el directorio Comments sin nueva infraestructura."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-020",
+      "title": "Crear el catálogo de traducción de Comments",
+      "description": "Crear el catálogo `admin/comments` en inglés y español con claves para los textos fijos del recurso de detalle, las respuestas y el widget de actividad. Reutilizar claves comunes ya existentes cuando representen exactamente el mismo texto, y no crear claves para contenido escrito por usuarios.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los dos catálogos son PHP válido y contienen los mismos nombres de clave con valores no vacíos.",
+        "Los placeholders están sincronizados entre inglés y español; no se incluyen mensajes ni nombres de autores como textos traducibles.",
+        "`AdminTranslationKeysTest` detecta el catálogo nuevo y pasa la comprobación de paridad."
+      ],
+      "filesToCreate": [
+        "lang/en/admin/comments.php",
+        "lang/es/admin/comments.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/admin/comments.php",
+        "lang/es/admin/comments.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/admin/comments.php && rtk php -l lang/es/admin/comments.php && rtk php artisan test --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Traducir la identidad y el detalle del recurso Comments",
+      "description": "Localizar las etiquetas singular/plural que usa el título de la página y los textos fijos de `CommentInfolist`. Ampliar la prueba del detalle para español e inglés sin modificar el contenido guardado.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "El título de detalle y las secciones, descripciones y campos de Comment aparecen en el locale activo.",
+        "El mensaje y el nombre del autor permanecen como datos originales; la fecha representa el mismo instante y se formatea según el locale.",
+        "La prueba conserva el acceso autorizado, el rechazo sin `admin.posts.view`, la navegación oculta y el comportamiento de solo lectura."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Comments/CommentResource.php",
+        "app/Modules/Admin/Filament/Resources/Comments/Schemas/CommentInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Comments/Pages/ViewCommentTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Comments/CommentResource.php",
+        "app/Modules/Admin/Filament/Resources/Comments/Schemas/CommentInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Comments/Pages/ViewCommentTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Comments/Pages/ViewCommentTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Traducir la tabla y el modal de respuestas",
+      "description": "Localizar columnas, filtros, acción, títulos y descripciones del modal y su botón de cierre en `RepliesRelationManager`. Añadir casos pequeños para ambos idiomas y mantener la relación de respuestas acotada al comentario seleccionado.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "Columnas, filtros de fecha/autor y textos de la acción/modal aparecen en el locale activo.",
+        "El filtrado, la paginación y la consulta siguen mostrando solo respuestas del comentario seleccionado, incluso si se presenta el ID de una respuesta ajena.",
+        "El modal permanece de solo lectura y los campos opcionales de edición o mención siguen ocultos cuando sus datos faltan o el usuario mencionado fue eliminado."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Comments/RelationManagers/RepliesRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Comments/RelationManagers/RepliesRelationManagerTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Comments/RelationManagers/RepliesRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Comments/RelationManagers/RepliesRelationManagerTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Comments/RelationManagers/RepliesRelationManagerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Traducir las métricas del detalle de Comments",
+      "description": "Localizar las etiquetas y descripciones de replies y likes en `CommentActivityOverview`. Ampliar sus pruebas por locale manteniendo conteos, autorización y el caso de comentario no disponible.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-020"
+      ],
+      "acceptanceCriteria": [
+        "Las etiquetas y descripciones de replies y likes cambian según el locale activo.",
+        "Los conteos siguen acotados al comentario seleccionado y muestran cero cuando no hay actividad.",
+        "Un administrador sin permiso de lectura no puede ver el widget ni sus métricas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Comments/Widgets/CommentActivityOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Comments/Widgets/CommentActivityOverviewTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Comments/Widgets/CommentActivityOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Comments/Widgets/CommentActivityOverviewTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Comments/Widgets/CommentActivityOverviewTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Incluir Comments en el detector de textos fijos",
+      "description": "Extender `AdminHardcodedTextTest` para escanear el recurso independiente de Comments y reemplazar la expectativa que actualmente exige excluirlo. Mantener fuera del detector el contenido authored que llega desde modelos.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-021",
+        "TASK-022",
+        "TASK-023"
+      ],
+      "acceptanceCriteria": [
+        "`AdminHardcodedTextTest` incluye `Resources/Comments` y falla ante un literal de interfaz pasado a métodos Filament o a componentes de texto.",
+        "El detector pasa para las superficies traducidas y conserva pruebas que distinguen copy de interfaz del contenido de comentarios/respuestas.",
+        "`AdminTranslationKeysTest` sigue verificando automáticamente paridad y placeholders del catálogo nuevo."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Sincronizar la documentación del alcance Comments",
+      "description": "Actualizar la documentación existente para reflejar que SOC-66 también traduce el recurso independiente de Comments, aclarando que permanece oculto de navegación, no tiene listado y conserva el contenido authored en su idioma original.",
+      "priority": "P2",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-024"
+      ],
+      "acceptanceCriteria": [
+        "`AGENTS.md`, `CLAUDE.md` y `docs/architecture/backend.md` describen de forma consistente la cobertura de Comments independiente.",
+        "La documentación mantiene explícitos el acceso de solo lectura, la autorización existente y la exclusión del contenido authored.",
+        "No queda una afirmación de que el recurso independiente de Comments permanece fuera del alcance de SOC-66."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/architecture/backend.md"
+      ],
+      "writeScope": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/architecture/backend.md"
+      ],
+      "validateCommand": "rtk git diff --check -- AGENTS.md CLAUDE.md docs/architecture/backend.md",
+      "review": "codex"
+    }
+  ],
+  "failureModes": [
+    "Un catálogo deja fuera una clave o marcador: `AdminTranslationKeysTest` debe fallar por paridad/placeholders antes de continuar con la UI.",
+    "Se traduce el mensaje del comentario o una respuesta como si fuera copy fijo: las pruebas de detalle/modal exigen que el contenido authored permanezca igual.",
+    "La traducción altera el alcance de replies, filtros o accesos por ID: `RepliesRelationManagerTest` debe conservar el caso que rechaza una reply perteneciente a otro comentario.",
+    "El detector sigue excluyendo Comments o empieza a inspeccionar texto authored: TASK-024 exige que escanee los archivos de interfaz y mantenga fuera los valores dinámicos."
+  ],
+  "shipCut": "El catálogo se establece primero. Después, el detalle, el gestor de respuestas y las métricas pueden avanzar como slices independientes. SOC-66 queda completamente traducida para Comments independiente cuando los tres slices, el detector de literales y la sincronización de documentación pasan.",
+  "testCoverageMap": {
+    "Catálogo Comments: paridad, valores y placeholders": [
+      "TASK-020",
+      "TASK-024"
+    ],
+    "Identidad y detalle de Comment: idiomas, contenido original, permisos y modo de solo lectura": [
+      "TASK-021"
+    ],
+    "Replies: copy localizado, alcance de registros, filtros, paginación y modal opcional": [
+      "TASK-022"
+    ],
+    "Widget: etiquetas, conteos cero/positivos y autorización": [
+      "TASK-023"
+    ],
+    "Detector de textos fijos y documentación de SOC-66": [
+      "TASK-024",
+      "TASK-025"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 6,
+    "layers": [
+      [
+        "TASK-020"
+      ],
+      [
+        "TASK-021",
+        "TASK-022",
+        "TASK-023"
+      ],
+      [
+        "TASK-024"
+      ],
+      [
+        "TASK-025"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-020",
+      "TASK-021",
+      "TASK-024",
+      "TASK-025"
+    ],
+    "parallelism": "Después del catálogo, detalle, replies y widget son tres slices independientes. El guardrail se amplía tras integrarlos y la documentación se actualiza al final."
+  },
+  "dependencyMap": {
+    "TASK-020": [],
+    "TASK-021": [
+      "TASK-020"
+    ],
+    "TASK-022": [
+      "TASK-020"
+    ],
+    "TASK-023": [
+      "TASK-020"
+    ],
+    "TASK-024": [
+      "TASK-021",
+      "TASK-022",
+      "TASK-023"
+    ],
+    "TASK-025": [
+      "TASK-024"
+    ]
+  },
+  "criticalPath": [
+    "TASK-020",
+    "TASK-021",
+    "TASK-024",
+    "TASK-025"
+  ]
+}
+

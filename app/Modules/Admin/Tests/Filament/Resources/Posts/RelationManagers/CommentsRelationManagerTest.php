@@ -12,7 +12,11 @@ use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -35,6 +39,89 @@ beforeEach(function (): void {
 
     AdminFilamentTestContext::configure($testCase);
 });
+
+it('shows the nested comments table and filters in the selected locale', function (
+    string $locale,
+    array $tableLabels,
+    array $filterLabels,
+): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $user = createUser();
+    $post = createPost();
+    createCommentOn($post, $user, ['content' => 'Authored comment locale sentinel']);
+
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        $testable = commentsRelationManagerFor($post)
+            ->assertOk()
+            ->assertSeeText('Authored comment locale sentinel')
+            ->assertSeeText($user->name);
+
+        foreach ($tableLabels as $tableLabel) {
+            $testable->assertSeeText($tableLabel);
+        }
+
+        $table = FilamentTableRecords::table($testable)->getTable();
+        $dateFilter = $table->getFilter('created_at');
+        $authorFilter = $table->getFilter('author');
+        $repliesFilter = $table->getFilter('has_replies');
+
+        throw_unless($dateFilter instanceof Filter, LogicException::class, 'The comments table must expose its date filter.');
+        throw_unless($authorFilter instanceof SelectFilter, LogicException::class, 'The comments table must expose its author filter.');
+        throw_unless($repliesFilter instanceof TernaryFilter, LogicException::class, 'The comments table must expose its reply filter.');
+
+        $dateFields = $dateFilter->getSchemaComponents();
+        $fromField = $dateFields[0] ?? null;
+        $untilField = $dateFields[1] ?? null;
+
+        throw_unless($fromField instanceof DatePicker, LogicException::class, 'The comment date filter must expose its start date.');
+        throw_unless($untilField instanceof DatePicker, LogicException::class, 'The comment date filter must expose its end date.');
+
+        expect($dateFilter->getLabel())->toBe($filterLabels['creation_date'])
+            ->and($fromField->getLabel())->toBe($filterLabels['from'])
+            ->and($untilField->getLabel())->toBe($filterLabels['until'])
+            ->and($authorFilter->getLabel())->toBe($filterLabels['author'])
+            ->and($repliesFilter->getLabel())->toBe($filterLabels['reply_presence'])
+            ->and($repliesFilter->getPlaceholder())->toBe($filterLabels['all_comments'])
+            ->and($repliesFilter->getTrueLabel())->toBe($filterLabels['has_replies'])
+            ->and($repliesFilter->getFalseLabel())->toBe($filterLabels['no_replies']);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'English' => [
+        'en',
+        ['Content', 'Author', 'Created at'],
+        [
+            'creation_date' => 'Creation date',
+            'from' => 'From',
+            'until' => 'Until',
+            'author' => 'Author',
+            'reply_presence' => 'Reply presence',
+            'all_comments' => 'All comments',
+            'has_replies' => 'Has replies',
+            'no_replies' => 'No replies',
+        ],
+    ],
+    'Spanish' => [
+        'es',
+        ['Contenido', 'Autor', 'Fecha de creación'],
+        [
+            'creation_date' => 'Fecha de creación',
+            'from' => 'Desde',
+            'until' => 'Hasta',
+            'author' => 'Autor',
+            'reply_presence' => 'Presencia de respuestas',
+            'all_comments' => 'Todos los comentarios',
+            'has_replies' => 'Con respuestas',
+            'no_replies' => 'Sin respuestas',
+        ],
+    ],
+]);
 
 it('loads comments lazily and displays a loading skeleton', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);

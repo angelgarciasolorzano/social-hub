@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Comments\Widgets;
 
 use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Comment\Models\Comment;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -50,11 +51,11 @@ class CommentActivityOverview extends StatsOverviewWidget
         }
 
         return [
-            Stat::make('Replies', $comment->repliesCount())
-                ->description('Replies to this comment')
+            Stat::make(TranslatedText::of('admin/comments.activity.replies'), $comment->repliesCount())
+                ->description(TranslatedText::of('admin/comments.activity.replies_description'))
                 ->color('info'),
-            Stat::make('Likes', $comment->likesCount())
-                ->description('Likes for this comment')
+            Stat::make(TranslatedText::of('admin/comments.activity.likes'), $comment->likesCount())
+                ->description(TranslatedText::of('admin/comments.activity.likes_description'))
                 ->color('warning'),
         ];
     }

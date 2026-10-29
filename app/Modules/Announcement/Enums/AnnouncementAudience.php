@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Announcement\Enums;
 
+use App\Support\Translation\TranslatedText;
+
 enum AnnouncementAudience: string
 {
     /**
@@ -22,14 +24,10 @@ enum AnnouncementAudience: string
     case WithoutTwoFactor = 'without_two_factor';
 
     /**
-     * Readable name shown in the admin panel.
+     * Readable name shown in the admin panel, in the panel's current language.
      */
     public function label(): string
     {
-        return match ($this) {
-            self::All => 'Everyone',
-            self::Authenticated => 'Signed-in users',
-            self::WithoutTwoFactor => 'Users without two-factor authentication',
-        };
+        return TranslatedText::of('admin/announcements.options.audience.'.$this->value);
     }
 }

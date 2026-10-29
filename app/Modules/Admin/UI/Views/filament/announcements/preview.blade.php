@@ -45,7 +45,9 @@
                         </x-filament::button>
                     @endif
 
-                    <x-filament::button size="sm" :color="$typeColor" disabled>Entendido</x-filament::button>
+                    <x-filament::button size="sm" :color="$typeColor" disabled>
+                        {{ __('admin/announcements.preview.acknowledge') }}
+                    </x-filament::button>
                 </div>
             </div>
         </div>
@@ -77,14 +79,18 @@
             <x-filament::icon-button
                 icon="heroicon-m-x-mark"
                 color="gray"
-                label="Close (disabled in preview)"
+                :label="__('admin/announcements.preview.close_disabled')"
                 disabled
             />
         </div>
     @endif
 
     <p class="text-sm text-gray-500 dark:text-gray-400">
-        Shown as {{ strtolower($announcement->display->label()) }} to {{ strtolower($announcement->audience->label()) }} &middot; {{ $announcement->is_dismissible ? 'stays closed once closed' : 'comes back in the next session after being closed' }} &middot;
-        the final look in the application may differ slightly.
+        {{
+            __('admin/announcements.preview.shown_as', [
+                'display' => strtolower($announcement->display->label()),
+                'audience' => strtolower($announcement->audience->label()),
+            ])
+        }} &middot; {{ __($announcement->is_dismissible ? 'admin/announcements.preview.dismissible' : 'admin/announcements.preview.not_dismissible') }} &middot; {{ __('admin/announcements.preview.final_look_note') }}
     </p>
 </div>

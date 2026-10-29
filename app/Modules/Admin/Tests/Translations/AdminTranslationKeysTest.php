@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\ActivityLogName;
+use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementType;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Lang;
 
@@ -134,4 +137,29 @@ it('names every cataloged activity event and log in both languages', function (s
     ));
 
     expect($missingKeys)->toBe([], "lang/{$locale}/admin/activity-log.php is missing keys");
+})->with(['en', 'es']);
+
+it('has labels and descriptions for announcement enum options in both languages', function (string $locale): void {
+    $announcementOptionKeys = [];
+
+    foreach (AnnouncementType::cases() as $announcementType) {
+        $announcementOptionKeys[] = 'options.type.'.$announcementType->value;
+    }
+
+    foreach (AnnouncementAudience::cases() as $announcementAudience) {
+        $announcementOptionKeys[] = 'options.audience.'.$announcementAudience->value;
+    }
+
+    foreach (AnnouncementDisplay::cases() as $announcementDisplay) {
+        $displayKey = 'options.display.'.$announcementDisplay->value;
+        $announcementOptionKeys[] = $displayKey;
+        $announcementOptionKeys[] = $displayKey.'_description';
+    }
+
+    $missingKeys = array_values(array_filter(
+        $announcementOptionKeys,
+        static fn (string $key): bool => ! Lang::has("admin/announcements.{$key}", $locale, false),
+    ));
+
+    expect($missingKeys)->toBe([], "lang/{$locale}/admin/announcements.php is missing enum presentation keys");
 })->with(['en', 'es']);

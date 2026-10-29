@@ -10,6 +10,7 @@ use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Services\AnnouncementService;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -35,45 +36,45 @@ class AnnouncementsTable
             ->defaultSort('starts_at', 'desc')
             ->columns([
                 TextColumn::make('title')
-                    ->label('Title')
+                    ->label(TranslatedText::of('admin/announcements.fields.title'))
                     ->searchable()
                     ->limit(60),
                 TextColumn::make('type')
-                    ->label('Type')
+                    ->label(TranslatedText::of('admin/announcements.fields.type'))
                     ->badge()
                     ->formatStateUsing(fn (AnnouncementType $state): string => $state->label())
                     ->color(fn (AnnouncementType $state): string => self::typeColor($state)),
                 TextColumn::make('audience')
-                    ->label('Audience')
+                    ->label(TranslatedText::of('admin/announcements.fields.audience'))
                     ->formatStateUsing(fn (AnnouncementAudience $state): string => $state->label()),
                 TextColumn::make('display')
-                    ->label('Shown as')
+                    ->label(TranslatedText::of('admin/announcements.fields.display'))
                     ->badge()
                     ->color('gray')
                     ->formatStateUsing(fn (AnnouncementDisplay $state): string => $state->label())
                     ->icon(fn (AnnouncementDisplay $state): Heroicon => self::displayIcon($state)),
                 TextColumn::make('starts_at')
-                    ->label('Starts')
+                    ->label(TranslatedText::of('admin/announcements.table.starts'))
                     ->dateTime()
                     ->sortable(),
                 TextColumn::make('ends_at')
-                    ->label('Ends')
+                    ->label(TranslatedText::of('admin/announcements.table.ends'))
                     ->dateTime()
-                    ->placeholder('No end date')
+                    ->placeholder(TranslatedText::of('admin/announcements.table.no_end_date'))
                     ->sortable(),
                 TextColumn::make('creator.name')
-                    ->label('Created by')
-                    ->placeholder('Deleted user'),
+                    ->label(TranslatedText::of('admin/announcements.fields.created_by'))
+                    ->placeholder(TranslatedText::of('admin/announcements.table.deleted_user')),
             ])
             ->filters([
                 SelectFilter::make('type')
-                    ->label('Type')
+                    ->label(TranslatedText::of('admin/announcements.filters.type'))
                     ->options(self::typeOptions()),
                 SelectFilter::make('audience')
-                    ->label('Audience')
+                    ->label(TranslatedText::of('admin/announcements.filters.audience'))
                     ->options(self::audienceOptions()),
                 SelectFilter::make('display')
-                    ->label('Shown as')
+                    ->label(TranslatedText::of('admin/announcements.filters.display'))
                     ->options(self::displayOptions()),
             ])
             ->recordActions([
@@ -116,16 +117,16 @@ class AnnouncementsTable
     private static function previewAction(): Action
     {
         return Action::make('preview')
-            ->label('Preview')
+            ->label(TranslatedText::of('admin/announcements.actions.preview'))
             ->icon(Heroicon::OutlinedEye)
             ->authorize('view')
-            ->modalHeading('Banner preview')
+            ->modalHeading(TranslatedText::of('admin/announcements.actions.preview_heading'))
             ->modalContent(fn (Announcement $record): View => view('admin::filament.announcements.preview', [
                 'announcement' => $record,
                 'typeColor' => self::typeColor($record->type),
             ]))
             ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Close');
+            ->modalCancelActionLabel(TranslatedText::of('admin/announcements.actions.close'));
     }
 
     /**
@@ -134,12 +135,12 @@ class AnnouncementsTable
     private static function duplicateAction(): Action
     {
         return Action::make('duplicate')
-            ->label('Duplicate')
+            ->label(TranslatedText::of('admin/announcements.actions.duplicate'))
             ->icon(Heroicon::OutlinedSquare2Stack)
             ->authorize('replicate')
             ->requiresConfirmation()
-            ->modalDescription('The copy starts tomorrow and has no end date, so it is not shown before you review it.')
-            ->successNotificationTitle('Announcement duplicated')
+            ->modalDescription(TranslatedText::of('admin/announcements.actions.duplicate_description'))
+            ->successNotificationTitle(TranslatedText::of('admin/announcements.actions.duplicated'))
             ->action(function (Action $action, Announcement $record): void {
                 $announcement = resolve(AnnouncementService::class)->duplicate($record, self::administrator());
 
@@ -154,15 +155,15 @@ class AnnouncementsTable
     private static function unpublishAction(): Action
     {
         return Action::make('unpublish')
-            ->label('Unpublish now')
+            ->label(TranslatedText::of('admin/announcements.actions.unpublish'))
             ->icon(Heroicon::OutlinedNoSymbol)
             ->color('warning')
             ->visible(fn (Announcement $record): bool => $record->isRunning())
             ->authorize('update')
             ->requiresConfirmation()
-            ->modalDescription('Users stop seeing this announcement right away.')
-            ->successNotificationTitle('Announcement unpublished')
-            ->failureNotificationTitle('The announcement is no longer running.')
+            ->modalDescription(TranslatedText::of('admin/announcements.actions.unpublish_description'))
+            ->successNotificationTitle(TranslatedText::of('admin/announcements.actions.unpublished'))
+            ->failureNotificationTitle(TranslatedText::of('admin/announcements.actions.no_longer_running'))
             ->action(function (Action $action, Announcement $record): void {
                 try {
                     resolve(AnnouncementService::class)->unpublish($record, self::administrator());
@@ -180,7 +181,11 @@ class AnnouncementsTable
     {
         $authenticatedUser = Filament::auth()->user();
 
-        throw_unless($authenticatedUser instanceof User, LogicException::class, 'Only a signed-in administrator can change announcements.');
+        throw_unless(
+            $authenticatedUser instanceof User,
+            LogicException::class,
+            TranslatedText::of('admin/announcements.actions.administrator_only'),
+        );
 
         return $authenticatedUser;
     }

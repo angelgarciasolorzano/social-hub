@@ -16,6 +16,7 @@ use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogOvervie
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogSummaryWidget;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -24,21 +25,33 @@ use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
-/**
- * @return array{labels: list<string>, counts: list<int>}
- */
-function activityLogSummaryChartPayload(ActivityLogSummaryWidget $activityLogSummaryWidget): array
+/** @return array<mixed, mixed> */
+function activityLogSummaryChartData(ActivityLogSummaryWidget $activityLogSummaryWidget): array
 {
     $cachedDataMethod = new ReflectionMethod(ChartWidget::class, 'getCachedData');
     $chartData = $cachedDataMethod->invoke($activityLogSummaryWidget);
-    $labels = is_array($chartData) ? ($chartData['labels'] ?? null) : null;
-    $datasets = is_array($chartData) ? ($chartData['datasets'] ?? null) : null;
+
+    throw_unless(is_array($chartData), LogicException::class, 'The activity summary chart must return chart data.');
+
+    return $chartData;
+}
+
+/**
+ * @return array{datasetLabel: string, labels: list<string>, counts: list<int>}
+ */
+function activityLogSummaryChartPayload(ActivityLogSummaryWidget $activityLogSummaryWidget): array
+{
+    $chartData = activityLogSummaryChartData($activityLogSummaryWidget);
+    $labels = $chartData['labels'] ?? null;
+    $datasets = $chartData['datasets'] ?? null;
     $firstDataset = is_array($datasets) ? ($datasets[0] ?? null) : null;
+    $datasetLabel = is_array($firstDataset) ? ($firstDataset['label'] ?? null) : null;
     $counts = is_array($firstDataset) ? ($firstDataset['data'] ?? null) : null;
 
     throw_unless(
         is_array($labels)
             && array_is_list($labels)
+            && is_string($datasetLabel)
             && is_array($counts)
             && array_is_list($counts),
         LogicException::class,
@@ -62,6 +75,7 @@ function activityLogSummaryChartPayload(ActivityLogSummaryWidget $activityLogSum
     }
 
     return [
+        'datasetLabel' => $datasetLabel,
         'labels' => $eventLabels,
         'counts' => $eventCounts,
     ];
@@ -107,6 +121,7 @@ function countActivityLogListQueries(): int
         array_column(DB::getQueryLog(), 'query'),
         fn (string $query): bool => preg_match('/\b(permissions|roles)\b/', $query) !== 1,
     );
+
     DB::disableQueryLog();
 
     return count($listQueries);
@@ -173,61 +188,198 @@ it('registers the aggregate summary on the activity log page', function (): void
         ->toContain(ActivityLogSummaryWidget::class);
 });
 
-it('summarizes event types inside the fixed seven-day window', function (): void {
+it('summarizes event types and accessible content in the active language within the fixed seven-day window', function (
+    PreferredLocale $preferredLocale,
+    string $expectedHeading,
+    string $expectedDescription,
+    string $expectedDatasetLabel,
+    string $expectedAssistiveContent,
+    array $expectedChart,
+): void {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
-    actingAsActivityLogReader($this);
+
+    app()->setLocale($preferredLocale->value);
+
+    $user = actingAsActivityLogReader($this);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
 
     ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne([
         'created_at' => '2026-06-09 00:00:00',
     ]);
+
     ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne([
         'created_at' => '2026-06-15 12:00:00',
     ]);
+
     ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::UserLoggedIn)->createOne([
         'created_at' => '2026-06-15 23:59:59',
     ]);
+
     ActivityLogFactory::new()->forEvent(ActivityLogLikeEvent::Added)->createOne([
         'created_at' => '2026-06-15 12:00:00',
     ]);
+
     ActivityLogFactory::new()->forEvent(ActivityLogTrustedDeviceEvent::Renamed)->createOne([
         'created_at' => '2026-06-15 12:00:00',
     ]);
+
     ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::LoginFailed)->createOne([
         'created_at' => '2026-06-08 23:59:59',
     ]);
 
     $testable = Livewire::test(ActivityLogSummaryWidget::class)
         ->assertOk()
-        ->assertSeeText('Activity events (last 7 days)')
-        ->assertSeeText('5 events in the last 7 days.')
-        ->assertSeeText('Event distribution: Role Granted: 2, User Logged In: 1, Like Added: 1, Trusted Device Renamed: 1.');
+        ->assertSeeText($expectedHeading)
+        ->assertSeeText($expectedDescription)
+        ->assertSeeText($expectedAssistiveContent);
+
     $component = $testable->instance();
+
     throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
+
     $chartData = activityLogSummaryChartPayload($component);
 
-    expect(array_combine($chartData['labels'], $chartData['counts']))
-        ->toBe([
+    expect($chartData['datasetLabel'])
+        ->toBe($expectedDatasetLabel)
+        ->and(array_combine($chartData['labels'], $chartData['counts']))
+        ->toBe($expectedChart);
+})->with([
+    'English' => [
+        PreferredLocale::ENGLISH,
+        'Activity events (last 7 days)',
+        '5 events in the last 7 days.',
+        'Events',
+        'Event distribution: Role Granted: 2, User Logged In: 1, Like Added: 1, Trusted Device Renamed: 1.',
+        [
             'Role Granted' => 2,
             'User Logged In' => 1,
             'Like Added' => 1,
             'Trusted Device Renamed' => 1,
-        ]);
-});
+        ],
+    ],
+    'Spanish' => [
+        PreferredLocale::SPANISH,
+        'Eventos de actividad (últimos 7 días)',
+        '5 eventos en los últimos 7 días.',
+        'Eventos',
+        'Distribución de eventos: Rol asignado: 2, Inicio de sesión: 1, Me gusta agregado: 1, Dispositivo de confianza renombrado: 1.',
+        [
+            'Rol asignado' => 2,
+            'Inicio de sesión' => 1,
+            'Me gusta agregado' => 1,
+            'Dispositivo de confianza renombrado' => 1,
+        ],
+    ],
+]);
 
-it('shows an empty state when there are no recent activity events', function (): void {
-    actingAsActivityLogReader($this);
+it('shows the localized empty state and an empty chart when there are no recent activity events', function (
+    PreferredLocale $preferredLocale,
+    string $expectedDescription,
+    string $expectedEmptyHeading,
+    string $expectedEmptyDescription,
+): void {
+    app()->setLocale($preferredLocale->value);
+
+    $user = actingAsActivityLogReader($this);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
 
     $testable = Livewire::test(ActivityLogSummaryWidget::class)
         ->assertOk()
-        ->assertSeeText('0 events in the last 7 days.')
-        ->assertSeeText('No activity in the last 7 days')
-        ->assertSeeText('There are no activity events to summarize for this period.');
+        ->assertSeeText($expectedDescription)
+        ->assertSeeText($expectedEmptyHeading)
+        ->assertSeeText($expectedEmptyDescription);
 
     $component = $testable->instance();
     throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
 
-    expect($component->isEmpty())->toBeTrue();
-});
+    expect($component->isEmpty())->toBeTrue()
+        ->and(activityLogSummaryChartData($component))
+        ->toBeEmpty();
+})->with([
+    'English' => [
+        PreferredLocale::ENGLISH,
+        '0 events in the last 7 days.',
+        'No activity in the last 7 days',
+        'There are no activity events to summarize for this period.',
+    ],
+    'Spanish' => [
+        PreferredLocale::SPANISH,
+        '0 eventos en los últimos 7 días.',
+        'Sin actividad en los últimos 7 días',
+        'No hay eventos de actividad para resumir en este período.',
+    ],
+]);
+
+it('uses a singular activity description in the active language', function (PreferredLocale $preferredLocale, string $expectedDescription): void {
+    app()->setLocale($preferredLocale->value);
+
+    $user = actingAsActivityLogReader($this);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne();
+
+    Livewire::test(ActivityLogSummaryWidget::class)
+        ->assertOk()
+        ->assertSeeText($expectedDescription);
+})->with([
+    'English' => [PreferredLocale::ENGLISH, '1 event in the last 7 days.'],
+    'Spanish' => [PreferredLocale::SPANISH, '1 evento en los últimos 7 días.'],
+]);
+
+it('translates unknown event labels for the chart without changing null events or their counts', function (
+    PreferredLocale $preferredLocale,
+    string $expectedAssistiveContent,
+    string $expectedDatasetLabel,
+    array $expectedChart,
+): void {
+    app()->setLocale($preferredLocale->value);
+
+    $user = actingAsActivityLogReader($this);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
+
+    $activityLog = ActivityLogFactory::new()->createOne(['event' => null]);
+    $secondUnknownEvent = ActivityLogFactory::new()->createOne(['event' => null]);
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne();
+
+    $testable = Livewire::test(ActivityLogSummaryWidget::class)
+        ->assertOk()
+        ->assertSeeText($expectedAssistiveContent);
+
+    $component = $testable->instance();
+
+    throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
+
+    $chartData = activityLogSummaryChartPayload($component);
+
+    expect($chartData['datasetLabel'])
+        ->toBe($expectedDatasetLabel)
+        ->and(array_combine($chartData['labels'], $chartData['counts']))
+        ->toBe($expectedChart)
+        ->and($activityLog->refresh()->event)
+        ->toBeNull()
+        ->and($secondUnknownEvent->refresh()->event)
+        ->toBeNull();
+})->with([
+    'English' => [
+        PreferredLocale::ENGLISH,
+        'Event distribution: Unspecified event: 2, Role Granted: 1.',
+        'Events',
+        [
+            'Unspecified event' => 2,
+            'Role Granted' => 1,
+        ],
+    ],
+    'Spanish' => [
+        PreferredLocale::SPANISH,
+        'Distribución de eventos: Evento no especificado: 2, Rol asignado: 1.',
+        'Eventos',
+        [
+            'Evento no especificado' => 2,
+            'Rol asignado' => 1,
+        ],
+    ],
+]);
 
 it('denies the summary widget to an administrator without activity access', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);

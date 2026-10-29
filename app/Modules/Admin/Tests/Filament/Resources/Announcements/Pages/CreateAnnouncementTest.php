@@ -6,6 +6,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\CreateAnnouncement;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
@@ -128,6 +129,115 @@ describe('with the announcements manager role', function (): void {
             ->assertSee('Button text')
             ->assertSee('Button link');
     });
+
+    it('shows the announcement resource and form labels in the selected locale', function (
+        string $locale,
+        string $modelLabel,
+        string $pluralModelLabel,
+        string $navigationLabel,
+        array $formLabels,
+        array $buttonLabels,
+    ): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+
+            expect(AnnouncementResource::getModelLabel())->toBe($modelLabel)
+                ->and(AnnouncementResource::getPluralModelLabel())->toBe($pluralModelLabel)
+                ->and(AnnouncementResource::getNavigationLabel())->toBe($navigationLabel);
+
+            $announcementForm = Livewire::test(CreateAnnouncement::class);
+
+            foreach ($formLabels as $formLabel) {
+                $announcementForm->assertSee($formLabel);
+            }
+
+            $announcementForm->set('data.has_button', true);
+
+            foreach ($buttonLabels as $buttonLabel) {
+                $announcementForm->assertSee($buttonLabel);
+            }
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => [
+            'en',
+            'announcement',
+            'announcements',
+            'Announcements',
+            [
+                'Content', 'Title', 'Message', 'Image', 'Display', 'Type', 'Audience', 'Shown as',
+                'Starts at', 'Ends at', 'Leave empty to keep it until it is unpublished.',
+                'Users can dismiss it', 'Button', 'Has button',
+            ],
+            [
+                'Button text', 'Button link',
+                'An https:// address or a path of this site, such as /setting/two-factor-authentication.',
+            ],
+        ],
+        'Spanish' => [
+            'es',
+            'anuncio',
+            'anuncios',
+            'Anuncios',
+            [
+                'Contenido', 'Título', 'Mensaje', 'Imagen', 'Presentación', 'Tipo', 'Audiencia', 'Se muestra como',
+                'Fecha de inicio', 'Fecha de finalización', 'Déjalo vacío para mantenerlo publicado hasta que se desactive.',
+                'Los usuarios pueden cerrar el anuncio', 'Botón', 'Incluir botón',
+            ],
+            [
+                'Texto del botón', 'Enlace del botón',
+                'Una dirección https:// o una ruta de este sitio, como /setting/two-factor-authentication.',
+            ],
+        ],
+    ]);
+
+    it('shows the localized validation message for an invalid button link', function (string $locale, string $message): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+
+            $announcementForm = filledCreateAnnouncementPage(invalidAnnouncementFormOverrides('javascript link'));
+            $announcementForm->call('create');
+            $announcementForm->assertHasErrors(['data.button_url']);
+            $announcementForm->assertSee($message);
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => ['en', 'The link must start with https:// or be a path of this site starting with /.'],
+        'Spanish' => ['es', 'El enlace debe comenzar con https:// o ser una ruta de este sitio que comience con /.'],
+    ]);
+
+    it('translates overlapping dialog hints for each locale and count', function (
+        string $locale,
+        int $overlappingDialogCount,
+        string $hint,
+    ): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+
+            for ($dialogIndex = 0; $dialogIndex < $overlappingDialogCount; $dialogIndex++) {
+                /** @var AnnouncementFactory $announcementFactory */
+                $announcementFactory = Announcement::factory();
+                $announcementFactory->asDialog()->active()->createOne(['ends_at' => null]);
+            }
+
+            filledCreateAnnouncementPage(['display' => AnnouncementDisplay::Dialog->value])
+                ->assertSee($hint);
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'one dialog in Spanish' => ['es', 1, 'Hay 1 diálogo más en el mismo período.'],
+        'multiple dialogs in English' => ['en', 2, '2 other dialogs are shown in the same period.'],
+        'multiple dialogs in Spanish' => ['es', 2, 'Hay 2 diálogos más en el mismo período.'],
+    ]);
 
     it('accepts a path of this site as the button link', function (): void {
         filledCreateAnnouncementPage([

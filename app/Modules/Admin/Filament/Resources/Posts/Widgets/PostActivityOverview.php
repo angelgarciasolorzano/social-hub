@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -62,16 +63,16 @@ class PostActivityOverview extends StatsOverviewWidget
             ->where('commentable_type', Comment::MORPH_NAME);
 
         return [
-            Stat::make('Comments', $post->comments()->count())
-                ->description('New comments per day over the last 7 days')
+            Stat::make(TranslatedText::of('admin/posts.widgets.activity.comments'), $post->comments()->count())
+                ->description(TranslatedText::of('admin/posts.widgets.activity.comments_description'))
                 ->chart($this->getDailyActivityChartData($post->comments()->getQuery(), $startDate, $endDate))
                 ->color('primary'),
-            Stat::make('Replies', $builder->count())
-                ->description('New replies per day over the last 7 days')
+            Stat::make(TranslatedText::of('admin/posts.widgets.activity.replies'), $builder->count())
+                ->description(TranslatedText::of('admin/posts.widgets.activity.replies_description'))
                 ->chart($this->getDailyActivityChartData($builder, $startDate, $endDate))
                 ->color('info'),
-            Stat::make('Likes', $post->likes()->count())
-                ->description('New likes per day over the last 7 days')
+            Stat::make(TranslatedText::of('admin/posts.widgets.activity.likes'), $post->likes()->count())
+                ->description(TranslatedText::of('admin/posts.widgets.activity.likes_description'))
                 ->chart($this->getDailyActivityChartData($post->likes()->getQuery(), $startDate, $endDate))
                 ->color('warning'),
         ];

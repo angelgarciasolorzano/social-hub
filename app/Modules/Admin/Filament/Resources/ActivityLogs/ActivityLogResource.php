@@ -9,6 +9,7 @@ use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ViewActivityLog;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Schemas\ActivityLogInfolist;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Tables\ActivityLogsTable;
+use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
@@ -29,13 +30,22 @@ class ActivityLogResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
     #[Override]
-    protected static ?string $modelLabel = 'activity';
+    public static function getModelLabel(): string
+    {
+        return TranslatedText::of('admin/activity-log.resource.label');
+    }
 
     #[Override]
-    protected static ?string $pluralModelLabel = 'activity log';
+    public static function getPluralModelLabel(): string
+    {
+        return TranslatedText::of('admin/activity-log.resource.plural_label');
+    }
 
     #[Override]
-    protected static ?string $navigationLabel = 'Activity log';
+    public static function getNavigationLabel(): string
+    {
+        return TranslatedText::of('admin/activity-log.resource.navigation_label');
+    }
 
     public static function infolist(Schema $schema): Schema
     {

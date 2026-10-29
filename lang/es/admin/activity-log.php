@@ -3,10 +3,60 @@
 declare(strict_types=1);
 
 /**
- * Texts of the activity log table, how its parties are described, and the readable names of every
- * cataloged event (keyed by its stored value, `log.action`) and log.
+ * Texts of the activity log resource, its table and detail, its summary widgets, and the readable
+ * names of every cataloged event (keyed by its stored value, `log.action`) and log.
  */
 return [
+    'resource' => [
+        'label' => 'actividad',
+        'plural_label' => 'registro de actividad',
+        'navigation_label' => 'Registro de actividad',
+    ],
+
+    'infolist' => [
+        'activity' => [
+            'heading' => 'Actividad',
+            'description' => 'Qué ocurrió, cuándo, quién lo hizo y sobre qué.',
+        ],
+        'details' => [
+            'heading' => 'Detalles',
+            'description' => 'Referencias guardadas con esta actividad. Nunca se registra contenido.',
+            'empty' => 'No hay detalles registrados',
+        ],
+        'request' => [
+            'heading' => 'Solicitud',
+            'description' => 'Origen de la acción, cuando se realizó desde la web.',
+            'ip_address' => 'Dirección IP',
+            'user_agent' => 'Agente de usuario',
+            'not_recorded' => 'No registrado',
+        ],
+        'values' => [
+            'yes' => 'Sí',
+            'no' => 'No',
+        ],
+    ],
+
+    'overview' => [
+        'heading' => 'Seguridad y administración (últimos 7 días)',
+        'failed_sign_ins' => 'Inicios de sesión fallidos',
+        'failed_sign_ins_description' => 'Intentos de autenticación rechazados',
+        'trusted_device_changes' => 'Cambios en dispositivos de confianza',
+        'trusted_device_changes_description' => 'Dispositivos agregados, renombrados, renovados, revocados o reactivados',
+        'admin_actions' => 'Acciones administrativas',
+        'admin_actions_description' => 'Roles, permisos, invitaciones, cuentas y respaldos',
+    ],
+
+    'summary' => [
+        'heading' => 'Eventos de actividad (últimos 7 días)',
+        'empty_state_heading' => 'Sin actividad en los últimos 7 días',
+        'empty_state_description' => 'No hay eventos de actividad para resumir en este período.',
+        'description' => '{0} :count eventos en los últimos 7 días.|{1} :count evento en los últimos 7 días.|[2,*] :count eventos en los últimos 7 días.',
+        'dataset_events' => 'Eventos',
+        'unknown_event' => 'Evento no especificado',
+        'assistive_empty' => 'No hay eventos de actividad para resumir en los últimos 7 días.',
+        'assistive_distribution' => 'Distribución de eventos: :distribution.',
+    ],
+
     'table' => [
         'log' => 'Registro',
         'event' => 'Evento',

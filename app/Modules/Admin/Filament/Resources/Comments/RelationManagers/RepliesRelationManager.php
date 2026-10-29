@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Comments\RelationManagers;
 
 use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Comment\Models\Comment;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use DateTimeInterface;
 use Filament\Actions\Action;
@@ -50,20 +51,20 @@ class RepliesRelationManager extends RelationManager
             ->recordTitleAttribute('content')
             ->columns([
                 TextColumn::make('content')
-                    ->label('Reply')
+                    ->label(TranslatedText::of('admin/comments.replies.table.reply'))
                     ->limit(70),
                 TextColumn::make('user.name')
-                    ->label('Author'),
+                    ->label(TranslatedText::of('admin/comments.fields.author')),
                 TextColumn::make('created_at')
-                    ->label('Created at')
+                    ->label(TranslatedText::of('admin/comments.fields.created_at'))
                     ->dateTime(),
             ])
             ->filters([
                 Filter::make('created_at')
-                    ->label('Creation date')
+                    ->label(TranslatedText::of('admin/comments.replies.filters.creation_date'))
                     ->schema([
-                        DatePicker::make('created_from')->label('From'),
-                        DatePicker::make('created_until')->label('Until'),
+                        DatePicker::make('created_from')->label(TranslatedText::of('admin/common.filters.from')),
+                        DatePicker::make('created_until')->label(TranslatedText::of('admin/common.filters.until')),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(
@@ -79,7 +80,7 @@ class RepliesRelationManager extends RelationManager
                                 : $builder,
                         )),
                 SelectFilter::make('author')
-                    ->label('Author')
+                    ->label(TranslatedText::of('admin/comments.fields.author'))
                     ->relationship('user', 'name')
                     ->searchable(),
             ])
@@ -89,43 +90,43 @@ class RepliesRelationManager extends RelationManager
             ->recordAction('viewReply')
             ->recordActions([
                 Action::make('viewReply')
-                    ->label('View reply')
+                    ->label(TranslatedText::of('admin/comments.replies.actions.view'))
                     ->icon(Heroicon::Eye)
                     ->color('gray')
                     ->authorize(fn (): bool => static::canViewForRecord(
                         $this->getOwnerRecord(),
                         ViewComment::class,
                     ))
-                    ->modalHeading('Reply details')
+                    ->modalHeading(TranslatedText::of('admin/comments.replies.actions.modal_heading'))
                     ->schema([
-                        Section::make('Reply content')
-                            ->description('The complete message in this conversation.')
+                        Section::make(TranslatedText::of('admin/comments.replies.modal.content_heading'))
+                            ->description(TranslatedText::of('admin/comments.infolist.content.description'))
                             ->icon(Heroicon::OutlinedDocumentText)
                             ->schema([
                                 TextEntry::make('content')
-                                    ->label('Message')
+                                    ->label(TranslatedText::of('admin/comments.fields.message'))
                                     ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
                                     ->prose()
                                     ->columnSpanFull(),
                             ]),
-                        Section::make('Reply details')
-                            ->description('Author and timeline for this reply.')
+                        Section::make(TranslatedText::of('admin/comments.replies.actions.modal_heading'))
+                            ->description(TranslatedText::of('admin/comments.replies.modal.details_description'))
                             ->icon(Heroicon::OutlinedUserCircle)
                             ->schema([
                                 TextEntry::make('user.name')
-                                    ->label('Author')
+                                    ->label(TranslatedText::of('admin/comments.fields.author'))
                                     ->icon(Heroicon::OutlinedUser),
                                 TextEntry::make('created_at')
-                                    ->label('Created at')
+                                    ->label(TranslatedText::of('admin/comments.fields.created_at'))
                                     ->icon(Heroicon::OutlinedCalendarDays)
                                     ->dateTime('Y-m-d H:i'),
                                 TextEntry::make('edited_at')
-                                    ->label('Edited at')
+                                    ->label(TranslatedText::of('admin/comments.fields.edited_at'))
                                     ->icon(Heroicon::OutlinedPencilSquare)
                                     ->dateTime('Y-m-d H:i')
                                     ->visible(static fn (Comment $record): bool => $record->edited_at !== null),
                                 TextEntry::make('repliedToUser.name')
-                                    ->label('Replying to')
+                                    ->label(TranslatedText::of('admin/comments.fields.replying_to'))
                                     ->icon(Heroicon::OutlinedUser)
                                     ->formatStateUsing(static fn (?string $state): ?string => filled($state) ? "@{$state}" : null)
                                     ->visible(static fn (Comment $record): bool => $record->repliedToUser instanceof User),
@@ -136,7 +137,7 @@ class RepliesRelationManager extends RelationManager
                             ]),
                     ])
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Close'),
+                    ->modalCancelActionLabel(TranslatedText::of('admin/comments.replies.actions.close')),
             ])
             ->headerActions([])
             ->toolbarActions([]);

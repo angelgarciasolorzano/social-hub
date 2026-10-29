@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ListPosts;
+use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Post\Models\Post;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -30,6 +33,104 @@ beforeEach(function (): void {
 
     AdminFilamentTestContext::configure($testCase);
 });
+
+it('shows the Posts resource and table labels in the selected locale', function (
+    string $locale,
+    string $modelLabel,
+    string $pluralModelLabel,
+    string $navigationLabel,
+    array $tableLabels,
+    array $filterLabels,
+): void {
+    $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminPostsReader,
+    );
+    $user = createUser();
+    $post = createPost($user, ['content' => 'Authored post locale sentinel']);
+    $this->actingAs($authenticatedUser, 'admin');
+
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        expect(PostResource::getModelLabel())->toBe($modelLabel)
+            ->and(PostResource::getPluralModelLabel())->toBe($pluralModelLabel)
+            ->and(PostResource::getNavigationLabel())->toBe($navigationLabel);
+
+        $testable = postsListPageForTesting()
+            ->assertOk()
+            ->assertSeeText($post->content)
+            ->assertSeeText($user->name);
+
+        foreach ($tableLabels as $tableLabel) {
+            $testable->assertSee($tableLabel);
+        }
+
+        $table = FilamentTableRecords::table($testable)->getTable();
+        $commentFilter = $table->getFilter('has_comments');
+        $creationDateFilter = $table->getFilter('created_at');
+
+        throw_unless($commentFilter instanceof TernaryFilter, LogicException::class, 'The Posts table must expose its comment filter.');
+        throw_unless($creationDateFilter instanceof Filter, LogicException::class, 'The Posts table must expose its creation date filter.');
+
+        $creationDateFields = $creationDateFilter->getSchemaComponents();
+        $fromField = $creationDateFields[0] ?? null;
+        $untilField = $creationDateFields[1] ?? null;
+
+        throw_unless($fromField instanceof DatePicker, LogicException::class, 'The creation date filter must expose its start date.');
+        throw_unless($untilField instanceof DatePicker, LogicException::class, 'The creation date filter must expose its end date.');
+
+        expect($commentFilter->getLabel())->toBe($filterLabels['comment_presence'])
+            ->and($commentFilter->getPlaceholder())->toBe($filterLabels['all_posts'])
+            ->and($commentFilter->getTrueLabel())->toBe($filterLabels['has_comments'])
+            ->and($commentFilter->getFalseLabel())->toBe($filterLabels['no_comments'])
+            ->and($creationDateFilter->getLabel())->toBe($filterLabels['creation_date'])
+            ->and($fromField->getLabel())->toBe($filterLabels['from'])
+            ->and($untilField->getLabel())->toBe($filterLabels['until']);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'English' => [
+        'en',
+        'post',
+        'posts',
+        'Posts',
+        [
+            'Image', 'Post image', 'Post', 'Author', 'Created at',
+        ],
+        [
+            'comment_presence' => 'Comment presence',
+            'all_posts' => 'All posts',
+            'has_comments' => 'Has comments',
+            'no_comments' => 'No comments',
+            'creation_date' => 'Creation date',
+            'from' => 'From',
+            'until' => 'Until',
+        ],
+    ],
+    'Spanish' => [
+        'es',
+        'publicación',
+        'publicaciones',
+        'Publicaciones',
+        [
+            'Imagen', 'Imagen de la publicación', 'Publicación', 'Autor', 'Fecha de creación',
+        ],
+        [
+            'comment_presence' => 'Presencia de comentarios',
+            'all_posts' => 'Todas las publicaciones',
+            'has_comments' => 'Con comentarios',
+            'no_comments' => 'Sin comentarios',
+            'creation_date' => 'Fecha de creación',
+            'from' => 'Desde',
+            'until' => 'Hasta',
+        ],
+    ],
+]);
 
 it('defers loading the posts table and displays a loading skeleton', function (): void {
     $authenticatedUser = AdminFilamentTestContext::actingAsAdminWithRoles(
@@ -148,12 +249,10 @@ it('keeps the Posts resource index read only with a view action for each record'
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    $tableComponent = Livewire::test(ListPosts::class)->instance();
-
-    throw_unless($tableComponent instanceof HasTable, LogicException::class, 'The Posts index must expose a Filament table.');
-
-    /** @var HasTable&Component $tableComponent */
-    $table = $tableComponent->getTable();
+    $post = createPost();
+    $testable = postsListPageForTesting()->assertOk();
+    $listPosts = $testable->instance();
+    $table = $listPosts->getTable();
     $recordActions = $table->getRecordActions();
     $viewAction = $recordActions[0] ?? null;
 
@@ -169,6 +268,8 @@ it('keeps the Posts resource index read only with a view action for each record'
         ->toBeEmpty()
         ->and($table->getToolbarActions())
         ->toBeEmpty();
+
+    $testable->assertSee(PostResource::getUrl('view', ['record' => $post]), false);
 });
 
 it('filters posts by whether they have comments', function (): void {
@@ -177,6 +278,14 @@ it('filters posts by whether they have comments', function (): void {
     $postWithComments = createPost();
     createCommentOn($postWithComments);
     $postWithoutComments = createPost();
+
+    $unfiltered = FilamentTableRecords::table(postsListPageForTesting());
+
+    expect(FilamentTableRecords::visibleRecordKeys($unfiltered, Post::class))
+        ->toEqualCanonicalizing([
+            FilamentTableRecords::recordKey($postWithComments),
+            FilamentTableRecords::recordKey($postWithoutComments),
+        ]);
 
     $testable = postsListPageForTesting()
         ->set('tableFilters.has_comments.value', true);

@@ -3,10 +3,60 @@
 declare(strict_types=1);
 
 /**
- * Texts of the activity log table, how its parties are described, and the readable names of every
- * cataloged event (keyed by its stored value, `log.action`) and log.
+ * Texts of the activity log resource, its table and detail, its summary widgets, and the readable
+ * names of every cataloged event (keyed by its stored value, `log.action`) and log.
  */
 return [
+    'resource' => [
+        'label' => 'activity',
+        'plural_label' => 'activity log',
+        'navigation_label' => 'Activity log',
+    ],
+
+    'infolist' => [
+        'activity' => [
+            'heading' => 'Activity',
+            'description' => 'What happened, when, who did it, and to what.',
+        ],
+        'details' => [
+            'heading' => 'Details',
+            'description' => 'The references stored with this activity. Content is never recorded.',
+            'empty' => 'No details recorded',
+        ],
+        'request' => [
+            'heading' => 'Request',
+            'description' => 'Where the action came from, when it was made through the web.',
+            'ip_address' => 'IP address',
+            'user_agent' => 'User agent',
+            'not_recorded' => 'Not recorded',
+        ],
+        'values' => [
+            'yes' => 'Yes',
+            'no' => 'No',
+        ],
+    ],
+
+    'overview' => [
+        'heading' => 'Security and administration (last 7 days)',
+        'failed_sign_ins' => 'Failed sign-ins',
+        'failed_sign_ins_description' => 'Authentication attempts that were rejected',
+        'trusted_device_changes' => 'Trusted device changes',
+        'trusted_device_changes_description' => 'Devices added, renamed, renewed, revoked or reactivated',
+        'admin_actions' => 'Admin actions',
+        'admin_actions_description' => 'Roles, permissions, invitations, accounts and backups',
+    ],
+
+    'summary' => [
+        'heading' => 'Activity events (last 7 days)',
+        'empty_state_heading' => 'No activity in the last 7 days',
+        'empty_state_description' => 'There are no activity events to summarize for this period.',
+        'description' => '{0} :count events in the last 7 days.|{1} :count event in the last 7 days.|[2,*] :count events in the last 7 days.',
+        'dataset_events' => 'Events',
+        'unknown_event' => 'Unspecified event',
+        'assistive_empty' => 'There are no activity events to summarize for the last 7 days.',
+        'assistive_distribution' => 'Event distribution: :distribution.',
+    ],
+
     'table' => [
         'log' => 'Log',
         'event' => 'Event',

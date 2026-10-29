@@ -9,6 +9,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\User\Enums\PreferredLocale;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -52,9 +53,21 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
-it('counts security and admin activity within the fixed seven-day window', function (): void {
+it('shows localized security and admin metrics within the fixed seven-day window', function (
+    PreferredLocale $preferredLocale,
+    string $expectedHeading,
+    string $expectedFailedSignIns,
+    string $expectedFailedSignInsDescription,
+    string $expectedTrustedDeviceChanges,
+    string $expectedTrustedDeviceChangesDescription,
+    string $expectedAdminActions,
+    string $expectedAdminActionsDescription,
+): void {
     $this->travelTo(CarbonImmutable::parse('2026-06-15 12:00:00'));
-    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    app()->setLocale($preferredLocale->value);
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
 
     ActivityLogFactory::new()->forEvent(ActivityLogAuthEvent::LoginFailed)->createOne([
         'created_at' => '2026-06-09 00:00:00',
@@ -80,10 +93,13 @@ it('counts security and admin activity within the fixed seven-day window', funct
 
     $testable = Livewire::test(ActivityLogOverview::class)
         ->assertOk()
-        ->assertSeeText('Security and administration (last 7 days)')
-        ->assertSeeText('Failed sign-ins')
-        ->assertSeeText('Trusted device changes')
-        ->assertSeeText('Admin actions');
+        ->assertSeeText($expectedHeading)
+        ->assertSeeText($expectedFailedSignIns)
+        ->assertSeeText($expectedFailedSignInsDescription)
+        ->assertSeeText($expectedTrustedDeviceChanges)
+        ->assertSeeText($expectedTrustedDeviceChangesDescription)
+        ->assertSeeText($expectedAdminActions)
+        ->assertSeeText($expectedAdminActionsDescription);
 
     expect($testable->instance())->toBeInstanceOf(ActivityLogOverview::class);
 
@@ -94,11 +110,42 @@ it('counts security and admin activity within the fixed seven-day window', funct
         ->and($stats['trustedDeviceChanges']->getValue())
         ->toBe(2)
         ->and($stats['adminActions']->getValue())
-        ->toBe(1);
-});
+        ->toBe(1)
+        ->and($stats['failedSignIns']->getColor())
+        ->toBe('danger')
+        ->and($stats['trustedDeviceChanges']->getColor())
+        ->toBe('info')
+        ->and($stats['adminActions']->getColor())
+        ->toBe('warning');
+})->with([
+    'English' => [
+        PreferredLocale::ENGLISH,
+        'Security and administration (last 7 days)',
+        'Failed sign-ins',
+        'Authentication attempts that were rejected',
+        'Trusted device changes',
+        'Devices added, renamed, renewed, revoked or reactivated',
+        'Admin actions',
+        'Roles, permissions, invitations, accounts and backups',
+    ],
+    'Spanish' => [
+        PreferredLocale::SPANISH,
+        'Seguridad y administración (últimos 7 días)',
+        'Inicios de sesión fallidos',
+        'Intentos de autenticación rechazados',
+        'Cambios en dispositivos de confianza',
+        'Dispositivos agregados, renombrados, renovados, revocados o reactivados',
+        'Acciones administrativas',
+        'Roles, permisos, invitaciones, cuentas y respaldos',
+    ],
+]);
 
 it('shows zero counts when there is no recent security or admin activity', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+
+    Livewire::test(ActivityLogOverview::class)
+        ->assertOk()
+        ->assertSeeText('0');
 
     $stats = activityLogOverviewStatsForTesting();
 
@@ -107,7 +154,9 @@ it('shows zero counts when there is no recent security or admin activity', funct
         ->and($stats['trustedDeviceChanges']->getValue())
         ->toBe(0)
         ->and($stats['adminActions']->getValue())
-        ->toBe(0);
+        ->toBe(0)
+        ->and($stats['failedSignIns']->getColor())
+        ->toBe('success');
 });
 
 it('denies the widget to an administrator without activity access', function (): void {
