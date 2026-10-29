@@ -8,6 +8,7 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Widgets\RegistrationSummaryWidget;
 use App\Modules\Admin\Services\AdminInvitationService;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -31,16 +32,16 @@ class ListUsers extends ListRecords
     {
         return [
             Action::make('inviteAdmin')
-                ->label('Invite administrator')
+                ->label(TranslatedText::of('admin/users.invite.label'))
                 ->icon(Heroicon::OutlinedUserPlus)
-                ->modalHeading('Invite administrator')
-                ->modalSubmitActionLabel('Send invitation')
-                ->successNotificationTitle('Invitation email queued')
+                ->modalHeading(TranslatedText::of('admin/users.invite.modal_heading'))
+                ->modalSubmitActionLabel(TranslatedText::of('admin/users.invite.submit'))
+                ->successNotificationTitle(TranslatedText::of('admin/users.invite.success'))
                 ->authorize(fn (): bool => $this->canInviteAdministrator())
                 ->schema([
                     Select::make('email')
-                        ->label('Email address')
-                        ->helperText('Search by name or email. To invite someone new, enter their full email and select the invite option.')
+                        ->label(TranslatedText::of('admin/users.fields.email_address'))
+                        ->helperText(TranslatedText::of('admin/users.invite.email_helper'))
                         ->required()
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search): array => $this->getInvitationUserSearchResults($search))
@@ -119,7 +120,7 @@ class ListUsers extends ListRecords
             return $searchResults;
         }
 
-        $searchResults[$search] = "Invite new email address: {$search}";
+        $searchResults[$search] = TranslatedText::of('admin/users.invite.new_email_option', ['email' => $search]);
 
         return $searchResults;
     }

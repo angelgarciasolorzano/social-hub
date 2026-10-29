@@ -12,6 +12,7 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Database\Factories\UserFactory;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
+use Filament\Notifications\Notification;
 use Filament\Tables\Testing\TestsFilters;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\UploadedFile;
@@ -432,6 +433,52 @@ it('shows the invitation action only to users with the provisioner permission', 
     expect(AdminInvitation::query()->exists())->toBeFalse();
 
     Mail::assertNothingOutgoing();
+});
+
+it('shows the invitation action, its modal and notification in Spanish', function (): void {
+    app()->setLocale('es');
+    Mail::fake();
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersProvisioner,
+    );
+
+    $testable = listUsersPageForTesting()
+        ->assertSee('Invitar administrador')
+        ->call('mountAction', 'inviteAdmin');
+
+    $testable->__call('assertMountedActionModalSee', [[
+        'Invitar administrador',
+        'Correo electrónico',
+        'Busca por nombre o correo.',
+        'Enviar invitación',
+    ]]);
+
+    $testable
+        ->set('mountedActions.0.data.email', 'nuevo-admin@example.test')
+        ->call('callMountedAction');
+
+    Notification::assertNotified('Correo de invitación en cola');
+});
+
+it('offers to invite a new email address in Spanish', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminUsersProvisioner,
+    );
+
+    $listUsers = listUsersPageForTesting()->instance();
+    $searchResults = new ReflectionMethod(ListUsers::class, 'getInvitationUserSearchResults')
+        ->invoke($listUsers, 'nuevo-admin@example.test');
+
+    expect($searchResults)->toBe([
+        'nuevo-admin@example.test' => 'Invitar al correo nuevo: nuevo-admin@example.test',
+    ]);
 });
 
 it('invites a selected existing user without changing their credentials or roles', function (): void {
