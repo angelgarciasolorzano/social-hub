@@ -2,11 +2,11 @@
 
 <x-filament-widgets::widget>
     <x-filament::section>
-        <x-slot name="heading">Quick access</x-slot>
+        <x-slot name="heading">{{ __('admin/dashboard.quick_links.heading') }}</x-slot>
 
-        <x-slot name="description">Open an area you have permission to access.</x-slot>
+        <x-slot name="description">{{ __('admin/dashboard.quick_links.description') }}</x-slot>
 
-        <nav aria-label="Dashboard quick links">
+        <nav aria-label="{{ __('admin/dashboard.quick_links.aria_label') }}">
             <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 @foreach ($this->getQuickLinks() as $quickLink)
                     <li>
