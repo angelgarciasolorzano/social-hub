@@ -69,9 +69,9 @@ php artisan admin:bootstrap-admin admin@example.com --actor=admin@example.com
 
 `admin:bootstrap-admin <email> --actor=<email>` solo permite el primer bootstrap: exige el catálogo inicializado, una cuenta existente con correo verificado y que todavía no haya un usuario con `admin.access`; asigna `admin` y los cinco roles lectores (actividad y respaldos incluidos desde SOC-56 y SOC-55). Después, `admin:user-role <grant|revoke> <email> <role> --actor=<admin-email>` modifica una asignación de rol y `admin:role-permissions <grant|revoke> <role> <permission> --actor=<admin-email>` modifica un bundle. Los tres comandos exigen `--actor` (SOC-54): la persona que ejecuta el cambio, que queda como causante en el log `admin` del registro de actividad. Debe ser una cuenta verificada y, salvo en el bootstrap (donde puede ser el mismo usuario promovido), tener `admin.access`. Solo se registran los cambios reales; un rechazo no cambia nada ni deja registro. El primer comando acepta cualquier caso de `AdminRole` y el segundo cualquier caso de `AdminPermission` (ver la tabla de arriba). Ambos rechazan valores fuera de los enums y protegen el último permiso `admin.access`. La gestión sigue siendo por consola; SOC-44 no agrega una pantalla administrativa para ello.
 
-### Idiomas del panel (SOC-65)
+### Idiomas del panel (SOC-65 y SOC-66)
 
-El panel de administración está en español e inglés. Las traducciones viven en `lang/{en,es}/` en la raíz del proyecto, la convención de Laravel; `resources/lang/` se movió ahí y ya no existe. Cada sección del panel tiene su catálogo: `lang/{en,es}/admin/{common,dashboard,users,backups,activity-log}.php`. `common` guarda solo los textos que usan dos o más secciones.
+El panel de administración está en español e inglés. Las traducciones viven en `lang/{en,es}/` en la raíz del proyecto, la convención de Laravel; `resources/lang/` se movió ahí y ya no existe. Cada sección del panel tiene su catálogo: `lang/{en,es}/admin/{common,dashboard,users,backups,activity-log,announcements,posts}.php`. `common` guarda solo los textos que usan dos o más secciones.
 
 - **Claves con nombre**, nunca el texto en inglés como clave: `admin/users.table.status`. Los plurales van con `trans_choice` (`{1} :count día|[0,*] :count días`) y los valores con marcadores (`:name`, `:count`). `:Type` pone el valor con la primera letra en mayúscula.
 - **En PHP** todo texto pasa por `App\Support\Translation\TranslatedText::of($clave, $reemplazos)`. Es `__()` tipado como `string`: PHPStan no acepta el `array|string` de `__()` donde Filament espera un texto, y una clave que apunta a un grupo lanza `LogicException`. **En Blade** se usa `__()`.
@@ -88,15 +88,16 @@ El panel de administración está en español e inglés. Las traducciones viven 
   - Dashboard.
   - Users, con `AccountStatus::label()`.
   - Backups, con los errores de descarga de `BackupManagementService`.
-  - Del registro de actividad: su tabla, `DescribesActivityLogParties` y los nombres de eventos y logs. `ActivityLogEventCatalog` lee `admin/activity-log.events.<valor>` y, si falta la clave, usa el nombre en inglés.
-- **Qué sigue en inglés**:
-  - Announcements, Posts y Comments.
-  - El resto del registro de actividad.
-  - El correo y la página de invitación.
+  - Activity Log: tabla, detalle, widgets, `DescribesActivityLogParties` y nombres de eventos y logs. `ActivityLogEventCatalog` lee `admin/activity-log.events.<valor>` y, si falta la clave, usa el nombre en inglés.
+  - Announcements: recurso, formularios, lista, tabs, acciones, detalle, preview y etiquetas/descripciones de sus enums.
+  - Posts: recurso, tabla, detalle, widgets y el gestor de Comments anidado en Posts.
+- **Fuera del alcance de traducción**:
+  - El recurso independiente de Comments y el contenido authored de anuncios, publicaciones y comentarios. Ese contenido conserva el idioma usado por su autor.
+  - El correo y la página de aceptación de invitaciones de administrador.
   - Los nombres de las comprobaciones fallidas de Spatie Backup.
 - **Pruebas que lo protegen** (`app/Modules/Admin/Tests/Translations/`):
-  - `AdminTranslationKeysTest` exige las mismas claves, textos no vacíos y los mismos marcadores en `en` y `es`, además de un nombre para cada evento, log y tipo del morph map.
-  - `AdminHardcodedTextTest` falla si un archivo ya traducido pasa un literal a un método de texto de Filament o escribe texto suelto en Blade.
+  - `AdminTranslationKeysTest` exige las mismas claves, textos no vacíos y los mismos marcadores en `en` y `es`, además de claves para las opciones de enums de Announcements y nombres para cada evento, log y tipo del morph map.
+  - `AdminHardcodedTextTest` escanea Activity Log, Announcements, Posts y el preview de anuncios; detecta literales en métodos de texto, títulos de tabs, componentes de estadísticas/secciones y texto Blade. Excluye el recurso independiente de Comments y el contenido authored.
 
 ### Registro de actividad (ActivityLog)
 
