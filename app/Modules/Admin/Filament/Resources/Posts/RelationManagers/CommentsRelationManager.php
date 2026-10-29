@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Filament\Resources\Posts\Pages\ViewPost;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use DateTimeInterface;
 use Filament\Actions\ViewAction;
@@ -52,20 +53,20 @@ class CommentsRelationManager extends RelationManager
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('user:id,name'))
             ->columns([
                 TextColumn::make('content')
-                    ->label('Content')
+                    ->label(TranslatedText::of('admin/posts.comments.fields.content'))
                     ->limit(70),
                 TextColumn::make('user.name')
-                    ->label('Author'),
+                    ->label(TranslatedText::of('admin/posts.comments.fields.author')),
                 TextColumn::make('created_at')
-                    ->label('Created at')
+                    ->label(TranslatedText::of('admin/posts.comments.fields.created_at'))
                     ->dateTime(),
             ])
             ->filters([
                 Filter::make('created_at')
-                    ->label('Creation date')
+                    ->label(TranslatedText::of('admin/posts.comments.filters.creation_date'))
                     ->schema([
-                        DatePicker::make('created_from')->label('From'),
-                        DatePicker::make('created_until')->label('Until'),
+                        DatePicker::make('created_from')->label(TranslatedText::of('admin/common.filters.from')),
+                        DatePicker::make('created_until')->label(TranslatedText::of('admin/common.filters.until')),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when(
@@ -81,14 +82,14 @@ class CommentsRelationManager extends RelationManager
                                 : $builder,
                         )),
                 SelectFilter::make('author')
-                    ->label('Author')
+                    ->label(TranslatedText::of('admin/posts.comments.filters.author'))
                     ->relationship('user', 'name')
                     ->searchable(),
                 TernaryFilter::make('has_replies')
-                    ->label('Reply presence')
-                    ->placeholder('All comments')
-                    ->trueLabel('Has replies')
-                    ->falseLabel('No replies')
+                    ->label(TranslatedText::of('admin/posts.comments.filters.reply_presence'))
+                    ->placeholder(TranslatedText::of('admin/posts.comments.filters.all_comments'))
+                    ->trueLabel(TranslatedText::of('admin/posts.comments.filters.has_replies'))
+                    ->falseLabel(TranslatedText::of('admin/posts.comments.filters.no_replies'))
                     ->queries(
                         true: fn (Builder $query): Builder => $query->whereHas('comments'),
                         false: fn (Builder $query): Builder => $query->whereDoesntHave('comments'),
