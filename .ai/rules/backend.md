@@ -53,3 +53,9 @@ In tests, do not use DB::table(...)->update(...) to modify data that belongs to 
 
 ## Test helper functions go at the top of the test file
 In backend test files, declare helper functions and constants at the top of the file, before the first test, not in the middle or at the end. This keeps the file readable: the reader meets the helpers before the tests that use them.
+
+## Write every admin panel text through a translation key
+Every visible text of the Filament admin panel lives in `lang/en/admin/<section>.php` and `lang/es/admin/<section>.php` under a named key, with both languages added together. In PHP read it with `App\Support\Translation\TranslatedText::of('admin/<section>.<key>', $replace)`, which returns a `string` for PHPStan; in Blade use `__('admin/<section>.<key>')`. Never pass a literal or use the English text as the key. Use `trans_choice` for counts and placeholders such as `:name` for values, never string concatenation. Text properties such as `$title`, `$heading` or `$navigationLabel` cannot call a function, so override the getter (`getTitle()`, `getHeading()`, `getNavigationLabel()`...) instead. A badge's color or icon must depend on the record or on a key, never on its translated label.
+
+Correct: `->label(TranslatedText::of('admin/users.table.status'))`, `trans_choice('admin/backups.retention.days', $days)`.
+Wrong: `->label('Status')`, `->label(__('Status'))`, `"{$count} days"`, `->color(fn (string $state) => $state === 'Verified' ? 'success' : 'warning')`.
