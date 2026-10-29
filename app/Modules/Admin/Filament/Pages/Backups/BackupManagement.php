@@ -10,6 +10,7 @@ use App\Modules\Admin\Filament\Pages\Backups\Schemas\BackupManagementInfolist;
 use App\Modules\Admin\Filament\Pages\Backups\Tables\BackupsTable;
 use App\Modules\Admin\Filament\Pages\Backups\Widgets\BackupSummaryWidget;
 use App\Modules\Admin\Services\BackupManagementService;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -22,28 +23,36 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Filament\Widgets\Widget;
 use Override;
-use UnitEnum;
 
 class BackupManagement extends Page implements HasTable
 {
     use InteractsWithTable;
 
     #[Override]
-    protected static ?string $title = 'Backup management';
-
-    #[Override]
-    protected static string|UnitEnum|null $navigationGroup = 'Administration';
-
-    #[Override]
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCircleStack;
-
-    #[Override]
-    protected static ?string $navigationLabel = 'Backups';
 
     #[Override]
     protected string $view = 'admin::filament.backups.backup-management';
 
     private ?BackupListingData $backupListing = null;
+
+    #[Override]
+    public function getTitle(): string
+    {
+        return TranslatedText::of('admin/backups.page.title');
+    }
+
+    #[Override]
+    public static function getNavigationGroup(): string
+    {
+        return TranslatedText::of('admin/backups.page.navigation_group');
+    }
+
+    #[Override]
+    public static function getNavigationLabel(): string
+    {
+        return TranslatedText::of('admin/backups.page.navigation_label');
+    }
 
     public static function canAccess(): bool
     {
@@ -61,13 +70,13 @@ class BackupManagement extends Page implements HasTable
     {
         return [
             Action::make('createBackup')
-                ->label('Create backup')
+                ->label(TranslatedText::of('admin/backups.actions.create.label'))
                 ->icon(Heroicon::OutlinedPlusCircle)
                 ->requiresConfirmation()
-                ->modalHeading('Create a database backup?')
-                ->modalDescription('The backup will be queued and appear in this list after the queue finishes processing it.')
-                ->modalSubmitActionLabel('Queue backup')
-                ->successNotificationTitle('Database backup queued')
+                ->modalHeading(TranslatedText::of('admin/backups.actions.create.modal_heading'))
+                ->modalDescription(TranslatedText::of('admin/backups.actions.create.modal_description'))
+                ->modalSubmitActionLabel(TranslatedText::of('admin/backups.actions.create.submit'))
+                ->successNotificationTitle(TranslatedText::of('admin/backups.actions.create.success'))
                 ->authorize(fn (): bool => $this->hasPermission(AdminPermission::AdminBackupsCreate))
                 ->action(function (): void {
                     $this->createBackup();

@@ -9,13 +9,16 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Pages\Backups\Widgets\BackupSummaryWidget;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
+use App\Modules\Admin\Services\BackupManagementService;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use Carbon\CarbonImmutable;
+use Filament\Notifications\Notification;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -392,4 +395,53 @@ it('exposes only download actions for backup rows without delete or restore acti
         ->assertSeeText('Download')
         ->assertDontSeeText('Delete')
         ->assertDontSeeText('Restore');
+});
+
+it('shows the page title, navigation and create action in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsCreate);
+    Queue::fake([RunDatabaseBackup::class]);
+    Storage::fake('backups');
+
+    $testable = backupManagementPageForTesting()
+        ->assertSeeText('Gestión de respaldos')
+        ->assertSeeText('Crear respaldo')
+        ->call('mountAction', 'createBackup');
+
+    $testable->__call('assertMountedActionModalSee', [[
+        '¿Crear un respaldo de la base de datos?',
+        'El respaldo se pondrá en cola',
+        'Poner en cola',
+    ]]);
+
+    $testable->call('callMountedAction');
+
+    Notification::assertNotified('Respaldo de la base de datos en cola');
+
+    expect(BackupManagement::getNavigationLabel())->toBe('Respaldos')
+        ->and(BackupManagement::getNavigationGroup())->toBe('Administración');
+});
+
+it('rejects an incorrect download password with a Spanish message', function (): void {
+    app()->setLocale('es');
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminBackupsDownload);
+    Storage::fake('backups');
+
+    $filename = (new RunDatabaseBackup)->filename;
+    storeBackupArchive($filename, 'backup archive');
+
+    expect(fn () => resolve(BackupManagementService::class)->downloadBackup($user, $filename, 'not-the-password'))
+        ->toThrow(ValidationException::class, 'La contraseña es incorrecta.');
 });
