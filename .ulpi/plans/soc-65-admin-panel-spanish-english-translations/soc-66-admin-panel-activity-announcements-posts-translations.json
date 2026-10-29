@@ -1,0 +1,774 @@
+{
+  "id": "soc-66-admin-panel-activity-announcements-posts-translations",
+  "title": "SOC-66: Traducir Activity Log, Announcements y Posts en el panel Admin",
+  "issue": {
+    "identifier": "SOC-66",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-66/feature-translate-activity-log-announcements-and-posts-into-spanish"
+  },
+  "mode": "EXPANSION",
+  "reviewDefault": "codex",
+  "date": "2026-10-29",
+  "overview": "Completar la localización al español e inglés de las interfaces Filament de Activity Log, Announcements y Posts bajo el selector ya implementado por SOC-65. El plan amplía la issue con pruebas ejecutables por sección, guardrails para evitar textos literales y sincronización de la documentación existente.",
+  "scopeChallenge": "EXPANSION, con revisión predeterminada de Codex (2026-10-29), confirmado por el usuario. El núcleo conserva exactamente los tres dominios de SOC-66; la expansión agrega pruebas por cada superficie, detección de literales que hoy no cubre tabs/tooltips/hints, verificación de enums y actualización de documentación existente. El Activity Log ya tiene tabla, filtros, nombres de eventos/logs y parties traducidos; el detalle y widgets siguen pendientes. Announcements tiene resource, enums, formularios, tabs, acciones, preview y detalle con textos fijos. Posts incluye su tabla, detalle, relation manager de comentarios dentro del post y widgets. Comments independiente, contenido authored y React quedan fuera.",
+  "prerequisites": [
+    "SOC-65 está Done y su implementación está en `origin/main` (`a3698b94`); el selector del panel, `users.preferred_locale`, middleware persistente de Livewire y la convención de catálogos existen.",
+    "Las traducciones de Activity Log ya cubren `ActivityLogsTable`, `DescribesActivityLogParties` y nombres de eventos/logs; deben conservarse.",
+    "`AdminTranslationKeysTest` detecta todos los catálogos `lang/en/admin/*.php` y verifica paridad/no-vacíos/placeholders; `AdminHardcodedTextTest` actualmente escanea solo superficies ya traducidas.",
+    "Las rutas usadas por el plan fueron inspeccionadas en `app/Modules/Admin/Filament/Resources/{ActivityLogs,Announcements,Posts}/`, sus pruebas y catálogos actuales.",
+    "No se requiere una dependencia nueva ni cambio a rutas, esquema, roles, permisos o persistencia."
+  ],
+  "nonGoals": [
+    "Cambiar el selector de idioma, cómo se resuelve el locale o cómo se guarda `users.preferred_locale`.",
+    "Traducir la aplicación React, el anuncio/publicación redactado por una persona, los correos, comandos o validaciones de Laravel.",
+    "Traducir el recurso independiente `app/Modules/Admin/Filament/Resources/Comments/` o el gestor PostsRelationManager en la pantalla User.",
+    "Cambiar valores persistidos de `AnnouncementType`, `AnnouncementAudience`, `AnnouncementDisplay`, eventos o logs.",
+    "Cambiar permisos, auditoría, workflows o comportamiento de solo lectura de Activity Log y Posts."
+  ],
+  "contracts": [
+    "Todo texto propio del panel se obtiene de `lang/{en,es}/admin/<sección>.php` con claves con nombre; PHP usa `TranslatedText::of('admin/<sección>.<clave>')` y Blade usa `__()`.",
+    "Los catálogos inglés/español conservan claves, valores no vacíos y placeholders; los plurales usan `trans_choice` y las fechas siguen el locale activo.",
+    "Los labels y descripciones de enums son presentación. Sus backing values persistidos permanecen estables; colores e iconos se seleccionan por estado tipado, nunca comparando la etiqueta traducida.",
+    "El texto authoreado de Announcement y Post no se traduce. Announcement body sigue renderizado por `safeBodyHtml()` y todas las escrituras/auditoría siguen pasando por `AnnouncementService`.",
+    "Activity Log no reconstruye ni expone contenido de posts/comments; los widgets mantienen consulta, conteos, periodo y autorización.",
+    "El Posts scope incluye el `CommentsRelationManager` anidado en `PostResource`, pero no la vista independiente de Comments a la que navega su acción View."
+  ],
+  "shipCut": "Los tres catálogos arrancan en paralelo. Cada dominio se puede desarrollar y validar en slices independientes; Activity Log queda traducido al terminar TASK-001..004, Announcements al terminar TASK-005..011 y Posts al terminar TASK-012..017. La issue no se considera lista para cerrar hasta que TASK-018 cubra todas las superficies y TASK-019 actualice los tres documentos existentes.",
+  "failureModes": [
+    "Una clave falta en español o cambia un placeholder: falla `AdminTranslationKeysTest` en TASK-018; las pruebas de página fijan los textos clave por locale.",
+    "Una etiqueta se localiza comparando el texto ya traducido para decidir icono/color: se rompen estados semánticos; cada tarea conserva la rama por enum/record y sus pruebas.",
+    "El evento desconocido del Activity Log se cambia en la consulta junto con su presentación: el centinela deja de coincidir; TASK-004 exige traducir solo la salida y conservar el conteo.",
+    "El texto del preview se confunde con contenido authored: TASK-009 traduce copy estático y verifica que título/cuerpo/botón se mantienen y el body sigue sanitizado.",
+    "El detector omite tabs, hints o cancel labels: TASK-018 añade esos patrones y pruebas positivas/negativas antes del cierre."
+  ],
+  "testCoverageMap": {
+    "Catálogo Activity Log: sintaxis, claves y presentación detalle/widgets": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-018"
+    ],
+    "Announcements: enums, formulario, tabs, tabla, acciones, preview y detalle": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-018"
+    ],
+    "Posts: tabla, detalle, comentarios anidados y widgets": [
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018"
+    ],
+    "Documentación existente y límites del scope": [
+      "TASK-019"
+    ]
+  },
+  "existingCodeLeverage": [
+    "`ActivityLogsTable::configure()` y `ActivityLogEventCatalog` ya localizan tabla, filtros, eventos, logs y partes.",
+    "`ActivityLogInfolist`, `ActivityLogOverview` y `ActivityLogSummaryWidget` centralizan las superficies faltantes del Activity Log; `ListActivityLogsTest` ya puede inspeccionar datos y accesibilidad del gráfico.",
+    "`AnnouncementType`, `AnnouncementAudience` y `AnnouncementDisplay` centralizan labels/descripciones reutilizados por tabla, formulario, detalle y preview.",
+    "`AnnouncementService` conserva las operaciones auditadas; `safeBodyHtml()` mantiene el sanitizado actual del body.",
+    "`PostResource`, `PostsTable`, `PostInfolist`, `CommentsRelationManager`, `PostsOverview` y `PostActivityOverview` son las superficies existentes del área Posts.",
+    "`AdminTranslationKeysTest` autodetecta nuevos catálogos; `AdminHardcodedTextTest` puede extender su lista de rutas/métodos sin introducir infraestructura nueva."
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [
+      "TASK-001"
+    ],
+    "TASK-004": [
+      "TASK-001"
+    ],
+    "TASK-005": [],
+    "TASK-006": [
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007"
+    ],
+    "TASK-009": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007"
+    ],
+    "TASK-010": [
+      "TASK-005"
+    ],
+    "TASK-011": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007"
+    ],
+    "TASK-012": [],
+    "TASK-013": [
+      "TASK-012"
+    ],
+    "TASK-014": [
+      "TASK-012"
+    ],
+    "TASK-015": [
+      "TASK-012"
+    ],
+    "TASK-016": [
+      "TASK-012"
+    ],
+    "TASK-017": [
+      "TASK-012"
+    ],
+    "TASK-018": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-018"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 19,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-005",
+        "TASK-012"
+      ],
+      [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-006",
+        "TASK-010",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017"
+      ],
+      [
+        "TASK-007"
+      ],
+      [
+        "TASK-008",
+        "TASK-009",
+        "TASK-011"
+      ],
+      [
+        "TASK-018"
+      ],
+      [
+        "TASK-019"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-018",
+      "TASK-019"
+    ],
+    "parallelism": "Los catálogos Activity Log, Announcements y Posts se inician en paralelo. Sus slices de UI avanzan por dominio y las pruebas guardrail/documentación cierran después de integrar todas las superficies."
+  },
+  "criticalPath": [
+    "TASK-005",
+    "TASK-006",
+    "TASK-007",
+    "TASK-008",
+    "TASK-018",
+    "TASK-019"
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Completar el catálogo del Activity Log",
+      "description": "Añadir al catálogo existente `lang/{en,es}/admin/activity-log.php` las claves para navegación, detalle y widgets del registro. Reutilizar claves de `admin/common` para textos compartidos cuando existan. Mantener intactas las claves de eventos, logs y tipos de sujeto ya usadas por `ActivityLogEventCatalog`.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Las claves nuevas tienen valores en inglés y español, con la misma estructura y los mismos placeholders; no hay textos vacíos.",
+        "Las claves existentes de eventos, logs y tipos de sujeto conservan sus nombres y valores de búsqueda.",
+        "Una clave de detalle que represente ausencia de datos tiene una traducción útil en ambos locales, no un texto vacío ni la clave cruda."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/admin/activity-log.php",
+        "lang/es/admin/activity-log.php"
+      ],
+      "writeScope": [
+        "lang/en/admin/activity-log.php",
+        "lang/es/admin/activity-log.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/admin/activity-log.php && rtk php -l lang/es/admin/activity-log.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Traducir la navegación y el detalle del Activity Log",
+      "description": "Sustituir los textos propios de Filament en `ActivityLogResource` y `ActivityLogInfolist` por claves del catálogo. Traducir secciones, descripciones, campos, placeholders y valores booleanos; formatear la fecha con el locale activo. Ampliar la prueba existente del detalle para ambos idiomas.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "El label de navegación y todos los textos fijos del detalle se muestran en el locale activo `en` o `es`.",
+        "Los valores booleanos, propiedades ausentes y contexto HTTP no registrado aparecen traducidos, conservando el valor y el tratamiento de los datos.",
+        "El detalle continúa ocultando contenido de publicaciones y comentarios y sigue permitiendo ver los datos almacenados al administrador autorizado."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/ActivityLogResource.php",
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/Schemas/ActivityLogInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ViewActivityLogTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/ActivityLogResource.php",
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/Schemas/ActivityLogInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ViewActivityLogTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ViewActivityLogTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Traducir las métricas de seguridad y administración del Activity Log",
+      "description": "Localizar el heading, labels y descripciones de las estadísticas de `ActivityLogOverview`. Conservar sus consultas, ventana fija de siete días, autorización y colores semánticos. Añadir aserciones en español e inglés a la prueba del widget.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "El heading, las tres etiquetas de estadística y sus descripciones se presentan en ambos locales.",
+        "Las métricas mantienen los mismos conteos y el rango de siete días al cambiar el locale.",
+        "Sin eventos recientes siguen apareciendo conteos cero, y el widget continúa denegado sin `admin.activity.viewAny`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/Widgets/ActivityLogOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Widgets/ActivityLogOverviewTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/Widgets/ActivityLogOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Widgets/ActivityLogOverviewTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Widgets/ActivityLogOverviewTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Traducir el gráfico y su resumen accesible del Activity Log",
+      "description": "Localizar heading, estados vacíos, etiqueta del dataset, descripción con pluralización y contenido accesible de `ActivityLogSummaryWidget`. El valor centinela usado internamente por la consulta para eventos desconocidos debe seguir estable y convertirse a una etiqueta localizada solo al presentar el gráfico. Ampliar las pruebas del gráfico en `ListActivityLogsTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "La leyenda, el resumen accesible, la descripción singular/plural y los estados vacíos se muestran en inglés y español.",
+        "Un evento sin etiqueta catalogada muestra una etiqueta de fallback traducida sin cambiar el valor centinela ni los conteos de la consulta.",
+        "El gráfico vacío sigue devolviendo una serie vacía y el widget conserva su autorización actual."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/Widgets/ActivityLogSummaryWidget.php",
+        "app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/ActivityLogs/Widgets/ActivityLogSummaryWidget.php",
+        "app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Crear el catálogo de Announcements",
+      "description": "Crear `lang/{en,es}/admin/announcements.php` con claves con nombre para la interfaz del recurso: navegación, formularios, lista, tabs, acciones, detalle, opciones de enums, notificaciones y preview. No incluir contenido escrito por administradores.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Ambos catálogos devuelven arrays PHP válidos con las mismas claves y valores no vacíos.",
+        "Los placeholders y reglas de pluralización coinciden entre inglés y español.",
+        "Los catálogos contienen claves de interfaz, sin claves que pretendan traducir los valores de título, cuerpo o botón guardados en cada anuncio."
+      ],
+      "filesToCreate": [
+        "lang/en/admin/announcements.php",
+        "lang/es/admin/announcements.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/admin/announcements.php",
+        "lang/es/admin/announcements.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/admin/announcements.php && rtk php -l lang/es/admin/announcements.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Localizar tipos y audiencias de Announcements",
+      "description": "Cambiar `AnnouncementType::label()` y `AnnouncementAudience::label()` para obtener sus textos del catálogo `admin/announcements`. Extender `AnnouncementEnumsTest` para probar ambos locales sin cambiar los valores persistidos de los enums.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Cada tipo y audiencia devuelve su etiqueta traducida según `app()->getLocale()`.",
+        "Los valores respaldados (`info`, `warning`, `critical`, `all`, `authenticated`, `without_two_factor`) no cambian.",
+        "Valores no reconocidos siguen rechazándose con `ValueError`; no se traducen ni normalizan para persistencia."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Enums/AnnouncementType.php",
+        "app/Modules/Announcement/Enums/AnnouncementAudience.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Enums/AnnouncementType.php",
+        "app/Modules/Announcement/Enums/AnnouncementAudience.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Localizar la presentación toast/dialog de Announcements",
+      "description": "Localizar `AnnouncementDisplay::label()` y `description()` mediante el catálogo. Ampliar `AnnouncementEnumsTest` para ambos locales y conservar la semántica de los valores de presentación.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Las etiquetas y descripciones para Toast y Dialog cambian con el locale activo.",
+        "Los valores respaldados `toast` y `dialog`, su uso en el formulario y la selección guardada permanecen iguales.",
+        "La descripción de cada opción no queda vacía en ninguno de los dos locales."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Announcement/Enums/AnnouncementDisplay.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Announcement/Enums/AnnouncementDisplay.php",
+        "app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Enums/AnnouncementEnumsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Traducir navegación y formulario de Announcements",
+      "description": "Localizar los labels del recurso, encabezados y secciones del formulario, hints, placeholders y campos condicionales. Usar getters en la clase Resource para los textos que hoy están en propiedades. Extender `CreateAnnouncementTest` para revisar español e inglés y conservar el comportamiento actual del formulario.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Navegación, singular/plural del recurso, secciones y textos del formulario aparecen completos en ambos locales.",
+        "El helper de solapamiento de diálogos y las opciones/descripciones de tipo, audiencia y display se traducen según el locale.",
+        "El toggle del botón, las reglas de URL y los campos condicionales conservan su comportamiento, incluso para URL inválidas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementForm.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/AnnouncementResource.php",
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementForm.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/CreateAnnouncementTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Traducir acciones, tabla y vista previa de Announcements",
+      "description": "Localizar columnas, filtros, acciones, tooltips, modales y notificaciones de `AnnouncementsTable`, y los textos estáticos de la vista previa Blade. Las etiquetas de display/type deben seguir usando estados tipados para color e icono. Extender las pruebas existentes de acciones, incluyendo el contenido del preview.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "La tabla, filtros, preview, duplicate y unpublish muestran sus textos fijos en el locale activo.",
+        "El título, cuerpo y texto del botón del anuncio se muestran exactamente como fueron guardados; el body continúa pasando por `safeBodyHtml()`.",
+        "El preview sigue separando el flujo toast/dialog y manteniendo color e icono basados en enums, no en etiquetas traducidas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php",
+        "app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Tables/AnnouncementsTable.php",
+        "app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Tables/AnnouncementTableActionsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Traducir las pestañas de la lista de Announcements",
+      "description": "Localizar tabs Scheduled, Active, Expired, Active dialogs y All, más el tooltip del badge. Mantener los nombres de clave de las pestañas y las consultas de estado. Ampliar `ListAnnouncementsTest` para locales `en` y `es`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Todas las pestañas y el tooltip se muestran en el locale activo.",
+        "Active continúa como la pestaña inicial y cada tab mantiene su query scope actual.",
+        "Si no hay diálogos activos, el badge sigue mostrando cero y el tooltip no altera el resultado."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ListAnnouncements.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Pages/ListAnnouncements.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ListAnnouncementsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Traducir el detalle de Announcements",
+      "description": "Localizar secciones, labels y placeholders del `AnnouncementInfolist`. Conservar la visualización del contenido generado por el administrador y los labels de enums ya localizados. Ampliar la prueba de detalle a ambos locales.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Labels, encabezados y placeholders del detalle aparecen completos en español e inglés.",
+        "Título, cuerpo enriquecido, imagen y texto del botón mantienen su contenido guardado sin traducirse.",
+        "El cuerpo del anuncio se presenta con el sanitizador actual; una entrada HTML peligrosa no se renderiza como código ejecutable."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Announcements/Schemas/AnnouncementInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Announcements/Pages/ViewAnnouncementTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Crear el catálogo de Posts",
+      "description": "Crear `lang/{en,es}/admin/posts.php` con claves con nombre para la interfaz de administración de Posts: navegación, tablas, filtros, detalle, relation manager anidado y widgets. Las traducciones son para etiquetas de interfaz; no para contenido de las publicaciones.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los dos archivos PHP son válidos y contienen el mismo árbol de claves.",
+        "Los valores de cada idioma no están vacíos y los placeholders están sincronizados.",
+        "No hay claves destinadas a modificar `Post::content` ni otros valores guardados."
+      ],
+      "filesToCreate": [
+        "lang/en/admin/posts.php",
+        "lang/es/admin/posts.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/admin/posts.php",
+        "lang/es/admin/posts.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/admin/posts.php && rtk php -l lang/es/admin/posts.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Traducir navegación y tabla de Posts",
+      "description": "Añadir labels localizados al recurso Posts y reemplazar los textos fijos en `PostsTable`: imagen, columnas, filtros, placeholders y rango de fechas. Ampliar `ListPostsTest` para ambos locales, manteniendo la búsqueda, filtros y navegación al detalle.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "Labels de recurso, columnas y filtros se muestran en español e inglés.",
+        "Contenido de post y nombre del autor siguen mostrándose como datos, sin ser traducidos ni modificados.",
+        "El filtro vacío, ambos límites de fecha y el enlace al detalle continúan funcionando."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
+        "app/Modules/Admin/Filament/Resources/Posts/Tables/PostsTable.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/PostResource.php",
+        "app/Modules/Admin/Filament/Resources/Posts/Tables/PostsTable.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ListPostsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Traducir el detalle de Posts",
+      "description": "Localizar títulos, descripciones, labels y alt text fijo de las secciones del detalle en `PostInfolist`. Formatear fechas según el locale y mantener el contenido de la publicación como dato. Añadir casos en ambos idiomas a `ViewPostTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "Los textos fijos del detalle y alt text aparecen en el locale activo.",
+        "El mensaje del post y sus datos de autor conservan el valor original.",
+        "La imagen de fallback sigue funcionando cuando la publicación no tiene imagen."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/Schemas/PostInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/Schemas/PostInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Pages/ViewPostTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Traducir el gestor de comentarios dentro de Posts",
+      "description": "Localizar labels y filtros de `CommentsRelationManager`, que se muestra en el detalle de una publicación. El botón nativo de Filament conserva sus propias traducciones; la ruta a la pantalla independiente de Comments queda fuera del alcance. Ampliar su prueba para ambos locales.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "Las columnas y filtros visibles dentro de la pantalla de Posts se muestran en el locale activo.",
+        "Búsqueda, filtros de autor/fecha/respuestas y navegación al detalle de comentario mantienen el comportamiento actual.",
+        "No se traduce ni modifica el recurso independiente `Resources/Comments` en esta tarea."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/RelationManagers/CommentsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/RelationManagers/CommentsRelationManagerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Traducir el resumen del recurso Posts",
+      "description": "Localizar el heading, etiquetas y descripciones de las estadísticas de `PostsOverview`. Crear una prueba dedicada en el directorio de widgets existente para comprobar ambos idiomas y conservar los datos del gráfico.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "El heading, labels y descripciones de las métricas aparecen en ambos idiomas.",
+        "Los conteos, datos de las gráficas y colores semánticos no cambian al seleccionar otro locale.",
+        "La consulta continúa limitada a la ventana de siete días y mantiene la autorización de `admin.posts.viewAny`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Widgets/PostsOverviewTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/Widgets/PostsOverview.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/Widgets/PostsOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Widgets/PostsOverviewTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Widgets/PostsOverviewTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Traducir las métricas del detalle de Posts",
+      "description": "Localizar las etiquetas y descripciones de `PostActivityOverview`, manteniendo los conteos y gráficos de comentarios, respuestas y likes. Ampliar la prueba del widget para español e inglés y para conservar su caso de registro inválido.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "Las tres estadísticas y sus descripciones se muestran según el locale activo.",
+        "Conteos, rangos y series mantienen sus valores en ambos idiomas.",
+        "Un administrador sin permiso o un post que ya no es visible sigue sin recibir las métricas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Posts/Widgets/PostActivityOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Widgets/PostActivityOverviewTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Posts/Widgets/PostActivityOverview.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Posts/Widgets/PostActivityOverviewTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Posts/Widgets/PostActivityOverviewTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Extender las protecciones de claves y textos fijos",
+      "description": "Ampliar `AdminTranslationKeysTest` con comprobaciones de las claves de presentación de los enums de Announcements y ampliar `AdminHardcodedTextTest` para escanear ActivityLogs, Announcements, Posts y el preview Blade. El detector debe cubrir métodos de texto usados aquí (`hint`, `badgeTooltip`, `modalCancelActionLabel`) y títulos de tabs, sin marcar los valores dinámicos ni el contenido authored.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017"
+      ],
+      "acceptanceCriteria": [
+        "Los catálogos en/es siguen teniendo las mismas claves, valores no vacíos y placeholders; los labels y descripciones de cada enum cubierto existen en ambos locales.",
+        "El detector falla ante un literal en un método de texto, un tab o el preview de las tres áreas, y pasa con una llamada traducida.",
+        "Los datos authored y el recurso independiente de Comments quedan fuera del detector de textos de interfaz de SOC-66."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+        "app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+        "app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Sincronizar la documentación de idiomas del panel",
+      "description": "Actualizar las secciones existentes sobre idiomas y estado de traducciones en `AGENTS.md`, `CLAUDE.md` y `docs/architecture/backend.md`. Reflejar la cobertura de Activity Log, Announcements y Posts, conservar los límites de Comments y contenido authored, y no crear documentación nueva.",
+      "priority": "P2",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "Los tres documentos indican de forma consistente qué secciones del panel están traducidas después de SOC-66.",
+        "La documentación mantiene la convención de catálogos, `TranslatedText::of`, `__()`, locales en/es y las pruebas que protegen traducciones.",
+        "No quedan afirmaciones obsoletas que digan que Announcements/Posts o el detalle/widgets de Activity Log siguen totalmente en inglés, ni se crean archivos de documentación."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/architecture/backend.md"
+      ],
+      "writeScope": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/architecture/backend.md"
+      ],
+      "validateCommand": "rtk git diff --check -- AGENTS.md CLAUDE.md docs/architecture/backend.md",
+      "review": "codex"
+    }
+  ]
+}
+
