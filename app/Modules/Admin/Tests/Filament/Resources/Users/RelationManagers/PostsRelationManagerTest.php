@@ -331,3 +331,27 @@ it('forbids direct relation requests without User record access', function (): v
     postsRelationManagerFor($targetUser)
         ->assertForbidden();
 });
+
+it('shows the posts tab in Spanish without translating the post content', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
+
+    $targetUser = createUser();
+    createPost($targetUser, ['content' => 'Post content stays as written']);
+
+    postsRelationManagerFor($targetUser)
+        ->assertOk()
+        ->assertSee('Imagen')
+        ->assertSee('Publicación')
+        ->assertSee('Creada el')
+        ->assertSee('Comentarios')
+        ->assertSee('Todas las publicaciones')
+        ->assertSee('Desde')
+        ->assertSee('Hasta')
+        ->assertSee('alt="Imagen de la publicación"', false)
+        ->assertSeeText('Post content stays as written')
+        ->assertDontSee('Comment presence');
+
+    expect(PostsRelationManager::getTitle($targetUser, ViewUser::class))->toBe('Publicaciones');
+});
