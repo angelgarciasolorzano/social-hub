@@ -79,7 +79,8 @@ El panel de administración está en español e inglés. Las traducciones viven 
 - **Colores e íconos de badges**: nunca comparan la etiqueta traducida. Dependen del registro (`hasVerifiedEmail()`, el booleano de salud de los respaldos) o de una clave: `TrustedDevicesRelationManager` guarda `active`/`expired`/`revoked` como estado y solo traduce la etiqueta.
 - **Fechas**: se formatean con `translatedFormat()` y un formato del catálogo. En español salen como "5 oct.". Los textos propios de Filament (login, MFA, perfil, botones, paginación, filtros) ya vienen traducidos.
 - **Selector de idioma**: es el plugin `bezhansalleh/filament-language-switch` (5.x), configurado en `AdminServiceProvider::configureLanguageSwitch()`.
-  - Ofrece `es` y `en` (`SWITCH_LOCALES`, casos de `PreferredLocale`) dentro del panel y en el login, la configuración obligatoria de MFA y el perfil. No aparece en la página de aceptar invitación.
+  - Ofrece `en` y `es` (`SWITCH_LOCALES`, casos de `PreferredLocale`). El inglés va primero: si el navegador no pide un idioma ofrecido, el plugin elige el primero de la lista, que debe coincidir con `app.locale`.
+  - Aparece dentro del panel y en el login, la configuración obligatoria de MFA y el perfil. No aparece en la página de aceptar invitación.
   - El idioma se resuelve en este orden: sesión, `?locale=`, `users.preferred_locale` del administrador (leído con `Filament::auth()`), `Accept-Language`, cookie y `app.locale`.
   - Al elegir un idioma, `StoreAdminPreferredLocale` lo guarda en `preferred_locale` sin auditarlo. Es la misma columna que edita la configuración de cuenta de la aplicación.
   - El middleware del plugin se registra también como middleware persistente de Livewire. Sin eso, cada actualización de un componente (filtrar, paginar, abrir un modal) respondería en `app.locale`.

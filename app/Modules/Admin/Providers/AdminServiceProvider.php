@@ -25,11 +25,12 @@ use Livewire\Livewire;
 class AdminServiceProvider extends ServiceProvider
 {
     /**
-     * Languages offered by the panel's switch, Spanish first.
+     * Languages offered by the panel's switch. English goes first: for a browser that asks for no
+     * offered language, the plugin picks the first one, and that must match `app.locale`.
      *
      * @var list<PreferredLocale>
      */
-    public const array SWITCH_LOCALES = [PreferredLocale::SPANISH, PreferredLocale::ENGLISH];
+    public const array SWITCH_LOCALES = [PreferredLocale::ENGLISH, PreferredLocale::SPANISH];
 
     public function boot(): void
     {
@@ -70,8 +71,8 @@ class AdminServiceProvider extends ServiceProvider
                     self::SWITCH_LOCALES,
                 ))
                 ->labels([
-                    PreferredLocale::SPANISH->value => 'Español',
                     PreferredLocale::ENGLISH->value => 'English',
+                    PreferredLocale::SPANISH->value => 'Español',
                 ])
                 ->visible(insidePanels: true, outsidePanels: true)
                 ->outsidePanelRoutes(static function () use ($languageSwitch): array {

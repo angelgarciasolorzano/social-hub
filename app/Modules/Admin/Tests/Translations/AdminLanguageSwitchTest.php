@@ -135,3 +135,14 @@ it('does not show the switch on the invitation acceptance page', function (): vo
 it('keeps the chosen language on Livewire updates of the panel', function (): void {
     expect(Livewire::getPersistentMiddleware())->toContain(SwitchLanguageLocale::class);
 });
+
+it('opens the sign-in page in the default language for a browser without an offered language', function (string $acceptLanguage, string $expectedLocale): void {
+    $testResponse = $this->withServerVariables(['HTTP_ACCEPT_LANGUAGE' => $acceptLanguage])->get('/admin/login');
+
+    expect(renderedPanelLocale($testResponse))->toBe($expectedLocale);
+})->with([
+    'no language' => ['', 'en'],
+    'an unsupported language' => ['fr-FR,fr;q=0.9', 'en'],
+    'Spanish' => ['es-MX,es;q=0.9', 'es'],
+    'English' => ['en-US,en;q=0.9', 'en'],
+]);
