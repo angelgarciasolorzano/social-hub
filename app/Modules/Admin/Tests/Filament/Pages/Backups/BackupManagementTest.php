@@ -514,3 +514,48 @@ it('shows the empty backups table and the download password prompt in Spanish', 
         'Descargar respaldo',
     ]]);
 });
+
+it('renders the backup summary in Spanish', function (): void {
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $user->saveAppAuthenticationSecret('filament-test-secret');
+    Storage::fake('backups');
+    $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
+
+    storeBackupArchive((new RunDatabaseBackup)->filename, str_repeat('b', 1024 * 1024), now()->subMinutes(30));
+
+    $this->get(BackupManagement::getUrl(isAbsolute: false).'?locale=es')
+        ->assertOk()
+        ->assertSeeText('Resumen de respaldos')
+        ->assertSeeText('Respaldos disponibles')
+        ->assertSeeText('Archivos presentes en el almacenamiento')
+        ->assertSeeText('Respaldos faltantes')
+        ->assertSeeText('No faltan archivos')
+        ->assertSeeText('Último respaldo disponible')
+        ->assertSeeText('hace 30 minutos')
+        ->assertSeeText('22 oct. 2026, 11:30')
+        ->assertSeeText('Tamaño total de los respaldos')
+        ->assertSeeText('Destino en buen estado.')
+        ->assertDontSeeText('Backup summary');
+});
+
+it('shows the empty and unhealthy backup summary in Spanish', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    $backupListingData = backupListingDataForSummary([], healthy: false);
+
+    Livewire::test(BackupSummaryWidget::class, ['backupListingData' => backupListingWidgetData($backupListingData)])
+        ->assertOk()
+        ->assertSeeText('El destino necesita atención. No hay respaldos.')
+        ->assertSeeText('No hay respaldos disponibles')
+        ->assertSeeText('No hay respaldos guardados')
+        ->assertSeeText('No disponible');
+});
