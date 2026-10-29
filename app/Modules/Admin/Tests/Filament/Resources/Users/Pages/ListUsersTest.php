@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
+use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Mail\AdminInvitationMail;
 use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
@@ -116,6 +117,41 @@ it('renders the last login fallback in the active application locale', function 
     } finally {
         app()->setLocale($originalLocale);
     }
+});
+
+it('shows the users list, its columns and filters in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole([
+        AdminRole::Admin->value,
+        AdminRole::AdminUsersReader->value,
+    ]);
+
+    $targetUser = createUser();
+
+    $this->actingAs($authenticatedUser, 'admin');
+
+    listUsersPageForTesting()
+        ->assertSee('Usuarios')
+        ->assertSee('Foto de perfil')
+        ->assertSee('Nombre')
+        ->assertSee('Correo electrónico')
+        ->assertSee('Estado')
+        ->assertSee('Correo verificado el')
+        ->assertSee('Creado el')
+        ->assertSee('Último inicio de sesión')
+        ->assertSee('Estado de la cuenta')
+        ->assertSee('Verificación del correo')
+        ->assertSee('Desde')
+        ->assertSee('Hasta')
+        ->assertSee('Todos los usuarios')
+        ->assertSeeHtml('alt="Foto de perfil de '.e($targetUser->name).'"')
+        ->assertDontSee('Post presence');
+
+    expect(UserResource::getNavigationLabel())->toBe('Usuarios')
+        ->and(UserResource::getModelLabel())->toBe('usuario')
+        ->and(UserResource::getPluralModelLabel())->toBe('usuarios');
 });
 
 it('renders a users profile picture with descriptive alt text', function (): void {

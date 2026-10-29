@@ -7,6 +7,7 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use BezhanSalleh\LanguageSwitch\Http\Livewire\LanguageSwitchComponent;
+use BezhanSalleh\LanguageSwitch\Http\Middleware\SwitchLanguageLocale;
 use Illuminate\Testing\TestResponse;
 use Livewire\Livewire;
 use Symfony\Component\HttpFoundation\Response;
@@ -129,4 +130,8 @@ it('does not show the switch on the invitation acceptance page', function (): vo
     $this->get(route('admin.invitations.accept', ['token' => $token]))
         ->assertOk()
         ->assertDontSee('Español');
+});
+
+it('keeps the chosen language on Livewire updates of the panel', function (): void {
+    expect(Livewire::getPersistentMiddleware())->toContain(SwitchLanguageLocale::class);
 });

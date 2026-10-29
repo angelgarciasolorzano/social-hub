@@ -13,6 +13,7 @@ use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRe
 use App\Modules\Admin\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Modules\Admin\Filament\Resources\Users\Tables\UsersTable;
 use App\Modules\Admin\Filament\Widgets\RegistrationSummaryWidget;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
@@ -36,6 +37,24 @@ class UserResource extends Resource
 
     #[Override]
     protected static ?string $recordTitleAttribute = 'name';
+
+    #[Override]
+    public static function getModelLabel(): string
+    {
+        return TranslatedText::of('admin/users.resource.model_label');
+    }
+
+    #[Override]
+    public static function getPluralModelLabel(): string
+    {
+        return TranslatedText::of('admin/users.resource.plural_model_label');
+    }
+
+    #[Override]
+    public static function getNavigationLabel(): string
+    {
+        return TranslatedText::of('admin/users.resource.navigation_label');
+    }
 
     public static function infolist(Schema $schema): Schema
     {

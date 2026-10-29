@@ -14,12 +14,13 @@ use App\User\Models\User;
 use BezhanSalleh\LanguageSwitch\Enums\Placement;
 use BezhanSalleh\LanguageSwitch\Enums\PlacementMode;
 use BezhanSalleh\LanguageSwitch\Events\LocaleChanged;
+use BezhanSalleh\LanguageSwitch\Http\Middleware\SwitchLanguageLocale;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\Facades\Filament;
-use Filament\Panel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AdminServiceProvider extends ServiceProvider
 {
@@ -50,6 +51,8 @@ class AdminServiceProvider extends ServiceProvider
 
         $this->configureLanguageSwitch();
 
+        Livewire::addPersistentMiddleware([SwitchLanguageLocale::class]);
+
         Event::listen(LocaleChanged::class, StoreAdminPreferredLocale::class);
     }
 
@@ -71,7 +74,15 @@ class AdminServiceProvider extends ServiceProvider
                     PreferredLocale::ENGLISH->value => 'English',
                 ])
                 ->visible(insidePanels: true, outsidePanels: true)
-                ->outsidePanelRoutes(static fn (): array => self::outsidePanelRouteNames($languageSwitch->getCurrentPanel()))
+                ->outsidePanelRoutes(static function () use ($languageSwitch): array {
+                    $panel = $languageSwitch->getCurrentPanel();
+
+                    return [
+                        $panel->generateRouteName('auth.login'),
+                        $panel->getSetUpRequiredMultiFactorAuthenticationRouteName(),
+                        $panel->generateRouteName('auth.profile'),
+                    ];
+                })
                 ->outsidePanelPlacement(Placement::TopEnd, PlacementMode::Pinned)
                 ->userPreferredLocale(static function (): ?string {
                     $user = Filament::auth()->user();
@@ -79,22 +90,6 @@ class AdminServiceProvider extends ServiceProvider
                     return $user instanceof User ? $user->preferred_locale->value : null;
                 });
         });
-    }
-
-    /**
-     * Route names of the panel pages outside its regular layout that also show the switch: sign-in, the
-     * required MFA set-up and the profile. Filament only exposes a route name getter for the MFA set-up,
-     * so the other two go through `generateRouteName()`, which adds the panel prefix (`filament.admin.`).
-     *
-     * @return list<string>
-     */
-    private static function outsidePanelRouteNames(Panel $panel): array
-    {
-        return [
-            $panel->generateRouteName('auth.login'),
-            $panel->getSetUpRequiredMultiFactorAuthenticationRouteName(),
-            $panel->generateRouteName('auth.profile'),
-        ];
     }
 
     /** Schedule daily backups and independent health checks during low-traffic hours. */
