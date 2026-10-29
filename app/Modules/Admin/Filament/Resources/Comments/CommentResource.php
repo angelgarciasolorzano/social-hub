@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Resources\Comments\Pages\ViewComment;
 use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelationManager;
 use App\Modules\Admin\Filament\Resources\Comments\Schemas\CommentInfolist;
 use App\Modules\Comment\Models\Comment;
+use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -32,6 +33,18 @@ class CommentResource extends Resource
 
     #[Override]
     protected static bool $shouldRegisterNavigation = false;
+
+    #[Override]
+    public static function getModelLabel(): string
+    {
+        return TranslatedText::of('admin/comments.resource.model_label');
+    }
+
+    #[Override]
+    public static function getPluralModelLabel(): string
+    {
+        return TranslatedText::of('admin/comments.resource.plural_model_label');
+    }
 
     #[Override]
     public static function canCreate(): bool

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Comments\Schemas;
 
+use App\Support\Translation\TranslatedText;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -15,15 +16,15 @@ class CommentInfolist
     {
         return $schema
             ->components([
-                Section::make('Comment details')
-                    ->description('Author and publication details for this comment.')
+                Section::make(TranslatedText::of('admin/comments.infolist.details.heading'))
+                    ->description(TranslatedText::of('admin/comments.infolist.details.description'))
                     ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
                     ->schema([
                         TextEntry::make('user.name')
-                            ->label('Author')
+                            ->label(TranslatedText::of('admin/comments.fields.author'))
                             ->icon(Heroicon::OutlinedUser),
                         TextEntry::make('created_at')
-                            ->label('Created at')
+                            ->label(TranslatedText::of('admin/comments.fields.created_at'))
                             ->icon(Heroicon::OutlinedCalendarDays)
                             ->dateTime(),
                     ])
@@ -31,12 +32,12 @@ class CommentInfolist
                         'default' => 1,
                         'sm' => 2,
                     ]),
-                Section::make('Comment content')
-                    ->description('The complete message in this conversation.')
+                Section::make(TranslatedText::of('admin/comments.infolist.content.heading'))
+                    ->description(TranslatedText::of('admin/comments.infolist.content.description'))
                     ->icon(Heroicon::OutlinedDocumentText)
                     ->schema([
                         TextEntry::make('content')
-                            ->label('Message')
+                            ->label(TranslatedText::of('admin/comments.fields.message'))
                             ->icon(Heroicon::OutlinedDocumentText)
                             ->prose()
                             ->columnSpanFull(),
