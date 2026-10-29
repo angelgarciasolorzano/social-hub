@@ -571,9 +571,9 @@ Cambiar los imports de `@/shared/lib/dateTime` por `useDateTime()`. Solo las fec
 
 **validateCommand:** `rtk npm run types && rtk npx eslint resources/js/modules/comment/components/CommentItem.tsx resources/js/modules/comment/components/dialog/CommentDialog.tsx && rtk npx prettier --check resources/js/modules/comment/components/CommentItem.tsx resources/js/modules/comment/components/dialog/CommentDialog.tsx`
 
-### TASK-026: Sidebar y layout de configuración
+### TASK-026: Sidebar y layout de configuración, sin el relleno de la plantilla
 
-Traducir `SettingSidebar`, `SettingSidebarNavMain` y `SettingLayout` con `setting/common`. Los títulos de los ítems pasan a ser claves si están en un arreglo estático.
+Traducir `SettingSidebar`, `SettingSidebarNavMain` y `SettingLayout` con `setting/common`; los títulos de los ítems pasan a ser claves del arreglo estático. Quitar el relleno de la plantilla de shadcn en vez de traducirlo (decisión del usuario, 2026-10-29): la cabecera del sidebar muestra el `name` compartido (nombre de la app) en lugar de 'Acme Inc'/'Enterprise'; se elimina el pie con `SettingSidebarNavUser` y su usuario de ejemplo (el archivo lo borra TASK-058); y se elimina el breadcrumb de ejemplo ('Build Your Application'/'Data Fetching') junto con su separador, conservando el `SidebarTrigger`.
 
 **Type:** feature · **Priority:** P1 · **Effort:** M · **Agent:** `react-vite-tailwind-engineer` · **Review:** claude
 
@@ -583,7 +583,7 @@ Traducir `SettingSidebar`, `SettingSidebarNavMain` y `SettingLayout` con `settin
 
 - Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/common` vía `t()`/`tChoice()`; no queda ningún texto visible literal.
 - Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.
-- En la página Apariencia (fuera de alcance) el sidebar también sale traducido, porque `PreferenceController` registra `setting/common` (TASK-013).
+- No quedan 'Acme Inc', 'Enterprise', el usuario `shadcn`/`m@example.com` ni el breadcrumb de ejemplo; en Apariencia (fuera de alcance) el sidebar también sale traducido, porque `PreferenceController` registra `setting/common` (TASK-013).
 
 **writeScope:**
 
@@ -1108,6 +1108,25 @@ Traducir `TrustedDeviceActivityFilterCombobox`, `TrustedDeviceActivityPagination
 
 **validateCommand:** `rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx`
 
+### TASK-058: Borrar SettingSidebarNavUser, el menú de usuario de ejemplo
+
+Eliminar `setting/shared/components/SettingSidebarNavUser.tsx` (relleno de la plantilla de shadcn con un usuario falso y 'Upgrade to Pro', 'Account', 'Billing', 'Notifications', 'Log out' sin acción), que deja de usarse cuando TASK-026 quita el pie del sidebar. Decisión del usuario del 2026-10-29: se quita en vez de traducirse.
+
+**Type:** chore · **Priority:** P2 · **Effort:** S · **Agent:** `react-vite-tailwind-engineer` · **Review:** claude
+
+**Depends on:** TASK-026
+
+**Acceptance Criteria:**
+
+- El archivo no existe y ningún archivo de `resources/js` lo importa.
+- `npm run types`, ESLint y `npm run build` siguen pasando sin el componente.
+
+**writeScope:**
+
+- `resources/js/modules/setting/shared/components/SettingSidebarNavUser.tsx`
+
+**validateCommand:** `rtk npm run types && rtk npm run lint:check`
+
 ### TASK-051: Paridad de claves y marcadores para setting/, dates y validation
 
 Mover a `tests/Pest.php` las funciones de `AdminTranslationKeysTest` que aplanan un catálogo y extraen marcadores (con nombres genéricos), hacer que `AdminTranslationKeysTest` las use sin cambiar lo que comprueba, y crear `SettingTranslationKeysTest` para todo `lang/{en,es}/setting/*.php`, `dates.php` y `validation.php`.
@@ -1155,7 +1174,7 @@ Crear `FrontendTranslationKeysTest`: busca en `resources/js/**/*.{ts,tsx}` todo 
 
 **Type:** test · **Priority:** P1 · **Effort:** M · **Agent:** `laravel-senior-engineer` · **Review:** claude
 
-**Depends on:** TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050
+**Depends on:** TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058
 
 **Acceptance Criteria:**
 
@@ -1174,7 +1193,7 @@ Crear `SettingHardcodedTextTest`, como `AdminHardcodedTextTest`, sobre `resource
 
 **Type:** test · **Priority:** P1 · **Effort:** M · **Agent:** `laravel-senior-engineer` · **Review:** claude
 
-**Depends on:** TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050
+**Depends on:** TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058
 
 **Acceptance Criteria:**
 
@@ -1194,7 +1213,7 @@ Describir: `lang/` como única fuente; por qué no hay paquete (laravel-react-i1
 
 **Type:** docs · **Priority:** P3 · **Effort:** M · **Agent:** `general-purpose` · **Review:** claude
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-051, TASK-052, TASK-053, TASK-054
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058, TASK-051, TASK-052, TASK-053, TASK-054
 
 **Acceptance Criteria:**
 
@@ -1215,7 +1234,7 @@ Actualizar `docs/architecture/frontend.md` y `docs/architecture/backend.md` (flu
 
 **Type:** docs · **Priority:** P3 · **Effort:** S · **Agent:** `general-purpose` · **Review:** claude
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-051, TASK-052, TASK-053, TASK-054
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058, TASK-051, TASK-052, TASK-053, TASK-054
 
 **Acceptance Criteria:**
 
@@ -1236,7 +1255,7 @@ Verificación final sin archivos propios: Pint, `rector-clear-cache` → `rector
 
 **Type:** chore · **Priority:** P3 · **Effort:** M · **Agent:** `general-purpose` · **Review:** claude
 
-**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-051, TASK-052, TASK-053, TASK-054, TASK-055, TASK-056
+**Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058, TASK-051, TASK-052, TASK-053, TASK-054, TASK-055, TASK-056
 
 **Acceptance Criteria:**
 
@@ -1281,7 +1300,7 @@ Si la ejecución se corta: TASK-001..006 dejan la infraestructura lista sin camb
 
 ## Execution Summary
 
-- **Tareas:** 57
+- **Tareas:** 58
 - **Ruta crítica:** TASK-001 → TASK-004 → TASK-005 → TASK-006 → TASK-029 → TASK-053 → TASK-055 → TASK-057
 - **Paralelismo:** Los cinco catálogos de `setting/`, `dates`, `validation`, el middleware y `FrontendTranslations` arrancan en paralelo; tras TASK-005/006 las 25 tareas de frontend son independientes entre sí (no comparten archivos) y corren en paralelo con las de backend.
 
@@ -1291,7 +1310,7 @@ Si la ejecución se corta: TASK-001..006 dejan la infraestructura lista sin camb
 | 1 | TASK-004, TASK-013, TASK-014, TASK-016, TASK-017, TASK-018, TASK-021, TASK-023, TASK-051 |
 | 2 | TASK-005, TASK-015, TASK-019, TASK-020, TASK-022 |
 | 3 | TASK-006, TASK-026, TASK-027, TASK-028, TASK-030, TASK-031, TASK-034, TASK-035, TASK-037, TASK-039, TASK-041, TASK-042, TASK-043, TASK-048, TASK-050 |
-| 4 | TASK-024, TASK-025, TASK-029, TASK-032, TASK-033, TASK-036, TASK-038, TASK-040, TASK-044, TASK-045, TASK-046, TASK-047, TASK-049 |
+| 4 | TASK-024, TASK-025, TASK-029, TASK-032, TASK-033, TASK-036, TASK-038, TASK-040, TASK-044, TASK-045, TASK-046, TASK-047, TASK-049, TASK-058 |
 | 5 | TASK-052, TASK-053, TASK-054 |
 | 6 | TASK-055, TASK-056 |
 | 7 | TASK-057 |
@@ -1350,10 +1369,11 @@ Si la ejecución se corta: TASK-001..006 dejan la infraestructura lista sin camb
 | TASK-048 | TASK-005, TASK-011 |
 | TASK-049 | TASK-005, TASK-006, TASK-011 |
 | TASK-050 | TASK-005, TASK-011 |
+| TASK-058 | TASK-026 |
 | TASK-051 | TASK-003, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012 |
 | TASK-052 | TASK-024, TASK-025, TASK-029, TASK-032, TASK-033, TASK-036, TASK-038, TASK-040, TASK-044, TASK-045, TASK-046, TASK-047, TASK-049 |
-| TASK-053 | TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050 |
-| TASK-054 | TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050 |
-| TASK-055 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-051, TASK-052, TASK-053, TASK-054 |
-| TASK-056 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-051, TASK-052, TASK-053, TASK-054 |
-| TASK-057 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-051, TASK-052, TASK-053, TASK-054, TASK-055, TASK-056 |
+| TASK-053 | TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058 |
+| TASK-054 | TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058 |
+| TASK-055 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058, TASK-051, TASK-052, TASK-053, TASK-054 |
+| TASK-056 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058, TASK-051, TASK-052, TASK-053, TASK-054 |
+| TASK-057 | TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007, TASK-008, TASK-009, TASK-010, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-017, TASK-018, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031, TASK-032, TASK-033, TASK-034, TASK-035, TASK-036, TASK-037, TASK-038, TASK-039, TASK-040, TASK-041, TASK-042, TASK-043, TASK-044, TASK-045, TASK-046, TASK-047, TASK-048, TASK-049, TASK-050, TASK-058, TASK-051, TASK-052, TASK-053, TASK-054, TASK-055, TASK-056 |

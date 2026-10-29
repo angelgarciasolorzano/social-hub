@@ -275,6 +275,9 @@
       "TASK-005",
       "TASK-011"
     ],
+    "TASK-058": [
+      "TASK-026"
+    ],
     "TASK-051": [
       "TASK-003",
       "TASK-007",
@@ -324,7 +327,8 @@
       "TASK-047",
       "TASK-048",
       "TASK-049",
-      "TASK-050"
+      "TASK-050",
+      "TASK-058"
     ],
     "TASK-054": [
       "TASK-026",
@@ -351,7 +355,8 @@
       "TASK-047",
       "TASK-048",
       "TASK-049",
-      "TASK-050"
+      "TASK-050",
+      "TASK-058"
     ],
     "TASK-055": [
       "TASK-001",
@@ -404,6 +409,7 @@
       "TASK-048",
       "TASK-049",
       "TASK-050",
+      "TASK-058",
       "TASK-051",
       "TASK-052",
       "TASK-053",
@@ -460,6 +466,7 @@
       "TASK-048",
       "TASK-049",
       "TASK-050",
+      "TASK-058",
       "TASK-051",
       "TASK-052",
       "TASK-053",
@@ -516,6 +523,7 @@
       "TASK-048",
       "TASK-049",
       "TASK-050",
+      "TASK-058",
       "TASK-051",
       "TASK-052",
       "TASK-053",
@@ -525,7 +533,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 57,
+    "taskCount": 58,
     "layers": [
       [
         "TASK-001",
@@ -586,7 +594,8 @@
         "TASK-045",
         "TASK-046",
         "TASK-047",
-        "TASK-049"
+        "TASK-049",
+        "TASK-058"
       ],
       [
         "TASK-052",
@@ -1332,8 +1341,8 @@
     },
     {
       "id": "TASK-026",
-      "title": "Sidebar y layout de configuración",
-      "description": "Traducir `SettingSidebar`, `SettingSidebarNavMain` y `SettingLayout` con `setting/common`. Los títulos de los ítems pasan a ser claves si están en un arreglo estático.",
+      "title": "Sidebar y layout de configuración, sin el relleno de la plantilla",
+      "description": "Traducir `SettingSidebar`, `SettingSidebarNavMain` y `SettingLayout` con `setting/common`; los títulos de los ítems pasan a ser claves del arreglo estático. Quitar el relleno de la plantilla de shadcn en vez de traducirlo (decisión del usuario, 2026-10-29): la cabecera del sidebar muestra el `name` compartido (nombre de la app) en lugar de 'Acme Inc'/'Enterprise'; se elimina el pie con `SettingSidebarNavUser` y su usuario de ejemplo (el archivo lo borra TASK-058); y se elimina el breadcrumb de ejemplo ('Build Your Application'/'Data Fetching') junto con su separador, conservando el `SidebarTrigger`.",
       "priority": "P1",
       "type": "feature",
       "effort": "M",
@@ -1345,7 +1354,7 @@
       "acceptanceCriteria": [
         "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/common` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
         "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
-        "En la página Apariencia (fuera de alcance) el sidebar también sale traducido, porque `PreferenceController` registra `setting/common` (TASK-013)."
+        "No quedan 'Acme Inc', 'Enterprise', el usuario `shadcn`/`m@example.com` ni el breadcrumb de ejemplo; en Apariencia (fuera de alcance) el sidebar también sale traducido, porque `PreferenceController` registra `setting/common` (TASK-013)."
       ],
       "filesToCreate": [],
       "filesToModify": [
@@ -2100,6 +2109,31 @@
       "review": "claude"
     },
     {
+      "id": "TASK-058",
+      "title": "Borrar SettingSidebarNavUser, el menú de usuario de ejemplo",
+      "description": "Eliminar `setting/shared/components/SettingSidebarNavUser.tsx` (relleno de la plantilla de shadcn con un usuario falso y 'Upgrade to Pro', 'Account', 'Billing', 'Notifications', 'Log out' sin acción), que deja de usarse cuando TASK-026 quita el pie del sidebar. Decisión del usuario del 2026-10-29: se quita en vez de traducirse.",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-026"
+      ],
+      "acceptanceCriteria": [
+        "El archivo no existe y ningún archivo de `resources/js` lo importa.",
+        "`npm run types`, ESLint y `npm run build` siguen pasando sin el componente."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/shared/components/SettingSidebarNavUser.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/shared/components/SettingSidebarNavUser.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npm run lint:check",
+      "review": "claude"
+    },
+    {
       "id": "TASK-051",
       "title": "Paridad de claves y marcadores para setting/, dates y validation",
       "description": "Mover a `tests/Pest.php` las funciones de `AdminTranslationKeysTest` que aplanan un catálogo y extraen marcadores (con nombres genéricos), hacer que `AdminTranslationKeysTest` las use sin cambiar lo que comprueba, y crear `SettingTranslationKeysTest` para todo `lang/{en,es}/setting/*.php`, `dates.php` y `validation.php`.",
@@ -2206,7 +2240,8 @@
         "TASK-047",
         "TASK-048",
         "TASK-049",
-        "TASK-050"
+        "TASK-050",
+        "TASK-058"
       ],
       "acceptanceCriteria": [
         "Una clave mal escrita en un `.tsx` o un `data/*.ts` hace fallar la prueba con el archivo, la línea y la clave.",
@@ -2255,7 +2290,8 @@
         "TASK-047",
         "TASK-048",
         "TASK-049",
-        "TASK-050"
+        "TASK-050",
+        "TASK-058"
       ],
       "acceptanceCriteria": [
         "Añadir `<p>Hola</p>` o `placeholder=\"Buscar\"` a un archivo del alcance hace fallar la prueba con archivo y línea.",
@@ -2331,6 +2367,7 @@
         "TASK-048",
         "TASK-049",
         "TASK-050",
+        "TASK-058",
         "TASK-051",
         "TASK-052",
         "TASK-053",
@@ -2413,6 +2450,7 @@
         "TASK-048",
         "TASK-049",
         "TASK-050",
+        "TASK-058",
         "TASK-051",
         "TASK-052",
         "TASK-053",
@@ -2495,6 +2533,7 @@
         "TASK-048",
         "TASK-049",
         "TASK-050",
+        "TASK-058",
         "TASK-051",
         "TASK-052",
         "TASK-053",
