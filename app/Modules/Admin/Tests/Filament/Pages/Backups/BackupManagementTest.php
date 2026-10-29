@@ -559,3 +559,23 @@ it('shows the empty and unhealthy backup summary in Spanish', function (): void 
         ->assertSeeText('No hay respaldos guardados')
         ->assertSeeText('No disponible');
 });
+
+it('formats the backup creation date like the summary widget in each language', function (string $locale, string $expectedDate): void {
+    app()->setLocale($locale);
+
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $this,
+        AdminRole::Admin,
+        AdminRole::AdminBackupsReader,
+    );
+    Storage::fake('backups');
+    $this->travelTo(CarbonImmutable::parse('2026-10-22 12:00:00'));
+
+    storeBackupArchive((new RunDatabaseBackup)->filename, 'backup archive', now()->subMinutes(30));
+
+    backupManagementPageForTesting()
+        ->assertSeeText($expectedDate);
+})->with([
+    'English' => ['en', 'Oct 22, 2026 11:30'],
+    'Spanish' => ['es', '22 oct. 2026, 11:30'],
+]);

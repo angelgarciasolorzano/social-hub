@@ -13,6 +13,8 @@ return [
         'navigation_label' => 'Backups',
     ],
 
+    'date_format' => 'M j, Y H:i',
+
     'disabled' => 'Disabled',
 
     'actions' => [
@@ -108,7 +110,6 @@ return [
         'latest' => [
             'label' => 'Latest available backup',
             'none' => 'No available backups',
-            'date_format' => 'M j, Y H:i',
         ],
         'total_size' => [
             'label' => 'Total backup size',

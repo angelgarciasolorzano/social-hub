@@ -13,6 +13,8 @@ return [
         'navigation_label' => 'Respaldos',
     ],
 
+    'date_format' => 'j M Y, H:i',
+
     'disabled' => 'Desactivado',
 
     'actions' => [
@@ -108,7 +110,6 @@ return [
         'latest' => [
             'label' => 'Último respaldo disponible',
             'none' => 'No hay respaldos disponibles',
-            'date_format' => 'j M Y, H:i',
         ],
         'total_size' => [
             'label' => 'Tamaño total de los respaldos',

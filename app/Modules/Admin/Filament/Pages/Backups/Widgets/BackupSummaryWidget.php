@@ -152,7 +152,7 @@ class BackupSummaryWidget extends StatsOverviewWidget
             hasBackups: $backupListingData['backups'] !== [],
             destinationHealthy: $backupListingData['health']['healthy'],
             latestBackupAge: $latestBackupDate?->diffForHumans(),
-            latestBackupCreatedAt: $latestBackupDate?->translatedFormat(TranslatedText::of('admin/backups.widget.latest.date_format')),
+            latestBackupCreatedAt: $latestBackupDate?->translatedFormat(TranslatedText::of('admin/backups.date_format')),
             totalSizeInBytes: $allSizesAvailable ? $totalSizeInBytes : null,
         );
     }

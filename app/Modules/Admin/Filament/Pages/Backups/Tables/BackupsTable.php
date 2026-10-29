@@ -38,7 +38,7 @@ class BackupsTable
                     ->label(TranslatedText::of('admin/backups.table.archive')),
                 TextColumn::make('created_at')
                     ->label(TranslatedText::of('admin/backups.table.created'))
-                    ->dateTime('M j, Y H:i'),
+                    ->dateTime(TranslatedText::of('admin/backups.date_format')),
                 TextColumn::make('size_in_bytes')
                     ->label(TranslatedText::of('admin/backups.table.size'))
                     ->formatStateUsing(static fn (?float $state): string => $state === null
