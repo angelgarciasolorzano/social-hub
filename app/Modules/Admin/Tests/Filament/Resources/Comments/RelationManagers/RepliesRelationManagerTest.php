@@ -8,7 +8,11 @@ use App\Modules\Admin\Filament\Resources\Comments\RelationManagers\RepliesRelati
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Comment\Models\Comment;
+use App\User\Enums\PreferredLocale;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -52,6 +56,68 @@ function assertMountedReplyModalSee(Testable $testable, array|string $values): v
 function assertMountedReplyModalDoesNotSee(Testable $testable, array|string $values): void
 {
     $testable->__call('assertMountedActionModalDontSee', [$values]);
+}
+
+/**
+ * @return array{reply: string, author: string, created_at: string, creation_date: string, from: string, until: string, view: string, modal_heading: string, close: string}
+ */
+function expectedReplyTableLabels(PreferredLocale $preferredLocale): array
+{
+    return match ($preferredLocale) {
+        PreferredLocale::ENGLISH => [
+            'reply' => 'Reply',
+            'author' => 'Author',
+            'created_at' => 'Created at',
+            'creation_date' => 'Creation date',
+            'from' => 'From',
+            'until' => 'Until',
+            'view' => 'View reply',
+            'modal_heading' => 'Reply details',
+            'close' => 'Close',
+        ],
+        PreferredLocale::SPANISH => [
+            'reply' => 'Respuesta',
+            'author' => 'Autor',
+            'created_at' => 'Fecha de creación',
+            'creation_date' => 'Fecha de creación',
+            'from' => 'Desde',
+            'until' => 'Hasta',
+            'view' => 'Ver respuesta',
+            'modal_heading' => 'Detalles de la respuesta',
+            'close' => 'Cerrar',
+        ],
+    };
+}
+
+/**
+ * @return list<string>
+ */
+function expectedReplyModalLabels(PreferredLocale $preferredLocale): array
+{
+    return match ($preferredLocale) {
+        PreferredLocale::ENGLISH => [
+            'Reply details',
+            'Reply content',
+            'The complete message in this conversation.',
+            'Message',
+            'Author and timeline for this reply.',
+            'Author',
+            'Created at',
+            'Edited at',
+            'Replying to',
+        ],
+        PreferredLocale::SPANISH => [
+            'Detalles de la respuesta',
+            'Contenido de la respuesta',
+            'El mensaje completo de esta conversación.',
+            'Mensaje',
+            'Autor y cronología de esta respuesta.',
+            'Autor',
+            'Fecha de creación',
+            'Editado el',
+            'En respuesta a',
+        ],
+    };
 }
 
 beforeEach(function (): void {
@@ -103,6 +169,57 @@ it('truncates long reply previews in the replies table', function (): void {
         ->assertSeeText(rtrim(mb_substr($content, 0, 70)))
         ->assertDontSeeText($content);
 });
+
+it('translates the replies table, filters and action in the active language', function (PreferredLocale $preferredLocale): void {
+    app()->setLocale($preferredLocale->value);
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $parentComment = createCommentOn(createPost());
+    createCommentOn($parentComment, attributes: ['content' => 'Reply table translation sentinel']);
+
+    $testable = repliesRelationManagerFor($parentComment)
+        ->assertSeeText('Reply table translation sentinel');
+    $table = FilamentTableRecords::table($testable)->getTable();
+    $expectedLabels = expectedReplyTableLabels($preferredLocale);
+    $columns = $table->getColumns();
+    $dateFilter = $table->getFilter('created_at');
+
+    throw_unless($dateFilter instanceof Filter, LogicException::class, 'The replies table must expose its creation date filter.');
+
+    $dateFilterFields = $dateFilter->getSchemaComponents();
+    $authorFilter = $table->getFilter('author');
+    $viewAction = $table->getRecordActions()[0];
+
+    throw_unless($dateFilterFields[0] instanceof DatePicker, LogicException::class, 'The creation date filter must expose a start date picker.');
+    throw_unless($dateFilterFields[1] instanceof DatePicker, LogicException::class, 'The creation date filter must expose an end date picker.');
+    throw_unless($authorFilter instanceof SelectFilter, LogicException::class, 'The replies table must expose its author filter.');
+    throw_unless($viewAction instanceof Action, LogicException::class, 'The replies table must expose a view action.');
+
+    expect($columns['content']->getLabel())
+        ->toBe($expectedLabels['reply'])
+        ->and($columns['user.name']->getLabel())
+        ->toBe($expectedLabels['author'])
+        ->and($columns['created_at']->getLabel())
+        ->toBe($expectedLabels['created_at'])
+        ->and($dateFilter->getLabel())
+        ->toBe($expectedLabels['creation_date'])
+        ->and($dateFilterFields[0]->getLabel())
+        ->toBe($expectedLabels['from'])
+        ->and($dateFilterFields[1]->getLabel())
+        ->toBe($expectedLabels['until'])
+        ->and($authorFilter->getLabel())
+        ->toBe($expectedLabels['author'])
+        ->and($viewAction->getLabel())
+        ->toBe($expectedLabels['view'])
+        ->and($viewAction->getModalHeading())
+        ->toBe($expectedLabels['modal_heading'])
+        ->and($viewAction->getModalCancelActionLabel())
+        ->toBe($expectedLabels['close']);
+})->with([
+    'English' => PreferredLocale::ENGLISH,
+    'Spanish' => PreferredLocale::SPANISH,
+]);
 
 it('does not resolve a reply from another comment when its ID is supplied', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
@@ -156,6 +273,30 @@ it('opens a read only modal with the full reply and available context', function
         "@{$mentionedUser->name}",
     ]);
 });
+
+it('translates the reply modal while preserving user authored content', function (PreferredLocale $preferredLocale): void {
+    app()->setLocale($preferredLocale->value);
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
+
+    $parentComment = createCommentOn(createPost());
+    $user = createUser();
+    $mentionedUser = createUser();
+    $replyContent = 'Reply modal translation sentinel';
+    $comment = createCommentOn($parentComment, $user, [
+        'content' => $replyContent,
+        'edited_at' => '2026-10-26 08:45:00',
+        'replied_to_user_id' => $mentionedUser->getKey(),
+    ]);
+
+    $testable = mountReplyViewAction(repliesRelationManagerFor($parentComment), $comment);
+
+    assertMountedReplyModalSee($testable, expectedReplyModalLabels($preferredLocale));
+    assertMountedReplyModalSee($testable, [$replyContent, $user->name, "@{$mentionedUser->name}"]);
+})->with([
+    'English' => PreferredLocale::ENGLISH,
+    'Spanish' => PreferredLocale::SPANISH,
+]);
 
 it('omits edited time and reply context when the reply has neither', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
