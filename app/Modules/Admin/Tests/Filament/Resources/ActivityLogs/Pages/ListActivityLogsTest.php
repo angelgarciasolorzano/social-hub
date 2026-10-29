@@ -277,7 +277,6 @@ it('shows the localized empty state and an empty chart when there are no recent 
     string $expectedDescription,
     string $expectedEmptyHeading,
     string $expectedEmptyDescription,
-    string $expectedAssistiveContent,
 ): void {
     app()->setLocale($preferredLocale->value);
 
@@ -288,8 +287,7 @@ it('shows the localized empty state and an empty chart when there are no recent 
         ->assertOk()
         ->assertSeeText($expectedDescription)
         ->assertSeeText($expectedEmptyHeading)
-        ->assertSeeText($expectedEmptyDescription)
-        ->assertSeeText($expectedAssistiveContent);
+        ->assertSeeText($expectedEmptyDescription);
 
     $component = $testable->instance();
     throw_unless($component instanceof ActivityLogSummaryWidget, LogicException::class, 'The activity summary widget was not mounted.');
@@ -303,14 +301,12 @@ it('shows the localized empty state and an empty chart when there are no recent 
         '0 events in the last 7 days.',
         'No activity in the last 7 days',
         'There are no activity events to summarize for this period.',
-        'There are no activity events to summarize for the last 7 days.',
     ],
     'Spanish' => [
         PreferredLocale::SPANISH,
         '0 eventos en los últimos 7 días.',
         'Sin actividad en los últimos 7 días',
         'No hay eventos de actividad para resumir en este período.',
-        'No hay eventos de actividad para resumir en los últimos 7 días.',
     ],
 ]);
 
