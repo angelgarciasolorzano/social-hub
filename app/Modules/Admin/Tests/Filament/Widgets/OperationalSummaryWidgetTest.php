@@ -95,6 +95,47 @@ it('shows account counts and status changes within the seven-day window', functi
         ->assertSee(UserResource::getUrl('index', panel: 'admin'));
 });
 
+it('shows the summary in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $authenticatedUser = createOperationalDashboardAdmin(
+        AdminPermission::AdminUsersViewAny,
+        AdminPermission::AdminActivityViewAny,
+        AdminPermission::AdminBackupsView,
+    );
+    $this->actingAs($authenticatedUser, 'admin');
+    Storage::fake('backups');
+
+    $suspendedUser = createUser();
+    $suspendedUser->forceFill(['status' => AccountStatus::Suspended])->save();
+    createDashboardStatusChange($suspendedUser, $authenticatedUser, AccountStatus::Suspended, '2026-06-14 00:00:00');
+    storeBackupArchive((new RunDatabaseBackup)->filename, 'latest backup', now()->subMinutes(30));
+
+    Livewire::test(OperationalSummaryWidget::class)
+        ->assertSeeText('Resumen operativo')
+        ->assertSeeText('Estado de las cuentas')
+        ->assertSeeText('1 activa · 1 suspendida')
+        ->assertSeeText('1 cambio de estado en los últimos 7 días')
+        ->assertSeeText('Actividad (7 días)')
+        ->assertSeeText('Eventos registrados en el registro de actividad')
+        ->assertSeeText('Último respaldo')
+        ->assertSeeText('hace 30 minutos')
+        ->assertSeeText('1/1 disponible')
+        ->assertDontSeeText('Operational summary');
+});
+
+it('shows the missing backup summary in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $authenticatedUser = createOperationalDashboardAdmin(AdminPermission::AdminBackupsView);
+    $this->actingAs($authenticatedUser, 'admin');
+    Storage::fake('backups');
+
+    Livewire::test(OperationalSummaryWidget::class)
+        ->assertSeeText('No disponible')
+        ->assertSeeText('No hay respaldos · 0/0 disponibles');
+});
+
 it('shows the activity count for the seven-day window', function (): void {
     $authenticatedUser = createOperationalDashboardAdmin(AdminPermission::AdminActivityViewAny);
     $this->actingAs($authenticatedUser, 'admin');
