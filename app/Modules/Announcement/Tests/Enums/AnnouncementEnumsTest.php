@@ -80,3 +80,37 @@ it('returns announcement audience labels in the selected locale', function (stri
     'signed-in users in Spanish' => ['es', AnnouncementAudience::Authenticated, 'Usuarios con sesión iniciada'],
     'users without two-factor in Spanish' => ['es', AnnouncementAudience::WithoutTwoFactor, 'Usuarios sin autenticación en dos pasos'],
 ]);
+
+it('returns announcement display labels in the selected locale', function (string $locale, AnnouncementDisplay $announcementDisplay, string $label): void {
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        expect($announcementDisplay->label())->toBe($label);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'toast in English' => ['en', AnnouncementDisplay::Toast, 'Toast'],
+    'dialog in English' => ['en', AnnouncementDisplay::Dialog, 'Dialog'],
+    'toast in Spanish' => ['es', AnnouncementDisplay::Toast, 'Aviso emergente'],
+    'dialog in Spanish' => ['es', AnnouncementDisplay::Dialog, 'Diálogo'],
+]);
+
+it('returns announcement display descriptions in the selected locale', function (string $locale, AnnouncementDisplay $announcementDisplay, string $description): void {
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        expect($announcementDisplay->description())->toBe($description);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'toast description in English' => ['en', AnnouncementDisplay::Toast, 'A floating notice that does not interrupt. Best for news and routine notices.'],
+    'dialog description in English' => ['en', AnnouncementDisplay::Dialog, 'A window the user must close before going on. Keep it for urgent notices.'],
+    'toast description in Spanish' => ['es', AnnouncementDisplay::Toast, 'Aviso flotante que no interrumpe. Ideal para noticias y avisos rutinarios.'],
+    'dialog description in Spanish' => ['es', AnnouncementDisplay::Dialog, 'Ventana que el usuario debe cerrar para continuar. Resérvala para avisos urgentes.'],
+]);

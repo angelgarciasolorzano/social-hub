@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Announcement\Enums;
 
+use App\Support\Translation\TranslatedText;
+
 enum AnnouncementDisplay: string
 {
     /**
@@ -17,14 +19,11 @@ enum AnnouncementDisplay: string
     case Dialog = 'dialog';
 
     /**
-     * Readable name shown in the admin panel.
+     * Readable name shown in the admin panel, in the panel's current language.
      */
     public function label(): string
     {
-        return match ($this) {
-            self::Toast => 'Toast',
-            self::Dialog => 'Dialog',
-        };
+        return TranslatedText::of('admin/announcements.options.display.'.$this->value);
     }
 
     /**
@@ -32,9 +31,6 @@ enum AnnouncementDisplay: string
      */
     public function description(): string
     {
-        return match ($this) {
-            self::Toast => 'A floating notice that does not interrupt. Best for news and routine notices.',
-            self::Dialog => 'A window the user must close before going on. Keep it for urgent notices.',
-        };
+        return TranslatedText::of('admin/announcements.options.display.'.$this->value.'_description');
     }
 }
