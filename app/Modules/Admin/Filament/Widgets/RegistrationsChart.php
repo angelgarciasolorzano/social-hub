@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Widgets;
 
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\ChartWidget;
@@ -28,19 +29,31 @@ class RegistrationsChart extends ChartWidget
     protected string $color = 'primary';
 
     #[Override]
-    protected ?string $heading = 'New user registrations';
-
-    #[Override]
-    protected ?string $description = 'Track account registrations over time.';
-
-    #[Override]
-    protected ?string $emptyStateHeading = 'No registrations yet';
-
-    #[Override]
-    protected ?string $emptyStateDescription = 'There are no account registrations in this period.';
-
-    #[Override]
     protected ?string $pollingInterval = null;
+
+    #[Override]
+    public function getHeading(): string
+    {
+        return TranslatedText::of('admin/dashboard.registrations_chart.heading');
+    }
+
+    #[Override]
+    public function getDescription(): string
+    {
+        return TranslatedText::of('admin/dashboard.registrations_chart.description');
+    }
+
+    #[Override]
+    public function getEmptyStateHeading(): string
+    {
+        return TranslatedText::of('admin/dashboard.registrations_chart.empty_heading');
+    }
+
+    #[Override]
+    public function getEmptyStateDescription(): string
+    {
+        return TranslatedText::of('admin/dashboard.registrations_chart.empty_description');
+    }
 
     #[Override]
     public static function canView(): bool
@@ -102,7 +115,7 @@ class RegistrationsChart extends ChartWidget
 
         return [
             'datasets' => [[
-                'label' => 'Registrations',
+                'label' => TranslatedText::of('admin/dashboard.registrations_chart.dataset'),
                 'data' => $counts,
             ]],
             'labels' => $labels,
@@ -115,10 +128,10 @@ class RegistrationsChart extends ChartWidget
     protected function getFilters(): ?array
     {
         return [
-            self::FILTER_7_DAYS => 'Last 7 days',
-            self::FILTER_30_DAYS => 'Last 30 days',
-            self::FILTER_90_DAYS => 'Last 90 days',
-            self::FILTER_12_MONTHS => 'Last 12 months',
+            self::FILTER_7_DAYS => TranslatedText::of('admin/dashboard.registrations_chart.filters.7_days'),
+            self::FILTER_30_DAYS => TranslatedText::of('admin/dashboard.registrations_chart.filters.30_days'),
+            self::FILTER_90_DAYS => TranslatedText::of('admin/dashboard.registrations_chart.filters.90_days'),
+            self::FILTER_12_MONTHS => TranslatedText::of('admin/dashboard.registrations_chart.filters.12_months'),
         ];
     }
 
@@ -177,12 +190,13 @@ class RegistrationsChart extends ChartWidget
             'monthly' => $end->startOfMonth(),
         };
 
+        $dateFormat = TranslatedText::of('admin/dashboard.registrations_chart.date_formats.'.($granularity === 'monthly' ? 'month' : 'day'));
         $buckets = [];
 
         while ($bucket->getTimestamp() <= $lastBucket->getTimestamp()) {
             $buckets[] = [
                 'key' => $bucket->toDateString(),
-                'label' => $bucket->format($granularity === 'monthly' ? 'M Y' : 'M j'),
+                'label' => $bucket->translatedFormat($dateFormat),
             ];
 
             $bucket = match ($granularity) {

@@ -211,3 +211,40 @@ it('renders filaments empty state when the selected period has no registrations'
         ->assertSeeText('No registrations yet')
         ->assertSeeText('There are no account registrations in this period.');
 });
+
+it('labels the chart days and months in Spanish', function (string $filter, string $firstLabel, string $lastLabel): void {
+    app()->setLocale('es');
+
+    $this->actingAs(RegistrationDashboardTestData::createDashboardReader(), 'admin');
+
+    RegistrationDashboardTestData::createDashboardRegistration('2026-06-10 10:00:00');
+
+    $component = Livewire::test(RegistrationsChart::class, ['filter' => $filter])->instance();
+
+    throw_unless($component instanceof RegistrationsChart, LogicException::class, 'The chart widget must be mounted.');
+
+    /** @var RegistrationsChart $component */
+    $chartData = registrationChartPayload($component);
+
+    expect($chartData['datasets'][0]['label'])->toBe('Registros')
+        ->and(array_slice($chartData['labels'], 0, 1))->toBe([$firstLabel])
+        ->and(array_slice($chartData['labels'], -1))->toBe([$lastLabel]);
+})->with([
+    'days' => ['7_days', '9 jun.', '15 jun.'],
+    'months' => ['12_months', 'jul. 2025', 'jun. 2026'],
+]);
+
+it('shows the chart texts, filters and empty state in Spanish', function (): void {
+    app()->setLocale('es');
+
+    $this->actingAs(RegistrationDashboardTestData::createDashboardReader(), 'admin');
+
+    Livewire::test(RegistrationsChart::class)
+        ->assertSeeText('Nuevos registros de usuarios')
+        ->assertSeeText('Sigue los registros de cuentas a lo largo del tiempo.')
+        ->assertSeeText('Últimos 7 días')
+        ->assertSeeText('Últimos 12 meses')
+        ->assertSeeText('Aún no hay registros')
+        ->assertSeeText('No hay registros de cuentas en este periodo.')
+        ->assertDontSeeText('New user registrations');
+});
