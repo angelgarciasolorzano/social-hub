@@ -11,6 +11,7 @@ use App\Modules\Admin\Filament\Resources\Posts\Schemas\PostInfolist;
 use App\Modules\Admin\Filament\Resources\Posts\Tables\PostsTable;
 use App\Modules\Admin\Filament\Resources\Posts\Widgets\PostsOverview;
 use App\Modules\Post\Models\Post;
+use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -28,6 +29,24 @@ class PostResource extends Resource
 
     #[Override]
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    #[Override]
+    public static function getModelLabel(): string
+    {
+        return TranslatedText::of('admin/posts.resource.model_label');
+    }
+
+    #[Override]
+    public static function getPluralModelLabel(): string
+    {
+        return TranslatedText::of('admin/posts.resource.plural_model_label');
+    }
+
+    #[Override]
+    public static function getNavigationLabel(): string
+    {
+        return TranslatedText::of('admin/posts.resource.navigation_label');
+    }
 
     public static function table(Table $table): Table
     {
