@@ -15,7 +15,7 @@ return [
     ],
 
     'parties' => [
-        'deleted_causer' => ':type #:id (ya no existe)',
+        'deleted_causer' => ':Type #:id (ya no existe)',
         'subject' => ':type #:id',
         'deleted_subject' => ':type #:id (ya no existe)',
         'types' => [

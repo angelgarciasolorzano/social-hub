@@ -90,3 +90,21 @@ it('titles the activity tab in the active language', function (string $locale, s
     'English' => ['en', 'Activity'],
     'Spanish' => ['es', 'Actividad'],
 ]);
+
+it('shows the activity table of the tab in Spanish', function (): void {
+    app()->setLocale('es');
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminActivityReader);
+    $user = createUser();
+    $otherUser = createUser();
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->causedBy($otherUser)->performedOn($user)->createOne();
+
+    activityLogsRelationManagerFor($user)
+        ->assertOk()
+        ->assertSee('Fecha')
+        ->assertSee('Realizado por')
+        ->assertSee('Sobre')
+        ->assertSeeText('Usuario #'.$user->id)
+        ->assertDontSee('Performed by');
+});

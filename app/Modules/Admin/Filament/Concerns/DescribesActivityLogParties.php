@@ -10,8 +10,10 @@ use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 
 /**
@@ -23,7 +25,7 @@ trait DescribesActivityLogParties
     protected static function causerLabel(ActivityLog $activityLog): string
     {
         if ($activityLog->causer_type === null) {
-            return 'Anonymous';
+            return TranslatedText::of('admin/common.anonymous');
         }
 
         $causer = $activityLog->causer;
@@ -32,7 +34,10 @@ trait DescribesActivityLogParties
             return $causer->name;
         }
 
-        return \sprintf('Deleted %s #%s', Str::lower(Str::headline($activityLog->causer_type)), $activityLog->causer_id);
+        return TranslatedText::of('admin/activity-log.parties.deleted_causer', [
+            'type' => Str::lower(self::recordTypeLabel($activityLog->causer_type)),
+            'id' => $activityLog->causer_id ?? '',
+        ]);
     }
 
     protected static function causerUrl(ActivityLog $activityLog): ?string
@@ -45,12 +50,17 @@ trait DescribesActivityLogParties
     protected static function subjectLabel(ActivityLog $activityLog): string
     {
         if ($activityLog->subject_type === null) {
-            return 'None';
+            return TranslatedText::of('admin/common.none');
         }
 
-        $subjectLabel = \sprintf('%s #%s', Str::headline($activityLog->subject_type), $activityLog->subject_id);
+        $replace = [
+            'type' => self::recordTypeLabel($activityLog->subject_type),
+            'id' => $activityLog->subject_id ?? '',
+        ];
 
-        return $activityLog->subject instanceof Model ? $subjectLabel : $subjectLabel.' (deleted)';
+        return TranslatedText::of($activityLog->subject instanceof Model
+            ? 'admin/activity-log.parties.subject'
+            : 'admin/activity-log.parties.deleted_subject', $replace);
     }
 
     protected static function subjectUrl(ActivityLog $activityLog): ?string
@@ -58,6 +68,16 @@ trait DescribesActivityLogParties
         $subject = $activityLog->subject;
 
         return $subject instanceof Model ? self::recordUrl($subject) : null;
+    }
+
+    /**
+     * The readable name of a stored morph type, or its headline for a type without a translation.
+     */
+    private static function recordTypeLabel(string $morphType): string
+    {
+        $key = 'admin/activity-log.parties.types.'.$morphType;
+
+        return Lang::has($key) ? TranslatedText::of($key) : Str::headline($morphType);
     }
 
     /**

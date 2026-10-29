@@ -53,7 +53,8 @@ function flattenAdminTranslations(array $translations, string $file, string $pre
 }
 
 /**
- * The `:name` placeholders of a text, sorted, without the plural ranges of `trans_choice`.
+ * The `:name` placeholders of a text, sorted and lowercased, since Laravel fills `:name`, `:Name` and
+ * `:NAME` with the same value (only changing its case).
  *
  * @return list<string>
  */
@@ -61,7 +62,7 @@ function adminTranslationPlaceholders(string $text): array
 {
     preg_match_all('/:([a-z_]+)/i', $text, $matches);
 
-    $placeholders = array_values(array_unique($matches[1]));
+    $placeholders = array_values(array_unique(array_map(strtolower(...), $matches[1])));
     sort($placeholders);
 
     return $placeholders;
