@@ -9,6 +9,7 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ViewActivityLog;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\User\Enums\PreferredLocale;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -21,38 +22,97 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
-it('shows the stored details and the request context to an activity reader', function (): void {
+it('shows the stored details and request context in the active language', function (PreferredLocale $preferredLocale, array $expectedTexts): void {
+    app()->setLocale($preferredLocale->value);
+
     $user = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
 
     $activityLog = ActivityLogFactory::new()
         ->forEvent(ActivityLogAdminEvent::InvitationAccepted)
         ->causedBy($user)
-        ->createOne(['properties' => [
-            'account_created' => true,
-            'roles_assigned' => ['admin', 'admin-posts-reader'],
-            'ip' => '203.0.113.7',
-            'user_agent' => 'Detail test browser',
-        ]]);
+        ->createOne([
+            'created_at' => '2025-03-08 15:04:00',
+            'properties' => [
+                'account_created' => true,
+                'device_active' => false,
+                'roles_assigned' => ['admin', 'admin-posts-reader'],
+                'ip' => '203.0.113.7',
+                'user_agent' => 'Detail test browser',
+            ],
+        ]);
 
-    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
-        ->assertOk()
-        ->assertSeeText('Invitation Accepted')
-        ->assertSeeText('account_created')
-        ->assertSeeText('Yes')
-        ->assertSeeText('admin, admin-posts-reader')
-        ->assertSeeText('203.0.113.7')
-        ->assertSeeText('Detail test browser');
-});
+    $testable = Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])->assertOk();
 
-it('marks the request context as not recorded for a console action', function (): void {
-    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    foreach ($expectedTexts as $expectedText) {
+        $testable->assertSeeText($expectedText);
+    }
+})->with([
+    'English' => [PreferredLocale::ENGLISH, [
+        'Activity',
+        'What happened, when, who did it, and to what.',
+        'Date',
+        'Log',
+        'Event',
+        'Invitation Accepted',
+        'Performed by',
+        'Subject',
+        'Details',
+        'The references stored with this activity. Content is never recorded.',
+        'account_created',
+        'Yes',
+        'device_active',
+        'No',
+        'admin, admin-posts-reader',
+        'Request',
+        'Where the action came from, when it was made through the web.',
+        'IP address',
+        'User agent',
+        '203.0.113.7',
+        'Detail test browser',
+        'March 8, 2025',
+    ]],
+    'Spanish' => [PreferredLocale::SPANISH, [
+        'Actividad',
+        'Qué ocurrió, cuándo, quién lo hizo y sobre qué.',
+        'Fecha',
+        'Registro',
+        'Evento',
+        'Invitación aceptada',
+        'Realizado por',
+        'Sobre',
+        'Detalles',
+        'Referencias guardadas con esta actividad. Nunca se registra contenido.',
+        'account_created',
+        'Sí',
+        'device_active',
+        'No',
+        'admin, admin-posts-reader',
+        'Solicitud',
+        'Origen de la acción, cuando se realizó desde la web.',
+        'Dirección IP',
+        'Agente de usuario',
+        '203.0.113.7',
+        'Detail test browser',
+        '8 de marzo de 2025',
+    ]],
+]);
+
+it('shows translated placeholders for an activity without details or request context', function (PreferredLocale $preferredLocale, string $expectedDetails, string $expectedRequest): void {
+    app()->setLocale($preferredLocale->value);
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $user->update(['preferred_locale' => $preferredLocale->value]);
 
     $activityLog = ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->createOne();
 
     Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
-        ->assertSeeText('No details recorded')
-        ->assertSeeText('Not recorded');
-});
+        ->assertSeeText($expectedDetails)
+        ->assertSeeText($expectedRequest);
+})->with([
+    'English' => [PreferredLocale::ENGLISH, 'No details recorded', 'Not recorded'],
+    'Spanish' => [PreferredLocale::SPANISH, 'No hay detalles registrados', 'No registrado'],
+]);
 
 it('denies the detail without admin.activity.view', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminPostsReader);
@@ -65,6 +125,17 @@ it('denies the detail without admin.activity.view', function (): void {
 it('only registers the list and detail pages', function (): void {
     expect(array_keys(ActivityLogResource::getPages()))->toBe(['index', 'view']);
 });
+
+it('shows translated resource labels in the active language', function (PreferredLocale $preferredLocale, string $label, string $pluralLabel, string $navigationLabel): void {
+    app()->setLocale($preferredLocale->value);
+
+    expect(ActivityLogResource::getModelLabel())->toBe($label)
+        ->and(ActivityLogResource::getPluralModelLabel())->toBe($pluralLabel)
+        ->and(ActivityLogResource::getNavigationLabel())->toBe($navigationLabel);
+})->with([
+    'English' => [PreferredLocale::ENGLISH, 'activity', 'activity log', 'Activity log'],
+    'Spanish' => [PreferredLocale::SPANISH, 'actividad', 'registro de actividad', 'Registro de actividad'],
+]);
 
 it('never shows the content of the post or comment it refers to', function (): void {
     $user = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader, AdminRole::AdminPostsReader);
