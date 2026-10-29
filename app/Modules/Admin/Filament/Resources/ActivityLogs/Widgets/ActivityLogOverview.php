@@ -8,6 +8,7 @@ use App\Modules\ActivityLog\Enums\ActivityLogName;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAuthEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Support\Icons\Heroicon;
@@ -22,10 +23,13 @@ class ActivityLogOverview extends StatsOverviewWidget
     protected int|string|array $columnSpan = 'full';
 
     #[Override]
-    protected ?string $heading = 'Security and administration (last 7 days)';
+    protected ?string $pollingInterval = null;
 
     #[Override]
-    protected ?string $pollingInterval = null;
+    protected function getHeading(): string
+    {
+        return TranslatedText::of('admin/activity-log.overview.heading');
+    }
 
     #[Override]
     public static function canView(): bool
@@ -45,16 +49,16 @@ class ActivityLogOverview extends StatsOverviewWidget
         $activityMetrics = $this->getActivityMetrics();
 
         return [
-            Stat::make('Failed sign-ins', $activityMetrics['failedSignIns'])
-                ->description('Authentication attempts that were rejected')
+            Stat::make(TranslatedText::of('admin/activity-log.overview.failed_sign_ins'), $activityMetrics['failedSignIns'])
+                ->description(TranslatedText::of('admin/activity-log.overview.failed_sign_ins_description'))
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($activityMetrics['failedSignIns'] > 0 ? 'danger' : 'success'),
-            Stat::make('Trusted device changes', $activityMetrics['trustedDeviceChanges'])
-                ->description('Devices added, renamed, renewed, revoked or reactivated')
+            Stat::make(TranslatedText::of('admin/activity-log.overview.trusted_device_changes'), $activityMetrics['trustedDeviceChanges'])
+                ->description(TranslatedText::of('admin/activity-log.overview.trusted_device_changes_description'))
                 ->descriptionIcon(Heroicon::OutlinedDevicePhoneMobile)
                 ->color('info'),
-            Stat::make('Admin actions', $activityMetrics['adminActions'])
-                ->description('Roles, permissions, invitations, accounts and backups')
+            Stat::make(TranslatedText::of('admin/activity-log.overview.admin_actions'), $activityMetrics['adminActions'])
+                ->description(TranslatedText::of('admin/activity-log.overview.admin_actions_description'))
                 ->descriptionIcon(Heroicon::OutlinedShieldCheck)
                 ->color('warning'),
         ];
