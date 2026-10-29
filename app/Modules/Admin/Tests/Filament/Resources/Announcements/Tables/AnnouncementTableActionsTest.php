@@ -11,7 +11,10 @@ use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
+use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Models\Announcement;
+use Filament\Notifications\Notification;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -125,6 +128,108 @@ describe('with the announcements manager role', function (): void {
             ->and(announcementEventCount(ActivityLogAdminEvent::AnnouncementUnpublished))->toBe(1);
     });
 
+    it('shows the announcement table and filter labels in the selected locale', function (string $locale, array $tableLabels): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+            tableActionAnnouncementFactory()->createOne(['created_by' => null, 'ends_at' => null]);
+
+            $testable = Livewire::test(ListAnnouncements::class)->set('activeTab', 'all')->call('loadTable');
+
+            foreach ($tableLabels as $tableLabel) {
+                $testable->assertSeeText($tableLabel);
+            }
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => [
+            'en',
+            [
+                'Title', 'Type', 'Audience', 'Shown as', 'Starts', 'Ends', 'Created by', 'No end date', 'Deleted user',
+                'Preview', 'Duplicate', 'Unpublish now',
+            ],
+        ],
+        'Spanish' => [
+            'es',
+            [
+                'Título', 'Tipo', 'Audiencia', 'Se muestra como', 'Inicio', 'Finaliza', 'Creado por', 'Sin fecha de finalización', 'Usuario eliminado',
+                'Vista previa', 'Duplicar', 'Desactivar ahora',
+            ],
+        ],
+    ]);
+
+    it('shows localized duplicate confirmation and notification copy', function (
+        string $locale,
+        string $actionLabel,
+        string $description,
+        string $notificationTitle,
+    ): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+            $announcement = tableActionAnnouncementFactory()->active()->createOne();
+
+            $testable = mountAnnouncementRowAction('duplicate', $announcement);
+            $testable->__call('assertMountedActionModalSee', [[$actionLabel, $description]]);
+            $testable->call('callMountedAction');
+
+            Notification::assertNotified($notificationTitle);
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => [
+            'en',
+            'Duplicate',
+            'The copy starts tomorrow and has no end date, so it is not shown before you review it.',
+            'Announcement duplicated',
+        ],
+        'Spanish' => [
+            'es',
+            'Duplicar',
+            'La copia se programa para mañana y no tendrá fecha de finalización, así que no se mostrará hasta que la revises.',
+            'Anuncio duplicado',
+        ],
+    ]);
+
+    it('shows localized unpublish confirmation and notification copy', function (
+        string $locale,
+        string $actionLabel,
+        string $description,
+        string $notificationTitle,
+    ): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+            $announcement = tableActionAnnouncementFactory()->active()->createOne();
+
+            $testable = mountAnnouncementRowAction('unpublish', $announcement);
+            $testable->__call('assertMountedActionModalSee', [[$actionLabel, $description]]);
+            $testable->call('callMountedAction');
+
+            Notification::assertNotified($notificationTitle);
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => [
+            'en',
+            'Unpublish now',
+            'Users stop seeing this announcement right away.',
+            'Announcement unpublished',
+        ],
+        'Spanish' => [
+            'es',
+            'Desactivar ahora',
+            'Los usuarios dejarán de ver este anuncio de inmediato.',
+            'Anuncio desactivado',
+        ],
+    ]);
+
     it('does not offer unpublish for an announcement that is not running', function (AnnouncementFactory $announcementFactory): void {
         $announcement = $announcementFactory->createOne();
 
@@ -156,7 +261,7 @@ describe('with the announcements manager role', function (): void {
         $testable = mountAnnouncementRowAction('preview', $announcement);
 
         $testable->__call('assertMountedActionModalSee', [['Shown as toast', $announcement->title]]);
-        $testable->__call('assertMountedActionModalDontSee', ['Entendido']);
+        $testable->__call('assertMountedActionModalDontSee', ['Understood']);
     });
 
     it('previews a dialog with its close button and without dangerous HTML', function (): void {
@@ -166,8 +271,71 @@ describe('with the announcements manager role', function (): void {
 
         $testable = mountAnnouncementRowAction('preview', $announcement);
 
-        $testable->__call('assertMountedActionModalSee', [['Shown as dialog', 'Entendido', (string) $announcement->button_label, 'comes back in the next session']]);
+        $testable->__call('assertMountedActionModalSee', [['Shown as dialog', 'Understood', (string) $announcement->button_label, 'comes back in the next session']]);
         $testable->__call('assertMountedActionModalSeeHtml', ['<strong>urgente</strong>']);
         $testable->__call('assertMountedActionModalDontSeeHtml', ['<script>alert("dialog")']);
     });
+
+    it('localizes static preview copy while preserving announcement content', function (
+        string $locale,
+        AnnouncementDisplay $announcementDisplay,
+        bool $isDismissible,
+        string $shownAs,
+        string $dismissalBehavior,
+        string $presentationLabel,
+        string $previewHeading,
+        string $closeLabel,
+    ): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+
+            $announcement = tableActionAnnouncementFactory()->createOne([
+                'title' => 'Admin-authored announcement title',
+                'body' => '<p>Admin-authored message with <strong>formatting</strong>.</p>',
+                'audience' => AnnouncementAudience::All,
+                'button_label' => 'Admin-authored button label',
+                'button_url' => 'https://example.com/details',
+                'display' => $announcementDisplay,
+                'is_dismissible' => $isDismissible,
+            ]);
+
+            $testable = mountAnnouncementRowAction('preview', $announcement);
+
+            $testable->__call('assertMountedActionModalSee', [[
+                $announcement->title,
+                (string) $announcement->button_label,
+                $shownAs,
+                $dismissalBehavior,
+                $presentationLabel,
+                $previewHeading,
+                $closeLabel,
+                $locale === 'en'
+                    ? 'The final appearance in the application may differ slightly.'
+                    : 'La apariencia final en la aplicación podría variar ligeramente.',
+            ]]);
+            $testable->__call('assertMountedActionModalSeeHtml', ['<strong>formatting</strong>']);
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English toast' => [
+            'en', AnnouncementDisplay::Toast, true,
+            'Shown as toast to everyone', 'remains hidden once closed', 'Close (disabled in preview)', 'Banner preview', 'Close',
+        ],
+        'English dialog' => [
+            'en', AnnouncementDisplay::Dialog, false,
+            'Shown as dialog to everyone', 'comes back in the next session after being closed', 'Understood', 'Banner preview', 'Close',
+        ],
+        'Spanish toast' => [
+            'es', AnnouncementDisplay::Toast, false,
+            'Se muestra como aviso emergente para todos', 'vuelve a aparecer en la siguiente sesión después de cerrarlo',
+            'Cerrar (desactivado en la vista previa)', 'Vista previa del anuncio', 'Cerrar',
+        ],
+        'Spanish dialog' => [
+            'es', AnnouncementDisplay::Dialog, true,
+            'Se muestra como diálogo para todos', 'permanece oculto después de cerrarlo', 'Entendido', 'Vista previa del anuncio', 'Cerrar',
+        ],
+    ]);
 });
