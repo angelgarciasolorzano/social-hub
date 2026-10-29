@@ -8,6 +8,7 @@ use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use App\Support\Translation\TranslatedText;
 use Carbon\CarbonImmutable;
 use Closure;
 use DateTimeInterface;
@@ -42,14 +43,14 @@ class AnnouncementForm
         return $schema
             ->columns(1)
             ->components([
-                Section::make('Content')
+                Section::make(TranslatedText::of('admin/announcements.sections.content'))
                     ->schema([
                         TextInput::make('title')
-                            ->label('Title')
+                            ->label(TranslatedText::of('admin/announcements.fields.title'))
                             ->required()
                             ->maxLength(Announcement::TITLE_MAX_LENGTH),
                         RichEditor::make('body')
-                            ->label('Message')
+                            ->label(TranslatedText::of('admin/announcements.fields.message'))
                             ->required()
                             ->fileAttachments(false)
                             ->toolbarButtons([
@@ -59,16 +60,16 @@ class AnnouncementForm
                                 ['undo', 'redo'],
                             ]),
                         SpatieMediaLibraryFileUpload::make('image')
-                            ->label('Image')
+                            ->label(TranslatedText::of('admin/announcements.fields.image'))
                             ->collection(Announcement::IMAGE_MEDIA_COLLECTION)
                             ->image()
                             ->maxSize(self::IMAGE_MAX_SIZE_KILOBYTES),
                     ]),
-                Section::make('Display')
+                Section::make(TranslatedText::of('admin/announcements.sections.display'))
                     ->columns(2)
                     ->schema([
                         Select::make('type')
-                            ->label('Type')
+                            ->label(TranslatedText::of('admin/announcements.fields.type'))
                             ->options(self::typeOptions())
                             ->default(AnnouncementType::Info->value)
                             ->required()
@@ -79,12 +80,12 @@ class AnnouncementForm
                                 }
                             }),
                         Select::make('audience')
-                            ->label('Audience')
+                            ->label(TranslatedText::of('admin/announcements.fields.audience'))
                             ->options(self::audienceOptions())
                             ->default(AnnouncementAudience::All->value)
                             ->required(),
                         Radio::make('display')
-                            ->label('Show as')
+                            ->label(TranslatedText::of('admin/announcements.fields.display'))
                             ->options(self::displayOptions())
                             ->descriptions(self::displayDescriptions())
                             ->default(AnnouncementDisplay::Toast->value)
@@ -103,37 +104,37 @@ class AnnouncementForm
                                 $hidden->state($record instanceof Announcement);
                             }),
                         DateTimePicker::make('starts_at')
-                            ->label('Starts at')
+                            ->label(TranslatedText::of('admin/announcements.fields.starts_at'))
                             ->default(now())
                             ->required()
                             ->live(onBlur: true),
                         DateTimePicker::make('ends_at')
-                            ->label('Ends at')
-                            ->helperText('Leave empty to keep it until it is unpublished.')
+                            ->label(TranslatedText::of('admin/announcements.fields.ends_at'))
+                            ->helperText(TranslatedText::of('admin/announcements.form.ends_at_helper'))
                             ->after('starts_at')
                             ->live(onBlur: true),
                         Toggle::make('is_dismissible')
-                            ->label('Users can dismiss it')
+                            ->label(TranslatedText::of('admin/announcements.fields.is_dismissible'))
                             ->default(true),
                     ]),
-                Section::make('Button')
+                Section::make(TranslatedText::of('admin/announcements.sections.button'))
                     ->columns(2)
                     ->schema([
                         Toggle::make('has_button')
-                            ->label('Has button')
+                            ->label(TranslatedText::of('admin/announcements.form.has_button'))
                             ->live()
                             ->columnSpanFull()
                             ->afterStateHydrated(function (Toggle $toggle, ?Announcement $record): void {
                                 $toggle->state($record?->button_url !== null);
                             }),
                         TextInput::make('button_label')
-                            ->label('Button text')
+                            ->label(TranslatedText::of('admin/announcements.fields.button_text'))
                             ->required()
                             ->maxLength(Announcement::BUTTON_LABEL_MAX_LENGTH)
                             ->visible(fn (Get $get): bool => $get->boolean('has_button')),
                         TextInput::make('button_url')
-                            ->label('Button link')
-                            ->helperText('An https:// address or a path of this site, such as /setting/two-factor-authentication.')
+                            ->label(TranslatedText::of('admin/announcements.fields.button_link'))
+                            ->helperText(TranslatedText::of('admin/announcements.form.button_link_helper'))
                             ->required()
                             ->maxLength(self::BUTTON_URL_MAX_LENGTH)
                             ->rule(fn (): Closure => self::buttonUrlRule())
@@ -168,7 +169,7 @@ class AnnouncementForm
     {
         return static function (string $attribute, mixed $value, Closure $fail): void {
             if (! \is_string($value) || ! self::isAllowedButtonUrl($value)) {
-                $fail('The link must start with https:// or be a path of this site starting with /.');
+                $fail(TranslatedText::of('admin/announcements.form.button_link_invalid'));
             }
         };
     }
@@ -202,11 +203,9 @@ class AnnouncementForm
             ->dialogsOverlapping($startsAt, self::dateFrom($get('ends_at')), $record?->id)
             ->count();
 
-        return match ($overlappingDialogs) {
-            0 => null,
-            1 => '1 other dialog is shown in the same period.',
-            default => "{$overlappingDialogs} other dialogs are shown in the same period.",
-        };
+        return $overlappingDialogs === 0
+            ? null
+            : trans_choice('admin/announcements.form.overlapping_dialogs', $overlappingDialogs);
     }
 
     private static function dateFrom(mixed $value): ?CarbonImmutable

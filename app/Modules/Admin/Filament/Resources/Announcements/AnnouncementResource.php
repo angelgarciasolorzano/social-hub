@@ -12,6 +12,7 @@ use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementForm;
 use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementInfolist;
 use App\Modules\Admin\Filament\Resources\Announcements\Tables\AnnouncementsTable;
 use App\Modules\Announcement\Models\Announcement;
+use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
@@ -32,13 +33,22 @@ class AnnouncementResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
 
     #[Override]
-    protected static ?string $modelLabel = 'announcement';
+    public static function getModelLabel(): string
+    {
+        return TranslatedText::of('admin/announcements.resource.model_label');
+    }
 
     #[Override]
-    protected static ?string $pluralModelLabel = 'announcements';
+    public static function getPluralModelLabel(): string
+    {
+        return TranslatedText::of('admin/announcements.resource.plural_model_label');
+    }
 
     #[Override]
-    protected static ?string $navigationLabel = 'Announcements';
+    public static function getNavigationLabel(): string
+    {
+        return TranslatedText::of('admin/announcements.resource.navigation_label');
+    }
 
     public static function form(Schema $schema): Schema
     {
