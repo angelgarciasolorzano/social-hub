@@ -81,3 +81,12 @@ it('hides the tab from an activity reader who cannot view users', function (): v
 
     expect(ActivityLogsRelationManager::canViewForRecord($user, ViewUser::class))->toBeFalse();
 });
+
+it('titles the activity tab in the active language', function (string $locale, string $title): void {
+    app()->setLocale($locale);
+
+    expect(ActivityLogsRelationManager::getTitle(createUser(), ViewUser::class))->toBe($title);
+})->with([
+    'English' => ['en', 'Activity'],
+    'Spanish' => ['es', 'Actividad'],
+]);

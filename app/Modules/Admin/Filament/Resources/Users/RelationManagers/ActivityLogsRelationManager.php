@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\RelationManagers;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Tables\ActivityLogsTable;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Facades\Filament;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -26,7 +27,10 @@ class ActivityLogsRelationManager extends RelationManager
     protected static string $relationship = 'causedActivityLogs';
 
     #[Override]
-    protected static ?string $title = 'Activity';
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return TranslatedText::of('admin/users.relations.activity.title');
+    }
 
     #[Override]
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
