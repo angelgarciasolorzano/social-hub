@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -20,10 +21,13 @@ class PostsOverview extends StatsOverviewWidget
     use BuildsDailyActivityCharts;
 
     #[Override]
-    protected ?string $heading = 'Posts overview';
+    protected ?string $pollingInterval = null;
 
     #[Override]
-    protected ?string $pollingInterval = null;
+    protected function getHeading(): string
+    {
+        return TranslatedText::of('admin/posts.widgets.overview.heading');
+    }
 
     #[Override]
     public static function canView(): bool
@@ -50,16 +54,16 @@ class PostsOverview extends StatsOverviewWidget
             ->where('likeable_type', Post::MORPH_NAME);
 
         return [
-            Stat::make('Posts', $builder->count())
-                ->description('New posts per day over the last 7 days')
+            Stat::make(TranslatedText::of('admin/posts.widgets.overview.posts'), $builder->count())
+                ->description(TranslatedText::of('admin/posts.widgets.overview.posts_description'))
                 ->chart($this->getDailyActivityChartData($builder, $startDate, $endDate))
                 ->color('primary'),
-            Stat::make('Comments', $commentQuery->count())
-                ->description('New comments on posts per day over the last 7 days')
+            Stat::make(TranslatedText::of('admin/posts.widgets.overview.comments'), $commentQuery->count())
+                ->description(TranslatedText::of('admin/posts.widgets.overview.comments_description'))
                 ->chart($this->getDailyActivityChartData($commentQuery, $startDate, $endDate))
                 ->color('info'),
-            Stat::make('Likes', $likeQuery->count('*'))
-                ->description('New likes on posts per day over the last 7 days')
+            Stat::make(TranslatedText::of('admin/posts.widgets.overview.likes'), $likeQuery->count('*'))
+                ->description(TranslatedText::of('admin/posts.widgets.overview.likes_description'))
                 ->chart($this->getDailyActivityChartData($likeQuery, $startDate, $endDate))
                 ->color('warning'),
         ];
