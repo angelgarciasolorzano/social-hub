@@ -72,6 +72,7 @@ class ActivityLogInfolist
                     ->icon(Heroicon::OutlinedListBullet)
                     ->schema([
                         KeyValueEntry::make('details')
+                            ->label(TranslatedText::of('admin/activity-log.infolist.details.heading'))
                             ->hiddenLabel()
                             ->state(fn (ActivityLog $activityLog): array => self::details($activityLog))
                             ->placeholder(TranslatedText::of('admin/activity-log.infolist.details.empty')),

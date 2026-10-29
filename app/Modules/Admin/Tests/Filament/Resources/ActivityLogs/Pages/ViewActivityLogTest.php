@@ -98,6 +98,22 @@ it('shows the stored details and request context in the active language', functi
     ]],
 ]);
 
+it('localizes the accessible details label in Spanish', function (): void {
+    app()->setLocale(PreferredLocale::SPANISH->value);
+
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $user->update(['preferred_locale' => PreferredLocale::SPANISH->value]);
+
+    $activityLog = ActivityLogFactory::new()
+        ->forEvent(ActivityLogAdminEvent::InvitationAccepted)
+        ->causedBy($user)
+        ->createOne(['properties' => ['guard' => 'admin']]);
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertSeeText('Detalles')
+        ->assertDontSeeText('Details');
+});
+
 it('shows translated placeholders for an activity without details or request context', function (PreferredLocale $preferredLocale, string $expectedDetails, string $expectedRequest): void {
     app()->setLocale($preferredLocale->value);
 
