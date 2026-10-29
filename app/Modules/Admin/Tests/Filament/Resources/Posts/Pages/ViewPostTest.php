@@ -52,7 +52,11 @@ it('allows Posts readers to open post details without Users access', function ()
         ->assertSee(PostResource::getUrl('view', ['record' => $post]), false);
 });
 
-it('renders a post author and timestamps on the detail page', function (): void {
+it('renders translated post detail labels, author and locale dates', function (
+    string $locale,
+    array $sectionTexts,
+    array $fieldLabels,
+): void {
     $authenticatedUser = createUser();
 
     $authenticatedUser->assignRole([
@@ -75,19 +79,50 @@ it('renders a post author and timestamps on the detail page', function (): void 
     /** @var CarbonImmutable $updatedAt */
     $this->actingAs($authenticatedUser, 'admin');
 
-    Livewire::test(ViewPost::class, ['record' => $post->getKey()])
-        ->assertOk()
-        ->assertSeeText('Post information')
-        ->assertSeeText('Author and publication history for this post.')
-        ->assertSeeText('Post content')
-        ->assertSeeText('The complete message and image shared in this post.')
-        ->assertSeeText('Post detail content sentinel')
-        ->assertSeeText($user->name)
-        ->assertSeeText('Created at')
-        ->assertSeeText('Updated at')
-        ->assertSeeText($createdAt->format('M j, Y'))
-        ->assertSeeText($updatedAt->format('M j, Y'));
-});
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+
+        $testable = Livewire::test(ViewPost::class, ['record' => $post->getKey()])
+            ->assertOk()
+            ->assertSeeText('Post detail content sentinel')
+            ->assertSeeText($user->name)
+            ->assertSeeText($createdAt->settings(['locale' => $locale])->translatedFormat('M j, Y'))
+            ->assertSeeText($updatedAt->settings(['locale' => $locale])->translatedFormat('M j, Y'));
+
+        foreach ($sectionTexts as $sectionText) {
+            $testable->assertSeeText($sectionText);
+        }
+
+        foreach ($fieldLabels as $fieldLabel) {
+            $testable->assertSeeText($fieldLabel);
+        }
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'English' => [
+        'en',
+        [
+            'Post information',
+            'Author and history of this post.',
+            'Post content',
+            'The complete message and image shared in this post.',
+        ],
+        ['Author', 'Created at', 'Updated at', 'Message', 'Post image'],
+    ],
+    'Spanish' => [
+        'es',
+        [
+            'Información de la publicación',
+            'Autor e historial de esta publicación.',
+            'Contenido de la publicación',
+            'El mensaje completo y la imagen compartidos en esta publicación.',
+        ],
+        ['Autor', 'Fecha de creación', 'Última actualización', 'Mensaje', 'Imagen de la publicación'],
+    ],
+]);
 
 it('shows the image from the posts_images collection on the post detail page', function (): void {
     Storage::fake((string) config('media-library.disk_name'));
@@ -115,7 +150,7 @@ it('shows the image from the posts_images collection on the post detail page', f
     expect($testable->html())->toContain($imageUrl);
 });
 
-it('shows the fallback when a post has no image on the detail page', function (): void {
+it('shows the fallback image with translated alt text', function (string $locale, string $altText): void {
     $authenticatedUser = createUser();
     $authenticatedUser->assignRole([
         AdminRole::Admin->value,
@@ -127,11 +162,24 @@ it('shows the fallback when a post has no image on the detail page', function ()
 
     $this->actingAs($authenticatedUser, 'admin');
 
-    $testable = Livewire::test(ViewPost::class, ['record' => $post->getKey()])
-        ->assertSeeText($post->content);
+    $originalLocale = app()->getLocale();
 
-    expect($testable->html())->toContain(asset('default-cover.svg'));
-});
+    try {
+        app()->setLocale($locale);
+
+        $testable = Livewire::test(ViewPost::class, ['record' => $post->getKey()])
+            ->assertSeeText($post->content);
+
+        expect($testable->html())
+            ->toContain(asset('default-cover.svg'))
+            ->toContain('alt="'.$altText.'"');
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'English' => ['en', 'Post image'],
+    'Spanish' => ['es', 'Imagen de la publicación'],
+]);
 
 it('keeps the detail page read-only and includes the activity overview', function (): void {
     $authenticatedUser = createUser();
