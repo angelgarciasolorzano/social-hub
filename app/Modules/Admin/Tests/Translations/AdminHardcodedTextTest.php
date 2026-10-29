@@ -37,6 +37,7 @@ const ADMIN_TRANSLATED_PATHS = [
     'app/Modules/Admin/Filament/Resources/ActivityLogs',
     'app/Modules/Admin/Filament/Resources/Announcements',
     'app/Modules/Admin/Filament/Resources/Posts',
+    'app/Modules/Admin/Filament/Resources/Comments',
     'app/Modules/Admin/Filament/Pages/Backups',
     'app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php',
     'app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php',
@@ -153,7 +154,7 @@ it('finds no hard-coded text in the translated admin sections', function (): voi
         ->and($hardcodedTexts)->toBe([], 'Use TranslatedText::of() in PHP or __() in Blade with a key in lang/{en,es}/admin/');
 });
 
-it('scans Activity Log, Announcements, Posts and the announcement preview but not independent Comments', function (): void {
+it('scans Activity Log, Announcements, Posts, independent Comments and the announcement preview', function (): void {
     $translatedPaths = array_map(
         static fn (string $file): string => str_replace(base_path().'/', '', $file),
         adminTranslatedFiles(),
@@ -170,7 +171,7 @@ it('scans Activity Log, Announcements, Posts and the announcement preview but no
         $translatedPaths,
         static fn (string $path): bool => str_starts_with($path, 'app/Modules/Admin/Filament/Resources/Posts/'),
     );
-    $independentCommentPaths = array_filter(
+    $commentPaths = array_filter(
         $translatedPaths,
         static fn (string $path): bool => str_starts_with($path, 'app/Modules/Admin/Filament/Resources/Comments/'),
     );
@@ -178,8 +179,9 @@ it('scans Activity Log, Announcements, Posts and the announcement preview but no
     expect($activityLogPaths)->not->toBeEmpty()
         ->and($announcementPaths)->not->toBeEmpty()
         ->and($postPaths)->not->toBeEmpty()
-        ->and($independentCommentPaths)
-        ->toBeEmpty()
+        ->and($commentPaths)->not->toBeEmpty()
+        ->and($commentPaths)
+        ->toContain('app/Modules/Admin/Filament/Resources/Comments/CommentResource.php')
         ->and($translatedPaths)
         ->toContain('app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php');
 });
@@ -198,6 +200,8 @@ it('detects literal texts passed to Filament', function (string $source, array $
     'a translated hint' => ["->hint(TranslatedText::of('admin/announcements.form.display'))", []],
     'a translated tab title' => ["Tab::make(TranslatedText::of('admin/announcements.tabs.scheduled'))", []],
     'authored announcement content' => ['->content($announcement->body)', []],
+    'authored comment content' => ['->state($comment->content)', []],
+    'authored reply content' => ['->state($reply->content)', []],
     'an icon and a color' => ["->icon(Heroicon::OutlinedUser)->color('success')", []],
 ]);
 
