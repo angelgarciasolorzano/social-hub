@@ -698,7 +698,7 @@ Traducir `views/TwoFactorDisabled.tsx`, `data/twoFactorDisabled.ts` y `component
 
 ### TASK-032: 2FA: vista activada y dispositivos
 
-Traducir `views/TwoFactorEnable.tsx`, `data/twoFactorEnable.ts` y `TwoFactorDevices.tsx` (que también lee `data/trustedDeviceOverview.ts`: sus etiquetas se envuelven con `t()` aunque TASK-037 aún no las haya convertido en claves).
+Traducir `views/TwoFactorEnable.tsx`, `data/twoFactorEnable.ts` y `TwoFactorDevices.tsx` (que también lee `data/trustedDeviceOverview.ts`: sus etiquetas se envuelven con `t()` aunque TASK-037 aún no las haya convertido en claves). Quitar de `TwoFactorEnable.tsx` la línea 'Última verificación: hace 2 horas', un texto fijo que no viene de ningún dato (decisión del usuario, 2026-10-29): se quita en vez de traducirse y la fila de método queda sola.
 
 **Type:** feature · **Priority:** P1 · **Effort:** M · **Agent:** `react-vite-tailwind-engineer` · **Review:** claude
 
@@ -708,7 +708,7 @@ Traducir `views/TwoFactorEnable.tsx`, `data/twoFactorEnable.ts` y `TwoFactorDevi
 
 - Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.
 - Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.
-- Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto.
+- Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto. Ya no aparece 'Última verificación' ni 'hace 2 horas'.
 
 **writeScope:**
 
