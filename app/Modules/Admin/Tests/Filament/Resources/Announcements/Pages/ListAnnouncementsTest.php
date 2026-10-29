@@ -118,6 +118,54 @@ describe('with the announcements manager role', function (): void {
             ->and($table->hasLoadingSkeleton())->toBeTrue();
     });
 
+    it('translates the schedule tabs and dialog badge tooltip in the selected locale', function (
+        string $locale,
+        array $expectedLabels,
+        string $expectedTooltip,
+    ): void {
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+
+            $tabs = announcementsListPage('active_dialogs')->instance()->getCachedTabs();
+
+            expect(array_keys($tabs))->toBe(['scheduled', 'active', 'expired', 'active_dialogs', 'all']);
+
+            foreach ($expectedLabels as $tabName => $expectedLabel) {
+                expect($tabs[$tabName]->getLabel())->toBe($expectedLabel);
+            }
+
+            expect($tabs['active_dialogs']->getBadgeTooltip())->toBe($expectedTooltip)
+                ->and($tabs['active_dialogs']->getBadge())->toBe('0');
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => [
+            'en',
+            [
+                'scheduled' => 'Scheduled',
+                'active' => 'Active',
+                'expired' => 'Expired',
+                'active_dialogs' => 'Active dialogs',
+                'all' => 'All',
+            ],
+            'Dialogs interrupt users until they close them.',
+        ],
+        'Spanish' => [
+            'es',
+            [
+                'scheduled' => 'Programados',
+                'active' => 'Activos',
+                'expired' => 'Finalizados',
+                'active_dialogs' => 'Diálogos activos',
+                'all' => 'Todos',
+            ],
+            'Los diálogos interrumpen a los usuarios hasta que los cierran.',
+        ],
+    ]);
+
     it('shows the create button', function (): void {
         Livewire::test(ListAnnouncements::class)->assertSee('New announcement');
     });

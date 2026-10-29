@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Pages;
 
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Models\Announcement;
+use App\Support\Translation\TranslatedText;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -27,15 +28,15 @@ class ListAnnouncements extends ListRecords
     public function getTabs(): array
     {
         return [
-            'scheduled' => Tab::make('Scheduled')->modifyQueryUsing($this->onlyScheduled(...)),
-            'active' => Tab::make('Active')->modifyQueryUsing($this->onlyRunning(...)),
-            'expired' => Tab::make('Expired')->modifyQueryUsing($this->onlyEnded(...)),
-            'active_dialogs' => Tab::make('Active dialogs')
+            'scheduled' => Tab::make(TranslatedText::of('admin/announcements.tabs.scheduled'))->modifyQueryUsing($this->onlyScheduled(...)),
+            'active' => Tab::make(TranslatedText::of('admin/announcements.tabs.active'))->modifyQueryUsing($this->onlyRunning(...)),
+            'expired' => Tab::make(TranslatedText::of('admin/announcements.tabs.expired'))->modifyQueryUsing($this->onlyEnded(...)),
+            'active_dialogs' => Tab::make(TranslatedText::of('admin/announcements.tabs.active_dialogs'))
                 ->modifyQueryUsing($this->onlyRunningDialogs(...))
                 ->badge(Announcement::query()->running()->dialogs()->count())
                 ->badgeColor('warning')
-                ->badgeTooltip('Dialogs interrupt users until they close them'),
-            'all' => Tab::make('All'),
+                ->badgeTooltip(TranslatedText::of('admin/announcements.tabs.active_dialogs_tooltip')),
+            'all' => Tab::make(TranslatedText::of('admin/announcements.tabs.all')),
         ];
     }
 
