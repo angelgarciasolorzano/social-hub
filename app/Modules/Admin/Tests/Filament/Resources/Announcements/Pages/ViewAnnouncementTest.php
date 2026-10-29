@@ -61,7 +61,13 @@ describe('with the announcements manager role', function (): void {
         AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminAnnouncementsManager);
     });
 
-    it('shows the content, display settings, button and author of the announcement', function (): void {
+    it('shows the content, display settings, button and author in the selected locale', function (
+        string $locale,
+        string $typeLabel,
+        string $audienceLabel,
+        array $sectionLabels,
+        array $fieldLabels,
+    ): void {
         Storage::fake('public');
         $user = createUser();
         $announcement = viewAnnouncementFactory()
@@ -74,39 +80,105 @@ describe('with the announcements manager role', function (): void {
         $announcement->addMedia(UploadedFile::fake()->image('banner.jpg'))
             ->toMediaCollection(Announcement::IMAGE_MEDIA_COLLECTION);
 
-        viewAnnouncementPage($announcement)
-            ->assertOk()
-            ->assertSee($announcement->title)
-            ->assertSeeHtml('<strong>verificación en dos pasos</strong>')
-            ->assertSee('Critical')
-            ->assertSee('Users without two-factor authentication')
-            ->assertSee((string) $announcement->button_label)
-            ->assertSee((string) $announcement->button_url)
-            ->assertSee($user->name)
-            ->assertDontSee('No image');
-    });
+        $originalLocale = app()->getLocale();
 
-    it('shows how the announcement is presented', function (string $display, string $label, string $otherLabel): void {
-        $announcement = viewAnnouncementFactory()->createOne(['display' => $display]);
+        try {
+            app()->setLocale($locale);
 
-        viewAnnouncementPage($announcement)
-            ->assertSee('Shown as')
-            ->assertSee($label)
-            ->assertDontSee($otherLabel);
+            $testable = viewAnnouncementPage($announcement)
+                ->assertOk()
+                ->assertSee($announcement->title)
+                ->assertSeeHtml('<strong>verificación en dos pasos</strong>')
+                ->assertSee($typeLabel)
+                ->assertSee($audienceLabel)
+                ->assertSee((string) $announcement->button_label)
+                ->assertSee((string) $announcement->button_url)
+                ->assertSee($user->name)
+                ->assertDontSee($locale === 'en' ? 'No image' : 'Sin imagen');
+
+            foreach ($sectionLabels as $sectionLabel) {
+                $testable->assertSee($sectionLabel);
+            }
+
+            foreach ($fieldLabels as $fieldLabel) {
+                $testable->assertSee($fieldLabel);
+            }
+        } finally {
+            app()->setLocale($originalLocale);
+        }
     })->with([
-        'toast' => ['toast', 'Toast', 'Dialog'],
-        'dialog' => ['dialog', 'Dialog', 'Toast'],
+        'English' => [
+            'en',
+            'Critical',
+            'Users without two-factor authentication',
+            ['Content', 'Display', 'Button', 'History'],
+            [
+                'Title', 'Message', 'Image', 'Type', 'Audience', 'Shown as', 'Users can dismiss it',
+                'Starts at', 'Ends at', 'Button text', 'Button link', 'Created by', 'Created at', 'Updated at',
+            ],
+        ],
+        'Spanish' => [
+            'es',
+            'Crítico',
+            'Usuarios sin autenticación en dos pasos',
+            ['Contenido', 'Presentación', 'Botón', 'Historial'],
+            [
+                'Título', 'Mensaje', 'Imagen', 'Tipo', 'Audiencia', 'Se muestra como',
+                'Los usuarios pueden cerrar el anuncio', 'Fecha de inicio', 'Fecha de finalización',
+                'Texto del botón', 'Enlace del botón', 'Creado por', 'Fecha de creación', 'Última actualización',
+            ],
+        ],
     ]);
 
-    it('shows placeholders for a deleted author, no end date, no button and no image', function (): void {
-        $announcement = viewAnnouncementFactory()->createOne(['created_by' => null, 'ends_at' => null]);
+    it('shows how the announcement is presented in the selected locale', function (
+        string $locale,
+        string $display,
+        string $label,
+        string $otherLabel,
+        string $fieldLabel,
+    ): void {
+        $announcement = viewAnnouncementFactory()->createOne(['display' => $display]);
+        $originalLocale = app()->getLocale();
 
-        viewAnnouncementPage($announcement)
-            ->assertSee('Deleted user')
-            ->assertSee('No end date')
-            ->assertSee('No button')
-            ->assertSee('No image');
-    });
+        try {
+            app()->setLocale($locale);
+
+            viewAnnouncementPage($announcement)
+                ->assertSee($fieldLabel)
+                ->assertSee($label)
+                ->assertDontSee($otherLabel);
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English toast' => ['en', 'toast', 'Toast', 'Dialog', 'Shown as'],
+        'English dialog' => ['en', 'dialog', 'Dialog', 'Toast', 'Shown as'],
+        'Spanish toast' => ['es', 'toast', 'Aviso emergente', 'Diálogo', 'Se muestra como'],
+        'Spanish dialog' => ['es', 'dialog', 'Diálogo', 'Aviso emergente', 'Se muestra como'],
+    ]);
+
+    it('shows translated placeholders for a deleted author, no end date, no button and no image', function (
+        string $locale,
+        array $placeholders,
+    ): void {
+        $announcement = viewAnnouncementFactory()->createOne(['created_by' => null, 'ends_at' => null]);
+        $originalLocale = app()->getLocale();
+
+        try {
+            app()->setLocale($locale);
+
+            $testable = viewAnnouncementPage($announcement);
+
+            foreach ($placeholders as $placeholder) {
+                $testable->assertSee($placeholder);
+            }
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    })->with([
+        'English' => ['en', ['Deleted user', 'No end date', 'No button', 'No image']],
+        'Spanish' => ['es', ['Usuario eliminado', 'Sin fecha de finalización', 'Sin botón', 'Sin imagen']],
+    ]);
 
     it('never renders dangerous HTML from the message', function (): void {
         $announcement = viewAnnouncementFactory()->createOne([

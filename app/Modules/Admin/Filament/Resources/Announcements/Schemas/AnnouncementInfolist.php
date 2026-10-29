@@ -9,6 +9,7 @@ use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use App\Support\Translation\TranslatedText;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\SpatieMediaLibraryImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -24,21 +25,21 @@ class AnnouncementInfolist
         return $schema
             ->columns(1)
             ->components([
-                Section::make('Content')
+                Section::make(TranslatedText::of('admin/announcements.sections.content'))
                     ->icon(Heroicon::OutlinedMegaphone)
                     ->schema([
                         TextEntry::make('title')
-                            ->label('Title'),
+                            ->label(TranslatedText::of('admin/announcements.fields.title')),
                         TextEntry::make('body')
-                            ->label('Message')
+                            ->label(TranslatedText::of('admin/announcements.fields.message'))
                             ->state(fn (Announcement $announcement): HtmlString => new HtmlString($announcement->safeBodyHtml()))
                             ->prose(),
                         SpatieMediaLibraryImageEntry::make('image')
-                            ->label('Image')
+                            ->label(TranslatedText::of('admin/announcements.fields.image'))
                             ->collection(Announcement::IMAGE_MEDIA_COLLECTION)
-                            ->placeholder('No image'),
+                            ->placeholder(TranslatedText::of('admin/announcements.placeholders.no_image')),
                     ]),
-                Section::make('Display')
+                Section::make(TranslatedText::of('admin/announcements.sections.display'))
                     ->icon(Heroicon::OutlinedCalendarDays)
                     ->columns([
                         'default' => 1,
@@ -46,31 +47,31 @@ class AnnouncementInfolist
                     ])
                     ->schema([
                         TextEntry::make('type')
-                            ->label('Type')
+                            ->label(TranslatedText::of('admin/announcements.fields.type'))
                             ->badge()
                             ->formatStateUsing(fn (AnnouncementType $state): string => $state->label())
                             ->color(fn (AnnouncementType $state): string => AnnouncementsTable::typeColor($state)),
                         TextEntry::make('audience')
-                            ->label('Audience')
+                            ->label(TranslatedText::of('admin/announcements.fields.audience'))
                             ->formatStateUsing(fn (AnnouncementAudience $state): string => $state->label()),
                         TextEntry::make('display')
-                            ->label('Shown as')
+                            ->label(TranslatedText::of('admin/announcements.fields.display'))
                             ->badge()
                             ->color('gray')
                             ->formatStateUsing(fn (AnnouncementDisplay $state): string => $state->label())
                             ->icon(fn (AnnouncementDisplay $state): Heroicon => AnnouncementsTable::displayIcon($state)),
                         IconEntry::make('is_dismissible')
-                            ->label('Users can dismiss it')
+                            ->label(TranslatedText::of('admin/announcements.fields.is_dismissible'))
                             ->boolean(),
                         TextEntry::make('starts_at')
-                            ->label('Starts at')
+                            ->label(TranslatedText::of('admin/announcements.fields.starts_at'))
                             ->dateTime(),
                         TextEntry::make('ends_at')
-                            ->label('Ends at')
+                            ->label(TranslatedText::of('admin/announcements.fields.ends_at'))
                             ->dateTime()
-                            ->placeholder('No end date'),
+                            ->placeholder(TranslatedText::of('admin/announcements.placeholders.no_end_date')),
                     ]),
-                Section::make('Button')
+                Section::make(TranslatedText::of('admin/announcements.sections.button'))
                     ->icon(Heroicon::OutlinedCursorArrowRays)
                     ->columns([
                         'default' => 1,
@@ -78,13 +79,13 @@ class AnnouncementInfolist
                     ])
                     ->schema([
                         TextEntry::make('button_label')
-                            ->label('Button text')
-                            ->placeholder('No button'),
+                            ->label(TranslatedText::of('admin/announcements.fields.button_text'))
+                            ->placeholder(TranslatedText::of('admin/announcements.placeholders.no_button')),
                         TextEntry::make('button_url')
-                            ->label('Button link')
-                            ->placeholder('No button'),
+                            ->label(TranslatedText::of('admin/announcements.fields.button_link'))
+                            ->placeholder(TranslatedText::of('admin/announcements.placeholders.no_button')),
                     ]),
-                Section::make('History')
+                Section::make(TranslatedText::of('admin/announcements.sections.history'))
                     ->icon(Heroicon::OutlinedUser)
                     ->columns([
                         'default' => 1,
@@ -92,13 +93,13 @@ class AnnouncementInfolist
                     ])
                     ->schema([
                         TextEntry::make('creator.name')
-                            ->label('Created by')
-                            ->placeholder('Deleted user'),
+                            ->label(TranslatedText::of('admin/announcements.fields.created_by'))
+                            ->placeholder(TranslatedText::of('admin/announcements.placeholders.deleted_user')),
                         TextEntry::make('created_at')
-                            ->label('Created at')
+                            ->label(TranslatedText::of('admin/announcements.fields.created_at'))
                             ->dateTime(),
                         TextEntry::make('updated_at')
-                            ->label('Updated at')
+                            ->label(TranslatedText::of('admin/announcements.fields.updated_at'))
                             ->dateTime(),
                     ]),
             ]);
