@@ -1,6 +1,6 @@
 import type { ComponentProps, JSX } from "react";
 
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 
 import { BookOpen, Bot, Command, SquareTerminal } from "lucide-react";
 
@@ -14,7 +14,6 @@ import { index as indexTwoFactorAuthentication } from "@/shared/wayfinder/routes
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -22,58 +21,54 @@ import {
   SidebarRail,
 } from "@/shared/components/shadcn/ui/sidebar";
 
-import { SettingSidebarNavMain } from "./SettingSidebarNavMain";
-import { SettingSidebarNavUser } from "./SettingSidebarNavUser";
+import type { SharedData } from "@/shared/types";
 
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+import { SettingSidebarNavMain } from "./SettingSidebarNavMain";
+
+const settingNavigationGroups = [
+  {
+    title: "setting/common.sidebar.account",
+    url: "#",
+    icon: SquareTerminal,
+    isActive: true,
+    items: [
+      {
+        title: "setting/common.sidebar.profile",
+        url: editAccountSettings.url(),
+      },
+    ],
   },
-  navMain: [
-    {
-      title: "Cuenta",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "Perfil",
-          url: editAccountSettings.url(),
-        },
-      ],
-    },
-    {
-      title: "Preferencias",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Apariencia",
-          url: appearance.url(),
-        },
-      ],
-    },
-    {
-      title: "Seguridad",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Autenticación en dos pasos",
-          url: indexTwoFactorAuthentication.url(),
-        },
-        {
-          title: "Dispositivos confiables",
-          url: devicesIndex.url(),
-        },
-      ],
-    },
-  ],
-};
+  {
+    title: "setting/common.sidebar.preferences",
+    url: "#",
+    icon: Bot,
+    items: [
+      {
+        title: "setting/common.sidebar.appearance",
+        url: appearance.url(),
+      },
+    ],
+  },
+  {
+    title: "setting/common.sidebar.security",
+    url: "#",
+    icon: BookOpen,
+    items: [
+      {
+        title: "setting/common.sidebar.two_factor",
+        url: indexTwoFactorAuthentication.url(),
+      },
+      {
+        title: "setting/common.sidebar.trusted_devices",
+        url: devicesIndex.url(),
+      },
+    ],
+  },
+];
 
 export function SettingSidebar({ ...props }: ComponentProps<typeof Sidebar>): JSX.Element {
+  const { name: appName } = usePage<SharedData>().props;
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -85,11 +80,9 @@ export function SettingSidebar({ ...props }: ComponentProps<typeof Sidebar>): JS
                   <Command className="size-4" />
                 </div>
 
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Acme Inc</span>
-
-                  <span className="truncate text-xs">Enterprise</span>
-                </div>
+                <span className="flex-1 truncate text-left text-sm leading-tight font-medium">
+                  {appName}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -97,12 +90,8 @@ export function SettingSidebar({ ...props }: ComponentProps<typeof Sidebar>): JS
       </SidebarHeader>
 
       <SidebarContent>
-        <SettingSidebarNavMain items={data.navMain} />
+        <SettingSidebarNavMain navigationGroups={settingNavigationGroups} />
       </SidebarContent>
-
-      <SidebarFooter>
-        <SettingSidebarNavUser user={data.user} />
-      </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>

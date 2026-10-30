@@ -20,40 +20,46 @@ import {
   SidebarMenuSubItem,
 } from "@/shared/components/shadcn/ui/sidebar";
 
-interface SettingSidebarNavMainSubItems {
+import { useTranslation } from "@/shared/hooks";
+
+interface SettingSidebarNavLink {
   title: string;
   url: string;
 }
 
-type SettingSidebarNavMainItems = Pick<SettingSidebarNavMainSubItems, "title" | "url"> & {
+type SettingSidebarNavGroup = SettingSidebarNavLink & {
   icon?: LucideIcon;
   isActive?: boolean;
-  items?: SettingSidebarNavMainSubItems[];
+  items?: SettingSidebarNavLink[];
 };
 
 interface SettingSidebarNavMainProps {
-  items: SettingSidebarNavMainItems[];
+  navigationGroups: SettingSidebarNavGroup[];
 }
 
-export function SettingSidebarNavMain({ items }: SettingSidebarNavMainProps): JSX.Element {
+export function SettingSidebarNavMain({
+  navigationGroups,
+}: SettingSidebarNavMainProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Configuración</SidebarGroupLabel>
+      <SidebarGroupLabel>{t("setting/common.sidebar.group_label")}</SidebarGroupLabel>
 
       <SidebarMenu>
-        {items.map((item) => (
+        {navigationGroups.map((navigationGroup) => (
           <Collapsible
             className="group/collapsible"
             asChild
-            defaultOpen={item.isActive}
-            key={item.title}
+            defaultOpen={navigationGroup.isActive}
+            key={navigationGroup.title}
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
+                <SidebarMenuButton tooltip={t(navigationGroup.title)}>
+                  {navigationGroup.icon && <navigationGroup.icon />}
 
-                  <span>{item.title}</span>
+                  <span>{t(navigationGroup.title)}</span>
 
                   <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuButton>
@@ -61,11 +67,11 @@ export function SettingSidebarNavMain({ items }: SettingSidebarNavMainProps): JS
 
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
+                  {navigationGroup.items?.map((navigationLink) => (
+                    <SidebarMenuSubItem key={navigationLink.title}>
                       <SidebarMenuSubButton asChild>
-                        <Link href={subItem.url}>
-                          <span>{subItem.title}</span>
+                        <Link href={navigationLink.url}>
+                          <span>{t(navigationLink.title)}</span>
                         </Link>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
