@@ -7,9 +7,13 @@ namespace App\Modules\Announcement\Services;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
 use App\Modules\Announcement\Data\AnnouncementData;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
 use App\User\Models\User;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use LogicException;
 
 /**
@@ -38,6 +42,80 @@ final readonly class AnnouncementService
 
             return $announcement;
         });
+    }
+
+    /**
+     * Submit a draft or rejected announcement for review and record who submitted it.
+     */
+    public function submitForReview(Announcement $announcement, User $user): Announcement
+    {
+        return DB::transaction(function () use ($announcement, $user): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            $reviewAction = match ($lockedAnnouncement->status) {
+                AnnouncementStatus::Draft => AnnouncementReviewAction::Submitted,
+                AnnouncementStatus::Rejected => AnnouncementReviewAction::Resubmitted,
+                default => throw new LogicException('Only draft and rejected announcements may be submitted for review.'),
+            };
+
+            $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview])->save();
+
+            $lockedAnnouncement->reviews()->create([
+                'action' => $reviewAction,
+                'reviewed_by' => $user->id,
+            ]);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
+
+            return $lockedAnnouncement;
+        });
+    }
+
+    /**
+     * Approve an announcement when the reviewer has seen its latest submission.
+     */
+    public function approve(
+        Announcement $announcement,
+        User $user,
+        int $expectedSubmissionReviewId,
+        ?string $comment = null,
+    ): Announcement {
+        return $this->recordReviewDecision(
+            $announcement,
+            $user,
+            $expectedSubmissionReviewId,
+            AnnouncementStatus::Approved,
+            AnnouncementReviewAction::Approved,
+            ActivityLogAdminEvent::AnnouncementApproved,
+            $comment,
+        );
+    }
+
+    /**
+     * Reject an announcement with a required comment of at most 1000 characters.
+     */
+    public function reject(
+        Announcement $announcement,
+        User $user,
+        int $expectedSubmissionReviewId,
+        string $comment,
+    ): Announcement {
+        throw_if(trim($comment) === '', InvalidArgumentException::class, 'A rejection comment is required.');
+
+        throw_if(mb_strlen($comment) > 1000, InvalidArgumentException::class, 'A rejection comment may not exceed 1000 characters.');
+
+        return $this->recordReviewDecision(
+            $announcement,
+            $user,
+            $expectedSubmissionReviewId,
+            AnnouncementStatus::Rejected,
+            AnnouncementReviewAction::Rejected,
+            ActivityLogAdminEvent::AnnouncementRejected,
+            $comment,
+        );
     }
 
     /**
@@ -133,6 +211,67 @@ final readonly class AnnouncementService
             $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementDeleted, $announcement, $user);
 
             $announcement->delete();
+        });
+    }
+
+    /**
+     * Lock the announcement and latest submission before persisting a review decision.
+     */
+    private function recordReviewDecision(
+        Announcement $announcement,
+        User $user,
+        int $expectedSubmissionReviewId,
+        AnnouncementStatus $announcementStatus,
+        AnnouncementReviewAction $announcementReviewAction,
+        ActivityLogAdminEvent $activityLogAdminEvent,
+        ?string $comment,
+    ): Announcement {
+        return DB::transaction(function () use (
+            $announcement,
+            $user,
+            $expectedSubmissionReviewId,
+            $announcementStatus,
+            $announcementReviewAction,
+            $activityLogAdminEvent,
+            $comment,
+        ): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            throw_if($lockedAnnouncement->status !== AnnouncementStatus::InReview, LogicException::class, 'Only announcements in review may be approved or rejected.');
+
+            $latestSubmission = AnnouncementReview::query()
+                ->where('announcement_id', $lockedAnnouncement->getKey())
+                ->whereIn('action', [
+                    AnnouncementReviewAction::Submitted->value,
+                    AnnouncementReviewAction::Resubmitted->value,
+                ])
+                ->latest()
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+            throw_unless($latestSubmission instanceof AnnouncementReview, LogicException::class, 'The announcement has no submission to review.');
+
+            throw_if($latestSubmission->id !== $expectedSubmissionReviewId, LogicException::class, 'The announcement submission changed before it was reviewed.');
+
+            throw_if($lockedAnnouncement->created_by === $user->id, LogicException::class, 'The announcement author may not review their own announcement.');
+
+            throw_if($latestSubmission->reviewed_by === $user->id, LogicException::class, 'The latest submitter may not review their own submission.');
+
+            $lockedAnnouncement->forceFill(['status' => $announcementStatus])->save();
+
+            $lockedAnnouncement->reviews()->create([
+                'action' => $announcementReviewAction,
+                'comment' => $comment,
+                'reviewed_by' => $user->id,
+            ]);
+
+            $this->activityLogger->record($activityLogAdminEvent, $lockedAnnouncement, $user);
+
+            return $lockedAnnouncement;
         });
     }
 }
