@@ -562,6 +562,23 @@ Para variantes de Button, Alert, Badge, etc., usá las variantes predefinidas de
 - Para hacer `POST/PUT/DELETE`, usá los helpers `.form()` (auto-incluye CSRF) o `useHttp()` (peticiones standalone v3).
 - **Componentes globales fuera de la página.** Lo que se monta en `withApp` de `app.tsx` (`FlashToaster`, `SystemAnnouncements`) queda fuera del contexto que necesita `usePage()`. Leé las props iniciales del segundo argumento de `withApp` (`{ page }`) y las siguientes de los eventos del router (`router.on("navigate", …)` o `router.on("flash", …)`), y limpiá la suscripción devolviendo el resultado de `router.on` desde el `useEffect`.
 
+### Idiomas de la aplicación (SOC-67)
+
+Los textos de las páginas traducidas (hoy, las de configuración) salen de `lang/`, igual que los del backend. El servidor decide el idioma y manda a cada página sus catálogos ya fusionados con el idioma de respaldo; React no carga archivos ni guarda el idioma en estado de módulo, así el SSR nunca mezcla idiomas entre peticiones.
+
+- **Props compartidos**: `locale` (`"en" | "es"`) y `translations` (los grupos de la página más `dates`), tipados en `SharedData`.
+- **`useTranslation()`** (`@/shared/hooks`) devuelve `{ t, tChoice, locale }`. Las claves son las mismas que en PHP: `t("setting/trusted-devices.table.open_actions", { device: name })`, `tChoice("setting/trusted-device-dialogs.revoke_all.devices_count", total)`.
+  - Los marcadores `:name`, `:Name` y `:NAME` funcionan como en Laravel, y los plurales aceptan `{n}`, `{a,b}`, `[desde,hasta]` y `uno|varios`.
+  - Una clave que no existe devuelve la clave.
+  - `t` y `tChoice` mantienen su identidad mientras no cambien las traducciones, así que sirven como dependencias de hooks.
+  - Las funciones puras viven en `shared/lib/translation.ts`.
+- **`useDateTime()`** (`@/shared/hooks`) da los formateadores de `shared/lib/dateTime.ts` ligados al idioma y al catálogo `dates`. Formatean con `dayjs(iso).locale(locale)`, nunca con el locale global, y sin ese contexto no compilan. Posts y comentarios ya los usan, aunque sus textos sigan en español.
+- **Datos estáticos** (`data/*.ts`): conservan su forma y nombres de campo, pero guardan claves que el componente pasa por `t()`. Los valores que viajan en la URL o al backend (filtros, orden) no cambian con el idioma.
+- **Componentes de presentación** (`OptionCard`, `SummaryCard`, `Timeline`): reciben texto ya traducido; la vista traduce los datos antes de pasarlos.
+- **Utilidades que no son hooks** reciben el texto traducido como parámetro: `deviceLabel(device, unknownDeviceLabel)`, `downloadRecoveryCodes(codes, { locale, t })`.
+- **Textos con una parte resaltada** se parten en claves `_before`/`_after` (o `_emphasis`), para que el `<strong>` quede en el componente.
+- **Cómo agregar un texto**: la clave va en `lang/en/<grupo>.php` y en `lang/es/<grupo>.php` a la vez; la regla completa está en `.ai/rules/frontend.md`. `FrontendTranslationKeysTest` y `SettingHardcodedTextTest` fallan si la clave no existe o si el texto quedó escrito a mano.
+
 ### Anuncios del sistema (SOC-61, SOC-63)
 
 `modules/announcement/` muestra la prop compartida `announcements` según su `display`. Los toasts van a un `Toaster` de Sonner propio (`id="announcements"`, arriba al centro, colapsado), separado del de `FlashToaster`: Sonner solo muestra en cada `Toaster` los toasts con su mismo `toasterId`. Se eligió un toast y no una franja dentro del flujo porque flota sobre cualquier layout, incluido el sidebar fijo de `SettingLayout`. Los dialogs se muestran de uno en uno.

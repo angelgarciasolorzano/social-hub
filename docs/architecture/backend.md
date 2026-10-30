@@ -100,6 +100,34 @@ El panel de administración está en español e inglés. Las traducciones viven 
   - `AdminTranslationKeysTest` exige las mismas claves, textos no vacíos y los mismos marcadores en `en` y `es`, además de claves para las opciones de enums de Announcements y nombres para cada evento, log y tipo del morph map.
   - `AdminHardcodedTextTest` escanea Activity Log, Announcements, Posts y el preview de anuncios; detecta literales en métodos de texto, títulos de tabs, componentes de estadísticas/secciones y texto Blade. Excluye solo el contenido authored.
 
+### Idiomas de la aplicación (SOC-67)
+
+La aplicación de React habla español e inglés, empezando por las páginas de configuración (Perfil, Autenticación en dos pasos y Dispositivos confiables). `lang/` en la raíz es la **única fuente de traducciones** para PHP y para React: no hay paquete de i18n ni catálogos en `resources/js`.
+
+- **Idioma de cada petición**: `App\Http\Middleware\SetApplicationLocale`, en el grupo `web` justo antes de `HandleInertiaRequests`.
+  - Orden: `preferred_locale` del usuario (leído en crudo con `PreferredLocale::tryFrom()`, para que un valor no soportado no rompa) → primer idioma soportado de `Accept-Language`, en el orden del navegador → español (`GUEST_FALLBACK_LOCALE`).
+  - `app.locale` y `app.fallback_locale` siguen en `en`: el selector del panel necesita `app.locale` en inglés, y el panel aplica su idioma por su cuenta con `SwitchLanguageLocale`.
+  - Al registrarse, la cuenta guarda el idioma resuelto. La columna tiene `en` por defecto, así que las cuentas existentes ven inglés hasta cambiarlo en Perfil.
+  - `AccountSettingsController::update()` aplica el idioma recién guardado antes de armar el flash, para que la página siguiente llegue en un solo idioma.
+- **Catálogos para React**: `App\Support\Translation\FrontendTranslations`, con alcance de petición (`#[Scoped]`).
+  - El controlador registra los grupos de su página con `use('setting/common', …)` antes de `Inertia::render()`. Lo hacen Perfil, 2FA (que además registra los grupos de dispositivos, porque muestra ese panel), Dispositivos y Apariencia (solo `setting/common`, por el sidebar).
+  - `toArray()` devuelve cada grupo en el idioma activo **fusionado clave por clave** sobre `fallback_locale`: una clave que falte en `es` llega en inglés, nunca como clave cruda. Un grupo inexistente lanza `InvalidArgumentException`.
+  - `HandleInertiaRequests` comparte `locale` y `translations` (siempre con `dates`) como closure: una recarga parcial que pide otro prop no los reenvía.
+- **Catálogos**: `lang/{en,es}/setting/{common,account-settings,two-factor,trusted-devices,trusted-device-dialogs}.php`, `lang/{en,es}/dates.php` (formatos de dayjs y textos de fecha) y `lang/{en,es}/validation.php` (mensajes de Laravel con su versión en español y `attributes` para los campos de configuración). Mismas reglas que el panel: claves con nombre, plurales `{1} …|[0,*] …`, marcadores.
+- **Textos del backend de estas páginas**: pasan por `TranslatedText::of('setting/…')`. Incluye `TrustedDeviceOperationResult::message()`, `TrustedDeviceAction::label()`, los FormRequests y concerns de TrustedDevice, `TrustedDeviceService`, `TwoFactorController` y sus requests, `PasswordController` y `AccountSettingsController`.
+  - Un `message:` con `:max` deja que el validador ponga el valor de la regla.
+  - `TrustedDeviceDashboardCache::recentActivity()` vuelve a etiquetar las filas en cada lectura, porque la caché la comparten todos los idiomas.
+  - `PasswordNewController` y `PasswordResetLinkController` ya no fuerzan `'es'`.
+- **Pruebas que lo protegen**:
+  - `tests/Feature/Http/SetApplicationLocaleTest.php` y `HandleInertiaRequestsLocaleTest.php`.
+  - En `tests/Feature/Translation/`:
+    - `FrontendTranslationsTest`;
+    - `SettingPageTranslationsTest`: cada página comparte exactamente sus grupos, y el cambio de idioma desde Perfil se ve en la página siguiente;
+    - `SettingTranslationKeysTest`: paridad de claves y marcadores de `setting/*`, `dates` y `validation`;
+    - `FrontendTranslationKeysTest`: cada clave usada en `resources/js` existe en los dos idiomas;
+    - `SettingHardcodedTextTest`: sin textos fijos en las carpetas traducidas.
+  - Las pruebas comparan mensajes con `translatedTextIn()`, sin copiar el texto. Ojo: Symfony manda `Accept-Language: en-us` en cada petición de prueba, así que un invitado de prueba recibe inglés.
+
 ### Registro de actividad (ActivityLog)
 
 `app/Modules/ActivityLog/` (SOC-54) registra las acciones de los usuarios y la auditoría administrativa en una sola tabla `activity_log` de `spatie/laravel-activitylog`, separada por `log_name` (`auth`, `content`, `likes`, `trusted_devices`, `account`, `admin`), cada uno con su retención y una purga diaria (`activity-log:purge`). Ningún otro módulo usa el paquete: los módulos despachan eventos de dominio que escuchan los subscribers de `Listeners/`, y la auditoría Admin llama a `Services/ActivityLogger` dentro de su transacción. Nunca se guarda contenido, contraseñas, códigos, tokens ni correos. La decisión de diseño, el catálogo de eventos (`Contracts/ActivityLogEvent` con un enum por dominio en `Enums/Events/`) y la política de privacidad están documentados en CLAUDE.md.
