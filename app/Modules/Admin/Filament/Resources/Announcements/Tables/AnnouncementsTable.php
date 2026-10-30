@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 
-use App\Modules\Admin\Filament\Concerns\BuildsAnnouncementReviewActions;
+use App\Modules\Admin\Filament\Concerns\ConstrainsAnnouncementSubmissionReview;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\ApproveAnnouncementAction;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\RejectAnnouncementAction;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\SubmitAnnouncementForReviewAction;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
@@ -30,7 +33,7 @@ use LogicException;
 
 class AnnouncementsTable
 {
-    use BuildsAnnouncementReviewActions;
+    use ConstrainsAnnouncementSubmissionReview;
 
     public static function configure(Table $table): Table
     {
@@ -101,7 +104,11 @@ class AnnouncementsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                ActionGroup::make(self::announcementReviewActions()),
+                ActionGroup::make([
+                    SubmitAnnouncementForReviewAction::make(),
+                    ApproveAnnouncementAction::make(),
+                    RejectAnnouncementAction::make(),
+                ]),
                 ActionGroup::make([
                     self::previewAction(),
                     self::duplicateAction(),

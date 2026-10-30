@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Announcements\Pages;
 
-use App\Modules\Admin\Filament\Concerns\BuildsAnnouncementReviewActions;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\ApproveAnnouncementAction;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\RejectAnnouncementAction;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\SubmitAnnouncementForReviewAction;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -13,8 +15,6 @@ use Override;
 
 class ViewAnnouncement extends ViewRecord
 {
-    use BuildsAnnouncementReviewActions;
-
     #[Override]
     protected static string $resource = AnnouncementResource::class;
 
@@ -25,7 +25,9 @@ class ViewAnnouncement extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            ...self::announcementReviewActions(),
+            SubmitAnnouncementForReviewAction::make(),
+            ApproveAnnouncementAction::make(),
+            RejectAnnouncementAction::make(),
             EditAction::make(),
         ];
     }
