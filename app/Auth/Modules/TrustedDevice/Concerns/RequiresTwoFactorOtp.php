@@ -6,6 +6,7 @@ namespace App\Auth\Modules\TrustedDevice\Concerns;
 
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceOperationResult;
 use App\Auth\Modules\TrustedDevice\Services\TwoFactorCodeVerifier;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
@@ -33,10 +34,10 @@ trait RequiresTwoFactorOtp
 
         return [
             'otp_code' => FluentRule::string()
-                ->required(message: 'Debes ingresar el código de verificación.')
-                ->min(6, message: 'El código debe tener 6 dígitos.')
-                ->max(6, message: 'El código debe tener 6 dígitos.')
-                ->rule('regex:/^[0-9]+$/', 'El código solo puede contener números.'),
+                ->required(message: TranslatedText::of('setting/trusted-devices.validation.code_required'))
+                ->min(6, message: TranslatedText::of('setting/trusted-devices.validation.code_length'))
+                ->max(6, message: TranslatedText::of('setting/trusted-devices.validation.code_length'))
+                ->rule('regex:/^[0-9]+$/', TranslatedText::of('setting/trusted-devices.validation.code_digits')),
         ];
     }
 
@@ -61,7 +62,7 @@ trait RequiresTwoFactorOtp
 
             if ($user instanceof User
                 && ! resolve(TwoFactorCodeVerifier::class)->verifyTotp($user, $this->string('otp_code')->toString())) {
-                $validator->errors()->add('otp_code', 'El código de verificación es incorrecto.');
+                $validator->errors()->add('otp_code', TranslatedText::of('setting/trusted-devices.validation.code_incorrect'));
             }
         });
     }

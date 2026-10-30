@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Concerns;
 
+use App\Support\Translation\TranslatedText;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
 use SanderMuller\FluentValidation\HasFluentRules;
@@ -31,11 +32,11 @@ trait HasPasswordConfirmation
     {
         return [
             'password' => FluentRule::string()
-                ->required(message: 'Debes confirmar tu contraseña.')
-                ->currentPassword(message: 'La contraseña proporcionada no es correcta.'),
+                ->required(message: TranslatedText::of('setting/trusted-devices.validation.password_required'))
+                ->currentPassword(message: TranslatedText::of('setting/trusted-devices.validation.password_incorrect')),
             'terms' => FluentRule::boolean()
-                ->required(message: 'Debes confirmar que entiendes las consecuencias.')
-                ->accepted(message: 'Debes aceptar los términos para continuar.'),
+                ->required(message: TranslatedText::of('setting/trusted-devices.validation.terms_required'))
+                ->accepted(message: TranslatedText::of('setting/trusted-devices.validation.terms_accepted')),
         ];
     }
 }
