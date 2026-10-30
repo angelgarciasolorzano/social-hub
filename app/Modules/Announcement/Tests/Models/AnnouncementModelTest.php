@@ -36,7 +36,16 @@ function announcementReviewFactory(): AnnouncementReviewFactory
 }
 
 it('reads a new announcement status as draft', function (): void {
-    $announcement = announcementFactory()->createOne()->refresh();
+    $attributes = announcementFactory()->makeOne()->only([
+        'title',
+        'body',
+        'type',
+        'audience',
+        'starts_at',
+        'ends_at',
+        'is_dismissible',
+    ]);
+    $announcement = Announcement::query()->create($attributes)->refresh();
 
     expect($announcement->status)->toBe(AnnouncementStatus::Draft);
 });

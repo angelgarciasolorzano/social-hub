@@ -270,6 +270,7 @@ class Announcement extends Model implements HasMedia
         $this->running($builder);
 
         $builder
+            ->where('status', AnnouncementStatus::Approved->value)
             ->whereIn('audience', array_map(
                 fn (AnnouncementAudience $announcementAudience): string => $announcementAudience->value,
                 $this->audiencesFor($user),

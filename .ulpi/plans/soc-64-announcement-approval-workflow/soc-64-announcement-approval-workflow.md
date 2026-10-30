@@ -127,11 +127,15 @@ Agregar el requisito `approved` a `availableTo()` —y por composición a `visib
 3. Un intento de descartar un anuncio no aprobado no queda autorizado.
 
 **writeScope:**
+- app/Modules/Announcement/Database/Factories/AnnouncementFactory.php
 - app/Modules/Announcement/Models/Announcement.php
+- app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php
 - app/Modules/Announcement/Tests/Queries/AnnouncementVisibilityTest.php
 - app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php
+- app/Modules/Announcement/Tests/Crud/AnnouncementDismissTest.php
+- app/Modules/Announcement/Tests/Crud/AnnouncementDismissalSyncTest.php
 
-**validateCommand:** `rtk php artisan test --compact app/Modules/Announcement/Tests/Queries/AnnouncementVisibilityTest.php app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php`
+**validateCommand:** `rtk php artisan test --compact app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php app/Modules/Announcement/Tests/Queries/AnnouncementVisibilityTest.php app/Modules/Announcement/Tests/Props/SharedAnnouncementsTest.php app/Modules/Announcement/Tests/Crud/AnnouncementDismissTest.php app/Modules/Announcement/Tests/Crud/AnnouncementDismissalSyncTest.php`
 
 **Review:** codex
 

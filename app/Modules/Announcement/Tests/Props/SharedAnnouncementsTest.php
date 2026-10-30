@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use Illuminate\Http\UploadedFile;
@@ -28,17 +29,18 @@ function sharedAnnouncementFactory(): AnnouncementFactory
  */
 function countAnnouncementQueriesOnHome(TestCase $testCase): int
 {
-    DB::flushQueryLog();
-    DB::enableQueryLog();
+    $databaseConnection = DB::connection();
+    $databaseConnection->flushQueryLog();
+    $databaseConnection->enableQueryLog();
 
     $testCase->get(route('home'))->assertOk();
 
     $announcementQueries = array_filter(
-        DB::getQueryLog(),
+        $databaseConnection->getQueryLog(),
         fn (array $query): bool => str_contains($query['query'], 'announcement')
             || str_contains($query['query'], '`media`'),
     );
-    DB::disableQueryLog();
+    $databaseConnection->disableQueryLog();
 
     return count($announcementQueries);
 }
@@ -59,6 +61,30 @@ it('shares only the announcements for everyone with a guest on the login page', 
             )
         );
 });
+
+it('shares only approved announcements with guests and signed-in users', function (AnnouncementStatus $announcementStatus): void {
+    $announcement = sharedAnnouncementFactory()->withStatus(AnnouncementStatus::Approved)->createOne();
+    sharedAnnouncementFactory()->withStatus($announcementStatus)->createOne();
+
+    $this->get(route('login'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->has('announcements', 1)
+            ->where('announcements.0.id', $announcement->id)
+        );
+
+    $this->actingAs(createUser())
+        ->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->has('announcements', 1)
+            ->where('announcements.0.id', $announcement->id)
+        );
+})->with([
+    'draft' => AnnouncementStatus::Draft,
+    'in review' => AnnouncementStatus::InReview,
+    'rejected' => AnnouncementStatus::Rejected,
+]);
 
 it('shares the announcements for users without two-factor with a signed-in user who lacks it', function (): void {
     $announcement = sharedAnnouncementFactory()

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Requests\AnnouncementDismissalSyncRequest;
 use App\User\Models\User;
@@ -76,9 +77,21 @@ it('stores only the announcements the user may still dismiss and answers their i
     $notDismissible = syncAnnouncementFactory()->notDismissible()->createOne();
     $expired = syncAnnouncementFactory()->expired()->createOne();
     $otherAudience = syncAnnouncementFactory()->forAudience(AnnouncementAudience::WithoutTwoFactor)->createOne();
+    $draft = syncAnnouncementFactory()->withStatus(AnnouncementStatus::Draft)->createOne();
+    $inReview = syncAnnouncementFactory()->withStatus(AnnouncementStatus::InReview)->createOne();
+    $rejected = syncAnnouncementFactory()->withStatus(AnnouncementStatus::Rejected)->createOne();
 
     syncDismissalsAs($this, $user, [
-        'announcement_ids' => [$announcement->id, $notDismissible->id, $expired->id, $otherAudience->id, 999999],
+        'announcement_ids' => [
+            $announcement->id,
+            $notDismissible->id,
+            $expired->id,
+            $otherAudience->id,
+            $draft->id,
+            $inReview->id,
+            $rejected->id,
+            999999,
+        ],
     ])
         ->assertOk()
         ->assertExactJson(['dismissed' => [$announcement->id]]);
