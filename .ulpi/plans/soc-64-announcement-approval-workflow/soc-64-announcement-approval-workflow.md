@@ -27,7 +27,7 @@ EXPANSION confirmado por el usuario; revisión predeterminada Codex. Se conserva
 
 ## Contracts
 
-- Status persistido y tipado: draft, in_review, approved, rejected; la migración backfillea anuncios existentes a approved y nuevas filas nacen draft.
+- Status persistido y tipado: draft, in_review, approved, rejected; la columna status usa draft por default para anuncios existentes y nuevos.
 - Announcement::availableTo() y visibleTo() excluyen todo lo que no esté approved; visibleTo() sigue siendo la única regla de lo que recibe la aplicación.
 - Transiciones permitidas: draft → in_review; in_review → approved/rejected; rejected → in_review; editar contenido aprobado → in_review. Duplicar crea draft; despublicar solo aplica a anuncios approved vigentes.
 - No puede revisar el autor ni el actor del envío más reciente. Cada fila de announcement_reviews almacena en reviewed_by al actor de esa acción; el último submitted/resubmitted identifica el remitente actual.
@@ -72,19 +72,19 @@ Crear `AnnouncementStatus` (`draft`, `in_review`, `approved`, `rejected`) y `Ann
 
 ### TASK-002: Persistir el estado y el historial de revisión
 
-Crear una migración nueva del módulo Announcement: `announcements.status` con default `draft`, backfill de los anuncios existentes a `approved`, y tabla append-only `announcement_reviews` con FK en cascada al anuncio, acción, comentario nullable, actor nullable con `nullOnDelete` y `created_at`. Generar con `rtk php artisan make:migration add_approval_workflow_to_announcements_table --path=app/Modules/Announcement/Database/Migrations --no-interaction` y no modificar migraciones anteriores.
+Crear una migración nueva del módulo Announcement: `announcements.status` con default `draft` para anuncios existentes y nuevos, sin backfill a `approved` porque el módulo aún no está en producción; y tabla append-only `announcement_reviews` con FK en cascada al anuncio, acción, comentario nullable, actor nullable con `nullOnDelete` y `created_at`. Generar con `rtk php artisan make:migration add_approval_workflow_to_announcements_table --path=app/Modules/Announcement/Database/Migrations --no-interaction` y no modificar migraciones anteriores.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
 **Depends on:** Ninguna
 
 **Acceptance Criteria:**
-1. Anuncios existentes quedan `approved`; anuncios creados después de migrar reciben `draft` por defecto.
+1. Anuncios existentes y nuevos reciben `draft` por el default de la columna; no se realiza backfill a `approved`.
 2. Las filas de revisión conservan la acción y el comentario; eliminar un usuario deja el actor en null y eliminar el anuncio elimina su historial.
 3. Rollback elimina solo la tabla y columna nuevas y permite volver a migrar.
 
 **writeScope:**
-- app/Modules/Announcement/Database/Migrations/2026_10_30_000000_add_approval_workflow_to_announcements_table.php (nuevo)
+- app/Modules/Announcement/Database/Migrations/2026_10_30_173738_add_approval_workflow_to_announcements_table.php (nuevo)
 - app/Modules/Announcement/Tests/Database/AnnouncementApprovalMigrationTest.php (nuevo)
 
 **validateCommand:** `rtk php artisan test --compact app/Modules/Announcement/Tests/Database/AnnouncementApprovalMigrationTest.php`
