@@ -21,6 +21,34 @@ class EditAnnouncement extends EditRecord
     #[Override]
     protected static string $resource = AnnouncementResource::class;
 
+    private ?string $imageMediaUuidBeforeSave = null;
+
+    protected function beforeSave(): void
+    {
+        $model = $this->getRecord();
+
+        throw_unless($model instanceof Announcement, LogicException::class, 'Only announcements can be edited here.');
+
+        $this->imageMediaUuidBeforeSave = $model->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid;
+    }
+
+    protected function afterSave(): void
+    {
+        $model = $this->getRecord();
+
+        throw_unless($model instanceof Announcement, LogicException::class, 'Only announcements can be edited here.');
+
+        $model->refresh();
+
+        $imageMediaUuidAfterSave = $model->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid;
+
+        if ($imageMediaUuidAfterSave === $this->imageMediaUuidBeforeSave) {
+            return;
+        }
+
+        resolve(AnnouncementService::class)->resubmitApprovedForImageChange($model, $this->administrator());
+    }
+
     /**
      * @return array<DeleteAction>
      */

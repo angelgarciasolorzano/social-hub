@@ -180,6 +180,41 @@ final readonly class AnnouncementService
     }
 
     /**
+     * Resubmit an approved announcement when its image changes after the form data is saved.
+     */
+    public function resubmitApprovedForImageChange(Announcement $announcement, User $user): Announcement
+    {
+        return DB::transaction(function () use ($announcement, $user): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            if ($lockedAnnouncement->status !== AnnouncementStatus::Approved) {
+                return $lockedAnnouncement;
+            }
+
+            $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview])->save();
+
+            $lockedAnnouncement->reviews()->create([
+                'action' => AnnouncementReviewAction::Resubmitted,
+                'reviewed_by' => $user->id,
+            ]);
+
+            $this->activityLogger->record(
+                ActivityLogAdminEvent::AnnouncementUpdated,
+                $lockedAnnouncement,
+                $user,
+                ['changed_attributes' => ['image']],
+            );
+
+            $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
+
+            return $lockedAnnouncement;
+        });
+    }
+
+    /**
      * End a running announcement now, so it stops showing right away.
      *
      * @throws LogicException when the announcement has not started or already ended

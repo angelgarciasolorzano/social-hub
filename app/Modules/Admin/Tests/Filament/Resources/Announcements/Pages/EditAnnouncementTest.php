@@ -11,8 +11,12 @@ use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -56,6 +60,15 @@ function editAnnouncementActivities(ActivityLogAdminEvent $activityLogAdminEvent
 function editPageShowsDeleteAction(Testable $testable): bool
 {
     return $testable->instance()->getAction('delete')?->isVisible() ?? false;
+}
+
+/**
+ * Attach an image to the announcement on the same disk as the edit form.
+ */
+function attachEditAnnouncementImage(Announcement $announcement, string $fileName): void
+{
+    $announcement->addMedia(UploadedFile::fake()->image($fileName))
+        ->toMediaCollection(Announcement::IMAGE_MEDIA_COLLECTION);
 }
 
 beforeEach(function (): void {
@@ -137,6 +150,117 @@ describe('with the announcements manager role', function (): void {
 
         expect(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toBeEmpty();
     });
+
+    it('resubmits an approved announcement when an image is added', function (): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->createOne();
+        $administratorId = auth('admin')->id();
+
+        editAnnouncementPage($announcement)
+            ->set('data.image', [UploadedFile::fake()->image('added-banner.jpg')])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $announcementReview = $announcement->reviews()->firstOrFail();
+        $updatedActivities = editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementUpdated);
+
+        expect($announcement->refresh()->status)->toBe(AnnouncementStatus::InReview)
+            ->and($announcement->getMedia(Announcement::IMAGE_MEDIA_COLLECTION))->toHaveCount(1)
+            ->and($announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->mime_type)->toBe('image/jpeg')
+            ->and($announcement->reviews()->count())->toBe(1)
+            ->and($announcementReview->action)->toBe(AnnouncementReviewAction::Resubmitted)
+            ->and($announcementReview->reviewed_by)->toBe($administratorId)
+            ->and($updatedActivities)->toHaveCount(1)
+            ->and($updatedActivities[0]->properties?->get('changed_attributes'))->toBe(['image'])
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+    });
+
+    it('resubmits an approved announcement when its image is replaced', function (): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->createOne();
+        attachEditAnnouncementImage($announcement, 'original-banner.jpg');
+        $originalMediaUuid = $announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid;
+
+        editAnnouncementPage($announcement)
+            ->set('data.image', [UploadedFile::fake()->image('replacement-banner.jpg')])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($announcement->refresh()->status)->toBe(AnnouncementStatus::InReview)
+            ->and($announcement->getMedia(Announcement::IMAGE_MEDIA_COLLECTION))->toHaveCount(1)
+            ->and($announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid)->not->toBe($originalMediaUuid)
+            ->and($announcement->reviews()->where('action', AnnouncementReviewAction::Resubmitted)->count())->toBe(1)
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+    });
+
+    it('resubmits an approved announcement when its image is removed', function (): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->createOne();
+        attachEditAnnouncementImage($announcement, 'removed-banner.jpg');
+
+        editAnnouncementPage($announcement)
+            ->set('data.image', [])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($announcement->refresh()->status)->toBe(AnnouncementStatus::InReview)
+            ->and($announcement->getMedia(Announcement::IMAGE_MEDIA_COLLECTION))->toBeEmpty()
+            ->and($announcement->reviews()->where('action', AnnouncementReviewAction::Resubmitted)->count())->toBe(1)
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+    });
+
+    it('does not resubmit an approved announcement when its image is unchanged', function (): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->createOne();
+        attachEditAnnouncementImage($announcement, 'unchanged-banner.jpg');
+        $originalMediaUuid = $announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid;
+
+        editAnnouncementPage($announcement)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($announcement->refresh()->status)->toBe(AnnouncementStatus::Approved)
+            ->and($announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid)->toBe($originalMediaUuid)
+            ->and($announcement->reviews()->count())->toBe(0)
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toBeEmpty()
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toBeEmpty();
+    });
+
+    it('records only one resubmission when content and image change together', function (): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->createOne();
+
+        editAnnouncementPage($announcement)
+            ->set('data.title', 'Título actualizado')
+            ->set('data.image', [UploadedFile::fake()->image('combined-banner.jpg')])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($announcement->refresh()->status)->toBe(AnnouncementStatus::InReview)
+            ->and($announcement->title)->toBe('Título actualizado')
+            ->and($announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->mime_type)->toBe('image/jpeg')
+            ->and($announcement->reviews()->where('action', AnnouncementReviewAction::Resubmitted)->count())->toBe(1)
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+    });
+
+    it('keeps the current review status when an image changes on an unapproved announcement', function (AnnouncementStatus $announcementStatus): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->withStatus($announcementStatus)->createOne();
+
+        editAnnouncementPage($announcement)
+            ->set('data.image', [UploadedFile::fake()->image('unapproved-banner.jpg')])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($announcement->refresh()->status)->toBe($announcementStatus)
+            ->and($announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->mime_type)->toBe('image/jpeg')
+            ->and($announcement->reviews()->count())->toBe(0)
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toBeEmpty();
+    })->with([
+        'draft' => AnnouncementStatus::Draft,
+        'in review' => AnnouncementStatus::InReview,
+        'rejected' => AnnouncementStatus::Rejected,
+    ]);
 
     it('removes the button when has button is switched off', function (): void {
         $announcement = editAnnouncementFactory()->withButton()->createOne();
