@@ -111,6 +111,64 @@ function latestSubmissionReviewForService(Announcement $announcement): Announcem
     return $submissionReview;
 }
 
+/**
+ * Approve a test announcement with a valid submission and reviewer history.
+ */
+function approvedAnnouncementForService(User $author, User $reviewer, AnnouncementData $announcementData): Announcement
+{
+    $announcement = announcementService()->create($announcementData, $author);
+    $submittedAnnouncement = announcementService()->submitForReview($announcement, $author);
+    $announcementReview = latestSubmissionReviewForService($submittedAnnouncement);
+
+    return announcementService()->approve($submittedAnnouncement, $reviewer, $announcementReview->id);
+}
+
+/**
+ * Change one content field while preserving the current schedule and other values.
+ */
+function announcementDataWithContentChangeForService(
+    AnnouncementData $announcementData,
+    string $contentAttribute,
+): AnnouncementData {
+    $updatedAnnouncementData = clone $announcementData;
+
+    switch ($contentAttribute) {
+        case 'title':
+            $updatedAnnouncementData->title = 'Título actualizado';
+
+            break;
+        case 'body':
+            $updatedAnnouncementData->body = '<p>Contenido actualizado.</p>';
+
+            break;
+        case 'type':
+            $updatedAnnouncementData->type = AnnouncementType::Critical;
+
+            break;
+        case 'audience':
+            $updatedAnnouncementData->audience = AnnouncementAudience::All;
+
+            break;
+        case 'display':
+            $updatedAnnouncementData->display = AnnouncementDisplay::Dialog;
+
+            break;
+        case 'dismissibility':
+            $updatedAnnouncementData->isDismissible = false;
+
+            break;
+        case 'button':
+            $updatedAnnouncementData->buttonLabel = 'Más información';
+            $updatedAnnouncementData->buttonUrl = 'https://example.com/announcement';
+
+            break;
+        default:
+            throw new LogicException("Unknown announcement content field {$contentAttribute}.");
+    }
+
+    return $updatedAnnouncementData;
+}
+
 it('creates an announcement authored by the administrator and audits it', function (): void {
     $user = createUser();
 
@@ -367,7 +425,7 @@ it('rejects a stale review decision after the announcement has been resubmitted'
         ->and($resubmittedAnnouncement->refresh()->status)
         ->toBe(AnnouncementStatus::InReview)
         ->and($resubmittedAnnouncement->reviews()
-                ->count())
+            ->count())
         ->toBe(3)
         ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementApproved))
         ->toBeEmpty();
@@ -408,6 +466,110 @@ it('records the display as the only changed attribute when only the presentation
         ->and($activities[0]->properties?->get('changed_attributes'))->toBe(['display']);
 });
 
+it('resubmits an approved announcement when its content changes', function (string $contentAttribute): void {
+    $user = createUser();
+    $reviewer = createUser();
+    $editor = createUser();
+    $announcementData = announcementDataForService();
+    $announcement = approvedAnnouncementForService($user, $reviewer, $announcementData);
+
+    $updatedAnnouncement = announcementService()->update(
+        $announcement,
+        announcementDataWithContentChangeForService($announcementData, $contentAttribute),
+        $editor,
+    );
+    $announcementReview = latestSubmissionReviewForService($updatedAnnouncement);
+
+    expect($updatedAnnouncement->status)->toBe(AnnouncementStatus::InReview)
+        ->and($announcementReview->action)->toBe(AnnouncementReviewAction::Resubmitted)
+        ->and($announcementReview->reviewed_by)->toBe($editor->id)
+        ->and($updatedAnnouncement->reviews()->count())->toBe(3)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toHaveCount(1)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(2);
+})->with([
+    'title' => 'title',
+    'body' => 'body',
+    'button' => 'button',
+    'type' => 'type',
+    'audience' => 'audience',
+    'presentation' => 'display',
+    'dismissibility' => 'dismissibility',
+]);
+
+it('keeps an approved announcement approved when only its dates change', function (): void {
+    $this->freezeSecond();
+    $user = createUser();
+    $reviewer = createUser();
+    $editor = createUser();
+    $announcementData = announcementDataForService();
+    $announcement = approvedAnnouncementForService($user, $reviewer, $announcementData);
+    $updatedAnnouncementData = clone $announcementData;
+    $updatedAnnouncementData->startsAt = now()->addHours(2)->toImmutable();
+    $updatedAnnouncementData->endsAt = now()->addDays(2)->toImmutable();
+
+    $updatedAnnouncement = announcementService()->update($announcement, $updatedAnnouncementData, $editor);
+
+    expect($updatedAnnouncement->status)->toBe(AnnouncementStatus::Approved)
+        ->and($updatedAnnouncement->reviews()->count())->toBe(2)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toHaveCount(1)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+});
+
+it('uses the current locked state when an editor submits data from a stale in-review model', function (): void {
+    $user = createUser();
+    $reviewer = createUser();
+    $editor = createUser();
+    $announcementData = announcementDataForService();
+    $announcement = announcementService()->create($announcementData, $user);
+    $submittedAnnouncement = announcementService()->submitForReview($announcement, $user);
+    $staleAnnouncement = Announcement::query()
+        ->whereKey($announcement->getKey())
+        ->firstOrFail();
+    $announcementReview = latestSubmissionReviewForService($submittedAnnouncement);
+
+    announcementService()->approve($submittedAnnouncement, $reviewer, $announcementReview->id);
+
+    $updatedAnnouncement = announcementService()->update(
+        $staleAnnouncement,
+        announcementDataWithContentChangeForService($announcementData, 'title'),
+        $editor,
+    );
+    $resubmissionReview = latestSubmissionReviewForService($updatedAnnouncement);
+
+    expect($updatedAnnouncement->status)->toBe(AnnouncementStatus::InReview)
+        ->and($resubmissionReview->action)->toBe(AnnouncementReviewAction::Resubmitted)
+        ->and($resubmissionReview->reviewed_by)->toBe($editor->id)
+        ->and($updatedAnnouncement->reviews()->count())->toBe(3)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementApproved))->toHaveCount(1)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(2);
+});
+
+it('rolls back an approved content change when the resubmission audit cannot be written', function (): void {
+    $user = createUser();
+    $reviewer = createUser();
+    $editor = createUser();
+    $announcementData = announcementDataForService();
+    $announcement = approvedAnnouncementForService($user, $reviewer, $announcementData);
+
+    ActivityLog::creating(function (ActivityLog $activityLog): void {
+        throw_if($activityLog->event === ActivityLogAdminEvent::AnnouncementSubmitted->value, RuntimeException::class, 'Activity log unavailable.');
+    });
+
+    expect(fn (): Announcement => announcementService()->update(
+        $announcement,
+        announcementDataWithContentChangeForService($announcementData, 'title'),
+        $editor,
+    ))->toThrow(RuntimeException::class, 'Activity log unavailable.');
+
+    $unchangedAnnouncement = $announcement->fresh();
+
+    expect($unchangedAnnouncement?->status)->toBe(AnnouncementStatus::Approved)
+        ->and($unchangedAnnouncement?->title)->toBe($announcementData->title)
+        ->and($unchangedAnnouncement?->reviews()->count())->toBe(2)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toBeEmpty()
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+});
+
 it('keeps the presentation when duplicating a dialog', function (): void {
     $announcement = serviceAnnouncementFactory()->asDialog()->createOne();
 
@@ -417,13 +579,19 @@ it('keeps the presentation when duplicating a dialog', function (): void {
 });
 
 it('records nothing when an update changes nothing', function (): void {
+    $this->freezeSecond();
     $user = createUser();
+    $reviewer = createUser();
+    $editor = createUser();
     $announcementData = announcementDataForService();
-    $announcement = announcementService()->create($announcementData, $user);
+    $announcement = approvedAnnouncementForService($user, $reviewer, $announcementData);
 
-    announcementService()->update($announcement->refresh(), $announcementData, $user);
+    $updatedAnnouncement = announcementService()->update($announcement, $announcementData, $editor);
 
-    expect(announcementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toBeEmpty();
+    expect($updatedAnnouncement->status)->toBe(AnnouncementStatus::Approved)
+        ->and($updatedAnnouncement->reviews()->count())->toBe(2)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementUpdated))->toBeEmpty()
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
 });
 
 it('unpublishes a running announcement by ending it now', function (): void {
@@ -451,6 +619,24 @@ it('refuses to unpublish an announcement that is not running, without writing an
     'scheduled' => fn (): AnnouncementFactory => serviceAnnouncementFactory()->scheduled(),
 ]);
 
+it('refuses to unpublish announcements that are not approved', function (AnnouncementStatus $announcementStatus): void {
+    $announcement = serviceAnnouncementFactory()
+        ->active()
+        ->withStatus($announcementStatus)
+        ->createOne();
+    $endsAt = $announcement->ends_at?->toDateTimeString();
+
+    expect(fn (): Announcement => announcementService()->unpublish($announcement, createUser()))
+        ->toThrow(LogicException::class, 'Only approved announcements may be unpublished.')
+        ->and($announcement->refresh()->status)->toBe($announcementStatus)
+        ->and($announcement->ends_at?->toDateTimeString())->toBe($endsAt)
+        ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementUnpublished))->toBeEmpty();
+})->with([
+    'draft' => AnnouncementStatus::Draft,
+    'in review' => AnnouncementStatus::InReview,
+    'rejected' => AnnouncementStatus::Rejected,
+]);
+
 it('duplicates an announcement with its image as an unreviewed copy scheduled for tomorrow', function (): void {
     Storage::fake('public');
     $this->freezeSecond();
@@ -463,11 +649,13 @@ it('duplicates an announcement with its image as an unreviewed copy scheduled fo
     $activities = announcementActivities(ActivityLogAdminEvent::AnnouncementDuplicated);
 
     expect($copy->id)->not->toBe($announcement->id)
+        ->and($copy->status)->toBe(AnnouncementStatus::Draft)
         ->and($copy->title)->toBe($announcement->title)
         ->and($copy->button_url)->toBe($announcement->button_url)
         ->and($copy->starts_at->equalTo(now()->addDay()))->toBeTrue()
         ->and($copy->ends_at)->toBeNull()
         ->and($copy->created_by)->toBe($user->id)
+        ->and($copy->reviews()->count())->toBe(0)
         ->and($copy->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->file_name)->toBe('banner.jpg')
         ->and($announcement->refresh()->getMedia(Announcement::IMAGE_MEDIA_COLLECTION))->toHaveCount(1)
         ->and($activities)->toHaveCount(1)
@@ -496,6 +684,7 @@ it('never stores the title or body of an announcement in the activity log', func
     $announcement = announcementService()->create(announcementDataForService(), $user);
     announcementService()->update($announcement, announcementDataForService(ANNOUNCEMENT_TITLE_SENTINEL.'-editado'), $user);
     $copy = announcementService()->duplicate($announcement, $user);
+    $announcement->forceFill(['status' => AnnouncementStatus::Approved])->save();
     announcementService()->unpublish($announcement, $user);
     announcementService()->delete($copy, $user);
 

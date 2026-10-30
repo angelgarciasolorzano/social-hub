@@ -23,6 +23,18 @@ use LogicException;
  */
 final readonly class AnnouncementService
 {
+    /** @var list<string> */
+    private const array CONTENT_ATTRIBUTES = [
+        'title',
+        'body',
+        'type',
+        'audience',
+        'display',
+        'button_label',
+        'button_url',
+        'is_dismissible',
+    ];
+
     public function __construct(
         private ActivityLogger $activityLogger,
     ) {}
@@ -119,29 +131,51 @@ final readonly class AnnouncementService
     }
 
     /**
-     * Apply the given content and schedule; saving without changes records nothing.
+     * Apply content and schedule; content changes to approved announcements start a new review.
      */
     public function update(Announcement $announcement, AnnouncementData $announcementData, User $user): Announcement
     {
-        $announcement->fill($announcementData->toModelAttributes());
+        return DB::transaction(function () use ($announcement, $announcementData, $user): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+            $lockedAnnouncement->fill($announcementData->toModelAttributes());
 
-        if (! $announcement->isDirty()) {
-            return $announcement;
-        }
+            $changedAttributes = array_keys($lockedAnnouncement->getDirty());
 
-        return DB::transaction(function () use ($announcement, $user): Announcement {
-            $changedAttributes = array_keys($announcement->getDirty());
+            if ($changedAttributes === []) {
+                return $lockedAnnouncement;
+            }
 
-            $announcement->save();
+            $hasContentChanges = array_intersect($changedAttributes, self::CONTENT_ATTRIBUTES) !== [];
+            $requiresReview = $lockedAnnouncement->status === AnnouncementStatus::Approved && $hasContentChanges;
+
+            if ($requiresReview) {
+                $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview]);
+            }
+
+            $lockedAnnouncement->save();
+
+            if ($requiresReview) {
+                $lockedAnnouncement->reviews()->create([
+                    'action' => AnnouncementReviewAction::Resubmitted,
+                    'reviewed_by' => $user->id,
+                ]);
+            }
 
             $this->activityLogger->record(
                 ActivityLogAdminEvent::AnnouncementUpdated,
-                $announcement,
+                $lockedAnnouncement,
                 $user,
                 ['changed_attributes' => $changedAttributes],
             );
 
-            return $announcement;
+            if ($requiresReview) {
+                $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
+            }
+
+            return $lockedAnnouncement;
         });
     }
 
@@ -153,7 +187,16 @@ final readonly class AnnouncementService
     public function unpublish(Announcement $announcement, User $user): Announcement
     {
         DB::transaction(function () use ($announcement, $user): void {
-            $lockedAnnouncement = Announcement::query()->lockForUpdate()->whereKey($announcement->id)->firstOrFail();
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            throw_unless(
+                $lockedAnnouncement->status === AnnouncementStatus::Approved,
+                LogicException::class,
+                'Only approved announcements may be unpublished.',
+            );
 
             $now = now();
 
@@ -185,6 +228,7 @@ final readonly class AnnouncementService
             $copy->forceFill([
                 'starts_at' => now()->addDay(),
                 'ends_at' => null,
+                'status' => AnnouncementStatus::Draft,
                 'created_by' => $user->id,
             ])->save();
 
