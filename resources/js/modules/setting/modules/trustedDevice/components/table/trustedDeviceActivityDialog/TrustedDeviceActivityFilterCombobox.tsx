@@ -16,6 +16,8 @@ import {
 } from "@/shared/components/shadcn/ui/combobox";
 import { FieldLabel } from "@/shared/components/shadcn/ui/field";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 
 export interface FilterOption {
@@ -34,6 +36,7 @@ export interface FilterComboboxConfig {
 export default function TrustedDeviceActivityFilterCombobox(
   props: FilterComboboxConfig,
 ): JSX.Element {
+  const { t } = useTranslation();
   const { label, multiple, options, value, onChange } = props;
 
   const anchor = useComboboxAnchor();
@@ -83,7 +86,9 @@ export default function TrustedDeviceActivityFilterCombobox(
           </ComboboxChips>
 
           <ComboboxContent anchor={anchor} className="pointer-events-auto">
-            <ComboboxEmpty className="font-normal">Sin resultados</ComboboxEmpty>
+            <ComboboxEmpty className="font-normal">
+              {t("setting/trusted-devices.toolbar.no_results")}
+            </ComboboxEmpty>
             <ComboboxList>
               {(item: { label: string; value: string }) => (
                 <ComboboxItem className="text-sm font-normal" key={item.value} value={item.value}>

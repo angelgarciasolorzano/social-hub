@@ -13,6 +13,8 @@ import {
   PaginationItem,
 } from "@/shared/components/shadcn/ui/pagination";
 
+import { useTranslation } from "@/shared/hooks";
+
 export interface TrustedDeviceActivityPaginationProps {
   pagination: TrustedDeviceActivityPaginationData;
   onPageChange: (page: number) => void;
@@ -22,6 +24,8 @@ export default function TrustedDeviceActivityPagination({
   pagination,
   onPageChange,
 }: TrustedDeviceActivityPaginationProps): JSX.Element | null {
+  const { t } = useTranslation();
+
   if (pagination.last_page <= 1) {
     return null;
   }
@@ -30,7 +34,7 @@ export default function TrustedDeviceActivityPagination({
 
   return (
     <Pagination
-      aria-label="Paginación de la actividad de dispositivos"
+      aria-label={t("setting/trusted-device-dialogs.activity.pagination_label")}
       className="mx-0 w-auto shrink-0"
     >
       <PaginationContent role="list">
@@ -74,11 +78,17 @@ function ActivityPaginationNumberButton({
   pagination,
   onPageChange,
 }: ActivityPaginationNumberButtonProps): JSX.Element {
+  const { t } = useTranslation();
+
   const isActive = page === pagination.current_page;
 
   return (
     <Button
-      aria-label={isActive ? `Página actual ${page}` : `Ir a la página ${page}`}
+      aria-label={
+        isActive
+          ? t("setting/trusted-device-dialogs.activity.current_page", { page })
+          : t("setting/trusted-device-dialogs.activity.go_to_page", { page })
+      }
       aria-current={isActive ? "page" : undefined}
       className="text-sm font-medium"
       onClick={() => {
@@ -101,11 +111,13 @@ function ActivityPaginationPreviousButton({
   pagination,
   onPageChange,
 }: ActivityPaginationPreviousButtonProps): JSX.Element {
+  const { t } = useTranslation();
+
   const isDisabled = pagination.current_page <= 1;
 
   return (
     <Button
-      aria-label="Página anterior"
+      aria-label={t("setting/trusted-devices.pagination.previous")}
       disabled={isDisabled}
       onClick={() => {
         onPageChange(pagination.current_page - 1);
@@ -124,11 +136,13 @@ function ActivityPaginationNextButton({
   pagination,
   onPageChange,
 }: ActivityPaginationNextButtonProps): JSX.Element {
+  const { t } = useTranslation();
+
   const isDisabled = pagination.current_page >= pagination.last_page;
 
   return (
     <Button
-      aria-label="Página siguiente"
+      aria-label={t("setting/trusted-devices.pagination.next")}
       disabled={isDisabled}
       onClick={() => {
         onPageChange(pagination.current_page + 1);
