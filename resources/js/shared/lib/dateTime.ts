@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 
 import type { Locale } from "../types";
-import { translate, type TranslationReplacements, type Translations } from "./translation";
+import type { TranslationReplacements } from "./translation";
 
 /**
  * The language a date is formatted in and the translator that reads the `dates` catalog of `lang/`.
@@ -13,32 +13,6 @@ export interface DateTimeContext {
 }
 
 /**
- * Temporary bridge for callers that do not pass a context yet: the Spanish `dates` catalog as it was
- * before the translation. TASK-052 of SOC-67 removes it once every caller uses `useDateTime()`.
- */
-const SPANISH_DATES: Translations = {
-  dates: {
-    formats: {
-      long: "D [de] MMMM [del] YYYY, h:mm A",
-      short: "D MMM YYYY",
-      full: "D [de] MMMM [del] YYYY",
-      activation_date: "D [de] MMMM [de] YYYY",
-      activation_time: "h:mm A",
-    },
-    time_with_offset: ":time (GMT:offset)",
-    never: "Nunca",
-    never_lowercase: "nunca",
-    not_available: "No disponible",
-    expired: "vencido",
-  },
-};
-
-const SPANISH_DATE_TIME_CONTEXT: DateTimeContext = {
-  locale: "es",
-  t: (key, replacements) => translate(SPANISH_DATES, key, replacements),
-};
-
-/**
  * Formats an ISO date string into a long, human-readable date with its time.
  * Example: "15 de enero del 2025, 3:45 PM" / "January 15, 2025 at 3:45 PM".
  *
@@ -46,10 +20,7 @@ const SPANISH_DATE_TIME_CONTEXT: DateTimeContext = {
  * @param context The language and texts to format with.
  * @returns The formatted date, or the catalog's "never" text when the date is null.
  */
-export function formatLongDate(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function formatLongDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
     return context.t("dates.never");
   }
@@ -65,10 +36,7 @@ export function formatLongDate(
  * @param context The language and texts to format with.
  * @returns The formatted date, or the catalog's "never" text when the date is null.
  */
-export function formatShortDate(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function formatShortDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
     return context.t("dates.never");
   }
@@ -84,10 +52,7 @@ export function formatShortDate(
  * @param context The language and texts to format with.
  * @returns The formatted date, or the catalog's "never" text when the date is null.
  */
-export function formatFullDate(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function formatFullDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
     return context.t("dates.never");
   }
@@ -103,10 +68,7 @@ export function formatFullDate(
  * @param context The language and texts to format with.
  * @returns The formatted date, or the catalog's "not available" text when the date is null.
  */
-export function formatActivationDate(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function formatActivationDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
     return context.t("dates.not_available");
   }
@@ -122,10 +84,7 @@ export function formatActivationDate(
  * @param context The language and texts to format with.
  * @returns The formatted time, or the catalog's "not available" text when the date is null.
  */
-export function formatActivationTime(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function formatActivationTime(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
     return context.t("dates.not_available");
   }
@@ -148,10 +107,7 @@ export function formatActivationTime(
  * @param context The language and texts to format with.
  * @returns The relative time, or the catalog's "expired" text when the date is null or has passed.
  */
-export function formatTimeUntil(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function formatTimeUntil(iso: string | null, context: DateTimeContext): string {
   if (iso === null || dayjs(iso).isBefore(dayjs())) {
     return context.t("dates.expired");
   }
@@ -167,10 +123,7 @@ export function formatTimeUntil(
  * @param context The language and texts to format with.
  * @returns The relative time, or the catalog's lowercase "never" text when the date is null.
  */
-export function fromNow(
-  iso: string | null,
-  context: DateTimeContext = SPANISH_DATE_TIME_CONTEXT,
-): string {
+export function fromNow(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
     return context.t("dates.never_lowercase");
   }
