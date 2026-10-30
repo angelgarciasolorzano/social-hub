@@ -40,7 +40,10 @@ interface AccountSettingsProfileFormProps {
 function AccountSettingsProfileForm({
   accountSettings,
 }: AccountSettingsProfileFormProps): JSX.Element {
-  const [biographyLength, setBiographyLength] = useState(accountSettings.biography?.length ?? 0);
+  const { t } = useTranslation();
+  const [biographyLength, setBiographyLength] = useState<number>(
+    accountSettings.biography?.length ?? 0,
+  );
 
   function handleBiographyChange(event: ChangeEvent<HTMLTextAreaElement>): void {
     setBiographyLength(event.currentTarget.value.length);
@@ -59,10 +62,10 @@ function AccountSettingsProfileForm({
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold tracking-tight" id="account-profile-heading">
-              Información personal
+              {t("setting/account-settings.profile_form.title")}
             </h2>
             <CardDescription>
-              Actualiza los datos personales que forman parte de tu perfil.
+              {t("setting/account-settings.profile_form.description")}
             </CardDescription>
           </CardHeader>
 
@@ -74,7 +77,7 @@ function AccountSettingsProfileForm({
                   className="shrink-0 text-muted-foreground"
                   size={16}
                 />
-                Nombre (obligatorio)
+                {t("setting/account-settings.profile_form.name")}
               </LabelForm>
 
               <Input
@@ -95,7 +98,7 @@ function AccountSettingsProfileForm({
             <div className="grid min-w-0 gap-2">
               <LabelForm error={errors["phone"]} htmlFor="account-phone">
                 <Phone aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
-                Teléfono (opcional)
+                {t("setting/account-settings.profile_form.phone")}
               </LabelForm>
 
               <Input
@@ -106,7 +109,10 @@ function AccountSettingsProfileForm({
                 aria-describedby={errors["phone"] !== undefined ? "account-phone-error" : undefined}
                 aria-invalid={errors["phone"] !== undefined}
                 defaultValue={accountSettings.phone ?? ""}
-                placeholder={accountSettings.phone ?? "Aquí escribe tu teléfono, Ej: +56 987654321"}
+                placeholder={
+                  accountSettings.phone ??
+                  t("setting/account-settings.profile_form.phone_placeholder")
+                }
                 maxLength={255}
               />
               <InputError id="account-phone-error" message={errors["phone"]} role="alert" />
@@ -115,7 +121,7 @@ function AccountSettingsProfileForm({
             <div className="grid min-w-0 gap-2">
               <LabelForm htmlFor="account-email">
                 <Mail aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
-                Correo electrónico
+                {t("setting/account-settings.profile_form.email")}
               </LabelForm>
 
               <Input
@@ -128,14 +134,14 @@ function AccountSettingsProfileForm({
               />
 
               <p className="text-sm text-muted-foreground" id="account-email-help">
-                El correo se muestra como referencia y no se puede editar aquí.
+                {t("setting/account-settings.profile_form.email_help")}
               </p>
             </div>
 
             <div className="grid min-w-0 gap-2">
               <LabelForm error={errors["preferredLocale"]} htmlFor="account-locale">
                 <Globe aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
-                Idioma preferido (obligatorio)
+                {t("setting/account-settings.profile_form.locale")}
               </LabelForm>
 
               <Select
@@ -159,8 +165,8 @@ function AccountSettingsProfileForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="es">Español</SelectItem>
+                    <SelectItem value="en">{t("setting/account-settings.locales.en")}</SelectItem>
+                    <SelectItem value="es">{t("setting/account-settings.locales.es")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -174,14 +180,14 @@ function AccountSettingsProfileForm({
               )}
 
               <p className="text-sm text-muted-foreground" id="account-locale-help">
-                El idioma preferido se guarda en tu cuenta.
+                {t("setting/account-settings.profile_form.locale_help")}
               </p>
             </div>
 
             <div className="grid min-w-0 gap-2 md:col-span-2">
               <LabelForm error={errors["biography"]} htmlFor="account-biography">
                 <FileText aria-hidden="true" className="shrink-0 text-muted-foreground" size={16} />
-                Biografía (opcional)
+                {t("setting/account-settings.profile_form.biography")}
               </LabelForm>
 
               <Textarea
@@ -191,14 +197,23 @@ function AccountSettingsProfileForm({
                 aria-describedby={`account-biography-help account-biography-count${errors["biography"] !== undefined ? " account-biography-error" : ""}`}
                 aria-invalid={errors["biography"] !== undefined}
                 defaultValue={accountSettings.biography ?? ""}
-                maxLength={160}
+                maxLength={BIOGRAPHY_MAX_LENGTH}
                 onChange={handleBiographyChange}
                 rows={4}
               />
 
               <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <p id="account-biography-help">Máximo 160 caracteres.</p>
-                <p id="account-biography-count">{biographyLength} / 160 caracteres</p>
+                <p id="account-biography-help">
+                  {t("setting/account-settings.profile_form.biography_help", {
+                    max: BIOGRAPHY_MAX_LENGTH,
+                  })}
+                </p>
+                <p id="account-biography-count">
+                  {t("setting/account-settings.profile_form.biography_count", {
+                    count: biographyLength,
+                    max: BIOGRAPHY_MAX_LENGTH,
+                  })}
+                </p>
               </div>
 
               <InputError id="account-biography-error" message={errors["biography"]} role="alert" />
@@ -207,7 +222,7 @@ function AccountSettingsProfileForm({
 
           <CardFooter className="flex flex-wrap items-center gap-4 px-4 sm:px-6">
             <Button type="submit" disabled={processing}>
-              Guardar cambios
+              {t("setting/account-settings.profile_form.save")}
             </Button>
 
             <p
@@ -217,9 +232,9 @@ function AccountSettingsProfileForm({
               role="status"
             >
               {processing
-                ? "Guardando cambios…"
+                ? t("setting/account-settings.profile_form.saving")
                 : recentlySuccessful
-                  ? "Cambios guardados correctamente."
+                  ? t("setting/account-settings.profile_form.saved")
                   : ""}
             </p>
           </CardFooter>
