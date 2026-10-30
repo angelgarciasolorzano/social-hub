@@ -66,7 +66,7 @@ function countAnnouncementsListQueries(): int
 
     announcementsListPage('all');
 
-    $queryCount = count(DB::getQueryLog());
+    $queryCount = count(DB::connection()->getQueryLog());
     DB::disableQueryLog();
 
     return $queryCount;
