@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\User\Enums\PreferredLocale;
 
 it('redirects guests to the login page', function (): void {
     $trustedDevice = createTrustedDevice();
@@ -68,7 +69,7 @@ it('does not accept the same recovery code to reactivate a second device', funct
     $testResponse = $this->actingAs($user)
         ->post(route('user.trusted-devices.reactivate', $secondDevice), ['otp_code' => 'abcde12345-fghij67890']);
 
-    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+    $testResponse->assertSessionHasErrors(['otp_code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/trusted-devices.validation.code_incorrect')]);
 
     expect($trustedDevice->refresh()->deleted_at)->toBeNull()
         ->and($secondDevice->refresh()->deleted_at)->not->toBeNull();
@@ -110,7 +111,7 @@ it('answers a wrong code with a fixed message that does not echo the submitted c
     $testResponse = $this->actingAs($user)
         ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => invalidOtpFor($user)]);
 
-    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+    $testResponse->assertSessionHasErrors(['otp_code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/trusted-devices.validation.code_incorrect')]);
 });
 
 it('rejects a malformed otp code', function (): void {
@@ -190,3 +191,19 @@ it('queues a cookie whose hash matches the regenerated token_hash', function ():
         ->toBe(hash('sha256', (string) $cookie?->getValue()))
         ->not->toBe(hash('sha256', 'old-token'));
 });
+
+it('answers a wrong code in the language of the user', function (PreferredLocale $preferredLocale): void {
+    $user = createUserWithTwoFactor();
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+    $trustedDevice = createTrustedDevice($user);
+    $trustedDevice->delete();
+
+    $this->actingAs($user)
+        ->post(route('user.trusted-devices.reactivate', $trustedDevice), ['otp_code' => invalidOtpFor($user)])
+        ->assertSessionHasErrors([
+            'otp_code' => translatedTextIn($preferredLocale, 'setting/trusted-devices.validation.code_incorrect'),
+        ]);
+})->with([
+    'English' => [PreferredLocale::ENGLISH],
+    'Spanish' => [PreferredLocale::SPANISH],
+]);

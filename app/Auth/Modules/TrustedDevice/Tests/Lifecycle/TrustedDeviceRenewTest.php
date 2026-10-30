@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\User\Enums\PreferredLocale;
 use Illuminate\Support\Facades\Date;
 
 it('redirects guests to the login page', function (): void {
@@ -67,7 +68,7 @@ it('answers a wrong OTP code with a fixed message that does not echo the submitt
     $testResponse = $this->actingAs($user)
         ->post(route('user.trusted-devices.renew', $trustedDevice), ['otp_code' => invalidOtpFor($user)]);
 
-    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+    $testResponse->assertSessionHasErrors(['otp_code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/trusted-devices.validation.code_incorrect')]);
 });
 
 it('does not extend the trust when two-factor is disabled or pending', function (bool $hasPendingSecret): void {
