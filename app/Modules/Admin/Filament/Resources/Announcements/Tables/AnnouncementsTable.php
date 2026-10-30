@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 
+use App\Modules\Admin\Filament\Concerns\BuildsAnnouncementReviewActions;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
@@ -24,14 +25,23 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use LogicException;
 
 class AnnouncementsTable
 {
+    use BuildsAnnouncementReviewActions;
+
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('creator:id,name'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->with('creator:id,name')
+                ->with([
+                    'reviews' => static function (Relation $reviewQuery): void {
+                        self::constrainLatestSubmissionReview($reviewQuery);
+                    },
+                ]))
             ->deferLoading()
             ->loadingSkeleton()
             ->defaultSort('starts_at', 'desc')
@@ -91,6 +101,7 @@ class AnnouncementsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                ActionGroup::make(self::announcementReviewActions()),
                 ActionGroup::make([
                     self::previewAction(),
                     self::duplicateAction(),
