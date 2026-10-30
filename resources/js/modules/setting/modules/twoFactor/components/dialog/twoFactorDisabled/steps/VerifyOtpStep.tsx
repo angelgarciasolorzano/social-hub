@@ -18,6 +18,8 @@ import {
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/shared/components/shadcn/ui/input-otp";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { OTP_MAX_LENGTH } from "../../../../hooks/useTwoFactorAuth";
 
 interface VerifyOtpStepProps {
@@ -26,6 +28,7 @@ interface VerifyOtpStepProps {
 }
 
 function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps): JSX.Element {
+  const { t } = useTranslation();
   const [code, setCode] = useState<string>("");
   const pinInputContainerRef = useRef<HTMLDivElement>(null);
   const otpInputId = useId();
@@ -70,7 +73,7 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps): JSX.Element {
           >
             <Field className="w-full items-center" data-invalid={isOtpInvalid}>
               <FieldLabel className="justify-center text-center" htmlFor={otpInputId}>
-                Código de verificación
+                {t("setting/common.two_factor_code.otp_label")}
               </FieldLabel>
 
               <InputOTP
@@ -107,7 +110,7 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps): JSX.Element {
                 id={otpInstructionsId}
               >
                 <Info aria-hidden="true" className="size-4 shrink-0" />
-                <span>El código cambia cada 30 segundos en tu aplicación.</span>
+                <span>{t("setting/two-factor.verify_otp.hint")}</span>
               </FieldDescription>
             </Field>
 
@@ -119,7 +122,7 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps): JSX.Element {
                 disabled={processing}
                 variant="outline"
               >
-                Volver
+                {t("setting/two-factor.labels.back")}
               </Button>
 
               <Button
@@ -132,10 +135,10 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps): JSX.Element {
                 {processing ? (
                   <>
                     <Spinner aria-hidden="true" data-icon="inline-start" />
-                    Verificando…
+                    {t("setting/two-factor.verify_otp.submitting")}
                   </>
                 ) : (
-                  "Confirmar"
+                  t("setting/two-factor.labels.confirm")
                 )}
               </Button>
             </div>

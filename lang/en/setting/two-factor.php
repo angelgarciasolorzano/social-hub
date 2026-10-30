@@ -203,6 +203,7 @@ return [
 
     'verify_otp' => [
         'hint' => 'The code changes every 30 seconds in your app.',
+        'submitting' => 'Verifying…',
     ],
 
     'success_step' => [

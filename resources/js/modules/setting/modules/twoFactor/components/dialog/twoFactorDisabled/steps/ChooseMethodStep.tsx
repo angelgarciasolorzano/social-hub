@@ -5,6 +5,8 @@ import { Info, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/ui/alert";
 import { Button } from "@/shared/components/shadcn/ui/button";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 import TwoFactorStepErrorAlert from "./TwoFactorStepErrorAlert";
@@ -18,6 +20,7 @@ interface ChooseMethodStepProps {
 }
 
 function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
+  const { t } = useTranslation();
   const { errors, qrCodeSvg, onContinue, onOpenManualSetup, onRetry } = props;
 
   const hasError = errors.length > 0;
@@ -34,21 +37,21 @@ function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
             {qrCodeSvg ? (
               <>
                 <div
-                  aria-label="Código QR para configurar la autenticación de dos factores"
+                  aria-label={t("setting/two-factor.choose_method.qr_alt")}
                   dangerouslySetInnerHTML={{
                     __html: qrCodeSvg,
                   }}
                   role="img"
                 />
                 <span className="sr-only" role="status">
-                  Código QR listo para escanear.
+                  {t("setting/two-factor.choose_method.qr_ready")}
                 </span>
               </>
             ) : (
               <>
                 <Loader2 aria-hidden="true" className="flex size-4 animate-spin" />
                 <span className="sr-only" role="status">
-                  Cargando código QR.
+                  {t("setting/two-factor.choose_method.qr_loading")}
                 </span>
               </>
             )}
@@ -62,20 +65,18 @@ function ChooseMethodStep(props: ChooseMethodStepProps): JSX.Element {
         onClick={onOpenManualSetup}
         variant="link"
       >
-        ¿No puedes escanear el código?
+        {t("setting/two-factor.choose_method.cannot_scan")}
       </Button>
 
       <Alert className={alertVariants.info}>
         <Info aria-hidden="true" />
-        <AlertTitle>Consejo</AlertTitle>
-        <AlertDescription>
-          Abre tu aplicación y usa la opción para agregar una nueva cuenta.
-        </AlertDescription>
+        <AlertTitle>{t("setting/two-factor.choose_method.tip_title")}</AlertTitle>
+        <AlertDescription>{t("setting/two-factor.choose_method.tip_description")}</AlertDescription>
       </Alert>
 
       <div className="flex w-full space-x-5">
         <Button className="w-full cursor-pointer" onClick={onContinue}>
-          Continuar
+          {t("setting/two-factor.labels.continue")}
         </Button>
       </div>
     </div>

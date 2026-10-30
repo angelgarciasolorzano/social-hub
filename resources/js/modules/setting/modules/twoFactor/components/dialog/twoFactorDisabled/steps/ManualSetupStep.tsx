@@ -17,6 +17,8 @@ import {
 } from "@/shared/components/shadcn/ui/input-group";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -39,6 +41,7 @@ function ManualSetupStep({
   onContinue,
   onRetry,
 }: ManualSetupStepProps): JSX.Element {
+  const { t } = useTranslation();
   const manualSetupKeyId = useId();
   const manualSetupInstructionsId = useId();
   const manualSetupLoadingId = useId();
@@ -66,13 +69,14 @@ function ManualSetupStep({
   return (
     <div className="flex w-full flex-col items-center space-y-5">
       <Field className="w-full">
-        <FieldLabel htmlFor={manualSetupKeyId}>Código manual</FieldLabel>
+        <FieldLabel htmlFor={manualSetupKeyId}>
+          {t("setting/two-factor.manual_setup.title")}
+        </FieldLabel>
 
         <Alert className={cn(alertVariants.info, "items-start")} role="note">
           <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
           <AlertDescription id={manualSetupInstructionsId}>
-            En tu aplicación, selecciona &quot;Ingresar clave manualmente&quot; o &quot;Agregar
-            cuenta manualmente&quot; y pega esta clave.
+            {t("setting/two-factor.manual_setup.instructions")}
           </AlertDescription>
         </Alert>
 
@@ -92,7 +96,7 @@ function ManualSetupStep({
 
       <div className="flex w-full space-x-5">
         <Button className="w-full cursor-pointer" onClick={onContinue}>
-          Entendido
+          {t("setting/two-factor.labels.understood")}
         </Button>
       </div>
     </div>
@@ -114,7 +118,8 @@ function ManualSetupKeyInput({
   loadingId,
   manualSetupKey,
   onCopy,
-}: ManualSetupKeyInputProps) {
+}: ManualSetupKeyInputProps): JSX.Element {
+  const { t } = useTranslation();
   const isLoading = !manualSetupKey;
   const describedBy = isLoading ? `${instructionsId} ${loadingId}` : instructionsId;
 
@@ -135,7 +140,7 @@ function ManualSetupKeyInput({
             <Loader2 aria-hidden="true" className="size-4 animate-spin text-muted-foreground" />
           ) : (
             <InputGroupButton
-              aria-label="Copiar código manual"
+              aria-label={t("setting/two-factor.manual_setup.copy")}
               onClick={onCopy}
               size="icon-sm"
               className="cursor-pointer"
@@ -148,7 +153,7 @@ function ManualSetupKeyInput({
 
       {isLoading && (
         <span className="sr-only" id={loadingId} role="status">
-          Cargando código manual.
+          {t("setting/two-factor.manual_setup.loading")}
         </span>
       )}
     </>
@@ -160,7 +165,9 @@ interface CopyFeedbackAlertProps {
   secondsLeft: number;
 }
 
-function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertProps) {
+function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertProps): JSX.Element {
+  const { t, tChoice } = useTranslation();
+
   return (
     <Alert
       role="status"
@@ -169,18 +176,15 @@ function CopyFeedbackAlert({ progressPercent, secondsLeft }: CopyFeedbackAlertPr
     >
       <FaCheckCircle aria-hidden="true" />
 
-      <AlertTitle>Clave copiada al portapapeles</AlertTitle>
+      <AlertTitle>{t("setting/two-factor.manual_setup.copied_title")}</AlertTitle>
 
       <AlertDescription className="text-xs">
-        <span>
-          Este mensaje desaparecerá automáticamente en {secondsLeft}{" "}
-          {secondsLeft === 1 ? "segundo" : "segundos"}.
-        </span>
+        <span>{tChoice("setting/two-factor.manual_setup.copied_countdown", secondsLeft)}</span>
 
         <div className="mt-2 flex w-full items-center gap-3">
           <Progress
             value={progressPercent}
-            aria-label="Tiempo restante"
+            aria-label={t("setting/two-factor.manual_setup.time_left")}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(progressPercent)}
