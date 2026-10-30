@@ -29,6 +29,10 @@ import {
 } from "@/shared/components/shadcn/ui/select";
 import { Textarea } from "@/shared/components/shadcn/ui/textarea";
 
+import { useTranslation } from "@/shared/hooks";
+
+const BIOGRAPHY_MAX_LENGTH = 160;
+
 interface AccountSettingsProfileFormProps {
   accountSettings: AccountSettings;
 }

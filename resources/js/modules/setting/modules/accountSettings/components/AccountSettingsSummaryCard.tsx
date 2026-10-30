@@ -18,13 +18,17 @@ import {
   CardTitle,
 } from "@/shared/components/shadcn/ui/card";
 
-import { formatActivationDate, formatLongDate } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
+/**
+ * `label` is a translation key of `setting/account-settings`.
+ */
 const accountStatusBadges: Record<AccountStatus, { className: string; label: string }> = {
-  active: { className: badgeVariants.success, label: "Activa" },
-  suspended: { className: badgeVariants.red, label: "Suspendida" },
+  active: { className: badgeVariants.success, label: "setting/account-settings.status.active" },
+  suspended: { className: badgeVariants.red, label: "setting/account-settings.status.suspended" },
 };
 
 interface AccountSettingsSummaryCardProps {
