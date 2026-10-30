@@ -4,6 +4,8 @@ import { useHttp } from "@inertiajs/react";
 
 import { qrCode, recoveryCodes, secretKey } from "@/shared/wayfinder/routes/two-factor";
 
+import { useTranslation } from "@/shared/hooks";
+
 interface UseTwoFactorAuthReturn {
   qrCodeSvg: string | null;
   manualSetupKey: string | null;
@@ -22,6 +24,7 @@ interface UseTwoFactorAuthReturn {
 export const OTP_MAX_LENGTH = 6;
 
 export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
+  const { t } = useTranslation();
   const { submit } = useHttp();
 
   const [qrCodeSvg, setQrCodeSvg] = useState<string | null>(null);
@@ -57,10 +60,13 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 
       setQrCodeSvg(svg);
     } catch {
-      setErrors((prev) => [...prev, "Failed to fetch QR code"]);
+      setErrors((previousErrors) => [
+        ...previousErrors,
+        t("setting/two-factor.fetch_errors.qr_code"),
+      ]);
       setQrCodeSvg(null);
     }
-  }, [submit]);
+  }, [submit, t]);
 
   const fetchSetupKey = useCallback(async (): Promise<void> => {
     try {
@@ -70,10 +76,13 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 
       setManualSetupKey(key);
     } catch {
-      setErrors((prev) => [...prev, "Failed to fetch a setup key"]);
+      setErrors((previousErrors) => [
+        ...previousErrors,
+        t("setting/two-factor.fetch_errors.setup_key"),
+      ]);
       setManualSetupKey(null);
     }
-  }, [submit]);
+  }, [submit, t]);
 
   const fetchRecoveryCodes = useCallback(async (): Promise<void> => {
     try {
@@ -81,10 +90,13 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
       const codes = (await submit(recoveryCodes())) as string[];
       setRecoveryCodesList(codes);
     } catch {
-      setErrors((prev) => [...prev, "Failed to fetch recovery codes"]);
+      setErrors((previousErrors) => [
+        ...previousErrors,
+        t("setting/two-factor.fetch_errors.recovery_codes"),
+      ]);
       setRecoveryCodesList([]);
     }
-  }, [submit]);
+  }, [submit, t]);
 
   const fetchSetupData = useCallback(async (): Promise<void> => {
     setErrors([]);

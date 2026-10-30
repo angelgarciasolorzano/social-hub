@@ -22,7 +22,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/shared/components/shadcn/ui/tooltip";
 
-import { formatActivationDate, formatActivationTime } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TwoFactorActivationDetailsDialogProps {
@@ -31,13 +32,13 @@ interface TwoFactorActivationDetailsDialogProps {
   confirmedAt: string | null;
 }
 
-const TWO_FACTOR_METHOD_LABEL = "TOTP (Aplicación)";
-
 function TwoFactorActivationDetailsDialog({
   isOpen,
   setOpen,
   confirmedAt,
 }: TwoFactorActivationDetailsDialogProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatActivationDate, formatActivationTime } = useDateTime();
   const dialogFocusRestoration = useDialogFocusRestoration();
 
   const activationDate = formatActivationDate(confirmedAt);
@@ -50,11 +51,11 @@ function TwoFactorActivationDetailsDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              Fecha de activación
+              {t("setting/two-factor.labels.activation_date")}
             </h2>
           </DialogTitle>
           <DialogDescription>
-            Aquí puedes ver cuándo activaste la autenticación de dos factores (2FA) en tu cuenta.
+            {t("setting/two-factor.activation_details.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -69,16 +70,18 @@ function TwoFactorActivationDetailsDialog({
                 style={{ borderRight: "1px solid var(--border)" }}
               >
                 <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                  Hora
+                  {t("setting/two-factor.activation_details.time")}
                 </dt>
                 <dd className="text-sm font-semibold">{activationTime}</dd>
               </div>
 
               <div className="flex flex-col items-center gap-1 border-b border-border px-6 py-6">
                 <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                  Método
+                  {t("setting/two-factor.activation_details.method")}
                 </dt>
-                <dd className="text-sm font-semibold">{TWO_FACTOR_METHOD_LABEL}</dd>
+                <dd className="text-sm font-semibold">
+                  {t("setting/two-factor.labels.method_totp")}
+                </dd>
               </div>
 
               <div
@@ -86,7 +89,7 @@ function TwoFactorActivationDetailsDialog({
                 style={{ gridColumn: "1 / -1" }}
               >
                 <dt className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                  Fecha de activación
+                  {t("setting/two-factor.labels.activation_date")}
                 </dt>
                 <dd className="text-sm font-semibold uppercase">{activationDate}</dd>
               </div>
@@ -96,15 +99,14 @@ function TwoFactorActivationDetailsDialog({
 
         <Alert className={alertVariants.success}>
           <ShieldCheck />
-          <AlertTitle>Protege tu cuenta</AlertTitle>
+          <AlertTitle>{t("setting/two-factor.activation_details.protect_title")}</AlertTitle>
           <AlertDescription className="flex items-start gap-2">
-            Si no reconoces esta actividad, te recomendamos cambiar tu contraseña y revisar tus
-            dispositivos de confianza.
+            {t("setting/two-factor.activation_details.protect_description")}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild variant="outline" size="icon">
                   <Link
-                    aria-label="Ir a dispositivos de confianza"
+                    aria-label={t("setting/two-factor.activation_details.go_to_devices")}
                     href={TrustedDeviceIndexController()}
                   >
                     <ArrowRight aria-hidden="true" />
@@ -112,7 +114,7 @@ function TwoFactorActivationDetailsDialog({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" sideOffset={4}>
-                Te llevará a la sección de dispositivos de confianza.
+                {t("setting/two-factor.activation_details.go_to_devices_hint")}
               </TooltipContent>
             </Tooltip>
           </AlertDescription>
@@ -121,7 +123,7 @@ function TwoFactorActivationDetailsDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
-              Cerrar
+              {t("setting/common.actions.close")}
             </Button>
           </DialogClose>
         </DialogFooter>

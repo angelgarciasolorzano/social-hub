@@ -23,6 +23,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 interface DisableTwoFactorFormData {
@@ -36,6 +38,7 @@ interface DisableTwoFactorDialogProps {
 }
 
 function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const idPrefix = useId();
   const formId = `${idPrefix}-disable-two-factor-form`;
   const passwordInputId = `${idPrefix}-password`;
@@ -80,13 +83,11 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">
               <ShieldBan className="h-5 w-5 text-muted-foreground" />
-              Desactivar Two-Factor Authentication
+              {t("setting/two-factor.disable_dialog.title")}
             </h2>
           </DialogTitle>
           <DialogDescription>
-            Por seguridad, necesitamos verificar tu identidad antes de desactivar la autenticación
-            de dos factores. Ingresa el código de tu aplicación autenticadora o uno de tus códigos
-            de recuperación.
+            {t("setting/two-factor.disable_dialog.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -94,32 +95,31 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
           <ShieldQuestionMark />
 
           <AlertTitle className="line-clamp-4 font-normal">
-            ¿Estás seguro de que quieres desactivar la autenticación de dos factores?
+            {t("setting/two-factor.disable_dialog.warning_title")}
           </AlertTitle>
 
           <AlertDescription>
-            Desactivar 2FA hará tu cuenta más vulnerable. Solo deberías hacerlo si tienes un motivo
-            específico.
+            {t("setting/two-factor.disable_dialog.warning_description")}
           </AlertDescription>
         </Alert>
 
         <form id={formId} className="grid gap-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-2">
             <LabelForm error={errors.password} htmlFor={passwordInputId}>
-              Contraseña
+              {t("setting/two-factor.labels.password")}
             </LabelForm>
 
             <PasswordInput
               id={passwordInputId}
               name="password"
               autoComplete="current-password"
-              onChange={(e) => {
-                setData("password", e.target.value);
+              onChange={(event) => {
+                setData("password", event.target.value);
               }}
               aria-invalid={!!errors.password}
               aria-describedby={errors.password ? passwordErrorId : undefined}
               required
-              placeholder="Contraseña"
+              placeholder={t("setting/two-factor.labels.password")}
               value={data.password}
             />
 
@@ -142,7 +142,7 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -150,10 +150,10 @@ function DisabledTwoFactorDialog({ isOpen, setOpen }: DisableTwoFactorDialogProp
             {processing ? (
               <>
                 <Spinner />
-                Desactivando 2FA...
+                {t("setting/two-factor.disable_dialog.submitting")}
               </>
             ) : (
-              "Desactivar 2FA"
+              t("setting/two-factor.labels.disable")
             )}
           </Button>
         </DialogFooter>
