@@ -12,6 +12,7 @@ use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -255,6 +256,18 @@ function createSuspendedUser(): User
     $factory = User::factory();
 
     return $factory->suspended()->createOne();
+}
+
+/**
+ * Create a persisted User whose preferred language is the given one, which the
+ * SetApplicationLocale middleware applies to every request of that user.
+ */
+function createUserPreferring(PreferredLocale $preferredLocale): User
+{
+    $user = createUser();
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+
+    return $user;
 }
 
 /**

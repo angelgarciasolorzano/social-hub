@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Resources\AnnouncementBannerResource;
+use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use App\User\Resources\UserResource;
 use Illuminate\Foundation\Inspiring;
@@ -15,6 +16,14 @@ use Override;
 
 class HandleInertiaRequests extends Middleware
 {
+    /**
+     * Translation groups every page receives, on top of the ones its controller registers in
+     * FrontendTranslations. `dates` feeds the date helpers that several modules use.
+     *
+     * @var list<string>
+     */
+    private const array ALWAYS_SHARED_TRANSLATION_GROUPS = ['dates'];
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -59,6 +68,10 @@ class HandleInertiaRequests extends Middleware
             'notification' => fn () => $request->session()->get('notification'),
             'search_results' => fn () => $request->session()->get('search_results'),
             'announcements' => fn (): array => $this->sharedAnnouncements($request),
+            'locale' => app()->getLocale(),
+            'translations' => fn (): array => resolve(FrontendTranslations::class)
+                ->use(...self::ALWAYS_SHARED_TRANSLATION_GROUPS)
+                ->toArray(),
         ];
     }
 

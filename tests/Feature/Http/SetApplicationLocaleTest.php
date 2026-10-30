@@ -8,20 +8,12 @@ use Illuminate\Support\Facades\Route;
 
 const LOCALE_PROBE_URI = '/locale-probe';
 
-function userPreferring(PreferredLocale $preferredLocale): User
-{
-    $user = createUser();
-    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
-
-    return $user;
-}
-
 beforeEach(function (): void {
     Route::middleware('web')->get(LOCALE_PROBE_URI, fn (): string => app()->getLocale());
 });
 
 it('applies the preferred language of the signed-in user over the browser one', function (PreferredLocale $preferredLocale, string $acceptLanguage): void {
-    $this->actingAs(userPreferring($preferredLocale))
+    $this->actingAs(createUserPreferring($preferredLocale))
         ->withHeader('Accept-Language', $acceptLanguage)
         ->get(LOCALE_PROBE_URI)
         ->assertOk()
