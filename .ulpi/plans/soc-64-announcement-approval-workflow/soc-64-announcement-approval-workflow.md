@@ -93,7 +93,7 @@ Crear una migración nueva del módulo Announcement: `announcements.status` con 
 
 ### TASK-003: Conectar modelos, casts y relaciones
 
-Agregar el cast de estado y la relación `reviews()` a `Announcement`; crear `AnnouncementReview` con cast de acción y relación nullable al actor que ejecutó cada acción. Ampliar las pruebas del modelo.
+Agregar el cast de estado y la relación `reviews()` a `Announcement`; crear `AnnouncementReview` y su factory del módulo, con cast de acción y relaciones al anuncio y al actor nullable. Ampliar las pruebas del modelo.
 
 **Type:** feature · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -105,6 +105,7 @@ Agregar el cast de estado y la relación `reviews()` a `Announcement`; crear `An
 
 **writeScope:**
 - app/Modules/Announcement/Models/AnnouncementReview.php (nuevo)
+- app/Modules/Announcement/Database/Factories/AnnouncementReviewFactory.php (nuevo)
 - app/Modules/Announcement/Models/Announcement.php
 - app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php
 

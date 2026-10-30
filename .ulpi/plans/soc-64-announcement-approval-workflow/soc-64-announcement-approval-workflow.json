@@ -102,7 +102,7 @@
     {
       "id": "TASK-003",
       "title": "Conectar modelos, casts y relaciones",
-      "description": "Agregar el cast de estado y la relación `reviews()` a `Announcement`; crear `AnnouncementReview` con cast de acción y relación nullable al actor que ejecutó cada acción. Ampliar las pruebas del modelo.",
+      "description": "Agregar el cast de estado y la relación `reviews()` a `Announcement`; crear `AnnouncementReview` y su factory del módulo, con cast de acción y relaciones al anuncio y al actor nullable. Ampliar las pruebas del modelo.",
       "priority": "P0",
       "type": "feature",
       "effort": "M",
@@ -116,7 +116,8 @@
         "La relación devuelve el historial ordenado por `created_at` e ID, y el actor eliminado aparece como null."
       ],
       "filesToCreate": [
-        "app/Modules/Announcement/Models/AnnouncementReview.php"
+        "app/Modules/Announcement/Models/AnnouncementReview.php",
+        "app/Modules/Announcement/Database/Factories/AnnouncementReviewFactory.php"
       ],
       "filesToModify": [
         "app/Modules/Announcement/Models/Announcement.php",
@@ -125,6 +126,7 @@
       "validateCommand": "rtk php artisan test --compact app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php",
       "writeScope": [
         "app/Modules/Announcement/Models/AnnouncementReview.php",
+        "app/Modules/Announcement/Database/Factories/AnnouncementReviewFactory.php",
         "app/Modules/Announcement/Models/Announcement.php",
         "app/Modules/Announcement/Tests/Models/AnnouncementModelTest.php"
       ],
