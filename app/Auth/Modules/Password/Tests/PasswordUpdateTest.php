@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\User\Enums\PreferredLocale;
 use Illuminate\Support\Facades\Hash;
 
 it('does not expose a standalone password settings page', function (): void {
@@ -48,3 +49,18 @@ it('rejects a password update when the current password is incorrect', function 
         ->assertSessionHasErrors('current_password')
         ->assertRedirect(route('profile.edit'));
 });
+
+it('confirms the password change in the language of the user', function (PreferredLocale $preferredLocale): void {
+    $this->actingAs(createUserPreferring($preferredLocale))
+        ->from(route('profile.edit'))
+        ->put(route('setting.password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertInertiaFlash('success', translatedTextIn($preferredLocale, 'setting/account-settings.messages.password_updated'));
+})->with([
+    'English' => [PreferredLocale::ENGLISH],
+    'Spanish' => [PreferredLocale::SPANISH],
+]);
