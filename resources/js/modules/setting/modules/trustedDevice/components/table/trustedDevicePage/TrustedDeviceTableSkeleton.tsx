@@ -17,6 +17,8 @@ import {
   TableRow,
 } from "@/shared/components/shadcn/ui/table";
 
+import { useTranslation } from "@/shared/hooks";
+
 interface TrustedDeviceTableSkeletonProps {
   columnVisibility: ColumnVisibilityState;
   hasActiveFilters: boolean;
@@ -26,43 +28,43 @@ interface TrustedDeviceTableSkeletonProps {
 const trustedDeviceSkeletonColumns = [
   {
     id: trustedDeviceTableColumnIds.device,
-    label: "Dispositivo",
+    label: "setting/trusted-devices.columns.device",
     width: trustedDeviceTableColumnSizes.device,
     kind: "device",
   },
   {
     id: trustedDeviceTableColumnIds.lastAccess,
-    label: "Último acceso",
+    label: "setting/trusted-devices.columns.last_access",
     width: trustedDeviceTableColumnSizes.lastAccess,
     kind: "text",
   },
   {
     id: trustedDeviceTableColumnIds.browserAndOs,
-    label: "Navegador / SO",
+    label: "setting/trusted-devices.columns.browser_os",
     width: trustedDeviceTableColumnSizes.browserAndOs,
     kind: "text",
   },
   {
     id: trustedDeviceTableColumnIds.ip,
-    label: "IP",
+    label: "setting/trusted-devices.columns.ip",
     width: trustedDeviceTableColumnSizes.ip,
     kind: "text",
   },
   {
     id: trustedDeviceTableColumnIds.expiration,
-    label: "Expira",
+    label: "setting/trusted-devices.columns.expires",
     width: trustedDeviceTableColumnSizes.expiration,
     kind: "text",
   },
   {
     id: trustedDeviceTableColumnIds.status,
-    label: "Estado",
+    label: "setting/trusted-devices.columns.status",
     width: trustedDeviceTableColumnSizes.status,
     kind: "status",
   },
   {
     id: trustedDeviceTableColumnIds.actions,
-    label: "Acciones",
+    label: "setting/trusted-devices.columns.actions",
     width: trustedDeviceTableColumnSizes.actions,
     kind: "actions",
   },
@@ -76,6 +78,7 @@ function TrustedDeviceTableSkeleton({
   hasActiveFilters,
   skeletonVariant,
 }: TrustedDeviceTableSkeletonProps): JSX.Element {
+  const { t } = useTranslation();
   const visibleColumns = trustedDeviceSkeletonColumns.filter(
     ({ id }) => columnVisibility[id] !== false,
   );
@@ -85,7 +88,7 @@ function TrustedDeviceTableSkeleton({
   return (
     <div aria-busy="true" className="flex min-w-0 flex-col gap-4">
       <span className="sr-only" role="status">
-        Cargando dispositivos de confianza
+        {t("setting/trusted-devices.table.loading")}
       </span>
 
       {skeletonVariant === "initial" && (
@@ -118,7 +121,7 @@ function TrustedDeviceTableSkeleton({
               <TableRow className="sticky top-0 z-10 bg-muted hover:bg-muted">
                 {visibleColumns.map((column) => (
                   <TableHead key={column.id} style={{ width: column.width }}>
-                    {column.label}
+                    {t(column.label)}
                   </TableHead>
                 ))}
                 <TableHead className="p-0" />

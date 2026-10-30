@@ -66,6 +66,7 @@ return [
         'device' => 'Device',
         'last_access' => 'Last access',
         'browser_os' => 'Browser / OS',
+        'ip' => 'IP',
         'expires' => 'Expires',
         'status' => 'Status',
         'actions' => 'Actions',
