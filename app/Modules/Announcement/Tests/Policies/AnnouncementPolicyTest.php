@@ -7,6 +7,8 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
@@ -38,6 +40,24 @@ function policyAnnouncementFactory(): AnnouncementFactory
     return $factory;
 }
 
+/**
+ * An announcement in review with a submission attributed to its latest sender.
+ */
+function inReviewPolicyAnnouncement(User $author, User $submitter): Announcement
+{
+    $announcement = policyAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::InReview)
+        ->createdBy($author)
+        ->createOne();
+
+    $announcement->reviews()->create([
+        'action' => AnnouncementReviewAction::Submitted,
+        'reviewed_by' => $submitter->id,
+    ]);
+
+    return $announcement;
+}
+
 beforeEach(function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 });
@@ -67,6 +87,130 @@ it('allows each panel ability only with its own permission', function (string $a
     'replicate' => ['replicate', AdminPermission::AdminAnnouncementsCreate],
     'delete' => ['delete', AdminPermission::AdminAnnouncementsDelete],
 ]);
+
+it('allows an authorized author to submit drafts and rejected announcements', function (AnnouncementStatus $announcementStatus): void {
+    $user = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsUpdate);
+    $announcement = policyAnnouncementFactory()
+        ->withStatus($announcementStatus)
+        ->createdBy($user)
+        ->createOne();
+
+    expect(Gate::forUser($user)->allows('submit', $announcement))->toBeTrue();
+})->with([
+    'draft' => AnnouncementStatus::Draft,
+    'rejected' => AnnouncementStatus::Rejected,
+]);
+
+it('denies submitting when the author lacks the edit permission', function (): void {
+    $user = createUser();
+    $announcement = policyAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::Draft)
+        ->createdBy($user)
+        ->createOne();
+
+    expect(Gate::forUser($user)->allows('submit', $announcement))->toBeFalse();
+});
+
+it('denies submitting when an editor is not the announcement author', function (): void {
+    $user = createUser();
+    $editor = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsUpdate);
+    $announcement = policyAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::Draft)
+        ->createdBy($user)
+        ->createOne();
+
+    expect(Gate::forUser($editor)->allows('submit', $announcement))->toBeFalse();
+});
+
+it('denies submitting announcements outside draft or rejected states', function (AnnouncementStatus $announcementStatus): void {
+    $user = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsUpdate);
+    $announcement = policyAnnouncementFactory()
+        ->withStatus($announcementStatus)
+        ->createdBy($user)
+        ->createOne();
+
+    expect(Gate::forUser($user)->allows('submit', $announcement))->toBeFalse();
+})->with([
+    'in review' => AnnouncementStatus::InReview,
+    'approved' => AnnouncementStatus::Approved,
+]);
+
+it('allows reviewers with permission to review a submission from another user', function (): void {
+    $user = createUser();
+    $reviewer = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsReview);
+    $announcement = inReviewPolicyAnnouncement($user, $user);
+
+    expect(Gate::forUser($reviewer)->allows('review', $announcement))->toBeTrue();
+});
+
+it('denies review without the review permission', function (): void {
+    $user = createUser();
+    $reviewer = createUser();
+    $announcement = inReviewPolicyAnnouncement($user, $user);
+
+    expect(Gate::forUser($reviewer)->allows('review', $announcement))->toBeFalse();
+});
+
+it('denies the announcement author from reviewing even when another user submitted it', function (): void {
+    $user = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsReview);
+    $submitter = createUser();
+    $announcement = inReviewPolicyAnnouncement($user, $submitter);
+
+    expect(Gate::forUser($user)->allows('review', $announcement))->toBeFalse();
+});
+
+it('denies the latest submitter but allows an earlier submitter to review', function (): void {
+    $user = createUser();
+    $earlierSubmitter = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsReview);
+    $latestSubmitter = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsReview);
+    $announcement = policyAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::InReview)
+        ->createdBy($user)
+        ->createOne();
+
+    $announcement->reviews()->create([
+        'action' => AnnouncementReviewAction::Submitted,
+        'reviewed_by' => $earlierSubmitter->id,
+    ]);
+    $announcement->reviews()->create([
+        'action' => AnnouncementReviewAction::Resubmitted,
+        'reviewed_by' => $latestSubmitter->id,
+    ]);
+
+    expect(Gate::forUser($latestSubmitter)->allows('review', $announcement))->toBeFalse()
+        ->and(Gate::forUser($earlierSubmitter)->allows('review', $announcement))->toBeTrue();
+});
+
+it('allows the dedicated reviewer role to view announcements without write permissions', function (): void {
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminAnnouncementsReviewer->value);
+
+    $author = createUser();
+    $announcement = inReviewPolicyAnnouncement($author, $author);
+
+    expect(Gate::forUser($user)->allows('viewAny', Announcement::class))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('view', $announcement))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('review', $announcement))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('create', Announcement::class))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('update', $announcement))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('delete', $announcement))->toBeFalse();
+});
+
+it('denies review outside in-review status and when there is no submission history', function (): void {
+    $user = createUser();
+    $reviewer = createUserWithAnnouncementPermission(AdminPermission::AdminAnnouncementsReview);
+    $announcement = policyAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::Draft)
+        ->createdBy($user)
+        ->createOne();
+    $announcementWithoutSubmission = policyAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::InReview)
+        ->createdBy($user)
+        ->createOne();
+
+    expect(Gate::forUser($reviewer)->allows('review', $announcement))->toBeFalse()
+        ->and(Gate::forUser($reviewer)->allows('review', $announcementWithoutSubmission))->toBeFalse();
+});
 
 it('denies bulk deletion and restoring even to the announcements manager', function (string $ability): void {
     $user = createUser();
