@@ -12,6 +12,8 @@ import {
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/shadcn/ui/popover";
 
+import { useTranslation } from "@/shared/hooks";
+
 import TrustedDeviceActivityFilterCombobox, {
   type FilterComboboxConfig,
 } from "./TrustedDeviceActivityFilterCombobox";
@@ -27,6 +29,7 @@ export interface TrustedDeviceActivityFiltersPopoverProps {
 export default function TrustedDeviceActivityFiltersPopover(
   props: TrustedDeviceActivityFiltersPopoverProps,
 ): JSX.Element {
+  const { t } = useTranslation();
   const {
     actionFilter,
     sinceDaysFilter,
@@ -35,11 +38,16 @@ export default function TrustedDeviceActivityFiltersPopover(
     onResetFilters,
   } = props;
 
+  const translateOptions = (
+    options: readonly { label: string; value: string }[],
+  ): { label: string; value: string }[] =>
+    options.map((option) => ({ ...option, label: t(option.label) }));
+
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
-      label: "Acción",
+      label: t("setting/trusted-device-dialogs.activity.action_filter"),
       multiple: true,
-      options: activityActionOptions,
+      options: translateOptions(activityActionOptions),
       value: actionFilter,
       onChange: (value) => {
         if (value === null) {
@@ -54,9 +62,9 @@ export default function TrustedDeviceActivityFiltersPopover(
       },
     },
     {
-      label: "Filtrar por rango temporal",
+      label: t("setting/trusted-device-dialogs.activity.range_filter"),
       multiple: true,
-      options: activitySinceDaysOptions,
+      options: translateOptions(activitySinceDaysOptions),
       value: sinceDaysFilter,
       onChange: (value) => {
         if (value === null) {
@@ -77,14 +85,14 @@ export default function TrustedDeviceActivityFiltersPopover(
       <PopoverTrigger asChild>
         <Button variant="outline">
           <Funnel />
-          Filtros
+          {t("setting/trusted-devices.toolbar.filters")}
         </Button>
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-72 p-3">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Filtros</h4>
+            <h4 className="text-sm font-medium">{t("setting/trusted-devices.toolbar.filters")}</h4>
 
             <Button
               className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
@@ -93,7 +101,7 @@ export default function TrustedDeviceActivityFiltersPopover(
               type="button"
               variant="ghost"
             >
-              Restablecer
+              {t("setting/trusted-devices.toolbar.reset")}
             </Button>
           </div>
 
@@ -109,7 +117,7 @@ export default function TrustedDeviceActivityFiltersPopover(
           ))}
 
           <Button onClick={onResetFilters} type="button" variant="outline">
-            Limpiar filtros
+            {t("setting/trusted-devices.toolbar.clear_filters")}
           </Button>
         </div>
       </PopoverContent>

@@ -21,8 +21,9 @@ import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 const actionVisuals: Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }> = {
@@ -43,21 +44,22 @@ export default function TrustedDeviceActivityEventList({
   events,
   hasActiveFilters,
 }: TrustedDeviceActivityEventListProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <ScrollArea className="min-h-0 flex-1 rounded-xl border shadow-xs dark:bg-muted/20">
       {events.length === 0 ? (
         <div className="gap-2 p-6">
           {hasActiveFilters ? (
             <EmptyState
-              description="Prueba cambiar el rango temporal, el tipo de acción o el término de búsqueda."
+              description={t("setting/trusted-device-dialogs.activity.empty_filtered_description")}
               icon={SearchX}
-              title="Sin actividad para los filtros seleccionados."
+              title={t("setting/trusted-device-dialogs.activity.empty_filtered_title")}
             />
           ) : (
             <EmptyState
-              description="Los eventos de tus dispositivos de confianza aparecerán aquí."
+              description={t("setting/trusted-device-dialogs.activity.empty_description")}
               icon={Inbox}
-              title="Aún no hay actividad registrada."
+              title={t("setting/trusted-device-dialogs.activity.empty_title")}
             />
           )}
         </div>
@@ -77,6 +79,8 @@ interface ActivityEventRowProps {
 }
 
 function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, fromNow } = useDateTime();
   const visual = actionVisuals[event.action];
   const Icon = visual.icon;
   const colors = iconColorVariants[visual.color];
@@ -92,7 +96,9 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
         </div>
 
         <div className="space-y-1">
-          <h3 className="text-sm font-medium">{event.deviceLabel ?? "Un dispositivo"}</h3>
+          <h3 className="text-sm font-medium">
+            {event.deviceLabel ?? t("setting/trusted-devices.values.a_device")}
+          </h3>
 
           <p className="text-sm font-normal text-muted-foreground">{event.actionLabel}</p>
 
@@ -100,7 +106,9 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
             <div className="flex items-center gap-1">
               <MapPin aria-hidden="true" className="h-3 w-3 text-muted-foreground" />
               <p className="text-xs font-normal text-muted-foreground">
-                IP: {event.ip ?? "No disponible"}
+                {t("setting/trusted-device-dialogs.activity.ip", {
+                  ip: event.ip ?? t("setting/trusted-devices.values.not_available"),
+                })}
               </p>
             </div>
 
@@ -113,7 +121,7 @@ function ActivityEventRow({ event }: ActivityEventRowProps): JSX.Element {
               )}
 
               <p className="text-xs font-normal text-muted-foreground">
-                {event.deviceOsName ?? "Sistema operativo desconocido"}
+                {event.deviceOsName ?? t("setting/trusted-device-dialogs.activity.unknown_os")}
               </p>
             </div>
           </div>

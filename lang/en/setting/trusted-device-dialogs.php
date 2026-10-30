@@ -166,6 +166,7 @@ return [
         'empty_filtered_description' => 'Try changing the time range, the action type or the search term.',
         'empty_title' => 'No activity recorded yet.',
         'empty_description' => 'The events of your trusted devices will appear here.',
+        'ip' => 'IP: :ip',
         'unknown_os' => 'Unknown operating system',
         'action_filter' => 'Action',
         'range_filter' => 'Filter by time range',

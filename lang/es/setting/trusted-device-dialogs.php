@@ -166,6 +166,7 @@ return [
         'empty_filtered_description' => 'Prueba cambiar el rango temporal, el tipo de acción o el término de búsqueda.',
         'empty_title' => 'Aún no hay actividad registrada.',
         'empty_description' => 'Los eventos de tus dispositivos de confianza aparecerán aquí.',
+        'ip' => 'IP: :ip',
         'unknown_os' => 'Sistema operativo desconocido',
         'action_filter' => 'Acción',
         'range_filter' => 'Filtrar por rango temporal',
