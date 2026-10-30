@@ -16,11 +16,14 @@ export const trustedDeviceRowActionKey = {
 } as const;
 
 export const trustedDeviceGlobalShortcuts = {
-  addDevice: { sequence: ["G", "N"], description: "Agregar un dispositivo de confianza" },
-  activity: { sequence: ["G", "A"], description: "Abrir toda la actividad" },
-  recommendations: { sequence: ["G", "R"], description: "Abrir recomendaciones" },
-  summary: { sequence: ["G", "S"], description: "Abrir el resumen de dispositivos" },
-  revokeAll: { sequence: ["G", "V"], description: "Revocar todos los dispositivos" },
+  addDevice: { sequence: ["G", "N"], description: "setting/trusted-devices.shortcuts.add_device" },
+  activity: { sequence: ["G", "A"], description: "setting/trusted-devices.shortcuts.activity" },
+  recommendations: {
+    sequence: ["G", "R"],
+    description: "setting/trusted-devices.shortcuts.recommendations",
+  },
+  summary: { sequence: ["G", "S"], description: "setting/trusted-devices.shortcuts.summary" },
+  revokeAll: { sequence: ["G", "V"], description: "setting/trusted-devices.shortcuts.revoke_all" },
 } as const;
 
 type TrustedDeviceRowActionKey =
@@ -47,27 +50,27 @@ const isRevoked = (device: TrustedDevice): boolean => device.deletedAt !== null;
 
 export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
   {
-    label: "Acciones del dispositivo",
+    label: "setting/trusted-devices.row_actions.menu",
     actions: [
       {
         key: trustedDeviceRowActionKey.viewDevice,
         shortcut: ["F", "D"],
         icon: Eye,
-        label: "Ver dispositivo",
+        label: "setting/trusted-devices.row_actions.view",
         isEnabled: () => true,
       },
       {
         key: trustedDeviceRowActionKey.renameDevice,
         shortcut: ["F", "E"],
         icon: Pencil,
-        label: "Renombrar dispositivo",
+        label: "setting/trusted-devices.row_actions.rename",
         isEnabled: (device) => !isRevoked(device),
       },
       {
         key: trustedDeviceRowActionKey.renewTrust,
         shortcut: ["F", "T"],
         icon: RotateCw,
-        label: "Renovar confianza",
+        label: "setting/trusted-devices.row_actions.renew",
         isEnabled: (device) => !isRevoked(device),
       },
     ],
@@ -78,7 +81,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
         key: trustedDeviceRowActionKey.reactivate,
         shortcut: ["F", "A"],
         icon: RotateCw,
-        label: "Reactivar",
+        label: "setting/trusted-devices.row_actions.reactivate",
         isEnabled: isRevoked,
       },
     ],
@@ -89,7 +92,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
         key: trustedDeviceRowActionKey.revokeDevice,
         shortcut: ["F", "V"],
         icon: Trash2,
-        label: "Revocar dispositivo",
+        label: "setting/trusted-devices.row_actions.revoke",
         isEnabled: (device) => !isRevoked(device),
         className:
           "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
@@ -99,7 +102,7 @@ export const trustedDeviceRowActions: TrustedDeviceRowActionGroup[] = [
         key: trustedDeviceRowActionKey.forceDestroy,
         shortcut: ["F", "X"],
         icon: Trash2,
-        label: "Eliminar definitivamente",
+        label: "setting/trusted-devices.row_actions.force_destroy",
         isEnabled: (device) => isRevoked(device),
         className:
           "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
@@ -155,7 +158,7 @@ export const trustedDeviceTitleActions: TrustedDeviceTitleActionGroup[] = [
       {
         key: trustedDeviceDialogKind.addDevice,
         icon: Plus,
-        label: "Agregar dispositivo",
+        label: "setting/trusted-devices.header_actions.add",
       },
     ],
   },
@@ -164,7 +167,7 @@ export const trustedDeviceTitleActions: TrustedDeviceTitleActionGroup[] = [
       {
         key: trustedDeviceDialogKind.revokeAll,
         icon: Trash2,
-        label: "Revocar todos",
+        label: "setting/trusted-devices.header_actions.revoke_all",
         className:
           "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
         iconClassName: "text-red-600 dark:text-red-500",

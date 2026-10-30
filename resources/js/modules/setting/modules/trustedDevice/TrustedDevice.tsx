@@ -76,7 +76,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/components/shadcn/ui/dropdown-menu";
 
-import { useDialog } from "@/shared/hooks";
+import { useDialog, useTranslation } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
@@ -97,6 +97,7 @@ interface TrustedDeviceDialogState extends DialogClosingState {
 }
 
 function TrustedDevice(): JSX.Element {
+  const { t } = useTranslation();
   const { currentDevicePreview, currentDeviceMatch, stats } =
     usePage<TrustedDevicePageProps>().props;
 
@@ -266,7 +267,7 @@ function TrustedDevice(): JSX.Element {
   return (
     <>
       <main className="max-w-8xl mx-auto flex w-full flex-1 flex-col gap-6">
-        <Head title="Dispositivos de confianza" />
+        <Head title={t("setting/trusted-devices.page.title")} />
 
         <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
           <div className="flex min-w-0 flex-1 flex-col gap-6">
@@ -280,7 +281,7 @@ function TrustedDevice(): JSX.Element {
               fallback={<TrustedDevicesStatCardsSkeleton />}
               rescue={({ reloading }) => (
                 <TrustedDeviceDeferredError
-                  message="No se pudieron cargar las estadísticas de tus dispositivos."
+                  message={t("setting/trusted-devices.deferred_errors.stats")}
                   onRetry={() => {
                     router.reload({ only: ["stats"] });
                   }}
@@ -302,7 +303,7 @@ function TrustedDevice(): JSX.Element {
               fallback={<TrustedDeviceSummarySkeleton />}
               rescue={({ reloading }) => (
                 <TrustedDeviceDeferredError
-                  message="No se pudo cargar el resumen de tus dispositivos."
+                  message={t("setting/trusted-devices.deferred_errors.summary")}
                   onRetry={() => {
                     router.reload({ only: ["stats"] });
                   }}
@@ -320,7 +321,7 @@ function TrustedDevice(): JSX.Element {
               fallback={<TrustedDeviceRecentActivitySkeleton />}
               rescue={({ reloading }) => (
                 <TrustedDeviceDeferredError
-                  message="No se pudo cargar la actividad reciente."
+                  message={t("setting/trusted-devices.deferred_errors.recent_activity")}
                   onRetry={() => {
                     router.reload({ only: ["recentActivity"] });
                   }}
@@ -350,6 +351,7 @@ function TrustedDeviceTitle({
   onOpenKeyboardShortcuts,
   onTitleAction,
 }: TrustedDeviceTitleProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <div className="flex min-w-0 flex-col gap-4 rounded-xl border bg-card p-5 shadow-xs sm:p-6 xl:flex-row xl:items-center xl:justify-between xl:gap-12">
       <div className="flex min-w-0 items-start gap-4 sm:gap-6">
@@ -360,12 +362,11 @@ function TrustedDeviceTitle({
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-col gap-1">
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              Dispositivos de confianza
+              {t("setting/trusted-devices.page.title")}
             </h1>
 
             <p className="text-sm text-muted-foreground">
-              Estos son los dispositivos en los que has iniciado sesion y que has marcado como de
-              confianza.
+              {t("setting/trusted-devices.page.description")}
             </p>
           </div>
         </div>
@@ -374,25 +375,25 @@ function TrustedDeviceTitle({
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <Button variant="outline" onClick={onOpenKeyboardShortcuts}>
           <CircleHelp aria-hidden="true" />
-          Atajos de teclado
+          {t("setting/trusted-devices.page.keyboard_shortcuts")}
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
               <MoreHorizontal />
-              Administrar
+              {t("setting/trusted-devices.page.manage")}
               <ChevronDown />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Acciones del dispositivo</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("setting/trusted-devices.row_actions.menu")}</DropdownMenuLabel>
 
             {trustedDeviceTitleActions.map((group, groupIndex) => (
               <Fragment key={groupIndex}>
                 <DropdownMenuGroup>
                   {group.label !== undefined && (
-                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t(group.label)}</DropdownMenuLabel>
                   )}
 
                   {group.actions.map((action) => {
@@ -407,7 +408,7 @@ function TrustedDeviceTitle({
                         className={action.className}
                       >
                         <Icon className={action.iconClassName} />
-                        {action.label}
+                        {t(action.label)}
                       </DropdownMenuItem>
                     );
                   })}
@@ -432,35 +433,36 @@ interface TrustedDeviceStatCard {
 }
 
 function TrustedDevicesStatCards(): JSX.Element {
+  const { t } = useTranslation();
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
   const trustedDevicesStatCards: TrustedDeviceStatCard[] = [
     {
-      description: "Dispositivos registrados",
+      description: t("setting/trusted-devices.stats.total.description"),
       icon: MonitorSmartphone,
       iconColor: "blue",
-      title: "Total de dispositivos",
+      title: t("setting/trusted-devices.stats.total.title"),
       value: stats.total,
     },
     {
-      description: "Actualmente pueden iniciar sesión",
+      description: t("setting/trusted-devices.stats.active.description"),
       icon: ShieldCheck,
       iconColor: "green",
-      title: "Dispositivos activos",
+      title: t("setting/trusted-devices.stats.active.title"),
       value: stats.active,
     },
     {
-      description: "En los proximos 7 días",
+      description: t("setting/trusted-devices.stats.expiring_soon.description"),
       icon: Clock4,
       iconColor: "purple",
-      title: "Proximos a expirar",
+      title: t("setting/trusted-devices.stats.expiring_soon.title"),
       value: stats.expiringSoon,
     },
     {
-      description: "En los ultimos 7 días",
+      description: t("setting/trusted-devices.stats.recently_added.description"),
       icon: SquarePlus,
       iconColor: "orange",
-      title: "Agregado recientemente",
+      title: t("setting/trusted-devices.stats.recently_added.title"),
       value: stats.recentlyAdded,
     },
   ];
@@ -508,35 +510,35 @@ function TrustedDeviceDeferredError({
   onRetry,
   reloading,
 }: TrustedDeviceDeferredErrorProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert variant="destructive">
-      <AlertTitle>No se pudo cargar la información</AlertTitle>
+      <AlertTitle>{t("setting/trusted-devices.page.load_failed")}</AlertTitle>
       <AlertDescription className="flex items-center justify-between gap-4">
         <span>{message}</span>
         <Button disabled={reloading} onClick={onRetry} size="sm" variant="outline">
-          {reloading ? "Reintentando..." : "Reintentar"}
+          {reloading ? t("setting/common.actions.retrying") : t("setting/common.actions.retry")}
         </Button>
       </AlertDescription>
     </Alert>
   );
 }
 
-function TrustedDevicesInfoBanner() {
+function TrustedDevicesInfoBanner(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert>
       <Info />
-      <AlertTitle>
-        Los dispositivos de confianza te permiten iniciar sesion mas rapido y mantener tu cuenta
-        protegida.
-      </AlertTitle>
+      <AlertTitle>{t("setting/trusted-devices.page.info_banner")}</AlertTitle>
       <AlertDescription className="flex cursor-pointer items-center font-semibold text-blue-700 hover:underline dark:text-blue-500">
-        Mas información sobre dispositivos de confianza <ChevronRight className="h-4 w-4" />
+        {t("setting/trusted-devices.page.learn_more")} <ChevronRight className="h-4 w-4" />
       </AlertDescription>
     </Alert>
   );
 }
 
 function TrustedDevicesTableSection(): JSX.Element {
+  const { t } = useTranslation();
   const { filters: initialFilters, trustedDevices } = usePage<TrustedDevicePageProps>().props;
 
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
@@ -604,7 +606,7 @@ function TrustedDevicesTableSection(): JSX.Element {
         fallback={trustedDevices === undefined ? initialTableSkeleton : reloadingTableSkeleton}
         rescue={({ reloading }) => (
           <TrustedDeviceDeferredError
-            message="No se pudieron cargar los dispositivos de confianza."
+            message={t("setting/trusted-devices.page.devices_load_failed")}
             onRetry={() => {
               router.reload({ only: ["trustedDevices"] });
             }}
@@ -640,6 +642,7 @@ function TrustedDevicesTableSection(): JSX.Element {
 }
 
 function TrustedDevicesSecurityCallout(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-4">
@@ -649,18 +652,19 @@ function TrustedDevicesSecurityCallout(): JSX.Element {
 
         <div className="flex w-full min-w-0 items-center justify-between gap-4">
           <div className="min-w-0 space-y-1">
-            <h4 className="text-sm font-semibold">¿No reconoces algun dispositivo?</h4>
+            <h4 className="text-sm font-semibold">
+              {t("setting/trusted-devices.page.unrecognized_title")}
+            </h4>
 
             <p className="text-sm text-muted-foreground">
-              Revoca su acceso desde el menu del dispositivo. Si detectas actividad sospechosa,
-              revisa la actividad de tu cuenta.
+              {t("setting/trusted-devices.page.unrecognized_description")}
             </p>
           </div>
         </div>
       </div>
 
       <Button className="shrink-0 text-blue-700 dark:text-blue-500" variant="link">
-        Revisar actividad de seguridad
+        {t("setting/trusted-devices.page.review_activity")}
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
