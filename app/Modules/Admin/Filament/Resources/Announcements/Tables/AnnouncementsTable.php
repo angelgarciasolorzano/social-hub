@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Services\AnnouncementService;
@@ -39,6 +40,13 @@ class AnnouncementsTable
                     ->label(TranslatedText::of('admin/announcements.fields.title'))
                     ->searchable()
                     ->limit(60),
+                TextColumn::make('status')
+                    ->label(TranslatedText::of('admin/common.fields.status'))
+                    ->state(fn (Announcement $record): ?AnnouncementStatus => self::statusForRecord($record))
+                    ->badge()
+                    ->formatStateUsing(fn (?AnnouncementStatus $state): ?string => self::statusLabel($state))
+                    ->color(fn (?AnnouncementStatus $state): string => self::statusColor($state))
+                    ->sortable(),
                 TextColumn::make('type')
                     ->label(TranslatedText::of('admin/announcements.fields.type'))
                     ->badge()
@@ -67,6 +75,9 @@ class AnnouncementsTable
                     ->placeholder(TranslatedText::of('admin/announcements.table.deleted_user')),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label(TranslatedText::of('admin/announcements.filters.status'))
+                    ->options(self::statusOptions()),
                 SelectFilter::make('type')
                     ->label(TranslatedText::of('admin/announcements.filters.type'))
                     ->options(self::typeOptions()),
@@ -97,6 +108,41 @@ class AnnouncementsTable
             AnnouncementType::Info => 'info',
             AnnouncementType::Warning => 'warning',
             AnnouncementType::Critical => 'danger',
+        };
+    }
+
+    /**
+     * Resolve an announcement's raw status without casting an unknown database value.
+     */
+    public static function statusForRecord(Announcement $announcement): ?AnnouncementStatus
+    {
+        $rawStatus = $announcement->getRawOriginal('status');
+
+        return \is_string($rawStatus) ? AnnouncementStatus::tryFrom($rawStatus) : null;
+    }
+
+    /**
+     * Translate a valid announcement status for the table badge.
+     */
+    public static function statusLabel(?AnnouncementStatus $announcementStatus): ?string
+    {
+        if (! $announcementStatus instanceof AnnouncementStatus) {
+            return null;
+        }
+
+        return TranslatedText::of('admin/announcements.options.status.'.$announcementStatus->value);
+    }
+
+    /**
+     * Select the badge tone from the status enum case.
+     */
+    public static function statusColor(?AnnouncementStatus $announcementStatus): string
+    {
+        return match ($announcementStatus) {
+            null, AnnouncementStatus::Draft => 'gray',
+            AnnouncementStatus::InReview => 'warning',
+            AnnouncementStatus::Approved => 'success',
+            AnnouncementStatus::Rejected => 'danger',
         };
     }
 
@@ -202,6 +248,20 @@ class AnnouncementsTable
         }
 
         return $typeOptions;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $statusOptions = [];
+
+        foreach (AnnouncementStatus::cases() as $announcementStatus) {
+            $statusOptions[$announcementStatus->value] = TranslatedText::of('admin/announcements.options.status.'.$announcementStatus->value);
+        }
+
+        return $statusOptions;
     }
 
     /**

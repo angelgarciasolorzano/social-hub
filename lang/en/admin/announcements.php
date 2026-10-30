@@ -45,6 +45,12 @@ return [
     ],
 
     'options' => [
+        'status' => [
+            'draft' => 'Draft',
+            'in_review' => 'In review',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+        ],
         'type' => [
             'info' => 'Information',
             'warning' => 'Warning',
@@ -71,6 +77,7 @@ return [
     ],
 
     'filters' => [
+        'status' => 'Status',
         'type' => 'Type',
         'audience' => 'Audience',
         'display' => 'Shown as',
