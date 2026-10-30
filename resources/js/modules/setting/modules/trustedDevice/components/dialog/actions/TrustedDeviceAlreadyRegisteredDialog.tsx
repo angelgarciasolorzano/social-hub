@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceAlreadyRegisteredDialogProps {
@@ -35,6 +37,7 @@ function TrustedDeviceAlreadyRegisteredDialog({
   onClose,
   showListLink = true,
 }: TrustedDeviceAlreadyRegisteredDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const handleGoToList = (): void => {
     onClose();
     router.visit(TrustedDeviceIndexController().url, {
@@ -57,22 +60,24 @@ function TrustedDeviceAlreadyRegisteredDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Dispositivo ya registrado
+              {t("setting/trusted-device-dialogs.already_registered.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Este dispositivo ya esta registrado como de confianza en tu cuenta. No es necesario
-            agregarlo nuevamente.
+            {t("setting/trusted-device-dialogs.already_registered.description")}
           </DialogDescription>
         </DialogHeader>
 
-        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
+        <TrustedDeviceInfoCard
+          device={existingDevice}
+          expirationLabel={t("setting/trusted-devices.info_card.expires_on")}
+        />
 
         {showListLink && <AlreadyRegisteredActionsAlert onGoToList={handleGoToList} />}
 
         <DialogFooter>
           <Button onClick={onClose} type="button">
-            Cerrar
+            {t("setting/common.actions.close")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -87,14 +92,17 @@ interface AlreadyRegisteredActionsAlertProps {
 function AlreadyRegisteredActionsAlert({
   onGoToList,
 }: AlreadyRegisteredActionsAlertProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={alertVariants.info}>
       <CircleAlert />
-      <AlertTitle>¿Necesitar hacer cambios?</AlertTitle>
+      <AlertTitle>
+        {t("setting/trusted-device-dialogs.already_registered.changes_title")}
+      </AlertTitle>
       <AlertDescription className="gap-2 text-sm font-normal">
-        Puedes administrar este dispositivo desde la lista de dispositivos de confianza.
+        {t("setting/trusted-device-dialogs.already_registered.changes_description")}
         <Button onClick={onGoToList} size="sm" variant="outline">
-          Ir a dispositivos de confianza
+          {t("setting/trusted-device-dialogs.already_registered.go_to_devices")}
           <ArrowRight />
         </Button>
       </AlertDescription>
