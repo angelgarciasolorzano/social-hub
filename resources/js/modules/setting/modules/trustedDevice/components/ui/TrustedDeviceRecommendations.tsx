@@ -8,6 +8,8 @@ import EmptyState from "@/modules/setting/shared/components/EmptyState";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { iconColorVariants } from "@/shared/lib/styling";
 
@@ -18,17 +20,21 @@ interface TrustedDeviceRecommendationsProps {
 function TrustedDeviceRecommendations({
   onOpenRecommendations,
 }: TrustedDeviceRecommendationsProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Card className="shadow-xs">
       <CardHeader>
-        <h2 className="text-lg leading-none font-semibold tracking-tight">Recomendaciones</h2>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">
+          {t("setting/trusted-devices.recommendations_panel.title")}
+        </h2>
       </CardHeader>
       <CardContent className="space-y-6">
         {trustedDeviceRecommendationsPreview.length === 0 ? (
           <EmptyState
-            description="Las recomendaciones de seguridad aparecerán aquí cuando estén disponibles."
+            description={t("setting/trusted-devices.recommendations_panel.empty_description")}
             icon={ShieldQuestionMark}
-            title="No hay recomendaciones disponibles."
+            title={t("setting/trusted-devices.recommendations_panel.empty_title")}
           />
         ) : (
           <ul className="space-y-6" role="list">
@@ -54,10 +60,10 @@ function TrustedDeviceRecommendations({
                     </div>
 
                     <div className="space-y-1.5">
-                      <h3 className="text-sm font-medium">{recommendation.title}</h3>
+                      <h3 className="text-sm font-medium">{t(recommendation.title)}</h3>
 
                       <p className="line-clamp-2 text-xs font-normal text-muted-foreground">
-                        {recommendation.description}
+                        {t(recommendation.description)}
                       </p>
                     </div>
                   </div>
@@ -75,7 +81,7 @@ function TrustedDeviceRecommendations({
             className="text-blue-700 dark:text-blue-500"
             onClick={onOpenRecommendations}
           >
-            Mas recomendaciones
+            {t("setting/trusted-devices.recommendations_panel.more")}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </CardFooter>

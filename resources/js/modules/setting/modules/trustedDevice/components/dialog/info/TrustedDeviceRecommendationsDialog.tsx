@@ -23,6 +23,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { alertVariants, type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
@@ -35,6 +37,7 @@ function TrustedDeviceRecommendationsDialog({
   open,
   onClose,
 }: TrustedDeviceRecommendationsDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const dialogFocusRestoration = useDialogFocusRestoration();
 
   return (
@@ -49,11 +52,11 @@ function TrustedDeviceRecommendationsDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Lightbulb aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Recomendaciones de seguridad
+              {t("setting/trusted-device-dialogs.recommendations.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Sigue estas recomendaciones para mantener tu cuenta y dispositivos de confianza seguros.
+            {t("setting/trusted-device-dialogs.recommendations.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -66,11 +69,11 @@ function TrustedDeviceRecommendationsDialog({
           >
             {trustedDeviceRecommendations.map((recommendation) => (
               <RecommendationItem
-                description={recommendation.description}
+                description={t(recommendation.description)}
                 icon={recommendation.icon}
                 iconColor={recommendation.iconColor}
                 key={recommendation.title}
-                title={recommendation.title}
+                title={t(recommendation.title)}
               />
             ))}
           </ul>
@@ -81,10 +84,10 @@ function TrustedDeviceRecommendationsDialog({
             <Alert className={alertVariants.success}>
               <ShieldCheck aria-hidden="true" />
               <AlertTitle className="text-sm font-medium">
-                {trustedDevicePreviewAlert.title}
+                {t(trustedDevicePreviewAlert.title)}
               </AlertTitle>
               <AlertDescription className="text-sm font-normal">
-                {trustedDevicePreviewAlert.body}
+                {t(trustedDevicePreviewAlert.body)}
               </AlertDescription>
             </Alert>
           </div>
@@ -95,11 +98,10 @@ function TrustedDeviceRecommendationsDialog({
         <DialogFooter className="items-center sm:justify-between">
           <p className="flex items-start gap-2 text-xs font-normal text-muted-foreground sm:max-w-md">
             <Info aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Los dispositivos de confianza agilizan tu inicio de sesión, pero conviene revisarlos de
-            vez en cuando.
+            {t("setting/trusted-device-dialogs.recommendations.footer")}
           </p>
           <DialogClose asChild>
-            <Button variant="outline">Cerrar</Button>
+            <Button variant="outline">{t("setting/common.actions.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -147,12 +149,15 @@ interface DevicesPreviewSidebarProps {
 }
 
 function DevicesPreviewSidebar({ previewRows }: DevicesPreviewSidebarProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-muted/40 p-4 dark:bg-muted/20">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-medium text-muted-foreground">Así se verá en tu lista</h3>
+        <h3 className="text-xs font-medium text-muted-foreground">
+          {t("setting/trusted-device-dialogs.recommendations.preview_title")}
+        </h3>
         <span className="rounded-full border bg-card px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-          Ejemplo
+          {t("setting/trusted-device-dialogs.recommendations.example")}
         </span>
       </div>
 
@@ -170,6 +175,7 @@ interface DevicePreviewRowProps {
 }
 
 function DevicePreviewRow({ previewRow }: DevicePreviewRowProps): JSX.Element {
+  const { t } = useTranslation();
   const DeviceIcon = previewRow.device.icon;
 
   return (
@@ -193,7 +199,7 @@ function DevicePreviewRow({ previewRow }: DevicePreviewRowProps): JSX.Element {
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{previewRow.device.name}</p>
           <p className="truncate text-xs font-normal text-muted-foreground">
-            {previewRow.device.subtitle}
+            {t(previewRow.device.subtitle)}
           </p>
         </div>
       </div>
@@ -206,7 +212,7 @@ function DevicePreviewRow({ previewRow }: DevicePreviewRowProps): JSX.Element {
         )}
       >
         <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-        {previewRow.badge.label}
+        {t(previewRow.badge.label)}
       </span>
     </div>
   );

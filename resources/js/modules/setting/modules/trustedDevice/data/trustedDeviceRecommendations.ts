@@ -12,32 +12,28 @@ export interface TrustedDeviceRecommendation {
 
 export const trustedDeviceRecommendations: TrustedDeviceRecommendation[] = [
   {
-    description:
-      "Mantén solo los dispositivos que realmente usas y reconoces. Elimina los que ya no utilices.",
+    description: "setting/trusted-devices.recommendations.review_periodically.description",
     icon: Calendar,
     iconColor: "blue",
-    title: "Revisa tus dispositivos periódicamente",
+    title: "setting/trusted-devices.recommendations.review_periodically.title",
   },
   {
-    description:
-      "Marca como confiables solo equipos bajo tu control. Evita computadoras públicas o de uso compartido.",
+    description: "setting/trusted-devices.recommendations.avoid_shared.description",
     icon: Users,
     iconColor: "green",
-    title: "No confíes en dispositivos compartidos",
+    title: "setting/trusted-devices.recommendations.avoid_shared.title",
   },
   {
-    description:
-      "Si ves un dispositivo extraño, revoca su acceso de inmediato para evitar que personas no autorizadas entren a tu cuenta.",
+    description: "setting/trusted-devices.recommendations.revoke_unknown.description",
     icon: Trash2,
     iconColor: "orange",
-    title: "Revoca accesos que no reconozcas",
+    title: "setting/trusted-devices.recommendations.revoke_unknown.title",
   },
   {
-    description:
-      "Las actualizaciones incluyen parches de seguridad que reducen el riesgo de vulnerabilidades conocidas.",
+    description: "setting/trusted-devices.recommendations.keep_updated.description",
     icon: RefreshCw,
     iconColor: "purple",
-    title: "Mantén tu navegador y sistema al día",
+    title: "setting/trusted-devices.recommendations.keep_updated.title",
   },
 ];
 
@@ -60,35 +56,35 @@ export interface TrustedDevicePreviewRow {
 
 export const trustedDevicePreviewRows: readonly TrustedDevicePreviewRow[] = [
   {
-    badge: { label: "Confiable", variant: "green" },
+    badge: { label: "setting/trusted-devices.recommendations.preview.trusted", variant: "green" },
     device: {
       icon: Laptop,
       iconVariant: "blue",
       name: "MacBook Pro",
-      subtitle: "Escritorio",
+      subtitle: "setting/trusted-devices.recommendations.preview.desktop",
     },
   },
   {
-    badge: { label: "Confiable", variant: "green" },
+    badge: { label: "setting/trusted-devices.recommendations.preview.trusted", variant: "green" },
     device: {
       icon: Smartphone,
       iconVariant: "green",
       name: "iPhone 14",
-      subtitle: "Móvil",
+      subtitle: "setting/trusted-devices.recommendations.preview.mobile",
     },
   },
   {
-    badge: { label: "Revocar", variant: "red" },
+    badge: { label: "setting/trusted-devices.recommendations.preview.revoke", variant: "red" },
     device: {
       icon: Monitor,
       iconVariant: "red",
       name: "Windows PC",
-      subtitle: "Escritorio",
+      subtitle: "setting/trusted-devices.recommendations.preview.desktop",
     },
   },
 ];
 
 export const trustedDevicePreviewAlert = {
-  body: "Cada dispositivo que revisas fortalece la seguridad de tu cuenta.",
-  title: "Pequeñas acciones, gran diferencia",
+  body: "setting/trusted-devices.recommendations.preview.footer_description",
+  title: "setting/trusted-devices.recommendations.preview.footer_title",
 } as const;
