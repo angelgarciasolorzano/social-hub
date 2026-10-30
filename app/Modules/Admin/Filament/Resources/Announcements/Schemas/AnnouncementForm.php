@@ -6,9 +6,11 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Schemas;
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Support\Translation\TranslatedText;
+use BackedEnum;
 use Carbon\CarbonImmutable;
 use Closure;
 use DateTimeInterface;
@@ -20,6 +22,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -43,16 +46,23 @@ class AnnouncementForm
         return $schema
             ->columns(1)
             ->components([
+                Callout::make(TranslatedText::of('admin/announcements.form.reapproval_notice_heading'))
+                    ->description(TranslatedText::of('admin/announcements.form.reapproval_notice_description'))
+                    ->warning()
+                    ->visible(fn (Get $get, ?Announcement $record): bool => self::shouldWarnAboutResubmission($get, $record))
+                    ->columnSpanFull(),
                 Section::make(TranslatedText::of('admin/announcements.sections.content'))
                     ->schema([
                         TextInput::make('title')
                             ->label(TranslatedText::of('admin/announcements.fields.title'))
                             ->required()
-                            ->maxLength(Announcement::TITLE_MAX_LENGTH),
+                            ->maxLength(Announcement::TITLE_MAX_LENGTH)
+                            ->live(onBlur: true),
                         RichEditor::make('body')
                             ->label(TranslatedText::of('admin/announcements.fields.message'))
                             ->required()
                             ->fileAttachments(false)
+                            ->live(onBlur: true)
                             ->toolbarButtons([
                                 ['bold', 'italic', 'underline', 'strike', 'link'],
                                 ['h2', 'h3'],
@@ -63,7 +73,8 @@ class AnnouncementForm
                             ->label(TranslatedText::of('admin/announcements.fields.image'))
                             ->collection(Announcement::IMAGE_MEDIA_COLLECTION)
                             ->image()
-                            ->maxSize(self::IMAGE_MAX_SIZE_KILOBYTES),
+                            ->maxSize(self::IMAGE_MAX_SIZE_KILOBYTES)
+                            ->live(),
                     ]),
                 Section::make(TranslatedText::of('admin/announcements.sections.display'))
                     ->columns(2)
@@ -83,7 +94,8 @@ class AnnouncementForm
                             ->label(TranslatedText::of('admin/announcements.fields.audience'))
                             ->options(self::audienceOptions())
                             ->default(AnnouncementAudience::All->value)
-                            ->required(),
+                            ->required()
+                            ->live(),
                         Radio::make('display')
                             ->label(TranslatedText::of('admin/announcements.fields.display'))
                             ->options(self::displayOptions())
@@ -115,7 +127,8 @@ class AnnouncementForm
                             ->live(onBlur: true),
                         Toggle::make('is_dismissible')
                             ->label(TranslatedText::of('admin/announcements.fields.is_dismissible'))
-                            ->default(true),
+                            ->default(true)
+                            ->live(),
                     ]),
                 Section::make(TranslatedText::of('admin/announcements.sections.button'))
                     ->columns(2)
@@ -131,16 +144,103 @@ class AnnouncementForm
                             ->label(TranslatedText::of('admin/announcements.fields.button_text'))
                             ->required()
                             ->maxLength(Announcement::BUTTON_LABEL_MAX_LENGTH)
+                            ->live(onBlur: true)
                             ->visible(fn (Get $get): bool => $get->boolean('has_button')),
                         TextInput::make('button_url')
                             ->label(TranslatedText::of('admin/announcements.fields.button_link'))
                             ->helperText(TranslatedText::of('admin/announcements.form.button_link_helper'))
                             ->required()
                             ->maxLength(self::BUTTON_URL_MAX_LENGTH)
+                            ->live(onBlur: true)
                             ->rule(fn (): Closure => self::buttonUrlRule())
                             ->visible(fn (Get $get): bool => $get->boolean('has_button')),
                     ]),
             ]);
+    }
+
+    /**
+     * Whether changing the current form state would return an approved announcement to review.
+     */
+    private static function shouldWarnAboutResubmission(Get $get, ?Announcement $announcement): bool
+    {
+        if (! $announcement instanceof Announcement || $announcement->status !== AnnouncementStatus::Approved) {
+            return false;
+        }
+
+        $hasButton = $get->boolean('has_button');
+
+        return trim(self::stringState($get('title'))) !== $announcement->title
+            || self::stringState($get('body')) !== $announcement->body
+            || ! self::enumStateMatches($get('type'), $announcement->type)
+            || ! self::enumStateMatches($get('audience'), $announcement->audience)
+            || ! self::enumStateMatches($get('display'), $announcement->display)
+            || $get->boolean('is_dismissible') !== $announcement->is_dismissible
+            || ($hasButton ? self::nullableStringState($get('button_label')) : null) !== $announcement->button_label
+            || ($hasButton ? self::nullableStringState($get('button_url')) : null) !== $announcement->button_url
+            || self::imageStateChanged($get('image'), $announcement);
+    }
+
+    /**
+     * Whether a form enum value matches its current model case.
+     */
+    private static function enumStateMatches(mixed $state, BackedEnum $currentValue): bool
+    {
+        if ($state instanceof BackedEnum) {
+            $state = $state->value;
+        }
+
+        return $state === $currentValue->value;
+    }
+
+    /**
+     * Read a string value from form state without converting invalid values.
+     */
+    private static function stringState(mixed $state): string
+    {
+        return \is_string($state) ? $state : '';
+    }
+
+    /**
+     * Normalize an optional text field like AnnouncementData does before saving it.
+     */
+    private static function nullableStringState(mixed $state): ?string
+    {
+        if (! \is_string($state)) {
+            return null;
+        }
+
+        $state = trim($state);
+
+        return $state === '' ? null : $state;
+    }
+
+    /**
+     * Whether the image upload state differs from the announcement's current media.
+     */
+    private static function imageStateChanged(mixed $state, Announcement $announcement): bool
+    {
+        if ($state !== null && ! \is_array($state)) {
+            return true;
+        }
+
+        $currentImageUuids = [];
+
+        foreach (array_keys($state ?? []) as $imageUuid) {
+            if (! \is_string($imageUuid)) {
+                return true;
+            }
+
+            $currentImageUuids[] = $imageUuid;
+        }
+
+        $storedImageUuids = $announcement->getMedia(Announcement::IMAGE_MEDIA_COLLECTION)
+            ->pluck('uuid')
+            ->all();
+
+        sort($currentImageUuids);
+        sort($storedImageUuids);
+
+        return $currentImageUuids !== $storedImageUuids;
     }
 
     /**
