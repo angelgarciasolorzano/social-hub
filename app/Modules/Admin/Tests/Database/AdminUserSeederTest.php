@@ -10,7 +10,9 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Spatie\Permission\Models\Role;
 
-it('assigns Angel backup operations, user moderation and all reader roles while preserving existing assignments', function (): void {
+it('assigns Angel backup operations, user moderation and all reader roles while preserving existing assignments', function (string $environment): void {
+    $this->app->detectEnvironment(fn (): string => $environment);
+
     $user = createUser();
     $user->forceFill(['email' => 'angel@gmail.com'])->save();
 
@@ -44,6 +46,7 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         AdminPermission::AdminUsersReactivate->value,
         AdminPermission::AdminAnnouncementsViewAny->value,
         AdminPermission::AdminAnnouncementsView->value,
+        AdminPermission::AdminAnnouncementsReview->value,
         AdminPermission::AdminAnnouncementsCreate->value,
         AdminPermission::AdminAnnouncementsUpdate->value,
         AdminPermission::AdminAnnouncementsDelete->value,
@@ -59,6 +62,7 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         AdminRole::AdminBackupsOperator->value,
         AdminRole::AdminUsersModerator->value,
         AdminRole::AdminAnnouncementsManager->value,
+        AdminRole::AdminAnnouncementsReviewer->value,
         $customAdminRole->name,
     ];
 
@@ -66,7 +70,10 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         ->toBe(collect($expectedRoleNames)->sort()->values()->all())
         ->and($user->getAllPermissions()->pluck('name')->sort()->values()->all())
         ->toBe(collect($expectedPermissionNames)->sort()->values()->all());
-});
+})->with([
+    'local' => 'local',
+    'testing' => 'testing',
+]);
 
 it('preserves the roles that other users already have', function (): void {
     $user = createUser();
@@ -91,4 +98,16 @@ it('preserves the roles that other users already have', function (): void {
         AdminRole::AdminUsersReader->value,
     ]))->toBeTrue()
         ->and($reader->refresh()->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue();
+});
+
+it('does not assign the reviewer role outside local and testing environments', function (): void {
+    $user = createUser();
+    $user->forceFill(['email' => 'angel@gmail.com'])->save();
+
+    $this->seed(AdminAuthorizationSeeder::class);
+    $this->app->detectEnvironment(fn (): string => 'production');
+
+    resolve(AdminUserSeeder::class)->run();
+
+    expect($user->refresh()->hasRole(AdminRole::AdminAnnouncementsReviewer->value, 'admin'))->toBeFalse();
 });
