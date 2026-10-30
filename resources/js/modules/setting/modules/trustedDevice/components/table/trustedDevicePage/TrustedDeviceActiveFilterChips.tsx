@@ -18,6 +18,8 @@ import {
 } from "@/modules/setting/modules/trustedDevice/data/trustedDeviceFilters";
 import type { TrustedDeviceFilters } from "@/modules/setting/modules/trustedDevice/types/trustedDevice";
 
+import { useTranslation } from "@/shared/hooks";
+
 export interface TrustedDeviceActiveFilterChipsProps {
   filters: TrustedDeviceFilters;
   onSearchChange: (value: string) => void;
@@ -37,13 +39,15 @@ function TrustedDeviceActiveFilterChips({
   onLastAccessFilterChange,
   onResetFilters,
 }: TrustedDeviceActiveFilterChipsProps): JSX.Element | null {
+  const { t } = useTranslation();
+
   const activeFilterChips: readonly TrustedDeviceActiveFilterChip[] = [
     ...(filters.search === ""
       ? []
       : [
           {
             key: "search",
-            label: `Búsqueda: ${filters.search}`,
+            label: t("setting/trusted-devices.chips.search", { value: filters.search }),
             onRemove: () => {
               onSearchChange("");
             },
@@ -51,14 +55,18 @@ function TrustedDeviceActiveFilterChips({
         ]),
     ...(filters.status ?? []).map((status) => ({
       key: `status-${status}`,
-      label: `Estado: ${findTrustedDeviceFilterOptionLabel(status, statusOptions)}`,
+      label: t("setting/trusted-devices.chips.status", {
+        value: t(findTrustedDeviceFilterOptionLabel(status, statusOptions)),
+      }),
       onRemove: () => {
         onStatusFilterChange(removeTrustedDeviceFilterValue(filters.status, status));
       },
     })),
     ...(filters.browser ?? []).map((browser) => ({
       key: `browser-${browser}`,
-      label: `Navegador / SO: ${findTrustedDeviceFilterOptionLabel(browser, browserOptions)}`,
+      label: t("setting/trusted-devices.chips.browser_os", {
+        value: t(findTrustedDeviceFilterOptionLabel(browser, browserOptions)),
+      }),
       onRemove: () => {
         onBrowserFilterChange(removeTrustedDeviceFilterValue(filters.browser, browser));
       },
@@ -68,7 +76,9 @@ function TrustedDeviceActiveFilterChips({
       : [
           {
             key: "device-type",
-            label: `Tipo: ${findTrustedDeviceFilterOptionLabel(filters.deviceType, deviceTypeOptions)}`,
+            label: t("setting/trusted-devices.chips.device_type", {
+              value: t(findTrustedDeviceFilterOptionLabel(filters.deviceType, deviceTypeOptions)),
+            }),
             onRemove: () => {
               onDeviceTypeFilterChange(null);
             },
@@ -76,7 +86,9 @@ function TrustedDeviceActiveFilterChips({
         ]),
     ...(filters.lastAccess ?? []).map((lastAccess) => ({
       key: `last-access-${lastAccess}`,
-      label: `Último acceso: ${findTrustedDeviceFilterOptionLabel(lastAccess, lastAccessOptions)}`,
+      label: t("setting/trusted-devices.chips.last_access", {
+        value: t(findTrustedDeviceFilterOptionLabel(lastAccess, lastAccessOptions)),
+      }),
       onRemove: () => {
         onLastAccessFilterChange(removeTrustedDeviceFilterValue(filters.lastAccess, lastAccess));
       },
@@ -85,7 +97,7 @@ function TrustedDeviceActiveFilterChips({
 
   return (
     <TrustedDeviceActiveFilterChipGroup
-      ariaLabel="Filtros activos"
+      ariaLabel={t("setting/trusted-devices.chips.active_filters")}
       filterChips={activeFilterChips}
       onResetFilters={onResetFilters}
     />

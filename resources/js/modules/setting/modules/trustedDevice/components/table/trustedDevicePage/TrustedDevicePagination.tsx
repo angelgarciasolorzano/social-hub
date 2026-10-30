@@ -28,6 +28,8 @@ import {
   SelectValue,
 } from "@/shared/components/shadcn/ui/select";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 
 interface TrustedDevicePaginationProps {
@@ -39,15 +41,19 @@ function TrustedDevicePagination({
   onPerPageChange,
   pagination,
 }: TrustedDevicePaginationProps): JSX.Element {
+  const { t } = useTranslation();
   const pages = computePaginationRange(pagination.current_page, pagination.last_page);
 
   return (
     <div className="grid min-w-0 grid-cols-1 items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
       <span className="text-sm font-normal text-muted-foreground">
-        Página {pagination.current_page} de {pagination.last_page}
+        {t("setting/trusted-devices.pagination.page_of", {
+          current: pagination.current_page,
+          last: pagination.last_page,
+        })}
       </span>
 
-      <Pagination aria-label="Paginación de dispositivos de confianza" className="min-w-0">
+      <Pagination aria-label={t("setting/trusted-devices.pagination.label")} className="min-w-0">
         <PaginationContent>
           <PaginationItem>
             <PaginationPreviousLink pagination={pagination} />
@@ -73,7 +79,7 @@ function TrustedDevicePagination({
 
       <div className="flex items-center justify-between gap-3 sm:justify-self-end">
         <Label className="text-sm font-medium whitespace-nowrap" htmlFor="trusted-devices-per-page">
-          Filas por página
+          {t("setting/trusted-devices.pagination.rows_per_page")}
         </Label>
 
         <Select
@@ -137,13 +143,14 @@ function PaginationNumberLink({ page, pagination }: PaginationNumberLinkProps): 
 type PaginationPreviousLinkProps = Pick<PaginationNumberLinkProps, "pagination">;
 
 function PaginationPreviousLink({ pagination }: PaginationPreviousLinkProps): JSX.Element {
+  const { t } = useTranslation();
   const url = pagination.prev_page_url;
 
   if (url === null) {
     return (
       <span
         aria-disabled
-        aria-label="Pagina anterior"
+        aria-label={t("setting/trusted-devices.pagination.previous")}
         className={cn(
           buttonVariants({ variant: "outline", size: "icon" }),
           "pointer-events-none opacity-50",
@@ -156,7 +163,7 @@ function PaginationPreviousLink({ pagination }: PaginationPreviousLinkProps): JS
 
   return (
     <Link
-      aria-label="Pagina anterior"
+      aria-label={t("setting/trusted-devices.pagination.previous")}
       className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
       href={url}
       only={["trustedDevices"]}
@@ -171,13 +178,14 @@ function PaginationPreviousLink({ pagination }: PaginationPreviousLinkProps): JS
 type PaginationNextLinkProps = PaginationPreviousLinkProps;
 
 function PaginationNextLink({ pagination }: PaginationNextLinkProps): JSX.Element {
+  const { t } = useTranslation();
   const url = pagination.next_page_url;
 
   if (url === null) {
     return (
       <span
         aria-disabled
-        aria-label="Pagina siguiente"
+        aria-label={t("setting/trusted-devices.pagination.next")}
         className={cn(
           buttonVariants({ variant: "outline", size: "icon" }),
           "pointer-events-none opacity-50",
@@ -190,7 +198,7 @@ function PaginationNextLink({ pagination }: PaginationNextLinkProps): JSX.Elemen
 
   return (
     <Link
-      aria-label="Pagina siguiente"
+      aria-label={t("setting/trusted-devices.pagination.next")}
       className={cn(buttonVariants({ variant: "outline", size: "icon" }))}
       href={url}
       only={["trustedDevices"]}
