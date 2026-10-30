@@ -53,6 +53,8 @@ class AccountSettingsController extends Controller
             event(AccountUpdated::fromSavedChanges($user));
         }
 
+        app()->setLocale($user->preferred_locale->value);
+
         return Inertia::flash([
             'type' => 'success',
             'message' => TranslatedText::of('setting/account-settings.messages.profile_updated'),
