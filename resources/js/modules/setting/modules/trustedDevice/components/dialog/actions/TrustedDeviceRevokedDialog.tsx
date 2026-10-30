@@ -22,6 +22,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceRevokedDialogProps {
@@ -35,6 +37,7 @@ function TrustedDeviceRevokedDialog({
   open,
   onClose,
 }: TrustedDeviceRevokedDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const handleGoToRevokedList = (): void => {
     onClose();
     router.visit(
@@ -60,27 +63,29 @@ function TrustedDeviceRevokedDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <ShieldOff aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Dispositivo revocado
+              {t("setting/trusted-device-dialogs.revoked.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Este dispositivo ya fue registrado pero lo revocaste. Para volver a confiar en él,
-            reactivarlo desde la lista de dispositivos revocados.
+            {t("setting/trusted-device-dialogs.revoked.description")}
           </DialogDescription>
         </DialogHeader>
 
         <Separator />
 
-        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expira el" />
+        <TrustedDeviceInfoCard
+          device={existingDevice}
+          expirationLabel={t("setting/trusted-devices.info_card.expires_on")}
+        />
 
         <RevokedActionsAlert />
 
         <DialogFooter>
           <Button onClick={onClose} type="button" variant="outline">
-            Cerrar
+            {t("setting/common.actions.close")}
           </Button>
           <Button onClick={handleGoToRevokedList} type="button">
-            Ir a dispositivos revocados
+            {t("setting/trusted-device-dialogs.revoked.go_to_revoked")}
             <ArrowRight />
           </Button>
         </DialogFooter>
@@ -90,14 +95,15 @@ function TrustedDeviceRevokedDialog({
 }
 
 function RevokedActionsAlert(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
       <AlertTitle className="text-sm font-medium">
-        ¿Quieres volver a confiar en este dispositivo?
+        {t("setting/trusted-device-dialogs.revoked.trust_again_title")}
       </AlertTitle>
       <AlertDescription>
-        Reactivarlo desde la lista de revocados restaura la fila con un token nuevo por seguridad.
+        {t("setting/trusted-device-dialogs.revoked.trust_again_description")}
       </AlertDescription>
     </Alert>
   );

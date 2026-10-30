@@ -29,7 +29,8 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
@@ -50,6 +51,8 @@ function TrustedDeviceRenameDialog({
   onClose,
   returnFocusTarget,
 }: TrustedDeviceRenameDialogProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, fromNow } = useDateTime();
   const { onOpenAutoFocus, onCloseAutoFocus } = useDialogFocusRestoration({
     getFallbackFocusTarget: () => returnFocusTarget,
   });
@@ -90,11 +93,11 @@ function TrustedDeviceRenameDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Pencil aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Renombrar Dispositivo
+              {t("setting/trusted-device-dialogs.rename.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Asigna un nombre personalizado para identificar este dispositivo facilmente.
+            {t("setting/trusted-device-dialogs.rename.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -113,7 +116,7 @@ function TrustedDeviceRenameDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -121,10 +124,10 @@ function TrustedDeviceRenameDialog({
             {processing ? (
               <>
                 <Spinner />
-                Guardando cambios...
+                {t("setting/trusted-device-dialogs.rename.submitting")}
               </>
             ) : (
-              "Guardar cambios"
+              t("setting/trusted-device-dialogs.rename.submit")
             )}
           </Button>
         </DialogFooter>
@@ -140,10 +143,11 @@ interface RenameDeviceFormProps {
 }
 
 function RenameDeviceForm({ handleSubmit, errors, setData }: RenameDeviceFormProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <form id="rename-trusted-device-form" onSubmit={handleSubmit} className="grid gap-2">
       <LabelForm htmlFor="rename-trusted-device" error={errors.name}>
-        Nombre del dispositivo
+        {t("setting/trusted-device-dialogs.rename.name_label")}
       </LabelForm>
 
       <Input
@@ -151,9 +155,9 @@ function RenameDeviceForm({ handleSubmit, errors, setData }: RenameDeviceFormPro
         name="name"
         required
         autoFocus
-        placeholder="Renombrar dispositivo"
-        onChange={(e) => {
-          setData("name", e.target.value);
+        placeholder={t("setting/trusted-device-dialogs.rename.name_placeholder")}
+        onChange={(event) => {
+          setData("name", event.target.value);
         }}
         aria-describedby={errors.name ? "rename-trusted-device-error" : "rename-device-description"}
         aria-invalid={errors.name ? "true" : "false"}
@@ -165,7 +169,7 @@ function RenameDeviceForm({ handleSubmit, errors, setData }: RenameDeviceFormPro
 
       {!errors.name && (
         <p className="text-sm font-normal text-muted-foreground" id="rename-device-description">
-          Este sera el nombre con el que identificaras este dispositivo.
+          {t("setting/trusted-device-dialogs.rename.name_help")}
         </p>
       )}
     </form>
@@ -177,13 +181,14 @@ interface DeviceNamePreviewProps {
 }
 
 function DeviceNamePreview({ data }: DeviceNamePreviewProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={alertVariants.preview}>
       <Eye />
 
-      <AlertTitle>Vista previa</AlertTitle>
+      <AlertTitle>{t("setting/trusted-device-dialogs.rename.preview_title")}</AlertTitle>
       <AlertDescription className="text-sm font-normal">
-        Este dispositivo se mostrara como:
+        {t("setting/trusted-device-dialogs.rename.preview_description")}
         {data.name?.trim() ? (
           <Badge
             className={cn(
