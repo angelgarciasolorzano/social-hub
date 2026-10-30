@@ -23,7 +23,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/shared/components/shadcn/ui/field";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { useDialog } from "@/shared/hooks";
+import { useDialog, useTranslation } from "@/shared/hooks";
 
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -34,6 +34,7 @@ interface PasswordFormData {
 }
 
 function AccountSettingsPasswordDialog(): JSX.Element {
+  const { t } = useTranslation();
   const { open, setOpen } = useDialog();
 
   const currentPasswordInput = useRef<HTMLInputElement>(null);
@@ -99,7 +100,7 @@ function AccountSettingsPasswordDialog(): JSX.Element {
           variant="outline"
         >
           <KeyRound aria-hidden="true" data-icon="inline-start" />
-          Cambiar contraseña
+          {t("setting/account-settings.password_dialog.trigger")}
           <ChevronRight aria-hidden="true" data-icon="inline-end" />
         </Button>
       </DialogTrigger>

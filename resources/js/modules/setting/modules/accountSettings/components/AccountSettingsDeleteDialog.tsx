@@ -23,7 +23,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/shared/components/shadcn/ui/field";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { useAppearance, useDialog } from "@/shared/hooks";
+import { useAppearance, useDialog, useTranslation } from "@/shared/hooks";
 
 import { alertVariants, buttonVariants, iconColorVariants } from "@/shared/lib/styling";
 
@@ -36,6 +36,7 @@ interface DeleteAccountFormData {
 }
 
 function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const { open, setOpen } = useDialog();
   const { resolvedAppearance } = useAppearance();
 
@@ -81,7 +82,7 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
           variant="outline"
         >
           <Trash2 aria-hidden="true" data-icon="inline-start" />
-          Eliminar mi cuenta
+          {t("setting/account-settings.delete_dialog.trigger")}
         </Button>
       </DialogTrigger>
 
