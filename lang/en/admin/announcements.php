@@ -99,6 +99,22 @@ return [
         'administrator_only' => 'Only a signed-in administrator can change announcements.',
     ],
 
+    'notifications' => [
+        'submitted' => [
+            'title' => 'Announcement needs review',
+            'body' => 'A system announcement was submitted for review.',
+        ],
+        'approved' => [
+            'title' => 'Announcement approved',
+            'body' => 'Your announcement was approved.',
+            'body_with_comment' => 'Your announcement was approved. Review comment: :comment',
+        ],
+        'rejected' => [
+            'title' => 'Announcement rejected',
+            'body' => 'Your announcement was rejected. Review comment: :comment',
+        ],
+    ],
+
     'placeholders' => [
         'no_image' => 'No image',
         'no_end_date' => 'No end date',

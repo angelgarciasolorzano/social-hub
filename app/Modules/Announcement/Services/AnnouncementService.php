@@ -6,12 +6,17 @@ namespace App\Modules\Announcement\Services;
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Announcement\Data\AnnouncementData;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Models\AnnouncementReview;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
+use Closure;
+use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
@@ -79,6 +84,8 @@ final readonly class AnnouncementService
                 'action' => $reviewAction,
                 'reviewed_by' => $user->id,
             ]);
+
+            $this->scheduleReviewerSubmissionNotification($lockedAnnouncement->created_by, $user->id);
 
             $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
 
@@ -173,6 +180,7 @@ final readonly class AnnouncementService
 
             if ($requiresReview) {
                 $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
+                $this->scheduleReviewerSubmissionNotification($lockedAnnouncement->created_by, $user->id);
             }
 
             return $lockedAnnouncement;
@@ -209,6 +217,8 @@ final readonly class AnnouncementService
             );
 
             $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
+
+            $this->scheduleReviewerSubmissionNotification($lockedAnnouncement->created_by, $user->id);
 
             return $lockedAnnouncement;
         });
@@ -350,7 +360,103 @@ final readonly class AnnouncementService
 
             $this->activityLogger->record($activityLogAdminEvent, $lockedAnnouncement, $user);
 
+            $this->scheduleAuthorDecisionNotification(
+                $lockedAnnouncement->created_by,
+                $announcementReviewAction,
+                $comment,
+            );
+
             return $lockedAnnouncement;
         });
+    }
+
+    /**
+     * Schedule a content-free notification for reviewers after the submission commits.
+     */
+    private function scheduleReviewerSubmissionNotification(?int $authorId, int $actorId): void
+    {
+        DB::afterCommit(function () use ($authorId, $actorId): void {
+            $excludedUserIds = [$actorId];
+
+            if ($authorId !== null) {
+                $excludedUserIds[] = $authorId;
+            }
+
+            $reviewers = User::query()
+                ->permission(AdminPermission::AdminAnnouncementsReview)
+                ->whereNotIn('id', $excludedUserIds)
+                ->get();
+
+            foreach ($reviewers as $reviewer) {
+                $this->withLocale($reviewer->preferred_locale->value, function () use ($reviewer): void {
+                    Notification::make()
+                        ->title(TranslatedText::of('admin/announcements.notifications.submitted.title'))
+                        ->body(TranslatedText::of('admin/announcements.notifications.submitted.body'))
+                        ->sendToDatabase($reviewer);
+                });
+            }
+        });
+    }
+
+    /**
+     * Schedule the review decision and optional comment for the author after commit.
+     */
+    private function scheduleAuthorDecisionNotification(
+        ?int $authorId,
+        AnnouncementReviewAction $announcementReviewAction,
+        ?string $comment,
+    ): void {
+        if ($authorId === null) {
+            return;
+        }
+
+        DB::afterCommit(function () use ($authorId, $announcementReviewAction, $comment): void {
+            $author = User::query()->find($authorId);
+
+            if (! $author instanceof User) {
+                return;
+            }
+
+            $this->withLocale($author->preferred_locale->value, function () use ($author, $announcementReviewAction, $comment): void {
+                if ($announcementReviewAction === AnnouncementReviewAction::Approved) {
+                    $title = TranslatedText::of('admin/announcements.notifications.approved.title');
+                    $body = $comment === null
+                        ? TranslatedText::of('admin/announcements.notifications.approved.body')
+                        : TranslatedText::of(
+                            'admin/announcements.notifications.approved.body_with_comment',
+                            ['comment' => $comment],
+                        );
+                } elseif ($announcementReviewAction === AnnouncementReviewAction::Rejected) {
+                    throw_if($comment === null, LogicException::class, 'Rejected announcements require a review comment.');
+                    $title = TranslatedText::of('admin/announcements.notifications.rejected.title');
+                    $body = TranslatedText::of(
+                        'admin/announcements.notifications.rejected.body',
+                        ['comment' => $comment],
+                    );
+                } else {
+                    throw new LogicException('Only approval decisions may notify announcement authors.');
+                }
+
+                Notification::make()
+                    ->title($title)
+                    ->body($body)
+                    ->sendToDatabase($author);
+            });
+        });
+    }
+
+    /**
+     * Run a notification callback in the recipient's language and restore the current language.
+     */
+    private function withLocale(string $locale, Closure $callback): void
+    {
+        $currentLocale = App::getLocale();
+        App::setLocale($locale);
+
+        try {
+            $callback();
+        } finally {
+            App::setLocale($currentLocale);
+        }
     }
 }

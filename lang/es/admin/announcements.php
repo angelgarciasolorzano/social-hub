@@ -99,6 +99,22 @@ return [
         'administrator_only' => 'Solo un administrador con sesión iniciada puede modificar los anuncios.',
     ],
 
+    'notifications' => [
+        'submitted' => [
+            'title' => 'Anuncio pendiente de revisión',
+            'body' => 'Se envió un anuncio del sistema para revisión.',
+        ],
+        'approved' => [
+            'title' => 'Anuncio aprobado',
+            'body' => 'Se aprobó tu anuncio.',
+            'body_with_comment' => 'Se aprobó tu anuncio. Comentario de revisión: :comment',
+        ],
+        'rejected' => [
+            'title' => 'Anuncio rechazado',
+            'body' => 'Se rechazó tu anuncio. Comentario de revisión: :comment',
+        ],
+    ],
+
     'placeholders' => [
         'no_image' => 'Sin imagen',
         'no_end_date' => 'Sin fecha de finalización',

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
+use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Data\AnnouncementData;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
@@ -14,8 +16,10 @@ use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Models\AnnouncementReview;
 use App\Modules\Announcement\Services\AnnouncementService;
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 use LogicException;
@@ -73,6 +77,23 @@ function announcementDataForService(
 function announcementActivities(ActivityLogAdminEvent $activityLogAdminEvent): array
 {
     return ActivityLog::query()->where('event', $activityLogAdminEvent->value)->get()->all();
+}
+
+/**
+ * Give a test user the announcement reviewer role and a known locale.
+ */
+function assignAnnouncementReviewerForService(User $user, PreferredLocale $preferredLocale = PreferredLocale::ENGLISH): void
+{
+    $user->assignRole(AdminRole::AdminAnnouncementsReviewer->value);
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+}
+
+/**
+ * Commit the test setup so after-commit callbacks run during the service action.
+ */
+function commitAnnouncementServiceTestSetupTransaction(): void
+{
+    DB::commit();
 }
 
 /**
@@ -169,6 +190,10 @@ function announcementDataWithContentChangeForService(
     return $updatedAnnouncementData;
 }
 
+beforeEach(function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+});
+
 it('creates an announcement authored by the administrator and audits it', function (): void {
     $user = createUser();
 
@@ -230,6 +255,56 @@ it('resubmits a rejected announcement with a new submitter history entry', funct
         ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
 });
 
+it('notifies eligible reviewers about submissions without exposing announcement content or the previous rejection comment', function (AnnouncementStatus $announcementStatus, AnnouncementReviewAction $announcementReviewAction): void {
+    $user = createUser();
+    $actor = createUser();
+    $eligibleReviewer = createUser();
+    $nonReviewer = createUser();
+    $previousReviewer = createUser();
+
+    assignAnnouncementReviewerForService($user);
+    assignAnnouncementReviewerForService($actor);
+    assignAnnouncementReviewerForService($eligibleReviewer, PreferredLocale::SPANISH);
+
+    $announcement = serviceAnnouncementFactory()
+        ->withStatus($announcementStatus)
+        ->createdBy($user)
+        ->createOne([
+            'title' => ANNOUNCEMENT_TITLE_SENTINEL,
+            'body' => ANNOUNCEMENT_BODY_SENTINEL,
+        ]);
+
+    if ($announcementStatus === AnnouncementStatus::Rejected) {
+        $announcement->reviews()->create([
+            'action' => AnnouncementReviewAction::Rejected,
+            'comment' => ANNOUNCEMENT_REVIEW_COMMENT_SENTINEL,
+            'reviewed_by' => $previousReviewer->id,
+        ]);
+    }
+
+    commitAnnouncementServiceTestSetupTransaction();
+
+    $submittedAnnouncement = announcementService()->submitForReview($announcement, $actor);
+    $announcementReview = latestSubmissionReviewForService($submittedAnnouncement);
+    $databaseNotification = $eligibleReviewer->notifications()->sole();
+    $notificationData = $databaseNotification->data;
+    $serializedNotificationData = json_encode($notificationData, JSON_THROW_ON_ERROR);
+
+    expect($announcementReview->action)->toBe($announcementReviewAction)
+        ->and($eligibleReviewer->notifications()->count())->toBe(1)
+        ->and($user->notifications()->count())->toBe(0)
+        ->and($actor->notifications()->count())->toBe(0)
+        ->and($nonReviewer->notifications()->count())->toBe(0)
+        ->and($notificationData['title'])->toBe('Anuncio pendiente de revisión')
+        ->and($notificationData['body'])->toBe('Se envió un anuncio del sistema para revisión.')
+        ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_TITLE_SENTINEL)
+        ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_BODY_SENTINEL)
+        ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_REVIEW_COMMENT_SENTINEL);
+})->with([
+    'draft submission' => [AnnouncementStatus::Draft, AnnouncementReviewAction::Submitted],
+    'rejected resubmission' => [AnnouncementStatus::Rejected, AnnouncementReviewAction::Resubmitted],
+]);
+
 it('refuses to submit an announcement outside a submittable state without writing history or audit', function (AnnouncementStatus $announcementStatus): void {
     $announcement = serviceAnnouncementFactory()->withStatus($announcementStatus)->createOne();
 
@@ -250,7 +325,10 @@ it('refuses to submit an announcement outside a submittable state without writin
 it('approves the latest submission with an optional comment', function (?string $comment): void {
     $user = createUser();
     $reviewer = createUser();
+    $user->forceFill(['preferred_locale' => PreferredLocale::SPANISH])->save();
     $submission = submitAnnouncementForService($user);
+
+    commitAnnouncementServiceTestSetupTransaction();
 
     $approvedAnnouncement = announcementService()->approve(
         $submission['announcement'],
@@ -262,6 +340,8 @@ it('approves the latest submission with an optional comment', function (?string 
         ->where('action', AnnouncementReviewAction::Approved->value)
         ->firstOrFail();
     $activities = announcementActivities(ActivityLogAdminEvent::AnnouncementApproved);
+    $databaseNotification = $user->notifications()->sole();
+    $notificationData = $databaseNotification->data;
 
     expect($approvedAnnouncement->status)->toBe(AnnouncementStatus::Approved)
         ->and($announcementReview->action)->toBe(AnnouncementReviewAction::Approved)
@@ -269,11 +349,41 @@ it('approves the latest submission with an optional comment', function (?string 
         ->and($announcementReview->reviewed_by)->toBe($reviewer->id)
         ->and($activities)->toHaveCount(1)
         ->and($activities[0]->subject?->is($approvedAnnouncement))->toBeTrue()
-        ->and($activities[0]->causer?->is($reviewer))->toBeTrue();
+        ->and($activities[0]->causer?->is($reviewer))->toBeTrue()
+        ->and($notificationData['title'])->toBe('Anuncio aprobado')
+        ->and($notificationData['body'])->toBe($comment === null
+            ? 'Se aprobó tu anuncio.'
+            : 'Se aprobó tu anuncio. Comentario de revisión: '.$comment)
+        ->and(json_encode($notificationData, JSON_THROW_ON_ERROR))->not->toContain(ANNOUNCEMENT_TITLE_SENTINEL)
+        ->and(json_encode($notificationData, JSON_THROW_ON_ERROR))->not->toContain(ANNOUNCEMENT_BODY_SENTINEL);
 })->with([
     'without a comment' => null,
     'with a comment' => 'Aprobado con cambios menores.',
 ]);
+
+it('skips the author notification when the announcement author has been deleted', function (): void {
+    $user = createUser();
+    $reviewer = createUser();
+    $submission = submitAnnouncementForService($user);
+
+    $user->delete();
+
+    $approvedAnnouncement = announcementService()->approve(
+        $submission['announcement'],
+        $reviewer,
+        $submission['submissionReview']->id,
+    );
+
+    commitAnnouncementServiceTestSetupTransaction();
+
+    expect($approvedAnnouncement->refresh()->status)->toBe(AnnouncementStatus::Approved)
+        ->and(User::query()->whereKey($user->id)->exists())->toBeFalse();
+
+    $this->assertDatabaseMissing('notifications', [
+        'notifiable_id' => $user->id,
+        'notifiable_type' => $user->getMorphClass(),
+    ]);
+});
 
 it('refuses approval or rejection unless the announcement has a current submission in review', function (AnnouncementStatus $announcementStatus, string $decision): void {
     $announcement = serviceAnnouncementFactory()->withStatus($announcementStatus)->createOne();
@@ -317,6 +427,9 @@ it('rejects with a 1000-character comment and keeps its content in review histor
     $submittedAnnouncement = announcementService()->submitForReview($announcement, $user);
     $announcementReview = $submittedAnnouncement->reviews()->firstOrFail();
 
+    $user->forceFill(['preferred_locale' => PreferredLocale::SPANISH])->save();
+    commitAnnouncementServiceTestSetupTransaction();
+
     $rejectedAnnouncement = announcementService()->reject(
         $submittedAnnouncement,
         $reviewer,
@@ -327,6 +440,8 @@ it('rejects with a 1000-character comment and keeps its content in review histor
         ->where('action', AnnouncementReviewAction::Rejected->value)
         ->firstOrFail();
     $activities = ActivityLog::query()->get()->toJson();
+    $databaseNotification = $user->notifications()->sole();
+    $notificationData = $databaseNotification->data;
 
     expect($rejectedAnnouncement->status)->toBe(AnnouncementStatus::Rejected)
         ->and($rejectionReview->comment)->toBe($comment)
@@ -334,7 +449,11 @@ it('rejects with a 1000-character comment and keeps its content in review histor
         ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementRejected))->toHaveCount(1)
         ->and($activities)->not->toContain(ANNOUNCEMENT_TITLE_SENTINEL)
         ->and($activities)->not->toContain(ANNOUNCEMENT_BODY_SENTINEL)
-        ->and($activities)->not->toContain($comment);
+        ->and($activities)->not->toContain($comment)
+        ->and($notificationData['title'])->toBe('Anuncio rechazado')
+        ->and($notificationData['body'])->toBe('Se rechazó tu anuncio. Comentario de revisión: '.$comment)
+        ->and(json_encode($notificationData, JSON_THROW_ON_ERROR))->not->toContain(ANNOUNCEMENT_TITLE_SENTINEL)
+        ->and(json_encode($notificationData, JSON_THROW_ON_ERROR))->not->toContain(ANNOUNCEMENT_BODY_SENTINEL);
 });
 
 it('refuses a rejection comment that is empty or longer than 1000 characters without writing', function (string $comment): void {
@@ -433,6 +552,8 @@ it('rejects a stale review decision after the announcement has been resubmitted'
 
 it('rolls back a submission when its activity log cannot be written', function (): void {
     $user = createUser();
+    $eligibleReviewer = createUser();
+    assignAnnouncementReviewerForService($eligibleReviewer);
     $announcement = serviceAnnouncementFactory()
         ->withStatus(AnnouncementStatus::Draft)
         ->createdBy($user)
@@ -451,6 +572,10 @@ it('rolls back a submission when its activity log cannot be written', function (
         ->toBe(0)
         ->and(announcementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))
         ->toBeEmpty();
+
+    commitAnnouncementServiceTestSetupTransaction();
+
+    expect($eligibleReviewer->notifications()->count())->toBe(0);
 });
 
 it('records the display as the only changed attribute when only the presentation changes', function (): void {
@@ -494,6 +619,53 @@ it('resubmits an approved announcement when its content changes', function (stri
     'audience' => 'audience',
     'presentation' => 'display',
     'dismissibility' => 'dismissibility',
+]);
+
+it('notifies eligible reviewers when an approved announcement is resubmitted', function (string $resubmissionType): void {
+    $user = createUser();
+    $editor = createUser();
+    $eligibleReviewer = createUser();
+
+    assignAnnouncementReviewerForService($user);
+    assignAnnouncementReviewerForService($editor);
+    assignAnnouncementReviewerForService($eligibleReviewer);
+
+    $announcement = serviceAnnouncementFactory()
+        ->withStatus(AnnouncementStatus::Approved)
+        ->createdBy($user)
+        ->createOne([
+            'title' => ANNOUNCEMENT_TITLE_SENTINEL,
+            'body' => ANNOUNCEMENT_BODY_SENTINEL,
+        ]);
+
+    commitAnnouncementServiceTestSetupTransaction();
+
+    $resubmittedAnnouncement = match ($resubmissionType) {
+        'content' => announcementService()->update(
+            $announcement,
+            announcementDataForService('Título actualizado'),
+            $editor,
+        ),
+        'image' => announcementService()->resubmitApprovedForImageChange($announcement, $editor),
+        default => throw new LogicException("Unknown announcement resubmission type {$resubmissionType}."),
+    };
+
+    $databaseNotification = $eligibleReviewer->notifications()->sole();
+    $notificationData = $databaseNotification->data;
+    $serializedNotificationData = json_encode($notificationData, JSON_THROW_ON_ERROR);
+
+    expect($resubmittedAnnouncement->status)->toBe(AnnouncementStatus::InReview)
+        ->and(latestSubmissionReviewForService($resubmittedAnnouncement)->action)->toBe(AnnouncementReviewAction::Resubmitted)
+        ->and($eligibleReviewer->notifications()->count())->toBe(1)
+        ->and($user->notifications()->count())->toBe(0)
+        ->and($editor->notifications()->count())->toBe(0)
+        ->and($notificationData['title'])->toBe('Announcement needs review')
+        ->and($notificationData['body'])->toBe('A system announcement was submitted for review.')
+        ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_TITLE_SENTINEL)
+        ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_BODY_SENTINEL);
+})->with([
+    'content change' => 'content',
+    'image change' => 'image',
 ]);
 
 it('keeps an approved announcement approved when only its dates change', function (): void {
