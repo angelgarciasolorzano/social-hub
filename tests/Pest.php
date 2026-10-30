@@ -271,6 +271,87 @@ function createUserPreferring(PreferredLocale $preferredLocale): User
 }
 
 /**
+ * The texts of a translation file of `lang/`, such as `admin/users` or `dates`, flattened to dotted keys.
+ *
+ * @return array<string, string>
+ */
+function translationFileTexts(string $locale, string $file): array
+{
+    $path = lang_path("{$locale}/{$file}.php");
+
+    expect($path)->toBeFile("lang/{$locale}/{$file}.php is missing");
+
+    $translations = require $path;
+
+    expect($translations)->toBeArray("lang/{$locale}/{$file}.php must return an array");
+
+    /** @var array<array-key, mixed> $translations */
+    return flattenTranslations($translations, "lang/{$locale}/{$file}.php");
+}
+
+/**
+ * @param  array<array-key, mixed>  $translations
+ * @return array<string, string>
+ */
+function flattenTranslations(array $translations, string $file, string $prefix = ''): array
+{
+    $texts = [];
+
+    foreach ($translations as $key => $value) {
+        $dottedKey = $prefix.$key;
+
+        if (is_array($value)) {
+            $texts = [...$texts, ...flattenTranslations($value, $file, $dottedKey.'.')];
+
+            continue;
+        }
+
+        expect($value)->toBeString("{$file}: '{$dottedKey}' must be a text");
+
+        /** @var string $value */
+        $texts[$dottedKey] = $value;
+    }
+
+    return $texts;
+}
+
+/**
+ * The `:name` placeholders of a text, sorted and lowercased, since Laravel fills `:name`, `:Name` and
+ * `:NAME` with the same value (only changing its case).
+ *
+ * @return list<string>
+ */
+function translationPlaceholders(string $text): array
+{
+    preg_match_all('/:([a-z_]+)/i', $text, $matches);
+
+    $placeholders = array_values(array_unique(array_map(strtolower(...), $matches[1])));
+    sort($placeholders);
+
+    return $placeholders;
+}
+
+/**
+ * Every translation file of a folder of `lang/en/`, as a dataset keyed by its name relative to `lang/en/`
+ * (`admin/users`). Pest builds datasets before the application boots, so `lang_path()` is not available.
+ *
+ * @return array<string, array{string}>
+ */
+function translationFilesIn(string $directory): array
+{
+    $files = [];
+
+    $paths = glob(dirname(__DIR__)."/lang/en/{$directory}/*.php");
+
+    foreach ($paths === false ? [] : $paths as $path) {
+        $file = $directory.'/'.basename($path, '.php');
+        $files[$file] = [$file];
+    }
+
+    return $files;
+}
+
+/**
  * The text of a translation key in the given language, to compare a flash or a validation
  * message with the catalog instead of copying the text into the test.
  */
