@@ -23,13 +23,13 @@ export interface OptionCardItem<TKey extends string = string> {
 
 interface OptionCardProps<TKey extends string = string> {
   options: OptionCardItem<TKey>[];
-  title?: string;
+  title: string;
   onOptionClick?: (optionKey: TKey) => void;
 }
 
 export function OptionCard<TKey extends string = string>({
   options,
-  title = "Beneficios de activar 2FA",
+  title,
   onOptionClick,
 }: OptionCardProps<TKey>): JSX.Element {
   const hasAction = onOptionClick !== undefined;
