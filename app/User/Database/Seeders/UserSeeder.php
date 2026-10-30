@@ -6,6 +6,7 @@ namespace App\User\Database\Seeders;
 
 use App\Support\Seeding\WeightedRandom;
 use App\User\Database\Factories\UserFactory;
+use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use App\User\Modules\TwoFactor\Enums\TwoFactorStatus;
@@ -79,6 +80,7 @@ class UserSeeder extends Seeder
             'name' => 'Angel Noé García Solórzano',
             'password' => Hash::make('password'),
             'email_verified_at' => now(),
+            'preferred_locale' => PreferredLocale::SPANISH,
         ]);
 
         $testImageProfilePath = glob(app_path(User::TEST_USER_IMAGE_GLOB_PATH), GLOB_BRACE);
