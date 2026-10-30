@@ -12,10 +12,9 @@ import { togglePost } from "@/shared/wayfinder/actions/App/Modules/Like/Controll
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { useLikeToggle } from "@/shared/hooks";
+import { useDateTime, useLikeToggle } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
-import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
@@ -28,6 +27,7 @@ interface PostCardProps {
 }
 
 function PostCard({ post }: PostCardProps): JSX.Element {
+  const { formatFullDate, fromNow } = useDateTime();
   const [commentsCount, setCommentsCount] = useState<number>(post.commentsCount);
 
   const { error, isPending, likesInfo, toggleLike } = useLikeToggle(
