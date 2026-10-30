@@ -271,6 +271,19 @@ function createUserPreferring(PreferredLocale $preferredLocale): User
 }
 
 /**
+ * The text of a translation key in the given language, to compare a flash or a validation
+ * message with the catalog instead of copying the text into the test.
+ */
+function translatedTextIn(PreferredLocale $preferredLocale, string $key): string
+{
+    $text = __($key, [], $preferredLocale->value);
+
+    throw_unless(is_string($text) && $text !== $key, LogicException::class, "The translation key [{$key}] has no text.");
+
+    return $text;
+}
+
+/**
  * Create a persisted User with confirmed two-factor authentication, using the
  * factory state: a real TOTP secret and Fortify-format recovery codes, so
  * tests can compute a genuinely valid code with validOtpFor().

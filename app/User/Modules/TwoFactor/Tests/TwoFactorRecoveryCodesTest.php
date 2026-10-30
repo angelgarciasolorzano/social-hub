@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\User\Enums\PreferredLocale;
 use Carbon\CarbonImmutable;
 use Laravel\Fortify\Features;
 
@@ -51,7 +52,7 @@ it('preserves recovery codes and their timestamp when the current password is in
             'password' => 'incorrect-password',
         ])
         ->assertRedirectBackWithErrors([
-            'password' => 'La contraseña proporcionada no es correcta.',
+            'password' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/two-factor.validation.password_incorrect'),
         ]);
 
     $unchangedUser = $user->refresh();
@@ -60,6 +61,26 @@ it('preserves recovery codes and their timestamp when the current password is in
         ->and($unchangedUser->recovery_codes_regenerated_at?->equalTo($previousRegenerationTimestamp))
         ->toBeTrue();
 })->skip(
+    fn (): bool => ! Features::canManageTwoFactorAuthentication(),
+    'Two-factor authentication is not enabled.'
+);
+
+it('answers an incorrect password in the language of the user', function (PreferredLocale $preferredLocale): void {
+    $user = createUserWithTwoFactor();
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+
+    $this->actingAs($user)
+        ->from(route('setting.security.two-factor-authentication.index'))
+        ->post(route('setting.security.two-factor-authentication.store-recovery-codes'), [
+            'password' => 'incorrect-password',
+        ])
+        ->assertRedirectBackWithErrors([
+            'password' => translatedTextIn($preferredLocale, 'setting/two-factor.validation.password_incorrect'),
+        ]);
+})->with([
+    'English' => [PreferredLocale::ENGLISH],
+    'Spanish' => [PreferredLocale::SPANISH],
+])->skip(
     fn (): bool => ! Features::canManageTwoFactorAuthentication(),
     'Two-factor authentication is not enabled.'
 );
