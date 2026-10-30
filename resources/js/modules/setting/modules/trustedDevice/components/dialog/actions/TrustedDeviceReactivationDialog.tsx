@@ -27,6 +27,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceReactivationDialogProps {
@@ -47,6 +49,7 @@ function TrustedDeviceReactivationDialog({
   open,
   onClose,
 }: TrustedDeviceReactivationDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const { data, setData, submit, processing, reset, errors, clearErrors } =
     useForm<ReactivationFormData>({
       otp_code: "",
@@ -85,17 +88,17 @@ function TrustedDeviceReactivationDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <RotateCw aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Reactivar dispositivo
+              {t("setting/trusted-device-dialogs.reactivation.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Para volver a confiar en este dispositivo, ingresa un código de verificación de tu
-            aplicación autenticadora o uno de tus códigos de recuperación. Recordar un navegador es
-            una comodidad temporal, no un segundo factor de autenticación independiente.
+            {t("setting/trusted-device-dialogs.reactivation.description")}
           </DialogDescription>
         </DialogHeader>
 
-        <ReactivationInstructions deviceName={device.name ?? "este dispositivo"} />
+        <ReactivationInstructions
+          deviceName={device.name ?? t("setting/trusted-device-dialogs.this_device")}
+        />
 
         <form id="reactivation-form" onSubmit={handleSubmit} className="grid gap-4">
           <TwoFactorCodeField
@@ -122,7 +125,7 @@ function TrustedDeviceReactivationDialog({
         <DialogFooter className="mt-1.5">
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -130,10 +133,10 @@ function TrustedDeviceReactivationDialog({
             {processing ? (
               <>
                 <Spinner />
-                Reactivando...
+                {t("setting/trusted-device-dialogs.reactivation.submitting")}
               </>
             ) : (
-              "Reactivar"
+              t("setting/trusted-device-dialogs.reactivation.submit")
             )}
           </Button>
         </DialogFooter>
@@ -147,14 +150,15 @@ interface ReactivationInstructionsProps {
 }
 
 function ReactivationInstructions({ deviceName }: ReactivationInstructionsProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={alertVariants.info}>
       <KeyRound />
-      <AlertTitle>¿Por qué pedimos código?</AlertTitle>
+      <AlertTitle>{t("setting/trusted-device-dialogs.reactivation.why_code_title")}</AlertTitle>
       <AlertDescription>
-        Por seguridad, reactivar <strong>{deviceName}</strong> requiere autenticarte de nuevo.
-        Ingresa el código de 6 dígitos de tu aplicación autenticadora o uno de tus códigos de
-        recuperación.
+        {t("setting/trusted-device-dialogs.reactivation.why_code_before")}{" "}
+        <strong>{deviceName}</strong>{" "}
+        {t("setting/trusted-device-dialogs.reactivation.why_code_after")}
       </AlertDescription>
     </Alert>
   );

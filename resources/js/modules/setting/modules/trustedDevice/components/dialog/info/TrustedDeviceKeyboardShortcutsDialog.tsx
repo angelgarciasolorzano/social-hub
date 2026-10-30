@@ -24,6 +24,8 @@ import { Kbd, KbdGroup } from "@/shared/components/shadcn/ui/kbd";
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useTranslation } from "@/shared/hooks";
+
 function subscribeToPlatformChanges(): () => void {
   return () => undefined;
 }
@@ -41,6 +43,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
   onClose,
   open,
 }: TrustedDeviceKeyboardShortcutsDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const dialogFocusRestoration = useDialogFocusRestoration();
 
   const platform = useSyncExternalStore(
@@ -51,8 +54,8 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
 
   const generalKeyboardShortcuts = [
     {
-      accessibleKeys: "Mayús y signo de interrogación",
-      description: "Abrir esta ayuda",
+      accessibleKeys: t("setting/trusted-device-dialogs.keyboard_shortcuts.open_help_keys"),
+      description: t("setting/trusted-device-dialogs.keyboard_shortcuts.open_help"),
       keys: [formatForDisplay({ key: "?", shift: true }, { platform })],
     },
   ];
@@ -62,16 +65,16 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
   const navigationKeyboardShortcuts = Object.values(navigationShortcuts).map((shortcut) => ({
     accessibleKeys: shortcut.sequence
       .map((key) => formatForDisplay(key, { platform }))
-      .join(", luego "),
-    description: shortcut.description,
+      .join(t("setting/trusted-device-dialogs.keyboard_shortcuts.then")),
+    description: t(shortcut.description),
     keys: shortcut.sequence.map((key) => formatForDisplay(key, { platform })),
   }));
 
   const revokeAllKeyboardShortcut = {
     accessibleKeys: revokeAllShortcut.sequence
       .map((key) => formatForDisplay(key, { platform }))
-      .join(", luego "),
-    description: revokeAllShortcut.description,
+      .join(t("setting/trusted-device-dialogs.keyboard_shortcuts.then")),
+    description: t(revokeAllShortcut.description),
     keys: revokeAllShortcut.sequence.map((key) => formatForDisplay(key, { platform })),
   };
 
@@ -79,17 +82,28 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
     group.actions.map((action) => ({
       accessibleKeys: action.shortcut
         .map((key) => formatForDisplay(key, { platform }))
-        .join(", luego "),
-      description: `${action.label} para la fila seleccionada`,
+        .join(t("setting/trusted-device-dialogs.keyboard_shortcuts.then")),
+      description: t("setting/trusted-device-dialogs.keyboard_shortcuts.for_selected_row", {
+        action: t(action.label),
+      }),
       keys: action.shortcut.map((key) => formatForDisplay(key, { platform })),
     })),
   );
 
   const keyboardShortcutGroups = [
-    { label: "GENERAL", shortcuts: generalKeyboardShortcuts },
-    { label: "NAVEGACIÓN", shortcuts: navigationKeyboardShortcuts },
     {
-      label: "ACCIONES",
+      id: "general",
+      label: t("setting/trusted-device-dialogs.keyboard_shortcuts.groups.general"),
+      shortcuts: generalKeyboardShortcuts,
+    },
+    {
+      id: "navigation",
+      label: t("setting/trusted-device-dialogs.keyboard_shortcuts.groups.navigation"),
+      shortcuts: navigationKeyboardShortcuts,
+    },
+    {
+      id: "actions",
+      label: t("setting/trusted-device-dialogs.keyboard_shortcuts.groups.actions"),
       shortcuts: [revokeAllKeyboardShortcut, ...rowKeyboardShortcuts],
     },
   ];
@@ -106,13 +120,11 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Keyboard aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Atajos de teclado
+              {t("setting/trusted-devices.page.keyboard_shortcuts")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Los atajos globales empiezan con G. Para las acciones por dispositivo, selecciona una
-            fila haciendo clic en ella o enfocando su botón de acciones (⋯); luego usa los atajos
-            que empiezan con F.
+            {t("setting/trusted-device-dialogs.keyboard_shortcuts.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -121,10 +133,10 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
         <ScrollArea className="max-h-150 min-h-120 px-4">
           <div className="space-y-5">
             {keyboardShortcutGroups.map((group) => (
-              <section aria-labelledby={`keyboard-shortcuts-${group.label}`} key={group.label}>
+              <section aria-labelledby={`keyboard-shortcuts-${group.id}`} key={group.id}>
                 <h3
                   className="mb-2 text-xs font-medium tracking-wide text-muted-foreground"
-                  id={`keyboard-shortcuts-${group.label}`}
+                  id={`keyboard-shortcuts-${group.id}`}
                 >
                   {group.label}
                 </h3>
@@ -164,7 +176,7 @@ export default function TrustedDeviceKeyboardShortcutsDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cerrar</Button>
+            <Button variant="outline">{t("setting/common.actions.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
