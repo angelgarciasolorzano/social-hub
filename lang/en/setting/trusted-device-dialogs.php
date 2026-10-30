@@ -67,6 +67,7 @@ return [
         'title' => 'Delete permanently',
         'description' => 'You will permanently delete :device from your account. This action is final and you will not be able to trust it again.',
         'submit' => 'Delete permanently',
+        'submitting' => 'Deleting...',
         'consequences_title' => 'Consequences of permanent deletion',
         'consequences' => [
             'deleted' => 'This device will be permanently deleted from the database.',
@@ -80,6 +81,7 @@ return [
         'title' => 'Reactivate device',
         'description' => 'To trust this device again, enter a verification code from your authenticator app or one of your recovery codes. Remembering a browser is a temporary convenience, not an independent second authentication factor.',
         'submit' => 'Reactivate',
+        'submitting' => 'Reactivating...',
         'why_code_title' => 'Why do we ask for a code?',
         'why_code_before' => 'For security, reactivating',
         'why_code_after' => 'requires you to authenticate again. Enter the 6-digit code from your authenticator app or one of your recovery codes.',
@@ -101,6 +103,7 @@ return [
         'title' => 'Renew trust',
         'description' => 'Extend the trust period so you are not asked for the verification code on this device. It is a temporary convenience, not an independent second authentication factor. For security, confirm with a code from your authenticator app.',
         'submit' => 'Renew trust',
+        'submitting' => 'Renewing...',
         'renewal_period' => '1 month',
         'current_expiration' => 'Current expiration',
         'new_expiration' => 'New expiration',
@@ -111,6 +114,7 @@ return [
         'title' => 'Revoke device',
         'description' => 'You will revoke :device. It will no longer be trusted and you will be asked for the verification code again the next time you sign in from it.',
         'submit' => 'Revoke device',
+        'submitting' => 'Revoking...',
         'consequences_title' => 'Consequences of revoking',
         'consequences' => [
             'not_trusted' => 'This device will no longer be registered as trusted.',
@@ -126,6 +130,8 @@ return [
         'single_hint_emphasis' => 'individually',
         'single_hint_after' => 'from the device list.',
         'submit' => 'Revoke all',
+        'submitting' => 'Revoking...',
+        'device_expires' => 'Expires on :date',
         'consequences_title' => 'Consequences of revoking all devices',
         'consequences' => [
             'all_removed' => 'Every trusted device linked to your account will be removed.',

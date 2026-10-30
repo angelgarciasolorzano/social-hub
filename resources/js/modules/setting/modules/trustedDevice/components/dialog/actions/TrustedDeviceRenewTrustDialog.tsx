@@ -40,7 +40,8 @@ import {
 } from "@/shared/components/shadcn/ui/item";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceRenewTrustDialogProps {
@@ -56,13 +57,14 @@ interface RenewFormData {
 interface RenewFormErrors extends FormDataErrors<RenewFormData>, TwoFactorRequiredErrors {}
 
 const TRUST_RENEWAL_DAYS = 30;
-const TRUST_RENEWAL_LABEL = "1 mes";
 
 function TrustedDeviceRenewTrustDialog({
   device,
   open,
   onClose,
 }: TrustedDeviceRenewTrustDialogProps): JSX.Element {
+  const { t } = useTranslation();
+  const { fromNow } = useDateTime();
   const { data, setData, submit, processing, reset, errors } = useForm<RenewFormData>({
     otp_code: "",
   });
@@ -100,14 +102,11 @@ function TrustedDeviceRenewTrustDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <RefreshCcw aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Renovar confianza
+              {t("setting/trusted-device-dialogs.renew.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Extiende el periodo de confianza para evitar que se te solicite el código de
-            verificación en este dispositivo. Es una comodidad temporal, no un segundo factor de
-            autenticación independiente. Por seguridad, confirma con un código de tu aplicación
-            autenticadora.
+            {t("setting/trusted-device-dialogs.renew.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -129,7 +128,7 @@ function TrustedDeviceRenewTrustDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -137,10 +136,10 @@ function TrustedDeviceRenewTrustDialog({
             {processing ? (
               <>
                 <Spinner />
-                Renovando...
+                {t("setting/trusted-device-dialogs.renew.submitting")}
               </>
             ) : (
-              "Renovar confianza"
+              t("setting/trusted-device-dialogs.renew.submit")
             )}
           </Button>
         </DialogFooter>
@@ -165,6 +164,8 @@ function RenewDeviceForm({
   processing,
   setData,
 }: RenewDeviceFormProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate } = useDateTime();
   const newExpiresAt = dayjs().add(TRUST_RENEWAL_DAYS, "day");
   const newExpiresAtFormatted = formatLongDate(newExpiresAt.toISOString());
 
@@ -175,7 +176,9 @@ function RenewDeviceForm({
           <CalendarClock />
         </ItemMedia>
         <ItemContent>
-          <ItemTitle className="text-xs font-medium">Expiracion actual</ItemTitle>
+          <ItemTitle className="text-xs font-medium">
+            {t("setting/trusted-device-dialogs.renew.current_expiration")}
+          </ItemTitle>
           <ItemDescription className="text-sm font-normal">
             {formatLongDate(device.expiresAt)}
           </ItemDescription>
@@ -194,17 +197,21 @@ function RenewDeviceForm({
           <CalendarRange />
         </ItemMedia>
         <ItemContent>
-          <ItemTitle className="text-xs font-medium">Nueva expiración</ItemTitle>
+          <ItemTitle className="text-xs font-medium">
+            {t("setting/trusted-device-dialogs.renew.new_expiration")}
+          </ItemTitle>
           <ItemDescription className="text-sm font-normal">{newExpiresAtFormatted}</ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Badge className={badgeVariants.success}>+ {TRUST_RENEWAL_LABEL}</Badge>
+          <Badge className={badgeVariants.success}>
+            + {t("setting/trusted-device-dialogs.renew.renewal_period")}
+          </Badge>
         </ItemActions>
       </Item>
 
       <TwoFactorOtpField
         id="renew-device-otp"
-        label="Código de verificación"
+        label={t("setting/common.two_factor_code.otp_label")}
         value={otpCode}
         error={errors.otp_code}
         disabled={processing}
@@ -225,13 +232,13 @@ function RenewDeviceForm({
 }
 
 function RenewInfoAlert(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={alertVariants.success}>
       <CircleAlert />
 
       <AlertTitle className="line-clamp-3">
-        No se te pedirá el código de verificación en este dispositivo hasta la nueva fecha de
-        expiración.
+        {t("setting/trusted-device-dialogs.renew.notice")}
       </AlertTitle>
     </Alert>
   );

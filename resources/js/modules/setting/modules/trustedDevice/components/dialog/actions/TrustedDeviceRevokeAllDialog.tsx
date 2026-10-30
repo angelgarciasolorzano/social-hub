@@ -39,7 +39,8 @@ import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { formatLongDate } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
@@ -63,6 +64,7 @@ function TrustedDeviceRevokeAllDialog({
   open,
   onClose,
 }: TrustedDeviceRevokeAllDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const { data, setData, submit, processing, reset, errors } = useForm<RevokeDeviceFormData>({
     password: "",
     terms: false,
@@ -127,13 +129,11 @@ function TrustedDeviceRevokeAllDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Revocar todos los dispositivos
+              {t("setting/trusted-device-dialogs.revoke_all.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Revocarás todos los dispositivos de confianza vinculados a tu cuenta. La próxima vez que
-            inicies sesión desde cualquiera de ellos, se te volverá a solicitar el código de
-            verificación.
+            {t("setting/trusted-device-dialogs.revoke_all.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,16 +157,18 @@ function TrustedDeviceRevokeAllDialog({
               <Alert className="border-none bg-transparent">
                 <CircleAlert className="text-purple-500 dark:text-purple-500" />
                 <AlertTitle className="line-clamp-3 font-normal text-muted-foreground">
-                  Si solo deseas eliminar uno, puedes revocarlo{" "}
-                  <strong className="text-purple-700 dark:text-purple-500">individualmente</strong>{" "}
-                  desde la lista de dispositivos.
+                  {t("setting/trusted-device-dialogs.revoke_all.single_hint_before")}{" "}
+                  <strong className="text-purple-700 dark:text-purple-500">
+                    {t("setting/trusted-device-dialogs.revoke_all.single_hint_emphasis")}
+                  </strong>{" "}
+                  {t("setting/trusted-device-dialogs.revoke_all.single_hint_after")}
                 </AlertTitle>
               </Alert>
 
               <div className="flex items-center justify-center gap-2">
                 <DialogClose asChild>
                   <Button type="button" variant="outline" disabled={processing}>
-                    Cancelar
+                    {t("setting/common.actions.cancel")}
                   </Button>
                 </DialogClose>
 
@@ -178,10 +180,10 @@ function TrustedDeviceRevokeAllDialog({
                   {processing ? (
                     <>
                       <Spinner />
-                      Revocando...
+                      {t("setting/trusted-device-dialogs.revoke_all.submitting")}
                     </>
                   ) : (
-                    "Revocar todos"
+                    t("setting/trusted-device-dialogs.revoke_all.submit")
                   )}
                 </Button>
               </div>
@@ -248,6 +250,7 @@ function TrustedDeviceRevokeAllDialogSkeleton(): JSX.Element {
 }
 
 function RevokeConsequencesAlert(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert aria-labelledby="revoke-all-warning-title" className={alertVariants.destructive}>
       <AlertTriangleIcon aria-hidden="true" />
@@ -255,13 +258,13 @@ function RevokeConsequencesAlert(): JSX.Element {
         className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
         id="revoke-all-warning-title"
       >
-        Consecuencias de revocar todos los dispositivos
+        {t("setting/trusted-device-dialogs.revoke_all.consequences_title")}
       </h3>
       <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
-          <li>Se eliminarán todos los dispositivos de confianza vinculados a tu cuenta.</li>
-          <li>Se te volverá a solicitar el código de verificación (2FA) en esos dispositivos.</li>
-          <li>Esta acción no se puede deshacer.</li>
+          <li>{t("setting/trusted-device-dialogs.revoke_all.consequences.all_removed")}</li>
+          <li>{t("setting/trusted-device-dialogs.revoke_all.consequences.code_again")}</li>
+          <li>{t("setting/trusted-device-dialogs.revoke_all.consequences.irreversible")}</li>
         </ul>
       </AlertDescription>
     </Alert>
@@ -273,14 +276,16 @@ interface AffectedDevicesListProps {
 }
 
 function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element {
+  const { t, tChoice } = useTranslation();
+  const { formatLongDate } = useDateTime();
   const deviceCount = devices.length;
   const hasDevices = deviceCount > 0;
   const headline = hasDevices
-    ? `${deviceCount} ${deviceCount === 1 ? "dispositivo será revocado" : "dispositivos serán revocados"}`
-    : "No hay dispositivos para revocar";
+    ? tChoice("setting/trusted-device-dialogs.revoke_all.devices_count", deviceCount)
+    : t("setting/trusted-device-dialogs.revoke_all.no_devices_title");
   const description = hasDevices
-    ? "Incluye todos los dispositivos de confianza registrados actualmente."
-    : "Cuando registres un nuevo dispositivo de confianza, aparecerá aquí para que puedas revocarlo junto con los demás.";
+    ? t("setting/trusted-device-dialogs.revoke_all.includes_all")
+    : t("setting/trusted-device-dialogs.revoke_all.no_devices_description");
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4 shadow-xs">
@@ -321,7 +326,9 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
                 <FaCircle aria-hidden="true" className="h-1 w-1 text-muted-foreground" />
 
                 <span className="truncate text-xs font-normal text-muted-foreground">
-                  Expira el {formatLongDate(device.expiresAt)}
+                  {t("setting/trusted-device-dialogs.revoke_all.device_expires", {
+                    date: formatLongDate(device.expiresAt),
+                  })}
                 </span>
               </li>
             ))}
@@ -331,7 +338,7 @@ function AffectedDevicesList({ devices }: AffectedDevicesListProps): JSX.Element
         <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-sm text-muted-foreground dark:bg-input/10">
           <EmptyState
             icon={MonitorOff}
-            title="Aun no tienes dispositivos de confianza registrados."
+            title={t("setting/trusted-device-dialogs.revoke_all.empty")}
           />
         </div>
       )}
@@ -348,13 +355,14 @@ interface RevokeDeviceFormProps {
 }
 
 function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
+  const { t } = useTranslation();
   const { handleSubmit, errors, setData, data, disabled } = props;
 
   return (
     <form id="revoke-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="revoke-trusted-device">
-          Para continuar, confirma y escribe tu contraseña
+          {t("setting/trusted-device-dialogs.password_confirmation.prompt")}
         </Label>
 
         <PasswordInput
@@ -362,7 +370,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           name="password"
           required
           autoFocus
-          placeholder="Ingresa tu contraseña"
+          placeholder={t("setting/trusted-device-dialogs.password_confirmation.placeholder")}
           disabled={disabled}
           onChange={(event) => {
             setData("password", event.target.value);
@@ -390,7 +398,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
         />
 
         <LabelForm htmlFor="revoke-trusted-device-terms" className="text-muted-foreground">
-          Entiendo que esta acción eliminará todos mis dispositivos de confianza.
+          {t("setting/trusted-device-dialogs.revoke_all.terms")}
         </LabelForm>
       </div>
 

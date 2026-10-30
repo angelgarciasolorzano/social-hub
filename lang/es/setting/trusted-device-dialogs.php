@@ -67,6 +67,7 @@ return [
         'title' => 'Eliminar permanentemente',
         'description' => 'Eliminarás permanentemente :device de tu cuenta. Esta acción es definitiva y no podrás volver a confiar en él.',
         'submit' => 'Eliminar definitivamente',
+        'submitting' => 'Eliminando...',
         'consequences_title' => 'Consecuencias de la eliminación permanente',
         'consequences' => [
             'deleted' => 'Este dispositivo se eliminará permanentemente de la base de datos.',
@@ -80,6 +81,7 @@ return [
         'title' => 'Reactivar dispositivo',
         'description' => 'Para volver a confiar en este dispositivo, ingresa un código de verificación de tu aplicación autenticadora o uno de tus códigos de recuperación. Recordar un navegador es una comodidad temporal, no un segundo factor de autenticación independiente.',
         'submit' => 'Reactivar',
+        'submitting' => 'Reactivando...',
         'why_code_title' => '¿Por qué pedimos código?',
         'why_code_before' => 'Por seguridad, reactivar',
         'why_code_after' => 'requiere autenticarte de nuevo. Ingresa el código de 6 dígitos de tu aplicación autenticadora o uno de tus códigos de recuperación.',
@@ -101,6 +103,7 @@ return [
         'title' => 'Renovar confianza',
         'description' => 'Extiende el periodo de confianza para evitar que se te solicite el código de verificación en este dispositivo. Es una comodidad temporal, no un segundo factor de autenticación independiente. Por seguridad, confirma con un código de tu aplicación autenticadora.',
         'submit' => 'Renovar confianza',
+        'submitting' => 'Renovando...',
         'renewal_period' => '1 mes',
         'current_expiration' => 'Expiración actual',
         'new_expiration' => 'Nueva expiración',
@@ -111,6 +114,7 @@ return [
         'title' => 'Revocar dispositivo',
         'description' => 'Revocarás :device. Dejará de ser de confianza y se te volverá a solicitar el código de verificación la próxima vez que inicies sesión desde él.',
         'submit' => 'Revocar dispositivo',
+        'submitting' => 'Revocando...',
         'consequences_title' => 'Consecuencias de la revocación',
         'consequences' => [
             'not_trusted' => 'Este dispositivo ya no estará registrado como de confianza.',
@@ -126,6 +130,8 @@ return [
         'single_hint_emphasis' => 'individualmente',
         'single_hint_after' => 'desde la lista de dispositivos.',
         'submit' => 'Revocar todos',
+        'submitting' => 'Revocando...',
+        'device_expires' => 'Expira el :date',
         'consequences_title' => 'Consecuencias de revocar todos los dispositivos',
         'consequences' => [
             'all_removed' => 'Se eliminarán todos los dispositivos de confianza vinculados a tu cuenta.',
