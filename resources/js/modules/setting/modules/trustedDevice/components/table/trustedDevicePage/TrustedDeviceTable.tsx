@@ -135,7 +135,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
     size: trustedDeviceTableColumnSizes.browserAndOs,
     minSize: 140,
     maxSize: 320,
-    cell: ({ row }) => deviceBrowserAndOs(row.original),
+    cell: ({ row }) => <TrustedDeviceBrowserAndOsCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.ip,
@@ -490,10 +490,14 @@ interface TrustedDeviceDeviceCellProps {
 }
 
 function TrustedDeviceDeviceCell({ device }: TrustedDeviceDeviceCellProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-2">
       {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
-      <span className="truncate">{deviceLabel(device)}</span>
+      <span className="truncate">
+        {deviceLabel(device, t("setting/trusted-devices.values.unknown_device"))}
+      </span>
     </div>
   );
 }
@@ -506,6 +510,18 @@ function TrustedDeviceLastAccessCell({ device }: TrustedDeviceLastAccessCellProp
   const { fromNow } = useDateTime();
 
   return <>{fromNow(device.lastUsedAt)}</>;
+}
+
+interface TrustedDeviceBrowserAndOsCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceBrowserAndOsCell({
+  device,
+}: TrustedDeviceBrowserAndOsCellProps): JSX.Element {
+  const { t } = useTranslation();
+
+  return <>{deviceBrowserAndOs(device, t("setting/trusted-devices.values.unknown"))}</>;
 }
 
 interface TrustedDeviceStatusCellProps {
@@ -600,7 +616,7 @@ function TrustedDeviceRowActions({
         <DropdownMenuTrigger asChild>
           <Button
             aria-label={t("setting/trusted-devices.table.open_actions", {
-              device: deviceLabel(device),
+              device: deviceLabel(device, t("setting/trusted-devices.values.unknown_device")),
             })}
             size="icon"
             variant="ghost"

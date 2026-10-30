@@ -9,10 +9,14 @@ import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/type
 
 /**
  * Resolve the human-friendly label for a trusted device. Falls back to the
- * raw user agent and finally to a generic placeholder when both are absent.
+ * raw user agent and finally to the given placeholder when both are absent.
+ *
+ * @param device The trusted device to name.
+ * @param unknownDeviceLabel The translated text for a device without name or user agent.
+ * @returns The device name, its user agent or the placeholder.
  */
-export function deviceLabel(device: TrustedDevice): string {
-  return device.name ?? device.userAgent ?? "Dispositivo desconocido";
+export function deviceLabel(device: TrustedDevice, unknownDeviceLabel: string): string {
+  return device.name ?? device.userAgent ?? unknownDeviceLabel;
 }
 
 /**
@@ -23,9 +27,13 @@ export function deviceLabel(device: TrustedDevice): string {
  * deviceBrowserAndOs(device)                  // "Chrome 152 / macOS"
  * deviceBrowserAndOs({ browser: null, ... })  // "macOS"
  * deviceBrowserAndOs({ browser: "", ... })    // "macOS"
- * deviceBrowserAndOs({ ... no browser/os })    // "Desconocido"
+ * deviceBrowserAndOs({ ... no browser/os }, t("…values.unknown"))  // the translated "Unknown"
+ *
+ * @param device The trusted device to describe.
+ * @param unknownLabel The translated text for a device without browser and system.
+ * @returns The browser and system, or the placeholder.
  */
-export function deviceBrowserAndOs(device: TrustedDevice): string {
+export function deviceBrowserAndOs(device: TrustedDevice, unknownLabel: string): string {
   const browserLabel = [device.browser, device.browserVersion]
     .filter((value) => value !== null && value !== "")
     .join(" ");
@@ -34,7 +42,7 @@ export function deviceBrowserAndOs(device: TrustedDevice): string {
     .filter((value) => value !== null && value !== "")
     .join(" / ");
 
-  return parts === "" ? "Desconocido" : parts;
+  return parts === "" ? unknownLabel : parts;
 }
 
 interface DeviceIconSource {

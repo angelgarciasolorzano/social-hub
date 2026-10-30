@@ -29,7 +29,8 @@ function TrustedDeviceSummaryCard({
 }: TrustedDeviceSummaryCardProps): JSX.Element {
   const { t } = useTranslation();
   const deviceName =
-    deviceLabel(device).trim() || t("setting/trusted-devices.values.unknown_device");
+    deviceLabel(device, t("setting/trusted-devices.values.unknown_device")).trim() ||
+    t("setting/trusted-devices.values.unknown_device");
   const hasLastUsedAt = lastUsedAt.trim() !== "";
   const hasBrowser = device.browser !== null && device.browser.trim() !== "";
   const hasExpiration = expiration !== undefined && expiration.trim() !== "";

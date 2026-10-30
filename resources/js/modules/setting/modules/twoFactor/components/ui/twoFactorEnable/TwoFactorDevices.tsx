@@ -508,8 +508,11 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps): JSX.Ele
               </div>
 
               <div className="flex flex-col gap-0.5">
-                <span className="max-w-40 truncate text-sm font-medium" title={deviceLabel(device)}>
-                  {deviceLabel(device)}
+                <span
+                  className="max-w-40 truncate text-sm font-medium"
+                  title={deviceLabel(device, t("setting/trusted-devices.values.unknown_device"))}
+                >
+                  {deviceLabel(device, t("setting/trusted-devices.values.unknown_device"))}
                 </span>
 
                 {device.browser !== null && device.browser !== "" && (
