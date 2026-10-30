@@ -84,6 +84,7 @@ return [
     ],
 
     'tabs' => [
+        'pending_review' => 'Pendientes de revisión',
         'scheduled' => 'Programados',
         'active' => 'Activos',
         'expired' => 'Finalizados',

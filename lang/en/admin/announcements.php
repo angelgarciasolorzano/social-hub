@@ -84,6 +84,7 @@ return [
     ],
 
     'tabs' => [
+        'pending_review' => 'Pending review',
         'scheduled' => 'Scheduled',
         'active' => 'Active',
         'expired' => 'Expired',
