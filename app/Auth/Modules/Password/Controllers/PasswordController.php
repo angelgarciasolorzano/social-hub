@@ -8,6 +8,7 @@ use App\Auth\Modules\Password\Events\PasswordUpdated;
 use App\Auth\Modules\Password\Requests\PasswordRequest;
 use App\Auth\Modules\Password\Services\PasswordTrustedDeviceRevoker;
 use App\Http\Controllers\Controller;
+use App\Support\Translation\TranslatedText;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -36,6 +37,6 @@ class PasswordController extends Controller
 
         event(new PasswordUpdated($user));
 
-        return Inertia::flash('success', 'Contraseña actualizada correctamente')->back();
+        return Inertia::flash('success', TranslatedText::of('setting/account-settings.messages.password_updated'))->back();
     }
 }

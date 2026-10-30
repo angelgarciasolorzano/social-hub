@@ -59,11 +59,11 @@ class PasswordNewController extends Controller
             });
 
         if ($status === Password::PASSWORD_RESET) {
-            return to_route('login')->with('status', __($status, [], 'es'));
+            return to_route('login')->with('status', __($status));
         }
 
         throw ValidationException::withMessages([
-            'email' => [__($status, [], 'es')],
+            'email' => [__($status)],
         ]);
     }
 }
