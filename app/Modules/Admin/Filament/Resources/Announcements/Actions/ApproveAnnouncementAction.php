@@ -49,11 +49,13 @@ class ApproveAnnouncementAction
                 try {
                     $announcementService->approve($record, $user, $expectedSubmissionReviewId, $comment);
                 } catch (LogicException) {
+                    $record->refresh();
                     $action->failure();
 
                     return;
                 }
 
+                $record->refresh();
                 $action->success();
             });
     }

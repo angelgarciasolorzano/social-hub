@@ -148,7 +148,9 @@ it('resubmits a rejected announcement from its detail page and preserves its his
         'reviewed_by' => $previousReviewer->id,
     ]);
 
-    mountAnnouncementReviewDetailAction('submitForReview', $announcement)
+    $testable = mountAnnouncementReviewDetailAction('submitForReview', $announcement);
+
+    $testable
         ->call('callMountedAction')
         ->assertHasNoErrors();
 
@@ -164,7 +166,9 @@ it('resubmits a rejected announcement from its detail page and preserves its his
         ->and($announcementReview->comment)->toBe('Please add more detail.')
         ->and($resubmission->action)->toBe(AnnouncementReviewAction::Resubmitted)
         ->and($resubmission->reviewed_by)->toBe($user->id)
-        ->and(announcementReviewActionEventCount(ActivityLogAdminEvent::AnnouncementSubmitted))->toBe(1);
+        ->and(announcementReviewActionEventCount(ActivityLogAdminEvent::AnnouncementSubmitted))->toBe(1)
+        ->and($testable->instance()->getRecord()->status)
+        ->toBe(AnnouncementStatus::InReview);
 });
 
 it('approves the latest submission from the table with an optional comment', function (?string $comment): void {
@@ -207,7 +211,9 @@ it('rejects the latest submission from its detail page with a comment', function
     );
     $announcement = announcementUnderReviewForActionTest(createUser(), createUser());
 
-    mountAnnouncementReviewDetailAction('reject', $announcement)
+    $testable = mountAnnouncementReviewDetailAction('reject', $announcement);
+
+    $testable
         ->set('mountedActions.0.data.comment', 'The announcement needs a clearer call to action.')
         ->call('callMountedAction')
         ->assertHasNoErrors();
@@ -219,7 +225,27 @@ it('rejects the latest submission from its detail page with a comment', function
     expect($announcement->refresh()->status)->toBe(AnnouncementStatus::Rejected)
         ->and($announcementReview->reviewed_by)->toBe($user->id)
         ->and($announcementReview->comment)->toBe('The announcement needs a clearer call to action.')
-        ->and(announcementReviewActionEventCount(ActivityLogAdminEvent::AnnouncementRejected))->toBe(1);
+        ->and(announcementReviewActionEventCount(ActivityLogAdminEvent::AnnouncementRejected))->toBe(1)
+        ->and($testable->instance()->getRecord()->status)
+        ->toBe(AnnouncementStatus::Rejected);
+});
+
+it('shows the approved status immediately on the detail page', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles(
+        $testCase,
+        AdminRole::Admin,
+        AdminRole::AdminAnnouncementsReviewer,
+    );
+    $announcement = announcementUnderReviewForActionTest(createUser(), createUser());
+    $testable = mountAnnouncementReviewDetailAction('approve', $announcement);
+
+    $testable
+        ->call('callMountedAction')
+        ->assertHasNoErrors();
+
+    expect($testable->instance()->getRecord()->status)->toBe(AnnouncementStatus::Approved);
 });
 
 it('does not mount review actions for an administrator without review permission', function (): void {

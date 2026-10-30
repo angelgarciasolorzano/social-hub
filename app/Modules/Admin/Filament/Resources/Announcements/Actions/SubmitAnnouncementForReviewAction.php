@@ -37,11 +37,13 @@ class SubmitAnnouncementForReviewAction
                 try {
                     $announcementService->submitForReview($record, $user);
                 } catch (LogicException) {
+                    $record->refresh();
                     $action->failure();
 
                     return;
                 }
 
+                $record->refresh();
                 $action->success();
             });
     }

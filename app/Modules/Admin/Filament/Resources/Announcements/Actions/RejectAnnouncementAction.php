@@ -50,11 +50,13 @@ class RejectAnnouncementAction
                 try {
                     $announcementService->reject($record, $user, $expectedSubmissionReviewId, $comment);
                 } catch (LogicException) {
+                    $record->refresh();
                     $action->failure();
 
                     return;
                 }
 
+                $record->refresh();
                 $action->success();
             });
     }
