@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Enums;
 
+use App\Support\Translation\TranslatedText;
+
 enum TrustedDeviceAction: string
 {
     case Created = 'created';
@@ -18,15 +20,11 @@ enum TrustedDeviceAction: string
 
     case Reactivated = 'reactivated';
 
+    /**
+     * The name shown in the activity of the trusted devices page, in the active language.
+     */
     public function label(): string
     {
-        return match ($this) {
-            self::Created => 'Dispositivo agregado',
-            self::Renewed => 'Confianza renovada',
-            self::Renamed => 'Dispositivo renombrado',
-            self::Revoked => 'Dispositivo revocado',
-            self::RevokedAll => 'Todos los dispositivos revocados',
-            self::Reactivated => 'Dispositivo reactivado',
-        };
+        return TranslatedText::of("setting/trusted-devices.actions.{$this->value}");
     }
 }

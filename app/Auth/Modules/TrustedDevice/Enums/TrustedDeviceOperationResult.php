@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Enums;
 
+use App\Support\Translation\TranslatedText;
+
 enum TrustedDeviceOperationResult
 {
     case Created;
@@ -40,20 +42,23 @@ enum TrustedDeviceOperationResult
         };
     }
 
+    /**
+     * The flash text of the result, in the active language.
+     */
     public function message(): string
     {
-        return match ($this) {
-            self::Created => 'Dispositivo agregado correctamente.',
-            self::AlreadyActive => 'Este dispositivo ya está registrado como de confianza.',
-            self::AlreadyRevoked => 'Este dispositivo ya está registrado pero fue revocado. Reactívalo desde la lista de dispositivos revocados en lugar de agregarlo nuevamente.',
-            self::Renamed => 'Dispositivo renombrado correctamente.',
-            self::Renewed => 'Confianza renovada correctamente.',
-            self::Revoked => 'Dispositivo de confianza revocado correctamente.',
-            self::RevokedAll => 'Todos los dispositivos de confianza fueron revocados.',
-            self::Reactivated => 'Dispositivo reactivado correctamente. Se regeneró el token de confianza por seguridad.',
-            self::ForceDeleted => 'Dispositivo eliminado permanentemente.',
-            self::TwoFactorRequired => 'Primero debes activar y confirmar la autenticación de dos factores para administrar dispositivos de confianza.',
-        };
+        return TranslatedText::of(match ($this) {
+            self::Created => 'setting/trusted-devices.results.created',
+            self::AlreadyActive => 'setting/trusted-devices.results.already_active',
+            self::AlreadyRevoked => 'setting/trusted-devices.results.already_revoked',
+            self::Renamed => 'setting/trusted-devices.results.renamed',
+            self::Renewed => 'setting/trusted-devices.results.renewed',
+            self::Revoked => 'setting/trusted-devices.results.revoked',
+            self::RevokedAll => 'setting/trusted-devices.results.revoked_all',
+            self::Reactivated => 'setting/trusted-devices.results.reactivated',
+            self::ForceDeleted => 'setting/trusted-devices.results.force_deleted',
+            self::TwoFactorRequired => 'setting/trusted-devices.results.two_factor_required',
+        });
     }
 
     /**
