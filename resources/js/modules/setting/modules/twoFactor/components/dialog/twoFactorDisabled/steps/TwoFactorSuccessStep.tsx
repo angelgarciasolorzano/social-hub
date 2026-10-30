@@ -9,6 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -172,11 +174,12 @@ interface RecoveryCodesActionsProps {
 
 function RecoveryCodesActions(props: RecoveryCodesActionsProps): JSX.Element {
   const { onClose, recoveryCodesList } = props;
+  const { locale, t } = useTranslation();
   const { email: accountEmail } = usePage<SharedData>().props.auth.user;
 
   const handleDownload = useCallback((): void => {
-    downloadRecoveryCodes(recoveryCodesList, { accountEmail });
-  }, [recoveryCodesList, accountEmail]);
+    downloadRecoveryCodes(recoveryCodesList, { accountEmail, locale, t });
+  }, [recoveryCodesList, accountEmail, locale, t]);
 
   return (
     <div className="flex w-full gap-5">

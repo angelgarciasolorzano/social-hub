@@ -22,6 +22,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -40,6 +42,7 @@ function RegenerateCodesDialog({
   setOpen,
   fetchRecoveryCodes,
 }: RegenerateCodesDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const idPrefix = useId();
   const formId = `${idPrefix}-regenerate-codes-form`;
   const passwordInputId = `${idPrefix}-password`;
@@ -79,41 +82,40 @@ function RegenerateCodesDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2">
               <RefreshCcwDot className="h-5 w-5 text-muted-foreground" />
-              Regenerar códigos de respaldo
+              {t("setting/two-factor.regenerate_dialog.title")}
             </h2>
           </DialogTitle>
           <DialogDescription>
-            ¿Estás seguro de que quieres regenerar tus códigos de respaldo? Esta acción no se puede
-            deshacer.
+            {t("setting/two-factor.regenerate_dialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         <Alert className={cn(alertVariants.destructive, "my-2")}>
           <AlertTriangleIcon />
           <AlertTitle className="font-normal">
-            Los códigos actuales dejarán de funcionar.
+            {t("setting/two-factor.regenerate_dialog.warning_title")}
           </AlertTitle>
           <AlertDescription>
-            Una vez que generes nuevos códigos, los anteriores no pódran usarse.
+            {t("setting/two-factor.regenerate_dialog.warning_description")}
           </AlertDescription>
         </Alert>
 
         <form id={formId} onSubmit={handleSubmit} className="grid gap-2">
           <LabelForm error={errors.password} htmlFor={passwordInputId}>
-            Para continuar, escribe tu contraseña
+            {t("setting/two-factor.regenerate_dialog.password_prompt")}
           </LabelForm>
 
           <PasswordInput
             id={passwordInputId}
             name="password"
             autoComplete="current-password"
-            onChange={(e) => {
-              setData("password", e.target.value);
+            onChange={(event) => {
+              setData("password", event.target.value);
             }}
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? passwordErrorId : undefined}
             required
-            placeholder="Contraseña"
+            placeholder={t("setting/two-factor.labels.password")}
             value={data.password}
           />
 
@@ -123,7 +125,7 @@ function RegenerateCodesDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -131,10 +133,10 @@ function RegenerateCodesDialog({
             {processing ? (
               <>
                 <Spinner />
-                Regenerando...
+                {t("setting/two-factor.regenerate_dialog.submitting")}
               </>
             ) : (
-              "Regenerar códigos"
+              t("setting/two-factor.labels.regenerate_codes")
             )}
           </Button>
         </DialogFooter>

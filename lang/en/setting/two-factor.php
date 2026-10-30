@@ -238,6 +238,7 @@ return [
         'warning_title' => 'Your current codes will stop working.',
         'warning_description' => 'Once you generate new codes, the previous ones can no longer be used.',
         'password_prompt' => 'To continue, enter your password',
+        'submitting' => 'Regenerating...',
     ],
 
     'activation_details' => [

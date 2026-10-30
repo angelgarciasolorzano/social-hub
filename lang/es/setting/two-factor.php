@@ -238,6 +238,7 @@ return [
         'warning_title' => 'Los códigos actuales dejarán de funcionar.',
         'warning_description' => 'Una vez que generes nuevos códigos, los anteriores no podrán usarse.',
         'password_prompt' => 'Para continuar, escribe tu contraseña',
+        'submitting' => 'Regenerando...',
     ],
 
     'activation_details' => [
