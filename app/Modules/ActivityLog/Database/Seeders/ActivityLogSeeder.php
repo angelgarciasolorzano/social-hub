@@ -13,7 +13,9 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
@@ -83,6 +85,7 @@ class ActivityLogSeeder extends Seeder
         $this->seedAdminActivity();
         $this->seedAccountStatusActivity();
         $this->seedAnnouncementActivity();
+        $this->seedAnnouncementReviewActivity();
 
         $this->flush();
     }
@@ -289,6 +292,35 @@ class ActivityLogSeeder extends Seeder
                     $this->queue(ActivityLogAdminEvent::AnnouncementUpdated, $announcement->created_by, Announcement::MORPH_NAME, $announcement->id, $updatedAt, [
                         'changed_attributes' => self::ANNOUNCEMENT_CHANGED_ATTRIBUTES[array_rand(self::ANNOUNCEMENT_CHANGED_ATTRIBUTES)],
                     ], web: true);
+                }
+            });
+    }
+
+    /**
+     * Mirror every seeded review action without storing announcement content or comments.
+     */
+    private function seedAnnouncementReviewActivity(): void
+    {
+        AnnouncementReview::query()
+            ->select(['id', 'announcement_id', 'action', 'reviewed_by', 'created_at'])
+            ->chunkById(self::RECORDS_PER_CHUNK, function (Collection $announcementReviews): void {
+                foreach ($announcementReviews as $announcementReview) {
+                    $activityLogEvent = match ($announcementReview->action) {
+                        AnnouncementReviewAction::Submitted,
+                        AnnouncementReviewAction::Resubmitted => ActivityLogAdminEvent::AnnouncementSubmitted,
+                        AnnouncementReviewAction::Approved => ActivityLogAdminEvent::AnnouncementApproved,
+                        AnnouncementReviewAction::Rejected => ActivityLogAdminEvent::AnnouncementRejected,
+                    };
+
+                    $this->queue(
+                        $activityLogEvent,
+                        $announcementReview->reviewed_by,
+                        Announcement::MORPH_NAME,
+                        $announcementReview->announcement_id,
+                        $announcementReview->created_at ?? $this->randomPastDate(),
+                        ['announcement_review_id' => $announcementReview->id],
+                        web: true,
+                    );
                 }
             });
     }
