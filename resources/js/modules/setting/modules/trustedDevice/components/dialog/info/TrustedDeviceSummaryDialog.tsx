@@ -36,6 +36,8 @@ import {
 } from "@/shared/components/shadcn/ui/dialog";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import {
   type IconColorVariant,
@@ -60,6 +62,7 @@ function TrustedDeviceSummaryDialog({
   open,
   onClose,
 }: TrustedDeviceSummaryDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const dialogFocusRestoration = useDialogFocusRestoration();
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
 
@@ -78,12 +81,12 @@ function TrustedDeviceSummaryDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <ShieldCheck aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Resumen de dispositivos
+              {t("setting/trusted-devices.summary.title")}
             </h2>
           </DialogTitle>
 
           <DialogDescription className="text-sm font-normal">
-            Aquí puedes ver el detalle de la distribución y estado de tus dispositivos de confianza.
+            {t("setting/trusted-device-dialogs.summary.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -99,7 +102,7 @@ function TrustedDeviceSummaryDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cerrar</Button>
+            <Button variant="outline">{t("setting/common.actions.close")}</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -120,31 +123,32 @@ interface StatCardRow {
 }
 
 function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
+  const { t } = useTranslation();
   const statCardRows: StatCardRow[] = [
     {
       icon: Monitor,
-      label: "Activos",
+      label: t("setting/trusted-devices.summary.active"),
       total: trustedDeviceStats.total,
       value: trustedDeviceStats.active,
       variant: "green",
     },
     {
       icon: Clock,
-      label: "Próximos a expirar",
+      label: t("setting/trusted-devices.summary.expiring_soon"),
       total: trustedDeviceStats.total,
       value: trustedDeviceStats.expiringSoon,
       variant: "amber",
     },
     {
       icon: Monitor,
-      label: "Inactivos",
+      label: t("setting/trusted-devices.summary.inactive"),
       total: trustedDeviceStats.total,
       value: trustedDeviceStats.inactive,
       variant: "gray",
     },
     {
       icon: Trash2,
-      label: "Revocados",
+      label: t("setting/trusted-devices.summary.revoked"),
       total: trustedDeviceStats.total,
       value: trustedDeviceStats.revoked,
       variant: "red",
@@ -175,7 +179,9 @@ function StatCard({ trustedDeviceStats }: StatCardProps): JSX.Element {
             <dl className="flex min-w-0 flex-col">
               <dt className="text-xs font-medium text-muted-foreground">{item.label}</dt>
               <dd className="text-lg font-semibold">{item.value}</dd>
-              <dd className="text-xs font-normal text-muted-foreground">{percentage}% del total</dd>
+              <dd className="text-xs font-normal text-muted-foreground">
+                {t("setting/trusted-device-dialogs.summary.percentage_of_total", { percentage })}
+              </dd>
             </dl>
           </li>
         );
@@ -194,17 +200,18 @@ interface DeviceTypeRow {
 type DeviceTypeBreakdownProps = StatCardProps;
 
 function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): JSX.Element {
+  const { t } = useTranslation();
   const deviceTypeRows: DeviceTypeRow[] = [
     {
       count: trustedDeviceStats.byDeviceType.desktop,
       icon: Laptop,
-      label: "Escritorio / Laptop",
+      label: t("setting/trusted-device-dialogs.summary.desktop"),
       variant: "violet",
     },
     {
       count: trustedDeviceStats.byDeviceType.mobile,
       icon: Smartphone,
-      label: "Móvil / Tablet",
+      label: t("setting/trusted-device-dialogs.summary.mobile"),
       variant: "green",
     },
   ];
@@ -215,10 +222,10 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
     <Card className="shadow-xs dark:bg-muted/20">
       <CardHeader>
         <h3 className="text-sm leading-none font-medium" id="device-type-breakdown-title">
-          Dispositivo por tipo
+          {t("setting/trusted-device-dialogs.summary.by_type_title")}
         </h3>
         <CardDescription className="text-sm font-normal">
-          Cantidad de dispositivos por categoría
+          {t("setting/trusted-device-dialogs.summary.by_type_description")}
         </CardDescription>
       </CardHeader>
 
@@ -264,7 +271,7 @@ function DeviceTypeBreakdown({ trustedDeviceStats }: DeviceTypeBreakdownProps): 
 
           {totalByType === 0 && (
             <li className="text-sm font-normal text-muted-foreground">
-              Aún no tienes dispositivos activos.
+              {t("setting/trusted-device-dialogs.summary.no_active")}
             </li>
           )}
         </ul>
@@ -286,33 +293,34 @@ interface CharData {
 function StateDistributionBreakdown({
   trustedDeviceStats,
 }: StateDistributionBreakdownProps): JSX.Element {
+  const { t } = useTranslation();
   const activeOnlyCount = Math.max(0, trustedDeviceStats.active - trustedDeviceStats.expiringSoon);
 
   const chartConfig = {
-    cantidad: { label: "Dispositivos" },
+    cantidad: { label: t("setting/trusted-devices.summary.devices") },
     activos: {
-      label: "Activos",
+      label: t("setting/trusted-devices.summary.active"),
       theme: {
         light: "oklch(0.723 0.219 149.579)",
         dark: "oklch(0.792 0.209 151.711)",
       },
     },
     porExpirar: {
-      label: "Próximos a expirar",
+      label: t("setting/trusted-devices.summary.expiring_soon"),
       theme: {
         light: "oklch(0.769 0.188 70.08)",
         dark: "oklch(0.828 0.189 84.429)",
       },
     },
     inactivos: {
-      label: "Inactivos",
+      label: t("setting/trusted-devices.summary.inactive"),
       theme: {
         light: "oklch(0.551 0.027 264.364)",
         dark: "oklch(0.707 0.022 261.325)",
       },
     },
     revocados: {
-      label: "Revocados",
+      label: t("setting/trusted-devices.summary.revoked"),
       theme: {
         light: "oklch(0.637 0.237 25.331)",
         dark: "oklch(0.704 0.191 22.216)",
@@ -325,28 +333,28 @@ function StateDistributionBreakdown({
       cantidad: activeOnlyCount,
       estado: "activos",
       fill: "var(--color-activos)",
-      label: "Activos",
+      label: t("setting/trusted-devices.summary.active"),
       variant: "green",
     },
     {
       cantidad: trustedDeviceStats.expiringSoon,
       estado: "porExpirar",
       fill: "var(--color-porExpirar)",
-      label: "Próximos a expirar",
+      label: t("setting/trusted-devices.summary.expiring_soon"),
       variant: "amber",
     },
     {
       cantidad: trustedDeviceStats.inactive,
       estado: "inactivos",
       fill: "var(--color-inactivos)",
-      label: "Inactivos",
+      label: t("setting/trusted-devices.summary.inactive"),
       variant: "gray",
     },
     {
       cantidad: trustedDeviceStats.revoked,
       estado: "revocados",
       fill: "var(--color-revocados)",
-      label: "Revocados",
+      label: t("setting/trusted-devices.summary.revoked"),
       variant: "red",
     },
   ];
@@ -355,10 +363,10 @@ function StateDistributionBreakdown({
     <Card className="shadow-xs dark:bg-muted/20">
       <CardHeader>
         <h3 className="text-sm leading-none font-medium" id="device-state-distribution-title">
-          Distribución por estado
+          {t("setting/trusted-device-dialogs.summary.by_status_title")}
         </h3>
         <CardDescription className="text-sm font-normal">
-          Porcentaje del total de dispositivos
+          {t("setting/trusted-device-dialogs.summary.by_status_description")}
         </CardDescription>
       </CardHeader>
 
