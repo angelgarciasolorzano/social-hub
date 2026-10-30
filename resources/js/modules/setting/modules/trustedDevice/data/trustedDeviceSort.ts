@@ -17,28 +17,28 @@ export interface TrustedDeviceSortOption {
 export const trustedDeviceSortOptions: TrustedDeviceSortOption[] = [
   {
     value: trustedDeviceSortKey.mostRecent,
-    label: "Mas recientes",
-    description: "Ultimo acceso (mas reciente primero)",
+    label: "setting/trusted-devices.sort.most_recent.label",
+    description: "setting/trusted-devices.sort.most_recent.description",
   },
   {
     value: trustedDeviceSortKey.oldest,
-    label: "Mas antiguos",
-    description: "Ultimo acceso (mas antiguo primero)",
+    label: "setting/trusted-devices.sort.oldest.label",
+    description: "setting/trusted-devices.sort.oldest.description",
   },
   {
     value: trustedDeviceSortKey.nameAsc,
-    label: "Nombre (A - Z)",
-    description: "Nombre del dispositivo (A a Z)",
+    label: "setting/trusted-devices.sort.name_asc.label",
+    description: "setting/trusted-devices.sort.name_asc.description",
   },
   {
     value: trustedDeviceSortKey.nameDesc,
-    label: "Nombre (Z - A)",
-    description: "Nombre del dispositivo (Z a A)",
+    label: "setting/trusted-devices.sort.name_desc.label",
+    description: "setting/trusted-devices.sort.name_desc.description",
   },
   {
     value: trustedDeviceSortKey.expiringSoon,
-    label: "Proximos a expirar",
-    description: "Dispositivos que expiran primero",
+    label: "setting/trusted-devices.sort.expiring_soon.label",
+    description: "setting/trusted-devices.sort.expiring_soon.description",
   },
 ];
 

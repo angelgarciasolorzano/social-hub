@@ -70,6 +70,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/sha
 import { RadioGroup, RadioGroupItem } from "@/shared/components/shadcn/ui/radio-group";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 
 interface TrustedDeviceTableToolbarProps extends Omit<
@@ -84,6 +86,7 @@ interface TrustedDeviceTableToolbarProps extends Omit<
 }
 
 function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.Element {
+  const { t } = useTranslation();
   const {
     committedFilters,
     filters,
@@ -104,14 +107,14 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <InputGroup className="w-full max-w-xs xl:min-w-0 xl:flex-1">
           <FieldLabel className="sr-only" htmlFor={searchInputId}>
-            Buscar dispositivo
+            {t("setting/trusted-devices.toolbar.search_label")}
           </FieldLabel>
           <InputGroupAddon>
             <Search className="size-4" />
           </InputGroupAddon>
           <InputGroupInput
             id={searchInputId}
-            placeholder="Buscar dispositivo..."
+            placeholder={t("setting/trusted-devices.toolbar.search_placeholder")}
             value={filters.search}
             onChange={(event) => {
               onSearchChange(event.target.value);
@@ -121,7 +124,7 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
           {filters.search !== "" && (
             <InputGroupAddon align="inline-end">
               <InputGroupButton
-                aria-label="Limpiar búsqueda"
+                aria-label={t("setting/trusted-devices.toolbar.clear_search")}
                 onClick={() => {
                   onSearchChange("");
                 }}
@@ -166,7 +169,7 @@ function TrustedDeviceTableToolbar(props: TrustedDeviceTableToolbarProps): JSX.E
             }}
           >
             <RefreshCw />
-            <span className="sr-only">Reload data</span>
+            <span className="sr-only">{t("setting/trusted-devices.toolbar.reload")}</span>
           </Button>
         </div>
       </div>
@@ -193,19 +196,20 @@ function TrustedDeviceColumnVisibilityMenu({
   columnVisibility,
   onColumnVisibilityChange,
 }: TrustedDeviceColumnVisibilityMenuProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline">
           <Columns3 />
-          Columnas
+          {t("setting/trusted-devices.toolbar.columns")}
         </Button>
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-60 p-3">
         <FieldSet className="gap-2">
           <FieldLegend className="mb-0 text-sm font-medium" variant="label">
-            Columnas visibles
+            {t("setting/trusted-devices.toolbar.visible_columns")}
           </FieldLegend>
 
           <FieldGroup className="mt-4 gap-2.5">
@@ -225,7 +229,7 @@ function TrustedDeviceColumnVisibilityMenu({
                     }}
                   />
                   <FieldLabel className="cursor-pointer text-sm font-medium" htmlFor={checkboxId}>
-                    {columnOption.label}
+                    {t(columnOption.label)}
                   </FieldLabel>
                 </Field>
               );
@@ -245,7 +249,7 @@ function TrustedDeviceColumnVisibilityMenu({
           variant="ghost"
         >
           <RotateCcw data-icon="inline-start" />
-          Restablecer columnas
+          {t("setting/trusted-devices.toolbar.reset_columns")}
         </Button>
       </PopoverContent>
     </Popover>
@@ -281,6 +285,7 @@ interface FilterComboboxConfig {
 }
 
 function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): JSX.Element {
+  const { t } = useTranslation();
   const {
     statusFilter,
     onStatusFilterChange,
@@ -293,11 +298,14 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
     onResetFilters,
   } = props;
 
+  const translateOptions = (options: readonly FilterOption[]): FilterOption[] =>
+    options.map((option) => ({ ...option, label: t(option.label) }));
+
   const filterConfigs: readonly FilterComboboxConfig[] = [
     {
-      label: "Estado",
+      label: t("setting/trusted-devices.columns.status"),
       multiple: true,
-      options: statusOptions,
+      options: translateOptions(statusOptions),
       value: statusFilter,
       onChange: (value) => {
         if (value === null) {
@@ -310,9 +318,9 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
       },
     },
     {
-      label: "Navegador / SO",
+      label: t("setting/trusted-devices.columns.browser_os"),
       multiple: true,
-      options: browserOptions,
+      options: translateOptions(browserOptions),
       value: browserFilter,
       onChange: (value) => {
         if (value === null) {
@@ -325,18 +333,18 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
       },
     },
     {
-      label: "Tipo de dispositivo",
+      label: t("setting/trusted-devices.toolbar.device_type"),
       multiple: false,
-      options: deviceTypeOptions,
+      options: translateOptions(deviceTypeOptions),
       value: deviceTypeFilter,
       onChange: (value) => {
         onDeviceTypeFilterChange(value as TrustedDeviceDeviceTypeFilter | null);
       },
     },
     {
-      label: "Último acceso",
+      label: t("setting/trusted-devices.columns.last_access"),
       multiple: true,
-      options: lastAccessOptions,
+      options: translateOptions(lastAccessOptions),
       value: lastAccessFilter,
       onChange: (value) => {
         if (value === null) {
@@ -355,13 +363,13 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
       <PopoverTrigger asChild>
         <Button variant="outline">
           <Funnel />
-          Filtros
+          {t("setting/trusted-devices.toolbar.filters")}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 p-3">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">Filtros</h4>
+            <h4 className="text-sm font-medium">{t("setting/trusted-devices.toolbar.filters")}</h4>
 
             <Button
               type="button"
@@ -370,7 +378,7 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
               className="text-blue-700 hover:bg-blue-100/50 hover:text-blue-700 dark:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-500"
               onClick={onResetFilters}
             >
-              Restablecer
+              {t("setting/trusted-devices.toolbar.reset")}
             </Button>
           </div>
 
@@ -386,7 +394,7 @@ function TrustedDeviceFiltersPopover(props: TrustedDeviceFiltersPopoverProps): J
           ))}
 
           <Button type="button" variant="outline" onClick={onResetFilters}>
-            Limpiar filtros
+            {t("setting/trusted-devices.toolbar.clear_filters")}
           </Button>
         </div>
       </PopoverContent>
@@ -401,6 +409,7 @@ function FilterCombobox({
   value,
   onChange,
 }: FilterComboboxConfig): JSX.Element {
+  const { t } = useTranslation();
   const anchor = useComboboxAnchor();
   const filterControlId = useId();
 
@@ -446,7 +455,7 @@ function FilterCombobox({
           </ComboboxChips>
 
           <ComboboxContent anchor={anchor}>
-            <ComboboxEmpty>Sin resultados</ComboboxEmpty>
+            <ComboboxEmpty>{t("setting/trusted-devices.toolbar.no_results")}</ComboboxEmpty>
             <ComboboxList>
               {(item: { label: string; value: string }) => (
                 <ComboboxItem key={item.value} value={item.value}>
@@ -510,20 +519,22 @@ function TrustedDeviceSortPopover({
   sortOrder,
   onSortOrderChange,
 }: TrustedDeviceSortPopoverProps): JSX.Element {
+  const { t } = useTranslation();
   const selectedSortLabel =
-    trustedDeviceSortOptions.find((option) => option.value === sortOrder)?.label ?? "Ordenar por";
+    trustedDeviceSortOptions.find((option) => option.value === sortOrder)?.label ??
+    "setting/trusted-devices.toolbar.sort_by";
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline">
           <ArrowDownNarrowWide />
-          {selectedSortLabel}
+          {t(selectedSortLabel)}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-3">
         <div className="flex flex-col gap-3">
-          <h4 className="text-sm font-medium">Ordenar por</h4>
+          <h4 className="text-sm font-medium">{t("setting/trusted-devices.toolbar.sort_by")}</h4>
 
           <RadioGroup
             value={sortOrder}
@@ -545,9 +556,9 @@ function TrustedDeviceSortPopover({
                 />
 
                 <div className="flex flex-1 flex-col gap-0.5 leading-tight">
-                  <span className="text-sm font-medium">{option.label}</span>
+                  <span className="text-sm font-medium">{t(option.label)}</span>
                   <span className="text-xs font-normal text-muted-foreground">
-                    {option.description}
+                    {t(option.description)}
                   </span>
                 </div>
               </label>
@@ -558,8 +569,12 @@ function TrustedDeviceSortPopover({
 
           <div className="flex items-center justify-between">
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-medium">Predeterminado</span>
-              <span className="text-xs font-normal text-muted-foreground">{selectedSortLabel}</span>
+              <span className="text-sm font-medium">
+                {t("setting/trusted-devices.toolbar.default_sort")}
+              </span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {t(selectedSortLabel)}
+              </span>
             </div>
 
             <Button
@@ -571,7 +586,7 @@ function TrustedDeviceSortPopover({
               }}
             >
               <RotateCcw />
-              Restablecer
+              {t("setting/trusted-devices.toolbar.reset")}
             </Button>
           </div>
         </div>
