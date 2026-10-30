@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent } from "@/shared/components/shadcn/ui/card";
 
+import { useDateTime } from "@/shared/hooks";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { validImage } from "@/shared/lib";
-import { formatFullDate, formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { cn } from "@/shared/lib/utils";
 
 import type { User } from "@/shared/types";
@@ -52,6 +52,7 @@ function CommentItem(props: CommentItemProps): JSX.Element {
 type LiveCommentItemProps = CommentItemProps & { comment: LiveComment };
 
 function LiveCommentItem(props: LiveCommentItemProps): JSX.Element {
+  const { formatFullDate, formatLongDate, fromNow } = useDateTime();
   const {
     comment,
     isReply = false,

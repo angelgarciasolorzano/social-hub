@@ -17,7 +17,7 @@ import {
 import { ScrollArea } from "@/shared/components/shadcn/ui/scroll-area";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
-import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
+import { useDateTime } from "@/shared/hooks";
 
 import { CommentType } from "../../enums/commentType";
 import type { CommentContextPreview } from "../../types/comment";
@@ -82,6 +82,7 @@ function CommentDialogPublication({ postDetail }: CommentDialogPublicationProps)
 type CommentDialogContentProps = CommentDialogProps;
 
 function CommentDialogContent({ onCommentsCountChange, postDetail }: CommentDialogContentProps) {
+  const { formatFullDate, fromNow } = useDateTime();
   const authorName = postDetail.user?.name ?? DELETED_AUTHOR_NAME;
 
   const previewContext: CommentContextPreview = {
