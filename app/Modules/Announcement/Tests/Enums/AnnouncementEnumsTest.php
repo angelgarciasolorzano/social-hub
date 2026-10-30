@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 
 it('only supports the info, warning and critical types and rejects any other', function (): void {
@@ -20,6 +22,34 @@ it('only supports the toast and dialog displays and rejects any other', function
     expect(array_column(AnnouncementDisplay::cases(), 'value'))->toBe(['toast', 'dialog'])
         ->and(fn (): AnnouncementDisplay => AnnouncementDisplay::from('popup'))->toThrow(ValueError::class);
 });
+
+it('only supports the draft, in review, approved and rejected statuses and rejects any other', function (): void {
+    expect(array_column(AnnouncementStatus::cases(), 'value'))->toBe(['draft', 'in_review', 'approved', 'rejected'])
+        ->and(fn (): AnnouncementStatus => AnnouncementStatus::from('published'))->toThrow(ValueError::class);
+});
+
+it('converts each persisted status to its matching case', function (string $value, AnnouncementStatus $announcementStatus): void {
+    expect(AnnouncementStatus::from($value))->toBe($announcementStatus);
+})->with([
+    'draft' => ['draft', AnnouncementStatus::Draft],
+    'in review' => ['in_review', AnnouncementStatus::InReview],
+    'approved' => ['approved', AnnouncementStatus::Approved],
+    'rejected' => ['rejected', AnnouncementStatus::Rejected],
+]);
+
+it('only supports the submitted, approved, rejected and resubmitted review actions and rejects any other', function (): void {
+    expect(array_column(AnnouncementReviewAction::cases(), 'value'))->toBe(['submitted', 'approved', 'rejected', 'resubmitted'])
+        ->and(fn (): AnnouncementReviewAction => AnnouncementReviewAction::from('returned'))->toThrow(ValueError::class);
+});
+
+it('converts each persisted review action to its matching case', function (string $value, AnnouncementReviewAction $announcementReviewAction): void {
+    expect(AnnouncementReviewAction::from($value))->toBe($announcementReviewAction);
+})->with([
+    'submitted' => ['submitted', AnnouncementReviewAction::Submitted],
+    'approved' => ['approved', AnnouncementReviewAction::Approved],
+    'rejected' => ['rejected', AnnouncementReviewAction::Rejected],
+    'resubmitted' => ['resubmitted', AnnouncementReviewAction::Resubmitted],
+]);
 
 it('explains when to use each display', function (AnnouncementDisplay $announcementDisplay): void {
     expect($announcementDisplay->description())->not->toBeEmpty();
