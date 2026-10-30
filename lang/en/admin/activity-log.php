@@ -142,6 +142,9 @@ return [
             'announcement_unpublished' => 'Announcement Unpublished',
             'announcement_duplicated' => 'Announcement Duplicated',
             'announcement_deleted' => 'Announcement Deleted',
+            'announcement_submitted' => 'Announcement Submitted for Review',
+            'announcement_approved' => 'Announcement Approved',
+            'announcement_rejected' => 'Announcement Rejected',
         ],
     ],
 ];

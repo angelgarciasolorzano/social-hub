@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Enums\AnnouncementStatus;
 use Illuminate\Support\Facades\Lang;
@@ -81,3 +82,31 @@ it('uses the same placeholders in each workflow catalog', function (): void {
             ->toBe(translationPlaceholders($englishTexts[$key]), "admin/announcements.{$key} has different placeholders in en and es");
     }
 });
+
+it('provides each announcement workflow event in the requested activity log locale', function (string $locale): void {
+    $announcementWorkflowEvents = [
+        ActivityLogAdminEvent::AnnouncementSubmitted,
+        ActivityLogAdminEvent::AnnouncementApproved,
+        ActivityLogAdminEvent::AnnouncementRejected,
+    ];
+    $missingKeys = [];
+
+    foreach ($announcementWorkflowEvents as $announcementWorkflowEvent) {
+        $translationKey = 'events.'.$announcementWorkflowEvent->eventName();
+
+        if (! Lang::has("admin/activity-log.{$translationKey}", $locale, false)) {
+            $missingKeys[] = $translationKey;
+
+            continue;
+        }
+
+        $text = Lang::get("admin/activity-log.{$translationKey}", [], $locale);
+
+        expect($text)->toBeString()->not->toBe('', "admin/activity-log.{$translationKey} must not be empty in {$locale}");
+    }
+
+    expect($missingKeys)->toBe([], "lang/{$locale}/admin/activity-log.php is missing announcement workflow event keys");
+})->with([
+    'English catalog' => ['en'],
+    'Spanish catalog' => ['es'],
+]);
