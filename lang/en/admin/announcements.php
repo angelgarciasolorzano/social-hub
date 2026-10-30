@@ -42,6 +42,8 @@ return [
         'button_link_helper' => 'An https:// address or a path of this site, such as /setting/two-factor-authentication.',
         'button_link_invalid' => 'The link must start with https:// or be a path of this site starting with /.',
         'overlapping_dialogs' => '{1} :count other dialog is shown in the same period.|[2,*] :count other dialogs are shown in the same period.',
+        'reapproval_notice_heading' => 'Changes need approval',
+        'reapproval_notice_description' => 'Saving changes to an approved announcement sends it back for review before the updated content is shown.',
     ],
 
     'options' => [
@@ -93,6 +95,19 @@ return [
         'active_dialogs_tooltip' => 'Dialogs interrupt users until they close them.',
     ],
 
+    'review_history' => [
+        'action' => 'Action',
+        'comment' => 'Review comment',
+        'actor' => 'Performed by',
+    ],
+
+    'review_actions' => [
+        'submitted' => 'Submitted for review',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+        'resubmitted' => 'Resubmitted for review',
+    ],
+
     'actions' => [
         'preview' => 'Preview',
         'preview_heading' => 'Banner preview',
@@ -105,6 +120,24 @@ return [
         'unpublished' => 'Announcement unpublished',
         'no_longer_running' => 'The announcement is no longer running.',
         'administrator_only' => 'Only a signed-in administrator can change announcements.',
+        'review_comment' => 'Review comment',
+        'review_action_failed' => 'The announcement could not be updated. Refresh the page and try again.',
+        'submit_for_review' => [
+            'label' => 'Submit for review',
+            'modal_heading' => 'Submit announcement for review',
+            'modal_description' => 'A reviewer must approve or reject this announcement before it is shown to users.',
+            'submit' => 'Submit for review',
+        ],
+        'approve' => [
+            'label' => 'Approve',
+            'modal_heading' => 'Approve announcement',
+            'submit' => 'Approve',
+        ],
+        'reject' => [
+            'label' => 'Reject',
+            'modal_heading' => 'Reject announcement',
+            'submit' => 'Reject',
+        ],
     ],
 
     'notifications' => [
