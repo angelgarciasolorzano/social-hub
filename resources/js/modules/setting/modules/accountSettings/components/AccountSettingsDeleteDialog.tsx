@@ -90,27 +90,27 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trash2 aria-hidden="true" className={`size-5 ${iconColorVariants.red.iconFgClass}`} />
-            Eliminar mi cuenta
+            {t("setting/account-settings.delete_dialog.title")}
           </DialogTitle>
           <DialogDescription>
-            Para continuar, confirma la eliminación con tu contraseña actual.
+            {t("setting/account-settings.delete_dialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         <Alert className={alertVariants.destructive} role="note">
           <AlertTriangle aria-hidden="true" />
-          <AlertTitle>Esta acción es permanente</AlertTitle>
+          <AlertTitle>{t("setting/account-settings.delete_dialog.warning_title")}</AlertTitle>
           <AlertDescription>
-            Se eliminará permanentemente tu cuenta y la información de perfil guardada en ella. Se
-            cerrará tu sesión y ya no podrás iniciar sesión con estas credenciales; para volver a
-            usar la plataforma tendrás que registrarte de nuevo. Esta acción no se puede deshacer.
+            {t("setting/account-settings.delete_dialog.warning_description")}
           </AlertDescription>
         </Alert>
 
         <form className="grid gap-4" id="delete-account-form" onSubmit={handleSubmit}>
           <FieldGroup className="gap-4">
             <Field className="gap-2" data-invalid={errors.password !== undefined}>
-              <FieldLabel htmlFor="delete-account-password">Contraseña actual</FieldLabel>
+              <FieldLabel htmlFor="delete-account-password">
+                {t("setting/account-settings.delete_dialog.current_password")}
+              </FieldLabel>
               <PasswordInput
                 ref={passwordInput}
                 id="delete-account-password"
@@ -139,7 +139,7 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
         <DialogFooter>
           <DialogClose asChild>
             <Button disabled={processing} type="button" variant="outline">
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -153,12 +153,12 @@ function AccountSettingsDeleteDialog({ userId }: AccountSettingsDeleteDialogProp
             {processing ? (
               <>
                 <Spinner data-icon="inline-start" />
-                Eliminando...
+                {t("setting/account-settings.delete_dialog.submitting")}
               </>
             ) : (
               <>
                 <Trash2 data-icon="inline-start" />
-                Eliminar cuenta
+                {t("setting/account-settings.delete_dialog.submit")}
               </>
             )}
           </Button>
