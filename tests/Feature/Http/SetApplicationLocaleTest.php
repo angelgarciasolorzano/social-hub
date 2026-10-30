@@ -34,10 +34,6 @@ it('applies the first supported browser language to a guest', function (string $
     'unsupported first, English later' => ['fr-FR,fr;q=0.9,en;q=0.5', 'en'],
 ]);
 
-/*
- * Symfony gives every test request `Accept-Language: en-us,en;q=0.5`, so an empty header stands for a
- * browser that sends none.
- */
 it('gives Spanish to a guest whose browser asks for no supported language', function (string $acceptLanguage): void {
     $this->withHeader('Accept-Language', $acceptLanguage)
         ->get(LOCALE_PROBE_URI)
