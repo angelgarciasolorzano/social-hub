@@ -23,6 +23,12 @@ class EditAnnouncement extends EditRecord
     #[Override]
     protected static string $resource = AnnouncementResource::class;
 
+    #[Override]
+    public function hasDatabaseTransactions(): bool
+    {
+        return true;
+    }
+
     private ?string $imageMediaUuidBeforeSave = null;
 
     private ?int $submissionReviewIdBeforeSave = null;
@@ -33,8 +39,13 @@ class EditAnnouncement extends EditRecord
 
         throw_unless($model instanceof Announcement, LogicException::class, 'Only announcements can be edited here.');
 
-        $this->imageMediaUuidBeforeSave = $model->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid;
-        $this->submissionReviewIdBeforeSave = $this->latestSubmissionReviewId($model);
+        $lockedAnnouncement = Announcement::query()
+            ->lockForUpdate()
+            ->whereKey($model->getKey())
+            ->firstOrFail();
+
+        $this->imageMediaUuidBeforeSave = $lockedAnnouncement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->uuid;
+        $this->submissionReviewIdBeforeSave = $this->latestSubmissionReviewId($lockedAnnouncement);
     }
 
     protected function afterSave(): void
@@ -103,6 +114,7 @@ class EditAnnouncement extends EditRecord
             ->reorder()
             ->whereIn('action', [AnnouncementReviewAction::Submitted->value, AnnouncementReviewAction::Resubmitted->value])
             ->orderByDesc('id')
+            ->lockForUpdate()
             ->first(['id']);
 
         return $latestSubmissionReview instanceof AnnouncementReview

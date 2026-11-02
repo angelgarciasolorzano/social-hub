@@ -136,6 +136,12 @@ describe('with the announcements manager role', function (): void {
             ->and(editPageShowsDeleteAction($testable))->toBeTrue();
     });
 
+    it('uses a database transaction for announcement edits', function (): void {
+        $announcement = editAnnouncementFactory()->createOne();
+
+        expect(editAnnouncementPage($announcement)->instance()->hasDatabaseTransactions())->toBeTrue();
+    });
+
     it('saves the changes and audits only the names of the changed attributes', function (): void {
         $announcement = editAnnouncementFactory()->ofType(AnnouncementType::Info)->createOne();
 
