@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\User\Enums\PreferredLocale;
+use App\User\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const ACCOUNT_SETTINGS_COMPONENT = 'setting/modules/accountSettings/AccountSettings';
+const TRUSTED_DEVICE_COMPONENT = 'setting/modules/trustedDevice/TrustedDevice';
 
 it('shares the active language and the dates catalog in that language', function (PreferredLocale $preferredLocale, string $never): void {
     $this->actingAs(createUserPreferring($preferredLocale))
@@ -26,12 +28,31 @@ it('renders the html lang attribute in the active language', function (): void {
         ->assertSeeHtml('<html lang="es"');
 });
 
-it('does not resend the translations on a partial reload that asks for another prop', function (): void {
-    $this->actingAs(createUserPreferring(PreferredLocale::SPANISH));
+it('keeps localized activity and shared props aligned after a language change on partial reload', function (): void {
+    $user = createUserPreferring(PreferredLocale::SPANISH);
+    createTrustedDeviceEvent($user, ['action' => TrustedDeviceAction::Created]);
 
-    $this->withHeaders(inertiaPartialHeaders($this, ACCOUNT_SETTINGS_COMPONENT, 'accountSettings'))
-        ->get(route('profile.edit'))
+    $this->actingAs($user)
+        ->get(route('setting.security.trusted-devices.index'))
         ->assertOk()
-        ->assertJsonMissingPath('props.translations')
-        ->assertJsonPath('props.accountSettings.preferredLocale', 'es');
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->component(TRUSTED_DEVICE_COMPONENT)
+            ->where('locale', PreferredLocale::SPANISH->value)
+            ->where('translations.dates.never', 'Nunca'));
+
+    User::query()
+        ->findOrFail($user->id)
+        ->forceFill(['preferred_locale' => PreferredLocale::ENGLISH])
+        ->save();
+
+    $this->actingAs(User::query()->findOrFail($user->id))
+        ->withHeaders(inertiaPartialHeaders($this, TRUSTED_DEVICE_COMPONENT, 'activityDialog'))
+        ->get(route('setting.security.trusted-devices.index'))
+        ->assertOk()
+        ->assertJsonPath('props.locale', PreferredLocale::ENGLISH->value)
+        ->assertJsonPath('props.translations.dates.never', 'Never')
+        ->assertJsonPath(
+            'props.activityDialog.activityLog.data.0.actionLabel',
+            translatedTextIn(PreferredLocale::ENGLISH, 'setting/trusted-devices.actions.created'),
+        );
 });

@@ -1,4 +1,6 @@
-import { createInertiaApp } from "@inertiajs/react";
+import { useEffect } from "react";
+
+import { createInertiaApp, router } from "@inertiajs/react";
 
 import { configureEcho } from "@laravel/echo-react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -18,6 +20,8 @@ import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
 import FlashToaster from "@/shared/components/FlashToaster";
 import { TooltipProvider } from "@/shared/components/shadcn/ui/tooltip";
+
+import type { SharedData } from "@/shared/types";
 
 import "../../css/app.css";
 import { initializeTheme } from "../shared/hooks/useAppearance";
@@ -46,6 +50,22 @@ configureEcho({
   wssPort: reverbPort,
 });
 
+interface DocumentLanguageSyncProps {
+  initialLocale: SharedData["locale"];
+}
+
+function DocumentLanguageSync({ initialLocale }: DocumentLanguageSyncProps): null {
+  useEffect(() => {
+    document.documentElement.lang = initialLocale;
+
+    return router.on("navigate", (event) => {
+      document.documentElement.lang = (event.detail.page.props as unknown as SharedData).locale;
+    });
+  }, [initialLocale]);
+
+  return null;
+}
+
 void createInertiaApp({
   pages: "../modules",
   title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -62,8 +82,11 @@ void createInertiaApp({
     }
   },
   withApp(app, { page }) {
+    const { locale } = page.props as unknown as SharedData;
+
     return (
       <TooltipProvider>
+        <DocumentLanguageSync initialLocale={locale} />
         <SystemAnnouncements
           initialAnnouncements={sharedAnnouncementsOf(page.props)}
           initialIsAuthenticated={isAuthenticatedPage(page.props)}

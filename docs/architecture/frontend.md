@@ -566,7 +566,7 @@ Para variantes de Button, Alert, Badge, etc., usá las variantes predefinidas de
 
 Los textos de las páginas traducidas (hoy, las de configuración) salen de `lang/`, igual que los del backend. El servidor decide el idioma y manda a cada página sus catálogos ya fusionados con el idioma de respaldo; React no carga archivos ni guarda el idioma en estado de módulo, así el SSR nunca mezcla idiomas entre peticiones.
 
-- **Props compartidos**: `locale` (`"en" | "es"`) y `translations` (los grupos de la página más `dates`), tipados en `SharedData`.
+- **Props compartidos**: `locale` (`"en" | "es"`) y `translations` (los grupos de la página más `dates`), tipados en `SharedData`. Ambos se reenvían juntos también en las recargas parciales para evitar combinar datos localizados con un catálogo anterior.
 - **`useTranslation()`** (`@/shared/hooks`) devuelve `{ t, tChoice, locale }`. Las claves son las mismas que en PHP: `t("setting/trusted-devices.table.open_actions", { device: name })`, `tChoice("setting/trusted-device-dialogs.revoke_all.devices_count", total)`.
   - Los marcadores `:name`, `:Name` y `:NAME` funcionan como en Laravel, y los plurales aceptan `{n}`, `{a,b}`, `[desde,hasta]` y `uno|varios`.
   - Una clave que no existe devuelve la clave.

@@ -11,6 +11,7 @@ use App\User\Models\User;
 use App\User\Resources\UserResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 use Override;
 
@@ -68,10 +69,10 @@ class HandleInertiaRequests extends Middleware
             'notification' => fn () => $request->session()->get('notification'),
             'search_results' => fn () => $request->session()->get('search_results'),
             'announcements' => fn (): array => $this->sharedAnnouncements($request),
-            'locale' => app()->getLocale(),
-            'translations' => fn (): array => resolve(FrontendTranslations::class)
+            'locale' => Inertia::always(app()->getLocale()),
+            'translations' => Inertia::always(fn (): array => resolve(FrontendTranslations::class)
                 ->use(...self::ALWAYS_SHARED_TRANSLATION_GROUPS)
-                ->toArray(),
+                ->toArray()),
         ];
     }
 
