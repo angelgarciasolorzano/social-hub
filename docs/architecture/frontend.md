@@ -579,9 +579,11 @@ Los textos de las páginas traducidas (hoy, las de configuración) salen de `lan
 - **Textos con una parte resaltada** se parten en claves `_before`/`_after` (o `_emphasis`), para que el `<strong>` quede en el componente.
 - **Cómo agregar un texto**: la clave va en `lang/en/<grupo>.php` y en `lang/es/<grupo>.php` a la vez; la regla completa está en `.ai/rules/frontend.md`. `FrontendTranslationKeysTest` y `SettingHardcodedTextTest` fallan si la clave no existe o si el texto quedó escrito a mano.
 
-### Anuncios del sistema (SOC-61, SOC-63)
+### Anuncios del sistema (SOC-61, SOC-63, SOC-64)
 
 `modules/announcement/` muestra la prop compartida `announcements` según su `display`. Los toasts van a un `Toaster` de Sonner propio (`id="announcements"`, arriba al centro, colapsado), separado del de `FlashToaster`: Sonner solo muestra en cada `Toaster` los toasts con su mismo `toasterId`. Se eligió un toast y no una franja dentro del flujo porque flota sobre cualquier layout, incluido el sidebar fijo de `SettingLayout`. Los dialogs se muestran de uno en uno.
+
+El backend aplica el filtro `status = approved` en `Announcement::availableTo()` (usado por `Announcement::visibleTo()`) antes de compartir la prop. `AnnouncementBannerResource` conserva el payload de presentación `{id, title, bodyHtml, type, display, buttonLabel, buttonUrl, isDismissible, imageUrl}`: no incluye `status` ni historial de revisión. React no modela `draft`, `in_review`, `approved` o `rejected`; recibe solo anuncios aprobados y usa `display` para elegir toast o dialog.
 
 - `SystemAnnouncements` sincroniza la lista: crea o actualiza un toast por anuncio con un id fijo (`duration: Infinity`, sin descartar por arrastre), cierra los que salen de la lista y deja el más grave arriba. Muestra un solo `AnnouncementDialog` con el primero de la cola, y mientras está abierto retiene los toasts, porque el z-index de Sonner los dibujaría encima del fondo del dialog.
 - `AnnouncementContent.tsx` reúne lo que comparten el toast y el dialog: el cuerpo (`bodyHtml`, ya saneado en el servidor, con `dangerouslySetInnerHTML`), el botón (`Link` de Inertia para rutas internas, una pestaña nueva con `rel="noopener noreferrer"` para enlaces externos, y un `onAction` que el dialog usa para contarlo como cerrado) y los colores e íconos por tipo con la paleta de Tailwind y variantes `dark:`.
