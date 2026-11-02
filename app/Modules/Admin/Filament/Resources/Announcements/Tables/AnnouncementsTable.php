@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Announcements\Tables;
 
+use App\Modules\Admin\Filament\Concerns\ConstrainsAnnouncementSubmissionReview;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\ApproveAnnouncementAction;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\RejectAnnouncementAction;
+use App\Modules\Admin\Filament\Resources\Announcements\Actions\SubmitAnnouncementForReviewAction;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Services\AnnouncementService;
@@ -23,14 +28,23 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use LogicException;
 
 class AnnouncementsTable
 {
+    use ConstrainsAnnouncementSubmissionReview;
+
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('creator:id,name'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                ->with('creator:id,name')
+                ->with([
+                    'reviews' => static function (Relation $reviewQuery): void {
+                        self::constrainLatestSubmissionReview($reviewQuery);
+                    },
+                ]))
             ->deferLoading()
             ->loadingSkeleton()
             ->defaultSort('starts_at', 'desc')
@@ -39,6 +53,13 @@ class AnnouncementsTable
                     ->label(TranslatedText::of('admin/announcements.fields.title'))
                     ->searchable()
                     ->limit(60),
+                TextColumn::make('status')
+                    ->label(TranslatedText::of('admin/common.fields.status'))
+                    ->state(fn (Announcement $record): ?AnnouncementStatus => self::statusForRecord($record))
+                    ->badge()
+                    ->formatStateUsing(fn (?AnnouncementStatus $state): ?string => self::statusLabel($state))
+                    ->color(fn (?AnnouncementStatus $state): string => self::statusColor($state))
+                    ->sortable(),
                 TextColumn::make('type')
                     ->label(TranslatedText::of('admin/announcements.fields.type'))
                     ->badge()
@@ -67,6 +88,9 @@ class AnnouncementsTable
                     ->placeholder(TranslatedText::of('admin/announcements.table.deleted_user')),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label(TranslatedText::of('admin/announcements.filters.status'))
+                    ->options(self::statusOptions()),
                 SelectFilter::make('type')
                     ->label(TranslatedText::of('admin/announcements.filters.type'))
                     ->options(self::typeOptions()),
@@ -80,6 +104,11 @@ class AnnouncementsTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                ActionGroup::make([
+                    SubmitAnnouncementForReviewAction::make(),
+                    ApproveAnnouncementAction::make(),
+                    RejectAnnouncementAction::make(),
+                ]),
                 ActionGroup::make([
                     self::previewAction(),
                     self::duplicateAction(),
@@ -97,6 +126,41 @@ class AnnouncementsTable
             AnnouncementType::Info => 'info',
             AnnouncementType::Warning => 'warning',
             AnnouncementType::Critical => 'danger',
+        };
+    }
+
+    /**
+     * Resolve an announcement's raw status without casting an unknown database value.
+     */
+    public static function statusForRecord(Announcement $announcement): ?AnnouncementStatus
+    {
+        $rawStatus = $announcement->getRawOriginal('status');
+
+        return \is_string($rawStatus) ? AnnouncementStatus::tryFrom($rawStatus) : null;
+    }
+
+    /**
+     * Translate a valid announcement status for the table badge.
+     */
+    public static function statusLabel(?AnnouncementStatus $announcementStatus): ?string
+    {
+        if (! $announcementStatus instanceof AnnouncementStatus) {
+            return null;
+        }
+
+        return TranslatedText::of('admin/announcements.options.status.'.$announcementStatus->value);
+    }
+
+    /**
+     * Select the badge tone from the status enum case.
+     */
+    public static function statusColor(?AnnouncementStatus $announcementStatus): string
+    {
+        return match ($announcementStatus) {
+            null, AnnouncementStatus::Draft => 'gray',
+            AnnouncementStatus::InReview => 'warning',
+            AnnouncementStatus::Approved => 'success',
+            AnnouncementStatus::Rejected => 'danger',
         };
     }
 
@@ -202,6 +266,20 @@ class AnnouncementsTable
         }
 
         return $typeOptions;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function statusOptions(): array
+    {
+        $statusOptions = [];
+
+        foreach (AnnouncementStatus::cases() as $announcementStatus) {
+            $statusOptions[$announcementStatus->value] = TranslatedText::of('admin/announcements.options.status.'.$announcementStatus->value);
+        }
+
+        return $statusOptions;
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
 use App\User\Models\User;
 use Illuminate\Testing\TestResponse;
@@ -84,6 +85,9 @@ it('forbids dismissing an announcement the user cannot dismiss', function (Annou
     'expired' => fn (): AnnouncementFactory => dismissAnnouncementFactory()->expired(),
     'scheduled' => fn (): AnnouncementFactory => dismissAnnouncementFactory()->scheduled(),
     'for another audience' => fn (): AnnouncementFactory => dismissAnnouncementFactory()->forAudience(AnnouncementAudience::WithoutTwoFactor),
+    'draft' => fn (): AnnouncementFactory => dismissAnnouncementFactory()->withStatus(AnnouncementStatus::Draft),
+    'in review' => fn (): AnnouncementFactory => dismissAnnouncementFactory()->withStatus(AnnouncementStatus::InReview),
+    'rejected' => fn (): AnnouncementFactory => dismissAnnouncementFactory()->withStatus(AnnouncementStatus::Rejected),
 ]);
 
 it('answers 404 for an announcement that does not exist', function (): void {

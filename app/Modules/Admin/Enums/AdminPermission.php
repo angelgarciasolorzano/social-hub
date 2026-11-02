@@ -38,6 +38,8 @@ enum AdminPermission: string
 
     case AdminAnnouncementsView = 'admin.announcements.view';
 
+    case AdminAnnouncementsReview = 'admin.announcements.review';
+
     case AdminAnnouncementsCreate = 'admin.announcements.create';
 
     case AdminAnnouncementsUpdate = 'admin.announcements.update';

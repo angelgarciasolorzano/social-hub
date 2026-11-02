@@ -7,6 +7,7 @@ namespace App\Modules\Announcement\Models;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Override;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -35,6 +37,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property AnnouncementType $type
  * @property AnnouncementAudience $audience
  * @property AnnouncementDisplay $display
+ * @property AnnouncementStatus $status
  * @property CarbonImmutable $starts_at
  * @property CarbonImmutable|null $ends_at
  * @property string|null $button_label
@@ -45,6 +48,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property CarbonImmutable|null $updated_at
  * @property-read User|null $creator
  * @property-read Collection<int, User> $dismissedBy
+ * @property-read Collection<int, AnnouncementReview> $reviews
  *
  * @mixin IdeHelperAnnouncement
  */
@@ -107,6 +111,7 @@ class Announcement extends Model implements HasMedia
             'type' => AnnouncementType::class,
             'audience' => AnnouncementAudience::class,
             'display' => AnnouncementDisplay::class,
+            'status' => AnnouncementStatus::class,
             'starts_at' => 'immutable_datetime',
             'ends_at' => 'immutable_datetime',
             'is_dismissible' => 'boolean',
@@ -149,6 +154,18 @@ class Announcement extends Model implements HasMedia
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the review history in chronological order.
+     *
+     * @return HasMany<AnnouncementReview, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(AnnouncementReview::class)
+            ->oldest()
+            ->orderBy('id');
     }
 
     /**
@@ -253,6 +270,7 @@ class Announcement extends Model implements HasMedia
         $this->running($builder);
 
         $builder
+            ->where('status', AnnouncementStatus::Approved->value)
             ->whereIn('audience', array_map(
                 fn (AnnouncementAudience $announcementAudience): string => $announcementAudience->value,
                 $this->audiencesFor($user),

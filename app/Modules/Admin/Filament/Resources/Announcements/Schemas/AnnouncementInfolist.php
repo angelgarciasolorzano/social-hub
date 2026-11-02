@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Announcements\Schemas;
 use App\Modules\Admin\Filament\Resources\Announcements\Tables\AnnouncementsTable;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\Support\Translation\TranslatedText;
@@ -46,6 +47,12 @@ class AnnouncementInfolist
                         'sm' => 3,
                     ])
                     ->schema([
+                        TextEntry::make('status')
+                            ->label(TranslatedText::of('admin/common.fields.status'))
+                            ->state(fn (Announcement $record): ?AnnouncementStatus => AnnouncementsTable::statusForRecord($record))
+                            ->badge()
+                            ->formatStateUsing(fn (?AnnouncementStatus $state): ?string => AnnouncementsTable::statusLabel($state))
+                            ->color(fn (?AnnouncementStatus $state): string => AnnouncementsTable::statusColor($state)),
                         TextEntry::make('type')
                             ->label(TranslatedText::of('admin/announcements.fields.type'))
                             ->badge()

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\User\Database\Factories\UserFactory;
@@ -36,6 +37,21 @@ function visibleAnnouncementIds(?User $user): array
 }
 
 /**
+ * The ids of announcements available to the given visitor, whether or not they dismissed them.
+ *
+ * @return list<int>
+ */
+function availableAnnouncementIds(?User $user): array
+{
+    return array_values(Announcement::query()
+        ->availableTo($user)
+        ->orderBy('id')
+        ->get()
+        ->map(fn (Announcement $announcement): int => $announcement->id)
+        ->all());
+}
+
+/**
  * A user whose two-factor setup is in the given state.
  */
 function createUserWithTwoFactorStatus(TwoFactorStatus $twoFactorStatus): User
@@ -59,6 +75,21 @@ it('shows a guest only the active announcements meant for everyone', function ()
 
     expect(visibleAnnouncementIds(null))->toBe([$announcement->id]);
 });
+
+it('makes only approved announcements available and visible to guests and signed-in users', function (AnnouncementStatus $announcementStatus): void {
+    $announcement = visibilityAnnouncementFactory()->withStatus(AnnouncementStatus::Approved)->createOne();
+    $unapproved = visibilityAnnouncementFactory()->withStatus($announcementStatus)->createOne();
+    $user = createUser();
+
+    foreach ([null, $user] as $visitor) {
+        expect(availableAnnouncementIds($visitor))->toBe([$announcement->id])
+            ->and(visibleAnnouncementIds($visitor))->toBe([$announcement->id]);
+    }
+})->with([
+    'draft' => AnnouncementStatus::Draft,
+    'in review' => AnnouncementStatus::InReview,
+    'rejected' => AnnouncementStatus::Rejected,
+]);
 
 it('shows an announcement from its start until just before its end, and forever without an end', function (): void {
     $this->freezeTime();

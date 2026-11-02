@@ -6,10 +6,20 @@ namespace App\Modules\Announcement\Services;
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Announcement\Data\AnnouncementData;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
+use Closure;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use LogicException;
 
 /**
@@ -19,6 +29,18 @@ use LogicException;
  */
 final readonly class AnnouncementService
 {
+    /** @var list<string> */
+    private const array CONTENT_ATTRIBUTES = [
+        'title',
+        'body',
+        'type',
+        'audience',
+        'display',
+        'button_label',
+        'button_url',
+        'is_dismissible',
+    ];
+
     public function __construct(
         private ActivityLogger $activityLogger,
     ) {}
@@ -41,29 +63,150 @@ final readonly class AnnouncementService
     }
 
     /**
-     * Apply the given content and schedule; saving without changes records nothing.
+     * Submit a draft or rejected announcement for review and record who submitted it.
+     */
+    public function submitForReview(Announcement $announcement, User $user): Announcement
+    {
+        return DB::transaction(function () use ($announcement, $user): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            $reviewAction = match ($lockedAnnouncement->status) {
+                AnnouncementStatus::Draft => AnnouncementReviewAction::Submitted,
+                AnnouncementStatus::Rejected => AnnouncementReviewAction::Resubmitted,
+                default => throw new LogicException('Only draft and rejected announcements may be submitted for review.'),
+            };
+
+            $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview])->save();
+
+            $lockedAnnouncement->reviews()->create([
+                'action' => $reviewAction,
+                'reviewed_by' => $user->id,
+            ]);
+
+            $this->scheduleReviewerSubmissionNotification($lockedAnnouncement->created_by, $user->id);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
+
+            return $lockedAnnouncement;
+        });
+    }
+
+    /**
+     * Approve an announcement when the reviewer has seen its latest submission.
+     */
+    public function approve(
+        Announcement $announcement,
+        User $user,
+        int $expectedSubmissionReviewId,
+        ?string $comment = null,
+    ): Announcement {
+        return $this->recordReviewDecision(
+            $announcement,
+            $user,
+            $expectedSubmissionReviewId,
+            AnnouncementStatus::Approved,
+            AnnouncementReviewAction::Approved,
+            ActivityLogAdminEvent::AnnouncementApproved,
+            $comment,
+        );
+    }
+
+    /**
+     * Reject an announcement with a required comment of at most 1000 characters.
+     */
+    public function reject(
+        Announcement $announcement,
+        User $user,
+        int $expectedSubmissionReviewId,
+        string $comment,
+    ): Announcement {
+        throw_if(trim($comment) === '', InvalidArgumentException::class, 'A rejection comment is required.');
+
+        throw_if(mb_strlen($comment) > 1000, InvalidArgumentException::class, 'A rejection comment may not exceed 1000 characters.');
+
+        return $this->recordReviewDecision(
+            $announcement,
+            $user,
+            $expectedSubmissionReviewId,
+            AnnouncementStatus::Rejected,
+            AnnouncementReviewAction::Rejected,
+            ActivityLogAdminEvent::AnnouncementRejected,
+            $comment,
+        );
+    }
+
+    /**
+     * Apply content and schedule; content changes to reviewed announcements start a new review.
      */
     public function update(Announcement $announcement, AnnouncementData $announcementData, User $user): Announcement
     {
-        $announcement->fill($announcementData->toModelAttributes());
+        return DB::transaction(function () use ($announcement, $announcementData, $user): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+            $lockedAnnouncement->fill($announcementData->toModelAttributes());
 
-        if (! $announcement->isDirty()) {
-            return $announcement;
-        }
+            $changedAttributes = array_keys($lockedAnnouncement->getDirty());
 
-        return DB::transaction(function () use ($announcement, $user): Announcement {
-            $changedAttributes = array_keys($announcement->getDirty());
+            if ($changedAttributes === []) {
+                return $lockedAnnouncement;
+            }
 
-            $announcement->save();
+            $hasContentChanges = array_intersect($changedAttributes, self::CONTENT_ATTRIBUTES) !== [];
 
-            $this->activityLogger->record(
-                ActivityLogAdminEvent::AnnouncementUpdated,
-                $announcement,
-                $user,
-                ['changed_attributes' => $changedAttributes],
+            $requiresResubmission = $hasContentChanges && in_array(
+                $lockedAnnouncement->status,
+                [AnnouncementStatus::Approved, AnnouncementStatus::InReview],
+                true,
             );
 
-            return $announcement;
+            if ($requiresResubmission && $lockedAnnouncement->status === AnnouncementStatus::Approved) {
+                $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview]);
+            }
+
+            $lockedAnnouncement->save();
+
+            if ($requiresResubmission) {
+                $this->recordResubmission($lockedAnnouncement, $user, $changedAttributes);
+            } else {
+                $this->activityLogger->record(
+                    ActivityLogAdminEvent::AnnouncementUpdated,
+                    $lockedAnnouncement,
+                    $user,
+                    ['changed_attributes' => $changedAttributes],
+                );
+            }
+
+            return $lockedAnnouncement;
+        });
+    }
+
+    /**
+     * Resubmit an approved or in-review announcement when its image changes after the form data is saved.
+     */
+    public function resubmitForImageChange(Announcement $announcement, User $user): Announcement
+    {
+        return DB::transaction(function () use ($announcement, $user): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            if (! \in_array($lockedAnnouncement->status, [AnnouncementStatus::Approved, AnnouncementStatus::InReview], true)) {
+                return $lockedAnnouncement;
+            }
+
+            if ($lockedAnnouncement->status === AnnouncementStatus::Approved) {
+                $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview])->save();
+            }
+
+            $this->recordResubmission($lockedAnnouncement, $user, ['image']);
+
+            return $lockedAnnouncement;
         });
     }
 
@@ -75,7 +218,16 @@ final readonly class AnnouncementService
     public function unpublish(Announcement $announcement, User $user): Announcement
     {
         DB::transaction(function () use ($announcement, $user): void {
-            $lockedAnnouncement = Announcement::query()->lockForUpdate()->whereKey($announcement->id)->firstOrFail();
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            throw_unless(
+                $lockedAnnouncement->status === AnnouncementStatus::Approved,
+                LogicException::class,
+                'Only approved announcements may be unpublished.',
+            );
 
             $now = now();
 
@@ -107,6 +259,7 @@ final readonly class AnnouncementService
             $copy->forceFill([
                 'starts_at' => now()->addDay(),
                 'ends_at' => null,
+                'status' => AnnouncementStatus::Draft,
                 'created_by' => $user->id,
             ])->save();
 
@@ -134,5 +287,186 @@ final readonly class AnnouncementService
 
             $announcement->delete();
         });
+    }
+
+    /**
+     * Lock the announcement and latest submission before persisting a review decision.
+     */
+    private function recordReviewDecision(
+        Announcement $announcement,
+        User $user,
+        int $expectedSubmissionReviewId,
+        AnnouncementStatus $announcementStatus,
+        AnnouncementReviewAction $announcementReviewAction,
+        ActivityLogAdminEvent $activityLogAdminEvent,
+        ?string $comment,
+    ): Announcement {
+        return DB::transaction(function () use (
+            $announcement,
+            $user,
+            $expectedSubmissionReviewId,
+            $announcementStatus,
+            $announcementReviewAction,
+            $activityLogAdminEvent,
+            $comment,
+        ): Announcement {
+            $lockedAnnouncement = Announcement::query()
+                ->lockForUpdate()
+                ->whereKey($announcement->getKey())
+                ->firstOrFail();
+
+            throw_if($lockedAnnouncement->status !== AnnouncementStatus::InReview, LogicException::class, 'Only announcements in review may be approved or rejected.');
+
+            $latestSubmission = AnnouncementReview::query()
+                ->where('announcement_id', $lockedAnnouncement->getKey())
+                ->whereIn('action', [
+                    AnnouncementReviewAction::Submitted->value,
+                    AnnouncementReviewAction::Resubmitted->value,
+                ])
+                ->latest()
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+            throw_unless($latestSubmission instanceof AnnouncementReview, LogicException::class, 'The announcement has no submission to review.');
+
+            throw_if($latestSubmission->id !== $expectedSubmissionReviewId, LogicException::class, 'The announcement submission changed before it was reviewed.');
+
+            throw_if($lockedAnnouncement->created_by === $user->id, LogicException::class, 'The announcement author may not review their own announcement.');
+
+            throw_if($latestSubmission->reviewed_by === $user->id, LogicException::class, 'The latest submitter may not review their own submission.');
+
+            $lockedAnnouncement->forceFill(['status' => $announcementStatus])->save();
+
+            $lockedAnnouncement->reviews()->create([
+                'action' => $announcementReviewAction,
+                'comment' => $comment,
+                'reviewed_by' => $user->id,
+            ]);
+
+            $this->activityLogger->record($activityLogAdminEvent, $lockedAnnouncement, $user);
+
+            $this->scheduleAuthorDecisionNotification(
+                $lockedAnnouncement->created_by,
+                $announcementReviewAction,
+                $comment,
+            );
+
+            return $lockedAnnouncement;
+        });
+    }
+
+    /**
+     * Record a fresh submission and audit the changed attributes.
+     *
+     * @param  list<string>  $changedAttributes
+     */
+    private function recordResubmission(Announcement $announcement, User $user, array $changedAttributes): void
+    {
+        $announcement->reviews()->create([
+            'action' => AnnouncementReviewAction::Resubmitted,
+            'reviewed_by' => $user->id,
+        ]);
+
+        $this->activityLogger->record(
+            ActivityLogAdminEvent::AnnouncementUpdated,
+            $announcement,
+            $user,
+            ['changed_attributes' => $changedAttributes],
+        );
+
+        $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $announcement, $user);
+        $this->scheduleReviewerSubmissionNotification($announcement->created_by, $user->id);
+    }
+
+    /**
+     * Schedule a content-free notification for reviewers after the submission commits.
+     */
+    private function scheduleReviewerSubmissionNotification(?int $authorId, int $actorId): void
+    {
+        DB::afterCommit(function () use ($authorId, $actorId): void {
+            $excludedUserIds = [$actorId];
+
+            if ($authorId !== null) {
+                $excludedUserIds[] = $authorId;
+            }
+
+            /** @var Collection<int, User> $reviewers */
+            $reviewers = User::query()
+                ->permission(AdminPermission::AdminAnnouncementsReview)
+                ->whereNotIn('id', $excludedUserIds)
+                ->get();
+
+            foreach ($reviewers as $reviewer) {
+                $this->withLocale($reviewer->preferred_locale->value, function () use ($reviewer): void {
+                    Notification::make()
+                        ->title(TranslatedText::of('admin/announcements.notifications.submitted.title'))
+                        ->body(TranslatedText::of('admin/announcements.notifications.submitted.body'))
+                        ->sendToDatabase($reviewer);
+                });
+            }
+        });
+    }
+
+    /**
+     * Schedule the review decision and optional comment for the author after commit.
+     */
+    private function scheduleAuthorDecisionNotification(
+        ?int $authorId,
+        AnnouncementReviewAction $announcementReviewAction,
+        ?string $comment,
+    ): void {
+        if ($authorId === null) {
+            return;
+        }
+
+        DB::afterCommit(function () use ($authorId, $announcementReviewAction, $comment): void {
+            $author = User::query()->find($authorId);
+
+            if (! $author instanceof User) {
+                return;
+            }
+
+            $this->withLocale($author->preferred_locale->value, function () use ($author, $announcementReviewAction, $comment): void {
+                if ($announcementReviewAction === AnnouncementReviewAction::Approved) {
+                    $title = TranslatedText::of('admin/announcements.notifications.approved.title');
+                    $body = $comment === null
+                        ? TranslatedText::of('admin/announcements.notifications.approved.body')
+                        : TranslatedText::of(
+                            'admin/announcements.notifications.approved.body_with_comment',
+                            ['comment' => $comment],
+                        );
+                } elseif ($announcementReviewAction === AnnouncementReviewAction::Rejected) {
+                    throw_if($comment === null, LogicException::class, 'Rejected announcements require a review comment.');
+                    $title = TranslatedText::of('admin/announcements.notifications.rejected.title');
+                    $body = TranslatedText::of(
+                        'admin/announcements.notifications.rejected.body',
+                        ['comment' => $comment],
+                    );
+                } else {
+                    throw new LogicException('Only approval decisions may notify announcement authors.');
+                }
+
+                Notification::make()
+                    ->title($title)
+                    ->body($body)
+                    ->sendToDatabase($author);
+            });
+        });
+    }
+
+    /**
+     * Run a notification callback in the recipient's language and restore the current language.
+     */
+    private function withLocale(string $locale, Closure $callback): void
+    {
+        $currentLocale = App::getLocale();
+        App::setLocale($locale);
+
+        try {
+            $callback();
+        } finally {
+            App::setLocale($currentLocale);
+        }
     }
 }

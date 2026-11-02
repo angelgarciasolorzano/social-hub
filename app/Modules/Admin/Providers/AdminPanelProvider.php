@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->authGuard('admin')
             ->login()
             ->profile()
+            ->databaseNotifications()
             ->multiFactorAuthentication([
                 AppAuthentication::make()
                     ->recoverable()

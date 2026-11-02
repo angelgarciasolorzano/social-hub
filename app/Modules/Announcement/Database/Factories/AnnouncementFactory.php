@@ -6,6 +6,7 @@ namespace App\Modules\Announcement\Database\Factories;
 
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use App\User\Models\User;
@@ -24,6 +25,14 @@ class AnnouncementFactory extends Factory
      */
     #[Override]
     protected $model = Announcement::class;
+
+    /**
+     * Mark factory announcements as approved so they represent content that can be shown in the application.
+     */
+    public function configure(): static
+    {
+        return $this->withStatus(AnnouncementStatus::Approved);
+    }
 
     /**
      * Define the model's default state: an active, dismissible toast for everyone, without a button.
@@ -149,5 +158,15 @@ class AnnouncementFactory extends Factory
         return $this->state(fn (): array => [
             'created_by' => $user->id,
         ]);
+    }
+
+    /**
+     * An announcement with the given approval status.
+     */
+    public function withStatus(AnnouncementStatus $announcementStatus): static
+    {
+        return $this->afterMaking(function (Announcement $announcement) use ($announcementStatus): void {
+            $announcement->forceFill(['status' => $announcementStatus]);
+        });
     }
 }

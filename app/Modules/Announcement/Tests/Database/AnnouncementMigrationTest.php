@@ -52,6 +52,11 @@ function insertAnnouncementDismissal(int $announcementId, User $user): bool
 
 it('drops both tables on rollback and recreates them with their indexes', function (): void {
     try {
+        Artisan::call('migrate:rollback', [
+            '--path' => __DIR__.'/../../Database/Migrations/2026_10_30_173738_add_approval_workflow_to_announcements_table.php',
+            '--realpath' => true,
+        ]);
+
         runAnnouncementMigration('migrate:rollback');
 
         expect(Schema::hasTable('announcements'))->toBeFalse()

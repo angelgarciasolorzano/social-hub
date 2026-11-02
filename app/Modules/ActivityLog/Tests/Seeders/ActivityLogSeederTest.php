@@ -8,7 +8,10 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
+use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
 use App\User\Database\Factories\AccountStatusChangeFactory;
 use App\User\Database\Seeders\UserSeeder;
 use App\User\Models\AccountStatusChange;
@@ -18,6 +21,8 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 const ACTIVITY_LOG_SEEDER_SENTINEL_TEXT = 'Texto centinela del seeder de actividad';
+
+const ACTIVITY_LOG_SEEDER_REVIEW_SENTINEL_COMMENT = 'Comentario privado centinela de revisión';
 
 /**
  * Seed a small, known set of data for the activity seeder to describe: Angel as the
@@ -85,6 +90,27 @@ function createSeededAnnouncement(User $user, string $createdAt, string $updated
         'ends_at' => $endsAt,
         'created_at' => $createdAt,
         'updated_at' => $updatedAt,
+    ]);
+}
+
+/**
+ * Create an announcement review with the given action and actor.
+ */
+function createSeededAnnouncementReview(
+    Announcement $announcement,
+    AnnouncementReviewAction $announcementReviewAction,
+    User $user,
+    string $createdAt,
+    string $comment,
+): AnnouncementReview {
+    /** @var AnnouncementReviewFactory $factory */
+    $factory = AnnouncementReview::factory();
+
+    return $factory->for($announcement)->createOne([
+        'action' => $announcementReviewAction,
+        'comment' => $comment,
+        'reviewed_by' => $user->id,
+        'created_at' => $createdAt,
     ]);
 }
 
@@ -287,11 +313,52 @@ it('records a later announcement with the same content as a duplicate of the fir
         ->and(seededAnnouncementActivity($announcement, 'admin.announcement_created'))->not->toBeNull();
 });
 
-it('never stores the title or body of an announcement', function (): void {
-    createSeededAnnouncement(createUser(), '2026-10-01 10:00:00', '2026-10-02 10:00:00');
+it('mirrors every announcement review with its actor, announcement and history id', function (AnnouncementReviewAction $announcementReviewAction, string $eventName, bool $isAuthorAction): void {
+    $user = createUser();
+    $actor = $isAuthorAction ? $user : createUser();
+    $announcement = createSeededAnnouncement($user, '2026-10-01 10:00:00', '2026-10-01 10:00:00');
+    $reviewCreatedAt = '2026-10-06 12:00:00';
+    $announcementReview = createSeededAnnouncementReview(
+        $announcement,
+        $announcementReviewAction,
+        $actor,
+        $reviewCreatedAt,
+        ACTIVITY_LOG_SEEDER_REVIEW_SENTINEL_COMMENT,
+    );
+
+    $this->seed(ActivityLogSeeder::class);
+
+    $activityLog = ActivityLog::query()
+        ->where('event', $eventName)
+        ->get()
+        ->sole(fn (ActivityLog $candidateActivityLog): bool => $candidateActivityLog->properties?->get('announcement_review_id') === $announcementReview->id);
+
+    expect($activityLog->subject?->is($announcement))->toBeTrue()
+        ->and($activityLog->causer?->is($actor))->toBeTrue()
+        ->and($activityLog->created_at?->toDateTimeString())->toBe($reviewCreatedAt)
+        ->and($activityLog->properties?->keys()->all())
+        ->toEqualCanonicalizing(['announcement_review_id', 'ip', 'user_agent']);
+})->with([
+    'submission' => [AnnouncementReviewAction::Submitted, 'admin.announcement_submitted', true],
+    'resubmission' => [AnnouncementReviewAction::Resubmitted, 'admin.announcement_submitted', true],
+    'approval' => [AnnouncementReviewAction::Approved, 'admin.announcement_approved', false],
+    'rejection' => [AnnouncementReviewAction::Rejected, 'admin.announcement_rejected', false],
+]);
+
+it('never stores review comments or announcement content in activity properties', function (): void {
+    $announcement = createSeededAnnouncement(createUser(), '2026-10-01 10:00:00', '2026-10-02 10:00:00');
+    createSeededAnnouncementReview(
+        $announcement,
+        AnnouncementReviewAction::Approved,
+        createUser(),
+        '2026-10-02 10:00:00',
+        ACTIVITY_LOG_SEEDER_REVIEW_SENTINEL_COMMENT,
+    );
 
     $this->seed(ActivityLogSeeder::class);
 
     expect(countSeededActivities('admin.announcement_created'))->toBe(1)
-        ->and(DB::table('activity_log')->get()->toJson())->not->toContain(ACTIVITY_LOG_SEEDER_SENTINEL_TEXT);
+        ->and(DB::table('activity_log')->get()->toJson())
+        ->not->toContain(ACTIVITY_LOG_SEEDER_SENTINEL_TEXT)
+        ->not->toContain(ACTIVITY_LOG_SEEDER_REVIEW_SENTINEL_COMMENT);
 });

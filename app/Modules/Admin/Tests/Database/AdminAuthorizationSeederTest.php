@@ -141,6 +141,22 @@ it('gives the announcements manager only the announcement permissions', function
         ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse();
 });
 
+it('gives the announcements reviewer only read and review permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $announcementsReviewerRole = Role::query()
+        ->where('name', AdminRole::AdminAnnouncementsReviewer->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+
+    expect($announcementsReviewerRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([
+            AdminPermission::AdminAnnouncementsReview->value,
+            AdminPermission::AdminAnnouncementsView->value,
+            AdminPermission::AdminAnnouncementsViewAny->value,
+        ]);
+});
+
 it('gives the activity reader only the activity log permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
@@ -208,4 +224,29 @@ it('preserves role assignments and revoked permissions when the seeder runs agai
         ->and($user->hasRole(AdminRole::AdminUsersReader->value, 'admin'))->toBeTrue()
         ->and($user->hasPermissionTo(AdminPermission::AdminUsersView->value, 'admin'))->toBeTrue()
         ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse();
+});
+
+it('preserves reviewer role assignments and permission changes when the seeder runs again', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $announcementsReviewerRole = Role::query()
+        ->where('name', AdminRole::AdminAnnouncementsReviewer->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $user = createUser();
+    $user->assignRole($announcementsReviewerRole);
+
+    $announcementsReviewerRole->revokePermissionTo(AdminPermission::AdminAnnouncementsReview->value);
+
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user->refresh();
+
+    expect($user->hasRole(AdminRole::AdminAnnouncementsReviewer->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAnnouncementsViewAny->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAnnouncementsView->value, 'admin'))->toBeTrue()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAnnouncementsReview->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAnnouncementsCreate->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAnnouncementsUpdate->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminAnnouncementsDelete->value, 'admin'))->toBeFalse();
 });

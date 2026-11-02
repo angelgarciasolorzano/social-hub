@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Announcement\Policies;
 
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
 use App\User\Models\User;
 
 /**
@@ -33,6 +36,35 @@ final class AnnouncementPolicy
     public function update(User $authenticatedUser): bool
     {
         return $authenticatedUser->can(AdminPermission::AdminAnnouncementsUpdate->value);
+    }
+
+    public function submit(User $authenticatedUser, Announcement $announcement): bool
+    {
+        return $this->update($authenticatedUser)
+            && $announcement->created_by === $authenticatedUser->id
+            && \in_array($announcement->status, [AnnouncementStatus::Draft, AnnouncementStatus::Rejected], true);
+    }
+
+    public function review(User $authenticatedUser, Announcement $announcement): bool
+    {
+        if (! $authenticatedUser->can(AdminPermission::AdminAnnouncementsReview->value)
+            || $announcement->status !== AnnouncementStatus::InReview
+            || $announcement->created_by === $authenticatedUser->id) {
+            return false;
+        }
+
+        $latestSubmission = $announcement->reviews()
+            ->reorder()
+            ->whereIn('action', [
+                AnnouncementReviewAction::Submitted->value,
+                AnnouncementReviewAction::Resubmitted->value,
+            ])
+            ->latest()
+            ->orderByDesc('id')
+            ->first();
+
+        return $latestSubmission instanceof AnnouncementReview
+            && $latestSubmission->reviewed_by !== $authenticatedUser->id;
     }
 
     /**

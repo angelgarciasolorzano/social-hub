@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Resources\Announcements\Pages\CreateAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\EditAnnouncement;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\ListAnnouncements;
 use App\Modules\Admin\Filament\Resources\Announcements\Pages\ViewAnnouncement;
+use App\Modules\Admin\Filament\Resources\Announcements\RelationManagers\AnnouncementReviewsRelationManager;
 use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementForm;
 use App\Modules\Admin\Filament\Resources\Announcements\Schemas\AnnouncementInfolist;
 use App\Modules\Admin\Filament\Resources\Announcements\Tables\AnnouncementsTable;
@@ -15,6 +16,7 @@ use App\Modules\Announcement\Models\Announcement;
 use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -63,6 +65,17 @@ class AnnouncementResource extends Resource
     public static function table(Table $table): Table
     {
         return AnnouncementsTable::configure($table);
+    }
+
+    /**
+     * @return array<class-string<RelationManager>>
+     */
+    #[Override]
+    public static function getRelations(): array
+    {
+        return [
+            AnnouncementReviewsRelationManager::class,
+        ];
     }
 
     /**

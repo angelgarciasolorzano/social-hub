@@ -11,6 +11,7 @@ use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +66,7 @@ function countAnnouncementsListQueries(): int
 
     announcementsListPage('all');
 
-    $queryCount = count(DB::getQueryLog());
+    $queryCount = count(DB::connection()->getQueryLog());
     DB::disableQueryLog();
 
     return $queryCount;
@@ -170,6 +171,14 @@ describe('with the announcements manager role', function (): void {
         Livewire::test(ListAnnouncements::class)->assertSee('New announcement');
     });
 
+    it('does not show a pending-review tab to a manager without review permission', function (): void {
+        listAnnouncementFactory()->withStatus(AnnouncementStatus::InReview)->createOne();
+
+        $tabs = announcementsListPage('all')->instance()->getCachedTabs();
+
+        expect($tabs)->not->toHaveKey('pending_review');
+    });
+
     it('shows on each tab only the announcements of that schedule', function (): void {
         $announcement = listAnnouncementFactory()->scheduled()->createOne();
         $active = listAnnouncementFactory()->active()->createOne();
@@ -227,6 +236,9 @@ describe('with the announcements manager role', function (): void {
     it('lists only the running dialogs on the active dialogs tab and counts them on its badge', function (): void {
         $announcement = listAnnouncementFactory()->asDialog()->active()->createOne();
         $withoutEnd = listAnnouncementFactory()->asDialog()->createOne(['starts_at' => now()->subDay(), 'ends_at' => null]);
+        listAnnouncementFactory()->asDialog()->active()->withStatus(AnnouncementStatus::Draft)->createOne();
+        listAnnouncementFactory()->asDialog()->active()->withStatus(AnnouncementStatus::InReview)->createOne();
+        listAnnouncementFactory()->asDialog()->active()->withStatus(AnnouncementStatus::Rejected)->createOne();
         listAnnouncementFactory()->asDialog()->scheduled()->createOne();
         listAnnouncementFactory()->asDialog()->expired()->createOne();
         listAnnouncementFactory()->active()->createOne();
@@ -256,3 +268,39 @@ describe('with the announcements manager role', function (): void {
             ->assertSee('Dialog');
     });
 });
+
+it('shows reviewers the pending-review tab with only in-review announcements and an accurate count', function (
+    string $locale,
+    string $expectedLabel,
+): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $originalLocale = app()->getLocale();
+
+    try {
+        app()->setLocale($locale);
+        AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminAnnouncementsReviewer);
+
+        $firstPendingAnnouncement = listAnnouncementFactory()->withStatus(AnnouncementStatus::InReview)->createOne();
+        $secondPendingAnnouncement = listAnnouncementFactory()->withStatus(AnnouncementStatus::InReview)->createOne();
+        listAnnouncementFactory()->withStatus(AnnouncementStatus::Draft)->createOne();
+        listAnnouncementFactory()->withStatus(AnnouncementStatus::Approved)->createOne();
+        listAnnouncementFactory()->withStatus(AnnouncementStatus::Rejected)->createOne();
+
+        $testable = announcementsListPage('pending_review');
+        $pendingReviewTab = $testable->instance()->getCachedTabs()['pending_review'];
+
+        expect($pendingReviewTab->getLabel())->toBe($expectedLabel)
+            ->and($pendingReviewTab->getBadge())->toBe('2')
+            ->and(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), Announcement::class))
+            ->toEqualCanonicalizing([
+                FilamentTableRecords::recordKey($firstPendingAnnouncement),
+                FilamentTableRecords::recordKey($secondPendingAnnouncement),
+            ]);
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+})->with([
+    'English' => ['en', 'Pending review'],
+    'Spanish' => ['es', 'Pendientes de revisión'],
+]);

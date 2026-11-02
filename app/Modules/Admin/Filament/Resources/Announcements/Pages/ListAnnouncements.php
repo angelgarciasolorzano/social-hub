@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Announcements\Pages;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Models\Announcement;
 use App\Support\Translation\TranslatedText;
+use App\User\Models\User;
 use Filament\Actions\CreateAction;
+use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,16 +31,34 @@ class ListAnnouncements extends ListRecords
     #[Override]
     public function getTabs(): array
     {
-        return [
+        $tabs = [
             'scheduled' => Tab::make(TranslatedText::of('admin/announcements.tabs.scheduled'))->modifyQueryUsing($this->onlyScheduled(...)),
             'active' => Tab::make(TranslatedText::of('admin/announcements.tabs.active'))->modifyQueryUsing($this->onlyRunning(...)),
             'expired' => Tab::make(TranslatedText::of('admin/announcements.tabs.expired'))->modifyQueryUsing($this->onlyEnded(...)),
             'active_dialogs' => Tab::make(TranslatedText::of('admin/announcements.tabs.active_dialogs'))
                 ->modifyQueryUsing($this->onlyRunningDialogs(...))
-                ->badge(Announcement::query()->running()->dialogs()->count())
+                ->badge(Announcement::query()
+                    ->where('status', AnnouncementStatus::Approved->value)
+                    ->running()
+                    ->dialogs()
+                    ->count())
                 ->badgeColor('warning')
                 ->badgeTooltip(TranslatedText::of('admin/announcements.tabs.active_dialogs_tooltip')),
             'all' => Tab::make(TranslatedText::of('admin/announcements.tabs.all')),
+        ];
+
+        if (! $this->canReviewAnnouncements()) {
+            return $tabs;
+        }
+
+        return [
+            'pending_review' => Tab::make(TranslatedText::of('admin/announcements.tabs.pending_review'))
+                ->modifyQueryUsing($this->onlyPendingReview(...))
+                ->badge(Announcement::query()
+                    ->where('status', AnnouncementStatus::InReview->value)
+                    ->count())
+                ->badgeColor('warning'),
+            ...$tabs,
         ];
     }
 
@@ -81,7 +103,21 @@ class ListAnnouncements extends ListRecords
      */
     private function onlyRunningDialogs(Builder $query): Builder
     {
-        return $query->running()->dialogs();
+        return $query
+            ->where('status', AnnouncementStatus::Approved->value)
+            ->running()
+            ->dialogs();
+    }
+
+    /**
+     * Limit the list to announcements waiting for review.
+     *
+     * @param  Builder<Announcement>  $query
+     * @return Builder<Announcement>
+     */
+    private function onlyPendingReview(Builder $query): Builder
+    {
+        return $query->where('status', AnnouncementStatus::InReview->value);
     }
 
     /**
@@ -91,5 +127,13 @@ class ListAnnouncements extends ListRecords
     private function onlyEnded(Builder $query): Builder
     {
         return $query->ended();
+    }
+
+    private function canReviewAnnouncements(): bool
+    {
+        $authenticatedUser = Filament::auth()->user();
+
+        return $authenticatedUser instanceof User
+            && $authenticatedUser->can(AdminPermission::AdminAnnouncementsReview->value);
     }
 }

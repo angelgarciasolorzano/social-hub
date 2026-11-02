@@ -6,10 +6,14 @@ namespace App\Modules\Announcement\Database\Seeders;
 
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
+use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
 use App\Support\Seeding\WeightedRandom;
 use App\User\Database\Seeders\UserSeeder;
 use App\User\Models\User;
@@ -20,9 +24,8 @@ use Spatie\Permission\Models\Role;
 
 /**
  * Sample announcements with a history over the last days: five fixed ones that cover every case of the banner,
- * then one per sample text with a random schedule (running, scheduled, ended or unpublished), some of them edited,
- * and a few duplicates made the way AnnouncementService makes them. It writes through the factory, never through
- * the service, so it records no activity; ActivityLogSeeder derives the audit from these rows.
+ * one per sample text with a random schedule, approval workflow examples with review history, and a few duplicates.
+ * It writes through factories, never through the service, so it records no activity; ActivityLogSeeder derives the audit.
  */
 class AnnouncementSeeder extends Seeder
 {
@@ -30,6 +33,14 @@ class AnnouncementSeeder extends Seeder
      * The title of the fixed announcement for users without two-factor authentication.
      */
     public const string TWO_FACTOR_TITLE = 'Activa la verificación en dos pasos';
+
+    public const string DRAFT_WORKFLOW_TITLE = 'Borrador de anuncio sobre nuevas funciones';
+
+    public const string PENDING_REVIEW_WORKFLOW_TITLE = 'Nuevo aviso pendiente de revisión';
+
+    public const string APPROVED_WORKFLOW_TITLE = 'Anuncio aprobado sobre la comunidad';
+
+    public const string REJECTED_WORKFLOW_TITLE = 'Aviso rechazado sobre mantenimiento';
 
     private const string ADMIN_GUARD = 'admin';
 
@@ -92,6 +103,7 @@ class AnnouncementSeeder extends Seeder
         }
 
         $this->seedDuplicates($sampleAnnouncements, $administrators);
+        $this->seedReviewWorkflowExamples($administrators);
     }
 
     /**
@@ -225,6 +237,139 @@ class AnnouncementSeeder extends Seeder
                 'updated_at' => $copiedAt,
             ]);
         }
+    }
+
+    /**
+     * Seed one example for each workflow status and record each completed transition.
+     *
+     * @param  Collection<int, User>  $administrators
+     */
+    private function seedReviewWorkflowExamples(Collection $administrators): void
+    {
+        $now = CarbonImmutable::now();
+        $author = $administrators->first();
+        $reviewer = $administrators->get(1);
+
+        $this->seedWorkflowAnnouncement(
+            $administrators,
+            $author,
+            AnnouncementStatus::Draft,
+            self::DRAFT_WORKFLOW_TITLE,
+            '<p>Este borrador todavía no se ha enviado para revisión.</p>',
+            $now->subDays(2),
+        );
+
+        $pendingAnnouncement = $this->seedWorkflowAnnouncement(
+            $administrators,
+            $author,
+            AnnouncementStatus::InReview,
+            self::PENDING_REVIEW_WORKFLOW_TITLE,
+            '<p>Este anuncio espera la decisión de una persona revisora.</p>',
+            $now->subDays(6),
+            $now->subDays(5),
+        );
+
+        $this->recordReview(
+            $pendingAnnouncement,
+            AnnouncementReviewAction::Submitted,
+            $author,
+            null,
+            $now->subDays(5),
+        );
+
+        $approvedAnnouncement = $this->seedWorkflowAnnouncement(
+            $administrators,
+            $author,
+            AnnouncementStatus::Approved,
+            self::APPROVED_WORKFLOW_TITLE,
+            '<p>Este anuncio completó el flujo de aprobación.</p>',
+            $now->subDays(10),
+            $now->subDays(8),
+        );
+
+        $this->recordReview($approvedAnnouncement, AnnouncementReviewAction::Submitted, $author, null, $now->subDays(9));
+
+        $this->recordReview(
+            $approvedAnnouncement,
+            AnnouncementReviewAction::Approved,
+            $reviewer,
+            'El contenido está listo para publicarse.',
+            $now->subDays(8),
+        );
+
+        $rejectedAnnouncement = $this->seedWorkflowAnnouncement(
+            $administrators,
+            $author,
+            AnnouncementStatus::Rejected,
+            self::REJECTED_WORKFLOW_TITLE,
+            '<p>Este anuncio necesita cambios antes de publicarse.</p>',
+            $now->subDays(8),
+            $now->subDays(6),
+        );
+
+        $this->recordReview($rejectedAnnouncement, AnnouncementReviewAction::Submitted, $author, null, $now->subDays(7));
+        $this->recordReview(
+            $rejectedAnnouncement,
+            AnnouncementReviewAction::Rejected,
+            $reviewer,
+            'Aclara la fecha y el impacto del mantenimiento.',
+            $now->subDays(6),
+        );
+    }
+
+    /**
+     * Create a workflow example with the given author and approval state.
+     *
+     * @param  Collection<int, User>  $administrators
+     */
+    private function seedWorkflowAnnouncement(
+        Collection $administrators,
+        ?User $user,
+        AnnouncementStatus $announcementStatus,
+        string $title,
+        string $body,
+        CarbonImmutable $createdAt,
+        ?CarbonImmutable $updatedAt = null,
+    ): Announcement {
+        $announcementFactory = $this->announcementFactory($administrators);
+        $announcementFactory = $user instanceof User
+            ? $announcementFactory->createdBy($user)
+            : $announcementFactory->state(['created_by' => null]);
+
+        return $announcementFactory
+            ->withStatus($announcementStatus)
+            ->createOne([
+                'title' => $title,
+                'body' => $body,
+                'type' => AnnouncementType::Info,
+                'audience' => AnnouncementAudience::All,
+                'display' => AnnouncementDisplay::Toast,
+                'starts_at' => $createdAt->addDay(),
+                'ends_at' => $createdAt->addMonth(),
+                'created_at' => $createdAt,
+                'updated_at' => $updatedAt ?? $createdAt,
+            ]);
+    }
+
+    /**
+     * Append a review history record without creating an activity log entry.
+     */
+    private function recordReview(
+        Announcement $announcement,
+        AnnouncementReviewAction $announcementReviewAction,
+        ?User $user,
+        ?string $comment,
+        CarbonImmutable $createdAt,
+    ): void {
+        /** @var AnnouncementReviewFactory $announcementReviewFactory */
+        $announcementReviewFactory = AnnouncementReview::factory();
+
+        $announcementReviewFactory->for($announcement)->createOne([
+            'action' => $announcementReviewAction,
+            'comment' => $comment,
+            'reviewed_by' => $user?->id,
+            'created_at' => $createdAt,
+        ]);
     }
 
     /**

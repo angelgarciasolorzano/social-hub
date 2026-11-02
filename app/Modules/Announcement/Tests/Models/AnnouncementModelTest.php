@@ -3,10 +3,15 @@
 declare(strict_types=1);
 
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
+use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
+use App\Modules\Announcement\Enums\AnnouncementReviewAction;
+use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
+use Carbon\CarbonImmutable;
 
 /**
  * The announcement factory, typed for static analysis.
@@ -18,6 +23,78 @@ function announcementFactory(): AnnouncementFactory
 
     return $factory;
 }
+
+/**
+ * The review factory, typed for static analysis.
+ */
+function announcementReviewFactory(): AnnouncementReviewFactory
+{
+    /** @var AnnouncementReviewFactory $factory */
+    $factory = AnnouncementReview::factory();
+
+    return $factory;
+}
+
+it('reads a new announcement status as draft', function (): void {
+    $attributes = announcementFactory()->makeOne()->only([
+        'title',
+        'body',
+        'type',
+        'audience',
+        'starts_at',
+        'ends_at',
+        'is_dismissible',
+    ]);
+    $announcement = Announcement::query()->create($attributes)->refresh();
+
+    expect($announcement->status)->toBe(AnnouncementStatus::Draft);
+});
+
+it('casts each persisted review action to its enum', function (AnnouncementReviewAction $announcementReviewAction): void {
+    $announcementReview = announcementReviewFactory()->createOne(['action' => $announcementReviewAction])->refresh();
+
+    expect($announcementReview->action)->toBe($announcementReviewAction)
+        ->and($announcementReview->created_at)->toBeInstanceOf(CarbonImmutable::class);
+})->with(AnnouncementReviewAction::cases());
+
+it('returns the announcement and user associated with a review', function (): void {
+    $announcement = announcementFactory()->createOne();
+    $user = createUser();
+    $announcementReview = announcementReviewFactory()
+        ->for($announcement, 'announcement')
+        ->createOne(['reviewed_by' => $user->id]);
+
+    expect($announcementReview->announcement->is($announcement))->toBeTrue()
+        ->and($announcementReview->reviewedBy?->is($user))->toBeTrue();
+});
+
+it('returns review history by creation time and then id', function (): void {
+    $announcement = announcementFactory()->createOne();
+    $announcementReview = announcementReviewFactory()->for($announcement, 'announcement')->createOne([
+        'created_at' => CarbonImmutable::parse('2026-10-03 12:00:00'),
+    ]);
+    $firstSameTimeReview = announcementReviewFactory()->for($announcement, 'announcement')->createOne([
+        'created_at' => CarbonImmutable::parse('2026-10-01 12:00:00'),
+    ]);
+    $secondSameTimeReview = announcementReviewFactory()->for($announcement, 'announcement')->createOne([
+        'created_at' => CarbonImmutable::parse('2026-10-01 12:00:00'),
+    ]);
+
+    expect($announcement->reviews()->pluck('id')->all())->toBe([
+        $firstSameTimeReview->id,
+        $secondSameTimeReview->id,
+        $announcementReview->id,
+    ]);
+});
+
+it('returns no review actor after that user is deleted', function (): void {
+    $user = createUser();
+    $announcementReview = announcementReviewFactory()->createOne(['reviewed_by' => $user->id]);
+
+    $user->delete();
+
+    expect($announcementReview->refresh()->reviewedBy)->toBeNull();
+});
 
 it('creates a dismissible toast for everyone that is active now by default', function (): void {
     $announcement = announcementFactory()->createOne();

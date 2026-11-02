@@ -42,9 +42,17 @@ return [
         'button_link_helper' => 'Una dirección https:// o una ruta de este sitio, como /setting/two-factor-authentication.',
         'button_link_invalid' => 'El enlace debe comenzar con https:// o ser una ruta de este sitio que comience con /.',
         'overlapping_dialogs' => '{1} Hay :count diálogo más en el mismo período.|[2,*] Hay :count diálogos más en el mismo período.',
+        'reapproval_notice_heading' => 'Los cambios requieren aprobación',
+        'reapproval_notice_description' => 'Al guardar cambios en un anuncio aprobado, volverá a revisión antes de que se muestre el contenido actualizado.',
     ],
 
     'options' => [
+        'status' => [
+            'draft' => 'Borrador',
+            'in_review' => 'En revisión',
+            'approved' => 'Aprobado',
+            'rejected' => 'Rechazado',
+        ],
         'type' => [
             'info' => 'Información',
             'warning' => 'Advertencia',
@@ -71,18 +79,33 @@ return [
     ],
 
     'filters' => [
+        'status' => 'Estado',
         'type' => 'Tipo',
         'audience' => 'Audiencia',
         'display' => 'Se muestra como',
     ],
 
     'tabs' => [
+        'pending_review' => 'Pendientes de revisión',
         'scheduled' => 'Programados',
         'active' => 'Activos',
         'expired' => 'Finalizados',
         'active_dialogs' => 'Diálogos activos',
         'all' => 'Todos',
         'active_dialogs_tooltip' => 'Los diálogos interrumpen a los usuarios hasta que los cierran.',
+    ],
+
+    'review_history' => [
+        'action' => 'Acción',
+        'comment' => 'Comentario de revisión',
+        'actor' => 'Realizada por',
+    ],
+
+    'review_actions' => [
+        'submitted' => 'Enviado a revisión',
+        'approved' => 'Aprobado',
+        'rejected' => 'Rechazado',
+        'resubmitted' => 'Enviado nuevamente a revisión',
     ],
 
     'actions' => [
@@ -97,6 +120,40 @@ return [
         'unpublished' => 'Anuncio desactivado',
         'no_longer_running' => 'El anuncio ya no está activo.',
         'administrator_only' => 'Solo un administrador con sesión iniciada puede modificar los anuncios.',
+        'review_comment' => 'Comentario de revisión',
+        'review_action_failed' => 'No se pudo actualizar el anuncio. Actualiza la página e inténtalo de nuevo.',
+        'submit_for_review' => [
+            'label' => 'Enviar a revisión',
+            'modal_heading' => 'Enviar anuncio a revisión',
+            'modal_description' => 'Un revisor debe aprobar o rechazar este anuncio antes de que se muestre a los usuarios.',
+            'submit' => 'Enviar a revisión',
+        ],
+        'approve' => [
+            'label' => 'Aprobar',
+            'modal_heading' => 'Aprobar anuncio',
+            'submit' => 'Aprobar',
+        ],
+        'reject' => [
+            'label' => 'Rechazar',
+            'modal_heading' => 'Rechazar anuncio',
+            'submit' => 'Rechazar',
+        ],
+    ],
+
+    'notifications' => [
+        'submitted' => [
+            'title' => 'Anuncio pendiente de revisión',
+            'body' => 'Se envió un anuncio del sistema para revisión.',
+        ],
+        'approved' => [
+            'title' => 'Anuncio aprobado',
+            'body' => 'Se aprobó tu anuncio.',
+            'body_with_comment' => 'Se aprobó tu anuncio. Comentario de revisión: :comment',
+        ],
+        'rejected' => [
+            'title' => 'Anuncio rechazado',
+            'body' => 'Se rechazó tu anuncio. Comentario de revisión: :comment',
+        ],
     ],
 
     'placeholders' => [
