@@ -15,6 +15,7 @@ use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Enums\AnnouncementStatus;
 use App\Modules\Announcement\Enums\AnnouncementType;
 use App\Modules\Announcement\Models\Announcement;
+use App\Modules\Announcement\Models\AnnouncementReview;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
@@ -69,6 +70,17 @@ function attachEditAnnouncementImage(Announcement $announcement, string $fileNam
 {
     $announcement->addMedia(UploadedFile::fake()->image($fileName))
         ->toMediaCollection(Announcement::IMAGE_MEDIA_COLLECTION);
+}
+
+/**
+ * Record the existing submission history for an in-review edit scenario.
+ */
+function addEditAnnouncementSubmission(Announcement $announcement): AnnouncementReview
+{
+    return $announcement->reviews()->create([
+        'action' => AnnouncementReviewAction::Submitted,
+        'reviewed_by' => $announcement->created_by,
+    ]);
 }
 
 beforeEach(function (): void {
@@ -226,9 +238,41 @@ describe('with the announcements manager role', function (): void {
             ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toBeEmpty();
     });
 
-    it('records only one resubmission when content and image change together', function (): void {
+    it('resubmits an in-review announcement when its image changes', function (): void {
         Storage::fake('public');
-        $announcement = editAnnouncementFactory()->createOne();
+        $announcement = editAnnouncementFactory()->withStatus(AnnouncementStatus::InReview)->createOne();
+        $previousSubmission = addEditAnnouncementSubmission($announcement);
+        $administratorId = auth('admin')->id();
+
+        editAnnouncementPage($announcement)
+            ->set('data.image', [UploadedFile::fake()->image('in-review-banner.jpg')])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $latestSubmission = $announcement->reviews()
+            ->reorder()
+            ->whereIn('action', [AnnouncementReviewAction::Submitted->value, AnnouncementReviewAction::Resubmitted->value])
+            ->orderByDesc('id')
+            ->firstOrFail();
+        $updatedActivities = editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementUpdated);
+
+        expect($announcement->refresh()->status)->toBe(AnnouncementStatus::InReview)
+            ->and($announcement->reviews()->count())->toBe(2)
+            ->and($previousSubmission->refresh()->action)->toBe(AnnouncementReviewAction::Submitted)
+            ->and($latestSubmission->action)->toBe(AnnouncementReviewAction::Resubmitted)
+            ->and($latestSubmission->reviewed_by)->toBe($administratorId)
+            ->and($updatedActivities)->toHaveCount(1)
+            ->and($updatedActivities[0]->properties?->get('changed_attributes'))->toBe(['image'])
+            ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
+    });
+
+    it('records only one resubmission when content and image change together', function (AnnouncementStatus $startingStatus): void {
+        Storage::fake('public');
+        $announcement = editAnnouncementFactory()->withStatus($startingStatus)->createOne();
+
+        if ($startingStatus === AnnouncementStatus::InReview) {
+            addEditAnnouncementSubmission($announcement);
+        }
 
         editAnnouncementPage($announcement)
             ->set('data.title', 'Título actualizado')
@@ -241,9 +285,12 @@ describe('with the announcements manager role', function (): void {
             ->and($announcement->getFirstMedia(Announcement::IMAGE_MEDIA_COLLECTION)?->mime_type)->toBe('image/jpeg')
             ->and($announcement->reviews()->where('action', AnnouncementReviewAction::Resubmitted)->count())->toBe(1)
             ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
-    });
+    })->with([
+        'approved' => AnnouncementStatus::Approved,
+        'in review' => AnnouncementStatus::InReview,
+    ]);
 
-    it('keeps the current review status when an image changes on an unapproved announcement', function (AnnouncementStatus $announcementStatus): void {
+    it('keeps draft and rejected statuses when their images change', function (AnnouncementStatus $announcementStatus): void {
         Storage::fake('public');
         $announcement = editAnnouncementFactory()->withStatus($announcementStatus)->createOne();
 
@@ -258,7 +305,6 @@ describe('with the announcements manager role', function (): void {
             ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toBeEmpty();
     })->with([
         'draft' => AnnouncementStatus::Draft,
-        'in review' => AnnouncementStatus::InReview,
         'rejected' => AnnouncementStatus::Rejected,
     ]);
 

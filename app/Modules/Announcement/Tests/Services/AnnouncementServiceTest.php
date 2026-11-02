@@ -21,9 +21,6 @@ use App\User\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use InvalidArgumentException;
-use LogicException;
-use RuntimeException;
 
 const ANNOUNCEMENT_TITLE_SENTINEL = 'centinela-titulo-de-anuncio';
 const ANNOUNCEMENT_BODY_SENTINEL = 'centinela-cuerpo-de-anuncio';
@@ -621,7 +618,7 @@ it('resubmits an approved announcement when its content changes', function (stri
     'dismissibility' => 'dismissibility',
 ]);
 
-it('notifies eligible reviewers when an approved announcement is resubmitted', function (string $resubmissionType): void {
+it('notifies eligible reviewers when reviewed announcements are resubmitted', function (AnnouncementStatus $startingStatus, string $resubmissionType): void {
     $user = createUser();
     $editor = createUser();
     $eligibleReviewer = createUser();
@@ -631,12 +628,21 @@ it('notifies eligible reviewers when an approved announcement is resubmitted', f
     assignAnnouncementReviewerForService($eligibleReviewer);
 
     $announcement = serviceAnnouncementFactory()
-        ->withStatus(AnnouncementStatus::Approved)
+        ->withStatus($startingStatus)
         ->createdBy($user)
         ->createOne([
             'title' => ANNOUNCEMENT_TITLE_SENTINEL,
             'body' => ANNOUNCEMENT_BODY_SENTINEL,
         ]);
+
+    $previousSubmissionReview = null;
+
+    if ($startingStatus === AnnouncementStatus::InReview) {
+        $previousSubmissionReview = $announcement->reviews()->create([
+            'action' => AnnouncementReviewAction::Submitted,
+            'reviewed_by' => $user->id,
+        ]);
+    }
 
     commitAnnouncementServiceTestSetupTransaction();
 
@@ -646,9 +652,17 @@ it('notifies eligible reviewers when an approved announcement is resubmitted', f
             announcementDataForService('Título actualizado'),
             $editor,
         ),
-        'image' => announcementService()->resubmitApprovedForImageChange($announcement, $editor),
+        'image' => announcementService()->resubmitForImageChange($announcement, $editor),
         default => throw new LogicException("Unknown announcement resubmission type {$resubmissionType}."),
     };
+
+    if ($previousSubmissionReview instanceof AnnouncementReview) {
+        expect(fn (): Announcement => announcementService()->approve(
+            $resubmittedAnnouncement,
+            $eligibleReviewer,
+            $previousSubmissionReview->id,
+        ))->toThrow(LogicException::class, 'The announcement submission changed before it was reviewed.');
+    }
 
     $databaseNotification = $eligibleReviewer->notifications()->sole();
     $notificationData = $databaseNotification->data;
@@ -664,8 +678,10 @@ it('notifies eligible reviewers when an approved announcement is resubmitted', f
         ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_TITLE_SENTINEL)
         ->and($serializedNotificationData)->not->toContain(ANNOUNCEMENT_BODY_SENTINEL);
 })->with([
-    'content change' => 'content',
-    'image change' => 'image',
+    'approved content change' => [AnnouncementStatus::Approved, 'content'],
+    'approved image change' => [AnnouncementStatus::Approved, 'image'],
+    'in-review content change' => [AnnouncementStatus::InReview, 'content'],
+    'in-review image change' => [AnnouncementStatus::InReview, 'image'],
 ]);
 
 it('keeps an approved announcement approved when only its dates change', function (): void {

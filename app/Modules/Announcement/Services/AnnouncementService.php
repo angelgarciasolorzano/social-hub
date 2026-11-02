@@ -138,7 +138,7 @@ final readonly class AnnouncementService
     }
 
     /**
-     * Apply content and schedule; content changes to approved announcements start a new review.
+     * Apply content and schedule; content changes to reviewed announcements start a new review.
      */
     public function update(Announcement $announcement, AnnouncementData $announcementData, User $user): Announcement
     {
@@ -156,31 +156,28 @@ final readonly class AnnouncementService
             }
 
             $hasContentChanges = array_intersect($changedAttributes, self::CONTENT_ATTRIBUTES) !== [];
-            $requiresReview = $lockedAnnouncement->status === AnnouncementStatus::Approved && $hasContentChanges;
 
-            if ($requiresReview) {
+            $requiresResubmission = $hasContentChanges && in_array(
+                $lockedAnnouncement->status,
+                [AnnouncementStatus::Approved, AnnouncementStatus::InReview],
+                true,
+            );
+
+            if ($requiresResubmission && $lockedAnnouncement->status === AnnouncementStatus::Approved) {
                 $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview]);
             }
 
             $lockedAnnouncement->save();
 
-            if ($requiresReview) {
-                $lockedAnnouncement->reviews()->create([
-                    'action' => AnnouncementReviewAction::Resubmitted,
-                    'reviewed_by' => $user->id,
-                ]);
-            }
-
-            $this->activityLogger->record(
-                ActivityLogAdminEvent::AnnouncementUpdated,
-                $lockedAnnouncement,
-                $user,
-                ['changed_attributes' => $changedAttributes],
-            );
-
-            if ($requiresReview) {
-                $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
-                $this->scheduleReviewerSubmissionNotification($lockedAnnouncement->created_by, $user->id);
+            if ($requiresResubmission) {
+                $this->recordResubmission($lockedAnnouncement, $user, $changedAttributes);
+            } else {
+                $this->activityLogger->record(
+                    ActivityLogAdminEvent::AnnouncementUpdated,
+                    $lockedAnnouncement,
+                    $user,
+                    ['changed_attributes' => $changedAttributes],
+                );
             }
 
             return $lockedAnnouncement;
@@ -188,9 +185,9 @@ final readonly class AnnouncementService
     }
 
     /**
-     * Resubmit an approved announcement when its image changes after the form data is saved.
+     * Resubmit an approved or in-review announcement when its image changes after the form data is saved.
      */
-    public function resubmitApprovedForImageChange(Announcement $announcement, User $user): Announcement
+    public function resubmitForImageChange(Announcement $announcement, User $user): Announcement
     {
         return DB::transaction(function () use ($announcement, $user): Announcement {
             $lockedAnnouncement = Announcement::query()
@@ -198,27 +195,15 @@ final readonly class AnnouncementService
                 ->whereKey($announcement->getKey())
                 ->firstOrFail();
 
-            if ($lockedAnnouncement->status !== AnnouncementStatus::Approved) {
+            if (! \in_array($lockedAnnouncement->status, [AnnouncementStatus::Approved, AnnouncementStatus::InReview], true)) {
                 return $lockedAnnouncement;
             }
 
-            $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview])->save();
+            if ($lockedAnnouncement->status === AnnouncementStatus::Approved) {
+                $lockedAnnouncement->forceFill(['status' => AnnouncementStatus::InReview])->save();
+            }
 
-            $lockedAnnouncement->reviews()->create([
-                'action' => AnnouncementReviewAction::Resubmitted,
-                'reviewed_by' => $user->id,
-            ]);
-
-            $this->activityLogger->record(
-                ActivityLogAdminEvent::AnnouncementUpdated,
-                $lockedAnnouncement,
-                $user,
-                ['changed_attributes' => ['image']],
-            );
-
-            $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $lockedAnnouncement, $user);
-
-            $this->scheduleReviewerSubmissionNotification($lockedAnnouncement->created_by, $user->id);
+            $this->recordResubmission($lockedAnnouncement, $user, ['image']);
 
             return $lockedAnnouncement;
         });
@@ -368,6 +353,29 @@ final readonly class AnnouncementService
 
             return $lockedAnnouncement;
         });
+    }
+
+    /**
+     * Record a fresh submission and audit the changed attributes.
+     *
+     * @param  list<string>  $changedAttributes
+     */
+    private function recordResubmission(Announcement $announcement, User $user, array $changedAttributes): void
+    {
+        $announcement->reviews()->create([
+            'action' => AnnouncementReviewAction::Resubmitted,
+            'reviewed_by' => $user->id,
+        ]);
+
+        $this->activityLogger->record(
+            ActivityLogAdminEvent::AnnouncementUpdated,
+            $announcement,
+            $user,
+            ['changed_attributes' => $changedAttributes],
+        );
+
+        $this->activityLogger->record(ActivityLogAdminEvent::AnnouncementSubmitted, $announcement, $user);
+        $this->scheduleReviewerSubmissionNotification($announcement->created_by, $user->id);
     }
 
     /**

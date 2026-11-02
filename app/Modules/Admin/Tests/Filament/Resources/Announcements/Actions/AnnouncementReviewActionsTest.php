@@ -86,6 +86,22 @@ function announcementReviewActionIsMounted(Testable $testable): bool
 }
 
 /**
+ * Get the announcement record displayed by a review page.
+ *
+ * @param  Testable<ViewAnnouncement>  $testable
+ */
+function announcementReviewActionRecord(Testable $testable): Announcement
+{
+    $record = $testable->instance()->getRecord();
+
+    if (! $record instanceof Announcement) {
+        throw new LogicException('Expected the review page to contain an announcement.');
+    }
+
+    return $record;
+}
+
+/**
  * Count audit rows for an announcement workflow event.
  */
 function announcementReviewActionEventCount(ActivityLogAdminEvent $activityLogAdminEvent): int
@@ -167,7 +183,7 @@ it('resubmits a rejected announcement from its detail page and preserves its his
         ->and($resubmission->action)->toBe(AnnouncementReviewAction::Resubmitted)
         ->and($resubmission->reviewed_by)->toBe($user->id)
         ->and(announcementReviewActionEventCount(ActivityLogAdminEvent::AnnouncementSubmitted))->toBe(1)
-        ->and($testable->instance()->getRecord()->status)
+        ->and(announcementReviewActionRecord($testable)->status)
         ->toBe(AnnouncementStatus::InReview);
 });
 
@@ -226,7 +242,7 @@ it('rejects the latest submission from its detail page with a comment', function
         ->and($announcementReview->reviewed_by)->toBe($user->id)
         ->and($announcementReview->comment)->toBe('The announcement needs a clearer call to action.')
         ->and(announcementReviewActionEventCount(ActivityLogAdminEvent::AnnouncementRejected))->toBe(1)
-        ->and($testable->instance()->getRecord()->status)
+        ->and(announcementReviewActionRecord($testable)->status)
         ->toBe(AnnouncementStatus::Rejected);
 });
 
@@ -245,7 +261,7 @@ it('shows the approved status immediately on the detail page', function (): void
         ->call('callMountedAction')
         ->assertHasNoErrors();
 
-    expect($testable->instance()->getRecord()->status)->toBe(AnnouncementStatus::Approved);
+    expect(announcementReviewActionRecord($testable)->status)->toBe(AnnouncementStatus::Approved);
 });
 
 it('does not mount review actions for an administrator without review permission', function (): void {
