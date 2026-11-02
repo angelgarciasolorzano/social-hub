@@ -19,7 +19,7 @@ import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 
-import { useAppearance } from "@/shared/hooks";
+import { useAppearance, useTranslation } from "@/shared/hooks";
 
 import { alertVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
@@ -41,14 +41,33 @@ interface TwoFactorDisabledProps {
 }
 
 function TwoFactorDisabled({ hasSetupData, onActivate }: TwoFactorDisabledProps): JSX.Element {
+  const { t } = useTranslation();
+
+  const benefits = twoFactorBenefits.map((benefit) => ({
+    ...benefit,
+    title: t(benefit.title),
+    description: t(benefit.description),
+  }));
+  const importantDetails = twoFactorImportantDetails.map((importantDetail) => ({
+    ...importantDetail,
+    title: t(importantDetail.title),
+    description: t(importantDetail.description),
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-6 xl:gap-8">
           <TwoFactorTitle hasSetupData={hasSetupData} onActivate={onActivate} />
           <TwoFactorInfoBanner />
-          <OptionCard options={twoFactorBenefits} />
-          <SummaryCard title="Detalles importantes" data={twoFactorImportantDetails} />
+          <OptionCard
+            options={benefits}
+            title={t("setting/two-factor.disabled_view.benefits_title")}
+          />
+          <SummaryCard
+            title={t("setting/two-factor.disabled_view.important_details_title")}
+            data={importantDetails}
+          />
         </div>
 
         <div className="flex w-full min-w-0 flex-col gap-6 xl:max-w-sm xl:shrink-0">
@@ -69,6 +88,7 @@ interface TwoFactorTitleProps {
 }
 
 function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.Element {
+  const { t } = useTranslation();
   const { resolvedAppearance } = useAppearance();
 
   return (
@@ -80,12 +100,11 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
 
         <div className="flex flex-col gap-2">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            Autenticación de dos factores (2FA)
+            {t("setting/two-factor.disabled_view.title")}
           </h1>
 
           <p className="text-sm text-muted-foreground">
-            Añade una capa adicional de seguridad a tu cuenta. Con 2FA, además de tu contraseña, se
-            te solicitará un código único para verificar tu identidad.
+            {t("setting/two-factor.disabled_view.description")}
           </p>
 
           <Badge
@@ -93,7 +112,7 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
             className="inline-flex dark:bg-red-700 dark:text-white"
           >
             <ShieldAlert />
-            Desactivado
+            {t("setting/two-factor.disabled_view.status")}
           </Badge>
         </div>
       </div>
@@ -102,12 +121,12 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
         {hasSetupData ? (
           <Button onClick={onActivate} className="w-full cursor-pointer sm:w-auto">
             <ShieldCheck />
-            Continuar configuración
+            {t("setting/two-factor.disabled_view.continue_setup")}
           </Button>
         ) : (
           <Form
             {...enable.form()}
-            onError={() => toast.error("No se pudo activar 2FA. Inténtalo de nuevo.")}
+            onError={() => toast.error(t("setting/two-factor.disabled_view.activate_failed"))}
             onSuccess={onActivate}
             className="w-full cursor-pointer sm:w-auto"
           >
@@ -117,7 +136,9 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
                 className="w-full cursor-pointer sm:w-auto"
                 disabled={processing}
               >
-                {processing ? "Activando..." : "Activar 2FA"}
+                {processing
+                  ? t("setting/two-factor.disabled_view.activating")
+                  : t("setting/two-factor.disabled_view.activate")}
               </Button>
             )}
           </Form>
@@ -127,61 +148,83 @@ function TwoFactorTitle({ hasSetupData, onActivate }: TwoFactorTitleProps): JSX.
   );
 }
 
-function TwoFactorInfoBanner() {
+function TwoFactorInfoBanner(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Alert className={alertVariants.info}>
       <Info />
-      <AlertTitle>Este PIN se solicitará cada vez que inicies sesión.</AlertTitle>
-      <AlertDescription>
-        Puedes obtenerlo desde una aplicación compatible con TOTP en tu teléfono.
-      </AlertDescription>
+      <AlertTitle>{t("setting/two-factor.disabled_view.pin_title")}</AlertTitle>
+      <AlertDescription>{t("setting/two-factor.disabled_view.pin_description")}</AlertDescription>
     </Alert>
   );
 }
 
-function TwoFactorActivationForm() {
+function TwoFactorActivationForm(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col items-start gap-4 rounded-xl border p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-6">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-        <span className="text-muted-foreground">¿Tienes dudas?</span>
+        <span className="text-muted-foreground">
+          {t("setting/two-factor.disabled_view.questions")}
+        </span>
 
-        <span className="font-medium text-blue-700 dark:text-blue-500">Consulta nuestros FAQ</span>
+        <span className="font-medium text-blue-700 dark:text-blue-500">
+          {t("setting/two-factor.disabled_view.faq_link")}
+        </span>
       </div>
 
       <div className="flex items-center gap-2">
         <LockKeyhole className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Tu seguridad es nuestra prioridad.</span>
+        <span className="text-sm text-muted-foreground">
+          {t("setting/two-factor.disabled_view.security_priority")}
+        </span>
       </div>
     </div>
   );
 }
 
-function TwoFactorOperations() {
+function TwoFactorOperations(): JSX.Element {
+  const { t } = useTranslation();
+
+  const operationSteps = twoFactorOperationSteps.map((operationStep) => ({
+    ...operationStep,
+    title: t(operationStep.title),
+    description: t(operationStep.description),
+  }));
+
   return (
     <Card className="shadow-xs">
       <CardHeader>
-        <h2 className="text-lg leading-none font-semibold">Cómo funciona</h2>
+        <h2 className="text-lg leading-none font-semibold">
+          {t("setting/two-factor.disabled_view.how_it_works")}
+        </h2>
       </CardHeader>
       <CardContent>
-        <Timeline steps={twoFactorOperationSteps} />
+        <Timeline steps={operationSteps} />
       </CardContent>
     </Card>
   );
 }
 
-function TwoFactorRequirements() {
+function TwoFactorRequirements(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Card className="shadow-xs">
       <CardHeader>
-        <h2 className="text-lg leading-none font-semibold">Requesitos</h2>
+        <h2 className="text-lg leading-none font-semibold">
+          {t("setting/two-factor.disabled_view.requirements_title")}
+        </h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-3 text-sm">
           {twoFactorRequirements.map((requirement) => (
             <div key={requirement.key} className="flex items-center gap-2">
               <CircleCheck className="text-green-500" />
-              <p>{requirement.description}</p>
+              <p>{t(requirement.description)}</p>
             </div>
           ))}
         </div>
@@ -190,11 +233,15 @@ function TwoFactorRequirements() {
   );
 }
 
-function TwoFactorRecommendedApps() {
+function TwoFactorRecommendedApps(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Card className="shadow-xs">
       <CardHeader>
-        <h2 className="text-lg leading-none font-semibold">Aplicaciones recomendadas</h2>
+        <h2 className="text-lg leading-none font-semibold">
+          {t("setting/two-factor.disabled_view.recommended_apps")}
+        </h2>
       </CardHeader>
       <CardContent>
         <div className="space-y-5 text-sm font-medium">

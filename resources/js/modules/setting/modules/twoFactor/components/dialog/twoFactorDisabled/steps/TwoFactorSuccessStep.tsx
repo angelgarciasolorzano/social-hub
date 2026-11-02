@@ -9,6 +9,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/shared/components/shadcn/
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -69,6 +71,7 @@ interface RecoveryCodesLoadErrorProps {
 }
 
 function RecoveryCodesLoadError(props: RecoveryCodesLoadErrorProps): JSX.Element {
+  const { t } = useTranslation();
   const { fetchRecoveryCodes, isLoadingRecoveryCodes, onClose } = props;
 
   const handleRetry = useCallback((): void => {
@@ -79,10 +82,10 @@ function RecoveryCodesLoadError(props: RecoveryCodesLoadErrorProps): JSX.Element
     <div className="flex w-full flex-col gap-4">
       <Alert className={cn(alertVariants.destructive, "w-full")}>
         <AlertCircleIcon aria-hidden="true" />
-        <AlertTitle>No pudimos mostrar tus códigos de respaldo.</AlertTitle>
+        <AlertTitle>{t("setting/two-factor.success_step.load_failed_title")}</AlertTitle>
 
         <AlertDescription>
-          Inténtalo de nuevo en unos segundos para volver a cargarlos.
+          {t("setting/two-factor.success_step.load_failed_description")}
         </AlertDescription>
       </Alert>
 
@@ -94,11 +97,13 @@ function RecoveryCodesLoadError(props: RecoveryCodesLoadErrorProps): JSX.Element
           onClick={handleRetry}
           disabled={isLoadingRecoveryCodes}
         >
-          {isLoadingRecoveryCodes ? "Reintentando..." : "Reintentar"}
+          {isLoadingRecoveryCodes
+            ? t("setting/common.actions.retrying")
+            : t("setting/common.actions.retry")}
         </Button>
 
         <Button type="button" className="flex-1 cursor-pointer" onClick={onClose}>
-          Entendido
+          {t("setting/two-factor.labels.understood")}
         </Button>
       </div>
     </div>
@@ -111,13 +116,14 @@ interface RecoveryCodesListProps {
 }
 
 function RecoveryCodesList(props: RecoveryCodesListProps): JSX.Element {
+  const { t } = useTranslation();
   const { isRecoveryCodesLoading, recoveryCodesList } = props;
 
   return (
     <>
       <ul
         aria-busy={isRecoveryCodesLoading}
-        aria-label="Códigos de respaldo"
+        aria-label={t("setting/two-factor.labels.backup_codes")}
         className="grid w-full grid-cols-2 gap-2"
       >
         {recoveryCodesList.length > 0 ? (
@@ -137,30 +143,29 @@ function RecoveryCodesList(props: RecoveryCodesListProps): JSX.Element {
           ))
         ) : (
           <li className="col-span-2 text-center text-sm text-muted-foreground">
-            No hay códigos de respaldo disponibles.
+            {t("setting/two-factor.labels.no_backup_codes")}
           </li>
         )}
       </ul>
 
       <span className="sr-only" role="status">
         {recoveryCodesList.length > 0
-          ? "Códigos de respaldo listos."
+          ? t("setting/two-factor.success_step.ready")
           : isRecoveryCodesLoading
-            ? "Cargando códigos de respaldo."
-            : "No hay códigos de respaldo disponibles."}
+            ? t("setting/two-factor.labels.loading_backup_codes")
+            : t("setting/two-factor.labels.no_backup_codes")}
       </span>
     </>
   );
 }
 
 function RecoveryCodesNotice(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={cn(alertVariants.warning, "w-full")}>
       <Info aria-hidden="true" />
-      <AlertTitle>Importante</AlertTitle>
-      <AlertDescription>
-        Cada código solo se puede usar una vez. Guarda o descarga estos códigos ahora.
-      </AlertDescription>
+      <AlertTitle>{t("setting/two-factor.success_step.important")}</AlertTitle>
+      <AlertDescription>{t("setting/two-factor.success_step.single_use")}</AlertDescription>
     </Alert>
   );
 }
@@ -172,11 +177,12 @@ interface RecoveryCodesActionsProps {
 
 function RecoveryCodesActions(props: RecoveryCodesActionsProps): JSX.Element {
   const { onClose, recoveryCodesList } = props;
+  const { locale, t } = useTranslation();
   const { email: accountEmail } = usePage<SharedData>().props.auth.user;
 
   const handleDownload = useCallback((): void => {
-    downloadRecoveryCodes(recoveryCodesList, { accountEmail });
-  }, [recoveryCodesList, accountEmail]);
+    downloadRecoveryCodes(recoveryCodesList, { accountEmail, locale, t });
+  }, [recoveryCodesList, accountEmail, locale, t]);
 
   return (
     <div className="flex w-full gap-5">
@@ -188,11 +194,11 @@ function RecoveryCodesActions(props: RecoveryCodesActionsProps): JSX.Element {
         disabled={!recoveryCodesList.length}
       >
         <ArrowDown aria-hidden="true" data-icon="inline-start" />
-        Descargar .txt
+        {t("setting/two-factor.labels.download_txt")}
       </Button>
 
       <Button type="button" className="flex-1 cursor-pointer" onClick={onClose}>
-        Entendido
+        {t("setting/two-factor.labels.understood")}
       </Button>
     </div>
   );

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\User\Modules\TwoFactor\Requests;
 
+use App\Support\Translation\TranslatedText;
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
@@ -26,8 +27,8 @@ class TwoFactorRegenerateRecoveryCodesRequest extends FormRequest
     {
         return [
             'password' => FluentRule::string()
-                ->required(message: 'Debes confirmar tu contraseña.')
-                ->currentPassword(message: 'La contraseña proporcionada no es correcta.'),
+                ->required(message: TranslatedText::of('setting/two-factor.validation.password_required'))
+                ->currentPassword(message: TranslatedText::of('setting/two-factor.validation.password_incorrect')),
         ];
     }
 }

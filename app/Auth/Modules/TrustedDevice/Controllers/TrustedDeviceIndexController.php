@@ -13,6 +13,7 @@ use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceEventResource;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Http\Controllers\Controller;
+use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use App\User\Modules\TwoFactor\Enums\TwoFactorStatus;
 use Carbon\CarbonImmutable;
@@ -27,11 +28,13 @@ final class TrustedDeviceIndexController extends Controller
 {
     public function __construct(private readonly TrustedDeviceDashboardCache $trustedDeviceDashboardCache) {}
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, FrontendTranslations $frontendTranslations): Response
     {
         $user = $request->user();
 
         abort_unless($user instanceof User, 401);
+
+        $frontendTranslations->use('setting/common', 'setting/trusted-devices', 'setting/trusted-device-dialogs');
 
         $trustedDeviceCurrentProps = new TrustedDeviceCurrentProps(
             request: $request,

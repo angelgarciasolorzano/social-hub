@@ -25,9 +25,15 @@ export const trustedDeviceDefaultColumnVisibility: ColumnVisibilityState = {
 };
 
 export const trustedDeviceColumnVisibilityOptions = [
-  { id: trustedDeviceTableColumnIds.lastAccess, label: "Último acceso" },
-  { id: trustedDeviceTableColumnIds.browserAndOs, label: "Navegador / SO" },
-  { id: trustedDeviceTableColumnIds.ip, label: "IP" },
-  { id: trustedDeviceTableColumnIds.expiration, label: "Expira" },
-  { id: trustedDeviceTableColumnIds.status, label: "Estado" },
+  {
+    id: trustedDeviceTableColumnIds.lastAccess,
+    label: "setting/trusted-devices.columns.last_access",
+  },
+  {
+    id: trustedDeviceTableColumnIds.browserAndOs,
+    label: "setting/trusted-devices.columns.browser_os",
+  },
+  { id: trustedDeviceTableColumnIds.ip, label: "setting/trusted-devices.columns.ip" },
+  { id: trustedDeviceTableColumnIds.expiration, label: "setting/trusted-devices.columns.expires" },
+  { id: trustedDeviceTableColumnIds.status, label: "setting/trusted-devices.columns.status" },
 ] as const;

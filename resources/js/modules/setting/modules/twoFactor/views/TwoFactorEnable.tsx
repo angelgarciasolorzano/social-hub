@@ -34,10 +34,10 @@ import {
 } from "@/shared/components/shadcn/ui/dropdown-menu";
 import { Progress } from "@/shared/components/shadcn/ui/progress";
 
+import { useDateTime, useTranslation } from "@/shared/hooks";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { cn } from "@/shared/lib";
-import { formatLongDate } from "@/shared/lib/dateTime";
 import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
@@ -60,6 +60,8 @@ import {
 } from "../data/twoFactorEnable";
 import { useTwoFactorAuth } from "../hooks/useTwoFactorAuth";
 
+const RECOVERY_CODES_TOTAL = 8;
+
 type SlotContent = "codes" | "devices";
 
 type SecurityDialogKind = "regenerateCodes" | "disableTwoFactor";
@@ -76,7 +78,14 @@ type TwoFactorEnablePageProps = SharedData & {
 };
 
 function TwoFactorEnable(): JSX.Element {
+  const { t } = useTranslation();
   const { recoveryCodesList, fetchRecoveryCodes, errors } = useTwoFactorAuth();
+
+  const securityOptions = twoFactorSecurityOptions.map((securityOption) => ({
+    ...securityOption,
+    title: t(securityOption.title),
+    description: t(securityOption.description),
+  }));
 
   const { twoFactorConfirmedAt = null } = usePage<TwoFactorEnablePageProps>().props;
 
@@ -171,8 +180,8 @@ function TwoFactorEnable(): JSX.Element {
         <TwoFactorTitle onManageAction={handleManageAction} />
 
         <OptionCard
-          title="Opciones de seguridad"
-          options={twoFactorSecurityOptions}
+          title={t("setting/two-factor.enabled_view.security_options")}
+          options={securityOptions}
           onOptionClick={handleSecurityOptionClick}
         />
 
@@ -189,7 +198,9 @@ function TwoFactorEnable(): JSX.Element {
       <Card className="w-full shadow-xs xl:max-w-sm xl:shrink-0 xl:self-start">
         <CardHeader>
           <h2 className="text-lg leading-none font-semibold">
-            {selectedContent === "codes" ? "Códigos de respaldo" : "Dispositivos de confianza"}
+            {selectedContent === "codes"
+              ? t("setting/two-factor.labels.backup_codes")
+              : t("setting/two-factor.labels.trusted_devices")}
           </h2>
         </CardHeader>
 
@@ -222,6 +233,8 @@ interface TwoFactorTitleProps {
 }
 
 function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <div className="flex min-w-0 flex-col items-start gap-4 rounded-xl border bg-card p-5 shadow-xs sm:flex-row sm:gap-6 sm:p-6">
       <div className={cn(iconColorVariants.green.iconBgClass, "rounded-3xl p-2")}>
@@ -230,31 +243,22 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">2FA está activo</h1>
+          <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+            {t("setting/two-factor.enabled_view.active_title")}
+          </h1>
 
           <p className="text-sm text-muted-foreground">
-            Tu cuenta está protegida con autenticación de dos factores.
+            {t("setting/two-factor.enabled_view.active_description")}
           </p>
         </div>
 
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:mt-4 sm:grid-cols-2 sm:gap-4">
-          <div className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
+        <div className="mt-2 flex items-center gap-2 sm:mt-4">
+          <ClipboardCheck className="h-4 w-4 text-green-700 dark:text-green-500" />
 
-            <span className="text-sm text-muted-foreground">
-              <strong className="font-medium">Método: </strong>
-              TOTP (Aplicación)
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Clock4 className="h-4 w-4 text-muted-foreground" />
-
-            <span className="text-sm text-muted-foreground">
-              <strong className="font-medium">Última verificación: </strong>
-              hace 2 horas
-            </span>
-          </div>
+          <span className="text-sm text-muted-foreground">
+            <strong className="font-medium">{t("setting/two-factor.enabled_view.method")} </strong>
+            {t("setting/two-factor.labels.method_totp")}
+          </span>
         </div>
       </div>
 
@@ -262,17 +266,17 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
         <DropdownMenuTrigger asChild>
           <Button className="w-full sm:w-auto" variant="outline">
             <Bolt />
-            Administrar
+            {t("setting/two-factor.enabled_view.manage")}
             <ChevronDown />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Gestión de acciones de 2FA</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("setting/two-factor.enabled_view.manage_menu")}</DropdownMenuLabel>
 
           {twoFactorManageActions.map((group, groupIndex) => (
             <Fragment key={groupIndex}>
               <DropdownMenuGroup>
-                {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+                {group.label && <DropdownMenuLabel>{t(group.label)}</DropdownMenuLabel>}
 
                 {group.actions.map((action) => {
                   const Icon = action.icon;
@@ -286,7 +290,7 @@ function TwoFactorTitle({ onManageAction }: TwoFactorTitleProps): JSX.Element {
                       className={action.className}
                     >
                       <Icon className={action.iconClassName} />
-                      {action.label}
+                      {t(action.label)}
                     </DropdownMenuItem>
                   );
                 })}
@@ -318,54 +322,68 @@ function TwoFactorSecuritySummary({
   onActivationDetailsClick,
   twoFactorConfirmedAt,
 }: TwoFactorSecuritySummaryProps): JSX.Element {
+  const { t, tChoice } = useTranslation();
+  const { formatLongDate } = useDateTime();
   const { trustedDevicesCount = 0 } = usePage<TwoFactorSecuritySummaryPageProps>().props;
 
-  const trustedDevicesLabel =
-    trustedDevicesCount === 1
-      ? "1 dispositivo de confianza configurado."
-      : `${trustedDevicesCount} dispositivos de confianza configurados.`;
+  const trustedDevicesLabel = tChoice(
+    "setting/two-factor.summary.trusted_devices_count",
+    trustedDevicesCount,
+  );
 
   const activationDescription =
     twoFactorConfirmedAt === null
-      ? "Aún no has activado la autenticación de dos factores."
-      : `Activaste 2FA el ${formatLongDate(twoFactorConfirmedAt)}`;
+      ? t("setting/two-factor.summary.not_activated")
+      : t("setting/two-factor.summary.activated_on", {
+          date: formatLongDate(twoFactorConfirmedAt),
+        });
 
   const summarySecurity: SumaryCardItem[] = [
     {
       key: "status-2fa",
-      title: "Estado de 2FA",
-      description: "La autenticación de dos factores está activa en tu cuenta.",
+      title: t("setting/two-factor.summary.status_title"),
+      description: t("setting/two-factor.summary.status_description"),
       icon: ShieldCheck,
       iconColor: "green",
-      action: { type: "badge", variant: "default", label: "Activado" },
+      action: {
+        type: "badge",
+        variant: "default",
+        label: t("setting/two-factor.summary.status_active"),
+      },
     },
     {
       key: "trusted-devices",
-      title: "Dispositivos de confianza",
+      title: t("setting/two-factor.labels.trusted_devices"),
       description: trustedDevicesLabel,
       icon: MonitorSmartphone,
       iconColor: "violet",
       action: {
         type: "button",
-        label: trustedDevicesCount === 0 ? "Configurar" : "Ver dispositivos",
+        label:
+          trustedDevicesCount === 0
+            ? t("setting/two-factor.summary.configure")
+            : t("setting/two-factor.summary.view_devices"),
         onClick: onViewTrustedDevices,
       },
     },
     {
       key: "backup-codes",
-      title: "Códigos de respaldo",
-      description: `Tienes ${recoveryCodesList.length} de 8 códigos disponibles.`,
+      title: t("setting/two-factor.labels.backup_codes"),
+      description: t("setting/two-factor.summary.backup_codes_available", {
+        available: recoveryCodesList.length,
+        total: RECOVERY_CODES_TOTAL,
+      }),
       icon: Key,
       iconColor: "orange",
       action: {
         type: "progress",
         current: recoveryCodesList.length,
-        total: 8,
+        total: RECOVERY_CODES_TOTAL,
       },
     },
     {
       key: "activation-date",
-      title: "Fecha de activación",
+      title: t("setting/two-factor.labels.activation_date"),
       description: activationDescription,
       icon: Clock4,
       iconColor: "blue",
@@ -414,7 +432,7 @@ function TwoFactorSecuritySummary({
             className="rounded-full"
             size="icon"
             type="button"
-            aria-label="Ver detalles"
+            aria-label={t("setting/two-factor.enabled_view.view_details")}
             variant="ghost"
           >
             <ChevronRight className="size-5 text-muted-foreground" />
@@ -427,7 +445,7 @@ function TwoFactorSecuritySummary({
 
   return (
     <SummaryCard
-      title="Resumen de seguridad"
+      title={t("setting/two-factor.enabled_view.summary_title")}
       data={summarySecurity}
       showLastSeparator
       renderAction={renderAction}
@@ -436,12 +454,14 @@ function TwoFactorSecuritySummary({
 }
 
 function TwoFactorSafetyTips(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Card className="shadow-xs">
       <CardHeader>
         <h2 className="flex items-center text-lg leading-none font-semibold">
           <Info className="mr-2 h-6 w-6 text-purple-700 dark:text-purple-500" />
-          Consejos de seguridad
+          {t("setting/two-factor.enabled_view.safety_tips_title")}
         </h2>
       </CardHeader>
       <CardContent className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -460,9 +480,9 @@ function TwoFactorSafetyTips(): JSX.Element {
               </div>
 
               <div className="flex flex-1 flex-col gap-0.5">
-                <h3 className="text-sm font-medium">{tip.title}</h3>
+                <h3 className="text-sm font-medium">{t(tip.title)}</h3>
 
-                <p className="text-xs text-muted-foreground">{tip.description}</p>
+                <p className="text-xs text-muted-foreground">{t(tip.description)}</p>
               </div>
             </div>
           );

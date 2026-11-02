@@ -6,7 +6,8 @@ import type { TrustedDevice } from "@/modules/setting/modules/trustedDevice/type
 import { valueOrFallback } from "@/modules/setting/modules/trustedDevice/utils/valueOrFallback";
 import { getDeviceIcon } from "@/modules/setting/shared/utils/trustedDevice";
 
-import { formatLongDate, formatTimeUntil, fromNow } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
@@ -26,35 +27,37 @@ interface TrustedDeviceInfoItemProps {
 
 export function TrustedDeviceInfoCard({
   device,
-  expirationLabel = "Expira el",
+  expirationLabel,
 }: TrustedDeviceInfoCardProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, formatTimeUntil, fromNow } = useDateTime();
   const browser = valueOrFallback(
     [device.browser, device.browserVersion]
       .filter((value) => value !== null && value !== "")
       .join(" "),
-    "Desconocido",
+    t("setting/trusted-devices.values.unknown"),
   );
 
-  const osName = valueOrFallback(device.osName, "Desconocido");
-  const ip = valueOrFallback(device.ip, "No disponible");
+  const osName = valueOrFallback(device.osName, t("setting/trusted-devices.values.unknown"));
+  const ip = valueOrFallback(device.ip, t("setting/trusted-devices.values.not_available"));
 
   const primaryMetadata: TrustedDeviceInfoItemProps[] = [
     {
       icon: <Globe className={cn("size-5", iconColorVariants.blue.iconFgClass)} />,
       iconColor: "blue",
-      label: "Navegador",
+      label: t("setting/trusted-devices.info_card.browser"),
       value: browser,
     },
     {
       icon: getDeviceIcon(device, cn("size-5", iconColorVariants.violet.iconFgClass)),
       iconColor: "violet",
-      label: "Sistema",
+      label: t("setting/trusted-devices.info_card.system"),
       value: osName,
     },
     {
       icon: <MapPin className={cn("size-5", iconColorVariants.orange.iconFgClass)} />,
       iconColor: "orange",
-      label: "Dirección IP",
+      label: t("setting/trusted-devices.info_card.ip_address"),
       value: ip,
       valueClassName: "break-all font-mono text-sm",
     },
@@ -65,14 +68,14 @@ export function TrustedDeviceInfoCard({
       detail: formatLongDate(device.lastUsedAt),
       icon: <Clock4 className={cn("size-5", iconColorVariants.cyan.iconFgClass)} />,
       iconColor: "cyan",
-      label: "Último acceso",
+      label: t("setting/trusted-devices.info_card.last_access"),
       value: fromNow(device.lastUsedAt),
     },
     {
       detail: formatLongDate(device.expiresAt),
       icon: <CalendarRange className={cn("size-5", iconColorVariants.green.iconFgClass)} />,
       iconColor: "green",
-      label: expirationLabel,
+      label: expirationLabel ?? t("setting/trusted-devices.info_card.expires_on"),
       value: formatTimeUntil(device.expiresAt),
     },
   ];
@@ -81,7 +84,7 @@ export function TrustedDeviceInfoCard({
     <section className="overflow-hidden rounded-xl border bg-card shadow-xs dark:bg-input/20">
       <div className="border-b bg-muted/30 px-4 py-3 sm:px-5">
         <h3 className="font-mono text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          Así identificamos este dispositivo
+          {t("setting/trusted-devices.info_card.identification")}
         </h3>
       </div>
 

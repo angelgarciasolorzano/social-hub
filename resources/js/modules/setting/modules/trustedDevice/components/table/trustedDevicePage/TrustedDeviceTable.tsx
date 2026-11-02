@@ -73,10 +73,9 @@ import {
   TableRow,
 } from "@/shared/components/shadcn/ui/table";
 
-import { useDialog } from "@/shared/hooks";
+import { useDateTime, useDialog, useTranslation } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
-import { formatLongDate, formatTimeUntil, fromNow } from "@/shared/lib/dateTime";
 import { badgeVariants } from "@/shared/lib/styling";
 
 type TrustedDeviceRowDialogActionKey =
@@ -115,7 +114,7 @@ const trustedDeviceColumnHelper = createColumnHelper<
 const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.device,
-    header: "Dispositivo",
+    header: "setting/trusted-devices.columns.device",
     size: trustedDeviceTableColumnSizes.device,
     minSize: 150,
     maxSize: 360,
@@ -124,23 +123,23 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.lastAccess,
-    header: "Último acceso",
+    header: "setting/trusted-devices.columns.last_access",
     size: trustedDeviceTableColumnSizes.lastAccess,
     minSize: 120,
     maxSize: 280,
-    cell: ({ row }) => fromNow(row.original.lastUsedAt),
+    cell: ({ row }) => <TrustedDeviceLastAccessCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.browserAndOs,
-    header: "Navegador / SO",
+    header: "setting/trusted-devices.columns.browser_os",
     size: trustedDeviceTableColumnSizes.browserAndOs,
     minSize: 140,
     maxSize: 320,
-    cell: ({ row }) => deviceBrowserAndOs(row.original),
+    cell: ({ row }) => <TrustedDeviceBrowserAndOsCell device={row.original} />,
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.ip,
-    header: "IP",
+    header: "setting/trusted-devices.columns.ip",
     size: trustedDeviceTableColumnSizes.ip,
     minSize: 120,
     maxSize: 260,
@@ -148,7 +147,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.expiration,
-    header: "Expira",
+    header: "setting/trusted-devices.columns.expires",
     size: trustedDeviceTableColumnSizes.expiration,
     minSize: 120,
     maxSize: 240,
@@ -156,7 +155,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.status,
-    header: "Estado",
+    header: "setting/trusted-devices.columns.status",
     size: trustedDeviceTableColumnSizes.status,
     minSize: 90,
     maxSize: 180,
@@ -164,7 +163,7 @@ const trustedDeviceTableColumns = trustedDeviceColumnHelper.columns([
   }),
   trustedDeviceColumnHelper.display({
     id: trustedDeviceTableColumnIds.actions,
-    header: "Acciones",
+    header: "setting/trusted-devices.columns.actions",
     size: trustedDeviceTableColumnSizes.actions,
     minSize: 96,
     maxSize: 180,
@@ -200,6 +199,7 @@ function TrustedDeviceTable({
   onPerPageChange,
   pagination,
 }: TrustedDeviceTableProps): JSX.Element {
+  const { t } = useTranslation();
   const deviceDialog = useDialog<RowDialogActionState | null>(null);
 
   const handleDeviceAction = (
@@ -366,7 +366,9 @@ function TrustedDeviceTable({
           )}
         >
           <Table className="table-fixed" style={{ width: `max(100%, ${table.getTotalSize()}px)` }}>
-            <TableCaption className="sr-only">Dispositivos de confianza registrados</TableCaption>
+            <TableCaption className="sr-only">
+              {t("setting/trusted-devices.table.label")}
+            </TableCaption>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
@@ -376,7 +378,7 @@ function TrustedDeviceTable({
                   {headerGroup.headers.map((header) => {
                     const headerLabel =
                       typeof header.column.columnDef.header === "string"
-                        ? header.column.columnDef.header
+                        ? t(header.column.columnDef.header)
                         : header.column.id;
 
                     return (
@@ -386,11 +388,13 @@ function TrustedDeviceTable({
                         scope="col"
                         style={{ width: header.getSize() }}
                       >
-                        {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                        {header.isPlaceholder ? null : headerLabel}
 
                         {header.column.getCanResize() && (
                           <TrustedDeviceColumnResizeHandle
-                            ariaLabel={`Redimensionar columna ${headerLabel}`}
+                            ariaLabel={t("setting/trusted-devices.table.resize_column", {
+                              column: headerLabel,
+                            })}
                             isResizing={header.column.getIsResizing()}
                             maximumSize={header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER}
                             minimumSize={header.column.columnDef.minSize ?? 20}
@@ -426,14 +430,16 @@ function TrustedDeviceTable({
                     >
                       {hasActiveFilters ? (
                         <EmptyState
-                          description="Prueba ajustar o limpiar los filtros aplicados."
+                          description={t(
+                            "setting/trusted-devices.table.empty_filtered_description",
+                          )}
                           icon={SearchX}
-                          title="No se encontraron dispositivos con esos filtros."
+                          title={t("setting/trusted-devices.table.empty_filtered_title")}
                         />
                       ) : (
                         <EmptyState
                           icon={MonitorSmartphone}
-                          title="No tienes dispositivos de confianza registrados."
+                          title={t("setting/trusted-devices.table.empty")}
                         />
                       )}
                     </div>
@@ -484,12 +490,38 @@ interface TrustedDeviceDeviceCellProps {
 }
 
 function TrustedDeviceDeviceCell({ device }: TrustedDeviceDeviceCellProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-2">
       {getDeviceIcon(device, "h-4 w-4 shrink-0 text-muted-foreground")}
-      <span className="truncate">{deviceLabel(device)}</span>
+      <span className="truncate">
+        {deviceLabel(device, t("setting/trusted-devices.values.unknown_device"))}
+      </span>
     </div>
   );
+}
+
+interface TrustedDeviceLastAccessCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceLastAccessCell({ device }: TrustedDeviceLastAccessCellProps): JSX.Element {
+  const { fromNow } = useDateTime();
+
+  return <>{fromNow(device.lastUsedAt)}</>;
+}
+
+interface TrustedDeviceBrowserAndOsCellProps {
+  device: TrustedDevice;
+}
+
+function TrustedDeviceBrowserAndOsCell({
+  device,
+}: TrustedDeviceBrowserAndOsCellProps): JSX.Element {
+  const { t } = useTranslation();
+
+  return <>{deviceBrowserAndOs(device, t("setting/trusted-devices.values.unknown"))}</>;
 }
 
 interface TrustedDeviceStatusCellProps {
@@ -497,15 +529,20 @@ interface TrustedDeviceStatusCellProps {
 }
 
 function TrustedDeviceStatusCell({ device }: TrustedDeviceStatusCellProps): JSX.Element {
+  const { t } = useTranslation();
   if (device.deletedAt !== null) {
-    return <Badge className={cn(badgeVariants.red)}>Revocado</Badge>;
+    return (
+      <Badge className={cn(badgeVariants.red)}>{t("setting/trusted-devices.status.revoked")}</Badge>
+    );
   }
 
   return (
     <Badge
       className={cn(device.isActive ? badgeVariants.success : badgeVariants.warning, "rounded-md")}
     >
-      {device.isActive ? "Activo" : "Expirado"}
+      {device.isActive
+        ? t("setting/trusted-devices.status.active")
+        : t("setting/trusted-devices.status.expired")}
     </Badge>
   );
 }
@@ -515,7 +552,8 @@ interface TrustedDeviceIpCellProps {
 }
 
 function TrustedDeviceIpCell({ device }: TrustedDeviceIpCellProps): JSX.Element {
-  const ipAddress = device.ip ?? "No disponible";
+  const { t } = useTranslation();
+  const ipAddress = device.ip ?? t("setting/trusted-devices.values.not_available");
 
   return (
     <span className="block truncate font-mono text-xs font-normal" title={device.ip ?? undefined}>
@@ -529,11 +567,15 @@ interface TrustedDeviceExpirationCellProps {
 }
 
 function TrustedDeviceExpirationCell({ device }: TrustedDeviceExpirationCellProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, formatTimeUntil } = useDateTime();
   const isRevoked = device.deletedAt !== null;
 
   return (
     <span title={isRevoked ? undefined : formatLongDate(device.expiresAt)}>
-      {isRevoked ? "No aplica" : formatTimeUntil(device.expiresAt)}
+      {isRevoked
+        ? t("setting/trusted-devices.values.not_applicable")
+        : formatTimeUntil(device.expiresAt)}
     </span>
   );
 }
@@ -565,6 +607,7 @@ function TrustedDeviceRowActions({
   device,
   onDeviceAction,
 }: TrustedDeviceRowActionsProps): JSX.Element {
+  const { t } = useTranslation();
   const actionTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   return (
@@ -572,7 +615,9 @@ function TrustedDeviceRowActions({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            aria-label={`Abrir acciones de ${deviceLabel(device)}`}
+            aria-label={t("setting/trusted-devices.table.open_actions", {
+              device: deviceLabel(device, t("setting/trusted-devices.values.unknown_device")),
+            })}
             size="icon"
             variant="ghost"
             className="size-8"
@@ -586,7 +631,9 @@ function TrustedDeviceRowActions({
           {trustedDeviceRowActions.map((group, groupIndex) => (
             <Fragment key={groupIndex}>
               <DropdownMenuGroup>
-                {group.label !== undefined && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+                {group.label !== undefined && (
+                  <DropdownMenuLabel>{t(group.label)}</DropdownMenuLabel>
+                )}
 
                 {group.actions.map((action) => {
                   const Icon = action.icon;
@@ -612,7 +659,7 @@ function TrustedDeviceRowActions({
                           !enabled && "opacity-70",
                         )}
                       />
-                      {action.label}
+                      {t(action.label)}
                     </DropdownMenuItem>
                   );
                 })}

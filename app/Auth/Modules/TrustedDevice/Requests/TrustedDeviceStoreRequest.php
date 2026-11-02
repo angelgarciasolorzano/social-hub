@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Auth\Modules\TrustedDevice\Requests;
 
 use App\Auth\Modules\TrustedDevice\Concerns\RequiresTwoFactorOtp;
+use App\Support\Translation\TranslatedText;
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
@@ -33,7 +34,7 @@ class TrustedDeviceStoreRequest extends FormRequest
         return [
             'name' => FluentRule::string()
                 ->nullable()
-                ->max(50, message: 'El nombre no puede tener más de 50 caracteres.'),
+                ->max(50, message: TranslatedText::of('setting/trusted-devices.validation.name_max')),
             ...$this->otpRules(),
         ];
     }

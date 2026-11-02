@@ -18,15 +18,17 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { useDateTime, useTranslation } from "@/shared/hooks";
 import { useClipboard } from "@/shared/hooks/useClipboard";
 
 import { cn } from "@/shared/lib";
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
 
 import { downloadRecoveryCodes } from "../../../utils/downloadRecoveryCodes";
+
+const RECOVERY_CODES_TOTAL = 8;
 
 interface TwoFactorRecoveryCodesProps {
   errors: string[];
@@ -40,6 +42,8 @@ type TwoFactorRecoveryCodesPageProps = SharedData & {
 
 function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element {
   const { errors, fetchRecoveryCodes, recoveryCodesList } = props;
+  const { locale, t } = useTranslation();
+  const { formatLongDate, fromNow } = useDateTime();
 
   const { recoveryCodesRegeneratedAt = null, auth } =
     usePage<TwoFactorRecoveryCodesPageProps>().props;
@@ -66,8 +70,8 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
   }, [recoveryCodesList, copyBulk]);
 
   const handleDownload = useCallback<() => void>(() => {
-    downloadRecoveryCodes(recoveryCodesList, { accountEmail });
-  }, [recoveryCodesList, accountEmail]);
+    downloadRecoveryCodes(recoveryCodesList, { accountEmail, locale, t });
+  }, [recoveryCodesList, accountEmail, locale, t]);
 
   const loadRecoveryCodes = useCallback<() => Promise<void>>(async () => {
     setIsLoadingRecoveryCodes(true);
@@ -105,22 +109,26 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
   return (
     <>
       {errors.length > 0 ? (
-        <AlertError errors={errors} title="No se pudieron cargar los códigos de respaldo." />
+        <AlertError errors={errors} title={t("setting/two-factor.recovery_codes.load_failed")} />
       ) : recoveryCodesList.length > 0 ? (
         <Alert className={cn(alertVariants.info, "max-w-md")} role="note">
           <AlertTriangleIcon aria-hidden="true" />
 
-          <AlertTitle>Guarda estos códigos en un lugar seguro.</AlertTitle>
+          <AlertTitle>{t("setting/two-factor.recovery_codes.save_title")}</AlertTitle>
 
           <AlertDescription>
-            Te permitirán acceder a tu cuenta si pierdes el acceso a tu aplicación autenticadora.
+            {t("setting/two-factor.recovery_codes.save_description")}
           </AlertDescription>
         </Alert>
       ) : null}
 
       <div className="flex flex-col gap-3 rounded-md border p-5">
         {recoveryCodesList.length > 0 ? (
-          <ul aria-label="Códigos de respaldo" className="flex flex-col" role="list">
+          <ul
+            aria-label={t("setting/two-factor.labels.backup_codes")}
+            className="flex flex-col"
+            role="list"
+          >
             {recoveryCodesList.map((code, codeIndex) => {
               const isCopied = rowCopiedText === code;
 
@@ -134,8 +142,8 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
                     }}
                     aria-label={
                       isCopied
-                        ? `Código de respaldo ${code} copiado`
-                        : `Copiar código de respaldo ${code}`
+                        ? t("setting/two-factor.recovery_codes.code_copied", { code })
+                        : t("setting/two-factor.recovery_codes.copy_code", { code })
                     }
                     className="h-auto w-full justify-between rounded-md px-0 py-3 text-sm hover:bg-accent/50 focus-visible:bg-accent/50"
                   >
@@ -168,22 +176,31 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
               role={errors.length === 0 ? "status" : undefined}
             >
               {errors.length > 0
-                ? "Intenta cargar los códigos de respaldo otra vez."
-                : "No hay códigos de respaldo disponibles."}
+                ? t("setting/two-factor.recovery_codes.retry_hint")
+                : t("setting/two-factor.labels.no_backup_codes")}
             </p>
 
             <Button onClick={handleRetry} type="button" variant="outline">
               <RotateCcw aria-hidden="true" />
-              {errors.length > 0 ? "Reintentar" : "Cargar códigos"}
+              {errors.length > 0
+                ? t("setting/common.actions.retry")
+                : t("setting/two-factor.recovery_codes.load")}
             </Button>
           </div>
         )}
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Códigos disponibles</span>
+        <span className="text-xs text-muted-foreground">
+          {t("setting/two-factor.recovery_codes.available")}
+        </span>
 
-        <span className="text-sm font-medium">{recoveryCodesList.length} de 8</span>
+        <span className="text-sm font-medium">
+          {t("setting/two-factor.recovery_codes.available_count", {
+            available: recoveryCodesList.length,
+            total: RECOVERY_CODES_TOTAL,
+          })}
+        </span>
       </div>
 
       <div className="flex items-center justify-between gap-4">
@@ -196,12 +213,12 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
           {bulkCopiedText !== null ? (
             <>
               <Check aria-hidden="true" className="h-4 w-4 text-green-600 dark:text-green-500" />
-              Copiado
+              {t("setting/two-factor.recovery_codes.copied")}
             </>
           ) : (
             <>
               <Copy aria-hidden="true" className="h-4 w-4" />
-              Copiar Códigos
+              {t("setting/two-factor.recovery_codes.copy_all")}
             </>
           )}
         </Button>
@@ -212,13 +229,13 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
           onClick={handleDownload}
         >
           <ArrowDown aria-hidden="true" />
-          Descargar .txt
+          {t("setting/two-factor.labels.download_txt")}
         </Button>
       </div>
 
       <Item variant="outline">
         <ItemContent>
-          <ItemTitle>Última regeneración</ItemTitle>
+          <ItemTitle>{t("setting/two-factor.recovery_codes.last_regenerated")}</ItemTitle>
 
           <ItemDescription className="text-xs">{regeneratedAtLabel}</ItemDescription>
         </ItemContent>
@@ -232,6 +249,7 @@ function TwoFactorRecoveryCodes(props: TwoFactorRecoveryCodesProps): JSX.Element
 }
 
 function TwoFactorRecoveryCodesSkeleton(): JSX.Element {
+  const { t } = useTranslation();
   const recoveryCodeSkeletonRows: string[] = [
     "first",
     "second",
@@ -246,7 +264,7 @@ function TwoFactorRecoveryCodesSkeleton(): JSX.Element {
   return (
     <>
       <p className="sr-only" role="status">
-        Cargando códigos de respaldo.
+        {t("setting/two-factor.labels.loading_backup_codes")}
       </p>
 
       <Alert aria-hidden="true" className="max-w-md">

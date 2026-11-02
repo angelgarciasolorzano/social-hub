@@ -8,6 +8,8 @@ use App\Auth\Models\TrustedDevice;
 use App\Auth\Modules\TrustedDevice\Props\TrustedDeviceCurrentProps;
 use App\Auth\Modules\TrustedDevice\Resources\TrustedDeviceResource;
 use App\Http\Controllers\Controller;
+use App\Support\Translation\FrontendTranslations;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use App\User\Modules\TwoFactor\Enums\TwoFactorStatus;
 use App\User\Modules\TwoFactor\Requests\TwoFactorDisableRequest;
@@ -42,9 +44,23 @@ class TwoFactorController extends Controller implements HasMiddleware
         return $user;
     }
 
-    public function index(TwoFactorRequest $twoFactorRequest, TrustedDeviceCurrentProps $trustedDeviceCurrentProps): Response
-    {
+    /**
+     * The trusted device groups are registered too: the page shows the trusted devices panel and its
+     * add and revoke-all dialogs.
+     */
+    public function index(
+        TwoFactorRequest $twoFactorRequest,
+        TrustedDeviceCurrentProps $trustedDeviceCurrentProps,
+        FrontendTranslations $frontendTranslations,
+    ): Response {
         $user = $this->getAuthenticatedUser();
+
+        $frontendTranslations->use(
+            'setting/common',
+            'setting/two-factor',
+            'setting/trusted-devices',
+            'setting/trusted-device-dialogs',
+        );
 
         $props = [
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
@@ -95,7 +111,7 @@ class TwoFactorController extends Controller implements HasMiddleware
 
         $generateNewRecoveryCodes($user);
 
-        return Inertia::flash('success', 'Códigos de recuperación regenerados exitosamente.')->back();
+        return Inertia::flash('success', TranslatedText::of('setting/two-factor.messages.recovery_codes_regenerated'))->back();
     }
 
     public function destroy(
@@ -106,7 +122,6 @@ class TwoFactorController extends Controller implements HasMiddleware
 
         $disableTwoFactorAuthentication($user);
 
-        return Inertia::flash('success', 'La autenticación de dos factores ha sido desactivada correctamente.')
-            ->back();
+        return Inertia::flash('success', TranslatedText::of('setting/two-factor.messages.disabled'))->back();
     }
 }

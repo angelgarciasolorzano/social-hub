@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useTranslation } from "@/shared/hooks";
+
 import {
   DEFAULT_TWO_FACTOR_ACTIVATION_STEP,
   type TwoFactorActivationStep,
@@ -46,6 +48,8 @@ export function useTwoFactorActivationFlow(
     twoFactorEnabled,
   } = params;
 
+  const { t } = useTranslation();
+
   const [step, setStep] = useState<TwoFactorActivationStep>(DEFAULT_TWO_FACTOR_ACTIVATION_STEP);
 
   const [previousStep, setPreviousStep] = useState<TwoFactorActivationStep | null>(null);
@@ -60,30 +64,29 @@ export function useTwoFactorActivationFlow(
     switch (step) {
       case twoFactorActivationStepKey.chooseMethod:
         return {
-          description: "Escanea el código QR con tu aplicación autenticadora.",
-          title: "Habilitar autenticación de dos factores",
+          description: t("setting/two-factor.setup_steps.qr.description"),
+          title: t("setting/two-factor.setup_steps.qr.title"),
         };
 
       case twoFactorActivationStepKey.manualSetup:
         return {
-          description: "Ingresa esta clave manualmente en tu aplicación autenticadora.",
-          title: "No puedes escanear el código QR",
+          description: t("setting/two-factor.setup_steps.manual.description"),
+          title: t("setting/two-factor.setup_steps.manual.title"),
         };
 
       case twoFactorActivationStepKey.verifyingOTP:
         return {
-          description:
-            "Ingresa el código de 6 dígitos que muestra tu aplicación para confirmar que funciona correctamente.",
-          title: "Verificar código de autenticación",
+          description: t("setting/two-factor.setup_steps.verify.description"),
+          title: t("setting/two-factor.setup_steps.verify.title"),
         };
 
       case twoFactorActivationStepKey.success:
         return {
-          description: "Guarda estos códigos de respaldo en un lugar seguro.",
-          title: "¡2FA activado correctamente!",
+          description: t("setting/two-factor.setup_steps.success.description"),
+          title: t("setting/two-factor.setup_steps.success.title"),
         };
     }
-  }, [step]);
+  }, [step, t]);
 
   const resetModalState = useCallback((): void => {
     setStep(DEFAULT_TWO_FACTOR_ACTIVATION_STEP);

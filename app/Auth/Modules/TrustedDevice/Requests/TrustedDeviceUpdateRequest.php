@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Modules\TrustedDevice\Requests;
 
+use App\Support\Translation\TranslatedText;
 use Illuminate\Foundation\Http\FormRequest;
 use SanderMuller\FluentValidation\Contracts\FluentRuleContract;
 use SanderMuller\FluentValidation\FluentRule;
@@ -30,8 +31,8 @@ class TrustedDeviceUpdateRequest extends FormRequest
     {
         return [
             'name' => FluentRule::string()
-                ->required(message: 'El nombre es obligatorio.')
-                ->max(50, message: 'El nombre no puede tener más de 50 caracteres.'),
+                ->required(message: TranslatedText::of('setting/trusted-devices.validation.name_required'))
+                ->max(50, message: TranslatedText::of('setting/trusted-devices.validation.name_max')),
         ];
     }
 }

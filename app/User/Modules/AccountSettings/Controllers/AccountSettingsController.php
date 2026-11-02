@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\User\Modules\AccountSettings\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Support\Translation\FrontendTranslations;
+use App\Support\Translation\TranslatedText;
 use App\User\Events\AccountUpdated;
 use App\User\Models\User;
 use App\User\Modules\AccountSettings\Data\AccountSettingsUpdateData;
@@ -26,9 +28,11 @@ class AccountSettingsController extends Controller
         return $user;
     }
 
-    public function edit(Request $request): Response
+    public function edit(Request $request, FrontendTranslations $frontendTranslations): Response
     {
         $user = $this->getAuthenticatedUser($request);
+
+        $frontendTranslations->use('setting/common', 'setting/account-settings');
 
         return Inertia::render('setting/modules/accountSettings/AccountSettings', [
             'accountSettings' => new AccountSettingsResource($user)->resolve($request),
@@ -49,9 +53,11 @@ class AccountSettingsController extends Controller
             event(AccountUpdated::fromSavedChanges($user));
         }
 
+        app()->setLocale($user->preferred_locale->value);
+
         return Inertia::flash([
             'type' => 'success',
-            'message' => 'Datos actualizados correctamente.',
+            'message' => TranslatedText::of('setting/account-settings.messages.profile_updated'),
         ])->back();
     }
 }

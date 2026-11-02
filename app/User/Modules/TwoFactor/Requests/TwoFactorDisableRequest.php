@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\Modules\TwoFactor\Requests;
 
 use App\Auth\Modules\TrustedDevice\Services\TwoFactorCodeVerifier;
+use App\Support\Translation\TranslatedText;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
@@ -31,15 +32,15 @@ class TwoFactorDisableRequest extends FormRequest
     {
         return [
             'password' => FluentRule::string()
-                ->required(message: 'Debes confirmar tu contraseña')
-                ->currentPassword(message: 'La contraseña proporcionada no coincide con tu contraseña actual.'),
+                ->required(message: TranslatedText::of('setting/two-factor.validation.password_required'))
+                ->currentPassword(message: TranslatedText::of('setting/two-factor.validation.password_mismatch')),
 
             'code' => FluentRule::string()
-                ->required(message: 'Debes ingresar el código de autenticación.')
-                ->max(21, message: 'El código es demasiado largo.')
+                ->required(message: TranslatedText::of('setting/two-factor.validation.code_required'))
+                ->max(21, message: TranslatedText::of('setting/two-factor.validation.code_too_long'))
                 ->rule(
                     'regex:/^([0-9]{6}|[A-Za-z0-9]{10}-[A-Za-z0-9]{10})$/',
-                    'Ingresa un código de 6 dígitos o un código de recuperación válido.',
+                    TranslatedText::of('setting/two-factor.validation.code_format'),
                 ),
         ];
     }
@@ -51,7 +52,7 @@ class TwoFactorDisableRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             if ($validator->errors()->isEmpty() && ! $this->hasValidCode()) {
-                $validator->errors()->add('code', 'El código de autenticación proporcionado no es válido.');
+                $validator->errors()->add('code', TranslatedText::of('setting/two-factor.validation.code_invalid'));
             }
         });
     }

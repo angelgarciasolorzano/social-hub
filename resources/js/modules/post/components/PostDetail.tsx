@@ -4,8 +4,9 @@ import { RiTimeZoneLine } from "react-icons/ri";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 
+import { useDateTime } from "@/shared/hooks";
+
 import { validImage } from "@/shared/lib";
-import { formatFullDate, fromNow } from "@/shared/lib/dateTime";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
@@ -17,6 +18,8 @@ interface PostDetailProps {
 }
 
 function PostDetail({ post }: PostDetailProps): JSX.Element {
+  const { formatFullDate, fromNow } = useDateTime();
+
   return (
     <article className="grid gap-2">
       <header className="flex items-center gap-3">

@@ -11,6 +11,7 @@ use App\Auth\Modules\TrustedDevice\Concerns\MintsTrustedDeviceToken;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceOperationResult;
 use App\Auth\Modules\TrustedDevice\Requests\TrustedDeviceStoreRequest;
+use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use DeviceDetector\DeviceDetector;
@@ -271,7 +272,7 @@ final readonly class TrustedDeviceService
 
         if (! $this->twoFactorCodeVerifier->verifyCode($lockedUser, $otpCode)) {
             throw ValidationException::withMessages([
-                'otp_code' => 'El código de verificación es incorrecto.',
+                'otp_code' => TranslatedText::of('setting/trusted-devices.validation.code_incorrect'),
             ]);
         }
     }

@@ -5,6 +5,8 @@ import { X } from "lucide-react";
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 import { Button } from "@/shared/components/shadcn/ui/button";
 
+import { useTranslation } from "@/shared/hooks";
+
 export interface TrustedDeviceActiveFilterChip {
   readonly key: string;
   readonly label: string;
@@ -43,13 +45,17 @@ export function TrustedDeviceActiveFilterChipGroup({
   filterChips,
   onResetFilters,
 }: TrustedDeviceActiveFilterChipGroupProps): JSX.Element | null {
+  const { t } = useTranslation();
+
   if (filterChips.length === 0) {
     return null;
   }
 
   return (
     <div aria-label={ariaLabel} className="flex flex-wrap items-center gap-2" role="group">
-      <span className="text-sm font-normal text-muted-foreground">Filtros activos:</span>
+      <span className="text-sm font-normal text-muted-foreground">
+        {t("setting/trusted-devices.chips.active_filters_label")}
+      </span>
 
       {filterChips.map((filterChip) => (
         <TrustedDeviceActiveFilterChip
@@ -60,7 +66,7 @@ export function TrustedDeviceActiveFilterChipGroup({
       ))}
 
       <Button onClick={onResetFilters} size="sm" type="button" variant="ghost">
-        Limpiar filtros
+        {t("setting/trusted-devices.chips.clear_filters")}
       </Button>
     </div>
   );
@@ -75,12 +81,14 @@ function TrustedDeviceActiveFilterChip({
   label,
   onRemove,
 }: TrustedDeviceActiveFilterChipProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Badge className="gap-1.5 pr-1 text-xs font-medium" variant="secondary">
       <span>{label}</span>
 
       <Button
-        aria-label={`Quitar filtro: ${label}`}
+        aria-label={t("setting/trusted-devices.chips.remove_filter", { label })}
         className="-mr-0.5"
         onClick={onRemove}
         size="icon-xs"

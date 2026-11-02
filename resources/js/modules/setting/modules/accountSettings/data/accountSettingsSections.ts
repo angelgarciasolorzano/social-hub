@@ -3,6 +3,9 @@ import { Bell, Eye, FileText, Mail, Megaphone, Settings2, UserRound } from "luci
 
 import type { IconColorVariant } from "@/shared/lib/styling";
 
+/**
+ * `title` and `description` are translation keys of `setting/account-settings`; the page translates them.
+ */
 export interface AccountPrivacyPrinciple {
   description: string;
   icon: LucideIcon;
@@ -10,6 +13,9 @@ export interface AccountPrivacyPrinciple {
   title: string;
 }
 
+/**
+ * `title` and `description` are translation keys of `setting/account-settings`; the page translates them.
+ */
 export interface AccountCommunicationChannel {
   description: string;
   enabled: boolean;
@@ -21,54 +27,54 @@ export interface AccountCommunicationChannel {
 
 export const privacyPrinciples: readonly AccountPrivacyPrinciple[] = [
   {
-    description: "Consulta y actualiza la información personal asociada a tu cuenta.",
+    description: "setting/account-settings.privacy_principles.account_data.description",
     icon: UserRound,
     iconColor: "blue",
-    title: "Datos de tu cuenta",
+    title: "setting/account-settings.privacy_principles.account_data.title",
   },
   {
-    description: "Consulta cómo se muestra la información de tu perfil público.",
+    description: "setting/account-settings.privacy_principles.public_profile.description",
     icon: Eye,
     iconColor: "violet",
-    title: "Perfil público",
+    title: "setting/account-settings.privacy_principles.public_profile.title",
   },
   {
-    description: "Puedes actualizar tus datos o eliminar tu cuenta desde las opciones disponibles.",
+    description: "setting/account-settings.privacy_principles.your_choice.description",
     icon: Settings2,
     iconColor: "amber",
-    title: "Tú decides",
+    title: "setting/account-settings.privacy_principles.your_choice.title",
   },
   {
-    description: "Revisa las acciones disponibles para administrar tu cuenta.",
+    description: "setting/account-settings.privacy_principles.account_options.description",
     icon: FileText,
     iconColor: "green",
-    title: "Opciones de cuenta",
+    title: "setting/account-settings.privacy_principles.account_options.title",
   },
 ];
 
 export const communicationChannels: readonly AccountCommunicationChannel[] = [
   {
-    description: "Recibe actualizaciones importantes y noticias.",
+    description: "setting/account-settings.communication.channels.email.description",
     enabled: true,
     icon: Mail,
     iconColor: "blue",
     id: "email",
-    title: "Correos electrónicos",
+    title: "setting/account-settings.communication.channels.email.title",
   },
   {
-    description: "Alertas y mensajes dentro de la plataforma.",
+    description: "setting/account-settings.communication.channels.system.description",
     enabled: true,
     icon: Bell,
     iconColor: "green",
     id: "system",
-    title: "Notificaciones del sistema",
+    title: "setting/account-settings.communication.channels.system.title",
   },
   {
-    description: "Recibe tips, mejoras y novedades de productos.",
+    description: "setting/account-settings.communication.channels.news.description",
     enabled: false,
     icon: Megaphone,
     iconColor: "violet",
     id: "news",
-    title: "Novedades y consejos",
+    title: "setting/account-settings.communication.channels.news.title",
   },
 ];

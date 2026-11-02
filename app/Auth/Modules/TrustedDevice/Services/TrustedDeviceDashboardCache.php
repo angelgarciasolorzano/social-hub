@@ -35,7 +35,8 @@ final class TrustedDeviceDashboardCache
     }
 
     /**
-     * Return the latest activity rows as resource arrays.
+     * Return the latest activity rows as resource arrays. The cache is shared by every language, so the
+     * action label is computed again from the stored action in the language of the current request.
      *
      * @return list<array{
      *     id: int,
@@ -74,7 +75,13 @@ final class TrustedDeviceDashboardCache
                 ->all(),
         );
 
-        return $recentActivity;
+        return array_map(
+            static fn (array $activity): array => [
+                ...$activity,
+                'actionLabel' => TrustedDeviceAction::from($activity['action'])->label(),
+            ],
+            $recentActivity,
+        );
     }
 
     private function buildStats(User $user): TrustedDeviceDashboardStatsData

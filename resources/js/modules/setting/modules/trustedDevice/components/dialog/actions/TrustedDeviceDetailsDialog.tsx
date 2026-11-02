@@ -20,8 +20,9 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceDetailsDialogProps {
@@ -37,6 +38,8 @@ function TrustedDeviceDetailsDialog({
   onClose,
   returnFocusTarget,
 }: TrustedDeviceDetailsDialogProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, fromNow } = useDateTime();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const { onOpenAutoFocus, onCloseAutoFocus } = useDialogFocusRestoration({
     captureActiveElement: false,
@@ -75,21 +78,21 @@ function TrustedDeviceDetailsDialog({
               tabIndex={-1}
             >
               <Eye aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Detalles del dispositivo
+              {t("setting/trusted-device-dialogs.details.title")}
             </h2>
           </DialogTitle>
 
           <DialogDescription className="text-left text-sm font-normal">
             {isRevoked
-              ? "Consulta la información del dispositivo que fue revocado de tu cuenta."
+              ? t("setting/trusted-device-dialogs.details.description_revoked")
               : isExpired
-                ? "Consulta la información de un dispositivo cuya confianza ya expiró."
-                : "Consulta la información completa de este dispositivo de confianza."}
+                ? t("setting/trusted-device-dialogs.details.description_expired")
+                : t("setting/trusted-device-dialogs.details.description_active")}
           </DialogDescription>
         </DialogHeader>
 
         <div
-          aria-label="Información del dispositivo"
+          aria-label={t("setting/trusted-device-dialogs.details.information")}
           className="min-h-0 overflow-y-auto overscroll-contain outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
           role="region"
           tabIndex={0}
@@ -110,7 +113,7 @@ function TrustedDeviceDetailsDialog({
 
         <DialogFooter>
           <Button className="w-full sm:w-auto" onClick={onClose} type="button" variant="outline">
-            Cerrar
+            {t("setting/common.actions.close")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -124,11 +127,12 @@ interface DeviceStatusAlertProps {
 }
 
 function DeviceStatusAlert({ isExpired, isRevoked }: DeviceStatusAlertProps): JSX.Element {
+  const { t } = useTranslation();
   const statusMessage = isRevoked
-    ? "Ya no es de confianza, aunque su expiración siga vigente. En tu próximo inicio de sesión se pedirá el código de verificación."
+    ? t("setting/trusted-device-dialogs.details.state_revoked")
     : isExpired
-      ? "El periodo de confianza expiró. En tu próximo inicio de sesión desde este dispositivo se pedirá el código de verificación."
-      : "Este dispositivo sigue siendo de confianza. No se te pedirá un código de verificación al iniciar sesión desde aquí hasta su fecha de expiración.";
+      ? t("setting/trusted-device-dialogs.details.state_expired")
+      : t("setting/trusted-device-dialogs.details.state_active");
 
   const statusIcon = isRevoked || isExpired ? <CircleAlert /> : <CircleCheck />;
   const statusClassName = isRevoked || isExpired ? alertVariants.warning : alertVariants.success;
@@ -144,16 +148,21 @@ function DeviceStatusAlert({ isExpired, isRevoked }: DeviceStatusAlertProps): JS
 type DeviceInformationGridProps = Pick<TrustedDeviceDetailsDialogProps, "device">;
 
 function DeviceInformationGrid({ device }: DeviceInformationGridProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate } = useDateTime();
   return (
     <div className="overflow-hidden rounded-lg border shadow-xs dark:bg-muted/20">
       <div className="grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0">
         <DeviceInformationItem
-          label="Dirección IP"
-          value={valueOrFallback(device.ip, "No disponible")}
+          label={t("setting/trusted-devices.info_card.ip_address")}
+          value={valueOrFallback(device.ip, t("setting/trusted-devices.values.not_available"))}
           valueClassName="font-mono"
         />
 
-        <DeviceInformationItem label="Registrado" value={formatLongDate(device.createdAt)} />
+        <DeviceInformationItem
+          label={t("setting/trusted-device-dialogs.details.registered")}
+          value={formatLongDate(device.createdAt)}
+        />
       </div>
     </div>
   );

@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 
 import { useTwoFactorActivationFlow } from "../../../hooks/useTwoFactorActivationFlow";
@@ -41,6 +43,7 @@ interface TwoFactorSetupDialogProps {
 }
 
 export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const dialogTitleRef = useRef<HTMLHeadingElement>(null);
   const dialogFocusRestoration = useDialogFocusRestoration();
 
@@ -143,7 +146,7 @@ export default function TwoFactorSetupDialog(props: TwoFactorSetupDialogProps): 
         {step === twoFactorActivationStepKey.manualSetup ? (
           <Button
             type="button"
-            aria-label="Volver"
+            aria-label={t("setting/two-factor.labels.back")}
             variant="outline"
             size="icon-sm"
             className="absolute top-3 left-3 z-10 inline-flex cursor-pointer items-center justify-center rounded-md"

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Auth\Models\TrustedDevice;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -83,7 +84,7 @@ it('answers a wrong OTP code with a fixed message that does not echo the submitt
 
     $testResponse = storeTrustedDeviceAs($this, $user, ['otp_code' => invalidOtpFor($user)]);
 
-    $testResponse->assertSessionHasErrors(['otp_code' => 'El código de verificación es incorrecto.']);
+    $testResponse->assertSessionHasErrors(['otp_code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/trusted-devices.validation.code_incorrect')]);
 });
 
 it('creates a trusted device with an inferred name and issues the cookie when the OTP is valid', function (): void {
@@ -164,3 +165,16 @@ it('reports a revoked duplicate as needing reactivation instead of creating a ne
     expect(TrustedDevice::withTrashed()->where('user_id', $user->id)->count())->toBe(1)
         ->and(TrustedDevice::query()->where('user_id', $user->id)->count())->toBe(0);
 });
+
+it('answers a wrong OTP code in the language of the user', function (PreferredLocale $preferredLocale): void {
+    $user = createUserWithTwoFactor();
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+
+    storeTrustedDeviceAs($this, $user, ['otp_code' => invalidOtpFor($user)])
+        ->assertSessionHasErrors([
+            'otp_code' => translatedTextIn($preferredLocale, 'setting/trusted-devices.validation.code_incorrect'),
+        ]);
+})->with([
+    'English' => [PreferredLocale::ENGLISH],
+    'Spanish' => [PreferredLocale::SPANISH],
+]);

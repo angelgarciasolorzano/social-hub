@@ -23,7 +23,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/shared/components/shadcn/ui/field";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { useDialog } from "@/shared/hooks";
+import { useDialog, useTranslation } from "@/shared/hooks";
 
 import { alertVariants } from "@/shared/lib/styling";
 
@@ -34,6 +34,7 @@ interface PasswordFormData {
 }
 
 function AccountSettingsPasswordDialog(): JSX.Element {
+  const { t } = useTranslation();
   const { open, setOpen } = useDialog();
 
   const currentPasswordInput = useRef<HTMLInputElement>(null);
@@ -99,7 +100,7 @@ function AccountSettingsPasswordDialog(): JSX.Element {
           variant="outline"
         >
           <KeyRound aria-hidden="true" data-icon="inline-start" />
-          Cambiar contraseña
+          {t("setting/account-settings.password_dialog.trigger")}
           <ChevronRight aria-hidden="true" data-icon="inline-end" />
         </Button>
       </DialogTrigger>
@@ -108,28 +109,29 @@ function AccountSettingsPasswordDialog(): JSX.Element {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <KeyRound aria-hidden="true" className="size-5" />
-            Cambiar contraseña
+            {t("setting/account-settings.password_dialog.title")}
           </DialogTitle>
           <DialogDescription>
-            Actualiza tu contraseña para mantener segura tu cuenta.
+            {t("setting/account-settings.password_dialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <Alert className={alertVariants.warning} role="note">
             <CircleAlert aria-hidden="true" />
-            <AlertTitle>Se revocará la confianza de tus dispositivos</AlertTitle>
+            <AlertTitle>
+              {t("setting/account-settings.password_dialog.revocation_title")}
+            </AlertTitle>
             <AlertDescription>
-              Al cambiar tu contraseña, se revocará la confianza de todos los dispositivos asociados
-              a tu cuenta. Si tienes activada la autenticación en dos pasos, tendrás que verificarte
-              de nuevo la próxima vez que inicies sesión desde esos dispositivos. Las sesiones que
-              ya estén abiertas seguirán activas.
+              {t("setting/account-settings.password_dialog.revocation_description")}
             </AlertDescription>
           </Alert>
 
           <FieldGroup className="gap-4">
             <Field className="gap-2" data-invalid={errors.current_password !== undefined}>
-              <FieldLabel htmlFor="account-settings-current-password">Contraseña actual</FieldLabel>
+              <FieldLabel htmlFor="account-settings-current-password">
+                {t("setting/account-settings.password_dialog.current_password")}
+              </FieldLabel>
               <PasswordInput
                 ref={currentPasswordInput}
                 id="account-settings-current-password"
@@ -156,7 +158,9 @@ function AccountSettingsPasswordDialog(): JSX.Element {
             </Field>
 
             <Field className="gap-2" data-invalid={errors.password !== undefined}>
-              <FieldLabel htmlFor="account-settings-new-password">Nueva contraseña</FieldLabel>
+              <FieldLabel htmlFor="account-settings-new-password">
+                {t("setting/account-settings.password_dialog.new_password")}
+              </FieldLabel>
               <PasswordInput
                 ref={newPasswordInput}
                 id="account-settings-new-password"
@@ -181,7 +185,7 @@ function AccountSettingsPasswordDialog(): JSX.Element {
 
             <Field className="gap-2" data-invalid={errors.password_confirmation !== undefined}>
               <FieldLabel htmlFor="account-settings-password-confirmation">
-                Confirmar contraseña
+                {t("setting/account-settings.password_dialog.password_confirmation")}
               </FieldLabel>
               <PasswordInput
                 ref={passwordConfirmationInput}
@@ -211,7 +215,7 @@ function AccountSettingsPasswordDialog(): JSX.Element {
           <DialogFooter>
             <DialogClose asChild>
               <Button disabled={processing} type="button" variant="outline">
-                Cancelar
+                {t("setting/common.actions.cancel")}
               </Button>
             </DialogClose>
 
@@ -219,12 +223,12 @@ function AccountSettingsPasswordDialog(): JSX.Element {
               {processing ? (
                 <>
                   <Spinner data-icon="inline-start" />
-                  Actualizando...
+                  {t("setting/account-settings.password_dialog.submitting")}
                 </>
               ) : (
                 <>
                   <KeyRound data-icon="inline-start" />
-                  Guardar contraseña
+                  {t("setting/account-settings.password_dialog.submit")}
                 </>
               )}
             </Button>

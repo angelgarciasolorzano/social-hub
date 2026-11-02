@@ -59,3 +59,9 @@ Every visible text of the Filament admin panel lives in `lang/en/admin/<section>
 
 Correct: `->label(TranslatedText::of('admin/users.table.status'))`, `trans_choice('admin/backups.retention.days', $days)`.
 Wrong: `->label('Status')`, `->label(__('Status'))`, `"{$count} days"`, `->color(fn (string $state) => $state === 'Verified' ? 'success' : 'warning')`.
+
+## Write every application text of a translated page through a translation key
+Flashes, validation messages and any other text the backend sends to a translated React page (today the settings pages) live in `lang/en/<group>.php` and `lang/es/<group>.php` under a named key, added to both languages together, and are read with `App\Support\Translation\TranslatedText::of('setting/<page>.<key>', $replace)`. In a FormRequest, pass it as `message:`; for a limit, leave `:max` (or the rule's own placeholder) in the text so the validator fills it from the rule. An enum that names its cases for the user (`TrustedDeviceAction::label()`, `TrustedDeviceOperationResult::message()`) reads its key from the case. A controller that renders a translated page registers its groups with `FrontendTranslations::use(...)` before `Inertia::render()`. Never cache text already translated into one language (relabel it on read), and never force a locale in `__()`: the request's language comes from `SetApplicationLocale`. Tests compare with `translatedTextIn(PreferredLocale::X, $key)`, never with a copied text.
+
+Correct: `->required(message: TranslatedText::of('setting/trusted-devices.validation.name_required'))`, `Inertia::flash('success', TranslatedText::of('setting/two-factor.messages.disabled'))`.
+Wrong: `->required(message: 'El nombre es obligatorio.')`, `__('passwords.reset', [], 'es')`, `->assertSessionHasErrors(['code' => 'El código…'])`.

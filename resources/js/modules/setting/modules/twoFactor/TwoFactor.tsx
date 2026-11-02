@@ -2,6 +2,7 @@ import type { JSX } from "react";
 
 import { Head } from "@inertiajs/react";
 
+import { useTranslation } from "@/shared/hooks";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import TwoFactorSetupDialog from "./components/dialog/twoFactorDisabled/TwoFactorSetupDialog";
@@ -31,11 +32,12 @@ export default function TwoFactor({
     errors,
   } = useTwoFactorAuth();
 
+  const { t } = useTranslation();
   const { open: showSetupDialog, setOpen: setShowSetupDialog } = useDialog();
 
   return (
     <>
-      <Head title="Two Factor Authentication" />
+      <Head title={t("setting/two-factor.page_title")} />
 
       {canManageTwoFactor && (
         <main className="max-w-8xl mx-auto flex w-full flex-1 flex-col gap-6">

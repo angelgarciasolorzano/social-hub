@@ -43,6 +43,8 @@ import {
 } from "@/shared/components/shadcn/ui/select";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
+import { useTranslation } from "@/shared/hooks";
+
 import type { SharedData } from "@/shared/types";
 
 interface TrustedDeviceActivityDialogProps {
@@ -64,6 +66,7 @@ export default function TrustedDeviceActivityDialog({
   onClose,
   filterController,
 }: TrustedDeviceActivityDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const { activityDialog } = usePage<TrustedDeviceActivityDialogPageProps>().props;
   const { reload } = filterController;
 
@@ -94,11 +97,11 @@ export default function TrustedDeviceActivityDialog({
           <DialogTitle className="text-lg font-semibold">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              Actividad reciente de dispositivos
+              {t("setting/trusted-device-dialogs.activity.title")}
             </div>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Historial de eventos relacionados con tus dispositivos de confianza.
+            {t("setting/trusted-device-dialogs.activity.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,6 +160,7 @@ function TrustedDeviceActivityDialogBody({
   filterController,
   initialActivity,
 }: TrustedDeviceActivityDialogBodyProps): JSX.Element {
+  const { t, tChoice } = useTranslation();
   const { committedFilters, filters, goToPage, resetFilters, updateFilter } = filterController;
   const searchInputId = useId();
 
@@ -170,7 +174,7 @@ function TrustedDeviceActivityDialogBody({
       <div className="flex items-center gap-2">
         <InputGroup className="flex-1">
           <Label className="sr-only" htmlFor={searchInputId}>
-            Buscar actividad de dispositivos
+            {t("setting/trusted-device-dialogs.activity.search_label")}
           </Label>
           <InputGroupAddon>
             <Search />
@@ -181,7 +185,7 @@ function TrustedDeviceActivityDialogBody({
             onChange={(event) => {
               updateFilter("search", event.target.value);
             }}
-            placeholder="Buscar por dispositivo, nombre o IP..."
+            placeholder={t("setting/trusted-device-dialogs.activity.search_placeholder")}
             autoFocus
             value={filters.search}
           />
@@ -189,7 +193,7 @@ function TrustedDeviceActivityDialogBody({
           {filters.search !== "" && (
             <InputGroupAddon align="inline-end">
               <InputGroupButton
-                aria-label="Limpiar búsqueda"
+                aria-label={t("setting/trusted-devices.toolbar.clear_search")}
                 onClick={() => {
                   updateFilter("search", "");
                 }}
@@ -240,7 +244,7 @@ function TrustedDeviceActivityDialogBody({
               className="text-xs whitespace-nowrap text-muted-foreground"
               htmlFor="trusted-device-activity-per-page"
             >
-              Eventos por página
+              {t("setting/trusted-device-dialogs.activity.per_page")}
             </Label>
 
             <Select
@@ -280,14 +284,22 @@ function TrustedDeviceActivityDialogBody({
 
             <span className="text-xs font-normal text-muted-foreground">
               {initialActivity.total === 0
-                ? "Sin eventos"
-                : `Mostrando ${initialActivity.from ?? 0}-${initialActivity.to ?? 0} de ${initialActivity.total} eventos`}
+                ? t("setting/trusted-device-dialogs.activity.no_events")
+                : tChoice(
+                    "setting/trusted-device-dialogs.activity.showing",
+                    initialActivity.total,
+                    {
+                      from: initialActivity.from ?? 0,
+                      to: initialActivity.to ?? 0,
+                      total: initialActivity.total,
+                    },
+                  )}
             </span>
           </div>
 
           <div className="flex justify-end">
             <DialogClose asChild>
-              <Button variant="outline">Cerrar</Button>
+              <Button variant="outline">{t("setting/common.actions.close")}</Button>
             </DialogClose>
           </div>
         </div>

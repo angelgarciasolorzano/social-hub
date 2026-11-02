@@ -43,7 +43,9 @@ import {
 import { Input } from "@/shared/components/shadcn/ui/input";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { formatShortDate, fromNow, valueOrNow } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
+import { valueOrNow } from "@/shared/lib/dateTime";
 import { alertVariants, badgeVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
@@ -73,6 +75,7 @@ function TrustedDeviceAddDialog({
   open,
   onClose,
 }: TrustedDeviceAddDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const { data, setData, submit, processing, reset, errors } = useForm<AddDeviceFormData>({
     name: "",
     otp_code: "",
@@ -122,14 +125,11 @@ function TrustedDeviceAddDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <ShieldPlus aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Agregar dispositivo de confianza
+              {t("setting/trusted-device-dialogs.add.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Este navegador aún no está registrado como dispositivo de confianza. Al agregarlo, no se
-            te solicitará el código de verificación desde este navegador hasta su fecha de
-            expiración. Es una comodidad temporal para omitir ese código, no un segundo factor de
-            autenticación independiente.
+            {t("setting/trusted-device-dialogs.add.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -151,8 +151,7 @@ function TrustedDeviceAddDialog({
           <Alert className={alertVariants.warning}>
             <CircleAlert aria-hidden="true" />
             <AlertDescription className="text-sm font-normal">
-              Agrégalo solo si es tu equipo personal. Puedes revocarlo cuando quieras desde esta
-              pantalla.
+              {t("setting/trusted-device-dialogs.add.personal_only")}
             </AlertDescription>
           </Alert>
         </div>
@@ -160,7 +159,7 @@ function TrustedDeviceAddDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -169,16 +168,16 @@ function TrustedDeviceAddDialog({
               {processing ? (
                 <>
                   <Spinner />
-                  Agregando...
+                  {t("setting/trusted-device-dialogs.add.submitting")}
                 </>
               ) : (
-                "Agregar dispositivo"
+                t("setting/trusted-device-dialogs.add.submit")
               )}
             </Button>
           ) : (
             <Button asChild>
               <Link href={twoFactorAuthenticationIndex.url()}>
-                Ir a autenticación de dos factores
+                {t("setting/trusted-device-dialogs.add.go_to_two_factor")}
               </Link>
             </Button>
           )}
@@ -197,36 +196,42 @@ interface DevicePreviewMetadataField {
 }
 
 function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatShortDate, fromNow } = useDateTime();
+  const unknownLabel = t("setting/trusted-devices.values.unknown");
   const browser = valueOrFallback(
     [preview?.browser, preview?.browserVersion].filter((value) => value !== "").join(" "),
-    "Desconocido",
+    unknownLabel,
   );
 
-  const osName = valueOrFallback(preview?.osName, "Desconocido");
+  const osName = valueOrFallback(preview?.osName, unknownLabel);
   const lastUsedAt = valueOrNow(preview?.lastUsedAt);
   const expiresAt = valueOrNow(preview?.expiresAt);
+  const knownDeviceParts = [browser, osName].filter((value) => value !== unknownLabel);
   const deviceDescription =
-    [browser, osName].filter((value) => value !== "Desconocido").join(" en ") || "Desconocido";
+    knownDeviceParts.length === 2
+      ? t("setting/trusted-device-dialogs.add.device_description", { browser, os: osName })
+      : (knownDeviceParts[0] ?? unknownLabel);
   const previewDeviceSource = preview ?? { osName: null, isMobile: false };
 
   const metadataFields: DevicePreviewMetadataField[] = [
     {
-      label: "Navegador",
+      label: t("setting/trusted-devices.info_card.browser"),
       value: browser,
       className: "border-r border-b border-border sm:border-b-0",
     },
     {
-      label: "Sistema",
+      label: t("setting/trusted-devices.info_card.system"),
       value: osName,
       className: "border-b border-border sm:border-r sm:border-b-0",
     },
     {
-      label: "Último acceso",
+      label: t("setting/trusted-devices.info_card.last_access"),
       value: fromNow(lastUsedAt),
       className: "border-r border-border",
     },
     {
-      label: "Expira",
+      label: t("setting/trusted-devices.columns.expires"),
       value: formatShortDate(expiresAt),
       className: "",
     },
@@ -241,7 +246,9 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
           </div>
 
           <div className="min-w-0">
-            <CardTitle className="text-base">Dispositivo detectado</CardTitle>
+            <CardTitle className="text-base">
+              {t("setting/trusted-device-dialogs.add.detected_device")}
+            </CardTitle>
 
             <CardDescription className="mt-1 truncate">{deviceDescription}</CardDescription>
           </div>
@@ -251,7 +258,7 @@ function DevicePreviewInfo({ preview }: DevicePreviewInfoProps): JSX.Element {
           className={cn(badgeVariants.amber, "gap-1.5 border-amber-200 dark:border-amber-500")}
         >
           <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-          Sin registrar
+          {t("setting/trusted-device-dialogs.add.unregistered")}
         </Badge>
       </CardHeader>
       <CardContent className="border-t p-0">
@@ -304,17 +311,18 @@ function AddDeviceForm({
   processing,
   setData,
 }: AddDeviceFormProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <form id="add-trusted-device-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <LabelForm htmlFor="add-device-name" error={errors.name}>
-          Nombre del dispositivo (opcional)
+          {t("setting/trusted-device-dialogs.add.name_label")}
         </LabelForm>
 
         <Input
           id="add-device-name"
           name="name"
-          placeholder="Mi dispositivo"
+          placeholder={t("setting/trusted-device-dialogs.add.name_placeholder")}
           aria-describedby={errors.name ? "add-device-name-error" : undefined}
           onChange={(event) => {
             setData("name", event.target.value);
@@ -327,7 +335,7 @@ function AddDeviceForm({
 
       <TwoFactorOtpField
         id="add-device-otp"
-        label="Código de verificación"
+        label={t("setting/common.two_factor_code.otp_label")}
         value={otpCode}
         error={errors.otp_code}
         disabled={processing}
@@ -352,6 +360,7 @@ interface TwoFactorRequiredNoticeProps {
 }
 
 function TwoFactorRequiredNotice({ twoFactorStatus }: TwoFactorRequiredNoticeProps): JSX.Element {
+  const { t } = useTranslation();
   const isPending = twoFactorStatus === "pending";
 
   return (
@@ -359,13 +368,13 @@ function TwoFactorRequiredNotice({ twoFactorStatus }: TwoFactorRequiredNoticePro
       <ShieldAlert aria-hidden="true" />
       <AlertTitle>
         {isPending
-          ? "Falta confirmar la autenticación de dos factores"
-          : "Primero activa la autenticación de dos factores"}
+          ? t("setting/trusted-device-dialogs.add.two_factor_pending_title")
+          : t("setting/trusted-device-dialogs.add.two_factor_disabled_title")}
       </AlertTitle>
       <AlertDescription>
         {isPending
-          ? "Ya iniciaste la configuración, pero aún no ingresaste el código de tu aplicación autenticadora. Confírmala para poder agregar dispositivos de confianza."
-          : "Para agregar un dispositivo de confianza necesitas tener la autenticación de dos factores activada y confirmada. Actívala desde la configuración de seguridad."}
+          ? t("setting/trusted-device-dialogs.add.two_factor_pending_description")
+          : t("setting/trusted-device-dialogs.add.two_factor_disabled_description")}
       </AlertDescription>
     </Alert>
   );

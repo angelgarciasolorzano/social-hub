@@ -1,0 +1,2555 @@
+{
+  "id": "soc-67-react-settings-spanish-english-translations",
+  "title": "SOC-67: Traducir al español e inglés las vistas de configuración de React (Perfil, 2FA, Dispositivos confiables)",
+  "issue": {
+    "identifier": "SOC-67",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-67/feature-translate-the-settings-views-of-the-react-app-into-spanish-and"
+  },
+  "mode": "EXPANSION",
+  "reviewDefault": "claude",
+  "date": "2026-10-29",
+  "overview": "Agregar español e inglés a la aplicación React empezando por Perfil, Autenticación en dos pasos y Dispositivos confiables, con `lang/` como única fuente para PHP y React. El servidor decide el idioma (`preferred_locale`, luego `Accept-Language`, luego `es`), comparte por Inertia solo los catálogos que registra cada página, ya fusionados con `fallback_locale`, y React los lee con un `useTranslation()` propio sin dependencias nuevas. Fechas, flashes y errores de validación siguen el mismo idioma.",
+  "scopeChallenge": "EXPANSION con revisión `claude` (confirmado el 2026-10-29). La ampliación sobre la issue: quitar el `'es'` forzado de `PasswordNewController`/`PasswordResetLinkController`, las fechas de comentarios y posts siguen el idioma (sus textos no), y el registro guarda el idioma resuelto. Transporte: se evaluaron la opción A (`laravel-react-i18n` 2.0.5: sin publicar desde 2024-10 y con `react ^18.2.0` como dependencia, lo que instalaría una segunda copia de React) y erag (`@erag/lang-sync-inertia` 3.1.0: peers obligatorios de Vue, Svelte, `@inertiajs/vue3` y `@inertiajs/svelte` —27 paquetes en un dry-run—, sin fallback por clave, y su paquete PHP reemplaza el alias global `Lang` y añade un middleware global). Se eligió una implementación propia al estilo erag (C mejorada): catálogos por página en `props.translations`, fusión con el fallback en el servidor y una prueba de PHP que valida cada clave usada en TS, en lugar de claves tipadas.",
+  "prerequisites": [
+    "SOC-65/66 están en `main`: `TranslatedText::of()`, `lang/` en la raíz y `AdminTranslationKeysTest`/`AdminHardcodedTextTest` existen.",
+    "`users.preferred_locale` (enum `PreferredLocale` `en`/`es`, default `en`) existe y se edita en Perfil.",
+    "`app.locale` y `app.fallback_locale` siguen en `en`: el selector del panel exige que el primer idioma coincida con `app.locale`.",
+    "El SSR de Inertia está activo (`INERTIA_SSR_ENABLED` true por defecto): nada del traductor ni de las fechas puede guardar el idioma en estado de módulo.",
+    "Decisión del usuario: no se cambia el default de la columna ni se migran datos (no hay producción); el registro guarda el idioma resuelto y Angel se siembra en `es`."
+  ],
+  "nonGoals": [
+    "Traducir otros módulos de React (auth, home, post, comment, profile público, announcement, Apariencia); comentarios y posts solo cambian sus fechas.",
+    "Un selector de idioma fuera de Perfil (login, header).",
+    "Correos y notificaciones por email; contenido escrito por usuarios; idiomas distintos de `en`/`es`.",
+    "Tocar `SwitchLanguageLocale` ni la configuración de idiomas del panel.",
+    "Renombrar las claves de `lang/*/messages.php` y `passwords.php` (tarea de auth).",
+    "Instalar dependencias de i18n en npm o Composer."
+  ],
+  "contracts": [
+    "Clave = `<grupo>.<ruta.anidada>`, con el grupo como ruta bajo `lang/<locale>/` (`setting/trusted-devices.table.title`); la misma clave sirve en PHP (`TranslatedText::of`) y en React (`t`).",
+    "`SetApplicationLocale` (grupo `web`, antes de `HandleInertiaRequests`): usuario → `preferred_locale` válido; invitado o valor inválido → `Accept-Language` limitado a `en`/`es` → `es`.",
+    "`FrontendTranslations` tiene alcance de petición; los controladores registran sus grupos con `use()`; `HandleInertiaRequests` añade siempre `dates`. Cada grupo se envía fusionado con `fallback_locale` (`en`), así que una clave ausente en `es` llega en inglés (criterio 3 de la issue).",
+    "Props compartidos nuevos: `locale: 'en' | 'es'` y `translations: Record<grupo, árbol>`, tipados en `SharedData`.",
+    "`useTranslation()` → `{ t, tChoice, locale }`; plurales y marcadores con la sintaxis de Laravel; una clave inexistente devuelve la clave.",
+    "`useDateTime()` → los formateadores de `dateTime.ts` ligados al idioma; se formatea con `dayjs(iso).locale(locale)`, nunca con `dayjs.locale()` global.",
+    "Contrato de `data/*.ts`: conservan forma y nombres de campo; los textos pasan a ser claves que el consumidor envuelve con `t()`. `value`, filtros y orden no cambian (viajan a la URL y al backend).",
+    "Los mensajes y flashes de backend de estas vistas usan `TranslatedText::of('setting/...')`; los nombres de campos de error no cambian."
+  ],
+  "shipCut": "Si la ejecución se corta: TASK-001..006 dejan la infraestructura lista sin cambiar nada visible para un usuario `es`, salvo que un usuario con `preferred_locale = en` recibe fechas en inglés, de forma coherente. Cada vista es entregable por separado al terminar su catálogo, el registro del controlador y sus tareas de frontend (Perfil: 008, 013, 028–030; 2FA: 009, 014, 027, 031–036; Dispositivos: 010, 011, 013, 016–019, 037–050). Mientras un `data/*.ts` ya devuelve claves y un consumidor aún no las envuelve con `t()`, esa pieza muestra claves crudas, así que una vista no se publica a medias. La issue no se cierra hasta TASK-051..057.",
+  "failureModes": [
+    "Un usuario existente tiene `preferred_locale = en` (default de la columna) y ve Configuración en inglés: es esperado tras la decisión; puede cambiarlo en Perfil. Documentado en TASK-055.",
+    "El traductor o las fechas guardan el idioma en estado de módulo y el SSR mezcla idiomas entre peticiones: el contrato lo prohíbe y TASK-006 formatea por instancia.",
+    "Una errata en una clave de React no la detecta `tsc`: TASK-053 falla con archivo, línea y clave.",
+    "Falta una clave en `es`: TASK-051 falla; en ejecución se muestra el texto inglés gracias a la fusión del servidor.",
+    "Un texto queda literal en un `.tsx`: TASK-054 falla.",
+    "Una recarga parcial reenvía los catálogos o los pierde: TASK-004 fija que `translations` no viaja en parciales y React conserva el valor anterior.",
+    "Las pruebas que comparan textos en español fallan al aplicarse el idioma del usuario (`en` en la factory): TASK-019, 020 y 022 las migran a comparar por clave y por idioma.",
+    "`getPreferredLanguage()` devuelve `en` cuando ningún idioma coincide: TASK-001 comprueba el encabezado explícitamente y lo cubre con `fr`."
+  ],
+  "testCoverageMap": {
+    "Resolución del idioma (usuario, navegador, invitado, valor inválido)": [
+      "TASK-001",
+      "TASK-023"
+    ],
+    "Catálogos para React con fallback por clave": [
+      "TASK-002",
+      "TASK-004",
+      "TASK-015"
+    ],
+    "Grupos por página y cambio de idioma desde Perfil": [
+      "TASK-015"
+    ],
+    "Flashes y validación de TrustedDevice en dos idiomas": [
+      "TASK-016",
+      "TASK-019"
+    ],
+    "Validación y flashes de 2FA en dos idiomas": [
+      "TASK-020"
+    ],
+    "Password y restablecimiento en dos idiomas": [
+      "TASK-022"
+    ],
+    "Paridad de claves y marcadores": [
+      "TASK-051"
+    ],
+    "Claves usadas en TS existen": [
+      "TASK-053"
+    ],
+    "Sin textos fijos en las vistas traducidas": [
+      "TASK-054"
+    ],
+    "Tipos, lint, formato, build y SSR": [
+      "TASK-057"
+    ]
+  },
+  "existingCodeLeverage": [
+    "`App\\Support\\Translation\\TranslatedText::of()` (SOC-65) para todo texto de PHP.",
+    "`AdminTranslationKeysTest` y `AdminHardcodedTextTest` como modelo de las pruebas de paridad y de textos fijos.",
+    "`App\\User\\Enums\\PreferredLocale` y el campo de idioma de `AccountSettingsProfileForm`, que ya guarda `preferred_locale`.",
+    "`HandleInertiaRequests::share()` y `SharedData` (`resources/js/shared/types/index.d.ts`).",
+    "`shared/lib/dateTime.ts` con sus siete formateadores, y `relativeTime` ya extendido en `app.tsx`.",
+    "El diseño de erag/laravel-lang-sync-inertia (catálogos por página en `props`, `trans`/`trans_choice` con sintaxis de Laravel) como referencia externa, no como código local."
+  ],
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [],
+    "TASK-004": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003"
+    ],
+    "TASK-005": [
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-003",
+      "TASK-005"
+    ],
+    "TASK-007": [],
+    "TASK-008": [],
+    "TASK-009": [],
+    "TASK-010": [],
+    "TASK-011": [],
+    "TASK-012": [],
+    "TASK-013": [
+      "TASK-002",
+      "TASK-007",
+      "TASK-008",
+      "TASK-010",
+      "TASK-011"
+    ],
+    "TASK-014": [
+      "TASK-002",
+      "TASK-007",
+      "TASK-009"
+    ],
+    "TASK-015": [
+      "TASK-004",
+      "TASK-013",
+      "TASK-014"
+    ],
+    "TASK-016": [
+      "TASK-010"
+    ],
+    "TASK-017": [
+      "TASK-010"
+    ],
+    "TASK-018": [
+      "TASK-010"
+    ],
+    "TASK-019": [
+      "TASK-001",
+      "TASK-017",
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-001",
+      "TASK-014"
+    ],
+    "TASK-021": [
+      "TASK-008"
+    ],
+    "TASK-022": [
+      "TASK-001",
+      "TASK-021"
+    ],
+    "TASK-023": [
+      "TASK-001"
+    ],
+    "TASK-024": [
+      "TASK-006"
+    ],
+    "TASK-025": [
+      "TASK-006"
+    ],
+    "TASK-026": [
+      "TASK-005",
+      "TASK-007"
+    ],
+    "TASK-027": [
+      "TASK-005",
+      "TASK-007"
+    ],
+    "TASK-028": [
+      "TASK-005",
+      "TASK-008"
+    ],
+    "TASK-029": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-008"
+    ],
+    "TASK-030": [
+      "TASK-005",
+      "TASK-008"
+    ],
+    "TASK-031": [
+      "TASK-005",
+      "TASK-009"
+    ],
+    "TASK-032": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-009"
+    ],
+    "TASK-033": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-009"
+    ],
+    "TASK-034": [
+      "TASK-005",
+      "TASK-009"
+    ],
+    "TASK-035": [
+      "TASK-005",
+      "TASK-009"
+    ],
+    "TASK-036": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-009"
+    ],
+    "TASK-037": [
+      "TASK-005",
+      "TASK-010"
+    ],
+    "TASK-038": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-010"
+    ],
+    "TASK-039": [
+      "TASK-005",
+      "TASK-010",
+      "TASK-011"
+    ],
+    "TASK-040": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-010"
+    ],
+    "TASK-041": [
+      "TASK-005",
+      "TASK-010"
+    ],
+    "TASK-042": [
+      "TASK-005",
+      "TASK-010"
+    ],
+    "TASK-043": [
+      "TASK-005",
+      "TASK-010"
+    ],
+    "TASK-044": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-011"
+    ],
+    "TASK-045": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-011"
+    ],
+    "TASK-046": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-011"
+    ],
+    "TASK-047": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-011"
+    ],
+    "TASK-048": [
+      "TASK-005",
+      "TASK-011"
+    ],
+    "TASK-049": [
+      "TASK-005",
+      "TASK-006",
+      "TASK-011"
+    ],
+    "TASK-050": [
+      "TASK-005",
+      "TASK-011"
+    ],
+    "TASK-058": [
+      "TASK-026"
+    ],
+    "TASK-051": [
+      "TASK-003",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012"
+    ],
+    "TASK-052": [
+      "TASK-024",
+      "TASK-025",
+      "TASK-029",
+      "TASK-032",
+      "TASK-033",
+      "TASK-036",
+      "TASK-038",
+      "TASK-040",
+      "TASK-044",
+      "TASK-045",
+      "TASK-046",
+      "TASK-047",
+      "TASK-049"
+    ],
+    "TASK-053": [
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038",
+      "TASK-039",
+      "TASK-040",
+      "TASK-041",
+      "TASK-042",
+      "TASK-043",
+      "TASK-044",
+      "TASK-045",
+      "TASK-046",
+      "TASK-047",
+      "TASK-048",
+      "TASK-049",
+      "TASK-050",
+      "TASK-058"
+    ],
+    "TASK-054": [
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038",
+      "TASK-039",
+      "TASK-040",
+      "TASK-041",
+      "TASK-042",
+      "TASK-043",
+      "TASK-044",
+      "TASK-045",
+      "TASK-046",
+      "TASK-047",
+      "TASK-048",
+      "TASK-049",
+      "TASK-050",
+      "TASK-058"
+    ],
+    "TASK-055": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038",
+      "TASK-039",
+      "TASK-040",
+      "TASK-041",
+      "TASK-042",
+      "TASK-043",
+      "TASK-044",
+      "TASK-045",
+      "TASK-046",
+      "TASK-047",
+      "TASK-048",
+      "TASK-049",
+      "TASK-050",
+      "TASK-058",
+      "TASK-051",
+      "TASK-052",
+      "TASK-053",
+      "TASK-054"
+    ],
+    "TASK-056": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038",
+      "TASK-039",
+      "TASK-040",
+      "TASK-041",
+      "TASK-042",
+      "TASK-043",
+      "TASK-044",
+      "TASK-045",
+      "TASK-046",
+      "TASK-047",
+      "TASK-048",
+      "TASK-049",
+      "TASK-050",
+      "TASK-058",
+      "TASK-051",
+      "TASK-052",
+      "TASK-053",
+      "TASK-054"
+    ],
+    "TASK-057": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008",
+      "TASK-009",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-013",
+      "TASK-014",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021",
+      "TASK-022",
+      "TASK-023",
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030",
+      "TASK-031",
+      "TASK-032",
+      "TASK-033",
+      "TASK-034",
+      "TASK-035",
+      "TASK-036",
+      "TASK-037",
+      "TASK-038",
+      "TASK-039",
+      "TASK-040",
+      "TASK-041",
+      "TASK-042",
+      "TASK-043",
+      "TASK-044",
+      "TASK-045",
+      "TASK-046",
+      "TASK-047",
+      "TASK-048",
+      "TASK-049",
+      "TASK-050",
+      "TASK-058",
+      "TASK-051",
+      "TASK-052",
+      "TASK-053",
+      "TASK-054",
+      "TASK-055",
+      "TASK-056"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 58,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012"
+      ],
+      [
+        "TASK-004",
+        "TASK-013",
+        "TASK-014",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-021",
+        "TASK-023",
+        "TASK-051"
+      ],
+      [
+        "TASK-005",
+        "TASK-015",
+        "TASK-019",
+        "TASK-020",
+        "TASK-022"
+      ],
+      [
+        "TASK-006",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-030",
+        "TASK-031",
+        "TASK-034",
+        "TASK-035",
+        "TASK-037",
+        "TASK-039",
+        "TASK-041",
+        "TASK-042",
+        "TASK-043",
+        "TASK-048",
+        "TASK-050"
+      ],
+      [
+        "TASK-024",
+        "TASK-025",
+        "TASK-029",
+        "TASK-032",
+        "TASK-033",
+        "TASK-036",
+        "TASK-038",
+        "TASK-040",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-049",
+        "TASK-058"
+      ],
+      [
+        "TASK-052",
+        "TASK-053",
+        "TASK-054"
+      ],
+      [
+        "TASK-055",
+        "TASK-056"
+      ],
+      [
+        "TASK-057"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-029",
+      "TASK-053",
+      "TASK-055",
+      "TASK-057"
+    ],
+    "parallelism": "Los cinco catálogos de `setting/`, `dates`, `validation`, el middleware y `FrontendTranslations` arrancan en paralelo; tras TASK-005/006 las 25 tareas de frontend son independientes entre sí (no comparten archivos) y corren en paralelo con las de backend."
+  },
+  "criticalPath": [
+    "TASK-001",
+    "TASK-004",
+    "TASK-005",
+    "TASK-006",
+    "TASK-029",
+    "TASK-053",
+    "TASK-055",
+    "TASK-057"
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Middleware que aplica el idioma del usuario o del navegador",
+      "description": "Crear `App\\Http\\Middleware\\SetApplicationLocale` y añadirlo al grupo `web` en `bootstrap/app.php` antes de `HandleInertiaRequests`. Orden: `preferred_locale` del usuario autenticado (leído con `getRawOriginal()` + `PreferredLocale::tryFrom()`, para que un valor no soportado en la BD no lance), luego `Accept-Language` limitado a `en`/`es` (comprobando el encabezado de forma explícita: `getPreferredLanguage()` devuelve el primer idioma ofrecido aunque nada coincida) y, si nada coincide, `es` como constante del middleware (`GUEST_FALLBACK_LOCALE`). No toca `app.locale` ni `fallback_locale` (siguen en `en`, como exige el selector del panel), ni el `SwitchLanguageLocale` del panel.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Un usuario con `preferred_locale = es` recibe `app()->getLocale() === 'es'` y uno con `en` recibe `en`, aunque su navegador pida el otro idioma.",
+        "Un invitado con `Accept-Language: en-US` recibe `en`; con `es-MX` recibe `es`; sin encabezado o con `fr` recibe `es`.",
+        "Un usuario cuyo `preferred_locale` en la BD es `fr` (escrito sin el modelo) no provoca error: se resuelve como un invitado."
+      ],
+      "filesToCreate": [
+        "app/Http/Middleware/SetApplicationLocale.php",
+        "tests/Feature/Http/SetApplicationLocaleTest.php"
+      ],
+      "filesToModify": [
+        "bootstrap/app.php"
+      ],
+      "writeScope": [
+        "app/Http/Middleware/SetApplicationLocale.php",
+        "tests/Feature/Http/SetApplicationLocaleTest.php",
+        "bootstrap/app.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Http/SetApplicationLocaleTest.php && rtk vendor/bin/phpstan analyse --no-progress app/Http/Middleware/SetApplicationLocale.php bootstrap/app.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Servicio FrontendTranslations: catálogos de lang/ para React con fallback",
+      "description": "Crear `App\\Support\\Translation\\FrontendTranslations`, con alcance de petición (`#[Scoped]` del contenedor; verificar con search-docs que existe en Laravel 13, y si no, registrar `scoped()` en `AppServiceProvider` y anotarlo en el PR). API: `use(string ...$groups): static` registra grupos como `setting/trusted-devices`; `toArray(): array<string, array<mixed>>` devuelve, por grupo, `array_replace_recursive(grupo en fallback_locale, grupo en el locale activo)` leído con el `Translator` de Laravel (nunca `require` de archivos). Un grupo inexistente lanza `InvalidArgumentException` para que una errata no pase en silencio. Diseño tomado de erag/laravel-lang-sync-inertia, sin su alias global `Lang` ni su middleware global.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Con locale `es`, una clave que solo existe en `lang/en/...` aparece con el texto inglés y las demás con el español (fallback por clave, no por archivo).",
+        "Registrar el mismo grupo dos veces no lo duplica, y `toArray()` sin grupos registrados devuelve `[]`.",
+        "Un grupo que no existe en ningún locale lanza `InvalidArgumentException` con el nombre del grupo."
+      ],
+      "filesToCreate": [
+        "app/Support/Translation/FrontendTranslations.php",
+        "tests/Feature/Translation/FrontendTranslationsTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Support/Translation/FrontendTranslations.php",
+        "tests/Feature/Translation/FrontendTranslationsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Translation/FrontendTranslationsTest.php && rtk vendor/bin/phpstan analyse --no-progress app/Support/Translation/FrontendTranslations.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Catálogo dates para los formateadores de fecha",
+      "description": "Crear `lang/{en,es}/dates.php` con los formatos de dayjs de `shared/lib/dateTime.ts` (`formats.long`, `formats.short`, `formats.full`, `formats.activation_date`, `formats.activation_time`) y sus textos (`never`, `never_lowercase`, `not_available`, `expired`). El español reproduce exactamente los formatos actuales (p. ej. `D [de] MMMM [del] YYYY, h:mm A`).",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Las dos versiones tienen las mismas claves y ningún valor vacío.",
+        "Los formatos en español son idénticos a las constantes actuales de `dateTime.ts`, así que la vista en español no cambia."
+      ],
+      "filesToCreate": [
+        "lang/en/dates.php",
+        "lang/es/dates.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/dates.php",
+        "lang/es/dates.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/dates.php && rtk php -l lang/es/dates.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "HandleInertiaRequests comparte locale y translations",
+      "description": "Añadir a `share()` `locale` (`app()->getLocale()`) y `translations` (closure que registra siempre el grupo `dates` y devuelve `FrontendTranslations::toArray()`), y tipar ambos en `SharedData` (`locale: 'en' | 'es'`, `translations: Record<string, TranslationTree>`). Como es un prop compartido, una recarga parcial con `only` no lo pide y React conserva el anterior.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Una visita Inertia autenticada con `preferred_locale = en` recibe `locale: 'en'` y `translations.dates` en inglés; con `es`, en español.",
+        "Una recarga parcial que pide solo otro prop no incluye `translations` (no se reenvían catálogos en cada recarga del diálogo de actividad).",
+        "`<html lang>` de `app.blade.php` sigue saliendo de `app()->getLocale()`."
+      ],
+      "filesToCreate": [
+        "tests/Feature/Http/HandleInertiaRequestsLocaleTest.php"
+      ],
+      "filesToModify": [
+        "app/Http/Middleware/HandleInertiaRequests.php",
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "writeScope": [
+        "tests/Feature/Http/HandleInertiaRequestsLocaleTest.php",
+        "app/Http/Middleware/HandleInertiaRequests.php",
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Http/HandleInertiaRequestsLocaleTest.php && rtk npm run types",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Traductor de React: t(), tChoice() y useTranslation()",
+      "description": "Crear `shared/lib/translation.ts` (funciones puras: búsqueda `grupo.clave.anidada`, partiendo en el primer punto; marcadores `:name`/`:Name`/`:NAME` como Laravel; plurales `{0} …|{1} …|[2,*] …` y la forma simple `uno|varios`) y `shared/hooks/useTranslation.ts`, que lee `locale` y `translations` de `usePage()` y devuelve `{ t, tChoice, locale }`. Sin estado de módulo, para que el SSR no mezcle idiomas entre peticiones.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "`tChoice('x', 0|1|5)` elige el tramo correcto para `{0}`, `{1}`, `[2,*]` y la forma `uno|varios`, y rellena `:count`.",
+        "`t('g.k', { name: 'ana' })` sustituye `:name` → `ana`, `:Name` → `Ana` y `:NAME` → `ANA`.",
+        "Una clave o grupo inexistente devuelve la clave tal cual, sin lanzar."
+      ],
+      "filesToCreate": [
+        "resources/js/shared/lib/translation.ts",
+        "resources/js/shared/hooks/useTranslation.ts"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "resources/js/shared/lib/translation.ts",
+        "resources/js/shared/hooks/useTranslation.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/shared/lib/translation.ts resources/js/shared/hooks/useTranslation.ts && rtk npx prettier --check resources/js/shared/lib/translation.ts resources/js/shared/hooks/useTranslation.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "useDateTime(): formateadores de fecha ligados al idioma activo",
+      "description": "Añadir a cada función de `shared/lib/dateTime.ts` un último parámetro opcional `DateTimeContext` (`{ locale, texts }`) y formatear con `dayjs(iso).locale(locale)`, nunca con el locale global, para no compartir estado en SSR. Sin contexto mantienen el comportamiento actual en español (compatibilidad temporal que TASK-052 elimina). Crear `shared/hooks/useDateTime.ts`, que construye el contexto desde `useTranslation()` y el grupo `dates` y devuelve las mismas funciones ya ligadas. `app.tsx` no cambia: `relativeTime` ya está extendido y el locale `en` viene con dayjs.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en`, `formatLongDate` usa el formato y los nombres de mes en inglés, y `fromNow` dice 'x hours ago'; con `es`, el resultado es idéntico al actual.",
+        "Con fecha `null`, cada función devuelve el texto del catálogo (`never`, `not_available`, `expired`), no un literal.",
+        "Los llamadores existentes que aún no pasan contexto siguen compilando y mostrando español."
+      ],
+      "filesToCreate": [
+        "resources/js/shared/hooks/useDateTime.ts"
+      ],
+      "filesToModify": [
+        "resources/js/shared/lib/dateTime.ts"
+      ],
+      "writeScope": [
+        "resources/js/shared/hooks/useDateTime.ts",
+        "resources/js/shared/lib/dateTime.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/shared/hooks/useDateTime.ts resources/js/shared/lib/dateTime.ts && rtk npx prettier --check resources/js/shared/hooks/useDateTime.ts resources/js/shared/lib/dateTime.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Catálogo setting/common",
+      "description": "Textos compartidos del módulo: `SettingSidebar` y sus navs (incluido el ítem Apariencia, porque el sidebar también se ve en esa página), `SettingLayout`, `TwoFactorOtpField` y `TwoFactorCodeField` (etiquetas, enlace para cambiar de modo, ayudas). Claves con nombre (nunca el texto como clave), plurales con la sintaxis de Laravel y valores como marcadores (`:name`, `:count`). El español conserva el texto actual palabra por palabra.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`lang/en` y `lang/es` tienen las mismas claves, ningún valor vacío y los mismos marcadores en cada texto.",
+        "Cada texto que hoy depende de una cantidad tiene una sola clave plural (`{1} …|[2,*] …`) en lugar de dos claves elegidas en el código.",
+        "Las claves en español reproducen el texto actual, así que con `es` la vista no cambia."
+      ],
+      "filesToCreate": [
+        "lang/en/setting/common.php",
+        "lang/es/setting/common.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/setting/common.php",
+        "lang/es/setting/common.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/setting/common.php && rtk php -l lang/es/setting/common.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Catálogo setting/account-settings",
+      "description": "Textos de Perfil: `AccountSettings.tsx`, las cards, `data/accountSettingsSections.ts`, `AccountActionsPanel`, los diálogos de contraseña y de borrado, el badge de estado (`status.active`/`status.suspended`) y la sección `messages.*` para los flashes de `PasswordController` y de la actualización del perfil. Claves con nombre (nunca el texto como clave), plurales con la sintaxis de Laravel y valores como marcadores (`:name`, `:count`). El español conserva el texto actual palabra por palabra.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`lang/en` y `lang/es` tienen las mismas claves, ningún valor vacío y los mismos marcadores en cada texto.",
+        "Cada texto que hoy depende de una cantidad tiene una sola clave plural (`{1} …|[2,*] …`) en lugar de dos claves elegidas en el código.",
+        "Las claves en español reproducen el texto actual, así que con `es` la vista no cambia."
+      ],
+      "filesToCreate": [
+        "lang/en/setting/account-settings.php",
+        "lang/es/setting/account-settings.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/setting/account-settings.php",
+        "lang/es/setting/account-settings.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/setting/account-settings.php && rtk php -l lang/es/setting/account-settings.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Catálogo setting/two-factor",
+      "description": "Textos de Autenticación en dos pasos: vistas activada/desactivada, `data/twoFactorEnable.ts` y `data/twoFactorDisabled.ts`, los pasos del asistente, `useTwoFactorActivationFlow`/`useTwoFactorAuth`, los códigos de respaldo (incluido el texto del archivo descargado), `RegenerateCodesDialog`, `DisabledTwoFactorDialog` y `TwoFactorActivationDetailsDialog`, más `messages.*` y `validation.*` para `TwoFactorController` y sus FormRequests. Claves con nombre (nunca el texto como clave), plurales con la sintaxis de Laravel y valores como marcadores (`:name`, `:count`). El español conserva el texto actual palabra por palabra.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`lang/en` y `lang/es` tienen las mismas claves, ningún valor vacío y los mismos marcadores en cada texto.",
+        "Cada texto que hoy depende de una cantidad tiene una sola clave plural (`{1} …|[2,*] …`) en lugar de dos claves elegidas en el código.",
+        "Las claves en español reproducen el texto actual, así que con `es` la vista no cambia."
+      ],
+      "filesToCreate": [
+        "lang/en/setting/two-factor.php",
+        "lang/es/setting/two-factor.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/setting/two-factor.php",
+        "lang/es/setting/two-factor.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/setting/two-factor.php && rtk php -l lang/es/setting/two-factor.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Catálogo setting/trusted-devices (página y backend)",
+      "description": "Textos de la página de Dispositivos confiables: vista, resumen, cards, recomendaciones, tabla, columnas, toolbar, filtros, orden, paginación, chips, skeleton, sección de revocados, estados vacíos, `shared/utils/trustedDevice.tsx`; y los del backend: `results.*` (los 10 casos de `TrustedDeviceOperationResult`), `actions.*` (labels de `TrustedDeviceAction`) y `validation.*` (requests, `RequiresTwoFactorOtp`, `HasPasswordConfirmation`, el mensaje de `TrustedDeviceService`). Claves con nombre (nunca el texto como clave), plurales con la sintaxis de Laravel y valores como marcadores (`:name`, `:count`). El español conserva el texto actual palabra por palabra.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`lang/en` y `lang/es` tienen las mismas claves, ningún valor vacío y los mismos marcadores en cada texto.",
+        "Cada texto que hoy depende de una cantidad tiene una sola clave plural (`{1} …|[2,*] …`) en lugar de dos claves elegidas en el código.",
+        "Las claves en español reproducen el texto actual, así que con `es` la vista no cambia."
+      ],
+      "filesToCreate": [
+        "lang/en/setting/trusted-devices.php",
+        "lang/es/setting/trusted-devices.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/setting/trusted-devices.php",
+        "lang/es/setting/trusted-devices.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/setting/trusted-devices.php && rtk php -l lang/es/setting/trusted-devices.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Catálogo setting/trusted-device-dialogs",
+      "description": "Textos de los 15 diálogos (`dialog/actions/` e `info/`) y de las piezas del diálogo de actividad (`table/trustedDeviceActivityDialog/`, `data/trustedDeviceActivityFilters.ts`), con un subárbol por diálogo (`add.*`, `revoke_all.*`, `activity.*`…). Claves con nombre (nunca el texto como clave), plurales con la sintaxis de Laravel y valores como marcadores (`:name`, `:count`). El español conserva el texto actual palabra por palabra.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "`lang/en` y `lang/es` tienen las mismas claves, ningún valor vacío y los mismos marcadores en cada texto.",
+        "Cada texto que hoy depende de una cantidad tiene una sola clave plural (`{1} …|[2,*] …`) en lugar de dos claves elegidas en el código.",
+        "Las claves en español reproducen el texto actual, así que con `es` la vista no cambia."
+      ],
+      "filesToCreate": [
+        "lang/en/setting/trusted-device-dialogs.php",
+        "lang/es/setting/trusted-device-dialogs.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/setting/trusted-device-dialogs.php",
+        "lang/es/setting/trusted-device-dialogs.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/setting/trusted-device-dialogs.php && rtk php -l lang/es/setting/trusted-device-dialogs.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Mensajes de validación genéricos en inglés y español",
+      "description": "Crear `lang/en/validation.php` (copia del de `laravel/framework` de la versión instalada) y `lang/es/validation.php` traducido, incluidas las reglas de `Password::default()` (`password.*`). Sin `lang:publish`, que publicaría más archivos de los necesarios.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los dos archivos tienen las mismas claves y los mismos marcadores (`:attribute`, `:max`, `:min`…).",
+        "Con locale `es`, un `required` sin mensaje propio sale en español; con `en`, igual que hoy."
+      ],
+      "filesToCreate": [
+        "lang/en/validation.php",
+        "lang/es/validation.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/validation.php",
+        "lang/es/validation.php"
+      ],
+      "validateCommand": "rtk php -l lang/en/validation.php && rtk php -l lang/es/validation.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Registrar los catálogos en las páginas de Perfil, Dispositivos y Apariencia",
+      "description": "Inyectar `FrontendTranslations` en `TrustedDeviceIndexController` (`setting/common`, `setting/trusted-devices`, `setting/trusted-device-dialogs`), `AccountSettingsController::edit` (`setting/common`, `setting/account-settings`; además su flash de `update()`, 'Datos actualizados correctamente.', pasa a `TranslatedText::of('setting/account-settings.messages.profile_updated')`) y `PreferenceController` (`setting/common`, solo para el sidebar; la página Apariencia sigue fuera de alcance).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-007",
+        "TASK-008",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Cada controlador registra exactamente sus grupos antes de `Inertia::render()`.",
+        "Las peticiones parciales del diálogo de actividad siguen devolviendo solo el prop pedido (las pruebas de `TrustedDeviceActivityTest` pasan)."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController.php",
+        "app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php",
+        "app/User/Preferences/Controllers/PreferenceController.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController.php",
+        "app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php",
+        "app/User/Preferences/Controllers/PreferenceController.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Queries app/User/Modules/AccountSettings/Tests/Crud && rtk vendor/bin/phpstan analyse --no-progress app/Auth/Modules/TrustedDevice/Controllers/TrustedDeviceIndexController.php app/User/Modules/AccountSettings/Controllers/AccountSettingsController.php app/User/Preferences/Controllers/PreferenceController.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "TwoFactor: catálogos de la página, flashes y mensajes de validación",
+      "description": "En `TwoFactorController` registrar `setting/common` y `setting/two-factor` y pasar sus flashes a `TranslatedText::of('setting/two-factor.messages.*')`; en `TwoFactorDisableRequest` y `TwoFactorRegenerateRecoveryCodesRequest` cambiar los `message:` literales por `TranslatedText::of('setting/two-factor.validation.*')`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-007",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Ningún texto visible de los tres archivos queda escrito en PHP.",
+        "Con locale `en`, deshabilitar 2FA con un código inválido devuelve el error `code` en inglés; con `es`, el texto actual.",
+        "Las pruebas de `TwoFactorSettingsTest` (que no comprueban textos) siguen pasando."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/User/Modules/TwoFactor/Controllers/TwoFactorController.php",
+        "app/User/Modules/TwoFactor/Requests/TwoFactorDisableRequest.php",
+        "app/User/Modules/TwoFactor/Requests/TwoFactorRegenerateRecoveryCodesRequest.php"
+      ],
+      "writeScope": [
+        "app/User/Modules/TwoFactor/Controllers/TwoFactorController.php",
+        "app/User/Modules/TwoFactor/Requests/TwoFactorDisableRequest.php",
+        "app/User/Modules/TwoFactor/Requests/TwoFactorRegenerateRecoveryCodesRequest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/User/Modules/TwoFactor/Tests/TwoFactorSettingsTest.php && rtk vendor/bin/phpstan analyse --no-progress app/User/Modules/TwoFactor/Controllers/TwoFactorController.php app/User/Modules/TwoFactor/Requests/TwoFactorDisableRequest.php app/User/Modules/TwoFactor/Requests/TwoFactorRegenerateRecoveryCodesRequest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Pruebas de idioma y catálogos de las páginas de configuración",
+      "description": "Crear `tests/Feature/Translation/SettingPageTranslationsTest.php`: cada página (Perfil, 2FA, Dispositivos, Apariencia) comparte `locale` y exactamente sus grupos en los dos idiomas; cambiar `preferred_locale` con `PATCH profile` hace que el siguiente `GET` llegue en el idioma nuevo.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-013",
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "Para cada página y cada idioma, `translations` contiene sus grupos y no los de otra página.",
+        "Tras `PATCH profile` con `preferred_locale = en` desde `es`, el `GET` siguiente devuelve `locale: 'en'` y textos ingleses, sin recargar nada más.",
+        "Un invitado que pide `/setting/profile` es redirigido al login sin error de traducción."
+      ],
+      "filesToCreate": [
+        "tests/Feature/Translation/SettingPageTranslationsTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "tests/Feature/Translation/SettingPageTranslationsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Translation/SettingPageTranslationsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "TrustedDevice: flashes de resultado y labels de acción traducidos",
+      "description": "Cambiar `TrustedDeviceOperationResult::message()` y los labels de `TrustedDeviceAction` a `TranslatedText::of('setting/trusted-devices.results.*' | '.actions.*')`; los casos y `payload()` no cambian de forma. Crear `Tests/Translations/TrustedDeviceTranslatedMessagesTest.php` (dentro de la suite TrustedDevice existente).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Cada caso de los dos enums devuelve un texto distinto de su clave en `en` y en `es`, y el texto inglés difiere del español.",
+        "`payload()` conserva la forma `{type, message}` y `isSuccessful()` no cambia (`TrustedDeviceServiceTest` pasa)."
+      ],
+      "filesToCreate": [
+        "app/Auth/Modules/TrustedDevice/Tests/Translations/TrustedDeviceTranslatedMessagesTest.php"
+      ],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceOperationResult.php",
+        "app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceAction.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Translations/TrustedDeviceTranslatedMessagesTest.php",
+        "app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceOperationResult.php",
+        "app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceAction.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Translations app/Auth/Modules/TrustedDevice/Tests/Services/TrustedDeviceServiceTest.php && rtk vendor/bin/phpstan analyse --no-progress app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceOperationResult.php app/Auth/Modules/TrustedDevice/Enums/TrustedDeviceAction.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "TrustedDevice: mensajes de los concerns y del servicio",
+      "description": "Pasar a `TranslatedText::of('setting/trusted-devices.validation.*')` los textos de `RequiresTwoFactorOtp`, `HasPasswordConfirmation` y el único literal de `TrustedDeviceService`. Las pruebas que hoy comparan estos textos en español se actualizan en TASK-019.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Ningún texto visible de los tres archivos queda escrito en PHP.",
+        "Los nombres de los campos de error (`two_factor`, `otp_code`, `password`) no cambian."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Concerns/RequiresTwoFactorOtp.php",
+        "app/Auth/Modules/TrustedDevice/Concerns/HasPasswordConfirmation.php",
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Concerns/RequiresTwoFactorOtp.php",
+        "app/Auth/Modules/TrustedDevice/Concerns/HasPasswordConfirmation.php",
+        "app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Services && rtk vendor/bin/phpstan analyse --no-progress app/Auth/Modules/TrustedDevice/Concerns/RequiresTwoFactorOtp.php app/Auth/Modules/TrustedDevice/Concerns/HasPasswordConfirmation.php app/Auth/Modules/TrustedDevice/Services/TrustedDeviceService.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "TrustedDevice: mensajes propios de los FormRequests",
+      "description": "Cambiar los `message:` literales de `TrustedDeviceReactivateRequest`, `TrustedDeviceStoreRequest` y `TrustedDeviceUpdateRequest` por `TranslatedText::of('setting/trusted-devices.validation.*')`, con `:max` como marcador en vez del número escrito en el texto.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Ningún `message:` de los tres archivos es un literal.",
+        "Con locale `en`, renombrar un dispositivo con 51 caracteres devuelve el error `name` en inglés con el límite 50 sustituido."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceReactivateRequest.php",
+        "app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceStoreRequest.php",
+        "app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceUpdateRequest.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceReactivateRequest.php",
+        "app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceStoreRequest.php",
+        "app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceUpdateRequest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceUpdateTest.php && rtk vendor/bin/phpstan analyse --no-progress app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceReactivateRequest.php app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceStoreRequest.php app/Auth/Modules/TrustedDevice/Requests/TrustedDeviceUpdateRequest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "TrustedDevice: pruebas de errores en los dos idiomas",
+      "description": "Actualizar las aserciones en español de `TrustedDeviceReactivateTest`, `TrustedDeviceRenewTest` y `TrustedDeviceStoreTest`: comparar con `TranslatedText::of()` de la clave y añadir un caso por idioma (usuario con `preferred_locale` `en` y `es`).",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-017",
+        "TASK-018"
+      ],
+      "acceptanceCriteria": [
+        "Ninguna de las tres pruebas compara con un texto en español escrito a mano.",
+        "Un código OTP incorrecto devuelve el error `otp_code` en inglés para un usuario `en` y en español para uno `es`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php",
+        "app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceReactivateTest.php app/Auth/Modules/TrustedDevice/Tests/Lifecycle/TrustedDeviceRenewTest.php app/Auth/Modules/TrustedDevice/Tests/Crud/TrustedDeviceStoreTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "TwoFactor: pruebas de errores en los dos idiomas",
+      "description": "Actualizar las aserciones en español de `TwoFactorDisableTest` y `TwoFactorRecoveryCodesTest` igual que TASK-019, cubriendo la contraseña incorrecta y el código inválido.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "Ninguna de las dos pruebas compara con un texto en español escrito a mano.",
+        "La contraseña incorrecta al regenerar códigos devuelve el error en inglés para un usuario `en` y en español para uno `es`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php",
+        "app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php"
+      ],
+      "writeScope": [
+        "app/User/Modules/TwoFactor/Tests/TwoFactorDisableTest.php",
+        "app/User/Modules/TwoFactor/Tests/TwoFactorRecoveryCodesTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/User/Modules/TwoFactor/Tests",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Password: flash traducido y sin locale 'es' forzado",
+      "description": "`PasswordController` pasa su flash a `TranslatedText::of('setting/account-settings.messages.*')`. En `PasswordNewController` y `PasswordResetLinkController` (ampliación EXPANSION) quitar el `'es'` forzado de `__()` para que usen el idioma activo; las claves de `lang/*/passwords.php` y `messages.php` no cambian (renombrarlas es de la tarea de auth).",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Ninguno de los tres controladores fuerza un locale.",
+        "Un invitado sin `Accept-Language` sigue recibiendo los mensajes de restablecimiento en español (idioma por defecto del middleware)."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/Password/Controllers/PasswordController.php",
+        "app/Auth/Modules/Password/Controllers/PasswordNewController.php",
+        "app/Auth/Modules/Password/Controllers/PasswordResetLinkController.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/Password/Controllers/PasswordController.php",
+        "app/Auth/Modules/Password/Controllers/PasswordNewController.php",
+        "app/Auth/Modules/Password/Controllers/PasswordResetLinkController.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/Password/Tests/PasswordUpdateTest.php && rtk vendor/bin/phpstan analyse --no-progress app/Auth/Modules/Password/Controllers/PasswordController.php app/Auth/Modules/Password/Controllers/PasswordNewController.php app/Auth/Modules/Password/Controllers/PasswordResetLinkController.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Password: pruebas en los dos idiomas",
+      "description": "Actualizar `PasswordResetTest` y `PasswordUpdateTest`: el caso actual queda como invitado sin encabezado (`es`) y se añade uno con `Accept-Language: en` y uno con usuario `en` para el flash de cambio de contraseña.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "El enlace de restablecimiento responde en inglés con `Accept-Language: en` y en español sin encabezado.",
+        "El flash de contraseña actualizada sale en el idioma del usuario."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/Password/Tests/PasswordResetTest.php",
+        "app/Auth/Modules/Password/Tests/PasswordUpdateTest.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/Password/Tests/PasswordResetTest.php",
+        "app/Auth/Modules/Password/Tests/PasswordUpdateTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/Password/Tests",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-023",
+      "title": "El registro guarda el idioma resuelto del navegador",
+      "description": "En `RegisterUserController` guardar `preferred_locale = PreferredLocale::from(app()->getLocale())` (lo que ya resolvió TASK-001), para que un usuario nuevo no quede en el default `en` de la columna. La columna y `UserFactory` no cambian (no hay producción, no se migran datos). `UserSeeder` crea a Angel con `preferred_locale = es`. Actualizar `RegistrationTest`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Registrarse con `Accept-Language: es-MX` o sin encabezado guarda `es`; con `en-US`, guarda `en`.",
+        "Un `preferred_locale` enviado en el formulario de registro se ignora (no está validado ni es asignable)."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Auth/Modules/Register/Controllers/RegisterUserController.php",
+        "app/Auth/Modules/Register/Tests/RegistrationTest.php",
+        "app/User/Database/Seeders/UserSeeder.php"
+      ],
+      "writeScope": [
+        "app/Auth/Modules/Register/Controllers/RegisterUserController.php",
+        "app/Auth/Modules/Register/Tests/RegistrationTest.php",
+        "app/User/Database/Seeders/UserSeeder.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Auth/Modules/Register/Tests/RegistrationTest.php && rtk vendor/bin/phpstan analyse --no-progress app/Auth/Modules/Register/Controllers/RegisterUserController.php app/User/Database/Seeders/UserSeeder.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Posts: fechas en el idioma activo",
+      "description": "Cambiar los imports de `@/shared/lib/dateTime` por `useDateTime()`. Solo las fechas siguen el idioma; el resto de textos del módulo sigue en español hasta su propia tarea.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = es` las fechas se ven igual que hoy; con `en`, en inglés.",
+        "Ningún archivo importa formateadores de `@/shared/lib/dateTime` directamente."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/post/components/PostCard.tsx",
+        "resources/js/modules/post/components/PostDetail.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/post/components/PostCard.tsx",
+        "resources/js/modules/post/components/PostDetail.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/post/components/PostCard.tsx resources/js/modules/post/components/PostDetail.tsx && rtk npx prettier --check resources/js/modules/post/components/PostCard.tsx resources/js/modules/post/components/PostDetail.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Comentarios: fechas en el idioma activo",
+      "description": "Cambiar los imports de `@/shared/lib/dateTime` por `useDateTime()`. Solo las fechas siguen el idioma; el resto de textos del módulo sigue en español hasta su propia tarea.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = es` las fechas se ven igual que hoy; con `en`, en inglés.",
+        "Ningún archivo importa formateadores de `@/shared/lib/dateTime` directamente."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/comment/components/CommentItem.tsx",
+        "resources/js/modules/comment/components/dialog/CommentDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/comment/components/CommentItem.tsx",
+        "resources/js/modules/comment/components/dialog/CommentDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/comment/components/CommentItem.tsx resources/js/modules/comment/components/dialog/CommentDialog.tsx && rtk npx prettier --check resources/js/modules/comment/components/CommentItem.tsx resources/js/modules/comment/components/dialog/CommentDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Sidebar y layout de configuración, sin el relleno de la plantilla",
+      "description": "Traducir `SettingSidebar`, `SettingSidebarNavMain` y `SettingLayout` con `setting/common`; los títulos de los ítems pasan a ser claves del arreglo estático. Quitar el relleno de la plantilla de shadcn en vez de traducirlo (decisión del usuario, 2026-10-29): la cabecera del sidebar muestra el `name` compartido (nombre de la app) en lugar de 'Acme Inc'/'Enterprise'; se elimina el pie con `SettingSidebarNavUser` y su usuario de ejemplo (el archivo lo borra TASK-058); y se elimina el breadcrumb de ejemplo ('Build Your Application'/'Data Fetching') junto con su separador, conservando el `SidebarTrigger`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/common` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "No quedan 'Acme Inc', 'Enterprise', el usuario `shadcn`/`m@example.com` ni el breadcrumb de ejemplo; en Apariencia (fuera de alcance) el sidebar también sale traducido, porque `PreferenceController` registra `setting/common` (TASK-013)."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/shared/components/SettingSidebar.tsx",
+        "resources/js/modules/setting/shared/components/SettingSidebarNavMain.tsx",
+        "resources/js/modules/setting/shared/layouts/SettingLayout.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/shared/components/SettingSidebar.tsx",
+        "resources/js/modules/setting/shared/components/SettingSidebarNavMain.tsx",
+        "resources/js/modules/setting/shared/layouts/SettingLayout.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/shared/components/SettingSidebar.tsx resources/js/modules/setting/shared/components/SettingSidebarNavMain.tsx resources/js/modules/setting/shared/layouts/SettingLayout.tsx && rtk npx prettier --check resources/js/modules/setting/shared/components/SettingSidebar.tsx resources/js/modules/setting/shared/components/SettingSidebarNavMain.tsx resources/js/modules/setting/shared/layouts/SettingLayout.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Campos de código 2FA compartidos",
+      "description": "Traducir `TwoFactorOtpField` y `TwoFactorCodeField` (etiquetas, `aria-label`, ayudas y el enlace para cambiar entre TOTP y código de respaldo).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/common` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx",
+        "resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx",
+        "resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx && rtk npx prettier --check resources/js/modules/setting/shared/components/TwoFactorOtpField.tsx resources/js/modules/setting/shared/components/TwoFactorCodeField.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Perfil: vista, secciones y panel de acciones",
+      "description": "Traducir `AccountSettings.tsx`, `AccountActionsPanel` y `data/accountSettingsSections.ts`. Contrato de los `data/*.ts`: conservan su forma y nombres de campo, pero los textos pasan a ser claves que el componente envuelve con `t()`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/account-settings` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx",
+        "resources/js/modules/setting/modules/accountSettings/data/accountSettingsSections.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx",
+        "resources/js/modules/setting/modules/accountSettings/data/accountSettingsSections.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/data/accountSettingsSections.ts && rtk npx prettier --check resources/js/modules/setting/modules/accountSettings/AccountSettings.tsx resources/js/modules/setting/modules/accountSettings/components/AccountActionsPanel.tsx resources/js/modules/setting/modules/accountSettings/data/accountSettingsSections.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Perfil: formulario y card de resumen",
+      "description": "Traducir `AccountSettingsProfileForm` (incluido el selector de idioma, cuyas opciones muestran cada idioma en su propio nombre) y `AccountSettingsSummaryCard` (badge 'Activa'/'Suspendida' y fechas).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/account-settings` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard.tsx && rtk npx prettier --check resources/js/modules/setting/modules/accountSettings/components/AccountSettingsProfileForm.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsSummaryCard.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-030",
+      "title": "Perfil: diálogos de contraseña y de borrado",
+      "description": "Traducir `AccountSettingsPasswordDialog` y `AccountSettingsDeleteDialog`; los errores de validación ya llegan traducidos del servidor.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/account-settings` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx",
+        "resources/js/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/accountSettings/components/AccountSettingsPasswordDialog.tsx resources/js/modules/setting/modules/accountSettings/components/AccountSettingsDeleteDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-031",
+      "title": "2FA: vista desactivada y sus opciones",
+      "description": "Traducir `views/TwoFactorDisabled.tsx`, `data/twoFactorDisabled.ts` y `components/ui/OptionCard.tsx`, con el contrato de `data/*.ts` de TASK-028.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx",
+        "resources/js/modules/setting/modules/twoFactor/data/twoFactorDisabled.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx",
+        "resources/js/modules/setting/modules/twoFactor/data/twoFactorDisabled.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/data/twoFactorDisabled.ts resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx && rtk npx prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorDisabled.tsx resources/js/modules/setting/modules/twoFactor/data/twoFactorDisabled.ts resources/js/modules/setting/modules/twoFactor/components/ui/OptionCard.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-032",
+      "title": "2FA: vista activada y dispositivos",
+      "description": "Traducir `views/TwoFactorEnable.tsx`, `data/twoFactorEnable.ts` y `TwoFactorDevices.tsx` (que también lee `data/trustedDeviceOverview.ts`: sus etiquetas se envuelven con `t()` aunque TASK-037 aún no las haya convertido en claves). Quitar de `TwoFactorEnable.tsx` la línea 'Última verificación: hace 2 horas', un texto fijo que no viene de ningún dato (decisión del usuario, 2026-10-29): se quita en vez de traducirse y la fila de método queda sola.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto. Ya no aparece 'Última verificación' ni 'hace 2 horas'."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+        "resources/js/modules/setting/modules/twoFactor/data/twoFactorEnable.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx",
+        "resources/js/modules/setting/modules/twoFactor/data/twoFactorEnable.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx resources/js/modules/setting/modules/twoFactor/data/twoFactorEnable.ts resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx && rtk npx prettier --check resources/js/modules/setting/modules/twoFactor/views/TwoFactorEnable.tsx resources/js/modules/setting/modules/twoFactor/data/twoFactorEnable.ts resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorDevices.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-033",
+      "title": "2FA: códigos de respaldo y regeneración",
+      "description": "Traducir `TwoFactorRecoveryCodes`, `utils/downloadRecoveryCodes.ts` (el encabezado del archivo descargado; recibe los textos ya traducidos como parámetro, porque no es un hook) y `RegenerateCodesDialog`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "El archivo descargado con `locale = en` tiene encabezado e instrucciones en inglés; los códigos no cambian."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
+        "resources/js/modules/setting/modules/twoFactor/utils/downloadRecoveryCodes.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx",
+        "resources/js/modules/setting/modules/twoFactor/utils/downloadRecoveryCodes.ts",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/utils/downloadRecoveryCodes.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/twoFactor/components/ui/twoFactorEnable/TwoFactorRecoveryCodes.tsx resources/js/modules/setting/modules/twoFactor/utils/downloadRecoveryCodes.ts resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/RegenerateCodesDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-034",
+      "title": "2FA: pasos de elección, configuración manual y verificación",
+      "description": "Traducir `ChooseMethodStep`, `ManualSetupStep` y `VerifyOtpStep` del asistente de activación.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx && rtk npx prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ChooseMethodStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/ManualSetupStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-035",
+      "title": "2FA: paso final, alertas y flujo de activación",
+      "description": "Traducir `TwoFactorSuccessStep`, `TwoFactorStepErrorAlert` y los textos que arma `useTwoFactorActivationFlow` (títulos de paso y errores locales de red/429).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Un error de red durante la activación muestra el mensaje local en el idioma activo, no el modal de error de Inertia."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx",
+        "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx",
+        "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts && rtk npx prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorSuccessStep.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorDisabled/steps/TwoFactorStepErrorAlert.tsx resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorActivationFlow.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-036",
+      "title": "2FA: deshabilitar, detalles de activación y useTwoFactorAuth",
+      "description": "Traducir `DisabledTwoFactorDialog`, `TwoFactorActivationDetailsDialog` y los textos de `useTwoFactorAuth`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/two-factor` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth.ts && rtk npx prettier --check resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/DisabledTwoFactorDialog.tsx resources/js/modules/setting/modules/twoFactor/components/dialog/twoFactorEnable/TwoFactorActivationDetailsDialog.tsx resources/js/modules/setting/modules/twoFactor/hooks/useTwoFactorAuth.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-037",
+      "title": "Dispositivos: vista, overview y resumen",
+      "description": "Traducir `TrustedDevice.tsx` (incluida la sección colapsable de revocados y sus estados vacíos), `data/trustedDeviceOverview.ts` y `TrustedDeviceSummary`, con el contrato de `data/*.ts` de TASK-028.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "L",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Los conteos ('N dispositivos') usan `tChoice()` y son correctos para 0, 1 y varios."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceOverview.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceOverview.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceOverview.ts resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/TrustedDevice.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceOverview.ts resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummary.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-038",
+      "title": "Dispositivos: cards de resumen, info y actividad reciente",
+      "description": "Traducir `TrustedDeviceSummaryCard`, `TrustedDeviceInfoCard` y `TrustedDeviceRecentActivity`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceSummaryCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceInfoCard.tsx resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecentActivity.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-039",
+      "title": "Dispositivos: recomendaciones",
+      "description": "Traducir `data/trustedDeviceRecommendations.ts`, `TrustedDeviceRecommendations` y `TrustedDeviceRecommendationsDialog`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` y `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceRecommendations.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceRecommendations.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceRecommendations.ts resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceRecommendations.ts resources/js/modules/setting/modules/trustedDevice/components/ui/TrustedDeviceRecommendations.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceRecommendationsDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-040",
+      "title": "Dispositivos: tabla, columnas y skeleton",
+      "description": "Traducir `TrustedDeviceTable` (estados vacíos según `committedFilters`), `data/trustedDeviceTableColumns.ts` y `TrustedDeviceTableSkeleton`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns.ts",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns.ts resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTable.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceTableColumns.ts resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableSkeleton.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-041",
+      "title": "Dispositivos: toolbar, filtros y orden",
+      "description": "Traducir `TrustedDeviceTableToolbar`, `data/trustedDeviceFilters.ts` y `data/trustedDeviceSort.ts`. Los `value` de filtros y orden no cambian: viajan a la URL y al backend.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "La URL de filtros (`status`, `browser`, `lastAccess`, orden) es idéntica en los dos idiomas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceFilters.ts",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceSort.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceFilters.ts",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceSort.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceFilters.ts resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceSort.ts && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceTableToolbar.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceFilters.ts resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceSort.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-042",
+      "title": "Dispositivos: paginación y chips de filtros",
+      "description": "Traducir `TrustedDevicePagination`, `TrustedDeviceActiveFilterChips` y `TrustedDeviceActiveFilterChipGroup`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "'Mostrando X–Y de Z' usa marcadores y `tChoice()`, sin concatenar fragmentos traducidos."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDevicePagination.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceActiveFilterChips.tsx resources/js/modules/setting/modules/trustedDevice/components/table/TrustedDeviceActiveFilterChipGroup.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-043",
+      "title": "Dispositivos: redimensionado de columnas y util compartida",
+      "description": "Traducir `TrustedDeviceColumnResizeHandle` (`aria-label`) y `setting/shared/utils/trustedDevice.tsx`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-devices` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx",
+        "resources/js/modules/setting/shared/utils/trustedDevice.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx",
+        "resources/js/modules/setting/shared/utils/trustedDevice.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx resources/js/modules/setting/shared/utils/trustedDevice.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDevicePage/TrustedDeviceColumnResizeHandle.tsx resources/js/modules/setting/shared/utils/trustedDevice.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-044",
+      "title": "Diálogos: añadir, ya registrado y expirado",
+      "description": "Traducir `TrustedDeviceAddDialog`, `TrustedDeviceAlreadyRegisteredDialog`, `TrustedDeviceExpiredDialog` con `setting/trusted-device-dialogs` (los textos comunes, como Cancelar, de `setting/common`).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAddDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceAlreadyRegisteredDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceExpiredDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-045",
+      "title": "Diálogos: detalles, renombrar y revocado",
+      "description": "Traducir `TrustedDeviceDetailsDialog`, `TrustedDeviceRenameDialog`, `TrustedDeviceRevokedDialog` con `setting/trusted-device-dialogs` (los textos comunes, como Cancelar, de `setting/common`).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceDetailsDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenameDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokedDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-046",
+      "title": "Diálogos: renovar, revocar y revocar todos",
+      "description": "Traducir `TrustedDeviceRenewTrustDialog`, `TrustedDeviceRevokeDialog`, `TrustedDeviceRevokeAllDialog` con `setting/trusted-device-dialogs` (los textos comunes, como Cancelar, de `setting/common`).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto. `TrustedDeviceRenewTrustDialog` deja de usar `dayjs` directo."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRenewTrustDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceRevokeAllDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-047",
+      "title": "Diálogos: eliminar definitivamente, reactivar y atajos",
+      "description": "Traducir `TrustedDeviceForceDestroyDialog`, `TrustedDeviceReactivationDialog`, `TrustedDeviceKeyboardShortcutsDialog` con `setting/trusted-device-dialogs` (los textos comunes, como Cancelar, de `setting/common`).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceForceDestroyDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/actions/TrustedDeviceReactivationDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceKeyboardShortcutsDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-048",
+      "title": "Diálogos: resumen y actividad",
+      "description": "Traducir `TrustedDeviceSummaryDialog`, `TrustedDeviceActivityDialog` con `setting/trusted-device-dialogs` (los textos comunes, como Cancelar, de `setting/common`).",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "El diálogo de actividad sigue sin cambiar la URL del navegador y sigue mostrando el spinner mientras llega `activityDialog`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceSummaryDialog.tsx resources/js/modules/setting/modules/trustedDevice/components/dialog/info/TrustedDeviceActivityDialog.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-049",
+      "title": "Actividad: lista de eventos, popover de filtros y sus datos",
+      "description": "Traducir `TrustedDeviceActivityEventList`, `TrustedDeviceActivityFiltersPopover` y `data/trustedDeviceActivityFilters.ts`. Los valores `action` y `since_days` no cambian.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-006",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan.",
+        "Las fechas usan `useDateTime()` (formatos y 'Nunca'/'No disponible'/'vencido' del catálogo `dates`) en lugar de importar los formateadores de `@/shared/lib/dateTime` sin contexto."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters.ts && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityEventList.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFiltersPopover.tsx resources/js/modules/setting/modules/trustedDevice/data/trustedDeviceActivityFilters.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-050",
+      "title": "Actividad: combobox, paginación y chips",
+      "description": "Traducir `TrustedDeviceActivityFilterCombobox`, `TrustedDeviceActivityPagination` y `TrustedDeviceActivityActiveFilterChips`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "Con `locale = en` los textos visibles de estos archivos salen en inglés y con `es` en español, desde `setting/trusted-device-dialogs` vía `t()`/`tChoice()`; no queda ningún texto visible literal.",
+        "Una clave inexistente no rompe el render: se muestra la clave cruda (el servidor ya fusionó `fallback_locale`), y `npm run types`, ESLint y Prettier pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx",
+        "resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx && rtk npx prettier --check resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityFilterCombobox.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityPagination.tsx resources/js/modules/setting/modules/trustedDevice/components/table/trustedDeviceActivityDialog/TrustedDeviceActivityActiveFilterChips.tsx",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-058",
+      "title": "Borrar SettingSidebarNavUser, el menú de usuario de ejemplo",
+      "description": "Eliminar `setting/shared/components/SettingSidebarNavUser.tsx` (relleno de la plantilla de shadcn con un usuario falso y 'Upgrade to Pro', 'Account', 'Billing', 'Notifications', 'Log out' sin acción), que deja de usarse cuando TASK-026 quita el pie del sidebar. Decisión del usuario del 2026-10-29: se quita en vez de traducirse.",
+      "priority": "P2",
+      "type": "chore",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-026"
+      ],
+      "acceptanceCriteria": [
+        "El archivo no existe y ningún archivo de `resources/js` lo importa.",
+        "`npm run types`, ESLint y `npm run build` siguen pasando sin el componente."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/setting/shared/components/SettingSidebarNavUser.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/setting/shared/components/SettingSidebarNavUser.tsx"
+      ],
+      "validateCommand": "rtk npm run types && rtk npm run lint:check",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-051",
+      "title": "Paridad de claves y marcadores para setting/, dates y validation",
+      "description": "Mover a `tests/Pest.php` las funciones de `AdminTranslationKeysTest` que aplanan un catálogo y extraen marcadores (con nombres genéricos), hacer que `AdminTranslationKeysTest` las use sin cambiar lo que comprueba, y crear `SettingTranslationKeysTest` para todo `lang/{en,es}/setting/*.php`, `dates.php` y `validation.php`.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "Una clave presente en un idioma y ausente en el otro, un valor vacío o un marcador distinto hace fallar la prueba con el archivo y la clave.",
+        "`AdminTranslationKeysTest` sigue pasando con el mismo número de aserciones.",
+        "Un archivo nuevo en `lang/en/setting/` sin su par en `lang/es/setting/` hace fallar la prueba."
+      ],
+      "filesToCreate": [
+        "tests/Feature/Translation/SettingTranslationKeysTest.php"
+      ],
+      "filesToModify": [
+        "tests/Pest.php",
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php"
+      ],
+      "writeScope": [
+        "tests/Feature/Translation/SettingTranslationKeysTest.php",
+        "tests/Pest.php",
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Translation/SettingTranslationKeysTest.php app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-052",
+      "title": "dateTime exige el contexto de idioma",
+      "description": "Quitar el valor por defecto en español del parámetro `DateTimeContext` de `shared/lib/dateTime.ts` (el puente temporal de TASK-006) y borrar sus textos literales. `npm run types` prueba que ningún llamador quedó sin migrar.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-024",
+        "TASK-025",
+        "TASK-029",
+        "TASK-032",
+        "TASK-033",
+        "TASK-036",
+        "TASK-038",
+        "TASK-040",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-049"
+      ],
+      "acceptanceCriteria": [
+        "`dateTime.ts` no contiene ningún texto en español ni formato literal.",
+        "Un import de un formateador sin contexto deja de compilar."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/shared/lib/dateTime.ts"
+      ],
+      "writeScope": [
+        "resources/js/shared/lib/dateTime.ts"
+      ],
+      "validateCommand": "rtk npm run types && rtk npx eslint resources/js/shared/lib/dateTime.ts && rtk npx prettier --check resources/js/shared/lib/dateTime.ts",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-053",
+      "title": "Cada clave usada en React existe en los dos idiomas",
+      "description": "Crear `FrontendTranslationKeysTest`: busca en `resources/js/**/*.{ts,tsx}` todo literal con forma de clave (`setting/<grupo>.<clave>` o `dates.<clave>`), incluidos los de `data/*.ts`, y exige que exista como texto en `en` y en `es`. Suple el tipado de claves en TypeScript: una errata falla la suite.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040",
+        "TASK-041",
+        "TASK-042",
+        "TASK-043",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-048",
+        "TASK-049",
+        "TASK-050",
+        "TASK-058"
+      ],
+      "acceptanceCriteria": [
+        "Una clave mal escrita en un `.tsx` o un `data/*.ts` hace fallar la prueba con el archivo, la línea y la clave.",
+        "Una clave que apunta a un grupo (array) en vez de a un texto también falla."
+      ],
+      "filesToCreate": [
+        "tests/Feature/Translation/FrontendTranslationKeysTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "tests/Feature/Translation/FrontendTranslationKeysTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Translation/FrontendTranslationKeysTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-054",
+      "title": "Ningún texto fijo en las vistas traducidas",
+      "description": "Crear `SettingHardcodedTextTest`, como `AdminHardcodedTextTest`, sobre `resources/js/modules/setting/{shared,modules/accountSettings,modules/twoFactor,modules/trustedDevice}`: falla con texto JSX que contiene letras, con literales en `title`, `placeholder`, `aria-label`, `alt`, `label`, `description` y con cualquier literal con caracteres del español. Una lista explícita y comentada permite excepciones (nombres propios, `className`, rutas).",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040",
+        "TASK-041",
+        "TASK-042",
+        "TASK-043",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-048",
+        "TASK-049",
+        "TASK-050",
+        "TASK-058"
+      ],
+      "acceptanceCriteria": [
+        "Añadir `<p>Hola</p>` o `placeholder=\"Buscar\"` a un archivo del alcance hace fallar la prueba con archivo y línea.",
+        "`preference/` (Apariencia) y los módulos fuera de alcance no se analizan.",
+        "Todo el alcance actual pasa sin entradas en la lista de excepciones salvo las justificadas en el propio test."
+      ],
+      "filesToCreate": [
+        "tests/Feature/Translation/SettingHardcodedTextTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "tests/Feature/Translation/SettingHardcodedTextTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Translation/SettingHardcodedTextTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-055",
+      "title": "Documentar la decisión en CLAUDE.md, AGENTS.md y la regla de frontend",
+      "description": "Describir: `lang/` como única fuente; por qué no hay paquete (laravel-react-i18n arrastra React 18; @erag/lang-sync-inertia exige Vue y Svelte como peers y no aplica fallback); `SetApplicationLocale` y el idioma por defecto `es`; `FrontendTranslations` y cómo una página registra sus grupos; `useTranslation`/`useDateTime`; el contrato de `data/*.ts`; los catálogos de `setting/`; y la convención para textos nuevos de React (regla en `.ai/rules/frontend.md`).",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "M",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-019",
+        "TASK-020",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040",
+        "TASK-041",
+        "TASK-042",
+        "TASK-043",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-048",
+        "TASK-049",
+        "TASK-050",
+        "TASK-058",
+        "TASK-051",
+        "TASK-052",
+        "TASK-053",
+        "TASK-054"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md lista los cinco catálogos de `setting/`, `dates.php`, el middleware, el prop `translations` y los tres tests de guarda.",
+        "La regla de `.ai/rules/frontend.md` dice cómo nombrar una clave, dónde ponerla y qué test fallará si se omite."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".ai/rules/frontend.md"
+      ],
+      "writeScope": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".ai/rules/frontend.md"
+      ],
+      "validateCommand": "rtk git diff --stat -- CLAUDE.md AGENTS.md .ai/rules/frontend.md",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-056",
+      "title": "Documentar la arquitectura y la regla de backend",
+      "description": "Actualizar `docs/architecture/frontend.md` y `docs/architecture/backend.md` (flujo idioma → `share()` → `useTranslation`, fallback por clave, SSR sin estado global) y `.ai/rules/backend.md` (los mensajes de FormRequests y flashes de la app usan `TranslatedText::of()` igual que el panel).",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-019",
+        "TASK-020",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040",
+        "TASK-041",
+        "TASK-042",
+        "TASK-043",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-048",
+        "TASK-049",
+        "TASK-050",
+        "TASK-058",
+        "TASK-051",
+        "TASK-052",
+        "TASK-053",
+        "TASK-054"
+      ],
+      "acceptanceCriteria": [
+        "Los dos documentos de arquitectura describen el mismo flujo con los mismos nombres de clases y archivos.",
+        "Ningún documento menciona `laravel-react-i18n` como opción vigente."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/frontend.md",
+        "docs/architecture/backend.md",
+        ".ai/rules/backend.md"
+      ],
+      "writeScope": [
+        "docs/architecture/frontend.md",
+        "docs/architecture/backend.md",
+        ".ai/rules/backend.md"
+      ],
+      "validateCommand": "rtk git diff --stat -- docs/architecture .ai/rules/backend.md",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-057",
+      "title": "Gates completos de backend y frontend",
+      "description": "Verificación final sin archivos propios: Pint, `rector-clear-cache` → `rector-dry` → `rector`, PHPStan, la suite completa en paralelo, `npm run types`, `lint:check`, `format:check`, `build` y `build:ssr`, más una revisión manual con `preferred_locale = en` y `es` de las tres vistas en el navegador. Cualquier corrección vuelve a la tarea dueña del archivo.",
+      "priority": "P3",
+      "type": "chore",
+      "effort": "M",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012",
+        "TASK-013",
+        "TASK-014",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-019",
+        "TASK-020",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030",
+        "TASK-031",
+        "TASK-032",
+        "TASK-033",
+        "TASK-034",
+        "TASK-035",
+        "TASK-036",
+        "TASK-037",
+        "TASK-038",
+        "TASK-039",
+        "TASK-040",
+        "TASK-041",
+        "TASK-042",
+        "TASK-043",
+        "TASK-044",
+        "TASK-045",
+        "TASK-046",
+        "TASK-047",
+        "TASK-048",
+        "TASK-049",
+        "TASK-050",
+        "TASK-058",
+        "TASK-051",
+        "TASK-052",
+        "TASK-053",
+        "TASK-054",
+        "TASK-055",
+        "TASK-056"
+      ],
+      "acceptanceCriteria": [
+        "Todos los gates pasan sin cambios pendientes de Pint o Rector.",
+        "Con `en`, las tres vistas no muestran claves crudas ni textos en español (fechas, flashes y errores incluidos); con `es`, se ven como antes."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "writeScope": [],
+      "validateCommand": "rtk vendor/bin/pint --dirty --format agent && rtk composer rector-clear-cache && rtk composer rector-dry && rtk composer phpstan && rtk composer test && rtk npm run types && rtk npm run lint:check && rtk npm run format:check && rtk npm run build && rtk npm run build:ssr",
+      "review": "claude"
+    }
+  ]
+}

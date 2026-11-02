@@ -24,8 +24,9 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/shadcn/ui/card";
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
-import { fromNow } from "@/shared/lib/dateTime";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
@@ -41,6 +42,8 @@ interface TrustedDeviceRecentActivityPageProps extends SharedData {
 function TrustedDeviceRecentActivity({
   onOpenActivity,
 }: TrustedDeviceRecentActivityProps): JSX.Element {
+  const { t } = useTranslation();
+  const { fromNow } = useDateTime();
   const { recentActivity } = usePage<TrustedDeviceRecentActivityPageProps>().props;
   const actionVisuals = useMemo<
     Record<TrustedDeviceAction, { icon: LucideIcon; color: IconColorVariant }>
@@ -59,14 +62,16 @@ function TrustedDeviceRecentActivity({
   return (
     <Card className="shadow-xs">
       <CardHeader>
-        <h2 className="text-lg leading-none font-semibold tracking-tight">Actividad reciente</h2>
+        <h2 className="text-lg leading-none font-semibold tracking-tight">
+          {t("setting/trusted-devices.recent_activity.title")}
+        </h2>
       </CardHeader>
       <CardContent className="space-y-4">
         {recentActivity.length === 0 ? (
           <EmptyState
-            description="Las acciones que realices sobre tus dispositivos aparecerán aquí."
+            description={t("setting/trusted-devices.recent_activity.empty_description")}
             icon={ShieldQuestionMark}
-            title="Sin actividad reciente registrada."
+            title={t("setting/trusted-devices.recent_activity.empty_title")}
           />
         ) : (
           <ul className="space-y-4" role="list">
@@ -89,7 +94,7 @@ function TrustedDeviceRecentActivity({
                       <div className="flex w-full items-center justify-between gap-4">
                         <div className="space-y-1">
                           <h3 className="max-w-40 truncate text-sm font-medium">
-                            {item.deviceLabel ?? "Un dispositivo"}
+                            {item.deviceLabel ?? t("setting/trusted-devices.values.a_device")}
                           </h3>
 
                           <p className="text-xs font-normal text-muted-foreground">
@@ -122,7 +127,7 @@ function TrustedDeviceRecentActivity({
             onClick={onOpenActivity}
             variant="link"
           >
-            Ver toda la actividad
+            {t("setting/trusted-devices.recent_activity.view_all")}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </CardFooter>

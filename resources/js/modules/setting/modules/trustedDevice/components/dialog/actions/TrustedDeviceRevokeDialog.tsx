@@ -28,8 +28,9 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceRevokeDialogProps {
@@ -48,6 +49,8 @@ function TrustedDeviceRevokeDialog({
   open,
   onClose,
 }: TrustedDeviceRevokeDialogProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, fromNow } = useDateTime();
   const { data, setData, submit, processing, reset, errors } = useForm<RevokeDeviceFormData>({
     password: "",
     terms: false,
@@ -91,13 +94,13 @@ function TrustedDeviceRevokeDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Revocar dispositivo
+              {t("setting/trusted-device-dialogs.revoke.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Revocarás {device.name ?? "este dispositivo"}. Dejará de ser de confianza y se te
-            volverá a solicitar el código de verificación la próxima vez que inicies sesión desde
-            él.
+            {t("setting/trusted-device-dialogs.revoke.description", {
+              device: device.name ?? t("setting/trusted-device-dialogs.this_device"),
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -121,7 +124,7 @@ function TrustedDeviceRevokeDialog({
         <DialogFooter className="mt-1.5">
           <DialogClose asChild>
             <Button disabled={processing} type="button" variant="outline">
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -129,10 +132,10 @@ function TrustedDeviceRevokeDialog({
             {processing ? (
               <>
                 <Spinner />
-                Revocando...
+                {t("setting/trusted-device-dialogs.revoke.submitting")}
               </>
             ) : (
-              "Revocar dispositivo"
+              t("setting/trusted-device-dialogs.revoke.submit")
             )}
           </Button>
         </DialogFooter>
@@ -142,6 +145,7 @@ function TrustedDeviceRevokeDialog({
 }
 
 function RevokeConsequencesAlert(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert
       aria-labelledby="revoke-device-warning-title"
@@ -152,15 +156,12 @@ function RevokeConsequencesAlert(): JSX.Element {
         className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
         id="revoke-device-warning-title"
       >
-        Consecuencias de la revocación
+        {t("setting/trusted-device-dialogs.revoke.consequences_title")}
       </h3>
       <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
-          <li>Este dispositivo ya no estara registrado como de confianza.</li>
-          <li>
-            Se te pedira el codigo de verificacion la proxima vez que inicies sesion desde este
-            dispositivo.
-          </li>
+          <li>{t("setting/trusted-device-dialogs.revoke.consequences.not_trusted")}</li>
+          <li>{t("setting/trusted-device-dialogs.revoke.consequences.code_again")}</li>
         </ul>
       </AlertDescription>
     </Alert>
@@ -175,13 +176,14 @@ interface RevokeDeviceFormProps {
 }
 
 function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
+  const { t } = useTranslation();
   const { handleSubmit, errors, setData, data } = props;
 
   return (
     <form id="revoke-trusted-device-form" className="grid gap-4" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-2">
         <Label htmlFor="revoke-trusted-device">
-          Para continuar, confirma y escribe tu contraseña
+          {t("setting/trusted-device-dialogs.password_confirmation.prompt")}
         </Label>
 
         <PasswordInput
@@ -190,7 +192,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
           autoFocus
           id="revoke-trusted-device"
           name="password"
-          placeholder="Ingresa tu contraseña"
+          placeholder={t("setting/trusted-device-dialogs.password_confirmation.placeholder")}
           required
           onChange={(event) => {
             setData("password", event.target.value);
@@ -219,7 +221,7 @@ function RevokeDeviceForm(props: RevokeDeviceFormProps): JSX.Element {
         />
 
         <LabelForm htmlFor="revoke-trusted-device-terms">
-          Entiendo las consecuencias de revocar este dispositivo.
+          {t("setting/trusted-device-dialogs.revoke.terms")}
         </LabelForm>
       </div>
 

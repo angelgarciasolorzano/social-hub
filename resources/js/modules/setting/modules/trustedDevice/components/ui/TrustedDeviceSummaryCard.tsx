@@ -7,6 +7,8 @@ import { deviceLabel, getDeviceIcon } from "@/modules/setting/shared/utils/trust
 
 import { Badge } from "@/shared/components/shadcn/ui/badge";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { badgeVariants, iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
@@ -25,7 +27,10 @@ function TrustedDeviceSummaryCard({
   expiration,
   status,
 }: TrustedDeviceSummaryCardProps): JSX.Element {
-  const deviceName = deviceLabel(device).trim() || "Dispositivo desconocido";
+  const { t } = useTranslation();
+  const deviceName =
+    deviceLabel(device, t("setting/trusted-devices.values.unknown_device")).trim() ||
+    t("setting/trusted-devices.values.unknown_device");
   const hasLastUsedAt = lastUsedAt.trim() !== "";
   const hasBrowser = device.browser !== null && device.browser.trim() !== "";
   const hasExpiration = expiration !== undefined && expiration.trim() !== "";
@@ -62,7 +67,9 @@ function TrustedDeviceSummaryCard({
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {hasBrowser && (
             <dl className="flex min-w-0 items-center truncate text-xs text-muted-foreground">
-              <dt className="sr-only">Sistema operativo y navegador</dt>
+              <dt className="sr-only">
+                {t("setting/trusted-devices.summary_card.os_and_browser")}
+              </dt>
               <dd className="m-0 truncate">{browserDetails}</dd>
             </dl>
           )}
@@ -73,7 +80,9 @@ function TrustedDeviceSummaryCard({
 
           {hasLastUsedAt && (
             <dl className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
-              <dt className="shrink-0 font-medium">Último uso:</dt>
+              <dt className="shrink-0 font-medium">
+                {t("setting/trusted-devices.summary_card.last_used")}
+              </dt>
               <dd className="m-0 truncate">{lastUsedAt}</dd>
             </dl>
           )}
@@ -81,7 +90,9 @@ function TrustedDeviceSummaryCard({
 
         {hasExpiration && (
           <dl className="flex items-center gap-1 text-xs text-muted-foreground">
-            <dt className="font-medium">Fecha de expiración:</dt>
+            <dt className="font-medium">
+              {t("setting/trusted-devices.summary_card.expiration_date")}
+            </dt>
             <dd className="m-0">{expiration}</dd>
           </dl>
         )}
@@ -95,7 +106,13 @@ type TrustedDeviceSummaryStatusBadgeProps = Pick<TrustedDeviceSummaryCardProps, 
 function TrustedDeviceSummaryStatusBadge({
   status,
 }: TrustedDeviceSummaryStatusBadgeProps): JSX.Element {
-  const label = status === "revoked" ? "Revocado" : status === "inactive" ? "Inactivo" : "Activo";
+  const { t } = useTranslation();
+  const label =
+    status === "revoked"
+      ? t("setting/trusted-devices.status.revoked")
+      : status === "inactive"
+        ? t("setting/trusted-devices.status.inactive")
+        : t("setting/trusted-devices.status.active");
 
   const className =
     status === "revoked"

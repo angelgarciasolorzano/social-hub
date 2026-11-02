@@ -21,6 +21,8 @@ import {
   DialogTitle,
 } from "@/shared/components/shadcn/ui/dialog";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { alertVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceExpiredDialogProps {
@@ -34,6 +36,7 @@ function TrustedDeviceExpiredDialog({
   open,
   onClose,
 }: TrustedDeviceExpiredDialogProps): JSX.Element {
+  const { t } = useTranslation();
   const handleGoToExpiredList = (): void => {
     onClose();
     router.visit(
@@ -60,25 +63,27 @@ function TrustedDeviceExpiredDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <ShieldAlert aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Confianza expirada
+              {t("setting/trusted-device-dialogs.expired.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Este dispositivo ya fue registrado pero su confianza expiro. Para volver a confiar en
-            él, renueva su confianza desde la lista de dispositivos expirados.
+            {t("setting/trusted-device-dialogs.expired.description")}
           </DialogDescription>
         </DialogHeader>
 
-        <TrustedDeviceInfoCard device={existingDevice} expirationLabel="Expiró el" />
+        <TrustedDeviceInfoCard
+          device={existingDevice}
+          expirationLabel={t("setting/trusted-device-dialogs.expired.expired_on")}
+        />
 
         <ExpiredActionsAlert />
 
         <DialogFooter>
           <Button onClick={onClose} type="button" variant="outline">
-            Cerrar
+            {t("setting/common.actions.close")}
           </Button>
           <Button onClick={handleGoToExpiredList} type="button">
-            Ir a dispositivos expirados
+            {t("setting/trusted-device-dialogs.expired.go_to_expired")}
             <ArrowRight />
           </Button>
         </DialogFooter>
@@ -88,12 +93,13 @@ function TrustedDeviceExpiredDialog({
 }
 
 function ExpiredActionsAlert(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert className={alertVariants.warning}>
       <CircleAlert />
-      <AlertTitle>¿Quieres volver a confiar en este dispositivo?</AlertTitle>
+      <AlertTitle>{t("setting/trusted-device-dialogs.expired.trust_again_title")}</AlertTitle>
       <AlertDescription>
-        Renueva la confianza para extender la fecha de expiracion sin volver a registrarlo.
+        {t("setting/trusted-device-dialogs.expired.trust_again_description")}
       </AlertDescription>
     </Alert>
   );

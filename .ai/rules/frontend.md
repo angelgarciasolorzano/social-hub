@@ -30,3 +30,11 @@ Declare the components of a file in reading order: the entry component or dispat
 Each component's props interface or type goes immediately before that component, in the order: interface, function, interface of the next function, function, and so on. Never group all the interfaces at the top of the file; only a type shared by several components (and its type guard) stays where it is first needed.
 
 Keep helpers in the same file while they are short and used only there; extract them to their own file when the file grows too large or they are reused.
+
+## Write every visible settings text through a translation key
+In the translated React settings pages (`modules/setting/shared`, `accountSettings`, `twoFactor`, `trustedDevice`) and in any module translated later, never write visible text by hand: read it with `t("<group>.<key>")` or `tChoice(...)` from `useTranslation()` (`@/shared/hooks`), and add the key to `lang/en/<group>.php` and `lang/es/<group>.php` in the same change. Name the key after its place (`setting/trusted-devices.table.open_actions`), never after the English text; put a text shared by several pages in `setting/common`. Pass values as placeholders (`t("…open_actions", { device })`), use `tChoice` for counts, and split a text with an emphasized part into `_before`/`_after` keys instead of concatenating fragments. Static `data/*.ts` arrays hold keys that the component translates; values sent in the URL or to the backend never change. Format dates with `useDateTime()`, never `dayjs(...).format(...)` or a literal format. Accessible texts count too (`aria-label`, `title`, `placeholder`, `alt`, screen-reader spans).
+
+`FrontendTranslationKeysTest` fails when a key literal does not name a text in both languages, `SettingTranslationKeysTest` when `en` and `es` differ in keys or placeholders, and `SettingHardcodedTextTest` when a translated folder writes text by hand; a literal that must stay (a brand name, a format sample) goes in that test's allowed list with its reason.
+
+Correct: `{t("setting/common.actions.cancel")}`, `aria-label={t("setting/trusted-devices.table.open_actions", { device: name })}`, `tChoice("setting/trusted-device-dialogs.revoke_all.devices_count", total)`.
+Wrong: `Cancelar`, `` aria-label={`Abrir acciones de ${name}`} ``, `` `${count} dispositivos` ``, `dayjs(date).format("D [de] MMMM")`.

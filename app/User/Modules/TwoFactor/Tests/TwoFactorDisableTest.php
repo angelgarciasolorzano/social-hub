@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Illuminate\Testing\TestResponse;
 use Laravel\Fortify\Features;
@@ -58,7 +59,7 @@ it('keeps two-factor authentication enabled when the current password is incorre
             'code' => validOtpFor($user),
         ])
         ->assertRedirectBackWithErrors([
-            'password' => 'La contraseña proporcionada no coincide con tu contraseña actual.',
+            'password' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/two-factor.validation.password_mismatch'),
         ]);
 
     expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeTrue();
@@ -103,7 +104,7 @@ it('keeps two-factor authentication enabled when the TOTP code is invalid', func
             'code' => $invalidCode,
         ])
         ->assertRedirectBackWithErrors([
-            'code' => 'El código de autenticación proporcionado no es válido.',
+            'code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/two-factor.validation.code_invalid'),
         ]);
 
     expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeTrue();
@@ -125,7 +126,7 @@ it('keeps two-factor authentication enabled when the recovery code is unknown', 
     $user = createUserWithRecoveryCodes(DISABLE_TEST_RECOVERY_CODE);
 
     disableTwoFactorAs($this, $user, ['password' => 'password', 'code' => 'zzzzz00000-yyyyy11111'])
-        ->assertRedirectBackWithErrors(['code' => 'El código de autenticación proporcionado no es válido.']);
+        ->assertRedirectBackWithErrors(['code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/two-factor.validation.code_invalid')]);
 
     expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeTrue()
         ->and($user->recoveryCodes())->toBe([DISABLE_TEST_RECOVERY_CODE]);
@@ -136,7 +137,7 @@ it('keeps two-factor authentication enabled when the recovery code belongs to an
     $user = createUserWithTwoFactor();
 
     disableTwoFactorAs($this, $user, ['password' => 'password', 'code' => DISABLE_TEST_RECOVERY_CODE])
-        ->assertRedirectBackWithErrors(['code' => 'El código de autenticación proporcionado no es válido.']);
+        ->assertRedirectBackWithErrors(['code' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/two-factor.validation.code_invalid')]);
 
     expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeTrue()
         ->and($owner->refresh()->recoveryCodes())->toBe([DISABLE_TEST_RECOVERY_CODE]);
@@ -146,7 +147,7 @@ it('does not consume the recovery code when the current password is incorrect', 
     $user = createUserWithRecoveryCodes(DISABLE_TEST_RECOVERY_CODE);
 
     disableTwoFactorAs($this, $user, ['password' => 'incorrect-password', 'code' => DISABLE_TEST_RECOVERY_CODE])
-        ->assertRedirectBackWithErrors(['password' => 'La contraseña proporcionada no coincide con tu contraseña actual.']);
+        ->assertRedirectBackWithErrors(['password' => translatedTextIn(PreferredLocale::ENGLISH, 'setting/two-factor.validation.password_mismatch')]);
 
     expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeTrue()
         ->and($user->recoveryCodes())->toBe([DISABLE_TEST_RECOVERY_CODE]);
@@ -163,4 +164,30 @@ it('rejects a code that is neither six digits nor a recovery code', function (st
     'letters' => ['abcdef'],
     'too short' => ['123'],
     'recovery code without the hyphen' => ['abcde12345fghij67890'],
+])->skip(twoFactorManagementIsUnavailable(...), 'Two-factor authentication is not enabled.');
+
+it('answers an incorrect password in the language of the user', function (PreferredLocale $preferredLocale): void {
+    $user = createUserWithRecoveryCodes(DISABLE_TEST_RECOVERY_CODE);
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+
+    disableTwoFactorAs($this, $user, ['password' => 'incorrect-password', 'code' => DISABLE_TEST_RECOVERY_CODE])
+        ->assertRedirectBackWithErrors([
+            'password' => translatedTextIn($preferredLocale, 'setting/two-factor.validation.password_mismatch'),
+        ]);
+})->with([
+    'English' => [PreferredLocale::ENGLISH],
+    'Spanish' => [PreferredLocale::SPANISH],
+])->skip(twoFactorManagementIsUnavailable(...), 'Two-factor authentication is not enabled.');
+
+it('answers an unknown code in the language of the user', function (PreferredLocale $preferredLocale): void {
+    $user = createUserWithRecoveryCodes(DISABLE_TEST_RECOVERY_CODE);
+    $user->forceFill(['preferred_locale' => $preferredLocale])->save();
+
+    disableTwoFactorAs($this, $user, ['password' => 'password', 'code' => 'zzzzz00000-yyyyy11111'])
+        ->assertRedirectBackWithErrors([
+            'code' => translatedTextIn($preferredLocale, 'setting/two-factor.validation.code_invalid'),
+        ]);
+})->with([
+    'English' => [PreferredLocale::ENGLISH],
+    'Spanish' => [PreferredLocale::SPANISH],
 ])->skip(twoFactorManagementIsUnavailable(...), 'Two-factor authentication is not enabled.');

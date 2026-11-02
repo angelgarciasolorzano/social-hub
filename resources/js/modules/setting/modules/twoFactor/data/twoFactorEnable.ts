@@ -12,6 +12,9 @@ import {
 
 import type { OptionCardItem } from "../components/ui/OptionCard";
 
+/**
+ * Titles, descriptions and labels of these lists are translation keys of `setting/two-factor`; the view translates them.
+ */
 export const twoFactorSecurityOptionsKey = {
   backupCodes: "backup-codes",
   regenerateCodes: "regenerate-codes",
@@ -24,22 +27,22 @@ export type TwoFactorSecurityOptionKey =
 export const twoFactorSecurityOptions: OptionCardItem<TwoFactorSecurityOptionKey>[] = [
   {
     key: twoFactorSecurityOptionsKey.backupCodes,
-    title: "Códigos de respaldo",
-    description: "Usa estos códigos si no tienes acceso a tu autenticador.",
+    title: "setting/two-factor.security_options.backup_codes.title",
+    description: "setting/two-factor.security_options.backup_codes.description",
     icon: TableOfContents,
     iconColor: "violet",
   },
   {
     key: twoFactorSecurityOptionsKey.regenerateCodes,
-    title: "Regenerar códigos",
-    description: "Genera nuevos códigos de respaldo. Los actuales dejarán de funcionar.",
+    title: "setting/two-factor.security_options.regenerate_codes.title",
+    description: "setting/two-factor.security_options.regenerate_codes.description",
     icon: Repeat,
     iconColor: "violet",
   },
   {
     key: twoFactorSecurityOptionsKey.disable2FA,
-    title: "Desactivar 2FA",
-    description: "Desactiva la autenticación de dos factores en tu cuenta.",
+    title: "setting/two-factor.security_options.disable.title",
+    description: "setting/two-factor.security_options.disable.description",
     icon: ShieldOff,
     iconColor: "red",
   },
@@ -51,21 +54,20 @@ export const twoFactorSafetyTips: TwoFactorSafetyTip[] = [
   {
     key: "save-backup-codes",
     icon: LockKeyhole,
-    title: "Guarda tus códigos",
-    description: "Almacena tus códigos de respaldo en un lugar seguro y accesible para ti.",
+    title: "setting/two-factor.safety_tips.save_backup_codes.title",
+    description: "setting/two-factor.safety_tips.save_backup_codes.description",
   },
   {
     key: "use-devices-trust",
     icon: MonitorSmartphone,
-    title: "Usa dispositivos de confianza",
-    description: "Marca dispositivos como confiables para evitar verificaciones frecuentes.",
+    title: "setting/two-factor.safety_tips.use_trusted_devices.title",
+    description: "setting/two-factor.safety_tips.use_trusted_devices.description",
   },
   {
     key: "keep-your-app-updated",
     icon: RotateCcw,
-    title: "Manten tu aplicacion actualizada",
-    description:
-      "Asegúrate de tener la ultima version de tu aplicacion autenticadora para garantizar la  mejor seguridad.",
+    title: "setting/two-factor.safety_tips.keep_app_updated.title",
+    description: "setting/two-factor.safety_tips.keep_app_updated.description",
   },
 ];
 
@@ -108,17 +110,17 @@ export const twoFactorManageActions: ManageActionGroup[] = [
       {
         key: twoFactorManageActionKey.viewCodes,
         icon: ChartNoAxesGantt,
-        label: "Ver Códigos de respaldo",
+        label: "setting/two-factor.manage_actions.view_codes",
       },
       {
         key: twoFactorManageActionKey.regenerateCodes,
         icon: RefreshCw,
-        label: "Regenerar códigos",
+        label: "setting/two-factor.manage_actions.regenerate_codes",
       },
       {
         key: twoFactorManageActionKey.viewDevices,
         icon: MonitorSmartphone,
-        label: "Dispositivos de confianza",
+        label: "setting/two-factor.manage_actions.trusted_devices",
       },
     ],
   },
@@ -127,7 +129,7 @@ export const twoFactorManageActions: ManageActionGroup[] = [
       {
         key: twoFactorManageActionKey.disable2FA,
         icon: CircleX,
-        label: "Desactivar 2FA",
+        label: "setting/two-factor.manage_actions.disable",
         className:
           "text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500",
         iconClassName: "text-red-600 dark:text-red-500",

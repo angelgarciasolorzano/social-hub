@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
+use App\User\Enums\PreferredLocale;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Event;
@@ -25,7 +26,7 @@ it('sends a reset notification when the email belongs to a user', function (): v
 
     $testResponse->assertSessionHas(
         'status',
-        'Se enviará un enlace de restablecimiento si la cuenta existe.',
+        translatedTextIn(PreferredLocale::ENGLISH, 'messages.A reset link will be sent if the account exists.'),
     );
 
     Notification::assertSentTo($user, ResetPassword::class);
@@ -79,7 +80,7 @@ it('resets the password with a valid token', function (): void {
         $testResponse
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('login'))
-            ->assertSessionHas('status', 'Tu contraseña se restableció correctamente.');
+            ->assertSessionHas('status', translatedTextIn(PreferredLocale::ENGLISH, 'passwords.reset'));
 
         return true;
     });
@@ -125,7 +126,7 @@ it('rejects an invalid password reset token', function (): void {
     ]);
 
     $testResponse->assertSessionHasErrors([
-        'email' => 'Este enlace para restablecer la contraseña no es válido.',
+        'email' => translatedTextIn(PreferredLocale::ENGLISH, 'passwords.token'),
     ]);
 
     $this->assertNotSoftDeleted($firstTrustedDevice);
@@ -144,3 +145,34 @@ it('rejects an invalid password reset token', function (): void {
 
     Event::assertNotDispatched(PasswordReset::class);
 });
+
+/*
+ * Symfony gives every test request `Accept-Language: en-us`; an empty header stands for a browser that sends
+ * none, which the guest locale resolution answers in Spanish.
+ */
+it('answers the reset link request in the language of the browser', function (string $acceptLanguage, PreferredLocale $preferredLocale): void {
+    Notification::fake();
+
+    $this->withHeader('Accept-Language', $acceptLanguage)
+        ->post(route('password.email'), ['email' => createUser()->email])
+        ->assertSessionHas('status', translatedTextIn($preferredLocale, 'messages.A reset link will be sent if the account exists.'));
+})->with([
+    'English browser' => ['en-US,en;q=0.9', PreferredLocale::ENGLISH],
+    'browser without a language' => ['', PreferredLocale::SPANISH],
+]);
+
+it('rejects an invalid reset token in the language of the browser', function (string $acceptLanguage, PreferredLocale $preferredLocale): void {
+    $user = createUser();
+
+    $this->withHeader('Accept-Language', $acceptLanguage)
+        ->post(route('password.store'), [
+            'token' => 'invalid-token',
+            'email' => $user->email,
+            'password' => 'newpassword123',
+            'password_confirmation' => 'newpassword123',
+        ])
+        ->assertSessionHasErrors(['email' => translatedTextIn($preferredLocale, 'passwords.token')]);
+})->with([
+    'English browser' => ['en-US,en;q=0.9', PreferredLocale::ENGLISH],
+    'browser without a language' => ['', PreferredLocale::SPANISH],
+]);

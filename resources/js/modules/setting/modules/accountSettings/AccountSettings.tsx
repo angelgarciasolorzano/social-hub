@@ -22,15 +22,18 @@ import {
 } from "@/shared/components/shadcn/ui/card";
 import { Switch } from "@/shared/components/shadcn/ui/switch";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { iconColorVariants } from "@/shared/lib/styling";
 
 function AccountSettings(): JSX.Element {
+  const { t } = useTranslation();
   const { accountSettings } = usePage<AccountSettingsPageProps>().props;
 
   return (
     <main className="max-w-8xl mx-auto flex w-full flex-1 flex-col gap-6">
-      <Head title="Configuración de la cuenta" />
+      <Head title={t("setting/account-settings.page_title")} />
 
       <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
@@ -54,6 +57,8 @@ function AccountSettings(): JSX.Element {
 }
 
 function AccountSettingsPrivacyOverview(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Card className="gap-0 overflow-hidden py-0">
       <CardHeader className="flex grid-cols-1 grid-rows-none items-start gap-4 px-5 pt-5 pb-4 sm:px-6 sm:pt-6">
@@ -69,13 +74,11 @@ function AccountSettingsPrivacyOverview(): JSX.Element {
 
         <div className="min-w-0 space-y-1">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            Información de tu perfil
+            {t("setting/account-settings.overview.title")}
           </h1>
-          <CardDescription>
-            Administra la información personal asociada a tu cuenta.
-          </CardDescription>
+          <CardDescription>{t("setting/account-settings.overview.description")}</CardDescription>
           <p className="text-sm text-muted-foreground">
-            Mantén tus datos actualizados para garantizar una mejor experiencia.
+            {t("setting/account-settings.overview.hint")}
           </p>
         </div>
       </CardHeader>
@@ -96,11 +99,10 @@ function AccountSettingsPrivacyOverview(): JSX.Element {
             <h2
               className={cn("font-semibold tracking-tight", iconColorVariants.violet.iconFgClass)}
             >
-              Administra tus datos
+              {t("setting/account-settings.overview.manage_title")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Actualiza la información personal disponible y consulta cómo se muestra tu perfil
-              público.
+              {t("setting/account-settings.overview.manage_description")}
             </p>
           </div>
         </div>
@@ -119,8 +121,8 @@ function AccountSettingsPrivacyOverview(): JSX.Element {
               </span>
 
               <div className="min-w-0 space-y-1">
-                <h3 className="text-sm leading-5 font-medium">{title}</h3>
-                <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+                <h3 className="text-sm leading-5 font-medium">{t(title)}</h3>
+                <p className="text-xs leading-5 text-muted-foreground">{t(description)}</p>
               </div>
             </li>
           ))}
@@ -131,13 +133,13 @@ function AccountSettingsPrivacyOverview(): JSX.Element {
 }
 
 function AccountCommunicationPreferences(): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Card className="overflow-hidden py-0">
       <CardHeader className="px-5 pt-5 sm:px-6 sm:pt-6">
-        <CardTitle>Preferencias de comunicación</CardTitle>
-        <CardDescription>
-          Ejemplo visual de los tipos de comunicación disponibles en la plataforma.
-        </CardDescription>
+        <CardTitle>{t("setting/account-settings.communication.title")}</CardTitle>
+        <CardDescription>{t("setting/account-settings.communication.description")}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4 px-5 pb-5 sm:px-6 sm:pb-6">
@@ -155,9 +157,9 @@ function AccountCommunicationPreferences(): JSX.Element {
 
             <div className="min-w-0 space-y-0.5">
               <h3 className="text-sm font-medium" id={`account-communication-channel-${id}`}>
-                {title}
+                {t(title)}
               </h3>
-              <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+              <p className="text-xs leading-5 text-muted-foreground">{t(description)}</p>
             </div>
 
             <Switch

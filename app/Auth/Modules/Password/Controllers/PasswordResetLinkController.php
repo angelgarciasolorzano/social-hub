@@ -33,7 +33,7 @@ class PasswordResetLinkController extends Controller
 
         return back()->with(
             'status',
-            __('messages.A reset link will be sent if the account exists.', [], 'es'),
+            __('messages.A reset link will be sent if the account exists.'),
         );
     }
 }

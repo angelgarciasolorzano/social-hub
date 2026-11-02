@@ -22,6 +22,8 @@ import {
 } from "@/shared/components/shadcn/ui/chart";
 import type { ChartConfig } from "@/shared/components/shadcn/ui/chart";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { cn } from "@/shared/lib";
 import { type IconColorVariant, iconColorVariants } from "@/shared/lib/styling";
 
@@ -39,66 +41,63 @@ const colorVariantForEstado: Record<TrustedDeviceSummaryDatum["estado"], IconCol
   revocados: "red",
 };
 
-const chartConfig = {
-  cantidad: { label: "Dispositivos" },
-  activos: {
-    label: "Activos",
-    theme: {
-      light: "oklch(0.723 0.219 149.579)",
-      dark: "oklch(0.792 0.209 151.711)",
-    },
-  },
-  porExpirar: {
-    label: "Próximos a expirar",
-    theme: {
-      light: "oklch(0.769 0.188 70.08)",
-      dark: "oklch(0.828 0.189 84.429)",
-    },
-  },
-  inactivos: {
-    label: "Inactivos",
-    theme: {
-      light: "oklch(0.551 0.027 264.364)",
-      dark: "oklch(0.707 0.022 261.325)",
-    },
-  },
-  revocados: {
-    label: "Revocados",
-    theme: {
-      light: "oklch(0.637 0.237 25.331)",
-      dark: "oklch(0.704 0.191 22.216)",
-    },
-  },
-} satisfies ChartConfig;
+/**
+ * Chart colors per state; the labels are added in the component, in the active language.
+ */
+const chartThemes = {
+  activos: { light: "oklch(0.723 0.219 149.579)", dark: "oklch(0.792 0.209 151.711)" },
+  porExpirar: { light: "oklch(0.769 0.188 70.08)", dark: "oklch(0.828 0.189 84.429)" },
+  inactivos: { light: "oklch(0.551 0.027 264.364)", dark: "oklch(0.707 0.022 261.325)" },
+  revocados: { light: "oklch(0.637 0.237 25.331)", dark: "oklch(0.704 0.191 22.216)" },
+};
+
 interface TrustedDeviceSummaryProps {
   onOpenSummary: () => void;
 }
 
 function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX.Element {
+  const { t } = useTranslation();
   const { stats } = usePage<{ stats: TrustedDeviceStats }>().props;
+
+  const chartConfig = {
+    cantidad: { label: t("setting/trusted-devices.summary.devices") },
+    activos: { label: t("setting/trusted-devices.summary.active"), theme: chartThemes.activos },
+    porExpirar: {
+      label: t("setting/trusted-devices.summary.expiring_soon"),
+      theme: chartThemes.porExpirar,
+    },
+    inactivos: {
+      label: t("setting/trusted-devices.summary.inactive"),
+      theme: chartThemes.inactivos,
+    },
+    revocados: {
+      label: t("setting/trusted-devices.summary.revoked"),
+      theme: chartThemes.revocados,
+    },
+  } satisfies ChartConfig;
 
   const chartData: TrustedDeviceSummaryDatum[] = [
     {
       estado: "activos",
-      label: "Activos",
+      label: t("setting/trusted-devices.summary.active"),
       cantidad: Math.max(0, stats.active - stats.expiringSoon),
       fill: "var(--color-activos)",
     },
     {
       estado: "porExpirar",
-      label: "Próximos a expirar",
+      label: t("setting/trusted-devices.summary.expiring_soon"),
       cantidad: stats.expiringSoon,
       fill: "var(--color-porExpirar)",
     },
     {
       estado: "inactivos",
-      label: "Inactivos",
+      label: t("setting/trusted-devices.summary.inactive"),
       cantidad: stats.inactive,
       fill: "var(--color-inactivos)",
     },
     {
       estado: "revocados",
-      label: "Revocados",
+      label: t("setting/trusted-devices.summary.revoked"),
       cantidad: stats.revoked,
       fill: "var(--color-revocados)",
     },
@@ -108,10 +107,10 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
     <Card className="flex flex-col shadow-xs">
       <CardHeader className="items-center pb-0">
         <h2 className="text-lg leading-none font-semibold tracking-tight">
-          Resumen de dispositivos
+          {t("setting/trusted-devices.summary.title")}
         </h2>
         <CardDescription className="text-xs font-normal">
-          Asi esta la seguridad de tus dispositivos
+          {t("setting/trusted-devices.summary.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 items-center gap-4 pb-0">
@@ -172,7 +171,7 @@ function TrustedDeviceSummary({ onOpenSummary }: TrustedDeviceSummaryProps): JSX
 
       <CardFooter className="mx-auto">
         <Button variant="link" className="text-blue-700 dark:text-blue-500" onClick={onOpenSummary}>
-          Ver detalles
+          {t("setting/trusted-devices.summary.view_details")}
           <ChevronRight className="h-4 w-4" />
         </Button>
       </CardFooter>

@@ -7,14 +7,22 @@ export interface BreadcrumbItem {
   title: string;
 }
 
+export type Locale = "en" | "es";
+
+export interface TranslationTree {
+  [key: string]: string | TranslationTree;
+}
+
 export interface SharedData {
   [key: string]: unknown;
   announcements: Announcement[];
   auth: Auth;
+  locale: Locale;
   name: string;
   quote: { message: string; author: string };
   search_results: User[] | null;
   sidebarOpen: boolean;
+  translations: Record<string, TranslationTree>;
 }
 
 export type * from "./lengthAwarePagination";

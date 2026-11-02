@@ -1,97 +1,134 @@
 import dayjs from "dayjs";
 
-const LONG_DATE_FORMAT = "D [de] MMMM [del] YYYY, h:mm A";
-const SHORT_DATE_FORMAT = "D MMM YYYY";
-const FULL_DATE_FORMAT = "D [de] MMMM [del] YYYY";
-const ACTIVATION_DATE_FORMAT = "D [de] MMMM [de] YYYY";
-const ACTIVATION_TIME_FORMAT = "h:mm A";
+import type { Locale } from "../types";
+import type { TranslationReplacements } from "./translation";
 
 /**
- * Formats an ISO date string into a long, human-readable format in Spanish.
- * Example: "15 de enero del 2025, 3:45 PM". Returns "Nunca" if the date is null.
+ * The language a date is formatted in and the translator that reads the `dates` catalog of `lang/`.
+ * Components get it already built from `useDateTime()`.
  */
-export function formatLongDate(iso: string | null): string {
-  if (iso === null) {
-    return "Nunca";
-  }
-
-  return dayjs(iso).format(LONG_DATE_FORMAT);
+export interface DateTimeContext {
+  locale: Locale;
+  t: (key: string, replacements?: TranslationReplacements) => string;
 }
 
 /**
- * Formats an ISO date string into a compact Spanish date.
- * Example: "15 ene 2025". Returns "Nunca" if the date is null.
+ * Formats an ISO date string into a long, human-readable date with its time.
+ * Example: "15 de enero del 2025, 3:45 PM" / "January 15, 2025 at 3:45 PM".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The formatted date, or the catalog's "never" text when the date is null.
  */
-export function formatShortDate(iso: string | null): string {
+export function formatLongDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
-    return "Nunca";
+    return context.t("dates.never");
   }
 
-  return dayjs(iso).format(SHORT_DATE_FORMAT);
+  return dayjs(iso).locale(context.locale).format(context.t("dates.formats.long"));
 }
 
 /**
- * Formats an ISO date string into a full Spanish date without the time.
- * Example: "15 de enero del 2025". Returns "Nunca" if the date is null.
+ * Formats an ISO date string into a compact date.
+ * Example: "15 ene 2025" / "Jan 15, 2025".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The formatted date, or the catalog's "never" text when the date is null.
  */
-export function formatFullDate(iso: string | null): string {
+export function formatShortDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
-    return "Nunca";
+    return context.t("dates.never");
   }
 
-  return dayjs(iso).format(FULL_DATE_FORMAT);
+  return dayjs(iso).locale(context.locale).format(context.t("dates.formats.short"));
 }
 
 /**
- * Formats an ISO date string into the activation date format (no time, no "del").
- * Example: "15 de marzo de 2024". Returns "No disponible" if the date is null.
+ * Formats an ISO date string into a full date without the time.
+ * Example: "15 de enero del 2025" / "January 15, 2025".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The formatted date, or the catalog's "never" text when the date is null.
  */
-export function formatActivationDate(iso: string | null): string {
+export function formatFullDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
-    return "No disponible";
+    return context.t("dates.never");
   }
 
-  return dayjs(iso).format(ACTIVATION_DATE_FORMAT);
+  return dayjs(iso).locale(context.locale).format(context.t("dates.formats.full"));
 }
 
 /**
- * Formats an ISO date string into a localized 12-hour time with a GMT offset suffix.
- * Example: "11:45 AM (GMT-6)" / "11:45 AM (GMT+5:30)". Returns "No disponible" if null.
+ * Formats an ISO date string into the activation date format (no time).
+ * Example: "15 de marzo de 2024" / "March 15, 2024".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The formatted date, or the catalog's "not available" text when the date is null.
  */
-export function formatActivationTime(iso: string | null): string {
+export function formatActivationDate(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
-    return "No disponible";
+    return context.t("dates.not_available");
   }
 
-  const date = dayjs(iso);
+  return dayjs(iso).locale(context.locale).format(context.t("dates.formats.activation_date"));
+}
+
+/**
+ * Formats an ISO date string into a 12-hour time with a GMT offset suffix.
+ * Example: "11:45 AM (GMT-6)" / "11:45 AM (GMT+5:30)".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The formatted time, or the catalog's "not available" text when the date is null.
+ */
+export function formatActivationTime(iso: string | null, context: DateTimeContext): string {
+  if (iso === null) {
+    return context.t("dates.not_available");
+  }
+
+  const date = dayjs(iso).locale(context.locale);
   const offset = date.format("Z");
   const formattedOffset = offset.replace(/^([+-])0/, "$1").replace(":00", "");
 
-  return `${date.format(ACTIVATION_TIME_FORMAT)} (GMT${formattedOffset})`;
+  return context.t("dates.time_with_offset", {
+    offset: formattedOffset,
+    time: date.format(context.t("dates.formats.activation_time")),
+  });
 }
 
 /**
  * Returns the time remaining until a given date in relative format.
- * Example: "hace 5 minutos", "en 2 días". Returns "vencido" if the date has passed or is null.
+ * Example: "en 2 días" / "in 2 days".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The relative time, or the catalog's "expired" text when the date is null or has passed.
  */
-export function formatTimeUntil(iso: string | null): string {
+export function formatTimeUntil(iso: string | null, context: DateTimeContext): string {
   if (iso === null || dayjs(iso).isBefore(dayjs())) {
-    return "vencido";
+    return context.t("dates.expired");
   }
 
-  return dayjs(iso).fromNow();
+  return dayjs(iso).locale(context.locale).fromNow();
 }
 
 /**
  * Returns the time elapsed since a given date in relative format.
- * Example: "hace 2 horas", "hace un día". Returns "nunca" if the date is null.
+ * Example: "hace 2 horas" / "2 hours ago".
+ *
+ * @param iso The date as an ISO string, or null when there is none.
+ * @param context The language and texts to format with.
+ * @returns The relative time, or the catalog's lowercase "never" text when the date is null.
  */
-export function fromNow(iso: string | null): string {
+export function fromNow(iso: string | null, context: DateTimeContext): string {
   if (iso === null) {
-    return "nunca";
+    return context.t("dates.never_lowercase");
   }
 
-  return dayjs(iso).fromNow();
+  return dayjs(iso).locale(context.locale).fromNow();
 }
 
 /**

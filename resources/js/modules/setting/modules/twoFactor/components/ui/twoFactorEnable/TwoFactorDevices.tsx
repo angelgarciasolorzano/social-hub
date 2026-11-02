@@ -56,10 +56,9 @@ import {
 import { Separator } from "@/shared/components/shadcn/ui/separator";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
-import { useDialog } from "@/shared/hooks";
+import { useDateTime, useDialog, useTranslation } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib";
-import { fromNow } from "@/shared/lib/dateTime";
 import { alertVariants } from "@/shared/lib/styling";
 
 import type { SharedData } from "@/shared/types";
@@ -99,6 +98,7 @@ function resolveAddDeviceKind(
 }
 
 function TwoFactorDevices(): JSX.Element {
+  const { t } = useTranslation();
   const { currentDevicePreview, currentDeviceMatch, trustedDevices } =
     usePage<TwoFactorDevicesPageProps>().props;
 
@@ -259,28 +259,25 @@ function TwoFactorDevices(): JSX.Element {
             <AlertTriangleIcon />
 
             <AlertTitle className="line-clamp-4">
-              Los dispositivos de confianza reducen la frecuencia con la que se te solicita el
-              código de verificación.
+              {t("setting/two-factor.devices_panel.description")}
             </AlertTitle>
 
-            <AlertDescription>
-              Revoca cualquier dispositivo que ya no utilices para mantener tu cuenta segura.
-            </AlertDescription>
+            <AlertDescription>{t("setting/two-factor.devices_panel.revoke_hint")}</AlertDescription>
           </Alert>
 
           <div className="flex items-center justify-between gap-4 font-semibold">
-            <span className="text-lg">Dispositivos registrados</span>
+            <span className="text-lg">{t("setting/two-factor.devices_panel.registered")}</span>
 
             <Button onClick={handleAddDevice} type="button" variant="outline">
               <Plus data-icon="inline-end" />
-              Agregar dispositivo
+              {t("setting/two-factor.devices_panel.add")}
             </Button>
           </div>
 
           <div className="flex flex-col gap-3 rounded-md border p-5">
             {!hasActiveDevices && (
               <div className="mb-1 text-sm text-muted-foreground">
-                No tienes dispositivos de confianza activos.
+                {t("setting/two-factor.devices_panel.empty")}
               </div>
             )}
 
@@ -290,7 +287,7 @@ function TwoFactorDevices(): JSX.Element {
           <div className="flex flex-col gap-3">
             <Button asChild className="w-full py-6" variant="outline">
               <Link href={devicesIndex.url()}>
-                Mostrar todos los dispositivos
+                {t("setting/two-factor.devices_panel.show_all")}
                 <ChevronRight />
               </Link>
             </Button>
@@ -303,18 +300,18 @@ function TwoFactorDevices(): JSX.Element {
               onClick={handleRevokeAllDevices}
             >
               <MonitorSmartphone className="mr-2 h-4 w-4" />
-              Revocar todos
+              {t("setting/two-factor.devices_panel.revoke_all")}
             </Button>
           </div>
 
           <Alert className={alertVariants.info}>
-            <AlertTitle>Consejos</AlertTitle>
+            <AlertTitle>{t("setting/two-factor.devices_panel.tips_title")}</AlertTitle>
 
             <AlertDescription>
               <ul className="list-inside list-disc space-y-2">
-                <li>Usa dispositivos que sean solo tuyos.</li>
-                <li>Cierra sesión en dispositivos que ya no uses.</li>
-                <li>Los cambios pueden tardar unos minutos en reflejarse.</li>
+                <li>{t("setting/two-factor.devices_panel.tips.only_yours")}</li>
+                <li>{t("setting/two-factor.devices_panel.tips.sign_out")}</li>
+                <li>{t("setting/two-factor.devices_panel.tips.delay")}</li>
               </ul>
             </AlertDescription>
           </Alert>
@@ -331,16 +328,18 @@ interface TwoFactorDevicesLoadErrorProps {
 }
 
 function TwoFactorDevicesLoadError({ onRetry }: TwoFactorDevicesLoadErrorProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Alert className={cn(alertVariants.destructive, "my-2")}>
       <AlertTriangleIcon aria-hidden="true" />
-      <AlertTitle>No se pudieron cargar los dispositivos de confianza</AlertTitle>
+      <AlertTitle>{t("setting/two-factor.devices_panel.load_failed_title")}</AlertTitle>
 
       <AlertDescription className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <span>Comprueba tu conexión e inténtalo de nuevo.</span>
+        <span>{t("setting/two-factor.devices_panel.load_failed_description")}</span>
 
         <Button onClick={onRetry} size="sm" type="button" variant="outline">
-          Reintentar
+          {t("setting/common.actions.retry")}
         </Button>
       </AlertDescription>
     </Alert>
@@ -348,12 +347,13 @@ function TwoFactorDevicesLoadError({ onRetry }: TwoFactorDevicesLoadErrorProps):
 }
 
 function TwoFactorDevicesSkeleton(): JSX.Element {
+  const { t } = useTranslation();
   const deviceSkeletonKeys = ["first", "second", "third"];
 
   return (
     <div aria-busy="true" className="flex flex-col gap-6">
       <span className="sr-only" role="status">
-        Cargando dispositivos de confianza.
+        {t("setting/two-factor.devices_panel.loading")}
       </span>
 
       <div className="flex flex-col gap-2 rounded-lg border p-4">
@@ -412,7 +412,9 @@ interface DialogActionState extends DialogClosingState {
   device: TrustedDevice;
 }
 
-function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
+function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps): JSX.Element {
+  const { t } = useTranslation();
+  const { fromNow } = useDateTime();
   const dialogDevice = useDialog<DialogActionState | null>(null);
 
   const handleDeviceAction = (action: TwoFactorDeviceActionKey, device: TrustedDevice) => {
@@ -506,8 +508,11 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
               </div>
 
               <div className="flex flex-col gap-0.5">
-                <span className="max-w-40 truncate text-sm font-medium" title={deviceLabel(device)}>
-                  {deviceLabel(device)}
+                <span
+                  className="max-w-40 truncate text-sm font-medium"
+                  title={deviceLabel(device, t("setting/trusted-devices.values.unknown_device"))}
+                >
+                  {deviceLabel(device, t("setting/trusted-devices.values.unknown_device"))}
                 </span>
 
                 {device.browser !== null && device.browser !== "" && (
@@ -520,7 +525,9 @@ function TwoFactorDevicesItems({ devices }: TwoFactorDevicesItemsProps) {
                 )}
 
                 <span className="text-xs text-muted-foreground">
-                  Último uso: {fromNow(device.lastUsedAt)}
+                  {t("setting/two-factor.devices_panel.last_used", {
+                    time: fromNow(device.lastUsedAt),
+                  })}
                 </span>
               </div>
             </div>
@@ -547,6 +554,8 @@ interface DeviceActionsDropdownProps {
 }
 
 function DeviceActionsDropdown({ device, onActionClick }: DeviceActionsDropdownProps): JSX.Element {
+  const { t } = useTranslation();
+
   const handleClick = (action: TwoFactorDeviceActionKey): void => {
     onActionClick(action, device);
   };
@@ -562,7 +571,7 @@ function DeviceActionsDropdown({ device, onActionClick }: DeviceActionsDropdownP
         {trustedDeviceRowActions.map((group, groupIndex) => (
           <Fragment key={groupIndex}>
             <DropdownMenuGroup>
-              {group.label && <DropdownMenuLabel>{group.label}</DropdownMenuLabel>}
+              {group.label && <DropdownMenuLabel>{t(group.label)}</DropdownMenuLabel>}
 
               {group.actions.map((action) => {
                 const Icon = action.icon;
@@ -591,7 +600,7 @@ function DeviceActionsDropdown({ device, onActionClick }: DeviceActionsDropdownP
                         !isActionEnabled && "opacity-70",
                       )}
                     />
-                    {action.label}
+                    {t(action.label)}
                   </DropdownMenuItem>
                 );
               })}

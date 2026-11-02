@@ -12,25 +12,28 @@ import { KeyRound, LockKeyhole, MonitorSmartphone, ShieldCheck, Star } from "luc
 import type { OptionCardItem } from "../components/ui/OptionCard";
 import type { Step } from "../components/ui/Timeline";
 
+/**
+ * Texts of these lists are translation keys of `setting/two-factor`; the views translate them.
+ */
 export const twoFactorBenefits: OptionCardItem[] = [
   {
     key: "security",
-    title: "Mas seguridad",
-    description: "Protege tu cuenta contra accesos no autorizados.",
+    title: "setting/two-factor.benefits.security.title",
+    description: "setting/two-factor.benefits.security.description",
     icon: LockKeyhole,
     iconColor: "green",
   },
   {
     key: "verification",
-    title: "Verificación adicional",
-    description: "Requiere un código único además de tu contraseña.",
+    title: "setting/two-factor.benefits.verification.title",
+    description: "setting/two-factor.benefits.verification.description",
     icon: ShieldCheck,
     iconColor: "blue",
   },
   {
     key: "standard",
-    title: "Estandar confiable",
-    description: "Utilizamos TOTP, un estandar ampliamente reconocido y seguro.",
+    title: "setting/two-factor.benefits.standard.title",
+    description: "setting/two-factor.benefits.standard.description",
     icon: Star,
     iconColor: "purple",
   },
@@ -41,33 +44,29 @@ type TwoFactorImportantDetail = OptionCardItem;
 export const twoFactorImportantDetails: TwoFactorImportantDetail[] = [
   {
     key: "standard",
-    title: "Estandar confiable",
-    description:
-      "Guarda los codigos de respaldos que te proporcionaremos. Te permitiran acceder a tu cuenta si pierdes el telefono.",
+    title: "setting/two-factor.important_details.standard.title",
+    description: "setting/two-factor.important_details.standard.description",
     icon: KeyRound,
     iconColor: "green",
   },
   {
     key: "backup-codes",
-    title: "Códigos de respaldo",
-    description:
-      "Cada código de recuperación se puede usar una vez para acceder a tu cuenta y se eliminará después de su uso. Si necesitas más, genera nuevos códigos después de activar 2FA.",
+    title: "setting/two-factor.important_details.backup_codes.title",
+    description: "setting/two-factor.important_details.backup_codes.description",
     icon: MonitorSmartphone,
     iconColor: "yellow",
   },
   {
     key: "devices-trusted",
-    title: "Dispositivos de confianza",
-    description:
-      "Marca tus dispositivos como confiables para no tener que ingresar un código de verificación cada vez que inicies sesión desde ellos.",
+    title: "setting/two-factor.important_details.trusted_devices.title",
+    description: "setting/two-factor.important_details.trusted_devices.description",
     icon: ShieldCheck,
     iconColor: "blue",
   },
   {
     key: "support",
-    title: "¿Problemas?",
-    description:
-      "Si no puedes acceder a tu cuenta, usa un codigo de respaldo o contacta al soporte para obtener ayuda.",
+    title: "setting/two-factor.important_details.support.title",
+    description: "setting/two-factor.important_details.support.description",
     icon: LockKeyhole,
     iconColor: "purple",
   },
@@ -78,19 +77,18 @@ type TwoFactorOperationStep = Step;
 export const twoFactorOperationSteps: TwoFactorOperationStep[] = [
   {
     number: 1,
-    title: "Escanea el código QR",
-    description:
-      "Abre tu aplicación autenticadora (Google Authenticator, Authy, 1Password, etc.) y escanea el código.",
+    title: "setting/two-factor.operation_steps.scan.title",
+    description: "setting/two-factor.operation_steps.scan.description",
   },
   {
     number: 2,
-    title: "Obtén tu código",
-    description: "La aplicación generará códigos de 6 dígitos que cambian cada 30 segundos.",
+    title: "setting/two-factor.operation_steps.get_code.title",
+    description: "setting/two-factor.operation_steps.get_code.description",
   },
   {
     number: 3,
-    title: "Ingresa el código",
-    description: "Ingresa el código de 6 dígitos para verificar y activar 2FA en tu cuenta.",
+    title: "setting/two-factor.operation_steps.enter_code.title",
+    description: "setting/two-factor.operation_steps.enter_code.description",
   },
 ];
 
@@ -99,15 +97,15 @@ type TwoFactorRequirement = Pick<OptionCardItem, "description" | "key">;
 export const twoFactorRequirements: TwoFactorRequirement[] = [
   {
     key: "totp-app",
-    description: "Una aplicación autenticadora compatible con TOTP",
+    description: "setting/two-factor.requirements.totp_app",
   },
   {
     key: "mobile-access",
-    description: "Acceso a tu teléfono móvil",
+    description: "setting/two-factor.requirements.mobile_access",
   },
   {
     key: "internet-connection",
-    description: "Conexión a internet (para la configuracion inicial)",
+    description: "setting/two-factor.requirements.internet_connection",
   },
 ];
 

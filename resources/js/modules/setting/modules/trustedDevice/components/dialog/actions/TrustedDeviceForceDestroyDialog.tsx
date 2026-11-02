@@ -25,7 +25,8 @@ import {
 import { Label } from "@/shared/components/shadcn/ui/label";
 import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 
-import { formatLongDate, fromNow } from "@/shared/lib/dateTime";
+import { useDateTime, useTranslation } from "@/shared/hooks";
+
 import { alertVariants, buttonVariants } from "@/shared/lib/styling";
 
 interface TrustedDeviceForceDestroyDialogProps {
@@ -44,6 +45,8 @@ function TrustedDeviceForceDestroyDialog({
   open,
   onClose,
 }: TrustedDeviceForceDestroyDialogProps): JSX.Element {
+  const { t } = useTranslation();
+  const { formatLongDate, fromNow } = useDateTime();
   const { data, setData, submit, processing, reset, errors } = useForm<ForceDestroyFormData>({
     password: "",
     terms: false,
@@ -77,12 +80,13 @@ function TrustedDeviceForceDestroyDialog({
           <DialogTitle asChild>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <Trash2 aria-hidden="true" className="h-5 w-5 text-muted-foreground" />
-              Eliminar permanentemente
+              {t("setting/trusted-device-dialogs.force_destroy.title")}
             </h2>
           </DialogTitle>
           <DialogDescription className="text-sm font-normal">
-            Eliminarás permanentemente {device.name ?? "este dispositivo"} de tu cuenta. Esta acción
-            es definitiva y no podrás volver a confiar en él.
+            {t("setting/trusted-device-dialogs.force_destroy.description", {
+              device: device.name ?? t("setting/trusted-device-dialogs.this_device"),
+            })}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +110,7 @@ function TrustedDeviceForceDestroyDialog({
         <DialogFooter className="mt-1.5">
           <DialogClose asChild>
             <Button type="button" variant="outline" disabled={processing}>
-              Cancelar
+              {t("setting/common.actions.cancel")}
             </Button>
           </DialogClose>
 
@@ -119,10 +123,10 @@ function TrustedDeviceForceDestroyDialog({
             {processing ? (
               <>
                 <Spinner />
-                Eliminando...
+                {t("setting/trusted-device-dialogs.force_destroy.submitting")}
               </>
             ) : (
-              "Eliminar definitivamente"
+              t("setting/trusted-device-dialogs.force_destroy.submit")
             )}
           </Button>
         </DialogFooter>
@@ -132,6 +136,7 @@ function TrustedDeviceForceDestroyDialog({
 }
 
 function ForceDestroyConsequencesAlert(): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Alert aria-labelledby="force-destroy-warning-title" className={alertVariants.destructive}>
       <AlertTriangleIcon aria-hidden="true" />
@@ -139,16 +144,13 @@ function ForceDestroyConsequencesAlert(): JSX.Element {
         className="col-start-2 min-h-4 text-sm font-medium tracking-tight"
         id="force-destroy-warning-title"
       >
-        Consecuencias de la eliminación permanente
+        {t("setting/trusted-device-dialogs.force_destroy.consequences_title")}
       </h3>
       <AlertDescription className="text-sm font-normal">
         <ul className="mt-1 list-inside list-disc space-y-2">
-          <li>Este dispositivo se eliminará permanentemente de la base de datos.</li>
-          <li>Ya no podrás reactivarlo desde la sección &quot;Revocados&quot;.</li>
-          <li>
-            Tu historial de actividad seguirá mostrando las acciones realizadas con este
-            dispositivo, pero ya no permitirá abrirlas para ver los detalles.
-          </li>
+          <li>{t("setting/trusted-device-dialogs.force_destroy.consequences.deleted")}</li>
+          <li>{t("setting/trusted-device-dialogs.force_destroy.consequences.no_reactivation")}</li>
+          <li>{t("setting/trusted-device-dialogs.force_destroy.consequences.history")}</li>
         </ul>
       </AlertDescription>
     </Alert>
@@ -168,11 +170,12 @@ function ForceDestroyForm({
   setData,
   data,
 }: ForceDestroyFormProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <form id="force-destroy-trusted-device-form" onSubmit={handleSubmit} className="grid gap-4">
       <div className="flex flex-col gap-2">
         <Label htmlFor="force-destroy-trusted-device">
-          Para continuar, confirma y escribe tu contraseña
+          {t("setting/trusted-device-dialogs.password_confirmation.prompt")}
         </Label>
 
         <PasswordInput
@@ -180,7 +183,7 @@ function ForceDestroyForm({
           name="password"
           required
           autoFocus
-          placeholder="Ingresa tu contraseña"
+          placeholder={t("setting/trusted-device-dialogs.password_confirmation.placeholder")}
           aria-describedby={errors.password ? "force-destroy-password-error" : undefined}
           onChange={(event) => {
             setData("password", event.target.value);
@@ -210,7 +213,7 @@ function ForceDestroyForm({
         />
 
         <LabelForm htmlFor="force-destroy-trusted-device-terms">
-          Entiendo que esta acción es irreversible.
+          {t("setting/trusted-device-dialogs.force_destroy.terms")}
         </LabelForm>
       </div>
 

@@ -12,6 +12,8 @@ import { index as publicProfileIndex } from "@/shared/wayfinder/routes/profile";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Card, CardContent, CardHeader } from "@/shared/components/shadcn/ui/card";
 
+import { useTranslation } from "@/shared/hooks";
+
 import { iconColorVariants } from "@/shared/lib/styling";
 
 interface AccountActionsPanelProps {
@@ -19,6 +21,8 @@ interface AccountActionsPanelProps {
 }
 
 function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
       <Card className="gap-4 overflow-hidden py-0">
@@ -26,20 +30,22 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
           <Eye aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-foreground" />
 
           <div className="flex min-w-0 flex-col gap-1">
-            <h2 className="font-semibold tracking-tight">Perfil público</h2>
+            <h2 className="font-semibold tracking-tight">
+              {t("setting/account-settings.actions.public_profile.title")}
+            </h2>
           </div>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-5 pb-5 sm:px-6 sm:pb-6">
           <p className="text-sm leading-6 text-muted-foreground">
-            Revisa cómo se muestra tu perfil público.
+            {t("setting/account-settings.actions.public_profile.description")}
           </p>
 
           <Button asChild className="w-fit max-w-full justify-between" size="sm" variant="outline">
             <Link href={publicProfileIndex.url()}>
               <span className="inline-flex min-w-0 items-center gap-2">
                 <ExternalLink aria-hidden="true" className="size-4 shrink-0" />
-                Ir a mi perfil público
+                {t("setting/account-settings.actions.public_profile.link")}
               </span>
               <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
             </Link>
@@ -52,13 +58,15 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
           <LockKeyhole aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-foreground" />
 
           <div className="flex min-w-0 flex-col gap-1">
-            <h2 className="font-semibold tracking-tight">Cambiar contraseña</h2>
+            <h2 className="font-semibold tracking-tight">
+              {t("setting/account-settings.actions.password.title")}
+            </h2>
           </div>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-5 pb-5 sm:px-6 sm:pb-6">
           <p className="text-sm leading-6 text-muted-foreground">
-            Elige una contraseña segura que no uses en otros sitios.
+            {t("setting/account-settings.actions.password.description")}
           </p>
 
           <AccountSettingsPasswordDialog />
@@ -76,14 +84,14 @@ function AccountActionsPanel({ userId }: AccountActionsPanelProps): JSX.Element 
 
           <div className="flex min-w-0 flex-col gap-1">
             <h2 className="font-semibold tracking-tight text-red-600 dark:text-red-400">
-              Eliminar cuenta
+              {t("setting/account-settings.actions.delete.title")}
             </h2>
           </div>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 px-5 pb-5 sm:px-6 sm:pb-6">
           <p className="text-sm leading-6 text-red-600 dark:text-red-400">
-            Esta acción es permanente y perderás el acceso a tu cuenta.
+            {t("setting/account-settings.actions.delete.description")}
           </p>
 
           <AccountSettingsDeleteDialog userId={userId} />

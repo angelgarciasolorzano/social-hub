@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Event;
@@ -103,4 +104,40 @@ it('keeps authenticated users from creating another account', function (): void 
     $this->assertAuthenticatedAs($authenticatedUser);
 
     expect(User::query()->count('id'))->toBe($userCount);
+});
+
+it('saves the language of the browser as the preferred language of the new account', function (string $acceptLanguage, PreferredLocale $preferredLocale): void {
+    $email = fake()->unique()->safeEmail();
+
+    $this->withHeader('Accept-Language', $acceptLanguage)
+        ->post(route('register.store'), [
+            'name' => 'New User',
+            'email' => $email,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])
+        ->assertRedirect(route('home', absolute: false));
+
+    expect(User::query()->where('email', $email)->firstOrFail()->preferred_locale)->toBe($preferredLocale);
+})->with([
+    'English browser' => ['en-US,en;q=0.9', PreferredLocale::ENGLISH],
+    'Spanish browser' => ['es-MX,es;q=0.9', PreferredLocale::SPANISH],
+    'browser without a language' => ['', PreferredLocale::SPANISH],
+]);
+
+it('ignores a preferred language sent with the registration form', function (): void {
+    $email = fake()->unique()->safeEmail();
+
+    $this->withHeader('Accept-Language', 'es-MX')
+        ->post(route('register.store'), [
+            'name' => 'New User',
+            'email' => $email,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'preferred_locale' => PreferredLocale::ENGLISH->value,
+            'preferredLocale' => PreferredLocale::ENGLISH->value,
+        ])
+        ->assertRedirect(route('home', absolute: false));
+
+    expect(User::query()->where('email', $email)->firstOrFail()->preferred_locale)->toBe(PreferredLocale::SPANISH);
 });

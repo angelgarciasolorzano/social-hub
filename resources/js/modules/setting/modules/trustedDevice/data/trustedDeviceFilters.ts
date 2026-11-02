@@ -1,7 +1,7 @@
 export const statusOptions = [
-  { value: "active", label: "Activo" },
-  { value: "inactive", label: "Expirado" },
-  { value: "revoked", label: "Revocado" },
+  { value: "active", label: "setting/trusted-devices.status.active" },
+  { value: "inactive", label: "setting/trusted-devices.status.expired" },
+  { value: "revoked", label: "setting/trusted-devices.status.revoked" },
 ] as const;
 
 export type TrustedDeviceStatusFilter = (typeof statusOptions)[number]["value"];
@@ -17,7 +17,7 @@ export const browserOptions = [
   { value: "firefox", label: "Firefox" },
   { value: "safari", label: "Safari" },
   { value: "edge", label: "Edge" },
-  { value: "otro", label: "Otro" },
+  { value: "otro", label: "setting/trusted-devices.filters.browsers.other" },
 ] as const;
 
 export type TrustedDeviceBrowserFilter = (typeof browserOptions)[number]["value"];
@@ -29,16 +29,16 @@ export const defaultTrustedDevicePerPage = 15;
 export type TrustedDevicePerPage = (typeof trustedDevicePerPageOptions)[number];
 
 export const deviceTypeOptions = [
-  { value: "desktop / laptop", label: "Escritorio / Portátil" },
-  { value: "mobile / tablet", label: "Móvil / Tablet" },
+  { value: "desktop / laptop", label: "setting/trusted-devices.filters.device_types.desktop" },
+  { value: "mobile / tablet", label: "setting/trusted-devices.filters.device_types.mobile" },
 ] as const;
 
 export type TrustedDeviceDeviceTypeFilter = (typeof deviceTypeOptions)[number]["value"];
 
 export const lastAccessOptions = [
-  { value: "24h", label: "Últimas 24 horas" },
-  { value: "7d", label: "Últimos 7 días" },
-  { value: "30d", label: "Últimos 30 días" },
+  { value: "24h", label: "setting/trusted-devices.filters.last_access.last_24_hours" },
+  { value: "7d", label: "setting/trusted-devices.filters.last_access.last_7_days" },
+  { value: "30d", label: "setting/trusted-devices.filters.last_access.last_30_days" },
 ] as const;
 
 export type TrustedDeviceLastAccessFilter = (typeof lastAccessOptions)[number]["value"];

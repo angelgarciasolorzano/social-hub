@@ -6,6 +6,8 @@ import { InputError, LabelForm } from "@/shared/components/form";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import { Input } from "@/shared/components/shadcn/ui/input";
 
+import { useTranslation } from "@/shared/hooks";
+
 const RECOVERY_CODE_MAX_LENGTH = 21;
 
 interface TwoFactorCodeFieldProps {
@@ -31,6 +33,7 @@ function TwoFactorCodeField({
   onChange,
   onModeChange,
 }: TwoFactorCodeFieldProps): JSX.Element {
+  const { t } = useTranslation();
   const [showRecoveryInput, setShowRecoveryInput] = useState<boolean>(false);
 
   const handleToggleRecoveryInput = (): void => {
@@ -54,7 +57,7 @@ function TwoFactorCodeField({
         <TwoFactorOtpField
           id={`${id}-otp`}
           name={name}
-          label="Código de verificación"
+          label={t("setting/common.two_factor_code.otp_label")}
           value={value}
           error={error}
           disabled={disabled}
@@ -70,8 +73,8 @@ function TwoFactorCodeField({
         onClick={handleToggleRecoveryInput}
       >
         {showRecoveryInput
-          ? "Usar un código de mi aplicación autenticadora"
-          : "Usar un código de recuperación"}
+          ? t("setting/common.two_factor_code.use_authenticator_code")
+          : t("setting/common.two_factor_code.use_recovery_code")}
       </Button>
     </div>
   );
@@ -94,12 +97,13 @@ function RecoveryCodeInput({
   disabled,
   onChange,
 }: RecoveryCodeInputProps): JSX.Element {
+  const { t } = useTranslation();
   const errorId = `${id}-error`;
 
   return (
     <div className="flex flex-col gap-2">
       <LabelForm error={error} htmlFor={id}>
-        Código de recuperación
+        {t("setting/common.two_factor_code.recovery_label")}
       </LabelForm>
 
       <Input
@@ -121,7 +125,7 @@ function RecoveryCodeInput({
       />
 
       <p className="text-xs text-muted-foreground">
-        Cada código de recuperación solo se puede usar una vez.
+        {t("setting/common.two_factor_code.recovery_single_use")}
       </p>
 
       {error && <InputError aria-live="polite" id={errorId} message={error} />}
