@@ -241,7 +241,7 @@ describe('with the announcements manager role', function (): void {
     it('resubmits an in-review announcement when its image changes', function (): void {
         Storage::fake('public');
         $announcement = editAnnouncementFactory()->withStatus(AnnouncementStatus::InReview)->createOne();
-        $previousSubmission = addEditAnnouncementSubmission($announcement);
+        $announcementReview = addEditAnnouncementSubmission($announcement);
         $administratorId = auth('admin')->id();
 
         editAnnouncementPage($announcement)
@@ -258,7 +258,7 @@ describe('with the announcements manager role', function (): void {
 
         expect($announcement->refresh()->status)->toBe(AnnouncementStatus::InReview)
             ->and($announcement->reviews()->count())->toBe(2)
-            ->and($previousSubmission->refresh()->action)->toBe(AnnouncementReviewAction::Submitted)
+            ->and($announcementReview->refresh()->action)->toBe(AnnouncementReviewAction::Submitted)
             ->and($latestSubmission->action)->toBe(AnnouncementReviewAction::Resubmitted)
             ->and($latestSubmission->reviewed_by)->toBe($administratorId)
             ->and($updatedActivities)->toHaveCount(1)
@@ -266,11 +266,11 @@ describe('with the announcements manager role', function (): void {
             ->and(editAnnouncementActivities(ActivityLogAdminEvent::AnnouncementSubmitted))->toHaveCount(1);
     });
 
-    it('records only one resubmission when content and image change together', function (AnnouncementStatus $startingStatus): void {
+    it('records only one resubmission when content and image change together', function (AnnouncementStatus $announcementStatus): void {
         Storage::fake('public');
-        $announcement = editAnnouncementFactory()->withStatus($startingStatus)->createOne();
+        $announcement = editAnnouncementFactory()->withStatus($announcementStatus)->createOne();
 
-        if ($startingStatus === AnnouncementStatus::InReview) {
+        if ($announcementStatus === AnnouncementStatus::InReview) {
             addEditAnnouncementSubmission($announcement);
         }
 

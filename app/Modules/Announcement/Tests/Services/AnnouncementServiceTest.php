@@ -618,7 +618,7 @@ it('resubmits an approved announcement when its content changes', function (stri
     'dismissibility' => 'dismissibility',
 ]);
 
-it('notifies eligible reviewers when reviewed announcements are resubmitted', function (AnnouncementStatus $startingStatus, string $resubmissionType): void {
+it('notifies eligible reviewers when reviewed announcements are resubmitted', function (AnnouncementStatus $announcementStatus, string $resubmissionType): void {
     $user = createUser();
     $editor = createUser();
     $eligibleReviewer = createUser();
@@ -628,7 +628,7 @@ it('notifies eligible reviewers when reviewed announcements are resubmitted', fu
     assignAnnouncementReviewerForService($eligibleReviewer);
 
     $announcement = serviceAnnouncementFactory()
-        ->withStatus($startingStatus)
+        ->withStatus($announcementStatus)
         ->createdBy($user)
         ->createOne([
             'title' => ANNOUNCEMENT_TITLE_SENTINEL,
@@ -637,7 +637,7 @@ it('notifies eligible reviewers when reviewed announcements are resubmitted', fu
 
     $previousSubmissionReview = null;
 
-    if ($startingStatus === AnnouncementStatus::InReview) {
+    if ($announcementStatus === AnnouncementStatus::InReview) {
         $previousSubmissionReview = $announcement->reviews()->create([
             'action' => AnnouncementReviewAction::Submitted,
             'reviewed_by' => $user->id,

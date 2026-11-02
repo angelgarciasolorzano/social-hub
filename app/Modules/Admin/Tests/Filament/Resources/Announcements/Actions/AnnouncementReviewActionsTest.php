@@ -92,13 +92,11 @@ function announcementReviewActionIsMounted(Testable $testable): bool
  */
 function announcementReviewActionRecord(Testable $testable): Announcement
 {
-    $record = $testable->instance()->getRecord();
+    $model = $testable->instance()->getRecord();
 
-    if (! $record instanceof Announcement) {
-        throw new LogicException('Expected the review page to contain an announcement.');
-    }
+    throw_unless($model instanceof Announcement, LogicException::class, 'Expected the review page to contain an announcement.');
 
-    return $record;
+    return $model;
 }
 
 /**

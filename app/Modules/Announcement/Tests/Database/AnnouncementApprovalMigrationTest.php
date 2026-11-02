@@ -50,16 +50,37 @@ function insertAnnouncementReview(
     ]);
 }
 
+/**
+ * Insert a legacy announcement without relying on the model's later status attribute.
+ */
+function insertAnnouncementForApprovalMigration(): int
+{
+    return DB::table('announcements')->insertGetId([
+        'title' => 'Aviso previo al flujo de aprobación',
+        'body' => '<p>Contenido anterior al flujo de aprobación.</p>',
+        'type' => 'info',
+        'audience' => 'all',
+        'starts_at' => now(),
+        'ends_at' => null,
+        'button_label' => null,
+        'button_url' => null,
+        'is_dismissible' => true,
+        'created_by' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
 it('defaults existing and new announcements to draft', function (): void {
     try {
         runAnnouncementApprovalMigration('migrate:rollback');
-        $existingAnnouncement = createApprovalWorkflowAnnouncement();
+        $existingAnnouncementId = insertAnnouncementForApprovalMigration();
 
         runAnnouncementApprovalMigration('migrate');
-        $newAnnouncement = createApprovalWorkflowAnnouncement();
+        $newAnnouncementId = insertAnnouncementForApprovalMigration();
 
-        expect(DB::table('announcements')->where('id', $existingAnnouncement->id)->value('status'))->toBe('draft')
-            ->and(DB::table('announcements')->where('id', $newAnnouncement->id)->value('status'))->toBe('draft');
+        expect(DB::table('announcements')->where('id', $existingAnnouncementId)->value('status'))->toBe('draft')
+            ->and(DB::table('announcements')->where('id', $newAnnouncementId)->value('status'))->toBe('draft');
     } finally {
         Artisan::call('migrate:fresh');
     }
