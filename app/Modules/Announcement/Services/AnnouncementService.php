@@ -16,6 +16,7 @@ use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Closure;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -390,6 +391,7 @@ final readonly class AnnouncementService
                 $excludedUserIds[] = $authorId;
             }
 
+            /** @var Collection<int, User> $reviewers */
             $reviewers = User::query()
                 ->permission(AdminPermission::AdminAnnouncementsReview)
                 ->whereNotIn('id', $excludedUserIds)
