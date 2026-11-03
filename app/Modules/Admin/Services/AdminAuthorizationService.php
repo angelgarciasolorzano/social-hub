@@ -6,11 +6,13 @@ namespace App\Modules\Admin\Services;
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
+use App\Modules\Admin\Data\AdminAuthorizationChanges;
 use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\User\Models\User;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -168,6 +170,131 @@ final readonly class AdminAuthorizationService
 
             return true;
         });
+    }
+
+    /**
+     * Leave the user with exactly the selected cataloged roles, in one transaction. Roles outside the
+     * catalog are kept. Grants run before revocations, so moving access between roles never trips the
+     * last `admin.access` check, and the whole sync is rolled back when it would remove the acting
+     * administrator's own access to the panel or to this action.
+     *
+     * @param  list<AdminRole>  $adminRoles
+     *
+     * @throws AdminAuthorizationException
+     */
+    public function syncUserRoles(User $user, array $adminRoles, User $actor): AdminAuthorizationChanges
+    {
+        return $this->syncWithinTransaction(function () use ($user, $adminRoles, $actor): AdminAuthorizationChanges {
+            $this->lockUser($user);
+
+            $currentRoles = $user->roles
+                ->filter(static fn (Role $role): bool => $role->guard_name === self::GUARD)
+                ->map(static fn (Role $role): ?AdminRole => AdminRole::tryFrom($role->name))
+                ->filter()
+                ->values()
+                ->all();
+
+            $granted = [];
+            $revoked = [];
+
+            foreach (AdminRole::cases() as $adminRole) {
+                if (\in_array($adminRole, $adminRoles, true) && ! \in_array($adminRole, $currentRoles, true)) {
+                    $this->grantRole($user, $adminRole, $actor);
+                    $granted[] = $adminRole->value;
+                }
+            }
+
+            foreach (AdminRole::cases() as $adminRole) {
+                if (\in_array($adminRole, $currentRoles, true) && ! \in_array($adminRole, $adminRoles, true)) {
+                    $this->revokeRole($user, $adminRole, $actor);
+                    $revoked[] = $adminRole->value;
+                }
+            }
+
+            $this->ensureActorKeepsAccess($actor, AdminPermission::AdminUsersRoles);
+
+            return new AdminAuthorizationChanges($granted, $revoked);
+        });
+    }
+
+    /**
+     * Leave the cataloged role with exactly the selected cataloged permissions, in one transaction.
+     * Permissions outside the catalog are kept, and the whole sync is rolled back when it would remove
+     * the acting administrator's own access to the panel or to this action.
+     *
+     * @param  list<AdminPermission>  $adminPermissions
+     *
+     * @throws AdminAuthorizationException
+     */
+    public function syncRolePermissions(AdminRole $adminRole, array $adminPermissions, User $user): AdminAuthorizationChanges
+    {
+        return $this->syncWithinTransaction(function () use ($adminRole, $adminPermissions, $user): AdminAuthorizationChanges {
+            ['role' => $role] = $this->lockCatalogRole($adminRole);
+
+            $currentPermissions = Permission::query()
+                ->where('guard_name', self::GUARD)
+                ->whereHas('roles', fn (Builder $builder): Builder => $builder->whereKey($role->getKey()))
+                ->get()
+                ->map(static fn (Permission $permission): ?AdminPermission => AdminPermission::tryFrom($permission->name))
+                ->filter()
+                ->values()
+                ->all();
+
+            $granted = [];
+            $revoked = [];
+
+            foreach (AdminPermission::cases() as $adminPermission) {
+                if (\in_array($adminPermission, $adminPermissions, true) && ! \in_array($adminPermission, $currentPermissions, true)) {
+                    $this->grantPermission($adminRole, $adminPermission, $user);
+                    $granted[] = $adminPermission->value;
+                }
+            }
+
+            foreach (AdminPermission::cases() as $adminPermission) {
+                if (\in_array($adminPermission, $currentPermissions, true) && ! \in_array($adminPermission, $adminPermissions, true)) {
+                    $this->revokePermission($adminRole, $adminPermission, $user);
+                    $revoked[] = $adminPermission->value;
+                }
+            }
+
+            $this->ensureActorKeepsAccess($user, AdminPermission::AdminRolesUpdate);
+
+            return new AdminAuthorizationChanges($granted, $revoked);
+        });
+    }
+
+    /**
+     * Run a sync in one transaction and flush Spatie's cache afterwards whatever the outcome: the
+     * actor check may rebuild it from rows that a failed sync then rolls back.
+     *
+     * @param  Closure(): AdminAuthorizationChanges  $sync
+     *
+     * @throws AdminAuthorizationException
+     */
+    private function syncWithinTransaction(Closure $sync): AdminAuthorizationChanges
+    {
+        try {
+            return DB::transaction($sync);
+        } finally {
+            $this->permissionRegistrar->forgetCachedPermissions();
+        }
+    }
+
+    /**
+     * @throws AdminAuthorizationException when the actor no longer holds `admin.access` or the permission
+     *                                     that authorized the sync
+     */
+    private function ensureActorKeepsAccess(User $user, AdminPermission $adminPermission): void
+    {
+        $this->permissionRegistrar->forgetCachedPermissions();
+        $user->unsetRelation('roles')->unsetRelation('permissions');
+
+        throw_unless(
+            $user->hasPermissionTo(AdminPermission::AdminAccess->value, self::GUARD)
+                && $user->hasPermissionTo($adminPermission->value, self::GUARD),
+            AdminAuthorizationException::class,
+            AdminAuthorizationFailure::ActorWouldLoseAccess,
+        );
     }
 
     /**
