@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Pages;
 
+use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Exceptions\AdminAuthorizationException;
+use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Resources\Users\Widgets\UserActivityOverview;
+use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Models\AccountStatusChange;
@@ -13,14 +17,20 @@ use App\User\Models\User;
 use App\User\Modules\AccountStatus\Services\AccountStatusService;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 use Override;
+use Spatie\Permission\Models\Role;
 
 class ViewUser extends ViewRecord
 {
+    use ConfirmsCurrentPassword;
+
     #[Override]
     protected static string $resource = UserResource::class;
 
@@ -28,12 +38,40 @@ class ViewUser extends ViewRecord
 
     private const string REACTIVATE_ACTION = 'reactivateAccount';
 
+    private const string MANAGE_ROLES_ACTION = 'manageRoles';
+
+    private const string ROLES_FIELD = 'roles';
+
+    private const string ROLES_PASSWORD_THROTTLE_PREFIX = 'admin-users:manage-roles:';
+
     /**
      * @return Action[]
      */
     protected function getHeaderActions(): array
     {
         return [
+            Action::make(self::MANAGE_ROLES_ACTION)
+                ->label(TranslatedText::of('admin/roles.actions.manage_roles.label'))
+                ->icon(Heroicon::OutlinedShieldCheck)
+                ->color('gray')
+                ->authorize('manageRoles')
+                ->modalHeading(fn (User $record): string => TranslatedText::of('admin/roles.actions.manage_roles.modal_heading', [
+                    'name' => $record->name,
+                ]))
+                ->modalDescription(TranslatedText::of('admin/roles.actions.manage_roles.modal_description'))
+                ->modalSubmitActionLabel(TranslatedText::of('admin/roles.actions.manage_roles.submit'))
+                ->modalWidth('3xl')
+                ->fillForm(fn (User $record): array => [self::ROLES_FIELD => $this->catalogRoleNames($record)])
+                ->schema([
+                    CheckboxList::make(self::ROLES_FIELD)
+                        ->label(TranslatedText::of('admin/roles.actions.manage_roles.field'))
+                        ->options($this->roleOptions())
+                        ->descriptions($this->roleDescriptions())
+                        ->columns(2)
+                        ->bulkToggleable(),
+                    self::currentPasswordField(),
+                ])
+                ->action(fn (array $data, AdminAuthorizationService $adminAuthorizationService) => $this->manageRoles($data, $adminAuthorizationService)),
             Action::make(self::SUSPEND_ACTION)
                 ->label(TranslatedText::of('admin/users.actions.suspend.label'))
                 ->icon(Heroicon::OutlinedNoSymbol)
@@ -148,5 +186,102 @@ class ViewUser extends ViewRecord
         } catch (LogicException) {
             $action->failure();
         }
+    }
+
+    /**
+     * Confirm the password, leave the user with the selected cataloged roles and report what changed,
+     * or why nothing did.
+     *
+     * @param  array<mixed>  $data
+     *
+     * @throws ValidationException when the password is wrong or its attempts are exhausted
+     */
+    private function manageRoles(array $data, AdminAuthorizationService $adminAuthorizationService): void
+    {
+        $administrator = Filament::auth()->user();
+        $model = $this->getRecord();
+        $currentPassword = $data[self::CURRENT_PASSWORD_FIELD] ?? null;
+        $selectedRoleNames = $data[self::ROLES_FIELD] ?? [];
+
+        abort_unless($administrator instanceof User && $model instanceof User, 403);
+        abort_unless(\is_string($currentPassword) && \is_array($selectedRoleNames), 422);
+
+        self::ensureCurrentPassword(
+            $administrator,
+            $currentPassword,
+            self::ROLES_PASSWORD_THROTTLE_PREFIX,
+            'mountedActions.0.data.'.self::CURRENT_PASSWORD_FIELD,
+        );
+
+        $selectedRoles = array_values(array_filter(array_map(
+            static fn (mixed $roleName): ?AdminRole => \is_string($roleName) ? AdminRole::tryFrom($roleName) : null,
+            $selectedRoleNames,
+        )));
+
+        try {
+            $adminAuthorizationChanges = $adminAuthorizationService->syncUserRoles($model, $selectedRoles, $administrator);
+        } catch (AdminAuthorizationException $adminAuthorizationException) {
+            Notification::make()
+                ->title($adminAuthorizationException->failure->message())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $changeCount = $adminAuthorizationChanges->changeCount();
+
+        Notification::make()
+            ->title($adminAuthorizationChanges->hasChanges()
+                ? trans_choice('admin/roles.actions.manage_roles.success', $changeCount, ['count' => $changeCount])
+                : TranslatedText::of('admin/roles.actions.manage_roles.unchanged'))
+            ->success()
+            ->send();
+    }
+
+    /**
+     * The cataloged roles of the user, as the form's initial state.
+     *
+     * @return list<string>
+     */
+    private function catalogRoleNames(User $user): array
+    {
+        $roleNames = $user->roles
+            ->filter(static fn (Role $role): bool => $role->guard_name === 'admin')
+            ->map(static fn (Role $role): string => $role->name)
+            ->all();
+
+        return array_values(array_filter(
+            array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()),
+            static fn (string $roleName): bool => \in_array($roleName, $roleNames, true),
+        ));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function roleOptions(): array
+    {
+        $roleOptions = [];
+
+        foreach (AdminRole::cases() as $adminRole) {
+            $roleOptions[$adminRole->value] = $adminRole->label();
+        }
+
+        return $roleOptions;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function roleDescriptions(): array
+    {
+        $roleDescriptions = [];
+
+        foreach (AdminRole::cases() as $adminRole) {
+            $roleDescriptions[$adminRole->value] = $adminRole->description();
+        }
+
+        return $roleDescriptions;
     }
 }
