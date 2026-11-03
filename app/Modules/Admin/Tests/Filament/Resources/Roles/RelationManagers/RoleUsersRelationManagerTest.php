@@ -46,8 +46,8 @@ it('lists only the users holding the role, linked to their detail', function ():
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
-    $postsReader = createUser();
-    $postsReader->assignRole(AdminRole::AdminPostsReader->value);
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminPostsReader->value);
 
     $suspendedPostsReader = createSuspendedUser();
     $suspendedPostsReader->assignRole(AdminRole::AdminPostsReader->value);
@@ -56,13 +56,13 @@ it('lists only the users holding the role, linked to their detail', function ():
 
     $testable = roleUsersRelationManagerFor(roleWithUsers(AdminRole::AdminPostsReader))
         ->assertOk()
-        ->assertSee($postsReader->email)
+        ->assertSee($user->email)
         ->assertSee('Suspended')
-        ->assertSee(UserResource::getUrl('view', ['record' => $postsReader]), false);
+        ->assertSee(UserResource::getUrl('view', ['record' => $user]), false);
 
     expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
         ->toEqualCanonicalizing([
-            FilamentTableRecords::recordKey($postsReader),
+            FilamentTableRecords::recordKey($user),
             FilamentTableRecords::recordKey($suspendedPostsReader),
         ]);
 });

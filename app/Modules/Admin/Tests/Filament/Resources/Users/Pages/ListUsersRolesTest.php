@@ -56,8 +56,8 @@ it('filters the users by one role or by the union of several', function (): void
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminRolesReader);
-    $moderator = createUser();
-    $moderator->assignRole(AdminRole::AdminUsersModerator->value);
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminUsersModerator->value);
 
     $backupsOperator = createUser();
     $backupsOperator->assignRole(AdminRole::AdminBackupsOperator->value);
@@ -72,9 +72,9 @@ it('filters the users by one role or by the union of several', function (): void
         User::class,
     );
 
-    expect($moderators)->toBe([FilamentTableRecords::recordKey($moderator)])
+    expect($moderators)->toBe([FilamentTableRecords::recordKey($user)])
         ->and($moderatorsAndOperators)->toEqualCanonicalizing([
-            FilamentTableRecords::recordKey($moderator),
+            FilamentTableRecords::recordKey($user),
             FilamentTableRecords::recordKey($backupsOperator),
         ]);
 });
