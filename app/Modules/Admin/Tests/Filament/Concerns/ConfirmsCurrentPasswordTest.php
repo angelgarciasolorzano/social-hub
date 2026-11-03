@@ -12,37 +12,45 @@ use Illuminate\Validation\ValidationException;
 const CONFIRMS_CURRENT_PASSWORD_THROTTLE_PREFIX = 'admin-test:current-password:';
 
 /**
- * A class that exposes the concern's protected methods to the tests.
- */
-final class ConfirmsCurrentPasswordProbe
-{
-    use ConfirmsCurrentPassword;
-
-    public static function ensure(User $user, string $currentPassword, string $errorKey = 'current_password'): void
-    {
-        self::ensureCurrentPassword($user, $currentPassword, CONFIRMS_CURRENT_PASSWORD_THROTTLE_PREFIX, $errorKey);
-    }
-
-    public static function fieldName(): string
-    {
-        return self::currentPasswordField()->getName();
-    }
-}
-
-/**
- * The validation errors of a password check, or an empty array when it passes.
+ * The validation errors of a password check, or an empty array when it passes. The concern is used by
+ * an anonymous class: a named class in a test file would break Composer's PSR-4 autoload map.
  *
  * @return array<mixed>
  */
 function currentPasswordErrors(User $user, string $currentPassword, string $errorKey = 'current_password'): array
 {
+    $probe = new class
+    {
+        use ConfirmsCurrentPassword;
+
+        public function ensure(User $user, string $currentPassword, string $errorKey): void
+        {
+            self::ensureCurrentPassword($user, $currentPassword, CONFIRMS_CURRENT_PASSWORD_THROTTLE_PREFIX, $errorKey);
+        }
+    };
+
     try {
-        ConfirmsCurrentPasswordProbe::ensure($user, $currentPassword, $errorKey);
+        $probe->ensure($user, $currentPassword, $errorKey);
     } catch (ValidationException $validationException) {
         return $validationException->errors();
     }
 
     return [];
+}
+
+function currentPasswordFieldName(): string
+{
+    $probe = new class
+    {
+        use ConfirmsCurrentPassword;
+
+        public function fieldName(): string
+        {
+            return self::currentPasswordField()->getName();
+        }
+    };
+
+    return $probe->fieldName();
 }
 
 it('accepts the current password and clears earlier failed attempts', function (): void {
@@ -77,5 +85,5 @@ it('locks the check after five wrong attempts, even for the right password', fun
 });
 
 it('builds the current password field', function (): void {
-    expect(ConfirmsCurrentPasswordProbe::fieldName())->toBe('current_password');
+    expect(currentPasswordFieldName())->toBe('current_password');
 });
