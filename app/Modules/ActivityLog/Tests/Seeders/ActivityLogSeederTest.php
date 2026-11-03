@@ -12,12 +12,14 @@ use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Models\AnnouncementReview;
+use App\Providers\AppServiceProvider;
 use App\User\Database\Factories\AccountStatusChangeFactory;
 use App\User\Database\Seeders\UserSeeder;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 const ACTIVITY_LOG_SEEDER_SENTINEL_TEXT = 'Texto centinela del seeder de actividad';
@@ -202,6 +204,33 @@ it('records Angel bootstrapping the panel and granting every role of the other a
         ->and($roleGrants->pluck('subject_id')->unique()->all())->toBe([$administrator->id])
         ->and($roleGrants->map(fn (ActivityLog $activityLog): mixed => $activityLog->properties?->get('role'))->sort()->values()->all())
         ->toBe([AdminRole::Admin->value, AdminRole::AdminPostsReader->value]);
+});
+
+it('records a few role permissions Angel revoked and later granted back', function (): void {
+    ['angel' => $angel] = seedActivityLogSourceData($this);
+
+    $this->seed(ActivityLogSeeder::class);
+
+    $revocations = ActivityLog::query()->where('event', 'admin.role_permission_revoked')->get();
+    $grants = ActivityLog::query()->where('event', 'admin.role_permission_granted')->get();
+
+    expect($revocations->count())->toBeGreaterThanOrEqual(3)->toBeLessThanOrEqual(8)
+        ->and($grants)->toHaveCount($revocations->count())
+        ->and($revocations->merge($grants)->pluck('causer_id')->unique()->all())->toBe([$angel->id])
+        ->and($revocations->merge($grants)->pluck('subject_type')->unique()->all())->toBe([AppServiceProvider::ROLE_MORPH_NAME]);
+
+    foreach ($revocations as $revocation) {
+        $role = Role::query()->findOrFail($revocation->subject_id);
+        $permissionName = $revocation->getProperty('permission');
+
+        $grant = $grants->first(static fn (ActivityLog $activityLog): bool => $activityLog->subject_id === $revocation->subject_id
+            && $activityLog->getProperty('permission') === $permissionName);
+
+        expect($grant)->toBeInstanceOf(ActivityLog::class)
+            ->and($grant?->created_at?->getTimestamp())->toBeGreaterThanOrEqual($revocation->created_at?->getTimestamp() ?? PHP_INT_MAX)
+            ->and($revocation->getProperty('role'))->toBe($role->name)
+            ->and(is_string($permissionName) && $role->hasPermissionTo($permissionName))->toBeTrue();
+    }
 });
 
 it('never stores the content of posts or comments', function (): void {
