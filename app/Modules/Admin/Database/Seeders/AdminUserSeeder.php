@@ -35,6 +35,7 @@ class AdminUserSeeder extends Seeder
             $this->roleFor(AdminRole::AdminUsersModerator),
             $this->roleFor(AdminRole::AdminAnnouncementsManager),
             $this->roleFor(AdminRole::AdminAnnouncementsReviewer),
+            $this->roleFor(AdminRole::AdminRolesManager),
             ...array_map($this->roleFor(...), $this->readerRoles()),
         );
 
