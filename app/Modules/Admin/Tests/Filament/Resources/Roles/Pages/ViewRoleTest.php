@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\PreferredLocale;
 use Livewire\Features\SupportTesting\Testable;
@@ -56,6 +57,21 @@ it('shows the role and its permissions grouped by area', function (PreferredLoca
         ->assertDontSee($text('catalog.areas.backups'))
         ->assertDontSee($text('catalog.permissions.'.AdminPermission::AdminAccess->translationKey().'.label'));
 })->with([PreferredLocale::ENGLISH, PreferredLocale::SPANISH]);
+
+it('titles the page and breadcrumb with the translated role name', function (): void {
+    app()->setLocale(PreferredLocale::SPANISH->value);
+
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    $role = adminGuardRole(AdminRole::AdminPostsReader);
+    $label = translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.roles.admin_posts_reader.label');
+
+    expect(RoleResource::getRecordTitle($role))->toBe($label)
+        ->and(RoleResource::getRecordTitle(Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin'])))->toBe('legacy-role');
+
+    viewRolePage($role)->assertSee($label);
+});
 
 it('shows an empty state for a role outside the catalog without permissions', function (): void {
     /** @var TestCase $testCase */

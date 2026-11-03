@@ -6,7 +6,7 @@
 
 <x-filament-panels::page>
     <x-filament::section>
-        <div class="overflow-x-auto">
+        <div class="relative overflow-x-auto">
             <table class="w-full border-collapse text-sm">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-white/10">

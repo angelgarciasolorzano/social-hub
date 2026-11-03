@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles;
 
+use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
@@ -22,6 +23,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 use Spatie\Permission\Models\Role;
 
@@ -41,6 +43,17 @@ class RoleResource extends Resource
 
     #[Override]
     protected static ?string $recordTitleAttribute = 'name';
+
+    /**
+     * The role's name in the current language, so titles and breadcrumbs never show the stored identifier.
+     */
+    #[Override]
+    public static function getRecordTitle(?Model $record): string
+    {
+        $roleName = $record instanceof Role ? $record->name : '';
+
+        return AdminRole::tryFrom($roleName)?->label() ?? $roleName;
+    }
 
     #[Override]
     public static function getModelLabel(): string

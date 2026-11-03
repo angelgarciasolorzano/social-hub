@@ -65,6 +65,8 @@ class UsersTable
                     ->state(fn (User $record): array => self::adminRoleLabels($record))
                     ->badge()
                     ->color('gray')
+                    ->limitList(2)
+                    ->expandableLimitedList()
                     ->placeholder(TranslatedText::of('admin/roles.users.no_roles'))
                     ->visible(self::canViewRoles(...))
                     ->toggleable(),
