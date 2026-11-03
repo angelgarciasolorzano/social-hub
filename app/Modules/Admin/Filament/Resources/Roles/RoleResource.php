@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles;
 
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\Schemas\RoleInfolist;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RolesTable;
 use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,6 +72,11 @@ class RoleResource extends Resource
         return $builder;
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return RoleInfolist::configure($schema);
+    }
+
     public static function table(Table $table): Table
     {
         return RolesTable::configure($table);
@@ -81,6 +89,7 @@ class RoleResource extends Resource
     {
         return [
             'index' => ListRoles::route('/'),
+            'view' => ViewRole::route('/{record}'),
         ];
     }
 }
