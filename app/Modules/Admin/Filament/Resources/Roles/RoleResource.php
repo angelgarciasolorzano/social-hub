@@ -6,11 +6,15 @@ namespace App\Modules\Admin\Filament\Resources\Roles;
 
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleUsersRelationManager;
 use App\Modules\Admin\Filament\Resources\Roles\Schemas\RoleInfolist;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RolesTable;
 use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
+use Filament\Resources\RelationManagers\RelationGroup;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Resources\RelationManagers\RelationManagerConfiguration;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -80,6 +84,17 @@ class RoleResource extends Resource
     public static function table(Table $table): Table
     {
         return RolesTable::configure($table);
+    }
+
+    /**
+     * @return array<class-string<RelationManager>|RelationGroup|RelationManagerConfiguration>
+     */
+    #[Override]
+    public static function getRelations(): array
+    {
+        return [
+            RoleUsersRelationManager::class,
+        ];
     }
 
     /**
