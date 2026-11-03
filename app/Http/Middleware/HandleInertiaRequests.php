@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Resources\AnnouncementBannerResource;
+use App\Modules\Notification\Props\NotificationProps;
 use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use App\User\Resources\UserResource;
@@ -57,6 +58,8 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+
+        Inertia::share(new NotificationProps($request));
 
         return [
             ...parent::share($request),

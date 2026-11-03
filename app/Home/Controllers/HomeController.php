@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Resources\PostResource;
+use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -15,13 +16,17 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function __invoke(CommentThreadProps $commentThreadProps): Response
-    {
+    public function __invoke(
+        CommentThreadProps $commentThreadProps,
+        FrontendTranslations $frontendTranslations,
+    ): Response {
         // $friendsId = Auth::user()->friends()->pluck('id')->toArray();
 
         $viewer = Auth::user();
 
         abort_unless($viewer instanceof User, 401);
+
+        $frontendTranslations->use('notification/center');
 
         $cursorPaginator = Post::with(['user.media', 'media'])
             ->withEngagementFor($viewer)
