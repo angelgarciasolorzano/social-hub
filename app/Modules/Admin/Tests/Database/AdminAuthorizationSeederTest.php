@@ -157,6 +157,60 @@ it('gives the announcements reviewer only read and review permissions', function
         ]);
 });
 
+it('gives the roles reader only read access to roles', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $rolesReaderRole = Role::query()
+        ->where('name', AdminRole::AdminRolesReader->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+
+    expect($rolesReaderRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([
+            AdminPermission::AdminRolesView->value,
+            AdminPermission::AdminRolesViewAny->value,
+        ]);
+});
+
+it('gives the roles manager role management and the user access it needs, without panel access', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $rolesManagerRole = Role::query()
+        ->where('name', AdminRole::AdminRolesManager->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $user = createUser();
+    $user->assignRole($rolesManagerRole);
+
+    expect($rolesManagerRole->permissions->pluck('name')->sort()->values()->all())
+        ->toBe([
+            AdminPermission::AdminRolesUpdate->value,
+            AdminPermission::AdminRolesView->value,
+            AdminPermission::AdminRolesViewAny->value,
+            AdminPermission::AdminUsersRoles->value,
+            AdminPermission::AdminUsersView->value,
+            AdminPermission::AdminUsersViewAny->value,
+        ])
+        ->and($user->hasPermissionTo(AdminPermission::AdminAccess->value, 'admin'))->toBeFalse()
+        ->and($user->hasPermissionTo(AdminPermission::AdminUsersSuspend->value, 'admin'))->toBeFalse();
+});
+
+it('preserves the permission changes of the roles manager when the seeder runs again', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $rolesManagerRole = Role::query()
+        ->where('name', AdminRole::AdminRolesManager->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $rolesManagerRole->revokePermissionTo(AdminPermission::AdminUsersRoles->value);
+
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    expect($rolesManagerRole->refresh()->permissions->pluck('name')->all())
+        ->not->toContain(AdminPermission::AdminUsersRoles->value)
+        ->toContain(AdminPermission::AdminRolesUpdate->value);
+});
+
 it('gives the activity reader only the activity log permissions', function (): void {
     $this->seed(AdminAuthorizationSeeder::class);
 
