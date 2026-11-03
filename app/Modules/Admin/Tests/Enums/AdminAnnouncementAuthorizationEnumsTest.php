@@ -27,6 +27,7 @@ test('admin RBAC catalogs retain every existing public identifier', function ():
         'admin.users.create',
         'admin.users.suspend',
         'admin.users.reactivate',
+        'admin.users.roles',
         'admin.posts.viewAny',
         'admin.posts.view',
         'admin.activity.viewAny',
@@ -40,6 +41,9 @@ test('admin RBAC catalogs retain every existing public identifier', function ():
         'admin.announcements.create',
         'admin.announcements.update',
         'admin.announcements.delete',
+        'admin.roles.viewAny',
+        'admin.roles.view',
+        'admin.roles.update',
     ])->and(array_map(
         fn (AdminRole $adminRole): string => $adminRole->value,
         AdminRole::cases(),
@@ -55,5 +59,7 @@ test('admin RBAC catalogs retain every existing public identifier', function ():
         'admin-backups-operator',
         'admin-announcements-manager',
         'admin-announcements-reviewer',
+        'admin-roles-reader',
+        'admin-roles-manager',
     ]);
 });

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\ActivityLogName;
+use App\Modules\Admin\Enums\AdminPermission;
+use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementDisplay;
 use App\Modules\Announcement\Enums\AnnouncementType;
@@ -81,4 +83,26 @@ it('has labels and descriptions for announcement enum options in both languages'
     ));
 
     expect($missingKeys)->toBe([], "lang/{$locale}/admin/announcements.php is missing enum presentation keys");
+})->with(['en', 'es']);
+
+it('names and describes every cataloged role, permission and permission area in both languages', function (string $locale): void {
+    $catalogKeys = [];
+
+    foreach (AdminRole::cases() as $adminRole) {
+        $catalogKeys[] = 'roles.'.$adminRole->translationKey().'.label';
+        $catalogKeys[] = 'roles.'.$adminRole->translationKey().'.description';
+    }
+
+    foreach (AdminPermission::cases() as $adminPermission) {
+        $catalogKeys[] = 'permissions.'.$adminPermission->translationKey().'.label';
+        $catalogKeys[] = 'permissions.'.$adminPermission->translationKey().'.description';
+        $catalogKeys[] = 'areas.'.$adminPermission->area();
+    }
+
+    $missingKeys = array_values(array_unique(array_filter(
+        $catalogKeys,
+        static fn (string $key): bool => ! Lang::has("admin/roles.catalog.{$key}", $locale, false),
+    )));
+
+    expect($missingKeys)->toBe([], "lang/{$locale}/admin/roles.php is missing catalog keys");
 })->with(['en', 'es']);

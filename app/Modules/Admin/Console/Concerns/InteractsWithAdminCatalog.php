@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Console\Concerns;
 
+use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\User\Models\User;
 use Illuminate\Console\Command;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 /**
  * @phpstan-require-extends Command
@@ -72,45 +71,19 @@ trait InteractsWithAdminCatalog
     }
 
     /**
-     * Locks the `admin` role and the `admin.access` permission together with the requested role.
-     * Reports the failure and returns null when the authorization catalog is not initialized.
-     *
-     * @return array{role: Role, adminAccessPermission: Permission}|null
+     * The console message of a catalog that `AdminAuthorizationService` found incomplete, or null for a
+     * failure the command reports in its own words.
      */
-    protected function lockCatalogRole(AdminRole $adminRole): ?array
-    {
-        $adminRoleLock = Role::query()
-            ->where('name', AdminRole::Admin->value)
-            ->where('guard_name', self::GUARD)
-            ->lockForUpdate()
-            ->first();
-
-        $adminAccessPermission = Permission::query()
-            ->where('name', AdminPermission::AdminAccess->value)
-            ->where('guard_name', self::GUARD)
-            ->lockForUpdate()
-            ->first();
-
-        if (! $adminRoleLock instanceof Role || ! $adminAccessPermission instanceof Permission) {
-            $this->error('Admin authorization is not initialized. Run the Admin authorization seeder first.');
-
-            return null;
-        }
-
-        $role = $adminRole === AdminRole::Admin
-            ? $adminRoleLock
-            : Role::query()
-                ->where('name', $adminRole->value)
-                ->where('guard_name', self::GUARD)
-                ->lockForUpdate()
-                ->first();
-
-        if (! $role instanceof Role) {
-            $this->error("The Admin role {$adminRole->value} is not initialized. Run the Admin authorization seeder first.");
-
-            return null;
-        }
-
-        return ['role' => $role, 'adminAccessPermission' => $adminAccessPermission];
+    protected function catalogFailureMessage(
+        AdminAuthorizationFailure $adminAuthorizationFailure,
+        AdminRole $adminRole,
+        ?AdminPermission $adminPermission = null,
+    ): ?string {
+        return match ($adminAuthorizationFailure) {
+            AdminAuthorizationFailure::CatalogNotInitialized => 'Admin authorization is not initialized. Run the Admin authorization seeder first.',
+            AdminAuthorizationFailure::RoleNotInitialized => "The Admin role {$adminRole->value} is not initialized. Run the Admin authorization seeder first.",
+            AdminAuthorizationFailure::PermissionNotInitialized => "The Admin permission {$adminPermission?->value} is not initialized. Run the Admin authorization seeder first.",
+            default => null,
+        };
     }
 }

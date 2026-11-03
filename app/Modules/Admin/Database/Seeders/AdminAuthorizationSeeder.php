@@ -75,6 +75,18 @@ class AdminAuthorizationSeeder extends Seeder
                     AdminPermission::AdminAnnouncementsView,
                     AdminPermission::AdminAnnouncementsReview,
                 ],
+                AdminRole::AdminRolesReader->value => [
+                    AdminPermission::AdminRolesViewAny,
+                    AdminPermission::AdminRolesView,
+                ],
+                AdminRole::AdminRolesManager->value => [
+                    AdminPermission::AdminRolesViewAny,
+                    AdminPermission::AdminRolesView,
+                    AdminPermission::AdminRolesUpdate,
+                    AdminPermission::AdminUsersRoles,
+                    AdminPermission::AdminUsersViewAny,
+                    AdminPermission::AdminUsersView,
+                ],
             ];
 
             foreach ($permissionsByRole as $roleName => $adminPermissions) {

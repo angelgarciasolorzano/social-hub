@@ -38,11 +38,14 @@ const ADMIN_TRANSLATED_PATHS = [
     'app/Modules/Admin/Filament/Resources/Announcements',
     'app/Modules/Admin/Filament/Resources/Posts',
     'app/Modules/Admin/Filament/Resources/Comments',
+    'app/Modules/Admin/Filament/Resources/Roles',
     'app/Modules/Admin/Filament/Pages/Backups',
+    'app/Modules/Admin/Filament/Concerns/ConfirmsCurrentPassword.php',
     'app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php',
     'app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php',
     'app/Modules/Admin/UI/Views/filament/widgets',
     'app/Modules/Admin/UI/Views/filament/backups',
+    'app/Modules/Admin/UI/Views/filament/roles',
 ];
 
 /**
@@ -154,7 +157,7 @@ it('finds no hard-coded text in the translated admin sections', function (): voi
         ->and($hardcodedTexts)->toBe([], 'Use TranslatedText::of() in PHP or __() in Blade with a key in lang/{en,es}/admin/');
 });
 
-it('scans Activity Log, Announcements, Posts, independent Comments and the announcement preview', function (): void {
+it('scans Activity Log, Announcements, Posts, independent Comments, Roles and their views', function (): void {
     $translatedPaths = array_map(
         static fn (string $file): string => str_replace(base_path().'/', '', $file),
         adminTranslatedFiles(),
@@ -176,7 +179,18 @@ it('scans Activity Log, Announcements, Posts, independent Comments and the annou
         static fn (string $path): bool => str_starts_with($path, 'app/Modules/Admin/Filament/Resources/Comments/'),
     );
 
+    $rolePaths = array_filter(
+        $translatedPaths,
+        static fn (string $path): bool => str_starts_with($path, 'app/Modules/Admin/Filament/Resources/Roles/'),
+    );
+
     expect($activityLogPaths)->not->toBeEmpty()
+        ->and($rolePaths)->toContain(
+            'app/Modules/Admin/Filament/Resources/Roles/RoleResource.php',
+            'app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php',
+            'app/Modules/Admin/Filament/Resources/Roles/Widgets/UsersPerRoleChart.php',
+        )
+        ->and($translatedPaths)->toContain('app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php')
         ->and($announcementPaths)->not->toBeEmpty()
         ->and($postPaths)->not->toBeEmpty()
         ->and($commentPaths)->not->toBeEmpty()

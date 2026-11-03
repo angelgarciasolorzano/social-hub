@@ -10,7 +10,7 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Spatie\Permission\Models\Role;
 
-it('assigns Angel backup operations, user moderation and all reader roles while preserving existing assignments', function (string $environment): void {
+it('assigns Angel backup operations, user moderation, role management and all reader roles while preserving existing assignments', function (string $environment): void {
     $this->app->detectEnvironment(fn (): string => $environment);
 
     $user = createUser();
@@ -50,6 +50,10 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         AdminPermission::AdminAnnouncementsCreate->value,
         AdminPermission::AdminAnnouncementsUpdate->value,
         AdminPermission::AdminAnnouncementsDelete->value,
+        AdminPermission::AdminRolesViewAny->value,
+        AdminPermission::AdminRolesView->value,
+        AdminPermission::AdminRolesUpdate->value,
+        AdminPermission::AdminUsersRoles->value,
     ];
 
     $expectedRoleNames = [
@@ -63,6 +67,7 @@ it('assigns Angel backup operations, user moderation and all reader roles while 
         AdminRole::AdminUsersModerator->value,
         AdminRole::AdminAnnouncementsManager->value,
         AdminRole::AdminAnnouncementsReviewer->value,
+        AdminRole::AdminRolesManager->value,
         $customAdminRole->name,
     ];
 
@@ -98,6 +103,27 @@ it('preserves the roles that other users already have', function (): void {
         AdminRole::AdminUsersReader->value,
     ]))->toBeTrue()
         ->and($reader->refresh()->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue();
+});
+
+it('never gives the role management roles to random administrators', function (): void {
+    $user = createUser();
+    $user->forceFill(['email' => 'angel@gmail.com'])->save();
+
+    /** @var Factory<User> $userFactory */
+    $userFactory = User::factory();
+
+    $userFactory->count(29)->create();
+
+    $this->seed(AdminAuthorizationSeeder::class);
+    $this->seed(AdminUserSeeder::class);
+
+    $roleManagers = User::query()
+        ->role([AdminRole::AdminRolesManager->value, AdminRole::AdminRolesReader->value], 'admin')
+        ->pluck('email')
+        ->all();
+
+    expect(User::query()->role(AdminRole::Admin->value, 'admin')->count())->toBeGreaterThan(1)
+        ->and($roleManagers)->toBe(['angel@gmail.com']);
 });
 
 it('does not assign the reviewer role outside local and testing environments', function (): void {

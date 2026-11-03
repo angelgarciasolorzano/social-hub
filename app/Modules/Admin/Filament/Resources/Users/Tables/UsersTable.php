@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 
+use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Support\Translation\TranslatedText;
@@ -12,6 +13,7 @@ use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use DateTimeInterface;
 use Filament\Actions\ViewAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -21,6 +23,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
+use Spatie\Permission\Models\Role;
 
 class UsersTable
 {
@@ -29,7 +33,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('media'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['media', 'roles']))
             ->deferLoading()
             ->loadingSkeleton()
             ->columns([
@@ -56,6 +60,16 @@ class UsersTable
                     ->formatStateUsing(fn (AccountStatus $state): string => self::accountStatusLabel($state))
                     ->color(fn (AccountStatus $state): string => self::accountStatusColor($state))
                     ->sortable(),
+                TextColumn::make('admin_roles')
+                    ->label(TranslatedText::of('admin/roles.users.column'))
+                    ->state(fn (User $record): array => self::adminRoleLabels($record))
+                    ->badge()
+                    ->color('gray')
+                    ->limitList(2)
+                    ->expandableLimitedList()
+                    ->placeholder(TranslatedText::of('admin/roles.users.no_roles'))
+                    ->visible(self::canViewRoles(...))
+                    ->toggleable(),
                 TextColumn::make('email_verified_at')
                     ->label(TranslatedText::of('admin/users.table.email_verified_at'))
                     ->dateTime()
@@ -74,6 +88,12 @@ class UsersTable
                 SelectFilter::make('status')
                     ->label(TranslatedText::of('admin/users.account_status.label'))
                     ->options(self::accountStatusOptions()),
+                SelectFilter::make('admin_roles')
+                    ->label(TranslatedText::of('admin/roles.users.filter'))
+                    ->options(self::adminRoleOptions())
+                    ->multiple()
+                    ->visible(self::canViewRoles(...))
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByAdminRoles($query, $data['values'] ?? [])),
                 TernaryFilter::make('email_verified_at')
                     ->label(TranslatedText::of('admin/users.fields.email_verification'))
                     ->nullable(),
@@ -113,5 +133,61 @@ class UsersTable
                     ->modal(false)
                     ->url(fn (User $user): string => UserResource::getUrl('view', ['record' => $user])),
             ]);
+    }
+
+    private static function canViewRoles(): bool
+    {
+        $authenticatedUser = Filament::auth()->user();
+
+        return $authenticatedUser instanceof User
+            && Gate::forUser($authenticatedUser)->allows('viewAny', Role::class);
+    }
+
+    /**
+     * The labels of the user's admin roles, from the roles loaded with the page.
+     *
+     * @return array<int, string>
+     */
+    private static function adminRoleLabels(User $user): array
+    {
+        return $user->roles
+            ->filter(static fn (Role $role): bool => $role->guard_name === 'admin')
+            ->map(static fn (Role $role): string => AdminRole::tryFrom($role->name)?->label() ?? $role->name)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function adminRoleOptions(): array
+    {
+        $adminRoleOptions = [];
+
+        foreach (AdminRole::cases() as $adminRole) {
+            $adminRoleOptions[$adminRole->value] = $adminRole->label();
+        }
+
+        return $adminRoleOptions;
+    }
+
+    /**
+     * Keep the users holding any of the selected cataloged roles of the admin guard.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    private static function filterByAdminRoles(Builder $query, mixed $selectedRoleNames): Builder
+    {
+        $roleNames = array_values(array_filter(
+            \is_array($selectedRoleNames) ? $selectedRoleNames : [],
+            static fn (mixed $roleName): bool => \is_string($roleName) && AdminRole::tryFrom($roleName) instanceof AdminRole,
+        ));
+
+        if ($roleNames === []) {
+            return $query;
+        }
+
+        return $query->role($roleNames, 'admin');
     }
 }

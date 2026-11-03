@@ -8,9 +8,11 @@ use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Widgets\AdminQuickLinksWidget;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Filament\Facades\Filament;
 use Filament\Widgets\AccountWidget;
@@ -137,6 +139,26 @@ it('hides the announcements link without admin.announcements.viewAny', function 
         ->assertOk()
         ->assertDontSeeText('Announcements')
         ->assertDontSee(AnnouncementResource::getUrl('index', panel: 'admin'));
+});
+
+it('shows the roles link to a roles reader without other section access', function (): void {
+    $user = adminQuickLinksUser(AdminPermission::AdminRolesViewAny);
+    $this->actingAs($user, 'admin');
+
+    Livewire::test(AdminQuickLinksWidget::class)
+        ->assertOk()
+        ->assertSeeText(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.quick_links.roles.label'))
+        ->assertSee(RoleResource::getUrl('index', panel: 'admin'))
+        ->assertDontSee(UserResource::getUrl('index', panel: 'admin'));
+});
+
+it('hides the roles link without admin.roles.viewAny', function (): void {
+    $user = adminQuickLinksUser(AdminPermission::AdminPostsViewAny);
+    $this->actingAs($user, 'admin');
+
+    Livewire::test(AdminQuickLinksWidget::class)
+        ->assertOk()
+        ->assertDontSee(RoleResource::getUrl('index', panel: 'admin'));
 });
 
 it('denies the widget to administrators without section access', function (): void {

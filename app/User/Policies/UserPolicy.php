@@ -38,6 +38,16 @@ final class UserPolicy
             && $user->isSuspended();
     }
 
+    /**
+     * Assign and remove the Admin roles of another user; an administrator never changes their own
+     * roles from the panel.
+     */
+    public function manageRoles(User $authenticatedUser, User $user): bool
+    {
+        return $authenticatedUser->can(AdminPermission::AdminUsersRoles->value)
+            && $authenticatedUser->isNot($user);
+    }
+
     public function create(): bool
     {
         return false;

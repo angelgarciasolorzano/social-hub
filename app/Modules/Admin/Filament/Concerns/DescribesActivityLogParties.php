@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Concerns;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
@@ -15,6 +16,7 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 /**
  * Describes who performed an activity and what it was performed on, by type and id only,
@@ -81,7 +83,7 @@ trait DescribesActivityLogParties
     }
 
     /**
-     * The detail page of a user, post or live comment the administrator may open.
+     * The detail page of a user, post, live comment or admin role the administrator may open.
      */
     private static function recordUrl(Model $model): ?string
     {
@@ -89,6 +91,7 @@ trait DescribesActivityLogParties
             $model instanceof User && UserResource::canView($model) => UserResource::getUrl('view', ['record' => $model]),
             $model instanceof Post && PostResource::canView($model) => PostResource::getUrl('view', ['record' => $model]),
             $model instanceof Comment && ! $model->trashed() && CommentResource::canView($model) => CommentResource::getUrl('view', ['record' => $model]),
+            $model instanceof Role && $model->guard_name === 'admin' && RoleResource::canView($model) => RoleResource::getUrl('view', ['record' => $model]),
             default => null,
         };
     }

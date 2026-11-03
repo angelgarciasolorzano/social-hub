@@ -9,6 +9,7 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\AccountStatusChangesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\ActivityLogsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\PostsRelationManager;
+use App\Modules\Admin\Filament\Resources\Users\RelationManagers\RolesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\Schemas\UserInfolist;
 use App\Modules\Admin\Filament\Resources\Users\Tables\UsersTable;
@@ -88,6 +89,7 @@ class UserResource extends Resource
             PostsRelationManager::class,
             ActivityLogsRelationManager::class,
             AccountStatusChangesRelationManager::class,
+            RolesRelationManager::class,
         ];
     }
 

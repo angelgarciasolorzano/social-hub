@@ -12,6 +12,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Models\Announcement;
@@ -20,6 +21,7 @@ use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
+use App\Providers\AppServiceProvider;
 use App\Support\Seeding\SkewedRandom;
 use App\Support\Seeding\WeightedRandom;
 use App\User\Database\Seeders\UserSeeder;
@@ -29,6 +31,7 @@ use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Spatie\Permission\Models\Role;
 
 /**
  * Builds activity from the data the other seeders created, so every record points to
@@ -48,6 +51,10 @@ class ActivityLogSeeder extends Seeder
     private const float LOGINS_SKEW = 2.0;
 
     private const int USER_AGENT_MAX_LENGTH = 512;
+
+    private const int MIN_ROLE_PERMISSION_CHANGES = 3;
+
+    private const int MAX_ROLE_PERMISSION_CHANGES = 8;
 
     /**
      * Plausible sets of attribute names for a seeded announcement edit.
@@ -229,6 +236,43 @@ class ActivityLogSeeder extends Seeder
                     $this->queue(ActivityLogAdminEvent::RoleGranted, $bootstrapAdmin->id, User::MORPH_NAME, $user->id, $this->dateAfter($bootstrappedAt), ['role' => $roleName]);
                 }
             });
+
+        $this->seedRolePermissionActivity($bootstrapAdmin, $bootstrappedAt);
+    }
+
+    /**
+     * A few permissions Angel took away from a role from the panel and later gave back, so the roles'
+     * history has entries while every role still ends with its seeded permissions.
+     */
+    private function seedRolePermissionActivity(User $user, CarbonImmutable $bootstrappedAt): void
+    {
+        $rolePermissions = [];
+
+        foreach (Role::query()->where('guard_name', 'admin')->with('permissions')->get() as $role) {
+            $roleId = $role->getKey();
+
+            if (! \is_int($roleId) || ! AdminRole::tryFrom($role->name) instanceof AdminRole) {
+                continue;
+            }
+
+            foreach ($role->permissions as $permission) {
+                if (AdminPermission::tryFrom($permission->name) instanceof AdminPermission) {
+                    $rolePermissions[] = ['roleId' => $roleId, 'role' => $role->name, 'permission' => $permission->name];
+                }
+            }
+        }
+
+        shuffle($rolePermissions);
+
+        $changes = \array_slice($rolePermissions, 0, random_int(self::MIN_ROLE_PERMISSION_CHANGES, self::MAX_ROLE_PERMISSION_CHANGES));
+
+        foreach ($changes as $change) {
+            $properties = ['role' => $change['role'], 'permission' => $change['permission']];
+            $revokedAt = $this->dateAfter($bootstrappedAt->addDays(random_int(1, self::SPREAD_DAYS - 2)));
+
+            $this->queue(ActivityLogAdminEvent::RolePermissionRevoked, $user->id, AppServiceProvider::ROLE_MORPH_NAME, $change['roleId'], $revokedAt, $properties);
+            $this->queue(ActivityLogAdminEvent::RolePermissionGranted, $user->id, AppServiceProvider::ROLE_MORPH_NAME, $change['roleId'], $this->dateAfter($revokedAt), $properties);
+        }
     }
 
     /**
