@@ -1,0 +1,310 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Texts of the Roles section of the admin panel: the catalog of roles and permissions, the resource,
+ * its table, detail, actions, relation managers, widgets and permission matrix, and the role pieces
+ * shown in the Users section.
+ */
+return [
+    'resource' => [
+        'model_label' => 'role',
+        'plural_model_label' => 'roles',
+        'navigation_label' => 'Roles',
+        'navigation_group' => 'Access control',
+    ],
+
+    'catalog' => [
+        'roles' => [
+            'admin' => [
+                'label' => 'Administrator',
+                'description' => 'Enter the admin panel. Grants no section by itself.',
+            ],
+            'admin_users_reader' => [
+                'label' => 'Users reader',
+                'description' => 'List users and open their details.',
+            ],
+            'admin_users_provisioner' => [
+                'label' => 'Users provisioner',
+                'description' => 'List users and invite new administrators.',
+            ],
+            'admin_users_moderator' => [
+                'label' => 'Users moderator',
+                'description' => 'Suspend and reactivate accounts from the user detail.',
+            ],
+            'admin_posts_reader' => [
+                'label' => 'Posts reader',
+                'description' => 'List posts and open their details and comments.',
+            ],
+            'admin_dashboard_reader' => [
+                'label' => 'Dashboard reader',
+                'description' => 'View the dashboard and its widgets.',
+            ],
+            'admin_activity_reader' => [
+                'label' => 'Activity reader',
+                'description' => 'View the activity log and its details.',
+            ],
+            'admin_backups_reader' => [
+                'label' => 'Backups reader',
+                'description' => 'View backups and the health of their destinations.',
+            ],
+            'admin_backups_operator' => [
+                'label' => 'Backups operator',
+                'description' => 'View, queue and download database backups.',
+            ],
+            'admin_announcements_manager' => [
+                'label' => 'Announcements manager',
+                'description' => 'Create, edit, duplicate, unpublish and delete system announcements.',
+            ],
+            'admin_announcements_reviewer' => [
+                'label' => 'Announcements reviewer',
+                'description' => 'View announcements and approve or reject the ones submitted for review.',
+            ],
+            'admin_roles_reader' => [
+                'label' => 'Roles reader',
+                'description' => 'View roles, their permissions and the permission matrix.',
+            ],
+            'admin_roles_manager' => [
+                'label' => 'Roles manager',
+                'description' => 'Change the permissions of a role and the roles of other users.',
+            ],
+        ],
+
+        'permissions' => [
+            'admin_access' => [
+                'label' => 'Access the panel',
+                'description' => 'Sign in to the admin panel.',
+            ],
+            'admin_dashboard_view' => [
+                'label' => 'View the dashboard',
+                'description' => 'Open the dashboard and its widgets.',
+            ],
+            'admin_users_view_any' => [
+                'label' => 'List users',
+                'description' => 'Open the list of users.',
+            ],
+            'admin_users_view' => [
+                'label' => 'View a user',
+                'description' => 'Open the detail of a user.',
+            ],
+            'admin_users_create' => [
+                'label' => 'Invite administrators',
+                'description' => 'Send administrator invitations.',
+            ],
+            'admin_users_suspend' => [
+                'label' => 'Suspend accounts',
+                'description' => 'Suspend another active account.',
+            ],
+            'admin_users_reactivate' => [
+                'label' => 'Reactivate accounts',
+                'description' => 'Reactivate a suspended account.',
+            ],
+            'admin_users_roles' => [
+                'label' => 'Manage user roles',
+                'description' => 'Assign and remove the roles of other users.',
+            ],
+            'admin_posts_view_any' => [
+                'label' => 'List posts',
+                'description' => 'Open the list of posts.',
+            ],
+            'admin_posts_view' => [
+                'label' => 'View a post',
+                'description' => 'Open the detail of a post and its comments.',
+            ],
+            'admin_activity_view_any' => [
+                'label' => 'List activity',
+                'description' => 'Open the activity log.',
+            ],
+            'admin_activity_view' => [
+                'label' => 'View an activity',
+                'description' => 'Open the detail of an activity.',
+            ],
+            'admin_backups_view' => [
+                'label' => 'View backups',
+                'description' => 'Open the backups page.',
+            ],
+            'admin_backups_create' => [
+                'label' => 'Create backups',
+                'description' => 'Queue a database backup.',
+            ],
+            'admin_backups_download' => [
+                'label' => 'Download backups',
+                'description' => 'Download a backup after confirming the password.',
+            ],
+            'admin_announcements_view_any' => [
+                'label' => 'List announcements',
+                'description' => 'Open the list of system announcements.',
+            ],
+            'admin_announcements_view' => [
+                'label' => 'View an announcement',
+                'description' => 'Open the detail and preview of an announcement.',
+            ],
+            'admin_announcements_review' => [
+                'label' => 'Review announcements',
+                'description' => 'Approve or reject announcements submitted for review.',
+            ],
+            'admin_announcements_create' => [
+                'label' => 'Create announcements',
+                'description' => 'Create and duplicate announcements.',
+            ],
+            'admin_announcements_update' => [
+                'label' => 'Edit announcements',
+                'description' => 'Edit and unpublish announcements.',
+            ],
+            'admin_announcements_delete' => [
+                'label' => 'Delete announcements',
+                'description' => 'Delete announcements.',
+            ],
+            'admin_roles_view_any' => [
+                'label' => 'List roles',
+                'description' => 'Open the list of roles and the permission matrix.',
+            ],
+            'admin_roles_view' => [
+                'label' => 'View a role',
+                'description' => 'Open the detail of a role.',
+            ],
+            'admin_roles_update' => [
+                'label' => 'Edit role permissions',
+                'description' => 'Grant and revoke the permissions of a cataloged role.',
+            ],
+        ],
+
+        'areas' => [
+            'access' => 'Panel access',
+            'dashboard' => 'Dashboard',
+            'users' => 'Users',
+            'posts' => 'Posts',
+            'activity' => 'Activity log',
+            'backups' => 'Backups',
+            'announcements' => 'Announcements',
+            'roles' => 'Roles',
+        ],
+    ],
+
+    'table' => [
+        'name' => 'Role',
+        'description' => 'Description',
+        'permissions_count' => 'Permissions',
+        'users_count' => 'Users',
+        'guard' => 'Guard',
+        'not_editable' => 'Not editable',
+        'not_editable_tooltip' => 'This role is not part of the catalog, so it cannot be edited from the panel.',
+    ],
+
+    'infolist' => [
+        'role' => [
+            'heading' => 'Role',
+            'description' => 'What this role is for and who holds it.',
+        ],
+        'permissions' => [
+            'heading' => 'Permissions',
+            'description' => 'What a user with this role can do, grouped by panel area.',
+            'empty' => 'This role has no permissions.',
+        ],
+        'users_count' => 'Users with this role',
+    ],
+
+    'actions' => [
+        'edit_permissions' => [
+            'label' => 'Edit permissions',
+            'modal_heading' => 'Edit the permissions of :role',
+            'modal_description' => 'Every user with this role gets the selected permissions on their next request. The change is recorded in the activity log.',
+            'field' => 'Permissions',
+            'submit' => 'Save permissions',
+            'success' => '{1} :count permission changed|[0,*] :count permissions changed',
+            'unchanged' => 'The permissions did not change',
+        ],
+        'manage_roles' => [
+            'label' => 'Manage roles',
+            'modal_heading' => 'Manage the roles of :name',
+            'modal_description' => 'The user gets the permissions of the selected roles on their next request. The change is recorded in the activity log.',
+            'field' => 'Roles',
+            'submit' => 'Save roles',
+            'success' => '{1} :count role changed|[0,*] :count roles changed',
+            'unchanged' => 'The roles did not change',
+        ],
+        'open_matrix' => [
+            'label' => 'Permission matrix',
+        ],
+        'current_password' => 'Current password',
+        'password_incorrect' => 'The password is incorrect.',
+        'too_many_attempts' => 'Too many password attempts. Try again in :seconds seconds.',
+    ],
+
+    'failures' => [
+        'catalog_not_initialized' => 'The authorization catalog is not initialized. Run the Admin authorization seeder first.',
+        'role_not_initialized' => 'This role is not initialized. Run the Admin authorization seeder first.',
+        'permission_not_initialized' => 'A selected permission is not initialized. Run the Admin authorization seeder first.',
+        'last_admin_access' => 'This change would leave no user with access to the panel, so nothing was changed.',
+        'actor_would_lose_access' => 'This change would remove your own access to the panel or to this action, so nothing was changed.',
+    ],
+
+    'relations' => [
+        'users' => [
+            'title' => 'Users',
+            'name' => 'Name',
+            'email' => 'Email',
+            'empty' => 'No user has this role.',
+        ],
+        'history' => [
+            'title' => 'History',
+        ],
+    ],
+
+    'widgets' => [
+        'overview' => [
+            'administrators' => [
+                'label' => 'Administrators',
+                'description' => 'Users who can access the panel',
+            ],
+            'unused_roles' => [
+                'label' => 'Roles without users',
+                'description' => 'Cataloged roles nobody holds',
+            ],
+            'changes' => [
+                'label' => 'Authorization changes (30 days)',
+                'description' => 'Roles and permissions granted or revoked',
+            ],
+        ],
+        'users_per_role' => [
+            'heading' => 'Users per role',
+            'description' => 'How many users hold each cataloged role.',
+            'dataset' => 'Users',
+            'empty_heading' => 'No roles yet',
+            'empty_description' => 'Run the Admin authorization seeder to create the catalog.',
+        ],
+    ],
+
+    'matrix' => [
+        'title' => 'Permission matrix',
+        'description' => 'Which permissions each cataloged role grants. To change a role, open it and edit its permissions.',
+        'permission' => 'Permission',
+        'granted' => 'Granted',
+        'not_granted' => 'Not granted',
+    ],
+
+    'users' => [
+        'column' => 'Roles',
+        'filter' => 'Role',
+        'no_roles' => 'No roles',
+        'effective_permissions' => [
+            'heading' => 'Effective permissions',
+            'description' => 'What this user can do in the panel through their roles.',
+            'empty' => 'This user has no admin permissions.',
+        ],
+        'relation' => [
+            'title' => 'Roles',
+            'role' => 'Role',
+            'description' => 'Description',
+            'permissions' => 'Permissions',
+        ],
+    ],
+
+    'quick_links' => [
+        'roles' => [
+            'label' => 'Roles',
+            'description' => 'Review roles, their permissions and the permission matrix.',
+        ],
+    ],
+];
