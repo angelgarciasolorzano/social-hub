@@ -19,6 +19,7 @@ import { useTranslation } from "@/shared/hooks";
 import type { SharedData } from "@/shared/types";
 
 import NotificationListItem from "./components/NotificationListItem";
+import { useNotificationStore } from "./stores/notificationStore";
 import type { Notification } from "./types/notification";
 
 interface NotificationCollection {
@@ -31,7 +32,10 @@ interface NotificationsProps {
 
 function Notifications({ notifications }: NotificationsProps): JSX.Element {
   const { t } = useTranslation();
-  const { unreadNotificationsCount } = usePage<SharedData>().props;
+  const {
+    auth: { user },
+    unreadNotificationsCount,
+  } = usePage<SharedData>().props;
 
   return (
     <HomeLayout>
@@ -64,6 +68,7 @@ function Notifications({ notifications }: NotificationsProps): JSX.Element {
           <NotificationHistory
             initialUnreadCount={unreadNotificationsCount ?? 0}
             notifications={notifications}
+            userId={user.id}
           />
         </Deferred>
       </main>
@@ -74,36 +79,72 @@ function Notifications({ notifications }: NotificationsProps): JSX.Element {
 interface NotificationHistoryProps {
   initialUnreadCount: number;
   notifications: NotificationCollection;
+  userId: number;
 }
 
 function NotificationHistory({
   initialUnreadCount,
   notifications,
+  userId,
 }: NotificationHistoryProps): JSX.Element {
   const { t, tChoice } = useTranslation();
   const { post } = useHttp({});
 
-  const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
+  const storeUserId = useNotificationStore((state) => state.authenticatedUserId);
+
+  const realtimeNotifications = useNotificationStore((state) =>
+    state.authenticatedUserId === userId ? state.notifications : [],
+  );
+
+  const storeUnreadCount = useNotificationStore((state) =>
+    state.authenticatedUserId === userId ? state.unreadCount : null,
+  );
+
+  const initializeForUser = useNotificationStore((state) => state.initializeForUser);
+
+  const markStoredNotificationAsRead = useNotificationStore(
+    (state) => state.markNotificationAsRead,
+  );
+
+  const markStoredNotificationsAsRead = useNotificationStore(
+    (state) => state.markAllNotificationsAsRead,
+  );
+
+  const unreadCount =
+    storeUserId === userId ? (storeUnreadCount ?? initialUnreadCount) : initialUnreadCount;
+
   const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => new Set());
+
   const [markingNotificationIds, setMarkingNotificationIds] = useState<Set<string>>(
     () => new Set(),
   );
+
   const [allReadBefore, setAllReadBefore] = useState<number | null>(null);
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState<boolean>(false);
 
   const uniqueNotifications = useMemo<Notification[]>(() => {
-    const seenNotificationIds = new Set<string>();
+    const realtimeNotificationsById = new Map(
+      realtimeNotifications.map((notification) => [notification.id, notification]),
+    );
 
-    return notifications.data.filter((notification) => {
-      if (seenNotificationIds.has(notification.id)) {
-        return false;
+    const pageNotificationIds = new Set<string>();
+
+    const pageNotifications = notifications.data.flatMap((notification) => {
+      if (pageNotificationIds.has(notification.id)) {
+        return [];
       }
 
-      seenNotificationIds.add(notification.id);
+      pageNotificationIds.add(notification.id);
 
-      return true;
+      return [realtimeNotificationsById.get(notification.id) ?? notification];
     });
-  }, [notifications.data]);
+
+    const newRealtimeNotifications = realtimeNotifications.filter(
+      (notification) => !pageNotificationIds.has(notification.id),
+    );
+
+    return [...newRealtimeNotifications, ...pageNotifications];
+  }, [notifications.data, realtimeNotifications]);
 
   const isNotificationRead = useCallback<(notification: Notification) => boolean>(
     (notification) => {
@@ -136,7 +177,13 @@ function NotificationHistory({
         await post(markAsRead({ notificationId }).url);
 
         setReadNotificationIds((currentIds) => new Set(currentIds).add(notificationId));
-        setUnreadCount((currentCount) => Math.max(0, currentCount - 1));
+
+        if (storeUserId !== userId) {
+          initializeForUser(userId, unreadCount);
+        }
+
+        markStoredNotificationAsRead(notificationId, unreadCount);
+
         toast.success(t("notification/center.toasts.marked_read"));
       } catch {
         return;
@@ -150,7 +197,18 @@ function NotificationHistory({
         });
       }
     },
-    [isMarkingAllAsRead, isNotificationRead, post, t, uniqueNotifications],
+    [
+      initializeForUser,
+      isMarkingAllAsRead,
+      isNotificationRead,
+      markStoredNotificationAsRead,
+      post,
+      storeUserId,
+      t,
+      unreadCount,
+      uniqueNotifications,
+      userId,
+    ],
   );
 
   const markAllNotificationsAsRead = useCallback<() => Promise<void>>(async () => {
@@ -163,19 +221,49 @@ function NotificationHistory({
     try {
       await post(markAllAsRead().url);
 
-      setAllReadBefore(Date.now());
+      const readAt = new Date().toISOString();
+      const readAtTimestamp = Date.parse(readAt);
+
+      setAllReadBefore(readAtTimestamp);
+
       setReadNotificationIds(
         (currentIds) =>
-          new Set([...currentIds, ...uniqueNotifications.map((notification) => notification.id)]),
+          new Set([
+            ...currentIds,
+            ...uniqueNotifications
+              .filter(
+                (notification) =>
+                  notification.createdAt === null ||
+                  Date.parse(notification.createdAt) <= readAtTimestamp,
+              )
+              .map((notification) => notification.id),
+          ]),
       );
-      setUnreadCount(0);
+
+      if (storeUserId !== userId) {
+        initializeForUser(userId, unreadCount);
+      }
+
+      markStoredNotificationsAsRead(readAt);
+
       toast.success(t("notification/center.toasts.all_marked_read"));
     } catch {
       return;
     } finally {
       setIsMarkingAllAsRead(false);
     }
-  }, [isMarkingAllAsRead, markingNotificationIds.size, post, t, uniqueNotifications]);
+  }, [
+    initializeForUser,
+    isMarkingAllAsRead,
+    markingNotificationIds.size,
+    markStoredNotificationsAsRead,
+    post,
+    storeUserId,
+    t,
+    unreadCount,
+    uniqueNotifications,
+    userId,
+  ]);
 
   return (
     <>
