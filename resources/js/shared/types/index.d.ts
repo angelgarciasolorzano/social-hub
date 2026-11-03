@@ -23,6 +23,7 @@ export interface SharedData {
   search_results: User[] | null;
   sidebarOpen: boolean;
   translations: Record<string, TranslationTree>;
+  unreadNotificationsCount?: number;
 }
 
 export type * from "./lengthAwarePagination";
