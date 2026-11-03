@@ -186,6 +186,19 @@ it('serves stable cursor-paginated history newest first using the creation time 
         ->and($expectedIds)->not->toContain($databaseNotification->id);
 });
 
+it('shares the notification center translations on the history page', function (): void {
+    $user = createUser();
+
+    $testResponse = $this->actingAs($user)
+        ->get(route('notifications.index'))
+        ->assertOk();
+    $page = $testResponse->viewData('page');
+    $translationGroup = $page['props']['translations']['notification/center'] ?? null;
+
+    expect($translationGroup['history']['empty_title'] ?? null)
+        ->toBe(__('notification/center.history.empty_title'));
+});
+
 it('marks only the authenticated user notification as read and returns not found for other users notifications', function (): void {
     $user = createUser();
     $otherUser = createUser();

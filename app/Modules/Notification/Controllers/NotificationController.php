@@ -6,6 +6,7 @@ namespace App\Modules\Notification\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Notification\Resources\NotificationResource;
+use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -19,8 +20,10 @@ class NotificationController extends Controller
 
     private const int RECENT_LIMIT = 5;
 
-    public function index(Request $request): Response
+    public function index(Request $request, FrontendTranslations $frontendTranslations): Response
     {
+        $frontendTranslations->use('notification/center');
+
         $cursorPaginator = $this->authenticatedUser($request)
             ->notifications()
             ->latest()
