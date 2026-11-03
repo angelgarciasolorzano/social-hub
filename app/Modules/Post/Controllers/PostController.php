@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace App\Modules\Post\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Post\Events\PostCreated;
+use App\Modules\Post\Models\Post;
 use App\Modules\Post\Requests\PostRequest;
+use App\Modules\Post\Resources\PostResource;
+use App\User\Models\User;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class PostController extends Controller
 {
-    public function __invoke(PostRequest $postRequest): RedirectResponse
+    public function store(PostRequest $postRequest): RedirectResponse
     {
         $user = $postRequest->user();
 
@@ -50,5 +56,21 @@ class PostController extends Controller
                 'url' => route('profile.index'),
             ],
         ])->back();
+    }
+
+    public function show(Request $request, Post $post, CommentThreadProps $commentThreadProps): Response
+    {
+        $viewer = $request->user();
+
+        abort_unless($viewer instanceof User, 401);
+
+        $loadedPost = Post::with(['user.media', 'media'])
+            ->withEngagementFor($viewer)
+            ->findOrFail($post->id);
+
+        return Inertia::render('post/Show', [
+            'post' => new PostResource($loadedPost)->resolve($request),
+            $commentThreadProps,
+        ]);
     }
 }

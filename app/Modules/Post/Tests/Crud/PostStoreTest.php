@@ -7,7 +7,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 it('redirects guests to the login page', function (): void {
-    $this->post(route('post.store'), ['content' => 'Contenido de la publicación'])
+    $this->post(route('posts.store'), ['content' => 'Contenido de la publicación'])
         ->assertRedirect(route('login'));
 
     expect(Post::query()->count())->toBe(0);
@@ -17,7 +17,7 @@ it('requires the content of the post', function (): void {
     $user = createUser();
 
     $this->actingAs($user)
-        ->post(route('post.store'), ['content' => ''])
+        ->post(route('posts.store'), ['content' => ''])
         ->assertSessionHasErrors(['content' => 'El contenido de la publicación es obligatorio']);
 
     expect(Post::query()->count())->toBe(0);
@@ -27,7 +27,7 @@ it('creates the post for the authenticated user and flashes a success message', 
     $user = createUser();
 
     $testResponse = $this->actingAs($user)
-        ->post(route('post.store'), ['content' => 'Mi primera publicación']);
+        ->post(route('posts.store'), ['content' => 'Mi primera publicación']);
 
     $testResponse->assertRedirect();
     $testResponse->assertInertiaFlash('type', 'success');
@@ -49,7 +49,7 @@ it('stores the uploaded image in the posts_images collection', function (): void
     $user = createUser();
 
     $testResponse = $this->actingAs($user)
-        ->post(route('post.store'), [
+        ->post(route('posts.store'), [
             'content' => 'Publicación con imagen',
             'image_file' => UploadedFile::fake()->image('photo.jpg'),
         ]);
@@ -70,7 +70,7 @@ it('flashes an error but keeps the post when the image is too big', function ():
     $user = createUser();
 
     $this->actingAs($user)
-        ->post(route('post.store'), [
+        ->post(route('posts.store'), [
             'content' => 'Publicación con imagen enorme',
             'image_file' => UploadedFile::fake()->image('big.jpg', 600, 600),
         ])
