@@ -10,6 +10,7 @@ use App\Modules\Post\Events\PostCreated;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Requests\PostRequest;
 use App\Modules\Post\Resources\PostResource;
+use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,11 +59,17 @@ class PostController extends Controller
         ])->back();
     }
 
-    public function show(Request $request, Post $post, CommentThreadProps $commentThreadProps): Response
-    {
+    public function show(
+        Request $request,
+        Post $post,
+        CommentThreadProps $commentThreadProps,
+        FrontendTranslations $frontendTranslations,
+    ): Response {
         $viewer = $request->user();
 
         abort_unless($viewer instanceof User, 401);
+
+        $frontendTranslations->use('notification/center');
 
         $loadedPost = Post::with(['user.media', 'media'])
             ->withEngagementFor($viewer)
