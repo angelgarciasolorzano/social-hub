@@ -9,6 +9,7 @@ use App\Modules\Admin\Console\Commands\AdminRolePermissionsCommand;
 use App\Modules\Admin\Console\Commands\AdminUserRoleCommand;
 use App\Modules\Admin\Jobs\RunDatabaseBackup;
 use App\Modules\Admin\Listeners\StoreAdminPreferredLocale;
+use App\Modules\Admin\Policies\RolePolicy;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use BezhanSalleh\LanguageSwitch\Enums\Placement;
@@ -18,9 +19,11 @@ use BezhanSalleh\LanguageSwitch\Http\Middleware\SwitchLanguageLocale;
 use BezhanSalleh\LanguageSwitch\LanguageSwitch;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 
 class AdminServiceProvider extends ServiceProvider
 {
@@ -47,6 +50,8 @@ class AdminServiceProvider extends ServiceProvider
                 AdminUserRoleCommand::class,
             ]);
         }
+
+        Gate::policy(Role::class, RolePolicy::class);
 
         $this->registerBackupSchedule();
 
