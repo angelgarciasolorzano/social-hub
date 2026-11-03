@@ -75,6 +75,15 @@ it('limits the user detail to allowlisted fields', function (): void {
         'email_verified_at',
         'created_at',
         'last_login_at',
+        'no_effective_permissions',
+        'effective_permissions_access',
+        'effective_permissions_dashboard',
+        'effective_permissions_users',
+        'effective_permissions_posts',
+        'effective_permissions_activity',
+        'effective_permissions_backups',
+        'effective_permissions_announcements',
+        'effective_permissions_roles',
     ]);
 });
 
