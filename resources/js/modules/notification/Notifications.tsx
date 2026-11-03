@@ -1,25 +1,18 @@
 import type { JSX } from "react";
-import { useCallback, useMemo, useState } from "react";
 
-import { Deferred, Head, InfiniteScroll, useHttp, usePage } from "@inertiajs/react";
-
-import { toast } from "sonner";
+import { Deferred, Head, InfiniteScroll, usePage } from "@inertiajs/react";
 
 import { HomeLayout } from "@/modules/home";
 
-import {
-  markAllAsRead,
-  markAsRead,
-} from "@/shared/wayfinder/actions/App/Modules/Notification/Controllers/NotificationController";
-
 import { Button } from "@/shared/components/shadcn/ui/button";
+import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useTranslation } from "@/shared/hooks";
 
 import type { SharedData } from "@/shared/types";
 
 import NotificationListItem from "./components/NotificationListItem";
-import { useNotificationStore } from "./stores/notificationStore";
+import useNotificationHistory from "./hooks/useNotificationHistory";
 import type { Notification } from "./types/notification";
 
 interface NotificationCollection {
@@ -59,9 +52,9 @@ function Notifications({ notifications }: NotificationsProps): JSX.Element {
               className="space-y-3"
               role="status"
             >
-              <div aria-hidden="true" className="h-16 animate-pulse rounded-xl bg-muted" />
-              <div aria-hidden="true" className="h-24 animate-pulse rounded-xl bg-muted" />
-              <div aria-hidden="true" className="h-24 animate-pulse rounded-xl bg-muted" />
+              <Skeleton aria-hidden="true" className="h-16 rounded-xl bg-muted" />
+              <Skeleton aria-hidden="true" className="h-24 rounded-xl bg-muted" />
+              <Skeleton aria-hidden="true" className="h-24 rounded-xl bg-muted" />
             </div>
           }
         >
@@ -84,186 +77,25 @@ interface NotificationHistoryProps {
 
 function NotificationHistory({
   initialUnreadCount,
-  notifications,
+  notifications: notificationCollection,
   userId,
 }: NotificationHistoryProps): JSX.Element {
   const { t, tChoice } = useTranslation();
-  const { post } = useHttp({});
 
-  const storeUserId = useNotificationStore((state) => state.authenticatedUserId);
-
-  const realtimeNotifications = useNotificationStore((state) =>
-    state.authenticatedUserId === userId ? state.notifications : [],
-  );
-
-  const storeUnreadCount = useNotificationStore((state) =>
-    state.authenticatedUserId === userId ? state.unreadCount : null,
-  );
-
-  const initializeForUser = useNotificationStore((state) => state.initializeForUser);
-
-  const markStoredNotificationAsRead = useNotificationStore(
-    (state) => state.markNotificationAsRead,
-  );
-
-  const markStoredNotificationsAsRead = useNotificationStore(
-    (state) => state.markAllNotificationsAsRead,
-  );
-
-  const unreadCount =
-    storeUserId === userId ? (storeUnreadCount ?? initialUnreadCount) : initialUnreadCount;
-
-  const [readNotificationIds, setReadNotificationIds] = useState<Set<string>>(() => new Set());
-
-  const [markingNotificationIds, setMarkingNotificationIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-
-  const [allReadBefore, setAllReadBefore] = useState<number | null>(null);
-  const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState<boolean>(false);
-
-  const uniqueNotifications = useMemo<Notification[]>(() => {
-    const realtimeNotificationsById = new Map(
-      realtimeNotifications.map((notification) => [notification.id, notification]),
-    );
-
-    const pageNotificationIds = new Set<string>();
-
-    const pageNotifications = notifications.data.flatMap((notification) => {
-      if (pageNotificationIds.has(notification.id)) {
-        return [];
-      }
-
-      pageNotificationIds.add(notification.id);
-
-      return [realtimeNotificationsById.get(notification.id) ?? notification];
-    });
-
-    const newRealtimeNotifications = realtimeNotifications.filter(
-      (notification) => !pageNotificationIds.has(notification.id),
-    );
-
-    return [...newRealtimeNotifications, ...pageNotifications];
-  }, [notifications.data, realtimeNotifications]);
-
-  const isNotificationRead = useCallback<(notification: Notification) => boolean>(
-    (notification) => {
-      if (notification.readAt !== null || readNotificationIds.has(notification.id)) {
-        return true;
-      }
-
-      return (
-        allReadBefore !== null &&
-        notification.createdAt !== null &&
-        Date.parse(notification.createdAt) <= allReadBefore
-      );
-    },
-    [allReadBefore, readNotificationIds],
-  );
-
-  const markNotificationAsRead = useCallback<(notificationId: string) => Promise<void>>(
-    async (notificationId) => {
-      const notification = uniqueNotifications.find(
-        (candidateNotification) => candidateNotification.id === notificationId,
-      );
-
-      if (notification === undefined || isNotificationRead(notification) || isMarkingAllAsRead) {
-        return;
-      }
-
-      setMarkingNotificationIds((currentIds) => new Set(currentIds).add(notificationId));
-
-      try {
-        await post(markAsRead({ notificationId }).url);
-
-        setReadNotificationIds((currentIds) => new Set(currentIds).add(notificationId));
-
-        if (storeUserId !== userId) {
-          initializeForUser(userId, unreadCount);
-        }
-
-        markStoredNotificationAsRead(notificationId, unreadCount);
-
-        toast.success(t("notification/center.toasts.marked_read"));
-      } catch {
-        return;
-      } finally {
-        setMarkingNotificationIds((currentIds) => {
-          const nextIds = new Set(currentIds);
-
-          nextIds.delete(notificationId);
-
-          return nextIds;
-        });
-      }
-    },
-    [
-      initializeForUser,
-      isMarkingAllAsRead,
-      isNotificationRead,
-      markStoredNotificationAsRead,
-      post,
-      storeUserId,
-      t,
-      unreadCount,
-      uniqueNotifications,
-      userId,
-    ],
-  );
-
-  const markAllNotificationsAsRead = useCallback<() => Promise<void>>(async () => {
-    if (isMarkingAllAsRead || markingNotificationIds.size > 0) {
-      return;
-    }
-
-    setIsMarkingAllAsRead(true);
-
-    try {
-      await post(markAllAsRead().url);
-
-      const readAt = new Date().toISOString();
-      const readAtTimestamp = Date.parse(readAt);
-
-      setAllReadBefore(readAtTimestamp);
-
-      setReadNotificationIds(
-        (currentIds) =>
-          new Set([
-            ...currentIds,
-            ...uniqueNotifications
-              .filter(
-                (notification) =>
-                  notification.createdAt === null ||
-                  Date.parse(notification.createdAt) <= readAtTimestamp,
-              )
-              .map((notification) => notification.id),
-          ]),
-      );
-
-      if (storeUserId !== userId) {
-        initializeForUser(userId, unreadCount);
-      }
-
-      markStoredNotificationsAsRead(readAt);
-
-      toast.success(t("notification/center.toasts.all_marked_read"));
-    } catch {
-      return;
-    } finally {
-      setIsMarkingAllAsRead(false);
-    }
-  }, [
-    initializeForUser,
+  const {
     isMarkingAllAsRead,
-    markingNotificationIds.size,
-    markStoredNotificationsAsRead,
-    post,
-    storeUserId,
-    t,
+    isMarkingAnyNotification,
+    isMarkingRead,
+    isNotificationRead,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+    notifications,
     unreadCount,
-    uniqueNotifications,
+  } = useNotificationHistory({
+    initialUnreadCount,
+    pageNotifications: notificationCollection.data,
     userId,
-  ]);
+  });
 
   return (
     <>
@@ -276,7 +108,7 @@ function NotificationHistory({
 
         {unreadCount > 0 && (
           <Button
-            disabled={isMarkingAllAsRead || markingNotificationIds.size > 0}
+            disabled={isMarkingAllAsRead || isMarkingAnyNotification}
             onClick={() => {
               void markAllNotificationsAsRead();
             }}
@@ -302,7 +134,7 @@ function NotificationHistory({
               className="flex flex-col gap-3"
               id="notification-history-list"
             >
-              {uniqueNotifications.length === 0 ? (
+              {notifications.length === 0 ? (
                 <li>
                   <div className="rounded-xl border border-dashed px-6 py-12 text-center">
                     <h2 className="text-lg font-medium">
@@ -314,11 +146,9 @@ function NotificationHistory({
                   </div>
                 </li>
               ) : (
-                uniqueNotifications.map((notification) => (
+                notifications.map((notification) => (
                   <NotificationListItem
-                    isMarkingRead={
-                      markingNotificationIds.has(notification.id) || isMarkingAllAsRead
-                    }
+                    isMarkingRead={isMarkingRead(notification.id)}
                     isRead={isNotificationRead(notification)}
                     key={notification.id}
                     notification={notification}
