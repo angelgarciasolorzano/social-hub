@@ -1,0 +1,1192 @@
+{
+  "id": "soc-69-admin-roles-permissions-panel",
+  "title": "SOC-69: Gestionar roles y permisos de administración desde el panel de Filament",
+  "issue": {
+    "identifier": "SOC-69",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-69/feature-manage-admin-roles-and-permissions-from-the-filament-panel"
+  },
+  "mode": "EXPANSION",
+  "reviewDefault": "claude",
+  "date": "2026-11-03",
+  "overview": "Llevar al panel de Filament la gestión que hoy solo existe por consola (`admin:user-role`, `admin:role-permissions`): un servicio compartido con las reglas de los comandos (bloqueos, último `admin.access`, auditoría), un Resource de roles con detalle, edición de permisos, usuarios, historial, widgets y una matriz roles × permisos, y en Users una acción 'Gestionar roles', una pestaña de roles, los permisos efectivos y una columna y un filtro de roles. El catálogo sigue cerrado a los enums `AdminRole` y `AdminPermission`.",
+  "scopeChallenge": "EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-03): permisos `admin.roles.viewAny`, `admin.roles.view`, `admin.roles.update` y `admin.users.roles`, con dos roles nuevos `admin-roles-reader` y `admin-roles-manager`; confirmación de contraseña en las dos acciones de escritura (editar permisos de un rol y gestionar roles de un usuario); extras: eventos simulados de permisos de rol en `ActivityLogSeeder`, columna y filtro de roles en Users, matriz de permisos, widgets en Roles, historial del rol y permisos efectivos del usuario. Hallazgos: la lógica vive hoy dentro de `AdminUserRoleCommand`/`AdminRolePermissionsCommand` y del trait `InteractsWithAdminCatalog::lockCatalogRole()`, que escribe errores en consola, así que el servicio devuelve fallos tipados que cada comando traduce a sus mensajes actuales (las pruebas de comandos verifican el texto). Spatie usa su propio `Role` (morph `role` ya registrado), así que su política se registra con `Gate::policy()`. Los valores de los permisos tienen puntos (`admin.users.view`), por lo que las claves de traducción usan el nombre del caso en snake_case, no el valor.",
+  "prerequisites": [
+    "Catálogo `AdminRole`/`AdminPermission` y `AdminAuthorizationSeeder`, que solo asigna permisos a un rol la primera vez que lo crea (SOC-44).",
+    "`ActivityLogger` con `ActivityLogAdminEvent::RoleGranted|RoleRevoked|RolePermissionGranted|RolePermissionRevoked` (SOC-54).",
+    "Autorización por políticas de modelo en Filament (SOC-57) y textos del panel con `TranslatedText::of()` en `lang/{en,es}/admin/` (SOC-65/66).",
+    "Confirmación de contraseña con límite de intentos ya resuelta en `BackupManagementService` (SOC-55), usada como referencia.",
+    "Morph `role` → `Spatie\\Permission\\Models\\Role` (`AppServiceProvider::ROLE_MORPH_NAME`)."
+  ],
+  "nonGoals": [
+    "Crear, renombrar o eliminar roles o permisos fuera de los enums (catálogo cerrado).",
+    "Teams de Spatie y roles del guard `web`.",
+    "Cambiar `admin:bootstrap-admin`: el primer administrador sigue recibiendo `admin` y los cinco roles lectores; los roles nuevos se otorgan después con `admin:user-role`.",
+    "Que un administrador gestione sus propios roles desde el panel (por consola sigue siendo posible).",
+    "Refactorizar la confirmación de contraseña de Backups para usar el concern nuevo.",
+    "Notificar al usuario cuando cambian sus roles."
+  ],
+  "contracts": [
+    "`AdminAuthorizationService` es el único escritor de roles y permisos del catálogo fuera de seeders: los tres caminos (dos comandos y dos acciones de Filament) pasan por él.",
+    "El servicio no autoriza (lo hacen `RolePolicy` y `UserPolicy::manageRoles`); sí valida el catálogo, bloquea filas, protege el último `admin.access`, audita solo cambios reales y limpia la caché de Spatie (`PermissionRegistrar::forgetCachedPermissions()`) tras cada transacción confirmada.",
+    "Los fallos del servicio son `AdminAuthorizationException` con un caso de `AdminAuthorizationFailure`; los comandos los traducen a sus mensajes y códigos de salida actuales, byte por byte; Filament los muestra como notificación de fallo traducida.",
+    "Las operaciones `sync*` del panel corren en una sola transacción: si el resultado deja al actor sin `admin.access` o sin el permiso que autorizó la acción, se revierte todo (cambios y actividad).",
+    "Las acciones del panel piden la contraseña actual con límite de 5 intentos por minuto por administrador; una contraseña errónea no escribe nada.",
+    "Las claves de traducción de roles y permisos son `admin/roles.catalog.roles.<case_snake>` y `admin/roles.catalog.permissions.<case_snake>` (`label`, `description`); las áreas, `admin/roles.catalog.areas.<area>`.",
+    "Un `Role` de la base de datos que no esté en `AdminRole` o no use el guard `admin` se lista como no editable: `RolePolicy::update()` lo niega."
+  ],
+  "existingCodeLeverage": [
+    "`AdminUserRoleCommand::userRetainsAdminAccessAfterRevocation()` y `AdminRolePermissionsCommand::aUserRetainsAdminAccessAfterRevocation()`: las comprobaciones del último `admin.access`, que se mueven al servicio sin cambiar su lógica.",
+    "`InteractsWithAdminCatalog::lockCatalogRole()`: el orden de bloqueos (rol `admin`, permiso `admin.access`, rol pedido).",
+    "`AccountStatusService` + `ViewUser::changeAccountStatus()`: patrón servicio sin autorización + acción de Filament con `->authorize()` y notificación de fallo.",
+    "`BackupManagementService` (RateLimiter + `Hash::check`) y `BackupsTable` (campo `current_password`): base del concern de confirmación de contraseña.",
+    "`ActivityLogsTable::configure($table, deferLoading: false)` y `ActivityLogsRelationManager`: base del historial del rol.",
+    "`BuildsDailyActivityCharts` y `RegistrationsChart`: base del widget de estadísticas con sparkline y del gráfico de barras.",
+    "`BackupManagement` + su vista Blade en `UI/Views/filament/backups/`: base de la página de matriz.",
+    "`AdminFilamentTestContext`, `FilamentTableRecords` y `createAdminCommandActor()` para las pruebas."
+  ],
+  "failureModes": [
+    "Dos administradores editan el mismo rol a la vez: los bloqueos `lockForUpdate` del servicio serializan; el segundo calcula su diferencia sobre el estado ya confirmado.",
+    "Quitar `admin.access` al último usuario que lo tiene, desde un rol o desde un usuario: `AdminAuthorizationFailure::LastAdminAccess`, sin cambios ni actividad.",
+    "Un gestor quita a su propio rol `admin.roles.update` o `admin.access`: `AdminAuthorizationFailure::ActorWouldLoseAccess`, rollback completo.",
+    "Contraseña errónea o demasiados intentos: error de validación en `current_password`, nada se escribe.",
+    "Base existente sin los roles nuevos: hay que volver a correr `AdminAuthorizationSeeder` (crea los roles con sus permisos la primera vez); se documenta en TASK-028.",
+    "Caché de permisos obsoleta tras un cambio: el servicio la limpia después del commit; TASK-008 lo prueba con un `can()` inmediato.",
+    "Rol fuera del catálogo en la base de datos: aparece en el listado y la matriz, sin acciones de edición."
+  ],
+  "shipCut": "Mínimo entregable: TASK-001 a TASK-016 (catálogo, traducciones, servicio, comandos refactorizados, políticas, Resource de roles con edición de permisos y acción 'Gestionar roles' en ViewUser). Los extras (TASK-017 a TASK-026) son independientes entre sí y pueden quedar para después; TASK-027 y TASK-028 cierran cualquier corte.",
+  "testCoverageMap": {
+    "Catálogo y seeders": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-003"
+    ],
+    "Traducciones": [
+      "TASK-005",
+      "TASK-029"
+    ],
+    "Servicio: último admin.access, auditoría, caché": [
+      "TASK-007"
+    ],
+    "Servicio: sincronización y auto-bloqueo": [
+      "TASK-008"
+    ],
+    "Compatibilidad de comandos": [
+      "TASK-009"
+    ],
+    "Políticas": [
+      "TASK-010",
+      "TASK-011"
+    ],
+    "Confirmación de contraseña": [
+      "TASK-012",
+      "TASK-016",
+      "TASK-023"
+    ],
+    "Resource de roles": [
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-020",
+      "TASK-022"
+    ],
+    "Users": [
+      "TASK-023",
+      "TASK-025",
+      "TASK-026"
+    ],
+    "Activity log y accesos rápidos": [
+      "TASK-027",
+      "TASK-028"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Ampliar el catálogo: permisos y roles de gestión de roles, con etiquetas y áreas",
+      "description": "Agregar a `AdminPermission` los casos `AdminRolesViewAny = 'admin.roles.viewAny'`, `AdminRolesView = 'admin.roles.view'`, `AdminRolesUpdate = 'admin.roles.update'` y `AdminUsersRoles = 'admin.users.roles'`, y a `AdminRole` `AdminRolesReader = 'admin-roles-reader'` y `AdminRolesManager = 'admin-roles-manager'`. Agregar a ambos enums `translationKey()` (el nombre del caso en snake_case: `admin_users_view`), `label()` y `description()` que leen `admin/roles.catalog.{roles|permissions}.<translationKey>.{label|description}` con `TranslatedText::of()`, y a `AdminPermission` `area()` (el segundo segmento del valor: `access`, `dashboard`, `users`, `posts`, `activity`, `backups`, `announcements`, `roles`). Las traducciones las agrega TASK-004; esta tarea prueba solo valores, claves y áreas.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Los cuatro permisos y dos roles nuevos existen con los valores exactos indicados, y `AdminPermission::tryFrom('admin.roles.delete')` es `null`.",
+        "`AdminPermission::AdminUsersView->translationKey()` es `admin_users_view` y `AdminPermission::AdminAccess->area()` es `access`; todas las claves son únicas (sin colisiones entre casos).",
+        "`AdminRolesManager` y `AdminRolesReader` no colisionan con ningún valor existente de `AdminRole`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Enums/AdminRoleManagementAuthorizationEnumsTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Enums/AdminPermission.php",
+        "app/Modules/Admin/Enums/AdminRole.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Enums/AdminRoleManagementAuthorizationEnumsTest.php",
+        "app/Modules/Admin/Enums/AdminPermission.php",
+        "app/Modules/Admin/Enums/AdminRole.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Enums",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Sembrar los bundles de los roles nuevos en el catálogo",
+      "description": "En `AdminAuthorizationSeeder`: `AdminRolesReader` → `AdminRolesViewAny`, `AdminRolesView`; `AdminRolesManager` → `AdminRolesViewAny`, `AdminRolesView`, `AdminRolesUpdate`, `AdminUsersRoles`, `AdminUsersViewAny`, `AdminUsersView` (necesita ver el usuario para usar su acción en ViewUser, como `AdminUsersModerator`). Mantener la regla actual: los permisos se asignan solo cuando el rol se crea.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Tras sembrar, `admin-roles-manager` tiene exactamente los seis permisos y `admin-roles-reader` exactamente los dos.",
+        "Volver a correr el seeder sobre un rol ya existente con permisos modificados no los restablece (idempotente, sin pisar cambios hechos desde el panel)."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Database/Seeders/AdminAuthorizationSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Database/AdminAuthorizationSeederTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Asignar el rol de gestor de roles a Angel en local",
+      "description": "En `AdminUserSeeder::run()`, Angel recibe además `AdminRolesManager` (como `AdminUsersModerator`). `readerRoles()` no cambia, así que los administradores aleatorios no reciben roles de gestión de roles y `admin:bootstrap-admin` sigue igual.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "acceptanceCriteria": [
+        "En `local`/`testing`, Angel tiene `admin-roles-manager` y puede `admin.users.roles`.",
+        "Ningún administrador aleatorio recibe `admin-roles-manager` ni `admin-roles-reader`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Database/Seeders/AdminUserSeeder.php",
+        "app/Modules/Admin/Tests/Database/AdminUserSeederTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Database/AdminUserSeederTest.php app/Modules/Admin/Tests/Database/AdminUserSeederRandomAdminsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Catálogo de traducciones de Roles (en/es)",
+      "description": "Crear `lang/{en,es}/admin/roles.php` con el árbol completo que consumen las tareas de UI: `resource` (model_label, plural_model_label, navigation_label, navigation_group 'Access control' / 'Control de acceso'); `catalog.roles.<case_snake>.{label,description}` para los 13 roles; `catalog.permissions.<case_snake>.{label,description}` para los 24 permisos; `catalog.areas.<area>`; `table` (name, description, permissions_count, users_count, guard, not_editable); `infolist` (sections y campos); `actions.edit_permissions.*` y `actions.manage_roles.*` (label, modal_heading, modal_description, submit, success, unchanged, current_password, password_incorrect, too_many_attempts); `failures.<failure_snake>` para cada caso de `AdminAuthorizationFailure` (TASK-006); `relations.users.*`, `relations.history.*`; `widgets.overview.*`, `widgets.users_per_role.*`; `matrix.*`; `users.*` (columna y filtro de roles, sección de permisos efectivos, pestaña de roles); `quick_links.roles.*`. Mismas claves y placeholders en ambos idiomas.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Cada caso de `AdminRole` y `AdminPermission` tiene `label` y `description` no vacíos en `en` y `es` (`Lang::has` con el locale, sin fallback).",
+        "Ambos archivos tienen exactamente las mismas claves y placeholders (lo verifica el `AdminTranslationKeysTest` existente al recorrer los catálogos de `lang/*/admin`)."
+      ],
+      "filesToCreate": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Probar que el catálogo de roles y permisos tiene nombre en ambos idiomas",
+      "description": "Extender `AdminTranslationKeysTest` con un caso que recorre `AdminRole::cases()`, `AdminPermission::cases()` y sus áreas y exige `label`/`description` (y nombre de área) en `en` y `es`, como hace ya con los eventos de actividad y los enums de anuncios.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "Falla si se agrega un caso a `AdminPermission` sin traducción en `lang/es/admin/roles.php`.",
+        "Pasa con el catálogo de TASK-004 en ambos locales."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Servicio de autorización: operaciones unitarias con fallos tipados",
+      "description": "Crear `App\\Modules\\Admin\\Services\\AdminAuthorizationService` (final readonly; recibe `ActivityLogger` y `PermissionRegistrar`) con `grantRole(User $user, AdminRole, User $actor): bool`, `revokeRole(...)`, `grantPermission(AdminRole, AdminPermission, User $actor): bool` y `revokePermission(...)`; cada una devuelve si hubo cambio. Mover desde los comandos, sin cambiar su lógica: el bloqueo del catálogo (rol `admin`, permiso `admin.access`, rol pedido), el bloqueo del usuario, las comprobaciones del último `admin.access` y la auditoría (`RoleGranted`/`RoleRevoked` con sujeto el usuario y `role`; `RolePermissionGranted`/`RolePermissionRevoked` con sujeto el `Role` y `role` + `permission`), solo si hubo cambio. Limpiar la caché de Spatie con `DB::afterCommit`. Los fallos lanzan `App\\Modules\\Admin\\Exceptions\\AdminAuthorizationException` con un caso de `App\\Modules\\Admin\\Enums\\AdminAuthorizationFailure`: `CatalogNotInitialized`, `RoleNotInitialized`, `PermissionNotInitialized`, `LastAdminAccess`, `ActorWouldLoseAccess` (este lo usa TASK-008). La carpeta `Exceptions/` es nueva en el módulo. El servicio no valida al actor ni autoriza.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "`grantRole` dos veces devuelve `true` y luego `false`, y deja una sola actividad `admin.role_granted` con el actor como causante.",
+        "Revocar el único rol con `admin.access` del único administrador lanza `LastAdminAccess` y no cambia roles ni actividad; `revokePermission(Admin, AdminAccess)` en ese caso lanza lo mismo.",
+        "Tras `grantPermission`, `$user->fresh()->can(...)` es verdadero en la misma prueba (caché limpiada); sin sembrar el catálogo, lanza `CatalogNotInitialized`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Services/AdminAuthorizationService.php",
+        "app/Modules/Admin/Exceptions/AdminAuthorizationException.php",
+        "app/Modules/Admin/Enums/AdminAuthorizationFailure.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Services/AdminAuthorizationService.php",
+        "app/Modules/Admin/Exceptions/AdminAuthorizationException.php",
+        "app/Modules/Admin/Enums/AdminAuthorizationFailure.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Services/AdminAuthorizationService.php app/Modules/Admin/Exceptions app/Modules/Admin/Enums/AdminAuthorizationFailure.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Pruebas del servicio de autorización (operaciones unitarias)",
+      "description": "Crear `Tests/Services/AdminAuthorizationServiceTest.php` cubriendo los tres criterios de TASK-006 y, además, que una revocación sin cambio no registra actividad y que el sujeto de `role_permission_*` es el `Role` (morph `role`). La carpeta `Tests/Services/` queda dentro de la suite `Admin` ya registrada.",
+      "priority": "P0",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Cubre: cambio real vs. repetido, último `admin.access` por rol y por permiso, caché limpiada y catálogo sin sembrar.",
+        "Ninguna prueba depende de mensajes de consola."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Services/AdminAuthorizationServiceTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Services/AdminAuthorizationServiceTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Services/AdminAuthorizationServiceTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Servicio: sincronización del panel con protección contra auto-bloqueo",
+      "description": "Agregar a `AdminAuthorizationService` `syncUserRoles(User $user, list<AdminRole> $roles, User $actor): AdminAuthorizationChanges` y `syncRolePermissions(AdminRole, list<AdminPermission>, User $actor): AdminAuthorizationChanges`. Cada una calcula la diferencia contra el estado bloqueado y aplica las operaciones unitarias dentro de UNA transacción; al final, si el actor ya no tiene `admin.access` o el permiso que autorizó la acción (`AdminUsersRoles` / `AdminRolesUpdate`), lanza `ActorWouldLoseAccess` y todo se revierte. `AdminAuthorizationChanges` (Data en `Data/`) lleva `granted` y `revoked` (listas de valores) y `hasChanges()`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Sincronizar `[A, B]` sobre un usuario con `[B, C]` concede A, revoca C, deja dos actividades y devuelve `granted=[A]`, `revoked=[C]`; sincronizar el mismo conjunto devuelve `hasChanges() === false` sin actividad.",
+        "Un gestor que quita `admin.roles.update` de `admin-roles-manager` (su propio rol) recibe `ActorWouldLoseAccess` y el rol conserva todos sus permisos y no hay actividad nueva.",
+        "Si una de varias operaciones lanza `LastAdminAccess`, ninguna de las anteriores de la misma sincronización persiste."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Data/AdminAuthorizationChanges.php",
+        "app/Modules/Admin/Tests/Services/AdminAuthorizationServiceSyncTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Services/AdminAuthorizationService.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Data/AdminAuthorizationChanges.php",
+        "app/Modules/Admin/Tests/Services/AdminAuthorizationServiceSyncTest.php",
+        "app/Modules/Admin/Services/AdminAuthorizationService.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Services/AdminAuthorizationServiceSyncTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Comandos admin:user-role y admin:role-permissions delegan en el servicio",
+      "description": "Reescribir `handle()` de ambos comandos para validar argumentos y `--actor` como hoy y delegar la escritura en `AdminAuthorizationService` dentro de su transacción, traduciendo cada `AdminAuthorizationFailure` al mensaje y código de salida actuales (`FAILURE`). Quitar `lockCatalogRole()` y los helpers privados de último `admin.access` que pasaron al servicio; `InteractsWithAdminCatalog` conserva `isValidAction`, `actorEmail`, `resolveActor` y las constantes. `AdminBootstrapCommand` no cambia.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Las 32 pruebas de `AdminUserRoleCommandTest` y `AdminRolePermissionsCommandTest` pasan sin modificar ni un archivo de prueba (mensajes y códigos idénticos).",
+        "`AdminBootstrapCommandTest` sigue pasando y ningún comando llama a `ActivityLogger` directamente salvo el bootstrap."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Console/Commands/AdminUserRoleCommand.php",
+        "app/Modules/Admin/Console/Commands/AdminRolePermissionsCommand.php",
+        "app/Modules/Admin/Console/Concerns/InteractsWithAdminCatalog.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Console/Commands/AdminUserRoleCommand.php",
+        "app/Modules/Admin/Console/Commands/AdminRolePermissionsCommand.php",
+        "app/Modules/Admin/Console/Concerns/InteractsWithAdminCatalog.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Commands",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "RolePolicy para el Role de Spatie",
+      "description": "Crear `App\\Modules\\Admin\\Policies\\RolePolicy`: `viewAny` (`admin.roles.viewAny`), `view` (`admin.roles.view`), `update(User, Role)` (`admin.roles.update`, guard `admin` y nombre en `AdminRole`); niega `create`, `delete`, `deleteAny`, `restore`, `restoreAny`, `forceDelete`, `forceDeleteAny`, `replicate` y `reorder`. Registrarla con `Gate::policy(Role::class, RolePolicy::class)` en `AdminServiceProvider::boot()` (el modelo es del paquete, no admite `#[UsePolicy]`).",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Un gestor puede `update` `admin-users-reader`, pero no un `Role` llamado `legacy-role` ni uno del guard `web`.",
+        "Un lector de roles puede `viewAny` y `view` pero no `update`; nadie puede `create`, `delete` ni `forceDelete`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Policies/RolePolicy.php",
+        "app/Modules/Admin/Tests/Policies/RolePolicyTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Providers/AdminServiceProvider.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Policies/RolePolicy.php",
+        "app/Modules/Admin/Tests/Policies/RolePolicyTest.php",
+        "app/Modules/Admin/Providers/AdminServiceProvider.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Policies/RolePolicyTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "UserPolicy::manageRoles",
+      "description": "Agregar `manageRoles(User $authenticatedUser, User $user): bool`: permiso `admin.users.roles` y `isNot($user)`. Las demás escrituras siguen negadas.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Un gestor puede gestionar los roles de otro usuario pero no los suyos.",
+        "Un moderador sin `admin.users.roles` no puede."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/User/Policies/UserPolicy.php",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "writeScope": [
+        "app/User/Policies/UserPolicy.php",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Policies/UserPolicyTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Concern de Filament para confirmar la contraseña actual",
+      "description": "Crear `Filament/Concerns/ConfirmsCurrentPassword.php` con `currentPasswordField(): TextInput` (password, `autocomplete=current-password`, requerido, etiqueta `admin/roles.actions.*.current_password` vía parámetro) y `ensureCurrentPassword(User $user, string $password, string $throttleKeyPrefix): void`, que aplica `RateLimiter` (5 por minuto por usuario) y `Hash::check`, y lanza `ValidationException` en `current_password` con los textos de TASK-004. Mismo comportamiento que `BackupManagementService`, sin tocar Backups.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "Una contraseña correcta no lanza y limpia el contador; una incorrecta lanza con la clave `current_password`.",
+        "El sexto intento erróneo en un minuto lanza el error de demasiados intentos aunque la contraseña sea correcta."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Concerns/ConfirmsCurrentPassword.php",
+        "app/Modules/Admin/Tests/Filament/Concerns/ConfirmsCurrentPasswordTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Concerns/ConfirmsCurrentPassword.php",
+        "app/Modules/Admin/Tests/Filament/Concerns/ConfirmsCurrentPasswordTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Concerns/ConfirmsCurrentPasswordTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Resource de roles: listado",
+      "description": "Crear `RoleResource` (modelo Spatie `Role`, URL `/admin/roles`, grupo de navegación y etiquetas traducidas, sin overrides `can*()`: Filament pregunta a `RolePolicy`), con solo la página `index` por ahora, `ListRoles` y `Tables/RolesTable`: consulta `Role::query()->where('guard_name', 'admin')->withCount(['permissions', 'users'])`, columnas nombre (etiqueta del catálogo o el nombre crudo), descripción, nº de permisos, nº de usuarios y un badge 'No editable' para roles fuera del catálogo; búsqueda por nombre; orden por nombre.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "`php artisan route:list --name=filament.admin.resources.roles` muestra solo `index`.",
+        "PHPStan pasa sobre los tres archivos sin overrides `can*()`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Roles",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Resource de roles: detalle",
+      "description": "Crear `Pages/ViewRole` y `Schemas/RoleInfolist` (nombre, descripción, guard, nº de usuarios y los permisos agrupados por área como badges con su etiqueta y la descripción en el tooltip) y registrar la página `view` y el infolist en `RoleResource`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "La página `view` existe en `route:list` y el registro de la tabla enlaza a ella.",
+        "PHPStan pasa sobre `Roles/`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Schemas/RoleInfolist.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Schemas/RoleInfolist.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Roles",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Pruebas del listado y el detalle de roles",
+      "description": "Crear `ListRolesTest` y `ViewRoleTest` en `Tests/Filament/Resources/Roles/Pages/`.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014",
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "Un lector ve los 13 roles del catálogo con sus conteos correctos y la consulta del listado es constante (no crece con el nº de roles o usuarios); un administrador sin `admin.roles.viewAny` recibe 403.",
+        "El detalle muestra los permisos agrupados por área en inglés y en español; un rol fuera del catálogo se lista con 'No editable'."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Acción 'Editar permisos' en el detalle del rol",
+      "description": "Agregar a `ViewRole` la acción de cabecera `editPermissions`: `CheckboxList` de `AdminPermission` agrupada por área (`label()` + `description()`), con el estado actual por defecto, más `currentPasswordField()`; `->authorize('update')`; confirma la contraseña, llama a `syncRolePermissions()` y notifica éxito con el nº de cambios, 'sin cambios' cuando no hay diferencia, o el fallo traducido de `AdminAuthorizationFailure`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-012",
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "Un gestor concede y quita permisos de `admin-posts-reader`; el rol queda con el conjunto enviado y hay una actividad por cambio con él como causante.",
+        "Con contraseña errónea no cambia nada; un lector no ve la acción y una llamada directa no escribe; un rol fuera del catálogo no muestra la acción.",
+        "Quitar `admin.access` del rol `admin` siendo el único administrador muestra la notificación de último acceso y no cambia nada."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleEditPermissionsActionTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleEditPermissionsActionTest.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleEditPermissionsActionTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Pestaña de usuarios del rol",
+      "description": "Crear `RelationManagers/RoleUsersRelationManager` (solo lectura, relación `users` del rol: nombre, email, estado de cuenta con `DescribesAccountStatus`, enlace al usuario si `UserResource::canView`) y registrarlo en `RoleResource::getRelations()`. Visible solo si el administrador puede `view` el rol y `viewAny` usuarios.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "Lista solo los usuarios con ese rol, sin acciones de crear, asociar ni quitar.",
+        "Oculta para un lector de roles sin `admin.users.viewAny`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManagerTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManagerTest.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManagerTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Pestaña de historial del rol",
+      "description": "Crear `RelationManagers/RoleActivityLogsRelationManager` reutilizando `ActivityLogsTable::configure($table, deferLoading: false)` sobre `ActivityLog::query()` con sujeto morph `role` e id del rol (eventos `role_permission_*`) y registrarlo en `RoleResource::getRelations()`. Visible solo con `viewAny` de `ActivityLog`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-017"
+      ],
+      "acceptanceCriteria": [
+        "Muestra los `role_permission_granted/revoked` de ese rol, no los de otro rol.",
+        "Oculta para un administrador sin `admin.activity.viewAny`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleActivityLogsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleActivityLogsRelationManagerTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleActivityLogsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleActivityLogsRelationManagerTest.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleActivityLogsRelationManagerTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Widgets del listado de roles",
+      "description": "Crear `Widgets/RolesOverview` (StatsOverview: usuarios con `admin.access`, roles del catálogo sin usuarios, cambios de autorización —`role_*` y `role_permission_*`— en 30 días con sparkline diaria vía `BuildsDailyActivityCharts`) y `Widgets/UsersPerRoleChart` (ChartWidget de barras: usuarios por rol del catálogo, etiquetas traducidas), y mostrarlos con `getHeaderWidgets()` en `ListRoles`. Ambos `canView()` con `Gate` `viewAny` de `Role`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "Los valores coinciden con los datos sembrados en la prueba (TASK-020).",
+        "Ningún widget se muestra a un administrador sin `admin.roles.viewAny`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/Widgets/RolesOverview.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Widgets/UsersPerRoleChart.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Widgets/RolesOverview.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Widgets/UsersPerRoleChart.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Roles",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Pruebas de los widgets de roles",
+      "description": "Crear `RolesOverviewTest` y `UsersPerRoleChartTest` en `Tests/Filament/Resources/Roles/Widgets/`.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-019",
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "Con 3 administradores, 1 rol vacío y 4 cambios en 30 días (uno a los 31), las estadísticas muestran 3, 1 y 4.",
+        "El gráfico tiene una barra por rol del catálogo con su etiqueta en español; un administrador sin permiso no ve ninguno."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/UsersPerRoleChartTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/UsersPerRoleChartTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Matriz de permisos",
+      "description": "Crear la página de recurso `Pages/RolePermissionMatrix` (`Filament\\Resources\\Pages\\Page`, ruta `/matrix`, `canAccess` con `viewAny` de `Role`) y su vista `UI/Views/filament/roles/permission-matrix.blade.php`: filas = permisos agrupados por área, columnas = roles del catálogo, ✓ en cada cruce, encabezados con etiqueta y descripción en `title`; una sola consulta (`Role::with('permissions')`). Registrarla en `RoleResource::getPages()` y agregar en `ListRoles` una acción de cabecera que enlaza a ella.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-018",
+        "TASK-019"
+      ],
+      "acceptanceCriteria": [
+        "La ruta `filament.admin.resources.roles.matrix` existe y la vista no contiene texto literal (todo `__()`).",
+        "PHPStan pasa sobre `Roles/`."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/RolePermissionMatrix.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/RolePermissionMatrix.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Roles",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Pruebas de la matriz de permisos",
+      "description": "Crear `RolePermissionMatrixTest`.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-021"
+      ],
+      "acceptanceCriteria": [
+        "Marca exactamente los cruces del catálogo sembrado (p. ej. `admin-users-moderator` × `admin.users.suspend`) y no `admin-posts-reader` × `admin.users.suspend`.",
+        "Un administrador sin `admin.roles.viewAny` recibe 403; la página hace un número constante de consultas."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php"
+      ],
+      "filesToModify": [],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-023",
+      "title": "Acción 'Gestionar roles' en el detalle del usuario",
+      "description": "Agregar a `ViewUser` la acción de cabecera `manageRoles`: `CheckboxList` de `AdminRole` (`label()` + `description()`) con los roles actuales por defecto, más `currentPasswordField()`; `->authorize('manageRoles')`; confirma la contraseña y llama a `syncUserRoles()`, con las mismas notificaciones que TASK-016. No toca las acciones de suspensión.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-011",
+        "TASK-012"
+      ],
+      "acceptanceCriteria": [
+        "Un gestor asigna `admin-posts-reader` y quita `admin-users-reader` a otro usuario; hay una actividad por cambio.",
+        "La acción no aparece en su propia cuenta ni para un moderador; una llamada directa no escribe; con contraseña errónea no cambia nada."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserManageRolesActionTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserManageRolesActionTest.php",
+        "app/Modules/Admin/Filament/Resources/Users/Pages/ViewUser.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserManageRolesActionTest.php app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserAccountStatusActionsTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-024",
+      "title": "Pestaña de roles y permisos efectivos del usuario",
+      "description": "Crear `Users/RelationManagers/RolesRelationManager` (solo lectura: rol, descripción y sus permisos como badges; visible con `view` del usuario y `viewAny` de `Role`) y registrarlo en `UserResource::getRelations()`. En `UserInfolist`, agregar una sección 'Permisos efectivos' (permisos que el usuario obtiene de sus roles, agrupados por área, calculados con `getAllPermissions()`), visible con `viewAny` de `Role`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "La pestaña lista solo los roles del usuario, sin acciones de escritura, y se oculta sin `admin.roles.viewAny`.",
+        "La sección muestra la unión sin duplicados de los permisos de dos roles que comparten `admin.users.view`; un usuario sin roles muestra un estado vacío traducido."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/RolesRelationManager.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/Schemas/UserInfolist.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/RolesRelationManager.php",
+        "app/Modules/Admin/Filament/Resources/Users/UserResource.php",
+        "app/Modules/Admin/Filament/Resources/Users/Schemas/UserInfolist.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Users",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Pruebas de la pestaña de roles y los permisos efectivos",
+      "description": "Crear `RolesRelationManagerTest` y actualizar `ViewUserTest` (su lista de campos permitidos del infolist incluye la sección nueva).",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-024",
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "Cubre los dos criterios de TASK-024 en inglés y español.",
+        "`ViewUserTest` sigue fallando si el infolist expone un campo fuera de la lista (2FA, contraseña)."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/RolesRelationManagerTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/RolesRelationManagerTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/RolesRelationManagerTest.php app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Columna y filtro de roles en el listado de usuarios",
+      "description": "En `UsersTable`: precargar `roles` junto con `media`, columna 'Roles' (badges con `AdminRole::label()` o el nombre crudo, `toggleable`) y `SelectFilter` múltiple por rol del catálogo (`whereHas('roles', name in ...)` con guard `admin`), visibles solo con `viewAny` de `Role`.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "Filtrar por `admin-users-moderator` devuelve solo usuarios con ese rol; filtrar por dos roles devuelve la unión.",
+        "El nº de consultas del listado no crece con el nº de usuarios; sin `admin.roles.viewAny` no aparecen ni la columna ni el filtro."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ListUsersRolesTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ListUsersRolesTest.php",
+        "app/Modules/Admin/Filament/Resources/Users/Tables/UsersTable.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ListUsersRolesTest.php app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ListUsersTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Enlazar roles en el activity log y en los accesos rápidos",
+      "description": "En `DescribesActivityLogParties::recordUrl()`, un `Role` enlaza a `RoleResource` cuando el administrador puede verlo. En `AdminQuickLinksWidget`, agregar el enlace 'Roles' cuando `Gate` permite `viewAny` de `Role` (incluido en `canView()`).",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "El sujeto de un `role_permission_granted` enlaza al detalle del rol para un lector de roles y no enlaza para quien no tiene permiso.",
+        "El widget muestra 'Roles' a un lector de roles sin otros permisos y no se lo muestra a un lector de posts."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php",
+        "app/Modules/Admin/Filament/Widgets/AdminQuickLinksWidget.php",
+        "app/Modules/Admin/Tests/Filament/Widgets/AdminQuickLinksWidgetTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php",
+        "app/Modules/Admin/Filament/Widgets/AdminQuickLinksWidget.php",
+        "app/Modules/Admin/Tests/Filament/Widgets/AdminQuickLinksWidgetTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Widgets/AdminQuickLinksWidgetTest.php app/Modules/Admin/Tests/Filament/Resources/ActivityLogs",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-028",
+      "title": "Eventos simulados de permisos de rol en ActivityLogSeeder",
+      "description": "En `seedAdminActivity()`, agregar entre 3 y 8 cambios de permisos de rol hechos por Angel sobre roles del catálogo: pares revocar → volver a conceder (en ese orden y con fechas crecientes) para que el estado final coincida con el catálogo sembrado; sujeto el `Role`, propiedades `role` y `permission`, sin IP (consola).",
+      "priority": "P3",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "Cada `role_permission_revoked` sembrado tiene un `role_permission_granted` posterior del mismo rol y permiso, y ambos apuntan a un `Role` existente.",
+        "Correr el seeder dos veces no duplica (regla actual de `activity_log` con filas)."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php",
+        "app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php",
+        "app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Cubrir Roles en la prueba de texto fijo del panel",
+      "description": "Agregar `app/Modules/Admin/Filament/Resources/Roles` y `app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php` a `ADMIN_TRANSLATED_PATHS` en `AdminHardcodedTextTest` y al caso que verifica qué se escanea.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "XS",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-016",
+        "TASK-018",
+        "TASK-020",
+        "TASK-022"
+      ],
+      "acceptanceCriteria": [
+        "Pasa con todo `Roles/` y la vista de la matriz escaneados.",
+        "Falla si se agrega un `->label('Texto')` literal en un archivo de `Roles/`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-030",
+      "title": "Documentación",
+      "description": "Actualizar CLAUDE.md (tabla de roles con `admin-roles-reader` y `admin-roles-manager`, lista de permisos y roles válidos de los comandos, sección de Admin: Resource de roles, matriz, widgets, acción en ViewUser, servicio compartido, `RolePolicy`, confirmación de contraseña; la frase 'Role and permission management remains command-line based' se reemplaza; volver a sembrar el catálogo en bases existentes), AGENTS.md (párrafo de bootstrap y gestión) y `docs/architecture/backend.md` (mismo contenido en español).",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-016",
+        "TASK-023"
+      ],
+      "acceptanceCriteria": [
+        "Ningún documento dice que la gestión es solo por consola.",
+        "Los tres documentos nombran los mismos roles, permisos y el servicio, y explican cómo otorgar `admin-roles-manager` en producción con `admin:user-role grant`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "docs/architecture/backend.md"
+      ],
+      "writeScope": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "docs/architecture/backend.md"
+      ],
+      "validateCommand": "rtk grep -n \"remains command-line based\" CLAUDE.md AGENTS.md docs/architecture/backend.md; test $? -eq 1",
+      "review": "claude"
+    },
+    {
+      "id": "TASK-031",
+      "title": "Gates finales de calidad",
+      "description": "Sin escrituras salvo las que pidan los formateadores: Pint (`--dirty --format agent`), `composer rector-clear-cache` → `composer rector-dry` → `composer rector`, `composer phpstan` y `composer test` (en paralelo; no al mismo tiempo que la suite de SOC-68).",
+      "priority": "P0",
+      "type": "chore",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-005",
+        "TASK-007",
+        "TASK-009",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-020",
+        "TASK-022",
+        "TASK-023",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027",
+        "TASK-028",
+        "TASK-029",
+        "TASK-030"
+      ],
+      "acceptanceCriteria": [
+        "Pint, Rector (sin cambios pendientes tras aplicar), PHPStan max y la suite completa pasan.",
+        "Si Rector renombra variables o reescribe código, se revisa y se vuelve a correr la suite."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "writeScope": [],
+      "validateCommand": "rtk composer phpstan && rtk composer test",
+      "review": "claude"
+    }
+  ],
+  "executionSummary": {
+    "taskCount": 31,
+    "layers": [
+      [
+        "TASK-001"
+      ],
+      [
+        "TASK-002",
+        "TASK-004",
+        "TASK-006",
+        "TASK-010",
+        "TASK-011",
+        "TASK-028"
+      ],
+      [
+        "TASK-003",
+        "TASK-005",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-012",
+        "TASK-013"
+      ],
+      [
+        "TASK-014",
+        "TASK-019",
+        "TASK-023",
+        "TASK-024",
+        "TASK-026"
+      ],
+      [
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-027"
+      ],
+      [
+        "TASK-018",
+        "TASK-020",
+        "TASK-025",
+        "TASK-030"
+      ],
+      [
+        "TASK-021"
+      ],
+      [
+        "TASK-022"
+      ],
+      [
+        "TASK-029"
+      ],
+      [
+        "TASK-031"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-004",
+      "TASK-013",
+      "TASK-014",
+      "TASK-017",
+      "TASK-018",
+      "TASK-021",
+      "TASK-022",
+      "TASK-029",
+      "TASK-031"
+    ]
+  },
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [
+      "TASK-001"
+    ],
+    "TASK-003": [
+      "TASK-002"
+    ],
+    "TASK-004": [
+      "TASK-001"
+    ],
+    "TASK-005": [
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-001"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-006"
+    ],
+    "TASK-009": [
+      "TASK-006"
+    ],
+    "TASK-010": [
+      "TASK-001"
+    ],
+    "TASK-011": [
+      "TASK-001"
+    ],
+    "TASK-012": [
+      "TASK-004"
+    ],
+    "TASK-013": [
+      "TASK-004",
+      "TASK-010"
+    ],
+    "TASK-014": [
+      "TASK-013"
+    ],
+    "TASK-015": [
+      "TASK-014",
+      "TASK-005"
+    ],
+    "TASK-016": [
+      "TASK-008",
+      "TASK-012",
+      "TASK-014"
+    ],
+    "TASK-017": [
+      "TASK-014"
+    ],
+    "TASK-018": [
+      "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-013"
+    ],
+    "TASK-020": [
+      "TASK-019",
+      "TASK-015"
+    ],
+    "TASK-021": [
+      "TASK-018",
+      "TASK-019"
+    ],
+    "TASK-022": [
+      "TASK-021"
+    ],
+    "TASK-023": [
+      "TASK-008",
+      "TASK-011",
+      "TASK-012"
+    ],
+    "TASK-024": [
+      "TASK-013"
+    ],
+    "TASK-025": [
+      "TASK-024",
+      "TASK-015"
+    ],
+    "TASK-026": [
+      "TASK-013"
+    ],
+    "TASK-027": [
+      "TASK-014"
+    ],
+    "TASK-028": [
+      "TASK-001"
+    ],
+    "TASK-029": [
+      "TASK-016",
+      "TASK-018",
+      "TASK-020",
+      "TASK-022"
+    ],
+    "TASK-030": [
+      "TASK-009",
+      "TASK-016",
+      "TASK-023"
+    ],
+    "TASK-031": [
+      "TASK-002",
+      "TASK-003",
+      "TASK-005",
+      "TASK-007",
+      "TASK-009",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-020",
+      "TASK-022",
+      "TASK-023",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027",
+      "TASK-028",
+      "TASK-029",
+      "TASK-030"
+    ]
+  }
+}
