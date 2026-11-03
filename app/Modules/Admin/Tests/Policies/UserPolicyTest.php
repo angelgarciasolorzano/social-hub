@@ -156,3 +156,32 @@ it('keeps every other user mutation denied for a moderator', function (): void {
         ->and(Gate::forUser($user)->allows('delete', $targetUser))->toBeFalse()
         ->and(Gate::forUser($user)->allows('forceDelete', $targetUser))->toBeFalse();
 });
+
+it('allows the roles manager to manage the roles of another user', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminRolesManager->value);
+
+    expect(Gate::forUser($user)->allows('manageRoles', createUser()))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('manageRoles', createSuspendedUser()))->toBeTrue();
+});
+
+it('denies the roles manager managing their own roles', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminRolesManager->value);
+
+    expect(Gate::forUser($user)->allows('manageRoles', $user))->toBeFalse();
+});
+
+it('denies managing roles without admin.users.roles', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminRolesReader->value);
+
+    expect(Gate::forUser(createUserModerator())->allows('manageRoles', createUser()))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('manageRoles', createUser()))->toBeFalse();
+});
