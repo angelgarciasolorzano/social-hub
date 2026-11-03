@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles;
 
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleActivityLogsRelationManager;
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleUsersRelationManager;
@@ -106,6 +107,7 @@ class RoleResource extends Resource
     {
         return [
             'index' => ListRoles::route('/'),
+            'matrix' => RolePermissionMatrix::route('/matrix'),
             'view' => ViewRole::route('/{record}'),
         ];
     }
