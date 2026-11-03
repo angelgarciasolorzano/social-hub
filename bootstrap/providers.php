@@ -11,6 +11,7 @@ use App\Modules\Admin\Providers\AdminServiceProvider;
 use App\Modules\Announcement\Providers\AnnouncementServiceProvider;
 use App\Modules\Comment\Providers\CommentServiceProvider;
 use App\Modules\Like\Providers\LikeServiceProvider;
+use App\Modules\Notification\Providers\NotificationServiceProvider;
 use App\Modules\Post\Providers\PostServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
@@ -26,6 +27,7 @@ return [
     PostServiceProvider::class,
     CommentServiceProvider::class,
     LikeServiceProvider::class,
+    NotificationServiceProvider::class,
     AnnouncementServiceProvider::class,
     ActivityLogServiceProvider::class,
     FriendshipServiceProvider::class,

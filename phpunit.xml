@@ -29,6 +29,9 @@
         <testsuite name="Announcement">
             <directory>app/Modules/Announcement/Tests</directory>
         </testsuite>
+        <testsuite name="Notification">
+            <directory>app/Modules/Notification</directory>
+        </testsuite>
         <testsuite name="Login">
             <directory>app/Auth/Modules/Login/Tests</directory>
         </testsuite>
