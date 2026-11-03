@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles;
 
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleActivityLogsRelationManager;
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleUsersRelationManager;
 use App\Modules\Admin\Filament\Resources\Roles\Schemas\RoleInfolist;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RolesTable;
@@ -94,6 +95,7 @@ class RoleResource extends Resource
     {
         return [
             RoleUsersRelationManager::class,
+            RoleActivityLogsRelationManager::class,
         ];
     }
 
