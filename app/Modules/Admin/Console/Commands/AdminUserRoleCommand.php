@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Console\Commands;
 
-use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
-use App\Modules\ActivityLog\Services\ActivityLogger;
 use App\Modules\Admin\Console\Concerns\InteractsWithAdminCatalog;
-use App\Modules\Admin\Enums\AdminPermission;
+use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Exceptions\AdminAuthorizationException;
+use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\User\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 #[Signature('admin:user-role {action : grant or revoke} {email : User account email} {role : Role name from the Admin catalog} {--actor= : Email of the administrator running the command}')]
 #[Description('Grant or revoke a cataloged Admin role for a user.')]
@@ -24,7 +21,7 @@ class AdminUserRoleCommand extends Command
 {
     use InteractsWithAdminCatalog;
 
-    public function handle(ActivityLogger $activityLogger): int
+    public function handle(AdminAuthorizationService $adminAuthorizationService): int
     {
         $action = $this->argument('action');
         $email = $this->argument('email');
@@ -65,11 +62,11 @@ class AdminUserRoleCommand extends Command
             return self::INVALID;
         }
 
-        return DB::transaction(function () use ($action, $email, $adminRole, $actorEmail, $activityLogger): int {
-            $lockedCatalog = $this->lockCatalogRole($adminRole);
-
-            if ($lockedCatalog === null) {
-                return self::FAILURE;
+        return DB::transaction(function () use ($action, $email, $adminRole, $actorEmail, $adminAuthorizationService): int {
+            try {
+                $adminAuthorizationService->lockCatalog($adminRole);
+            } catch (AdminAuthorizationException $adminAuthorizationException) {
+                return $this->reportFailure($adminAuthorizationException->failure, $adminRole);
             }
 
             $actor = $this->resolveActor($actorEmail);
@@ -77,9 +74,6 @@ class AdminUserRoleCommand extends Command
             if (! $actor instanceof User) {
                 return self::FAILURE;
             }
-
-            $role = $lockedCatalog['role'];
-            $adminAccessPermission = $lockedCatalog['adminAccessPermission'];
 
             $user = User::query()
                 ->where('email', $email)
@@ -92,42 +86,18 @@ class AdminUserRoleCommand extends Command
                 return self::FAILURE;
             }
 
-            $hadRole = $user->hasRole($role);
+            try {
+                if ($action === self::ACTION_GRANT) {
+                    $adminAuthorizationService->grantRole($user, $adminRole, $actor);
 
-            if ($action === self::ACTION_GRANT) {
-                $user->assignRole($role);
+                    $this->info("Role {$adminRole->value} is assigned to {$email}.");
 
-                if (! $hadRole) {
-                    $activityLogger->record(ActivityLogAdminEvent::RoleGranted, $user, $actor, ['role' => $adminRole->value]);
+                    return self::SUCCESS;
                 }
 
-                $this->info("Role {$adminRole->value} is assigned to {$email}.");
-
-                return self::SUCCESS;
-            }
-
-            $higherOrderExpectation = $role->permissions()
-                ->whereKey($adminAccessPermission->getKey())
-                ->exists();
-
-            if (
-                $hadRole
-                && $higherOrderExpectation
-                && ! $this->userRetainsAdminAccessAfterRevocation($user, $role, $adminAccessPermission)
-                && ! User::query()
-                    ->permission(AdminPermission::AdminAccess->value)
-                    ->whereKeyNot($user->getKey())
-                    ->exists()
-            ) {
-                $this->error('Cannot revoke this role because it would leave no user with admin.access.');
-
-                return self::FAILURE;
-            }
-
-            $user->removeRole($role);
-
-            if ($hadRole) {
-                $activityLogger->record(ActivityLogAdminEvent::RoleRevoked, $user, $actor, ['role' => $adminRole->value]);
+                $adminAuthorizationService->revokeRole($user, $adminRole, $actor);
+            } catch (AdminAuthorizationException $adminAuthorizationException) {
+                return $this->reportFailure($adminAuthorizationException->failure, $adminRole);
             }
 
             $this->info("Role {$adminRole->value} is absent from {$email}.");
@@ -136,22 +106,13 @@ class AdminUserRoleCommand extends Command
         });
     }
 
-    private function userRetainsAdminAccessAfterRevocation(
-        User $user,
-        Role $revokedRole,
-        Permission $adminAccessPermission,
-    ): bool {
-        if ($user->hasDirectPermission($adminAccessPermission)) {
-            return true;
-        }
+    private function reportFailure(AdminAuthorizationFailure $adminAuthorizationFailure, AdminRole $adminRole): int
+    {
+        $this->error(
+            $this->catalogFailureMessage($adminAuthorizationFailure, $adminRole)
+                ?? 'Cannot revoke this role because it would leave no user with admin.access.',
+        );
 
-        return $user->roles()
-            ->whereKeyNot($revokedRole->getKey())
-            ->whereHas(
-                'permissions',
-                fn (Builder $builder): Builder => $builder
-                    ->whereKey($adminAccessPermission->getKey()),
-            )
-            ->exists();
+        return self::FAILURE;
     }
 }
