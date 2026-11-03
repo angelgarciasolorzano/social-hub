@@ -9,6 +9,7 @@ use App\Modules\Admin\Filament\Pages\Backups\BackupManagement;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Announcement\Models\Announcement;
 use App\Support\Translation\TranslatedText;
@@ -17,6 +18,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Gate;
 use Override;
+use Spatie\Permission\Models\Role;
 
 class AdminQuickLinksWidget extends Widget
 {
@@ -38,6 +40,7 @@ class AdminQuickLinksWidget extends Widget
                 || $authenticatedUser->can(AdminPermission::AdminActivityViewAny->value)
                 || $authenticatedUser->can(AdminPermission::AdminBackupsView->value)
                 || Gate::forUser($authenticatedUser)->allows('viewAny', Announcement::class)
+                || Gate::forUser($authenticatedUser)->allows('viewAny', Role::class)
             );
     }
 
@@ -96,6 +99,15 @@ class AdminQuickLinksWidget extends Widget
                 'description' => $this->text('announcements.description'),
                 'icon' => Heroicon::OutlinedMegaphone,
                 'url' => AnnouncementResource::getUrl('index', panel: 'admin'),
+            ];
+        }
+
+        if (Gate::forUser($authenticatedUser)->allows('viewAny', Role::class)) {
+            $quickLinks[] = [
+                'label' => TranslatedText::of('admin/roles.quick_links.roles.label'),
+                'description' => TranslatedText::of('admin/roles.quick_links.roles.description'),
+                'icon' => Heroicon::OutlinedShieldCheck,
+                'url' => RoleResource::getUrl('index', panel: 'admin'),
             ];
         }
 

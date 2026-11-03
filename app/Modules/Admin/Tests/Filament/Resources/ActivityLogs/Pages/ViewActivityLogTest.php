@@ -8,9 +8,11 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ViewActivityLog;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\PreferredLocale;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 const ACTIVITY_LOG_DETAIL_SENTINEL_TEXT = 'Texto centinela que el detalle nunca muestra';
@@ -168,4 +170,20 @@ it('never shows the content of the post or comment it refers to', function (): v
     Livewire::test(ViewActivityLog::class, ['record' => $commentActivityLog->getKey()])
         ->assertSeeText('Comment #'.$comment->id)
         ->assertDontSeeText(ACTIVITY_LOG_DETAIL_SENTINEL_TEXT);
+});
+
+it('links a role subject to the role detail only for an administrator who may view roles', function (): void {
+    $role = Role::query()->where('name', AdminRole::AdminPostsReader->value)->where('guard_name', 'admin')->sole();
+    $activityLog = ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RolePermissionGranted)->performedOn($role)->createOne();
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader, AdminRole::AdminRolesReader);
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertSee(RoleResource::getUrl('view', ['record' => $role]), false);
+
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertSeeText('Role #'.$role->id)
+        ->assertDontSee(RoleResource::getUrl('view', ['record' => $role]), false);
 });
