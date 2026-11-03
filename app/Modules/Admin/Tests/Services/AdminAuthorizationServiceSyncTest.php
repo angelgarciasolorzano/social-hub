@@ -10,6 +10,7 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\User\Models\User;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -163,4 +164,29 @@ it('rolls back the grants of a sync when a later revocation protects the last pa
         ->and(catalogRolePermissionNames(AdminRole::Admin))->toBe([AdminPermission::AdminAccess->value])
         ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse()
         ->and($user->fresh()?->can(AdminPermission::AdminPostsView->value))->toBeFalse();
+});
+
+it('locks the admin role before the user, the same order as the console commands', function (): void {
+    $actor = createRolesManager();
+    $user = createUser();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    resolve(AdminAuthorizationService::class)->syncUserRoles($user, [AdminRole::AdminPostsReader], $actor);
+
+    $lockedTables = [];
+
+    foreach (DB::getQueryLog() as $loggedQuery) {
+        $sql = mb_strtolower($loggedQuery['query']);
+
+        if (str_contains($sql, 'for update') && preg_match('/from [`"]?(\w+)[`"]?/', $sql, $matches) === 1) {
+            $lockedTables[] = $matches[1];
+        }
+    }
+
+    DB::disableQueryLog();
+
+    expect($lockedTables[0] ?? null)->toBe('roles')
+        ->and($lockedTables)->toContain('users');
 });

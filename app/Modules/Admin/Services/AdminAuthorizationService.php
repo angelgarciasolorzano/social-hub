@@ -176,7 +176,9 @@ final readonly class AdminAuthorizationService
      * Leave the user with exactly the selected cataloged roles, in one transaction. Roles outside the
      * catalog are kept. Grants run before revocations, so moving access between roles never trips the
      * last `admin.access` check, and the whole sync is rolled back when it would remove the acting
-     * administrator's own access to the panel or to this action.
+     * administrator's own access to the panel or to this action. Like every other write, it locks the
+     * `admin` role before the user, so a concurrent change of the same user from the console waits for
+     * it instead of deadlocking.
      *
      * @param  list<AdminRole>  $adminRoles
      *
@@ -185,6 +187,7 @@ final readonly class AdminAuthorizationService
     public function syncUserRoles(User $user, array $adminRoles, User $actor): AdminAuthorizationChanges
     {
         return $this->syncWithinTransaction(function () use ($user, $adminRoles, $actor): AdminAuthorizationChanges {
+            $this->lockCatalogRole(AdminRole::Admin);
             $this->lockUser($user);
 
             $currentRoles = $user->roles
