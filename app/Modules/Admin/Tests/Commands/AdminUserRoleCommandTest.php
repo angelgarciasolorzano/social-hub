@@ -5,12 +5,12 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\User\Models\User;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
 function runAdminUserRole(string $action, string $email, string $role, ?User $user = null): int

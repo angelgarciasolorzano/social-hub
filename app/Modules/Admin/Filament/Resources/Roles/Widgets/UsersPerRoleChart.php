@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\Widgets;
 
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
  * How many users hold each cataloged role, in catalog order.

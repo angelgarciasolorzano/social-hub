@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Enums\UserImageType;
@@ -24,7 +25,6 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
 
 class UsersTable
 {

@@ -9,12 +9,12 @@ use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Providers\AppServiceProvider;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 function adminAuthorizationService(): AdminAuthorizationService
 {

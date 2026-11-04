@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles\RelationManagers;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
@@ -17,7 +18,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
  * The users holding a role, read-only: roles are assigned from the user's detail.

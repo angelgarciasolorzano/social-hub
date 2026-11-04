@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
-use Spatie\Permission\Models\Role;
+use App\Modules\Admin\Models\Role;
 
 /**
  * @return array<int, mixed>

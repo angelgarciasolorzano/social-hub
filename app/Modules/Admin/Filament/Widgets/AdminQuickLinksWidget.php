@@ -11,6 +11,7 @@ use App\Modules\Admin\Filament\Resources\Announcements\AnnouncementResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Models\Announcement;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
@@ -18,7 +19,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 class AdminQuickLinksWidget extends Widget
 {

@@ -6,13 +6,13 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Schemas;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class RoleInfolist
 {

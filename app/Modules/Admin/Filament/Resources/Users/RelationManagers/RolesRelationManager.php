@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\RelationManagers;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Facades\Filament;
@@ -18,7 +19,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Override;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 /**
  * The Admin roles of a user with the permissions each grants, read-only: roles are changed with the

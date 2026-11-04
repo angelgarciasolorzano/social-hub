@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Policies\RolePolicy;
 use App\User\Models\User;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
 
 /**
  * Create a user holding the given Admin role.

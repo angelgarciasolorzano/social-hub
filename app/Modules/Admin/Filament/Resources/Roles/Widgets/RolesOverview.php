@@ -9,6 +9,7 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -18,7 +19,6 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
  * Who can enter the panel, which cataloged roles nobody holds and how often authorization changed.

@@ -6,9 +6,9 @@ use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Spatie\Permission\Models\Role;
 
 it('assigns Angel backup operations, user moderation, role management and all reader roles while preserving existing assignments', function (string $environment): void {
     $this->app->detectEnvironment(fn (): string => $environment);

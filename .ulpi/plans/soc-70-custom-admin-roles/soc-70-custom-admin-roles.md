@@ -72,7 +72,7 @@ Crear la migración `2026_11_04_000000_add_presentation_columns_to_roles_table.p
 
 ### TASK-002: Cablear el modelo Role en Spatie, el morph map y la política
 
-En `config/permission.php`, `models.role` pasa a `App\Modules\Admin\Models\Role`. En `AppServiceProvider::registerMorphMap()`, `role` apunta al modelo nuevo. `Gate::policy(Role::class, RolePolicy::class)` de `AdminServiceProvider` se mantiene: el código que todavía usa el `Role` de Spatie (UI, widgets, pruebas) pierde la política sin él y Filament lo permitiría todo; se quita en TASK-030.
+En `config/permission.php`, `models.role` pasa a `App\Modules\Admin\Models\Role`. En `AppServiceProvider::registerMorphMap()`, `role` apunta al modelo nuevo. `Gate::policy(Role::class, RolePolicy::class)` de `AdminServiceProvider` se mantiene: el código que todavía usa el `Role` de Spatie (UI, widgets, pruebas) pierde la política sin él y Filament lo permitiría todo; se quita en TASK-030. Corrección posterior: como `role` del morph map solo admite el modelo nuevo, una instancia del `Role` de Spatie que llegue al registro de actividad falla con 'No morph map defined'; por eso todos los imports de `Spatie\Permission\Models\Role` en `app/` (servicio, seeders, comandos, recursos de Filament y pruebas) pasan al modelo nuevo, salvo `AdminServiceProvider` y `RolePolicy`, cuyos tipos aceptan ambas clases.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -704,7 +704,7 @@ Actualizar CLAUDE.md (modelo `Role` propio y config, morph map, tabla de roles c
 
 ### TASK-030: Gates finales de calidad
 
-Quitar `Gate::policy(Role::class, RolePolicy::class)` y sus imports de `AdminServiceProvider` (la política resuelve por `#[UsePolicy]` del modelo nuevo), después de comprobar con `grep` que ningún archivo de `app/` usa ya `Spatie\Permission\Models\Role` para autorizar. Pint (`--dirty --format agent`), `composer rector-clear-cache` → `rector-dry` → `rector` sobre todo el proyecto, `composer phpstan`, `composer test` y `composer doctor`. Prueba manual en el navegador del flujo crear → asignar → editar → duplicar → eliminar.
+Quitar `Gate::policy(Role::class, RolePolicy::class)` y sus imports de `AdminServiceProvider` (la política resuelve por `#[UsePolicy]` del modelo nuevo), después de comprobar con `grep` que ningún archivo de `app/` salvo `RolePolicy` usa ya `Spatie\Permission\Models\Role` (pasar también los tipos de `RolePolicy` al modelo nuevo). Pint (`--dirty --format agent`), `composer rector-clear-cache` → `rector-dry` → `rector` sobre todo el proyecto, `composer phpstan`, `composer test` y `composer doctor`. Prueba manual en el navegador del flujo crear → asignar → editar → duplicar → eliminar.
 
 **Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 

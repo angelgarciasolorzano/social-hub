@@ -6,6 +6,7 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleUsersRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\User\Enums\PreferredLocale;
@@ -13,7 +14,6 @@ use App\User\Models\User;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 function roleWithUsers(AdminRole $adminRole): Role

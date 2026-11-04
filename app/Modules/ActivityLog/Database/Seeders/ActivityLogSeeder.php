@@ -14,6 +14,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Models\AnnouncementReview;
@@ -31,7 +32,6 @@ use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
-use Spatie\Permission\Models\Role;
 
 /**
  * Builds activity from the data the other seeders created, so every record points to

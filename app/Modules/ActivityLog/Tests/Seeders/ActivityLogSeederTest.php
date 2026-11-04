@@ -7,6 +7,7 @@ use App\Modules\ActivityLog\Database\Seeders\ActivityLogSeeder;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
@@ -19,7 +20,6 @@ use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 const ACTIVITY_LOG_SEEDER_SENTINEL_TEXT = 'Texto centinela del seeder de actividad';

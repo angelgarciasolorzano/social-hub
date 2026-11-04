@@ -9,6 +9,7 @@ use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Resources\Users\Widgets\UserActivityOverview;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
@@ -25,7 +26,6 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use Override;
-use Spatie\Permission\Models\Role;
 
 class ViewUser extends ViewRecord
 {

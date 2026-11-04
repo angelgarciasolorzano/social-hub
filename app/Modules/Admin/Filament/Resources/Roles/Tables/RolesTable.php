@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\Tables;
 
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Permission\Models\Role;
 
 class RolesTable
 {

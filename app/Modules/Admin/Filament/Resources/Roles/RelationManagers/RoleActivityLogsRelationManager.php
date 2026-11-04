@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles\RelationManagers;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Tables\ActivityLogsTable;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Facades\Filament;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
  * The activity recorded with a role as its subject (its permission changes), with the columns and

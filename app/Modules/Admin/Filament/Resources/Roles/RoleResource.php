@@ -12,6 +12,7 @@ use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleActivityLogs
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleUsersRelationManager;
 use App\Modules\Admin\Filament\Resources\Roles\Schemas\RoleInfolist;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RolesTable;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
@@ -25,7 +26,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
  * The Admin roles and their permissions. Access is decided by RolePolicy; the catalog is closed, so

@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Pages;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Facades\Filament;
@@ -14,7 +15,6 @@ use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\Gate;
 use Override;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 /**
  * Which permissions each cataloged role grants, as a read-only table of permissions (rows, grouped by

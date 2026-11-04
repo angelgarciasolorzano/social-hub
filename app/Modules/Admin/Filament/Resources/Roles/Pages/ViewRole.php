@@ -9,6 +9,7 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
@@ -21,7 +22,6 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\ValidationException;
 use Override;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class ViewRole extends ViewRecord
 {

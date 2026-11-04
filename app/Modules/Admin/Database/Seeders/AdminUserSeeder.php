@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Database\Seeders;
 
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\User\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 
 class AdminUserSeeder extends Seeder
 {
