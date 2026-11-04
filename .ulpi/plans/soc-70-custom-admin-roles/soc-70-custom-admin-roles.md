@@ -72,7 +72,7 @@ Crear la migración `2026_11_04_000000_add_presentation_columns_to_roles_table.p
 
 ### TASK-002: Cablear el modelo Role en Spatie, el morph map y la política
 
-En `config/permission.php`, `models.role` pasa a `App\Modules\Admin\Models\Role`. En `AppServiceProvider::registerMorphMap()`, `role` apunta al modelo nuevo. En `AdminServiceProvider`, quitar `Gate::policy(Role::class, RolePolicy::class)` (ahora resuelve `#[UsePolicy]`) y su import.
+En `config/permission.php`, `models.role` pasa a `App\Modules\Admin\Models\Role`. En `AppServiceProvider::registerMorphMap()`, `role` apunta al modelo nuevo. `Gate::policy(Role::class, RolePolicy::class)` de `AdminServiceProvider` se mantiene: el código que todavía usa el `Role` de Spatie (UI, widgets, pruebas) pierde la política sin él y Filament lo permitiría todo; se quita en TASK-030.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -81,15 +81,14 @@ En `config/permission.php`, `models.role` pasa a `App\Modules\Admin\Models\Role`
 **Acceptance Criteria:**
 
 1. `app(PermissionRegistrar::class)->getRoleClass()` es el modelo nuevo y `Relation::getMorphedModel('role')` también.
-2. `Gate::getPolicyFor(Role::class)` sigue devolviendo `RolePolicy` sin el registro manual; las pruebas de `RolePolicyTest` de SOC-69 que no dependen del catálogo cerrado siguen pasando.
+2. `Gate::getPolicyFor()` devuelve `RolePolicy` tanto para el modelo nuevo como para el de Spatie, y la suite Admin sigue pasando.
 
 **writeScope:**
 
 - `config/permission.php`
 - `app/Providers/AppServiceProvider.php`
-- `app/Modules/Admin/Providers/AdminServiceProvider.php`
 
-**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Policies/RolePolicyTest.php --filter=resolves`
+**validateCommand:** `rtk php -d memory_limit=2G artisan test --parallel --compact --testsuite=Admin --passthru-php="'-d' 'memory_limit=1G'"`
 
 **Review:** claude
 
@@ -705,7 +704,7 @@ Actualizar CLAUDE.md (modelo `Role` propio y config, morph map, tabla de roles c
 
 ### TASK-030: Gates finales de calidad
 
-Pint (`--dirty --format agent`), `composer rector-clear-cache` → `rector-dry` → `rector` sobre todo el proyecto, `composer phpstan`, `composer test` y `composer doctor`. Prueba manual en el navegador del flujo crear → asignar → editar → duplicar → eliminar.
+Quitar `Gate::policy(Role::class, RolePolicy::class)` y sus imports de `AdminServiceProvider` (la política resuelve por `#[UsePolicy]` del modelo nuevo), después de comprobar con `grep` que ningún archivo de `app/` usa ya `Spatie\Permission\Models\Role` para autorizar. Pint (`--dirty --format agent`), `composer rector-clear-cache` → `rector-dry` → `rector` sobre todo el proyecto, `composer phpstan`, `composer test` y `composer doctor`. Prueba manual en el navegador del flujo crear → asignar → editar → duplicar → eliminar.
 
 **Type:** chore · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -713,8 +712,13 @@ Pint (`--dirty --format agent`), `composer rector-clear-cache` → `rector-dry` 
 
 **Acceptance Criteria:**
 
-1. Pint, Rector (sin pendientes), PHPStan max, la suite completa y `composer doctor` pasan.
-2. El flujo completo funciona en el navegador sin errores de consola.
+1. Sin el registro manual, las pruebas de denegación de Roles (`ListRolesTest`, `ViewRoleTest`) siguen respondiendo 403.
+2. Pint, Rector (sin pendientes), PHPStan max, la suite completa y `composer doctor` pasan.
+3. El flujo completo funciona en el navegador sin errores de consola.
+
+**writeScope:**
+
+- `app/Modules/Admin/Providers/AdminServiceProvider.php`
 
 **validateCommand:** `rtk composer phpstan && rtk composer test && rtk composer doctor`
 
