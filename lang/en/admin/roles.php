@@ -67,7 +67,7 @@ return [
             ],
             'admin_roles_manager' => [
                 'label' => 'Roles manager',
-                'description' => 'Change the permissions of a role and the roles of other users.',
+                'description' => 'Create, edit, duplicate and delete custom roles, change the permissions of a role and the roles of other users.',
             ],
         ],
 
@@ -165,8 +165,16 @@ return [
                 'description' => 'Open the detail of a role.',
             ],
             'admin_roles_update' => [
-                'label' => 'Edit role permissions',
-                'description' => 'Grant and revoke the permissions of a cataloged role.',
+                'label' => 'Edit roles',
+                'description' => 'Change the permissions of a role and the name and description of a custom role.',
+            ],
+            'admin_roles_create' => [
+                'label' => 'Create roles',
+                'description' => 'Create custom roles and duplicate existing ones.',
+            ],
+            'admin_roles_delete' => [
+                'label' => 'Delete roles',
+                'description' => 'Delete custom roles that no user holds.',
             ],
         ],
 
@@ -180,6 +188,38 @@ return [
             'announcements' => 'Announcements',
             'roles' => 'Roles',
         ],
+    ],
+
+    'types' => [
+        'column' => 'Type',
+        'filter' => 'Type',
+        'system' => 'System',
+        'custom' => 'Custom',
+        'system_tooltip' => 'Comes with the application. Its permissions can be edited, but it cannot be renamed or deleted.',
+        'custom_tooltip' => 'Created from the panel. It can be renamed, duplicated and deleted.',
+    ],
+
+    'form' => [
+        'label' => 'Name',
+        'label_helper' => 'The name shown in the panel. It must be unique among roles.',
+        'description' => 'Description',
+        'description_helper' => 'What this role is for, in one sentence.',
+        'permissions' => 'Permissions',
+        'permissions_helper' => 'What a user with this role can do, grouped by panel area.',
+        'dependencies_note' => 'Checking a permission also checks the ones it needs, and unchecking it unchecks the ones that need it.',
+    ],
+
+    'locked' => [
+        'badge' => 'Locked',
+        'tooltip' => 'The Administrator role only grants access to the panel, so it cannot be edited.',
+        'notice' => 'This role only grants access to the panel. Give sections through other roles.',
+    ],
+
+    'summary' => [
+        'heading' => 'Summary of changes',
+        'grant' => '{1} Grants :count permission: :list|[0,*] Grants :count permissions: :list',
+        'revoke' => '{1} Revokes :count permission: :list|[0,*] Revokes :count permissions: :list',
+        'none' => 'No permission changes.',
     ],
 
     'table' => [
@@ -224,6 +264,35 @@ return [
             'success' => '{1} :count role changed|[0,*] :count roles changed',
             'unchanged' => 'The roles did not change',
         ],
+        'create' => [
+            'label' => 'New role',
+            'modal_heading' => 'Create a role',
+            'submit' => 'Create role',
+            'success' => 'The role :role was created',
+        ],
+        'edit_details' => [
+            'label' => 'Edit details',
+            'modal_heading' => 'Edit the details of :role',
+            'submit' => 'Save details',
+            'success' => 'The details of :role were saved',
+            'unchanged' => 'The details did not change',
+        ],
+        'duplicate' => [
+            'label' => 'Duplicate',
+            'modal_heading' => 'Duplicate :role',
+            'modal_description' => 'The copy is a custom role with the same permissions and no users.',
+            'copy_label' => ':role (copy)',
+            'submit' => 'Duplicate role',
+            'success' => 'The role :role was created as a copy',
+        ],
+        'delete' => [
+            'label' => 'Delete',
+            'modal_heading' => 'Delete :role',
+            'modal_description' => 'The role is deleted permanently. The deletion is recorded in the activity log.',
+            'blocked_by_users' => '{1} :count user holds this role. Remove it from them before deleting it.|[0,*] :count users hold this role. Remove it from them before deleting it.',
+            'submit' => 'Delete role',
+            'success' => 'The role :role was deleted',
+        ],
         'open_matrix' => [
             'label' => 'Permission matrix',
         ],
@@ -238,6 +307,11 @@ return [
         'permission_not_initialized' => 'A selected permission is not initialized. Run the Admin authorization seeder first.',
         'last_admin_access' => 'This change would leave no user with access to the panel, so nothing was changed.',
         'actor_would_lose_access' => 'This change would remove your own access to the panel or to this action, so nothing was changed.',
+        'role_locked' => 'The Administrator role only grants access to the panel and cannot be changed.',
+        'system_role_protected' => 'This role comes with the application, so it cannot be renamed or deleted.',
+        'role_has_users' => 'This role still has users, so it was not deleted. Remove it from them first.',
+        'role_label_taken' => 'Another role already uses this name.',
+        'permission_dependency_missing' => 'A selected permission needs another one that is not selected, so nothing was changed.',
     ],
 
     'relations' => [
@@ -246,6 +320,20 @@ return [
             'name' => 'Name',
             'email' => 'Email',
             'empty' => 'No user has this role.',
+            'add' => [
+                'label' => 'Add users',
+                'modal_heading' => 'Add users to :role',
+                'field' => 'Users',
+                'submit' => 'Add users',
+                'success' => '{1} :count user added|[0,*] :count users added',
+            ],
+            'remove' => [
+                'label' => 'Remove',
+                'modal_heading' => 'Remove :role from :name',
+                'modal_description' => 'The user loses the permissions of this role on their next request. The change is recorded in the activity log.',
+                'submit' => 'Remove',
+                'success' => ':name no longer has :role',
+            ],
         ],
         'history' => [
             'title' => 'History',
@@ -273,6 +361,12 @@ return [
             'dataset' => 'Users',
             'empty_heading' => 'No roles yet',
             'empty_description' => 'Run the Admin authorization seeder to create the catalog.',
+        ],
+        'types' => [
+            'heading' => 'Roles by type',
+            'description' => 'System roles come with the application; custom roles are created from the panel.',
+            'system' => 'System roles',
+            'custom' => 'Custom roles',
         ],
     ],
 

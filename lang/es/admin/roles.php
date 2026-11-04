@@ -67,7 +67,7 @@ return [
             ],
             'admin_roles_manager' => [
                 'label' => 'Gestor de roles',
-                'description' => 'Cambiar los permisos de un rol y los roles de otros usuarios.',
+                'description' => 'Crear, editar, duplicar y eliminar roles personalizados, y cambiar los permisos de un rol y los roles de otros usuarios.',
             ],
         ],
 
@@ -165,8 +165,16 @@ return [
                 'description' => 'Abrir el detalle de un rol.',
             ],
             'admin_roles_update' => [
-                'label' => 'Editar permisos de roles',
-                'description' => 'Conceder y quitar los permisos de un rol del catálogo.',
+                'label' => 'Editar roles',
+                'description' => 'Cambiar los permisos de un rol y el nombre y la descripción de un rol personalizado.',
+            ],
+            'admin_roles_create' => [
+                'label' => 'Crear roles',
+                'description' => 'Crear roles personalizados y duplicar los existentes.',
+            ],
+            'admin_roles_delete' => [
+                'label' => 'Eliminar roles',
+                'description' => 'Eliminar roles personalizados que ningún usuario tiene.',
             ],
         ],
 
@@ -180,6 +188,38 @@ return [
             'announcements' => 'Anuncios',
             'roles' => 'Roles',
         ],
+    ],
+
+    'types' => [
+        'column' => 'Tipo',
+        'filter' => 'Tipo',
+        'system' => 'Sistema',
+        'custom' => 'Personalizado',
+        'system_tooltip' => 'Viene con la aplicación. Sus permisos se pueden editar, pero no se puede renombrar ni eliminar.',
+        'custom_tooltip' => 'Creado desde el panel. Se puede renombrar, duplicar y eliminar.',
+    ],
+
+    'form' => [
+        'label' => 'Nombre',
+        'label_helper' => 'El nombre que se muestra en el panel. No puede repetirse entre roles.',
+        'description' => 'Descripción',
+        'description_helper' => 'Para qué sirve este rol, en una frase.',
+        'permissions' => 'Permisos',
+        'permissions_helper' => 'Lo que puede hacer un usuario con este rol, agrupado por área del panel.',
+        'dependencies_note' => 'Al marcar un permiso se marcan los que necesita, y al desmarcarlo se desmarcan los que dependen de él.',
+    ],
+
+    'locked' => [
+        'badge' => 'Bloqueado',
+        'tooltip' => 'El rol Administrador solo da acceso al panel, así que no se puede editar.',
+        'notice' => 'Este rol solo da acceso al panel. Las secciones se dan con otros roles.',
+    ],
+
+    'summary' => [
+        'heading' => 'Resumen de cambios',
+        'grant' => '{1} Concede :count permiso: :list|[0,*] Concede :count permisos: :list',
+        'revoke' => '{1} Quita :count permiso: :list|[0,*] Quita :count permisos: :list',
+        'none' => 'Los permisos no cambian.',
     ],
 
     'table' => [
@@ -224,6 +264,35 @@ return [
             'success' => '{1} Se cambió :count rol|[0,*] Se cambiaron :count roles',
             'unchanged' => 'Los roles no cambiaron',
         ],
+        'create' => [
+            'label' => 'Nuevo rol',
+            'modal_heading' => 'Crear un rol',
+            'submit' => 'Crear rol',
+            'success' => 'Se creó el rol :role',
+        ],
+        'edit_details' => [
+            'label' => 'Editar datos',
+            'modal_heading' => 'Editar los datos de :role',
+            'submit' => 'Guardar datos',
+            'success' => 'Se guardaron los datos de :role',
+            'unchanged' => 'Los datos no cambiaron',
+        ],
+        'duplicate' => [
+            'label' => 'Duplicar',
+            'modal_heading' => 'Duplicar :role',
+            'modal_description' => 'La copia es un rol personalizado con los mismos permisos y sin usuarios.',
+            'copy_label' => ':role (copia)',
+            'submit' => 'Duplicar rol',
+            'success' => 'Se creó el rol :role como copia',
+        ],
+        'delete' => [
+            'label' => 'Eliminar',
+            'modal_heading' => 'Eliminar :role',
+            'modal_description' => 'El rol se elimina para siempre. La eliminación queda en el registro de actividad.',
+            'blocked_by_users' => '{1} :count usuario tiene este rol. Quítaselo antes de eliminarlo.|[0,*] :count usuarios tienen este rol. Quítaselo antes de eliminarlo.',
+            'submit' => 'Eliminar rol',
+            'success' => 'Se eliminó el rol :role',
+        ],
         'open_matrix' => [
             'label' => 'Matriz de permisos',
         ],
@@ -238,6 +307,11 @@ return [
         'permission_not_initialized' => 'Un permiso seleccionado no está inicializado. Ejecuta primero el seeder de autorización de Admin.',
         'last_admin_access' => 'Este cambio dejaría el panel sin ningún usuario con acceso, así que no se cambió nada.',
         'actor_would_lose_access' => 'Este cambio te quitaría el acceso al panel o a esta acción, así que no se cambió nada.',
+        'role_locked' => 'El rol Administrador solo da acceso al panel y no se puede cambiar.',
+        'system_role_protected' => 'Este rol viene con la aplicación, así que no se puede renombrar ni eliminar.',
+        'role_has_users' => 'Este rol todavía tiene usuarios, así que no se eliminó. Quítaselo primero.',
+        'role_label_taken' => 'Otro rol ya usa este nombre.',
+        'permission_dependency_missing' => 'Un permiso seleccionado necesita otro que no está seleccionado, así que no se cambió nada.',
     ],
 
     'relations' => [
@@ -246,6 +320,20 @@ return [
             'name' => 'Nombre',
             'email' => 'Correo',
             'empty' => 'Ningún usuario tiene este rol.',
+            'add' => [
+                'label' => 'Agregar usuarios',
+                'modal_heading' => 'Agregar usuarios a :role',
+                'field' => 'Usuarios',
+                'submit' => 'Agregar usuarios',
+                'success' => '{1} Se agregó :count usuario|[0,*] Se agregaron :count usuarios',
+            ],
+            'remove' => [
+                'label' => 'Quitar',
+                'modal_heading' => 'Quitar :role a :name',
+                'modal_description' => 'El usuario pierde los permisos de este rol en su siguiente petición. El cambio queda en el registro de actividad.',
+                'submit' => 'Quitar',
+                'success' => ':name ya no tiene :role',
+            ],
         ],
         'history' => [
             'title' => 'Historial',
@@ -273,6 +361,12 @@ return [
             'dataset' => 'Usuarios',
             'empty_heading' => 'Todavía no hay roles',
             'empty_description' => 'Ejecuta el seeder de autorización de Admin para crear el catálogo.',
+        ],
+        'types' => [
+            'heading' => 'Roles por tipo',
+            'description' => 'Los roles de sistema vienen con la aplicación; los personalizados se crean desde el panel.',
+            'system' => 'Roles de sistema',
+            'custom' => 'Roles personalizados',
         ],
     ],
 
