@@ -22,6 +22,8 @@ use Spatie\Permission\Models\Role as SpatieRole;
  * @property bool $is_system
  * @property string|null $label
  * @property string|null $description
+ *
+ * @mixin IdeHelperRole
  */
 #[UsePolicy(RolePolicy::class)]
 #[UseFactory(RoleFactory::class)]
