@@ -81,7 +81,7 @@ it('lists every cataloged role of the admin guard with its permission and user c
     ))
         ->and($roles[AdminRole::AdminPostsReader->value]->getAttribute('users_count'))->toBe(2)
         ->and($roles[AdminRole::AdminPostsReader->value]->getAttribute('permissions_count'))->toBe(2)
-        ->and($roles[AdminRole::AdminRolesManager->value]->getAttribute('permissions_count'))->toBe(6);
+        ->and($roles[AdminRole::AdminRolesManager->value]->getAttribute('permissions_count'))->toBe(8);
 });
 
 it('shows a role outside the catalog as not editable', function (): void {

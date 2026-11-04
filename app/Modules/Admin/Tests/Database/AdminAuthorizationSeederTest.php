@@ -184,6 +184,8 @@ it('gives the roles manager role management and the user access it needs, withou
 
     expect($rolesManagerRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([
+            AdminPermission::AdminRolesCreate->value,
+            AdminPermission::AdminRolesDelete->value,
             AdminPermission::AdminRolesUpdate->value,
             AdminPermission::AdminRolesView->value,
             AdminPermission::AdminRolesViewAny->value,
@@ -193,6 +195,33 @@ it('gives the roles manager role management and the user access it needs, withou
         ])
         ->and($user->hasPermissionTo(AdminPermission::AdminAccess->value, 'admin'))->toBeFalse()
         ->and($user->hasPermissionTo(AdminPermission::AdminUsersSuspend->value, 'admin'))->toBeFalse();
+});
+
+it('marks every catalog role as a system role', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    expect(Role::query()->admin()->system()->pluck('name')->sort()->values()->all())
+        ->toBe(collect(AdminRole::cases())->pluck('value')->sort()->values()->all())
+        ->and(Role::query()->custom()->count())->toBe(0);
+});
+
+it('marks an existing catalog role as a system role without touching its permissions', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $postsReaderRole = Role::query()
+        ->where('name', AdminRole::AdminPostsReader->value)
+        ->where('guard_name', 'admin')
+        ->firstOrFail();
+    $postsReaderRole->update(['is_system' => false]);
+    $postsReaderRole->revokePermissionTo(AdminPermission::AdminPostsView->value);
+
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $postsReaderRole->refresh();
+
+    expect($postsReaderRole->is_system)->toBeTrue()
+        ->and($postsReaderRole->permissions->pluck('name')->all())
+        ->toBe([AdminPermission::AdminPostsViewAny->value]);
 });
 
 it('preserves the permission changes of the roles manager when the seeder runs again', function (): void {

@@ -183,7 +183,7 @@ it('refuses a change that removes the manager own access to this action', functi
 
     Notification::assertNotified(AdminAuthorizationFailure::ActorWouldLoseAccess->message());
 
-    expect(editedRolePermissionNames(AdminRole::AdminRolesManager))->toHaveCount(6);
+    expect(editedRolePermissionNames(AdminRole::AdminRolesManager))->toHaveCount(8);
 });
 
 it('hides the action from a roles reader and ignores a direct call', function (): void {

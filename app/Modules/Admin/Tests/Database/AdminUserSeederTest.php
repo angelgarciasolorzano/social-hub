@@ -53,6 +53,8 @@ it('assigns Angel backup operations, user moderation, role management and all re
         AdminPermission::AdminRolesViewAny->value,
         AdminPermission::AdminRolesView->value,
         AdminPermission::AdminRolesUpdate->value,
+        AdminPermission::AdminRolesCreate->value,
+        AdminPermission::AdminRolesDelete->value,
         AdminPermission::AdminUsersRoles->value,
     ];
 
