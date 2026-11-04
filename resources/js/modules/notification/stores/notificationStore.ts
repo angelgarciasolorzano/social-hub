@@ -5,9 +5,11 @@ import type { Notification } from "../types/notification";
 interface NotificationStoreState {
   authenticatedUserId: number | null;
   notifications: Notification[];
+  removedNotificationIds: string[];
   unreadCount: number | null;
   initializeForUser: (userId: number, unreadCount: number | undefined) => void;
   receiveNotification: (notification: Notification) => boolean;
+  removeNotification: (notificationId: string) => void;
   markNotificationAsRead: (notificationId: string, fallbackUnreadCount: number) => void;
   markAllNotificationsAsRead: (readAt: string) => void;
 }
@@ -28,6 +30,7 @@ function notificationContentIsEqual(
 export const useNotificationStore = create<NotificationStoreState>()((set) => ({
   authenticatedUserId: null,
   notifications: [],
+  removedNotificationIds: [],
   unreadCount: null,
 
   initializeForUser: (userId, unreadCount) => {
@@ -36,6 +39,7 @@ export const useNotificationStore = create<NotificationStoreState>()((set) => ({
         return {
           authenticatedUserId: userId,
           notifications: [],
+          removedNotificationIds: [],
           unreadCount: unreadCount ?? null,
         };
       }
@@ -52,6 +56,10 @@ export const useNotificationStore = create<NotificationStoreState>()((set) => ({
     let hasChanged = false;
 
     set((state) => {
+      if (state.removedNotificationIds.includes(notification.id)) {
+        return state;
+      }
+
       const existingIndex = state.notifications.findIndex(
         (candidateNotification) => candidateNotification.id === notification.id,
       );
@@ -98,6 +106,24 @@ export const useNotificationStore = create<NotificationStoreState>()((set) => ({
     });
 
     return hasChanged;
+  },
+
+  removeNotification: (notificationId) => {
+    set((state) => {
+      if (state.removedNotificationIds.includes(notificationId)) {
+        return state;
+      }
+
+      const notifications = state.notifications.filter(
+        (candidateNotification) => candidateNotification.id !== notificationId,
+      );
+
+      return {
+        notifications,
+        removedNotificationIds: [...state.removedNotificationIds, notificationId],
+        unreadCount: state.unreadCount === null ? null : Math.max(0, state.unreadCount - 1),
+      };
+    });
   },
 
   markNotificationAsRead: (notificationId, fallbackUnreadCount) => {

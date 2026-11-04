@@ -19,6 +19,7 @@ final class LikeNotification extends Notification
         private array $actors,
         private array $target,
         string $id,
+        private readonly bool $isDeletionBroadcast = false,
     ) {
         $this->id = $id;
     }
@@ -42,7 +43,7 @@ final class LikeNotification extends Notification
     }
 
     /**
-     * @return array{
+     * @return array{deleted: true}|array{
      *     summary: string,
      *     actors: list<array{id: int, name: string}>,
      *     target: array{postId: int, commentId: int|null}
@@ -50,6 +51,10 @@ final class LikeNotification extends Notification
      */
     public function toArray(User $user): array
     {
+        if ($this->isDeletionBroadcast) {
+            return ['deleted' => true];
+        }
+
         $actorCount = \count($this->actors);
         $summaryKey = $this->target['commentId'] === null ? 'liked_post' : 'liked_comment';
         $actorName = $this->actors[$actorCount - 1]['name'] ?? '';

@@ -8,7 +8,6 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
-use UnexpectedValueException;
 
 /**
  * Create a notification with stable timestamps for notification center endpoint tests.
@@ -193,9 +192,21 @@ it('shares the notification center translations on the history page', function (
         ->get(route('notifications.index'))
         ->assertOk();
     $page = $testResponse->viewData('page');
-    $translationGroup = $page['props']['translations']['notification/center'] ?? null;
+    throw_unless(\is_array($page), UnexpectedValueException::class, 'The response did not contain an Inertia page.');
 
-    expect($translationGroup['history']['empty_title'] ?? null)
+    $props = $page['props'] ?? null;
+    throw_unless(\is_array($props), UnexpectedValueException::class, 'The Inertia page did not contain props.');
+
+    $translations = $props['translations'] ?? null;
+    throw_unless(\is_array($translations), UnexpectedValueException::class, 'The Inertia page did not contain translations.');
+
+    $translationGroup = $translations['notification/center'] ?? null;
+    throw_unless(\is_array($translationGroup), UnexpectedValueException::class, 'The notification translation group was not shared.');
+
+    $history = $translationGroup['history'] ?? null;
+    throw_unless(\is_array($history), UnexpectedValueException::class, 'The notification history translations were not shared.');
+
+    expect($history['empty_title'] ?? null)
         ->toBe(__('notification/center.history.empty_title'));
 });
 

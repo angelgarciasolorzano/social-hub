@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Notification\Notifications\LikeNotification;
 use App\Modules\Notification\Services\LikeNotificationGroupService;
 use App\User\Enums\PreferredLocale;
+use App\User\Models\User;
 use Illuminate\Support\Facades\Lang;
 
 it('groups distinct actors into one unread notification for each destination', function (): void {
@@ -156,4 +157,15 @@ it('uses the root post id when grouping a like on a reply', function (): void {
         'postId' => $post->id,
         'commentId' => $comment->id,
     ]);
+});
+
+it('serializes a grouped-like removal as a deletion marker', function (): void {
+    $notification = new LikeNotification(
+        [],
+        ['postId' => 123, 'commentId' => null],
+        'notification-id',
+        isDeletionBroadcast: true,
+    );
+
+    expect($notification->toArray(new User))->toBe(['deleted' => true]);
 });

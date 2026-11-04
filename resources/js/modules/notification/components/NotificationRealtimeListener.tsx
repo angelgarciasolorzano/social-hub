@@ -11,10 +11,17 @@ import type { Notification } from "../types/notification";
 
 type NotificationBroadcastData = Pick<Notification, "actors" | "summary" | "target">;
 
-interface NotificationBroadcastPayload extends NotificationBroadcastData {
+interface NotificationBroadcastEnvelope {
   id: string;
   type: Notification["type"];
 }
+
+interface NotificationBroadcastDeletion extends NotificationBroadcastEnvelope {
+  deleted: true;
+}
+
+type NotificationBroadcastPayload = NotificationBroadcastEnvelope &
+  (NotificationBroadcastData | { deleted: true });
 
 interface NotificationRealtimeListenerProps {
   initialUnreadNotificationsCount: number | undefined;
@@ -28,6 +35,12 @@ interface AuthenticatedNotificationListenerProps {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isNotificationDeletionPayload(
+  payload: NotificationBroadcastPayload,
+): payload is NotificationBroadcastDeletion {
+  return "deleted" in payload;
 }
 
 function userIdFromPageProps(pageProps: Record<string, unknown>): number | null {
@@ -85,6 +98,7 @@ function AuthenticatedNotificationListener({
 }: AuthenticatedNotificationListenerProps): null {
   const initializeForUser = useNotificationStore((state) => state.initializeForUser);
   const receiveNotification = useNotificationStore((state) => state.receiveNotification);
+  const removeNotification = useNotificationStore((state) => state.removeNotification);
 
   useEffect(() => {
     initializeForUser(userId, unreadNotificationsCount);
@@ -92,6 +106,14 @@ function AuthenticatedNotificationListener({
 
   const handleNotification = useCallback<(payload: NotificationBroadcastPayload) => void>(
     (payload) => {
+      if (isNotificationDeletionPayload(payload)) {
+        if (payload.type === "likes_grouped") {
+          removeNotification(payload.id);
+        }
+
+        return;
+      }
+
       const notification: Notification = {
         id: payload.id,
         type: payload.type,
@@ -106,10 +128,10 @@ function AuthenticatedNotificationListener({
         toast.info(notification.summary);
       }
     },
-    [receiveNotification],
+    [receiveNotification, removeNotification],
   );
 
-  useEchoNotification<NotificationBroadcastData>(
+  useEchoNotification<NotificationBroadcastData | { deleted: true }>(
     `users.${userId}.notifications`,
     handleNotification,
     undefined,

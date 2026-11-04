@@ -8,7 +8,6 @@ use App\Modules\Notification\Notifications\LikeNotification;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use RuntimeException;
 
 it('groups likes on a post for its owner', function (): void {
     $user = createUser();

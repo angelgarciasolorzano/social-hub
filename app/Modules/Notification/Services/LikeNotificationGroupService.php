@@ -82,7 +82,7 @@ final class LikeNotificationGroupService
 
                 $this->broadcastAfterCommit(
                     $recipient,
-                    new LikeNotification([], $target, $notificationId),
+                    new LikeNotification([], $target, $notificationId, isDeletionBroadcast: true),
                 );
 
                 return;
