@@ -1,0 +1,1016 @@
+{
+  "metadata": {
+    "title": "SOC-68: Centro de notificaciones en tiempo real para React",
+    "slug": "soc-68-real-time-notification-center",
+    "issue": "SOC-68",
+    "issueUrl": "https://linear.app/social-hub-ang/issue/SOC-68/feature-add-a-real-time-notification-center-to-the-react-app",
+    "mode": "EXPANSION",
+    "reviewDefault": "codex",
+    "plannedAt": "2026-11-02",
+    "scopeDecision": "SOC-68 completo más notificaciones de likes agrupados, confirmado por el usuario."
+  },
+  "overview": "Construir un centro de notificaciones de React para comentarios en publicaciones ajenas, respuestas a comentarios y likes agrupados. Laravel persistirá el estado en la tabla `notifications` existente y transmitirá los cambios por Reverb a un canal privado propio de cada usuario. La campana, el historial, el conteo de no leídas y las acciones de lectura se integrarán con los módulos existentes. El plan añade una ruta de publicación porque el proyecto no tiene actualmente una página a la que pueda llevar un aviso.",
+  "scopeChallenge": [
+    "Se reutilizan Laravel Reverb, Laravel Echo, `@laravel/echo-react`, Sonner, el trait `Notifiable`, la tabla `notifications`, `CommentCreated` y `LikeToggled`.",
+    "La configuración existente no está completa para desarrollo: `.env.example` selecciona `BROADCAST_CONNECTION=log` y el comando `composer run dev` registra `serve`, `queue:listen`, Pail y Vite, pero todavía no inicia Reverb.",
+    "El canal actual usa `App.Models.User.{id}`. El modelo real está en `App\\User\\Models\\User`; se definirá un nombre estable, explícito y autorizado por usuario.",
+    "La tabla `notifications` ya persiste avisos de Filament. El plan reutiliza esa tabla y mantiene intactos el panel y sus notificaciones.",
+    "El icono de `HomeNotificationHeader` es todavía un marcador; Sonner ya está montado por `FlashToaster`.",
+    "La decisión confirmada para respuestas es: comentario raíz → dueño de la publicación; respuesta a comentario raíz → autor del comentario; respuesta a respuesta → `replied_to_user_id`. Se ignoran acciones propias y se evita notificar dos veces al mismo usuario.",
+    "La ampliación de likes usa un grupo no leído por destinatario y contenido (publicación o comentario). El grupo conserva actores únicos; un unlike retira al actor de un grupo no leído y, si queda vacío, lo elimina. Un grupo ya leído queda como historial y un like posterior crea otro grupo no leído.",
+    "SOC-68 actualmente enumera los likes agrupados como fuera de alcance. Antes de ejecutar el plan, hay que sincronizar esa descripción con la ampliación que el usuario confirmó."
+  ],
+  "prerequisites": [
+    "SOC-41 está completada y `CommentCreated` ya incluye el comentario objetivo; `Comment` conserva `replied_to_user_id` para respuestas a respuestas.",
+    "`LikeToggled` se dispara al agregar y retirar likes de publicaciones y comentarios, y ya distingue el estado resultante.",
+    "La tabla `notifications` y `User::notifications()` ya existen; no se añade una tabla paralela ni una dependencia.",
+    "El entorno local usa los valores Reverb existentes de `.env.example`; `composer run dev` debe quedar como punto de arranque de servidor, cola, Vite y Reverb.",
+    "Antes de implementación, actualizar el texto de SOC-68 para incluir likes agrupados y conservar como fuera de alcance los avisos de seguridad, anuncios del sistema, presencia, email y push."
+  ],
+  "nonGoals": [
+    "Avisos de seguridad, preferencias para silenciar tipos, anuncios del sistema en tiempo real y cambios a las notificaciones de Filament.",
+    "Presencia, usuarios en línea, eventos de escritura, contadores sociales en vivo fuera del centro de notificaciones, correo y push del navegador.",
+    "Migrar o reemplazar la tabla `notifications`, añadir dependencias o cambiar el funcionamiento del panel Admin.",
+    "Guardar el contenido completo de comentarios o datos sensibles dentro del payload de una notificación.",
+    "Cambiar la política de likes o permitir respuestas con más de un nivel."
+  ],
+  "contracts": [
+    "Canal: `users.{id}.notifications`, privado y autorizado solo si la sesión pertenece a ese usuario y su cuenta no está suspendida. `User::receivesBroadcastNotificationsOn()` fija el nombre; `routes/channels.php` valida propietario y estado.",
+    "Idioma: `User` implementa `HasLocalePreference` y devuelve `preferred_locale->value`. Los resúmenes guardados se generan en el idioma del destinatario; los textos de React se leen con `useTranslation()` desde `notification/center` en inglés y español.",
+    "Persistencia y entrega: notificaciones Laravel usan `database` y `broadcast`, son encoladas y conservan un payload normalizado con tipo, resumen localizado, snapshot mínimo de actores, ids de destino, `readAt` y fecha. La base de datos es la fuente de verdad; Echo solo mantiene la pantalla al día.",
+    "Comentarios: comentario raíz en publicación ajena avisa al dueño de la publicación; respuesta a raíz avisa al autor de raíz; respuesta a respuesta avisa a `replied_to_user_id`. El autor nunca se notifica a sí mismo.",
+    "Likes: una fila de notificación no leída por destinatario y destino. La clave lógica es `(notifiable, likeable_type, likeable_id)`; la escritura se serializa para que likes simultáneos no dupliquen el grupo. Actualizaciones de grupo conservan el id de notificación para que React lo reemplace.",
+    "Payload público: `NotificationResource` expone solo `id`, `type`, `summary`, `actors`, `target`, `readAt` y `createdAt`. Los snapshots permiten mostrar un aviso aunque el comentario o la publicación se borren; serializar una notificación no carga esos modelos.",
+    "Endpoints: `GET /notifications` entrega historial con cursor, `GET /notifications/recent` entrega las cinco más recientes, `POST /notifications/{notificationId}/read` marca una propia y `POST /notifications/read-all` marca todas las propias. Las escrituras llevan throttle; el acceso ajeno responde 404.",
+    "Inertia: `unreadNotificationsCount` es una prop compartida diferida. Home registra `notification/center`; la página de notificaciones registra el mismo grupo. El historial usa `Inertia::scroll()` y `InfiniteScroll` con orden estable por `created_at` e `id`.",
+    "Deep link: `GET /posts/{post}` renderiza una página de publicación con su hilo de comentarios. Los avisos apuntan a esa página; si el destino se eliminó, el resumen guardado sigue visible y el destino puede responder 404.",
+    "Reverb: `composer run dev` debe iniciar Reverb además de los procesos que Laravel ya registra; `queue:listen` existente procesa las notificaciones. La configuración Echo actual se reutiliza si supera la comprobación de autenticación de sesión y `npm run build:ssr`."
+  ],
+  "existingCodeLeverage": [
+    "`app/Modules/Comment/Events/CommentCreated.php` y `app/Modules/Like/Events/LikeToggled.php` son los puntos de entrada de los suscriptores del módulo Notification.",
+    "`app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php`, `ContentActivitySubscriber.php` y `LikeActivitySubscriber.php` muestran cómo registrar suscriptores de eventos de dominio.",
+    "`app/User/Models/User.php`, `routes/channels.php` y `config/broadcasting.php` son los puntos reales de locale, autorización y broadcasting.",
+    "`database/migrations/2026_10_30_193919_create_notifications_table.php` y el trait `Notifiable` proveen persistencia e historial.",
+    "`app/Modules/Comment/Props/CommentThreadProps.php`, `PostResource`, `CommentList` y `HomeController` sirven de patrón para cursor, recursos, hilos y props Inertia.",
+    "`resources/js/modules/home/components/header/HomeNotificationHeader.tsx` es el marcador existente; `HomeLayout` y `app.tsx` son los puntos de integración visual y Echo.",
+    "`resources/js/shared/components/FlashToaster.tsx` ya monta Sonner; el listener de tiempo real debe usar el mismo toaster.",
+    "`resources/js/shared/wayfinder/` se genera desde `vite.config.ts`; las rutas nuevas se importan desde el output generado y nunca se editan a mano.",
+    "`package.json` ya contiene `@laravel/echo-react`, `laravel-echo`, `pusher-js`, Inertia v3, Zustand y Sonner; no hace falta instalar paquetes."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Activar Reverb en el arranque local",
+      "description": "Cambiar el default de `.env.example` a Reverb y registrar `reverb:start` en los procesos de desarrollo mediante `Illuminate\\Foundation\\DevCommands`. Laravel ya agrega `serve`, `queue:listen`, Pail y Vite al comando `dev`; no registrar una segunda cola. Añadir una prueba pequeña del roster para que `composer run dev` siga levantando Reverb y el worker.",
+      "type": "infra",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "backend",
+        "reverb",
+        "local-development"
+      ],
+      "acceptanceCriteria": [
+        "`.env.example` selecciona `BROADCAST_CONNECTION=reverb` y mantiene las credenciales locales de Reverb.",
+        "La prueba confirma que el roster de `php artisan dev` contiene Reverb, Vite y el `queue:listen` ya registrado por Laravel.",
+        "Al arrancar con los valores del ejemplo, las notificaciones no quedan en el broadcaster `log`."
+      ],
+      "filesToModify": [
+        ".env.example",
+        "app/Providers/AppServiceProvider.php"
+      ],
+      "filesToCreate": [
+        "tests/Feature/Console/DevProcessConfigurationTest.php"
+      ],
+      "writeScope": [
+        ".env.example",
+        "app/Providers/AppServiceProvider.php",
+        "tests/Feature/Console/DevProcessConfigurationTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact tests/Feature/Console/DevProcessConfigurationTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Definir el canal privado y locale del usuario",
+      "description": "Implementar `HasLocalePreference` en `User`, devolver el valor de `preferred_locale` y reemplazar el canal de plantilla por `users.{id}.notifications`. Autorizar únicamente al usuario activo dueño del canal y cubrir la ruta real de autorización de broadcasting.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "backend",
+        "broadcasting",
+        "security"
+      ],
+      "acceptanceCriteria": [
+        "Una sesión activa puede autorizar su canal `users.{id}.notifications`; un usuario distinto y un invitado reciben 403.",
+        "Una cuenta suspendida recibe 403 y no conserva acceso al canal.",
+        "`preferredLocale()` devuelve `en` o `es` según el enum persistido del usuario."
+      ],
+      "filesToModify": [
+        "app/User/Models/User.php",
+        "routes/channels.php"
+      ],
+      "filesToCreate": [
+        "app/User/Tests/Notifications/UserNotificationChannelTest.php"
+      ],
+      "writeScope": [
+        "app/User/Models/User.php",
+        "routes/channels.php",
+        "app/User/Tests/Notifications/UserNotificationChannelTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/User/Tests/Notifications/UserNotificationChannelTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Crear la base del módulo Notification",
+      "description": "Crear `NotificationServiceProvider`, `NotificationRouteServiceProvider` y `routes/routes.php` siguiendo la estructura de Comment y Like. El provider del módulo registra el route provider; el archivo de rutas existe desde esta tarea y recibe las rutas funcionales en la tarea de endpoints.",
+      "type": "infra",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "backend",
+        "module-architecture"
+      ],
+      "acceptanceCriteria": [
+        "Los dos providers siguen el patrón registrado por los módulos Post, Comment y Like y el route provider usa el middleware `web`.",
+        "El route provider carga el archivo real `app/Modules/Notification/routes/routes.php`.",
+        "Los archivos nuevos pasan `php -l` sin depender de rutas duplicadas o clases ficticias."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php",
+        "app/Modules/Notification/Providers/NotificationRouteServiceProvider.php",
+        "app/Modules/Notification/routes/routes.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php",
+        "app/Modules/Notification/Providers/NotificationRouteServiceProvider.php",
+        "app/Modules/Notification/routes/routes.php"
+      ],
+      "validateCommand": "php -l app/Modules/Notification/Providers/NotificationServiceProvider.php\nphp -l app/Modules/Notification/Providers/NotificationRouteServiceProvider.php\nphp -l app/Modules/Notification/routes/routes.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Registrar el módulo y su suite Pest",
+      "description": "Registrar `NotificationServiceProvider` en `bootstrap/providers.php` y sumar la suite `Notification` a PHPUnit y Pest. Esto deja asignado el propietario del wiring del módulo y hace que los tests co-localizados se ejecuten con el TestCase y `RefreshDatabase` del proyecto.",
+      "type": "infra",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "labels": [
+        "backend",
+        "testing"
+      ],
+      "acceptanceCriteria": [
+        "Laravel carga el módulo Notification y sus rutas sin errores.",
+        "PHPUnit y Pest reconocen `app/Modules/Notification/Tests/` como una suite del módulo.",
+        "La aplicación continúa registrando las rutas existentes de Admin, Comment y Like."
+      ],
+      "filesToModify": [
+        "bootstrap/providers.php",
+        "phpunit.xml",
+        "tests/Pest.php"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "bootstrap/providers.php",
+        "phpunit.xml",
+        "tests/Pest.php"
+      ],
+      "validateCommand": "rtk php artisan route:list --except-vendor",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Añadir los catálogos de notificaciones",
+      "description": "Crear el grupo `notification/center` en inglés y español para resúmenes de comentarios, respuestas y likes agrupados, además del centro, estados vacíos, acciones, contador, accesibilidad y fallback de destino eliminado. Usar placeholders y plurales donde corresponda.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "labels": [
+        "translations",
+        "frontend",
+        "backend"
+      ],
+      "acceptanceCriteria": [
+        "Los catálogos `en` y `es` contienen las mismas claves y placeholders.",
+        "Los resúmenes permiten generar el idioma del destinatario y los textos de interfaz permiten `t()`/`tChoice()`.",
+        "El copy contempla una notificación sin destino disponible y un centro sin notificaciones."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "lang/en/notification/center.php",
+        "lang/es/notification/center.php"
+      ],
+      "writeScope": [
+        "lang/en/notification/center.php",
+        "lang/es/notification/center.php"
+      ],
+      "validateCommand": "php -l lang/en/notification/center.php\nphp -l lang/es/notification/center.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Crear notificaciones Laravel para comentarios",
+      "description": "Crear las clases `CommentedOnPostNotification` y `RepliedToCommentNotification` con canales `database` y `broadcast`, `ShouldQueue`, tipos de broadcast estables y payload con resumen localizado, snapshot del actor y los ids del post/comentario. El payload no almacena el texto íntegro del comentario ni datos privados.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-004",
+        "TASK-005"
+      ],
+      "labels": [
+        "backend",
+        "notifications"
+      ],
+      "acceptanceCriteria": [
+        "`Notification::fake()` confirma ambos canales para cada clase y el `broadcastType` identifica el tipo de aviso.",
+        "Los payloads guardan id y nombre mínimo del actor, resumen y destino; no incluyen contenido completo, email ni otros datos del usuario.",
+        "Los resúmenes se producen en el locale preferido del destinatario y siguen serializándose aunque el comentario se elimine."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Notification/Notifications/CommentedOnPostNotification.php",
+        "app/Modules/Notification/Notifications/RepliedToCommentNotification.php",
+        "app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Notifications/CommentedOnPostNotification.php",
+        "app/Modules/Notification/Notifications/RepliedToCommentNotification.php",
+        "app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Enviar avisos para comentarios y respuestas",
+      "description": "Crear `CommentNotificationSubscriber` y registrarlo desde `NotificationServiceProvider`. Resolver el destinatario según el tipo de acción: dueño de la publicación para comentario raíz, autor del comentario raíz para una respuesta normal y `replied_to_user_id` para respuesta a respuesta.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "labels": [
+        "backend",
+        "notifications",
+        "comments"
+      ],
+      "acceptanceCriteria": [
+        "Un comentario raíz en publicación ajena avisa al dueño de la publicación; una respuesta normal avisa al autor del comentario respondido.",
+        "Una respuesta a respuesta avisa al usuario guardado en `replied_to_user_id`, nunca toma ese destinatario de datos del cliente.",
+        "Las acciones propias y los casos sin destinatario distinto no producen notificaciones duplicadas."
+      ],
+      "filesToModify": [
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Listeners/CommentNotificationSubscriber.php",
+        "app/Modules/Notification/Tests/Listeners/CommentNotificationSubscriberTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Listeners/CommentNotificationSubscriber.php",
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php",
+        "app/Modules/Notification/Tests/Listeners/CommentNotificationSubscriberTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Listeners/CommentNotificationSubscriberTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Persistir grupos de likes no leídos",
+      "description": "Crear `LikeNotification` y `LikeNotificationGroupService`. El servicio mantiene un agregado Laravel en `notifications` por destinatario y destino mientras sigue sin leer, actualiza actores y resumen en una transacción y publica la versión actualizada después del commit con el mismo id de grupo.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-004",
+        "TASK-005"
+      ],
+      "labels": [
+        "backend",
+        "notifications",
+        "likes"
+      ],
+      "acceptanceCriteria": [
+        "Likes de usuarios distintos a la misma publicación o comentario actualizan un único grupo no leído con actores únicos y contador correcto.",
+        "Un unlike retira al actor del grupo no leído y elimina el grupo cuando queda vacío; un grupo ya leído conserva su historial.",
+        "Un like posterior a un grupo leído crea un grupo no leído nuevo y los likes simultáneos no generan dos grupos para el mismo destino."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Notification/Notifications/LikeNotification.php",
+        "app/Modules/Notification/Services/LikeNotificationGroupService.php",
+        "app/Modules/Notification/Tests/Services/LikeNotificationGroupServiceTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Notifications/LikeNotification.php",
+        "app/Modules/Notification/Services/LikeNotificationGroupService.php",
+        "app/Modules/Notification/Tests/Services/LikeNotificationGroupServiceTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Services/LikeNotificationGroupServiceTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Conectar likes con el agregado de notificaciones",
+      "description": "Crear `LikeNotificationSubscriber` para consumir `LikeToggled` y registrarlo en `NotificationServiceProvider`. El destinatario es el dueño del post o comentario likeado; el subscriber pasa tanto altas como bajas al servicio de grupos.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007",
+        "TASK-008"
+      ],
+      "labels": [
+        "backend",
+        "notifications",
+        "likes"
+      ],
+      "acceptanceCriteria": [
+        "Un like a una publicación o comentario ajeno actualiza el grupo del dueño correcto.",
+        "Un like propio no genera un aviso y un unlike actualiza solo el grupo del destino correspondiente.",
+        "Una excepción al guardar el agregado no deja un evento parcial ni cambia el like de otro usuario."
+      ],
+      "filesToModify": [
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Listeners/LikeNotificationSubscriber.php",
+        "app/Modules/Notification/Tests/Listeners/LikeNotificationSubscriberTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Listeners/LikeNotificationSubscriber.php",
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php",
+        "app/Modules/Notification/Tests/Listeners/LikeNotificationSubscriberTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Listeners/LikeNotificationSubscriberTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Serializar notificaciones con un contrato seguro",
+      "description": "Crear `NotificationResource` que convierta `DatabaseNotification` al contrato de la interfaz mediante una lista permitida de campos. La serialización no consulta post, comentario ni usuario; los snapshots guardados permiten representar destinos eliminados sin N+1 ni excepciones.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-008"
+      ],
+      "labels": [
+        "backend",
+        "notifications",
+        "privacy"
+      ],
+      "acceptanceCriteria": [
+        "El recurso devuelve `id`, tipo, resumen, actores mínimos, destino, `readAt` y `createdAt`.",
+        "No serializa emails, contenido completo ni atributos de Eloquent fuera del contrato.",
+        "Una notificación con destino eliminado se serializa desde su snapshot sin consultar relaciones inexistentes."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Notification/Resources/NotificationResource.php",
+        "app/Modules/Notification/Tests/Resources/NotificationResourceTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Resources/NotificationResource.php",
+        "app/Modules/Notification/Tests/Resources/NotificationResourceTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Resources/NotificationResourceTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Calcular el conteo diferido de no leídas",
+      "description": "Crear `NotificationProps` como propietario del conteo no leído y exponerlo con `Inertia::defer()`. Como las agrupaciones de likes ocupan una fila, el conteo es el número de filas de notificación no leídas del usuario, no el número de actores del grupo.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "labels": [
+        "backend",
+        "inertia",
+        "notifications"
+      ],
+      "acceptanceCriteria": [
+        "El conteo diferido se obtiene solo de `unreadNotifications()` del usuario autenticado y no incluye otros usuarios.",
+        "Un usuario sin avisos recibe cero; marcar un aviso leído baja el conteo de manera consistente.",
+        "La prop queda marcada como diferida y no añade una consulta de conteo al render inicial."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "app/Modules/Notification/Props/NotificationProps.php",
+        "app/Modules/Notification/Tests/Props/NotificationPropsTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Props/NotificationProps.php",
+        "app/Modules/Notification/Tests/Props/NotificationPropsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Props/NotificationPropsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Compartir el conteo con Home y React",
+      "description": "Añadir las props de `NotificationProps` a `HandleInertiaRequests` y registrar el grupo `notification/center` desde `HomeController`, donde se monta la campana. Añadir una prueba de integración para invitado, usuario sin avisos y usuario con avisos.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-011"
+      ],
+      "labels": [
+        "backend",
+        "inertia",
+        "notifications"
+      ],
+      "acceptanceCriteria": [
+        "Las páginas Inertia reciben `unreadNotificationsCount` diferido y el catálogo de `notification/center` requerido por Home.",
+        "El conteo es propio del usuario actual; un invitado no dispara una consulta de usuario ni recibe datos ajenos.",
+        "Las props existentes de auth, anuncios, locale y búsquedas siguen presentes."
+      ],
+      "filesToModify": [
+        "app/Http/Middleware/HandleInertiaRequests.php",
+        "app/Home/Controllers/HomeController.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Tests/Props/SharedUnreadNotificationsTest.php"
+      ],
+      "writeScope": [
+        "app/Http/Middleware/HandleInertiaRequests.php",
+        "app/Home/Controllers/HomeController.php",
+        "app/Modules/Notification/Tests/Props/SharedUnreadNotificationsTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Notification/Tests/Props/SharedUnreadNotificationsTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Crear el historial, recientes y acciones de lectura",
+      "description": "Implementar `NotificationController` y sus rutas autenticadas: historial Inertia cursor-paginado, recientes JSON para la campana, marcar una notificación y marcar todas. Ordenar con `created_at` e `id`, limitar lecturas y escrituras al vínculo del usuario autenticado y aplicar throttle a las escrituras.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-010",
+        "TASK-011"
+      ],
+      "labels": [
+        "backend",
+        "inertia",
+        "notifications"
+      ],
+      "acceptanceCriteria": [
+        "`GET /notifications` devuelve el historial con cursor estable y `GET /notifications/recent` devuelve como máximo las cinco más recientes serializadas por `NotificationResource`.",
+        "Marcar una y marcar todas actualiza solo notificaciones propias; un id ajeno o inexistente responde 404.",
+        "Un invitado no puede leer ni modificar la bandeja y los endpoints de escritura tienen throttle."
+      ],
+      "filesToModify": [
+        "app/Modules/Notification/routes/routes.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Controllers/NotificationController.php",
+        "app/Modules/Notification/Tests/Controllers/NotificationControllerTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Notification/Controllers/NotificationController.php",
+        "app/Modules/Notification/routes/routes.php",
+        "app/Modules/Notification/Tests/Controllers/NotificationControllerTest.php"
+      ],
+      "validateCommand": "rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction\nrtk php artisan test --compact app/Modules/Notification/Tests/Controllers/NotificationControllerTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Dar a las notificaciones una ruta de destino para publicaciones",
+      "description": "Añadir `GET /posts/{post}` a `PostController` y al route file existente. La acción autenticada carga el `PostResource` y `CommentThreadProps` para renderizar una publicación con su hilo; esta ruta es el destino estable de avisos de comentarios, respuestas y likes.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "labels": [
+        "backend",
+        "posts",
+        "navigation"
+      ],
+      "acceptanceCriteria": [
+        "Un usuario autenticado abre una publicación existente en el componente `post/Show` con su recurso y comentarios disponibles.",
+        "Una publicación inexistente o eliminada responde 404 y un invitado sigue el flujo de autenticación existente.",
+        "La ruta queda nombrada como `posts.show` y Wayfinder genera un helper con la URI correcta."
+      ],
+      "filesToModify": [
+        "app/Modules/Post/Controllers/PostController.php",
+        "app/Modules/Post/routes/routes.php"
+      ],
+      "filesToCreate": [
+        "app/Modules/Post/Tests/Crud/PostShowTest.php"
+      ],
+      "writeScope": [
+        "app/Modules/Post/Controllers/PostController.php",
+        "app/Modules/Post/routes/routes.php",
+        "app/Modules/Post/Tests/Crud/PostShowTest.php"
+      ],
+      "validateCommand": "rtk php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder --no-interaction\nrtk php artisan test --compact app/Modules/Post/Tests/Crud/PostShowTest.php",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Tipar el contrato compartido de notificaciones",
+      "description": "Definir en TypeScript la forma serializada de avisos de comentarios y grupos de likes, junto con el tipo de `unreadNotificationsCount` en `SharedData`. El contrato mantiene los mismos nombres y nulabilidad del `NotificationResource`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-010",
+        "TASK-012",
+        "TASK-013"
+      ],
+      "labels": [
+        "frontend",
+        "typescript",
+        "notifications"
+      ],
+      "acceptanceCriteria": [
+        "El tipo cubre `comment_on_post`, `comment_reply` y `likes_grouped`, incluyendo snapshots de actores y destino post/comment.",
+        "`SharedData` tipa el conteo compartido y la carga diferida sin `any`.",
+        "El chequeo de TypeScript resuelve los imports sin introducir tipos duplicados del mismo payload."
+      ],
+      "filesToModify": [
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/notification/types/notification.ts"
+      ],
+      "writeScope": [
+        "resources/js/shared/types/index.d.ts",
+        "resources/js/modules/notification/types/notification.ts"
+      ],
+      "validateCommand": "rtk npm run types\nrtk npx eslint resources/js/shared/types/index.d.ts resources/js/modules/notification/types/notification.ts\nrtk npx prettier --check resources/js/shared/types/index.d.ts resources/js/modules/notification/types/notification.ts",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Mostrar una publicación desde su deep link",
+      "description": "Crear `resources/js/modules/post/Show.tsx` como página Inertia que usa `HomeLayout` y el `PostCard` existente para presentar la publicación y abrir su hilo de comentarios. No duplica la tarjeta ni inventa una segunda UI de likes.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "labels": [
+        "frontend",
+        "posts",
+        "navigation"
+      ],
+      "acceptanceCriteria": [
+        "El componente `post/Show` muestra el Post recibido por Inertia y permite acceder al diálogo de comentarios.",
+        "El deep link funciona con una publicación existente; una ruta 404 no deja una tarjeta fantasma.",
+        "La página compila con React 19, Inertia v3 y el layout existente."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/js/modules/post/Show.tsx"
+      ],
+      "writeScope": [
+        "resources/js/modules/post/Show.tsx"
+      ],
+      "validateCommand": "rtk npm run types\nrtk npx eslint resources/js/modules/post/Show.tsx\nrtk npx prettier --check resources/js/modules/post/Show.tsx\nrtk npm run build:ssr",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Construir la página de historial",
+      "description": "Crear la página Inertia `notification/Notifications`, su item reutilizable y el barrel del módulo. La lista usa `InfiniteScroll` con la prop `notifications` de `Inertia::scroll()`, muestra estados vacíos/carga y permite marcar avisos individuales o todos como leídos.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005",
+        "TASK-013",
+        "TASK-015",
+        "TASK-016"
+      ],
+      "labels": [
+        "frontend",
+        "notifications",
+        "inertia"
+      ],
+      "acceptanceCriteria": [
+        "El historial consume cursores sin duplicar filas y conserva el orden estable del servidor.",
+        "Marcar una o todas actualiza estado visual y conteo; errores de servidor conservan la lista actual.",
+        "Copy, plurales, acciones accesibles y fechas usan `useTranslation()` y `useDateTime()`."
+      ],
+      "filesToModify": [],
+      "filesToCreate": [
+        "resources/js/modules/notification/Notifications.tsx",
+        "resources/js/modules/notification/components/NotificationListItem.tsx",
+        "resources/js/modules/notification/index.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/notification/Notifications.tsx",
+        "resources/js/modules/notification/components/NotificationListItem.tsx",
+        "resources/js/modules/notification/index.ts"
+      ],
+      "validateCommand": "rtk npm run types\nrtk npx eslint resources/js/modules/notification/Notifications.tsx resources/js/modules/notification/components/NotificationListItem.tsx resources/js/modules/notification/index.ts\nrtk npx prettier --check resources/js/modules/notification/Notifications.tsx resources/js/modules/notification/components/NotificationListItem.tsx resources/js/modules/notification/index.ts",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Conectar Echo con el estado React del centro",
+      "description": "Crear el store de notificaciones y un listener con `useEchoNotification`, y montarlo una sola vez en `withApp`. El listener procesa el canal del usuario actual, deduplica por id, reemplaza el payload del grupo de likes cuando mantiene el mismo id y usa Sonner para avisar.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-007",
+        "TASK-009",
+        "TASK-015"
+      ],
+      "labels": [
+        "frontend",
+        "echo",
+        "realtime"
+      ],
+      "acceptanceCriteria": [
+        "Una notificación nueva actualiza lista/conteo y muestra un toast sin recargar; una actualización de grupo reemplaza el elemento y no incrementa de nuevo el conteo.",
+        "El listener solo se monta con un usuario autenticado y se desuscribe al desmontarse.",
+        "`npm run build:ssr` termina sin errores de browser globals y la conexión usa la configuración Reverb existente."
+      ],
+      "filesToModify": [
+        "resources/js/app/app.tsx"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/notification/stores/notificationStore.ts",
+        "resources/js/modules/notification/components/NotificationRealtimeListener.tsx"
+      ],
+      "writeScope": [
+        "resources/js/app/app.tsx",
+        "resources/js/modules/notification/stores/notificationStore.ts",
+        "resources/js/modules/notification/components/NotificationRealtimeListener.tsx"
+      ],
+      "validateCommand": "rtk npm run types\nrtk npx eslint resources/js/app/app.tsx resources/js/modules/notification/stores/notificationStore.ts resources/js/modules/notification/components/NotificationRealtimeListener.tsx\nrtk npx prettier --check resources/js/app/app.tsx resources/js/modules/notification/stores/notificationStore.ts resources/js/modules/notification/components/NotificationRealtimeListener.tsx\nrtk npm run build:ssr",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Completar la campana y su desplegable",
+      "description": "Reemplazar el marcador de `HomeNotificationHeader` con una campana accesible, badge, desplegable de recientes y enlace al historial. El desplegable carga el endpoint reciente al abrirse, se mantiene sincronizado con el store Echo y abre `posts.show` al seleccionar un aviso.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-013",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018"
+      ],
+      "labels": [
+        "frontend",
+        "notifications",
+        "ui"
+      ],
+      "acceptanceCriteria": [
+        "El badge representa grupos no leídos; el desplegable muestra hasta cinco avisos y el enlace abre el historial completo.",
+        "Al seleccionar un aviso se marca como leído y navega a la publicación; un destino eliminado conserva el resumen y no rompe la campana.",
+        "El botón, badge, empty state, acciones y toasts tienen copy traducido y nombres accesibles en inglés y español."
+      ],
+      "filesToModify": [
+        "resources/js/modules/home/components/header/HomeNotificationHeader.tsx"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/notification/components/NotificationDropdown.tsx",
+        "resources/js/modules/notification/hooks/useNotificationDropdown.ts"
+      ],
+      "writeScope": [
+        "resources/js/modules/home/components/header/HomeNotificationHeader.tsx",
+        "resources/js/modules/notification/components/NotificationDropdown.tsx",
+        "resources/js/modules/notification/hooks/useNotificationDropdown.ts"
+      ],
+      "validateCommand": "rtk npm run types\nrtk npx eslint resources/js/modules/home/components/header/HomeNotificationHeader.tsx resources/js/modules/notification/components/NotificationDropdown.tsx resources/js/modules/notification/hooks/useNotificationDropdown.ts\nrtk npx prettier --check resources/js/modules/home/components/header/HomeNotificationHeader.tsx resources/js/modules/notification/components/NotificationDropdown.tsx resources/js/modules/notification/hooks/useNotificationDropdown.ts",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Documentar la arquitectura y el recorrido de una notificación",
+      "description": "Actualizar CLAUDE.md y la documentación de arquitectura del backend/frontend con el módulo Notification, el contrato de destinatarios, la agrupación de likes, el payload, los endpoints y el flujo evento → persistencia → cola → Reverb → canal privado → Echo/React. Explicar las decisiones y los límites, sin documentar mecanismos que no queden implementados.",
+      "type": "docs",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-004",
+        "TASK-007",
+        "TASK-009",
+        "TASK-013",
+        "TASK-014",
+        "TASK-016",
+        "TASK-017",
+        "TASK-018",
+        "TASK-019"
+      ],
+      "labels": [
+        "docs",
+        "architecture"
+      ],
+      "acceptanceCriteria": [
+        "CLAUDE.md explica canal, driver, autenticación, cola, arranque local y módulo de notificaciones con los motivos de diseño.",
+        "Los documentos de arquitectura describen los límites backend/frontend y la semántica acordada de comentarios, respuestas y likes agrupados.",
+        "Las notificaciones de Filament siguen descritas como existentes e independientes del centro React."
+      ],
+      "filesToModify": [
+        "CLAUDE.md",
+        "docs/architecture/backend.md",
+        "docs/architecture/frontend.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "CLAUDE.md",
+        "docs/architecture/backend.md",
+        "docs/architecture/frontend.md"
+      ],
+      "validateCommand": "git diff --check -- CLAUDE.md docs/architecture/backend.md docs/architecture/frontend.md",
+      "review": "codex"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Actualizar los comandos locales de desarrollo",
+      "description": "Documentar en `docs/development/backend-commands.md` que `composer run dev` arranca Reverb junto con los procesos Laravel ya registrados, y explicar cómo validar y reiniciar Reverb cuando cambie su configuración.",
+      "type": "docs",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "labels": [
+        "docs",
+        "development"
+      ],
+      "acceptanceCriteria": [
+        "La guía enumera `serve`, `queue:listen`, Vite y Reverb con el comando que los registra.",
+        "La guía diferencia las variables cliente `VITE_REVERB_*` de credenciales de servidor y explica el broadcaster activo local.",
+        "Los comandos documentados coinciden con `composer run dev` y `php artisan reverb:restart`."
+      ],
+      "filesToModify": [
+        "docs/development/backend-commands.md"
+      ],
+      "filesToCreate": [],
+      "writeScope": [
+        "docs/development/backend-commands.md"
+      ],
+      "validateCommand": "git diff --check -- docs/development/backend-commands.md",
+      "review": "codex"
+    }
+  ],
+  "failureModes": [
+    "Si `BROADCAST_CONNECTION` permanece en `log` o `reverb:start` no se registra, la UI puede mostrar persistencia pero no recibirá eventos reales.",
+    "Si el canal usa el namespace automático o no valida propietario/estado, un usuario puede perder sus avisos o suscribirse al canal de otro.",
+    "Si una notificación se emite antes de que su escritura termine, el cliente puede recibir una fila que no se puede cargar; las actualizaciones agrupadas se publican después del commit.",
+    "Si el servicio de likes no serializa actualizaciones concurrentes o React cuenta cada update del mismo id como nuevo, habrá grupos duplicados y conteos inflados.",
+    "Si el controlador carga relaciones del actor o destino por fila, el historial puede introducir N+1 y fallar cuando se borre un destino.",
+    "Si los endpoints no consultan a través de `$user->notifications()`, un usuario puede marcar o leer notificaciones ajenas.",
+    "Si el listener se monta más de una vez, un evento puede producir toasts duplicados y estado desincronizado.",
+    "Si se omite un catálogo o un placeholder entre `lang/en` y `lang/es`, la traducción del backend y la interfaz dejan de coincidir.",
+    "No hay runner de pruebas React instalado; la validación de UI depende de TypeScript, ESLint, Prettier, build SSR y verificación manual con dos usuarios."
+  ],
+  "shipCut": [
+    "El corte de entrega exige canal privado autorizado, cola/Reverb local, persistencia de los tres tipos, agrupación de likes, historial cursor-paginado, contador, lectura individual/total, deep link a publicación y actualización realtime de campana/toast.",
+    "No presentar como terminado un backend que solo guarda notificaciones o una UI que solo muestra toasts; ambas rutas deben probarse de punta a punta.",
+    "Mantener fuera del corte avisos de seguridad, anuncios en vivo, likes agrupados por actor en otras pantallas, preferencias, Filament, email y push."
+  ],
+  "testCoverageMap": [
+    {
+      "area": "Dev processes y broadcaster",
+      "test": "tests/Feature/Console/DevProcessConfigurationTest.php",
+      "protects": "Reverb y queue:listen quedan registrados para composer run dev."
+    },
+    {
+      "area": "Canal privado y locale de User",
+      "test": "app/User/Tests/Notifications/UserNotificationChannelTest.php",
+      "protects": "Propietario, invitado, cuenta suspendida y HasLocalePreference."
+    },
+    {
+      "area": "Serialización de notificaciones",
+      "test": "app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php y app/Modules/Notification/Tests/Resources/NotificationResourceTest.php",
+      "protects": "Canales, payload mínimo/localizado, campos permitidos y destino eliminado."
+    },
+    {
+      "area": "Suscriptores de dominio",
+      "test": "app/Modules/Notification/Tests/Listeners/CommentNotificationSubscriberTest.php y app/Modules/Notification/Tests/Listeners/LikeNotificationSubscriberTest.php",
+      "protects": "Destinatario exacto, exclusión de la acción propia y cambio de tipo de evento."
+    },
+    {
+      "area": "Agrupación de likes",
+      "test": "app/Modules/Notification/Tests/Services/LikeNotificationGroupServiceTest.php",
+      "protects": "Agregado por destino, unlike, grupo vacío, grupo leído y escritura concurrente."
+    },
+    {
+      "area": "Prop compartida y API",
+      "test": "app/Modules/Notification/Tests/Props/NotificationPropsTest.php, app/Modules/Notification/Tests/Props/SharedUnreadNotificationsTest.php y app/Modules/Notification/Tests/Controllers/NotificationControllerTest.php",
+      "protects": "Conteo propio, cursor, recientes, acciones de lectura y acceso ajeno."
+    },
+    {
+      "area": "Destino de publicación",
+      "test": "app/Modules/Post/Tests/Crud/PostShowTest.php",
+      "protects": "Ruta posts.show, autenticación, recurso y 404 del destino."
+    },
+    {
+      "area": "Frontend",
+      "test": "Sin suite React configurada; `npm run types`, ESLint, Prettier, `npm run build:ssr` y navegador con dos sesiones.",
+      "protects": "Render SSR, recepción realtime, agrupación, toast, conteo, historial, marcaje y textos es/en."
+    }
+  ],
+  "taskCount": 21,
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [],
+    "TASK-004": [
+      "TASK-003"
+    ],
+    "TASK-005": [],
+    "TASK-006": [
+      "TASK-002",
+      "TASK-004",
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-002",
+      "TASK-004",
+      "TASK-005"
+    ],
+    "TASK-009": [
+      "TASK-007",
+      "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-006",
+      "TASK-008"
+    ],
+    "TASK-011": [
+      "TASK-010"
+    ],
+    "TASK-012": [
+      "TASK-005",
+      "TASK-011"
+    ],
+    "TASK-013": [
+      "TASK-004",
+      "TASK-010",
+      "TASK-011"
+    ],
+    "TASK-014": [],
+    "TASK-015": [
+      "TASK-010",
+      "TASK-012",
+      "TASK-013"
+    ],
+    "TASK-016": [
+      "TASK-014"
+    ],
+    "TASK-017": [
+      "TASK-005",
+      "TASK-013",
+      "TASK-015",
+      "TASK-016"
+    ],
+    "TASK-018": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-007",
+      "TASK-009",
+      "TASK-015"
+    ],
+    "TASK-019": [
+      "TASK-013",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-004",
+      "TASK-007",
+      "TASK-009",
+      "TASK-013",
+      "TASK-014",
+      "TASK-016",
+      "TASK-017",
+      "TASK-018",
+      "TASK-019"
+    ],
+    "TASK-021": [
+      "TASK-001"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 21,
+    "parallelLayers": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-005",
+        "TASK-014"
+      ],
+      [
+        "TASK-004",
+        "TASK-016",
+        "TASK-021"
+      ],
+      [
+        "TASK-006",
+        "TASK-008"
+      ],
+      [
+        "TASK-007",
+        "TASK-010"
+      ],
+      [
+        "TASK-009",
+        "TASK-011"
+      ],
+      [
+        "TASK-012",
+        "TASK-013"
+      ],
+      [
+        "TASK-015"
+      ],
+      [
+        "TASK-017",
+        "TASK-018"
+      ],
+      [
+        "TASK-019"
+      ],
+      [
+        "TASK-020"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-003",
+      "TASK-004",
+      "TASK-006",
+      "TASK-010",
+      "TASK-011",
+      "TASK-012",
+      "TASK-015",
+      "TASK-017",
+      "TASK-019",
+      "TASK-020"
+    ],
+    "criticalPathSummary": "Crear la base del módulo Notification → Registrar el módulo y su suite Pest → Crear notificaciones Laravel para comentarios → Serializar notificaciones con un contrato seguro → Calcular el conteo diferido de no leídas → Compartir el conteo con Home y React → Tipar el contrato compartido de notificaciones → Construir la página de historial → Completar la campana y su desplegable → Documentar la arquitectura y el recorrido de una notificación",
+    "reviewDefault": "codex",
+    "mode": "EXPANSION"
+  }
+}
+

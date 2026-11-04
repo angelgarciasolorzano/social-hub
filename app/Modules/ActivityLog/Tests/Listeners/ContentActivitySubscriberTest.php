@@ -36,7 +36,7 @@ function commentForActivityLog(TestCase $testCase, User $user, Post|Comment $com
 it('records a published post without its content', function (): void {
     $user = createUser();
 
-    $this->actingAs($user)->post(route('post.store'), ['content' => CONTENT_ACTIVITY_SENTINEL_TEXT]);
+    $this->actingAs($user)->post(route('posts.store'), ['content' => CONTENT_ACTIVITY_SENTINEL_TEXT]);
 
     $activity = soleContentActivity('content.post_created');
 

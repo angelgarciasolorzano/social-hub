@@ -51,7 +51,7 @@ it('never stores content, passwords or attempted emails across the recorded flow
     $this->post(route('login.store'), ['email' => $user->email, 'password' => PRIVACY_SENTINEL_WRONG_PASSWORD]);
     $this->post(route('login.store'), ['email' => PRIVACY_SENTINEL_UNKNOWN_EMAIL, 'password' => PRIVACY_SENTINEL_WRONG_PASSWORD]);
 
-    $this->actingAs($user)->post(route('post.store'), ['content' => PRIVACY_SENTINEL_POST]);
+    $this->actingAs($user)->post(route('posts.store'), ['content' => PRIVACY_SENTINEL_POST]);
     $post = Post::query()->latest('id')->firstOrFail();
 
     $this->post(route('comments.store'), [

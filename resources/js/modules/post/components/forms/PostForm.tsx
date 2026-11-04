@@ -2,7 +2,7 @@ import type { Dispatch, JSX, SetStateAction, SubmitEvent } from "react";
 
 import type { InertiaFormProps } from "@inertiajs/react";
 
-import PostController from "@/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController";
+import { store as storePost } from "@/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController";
 
 import { LabelForm } from "@/shared/components/form";
 import InputError from "@/shared/components/form/InputError";
@@ -42,7 +42,7 @@ function PostForm({ form, setOpen }: PostFormtProps): JSX.Element {
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
-    submit(PostController(), {
+    submit(storePost(), {
       onSuccess: () => {
         setOpen(false);
         form.reset();

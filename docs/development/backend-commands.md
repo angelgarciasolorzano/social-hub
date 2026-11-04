@@ -231,20 +231,45 @@ Configuración inicial del proyecto en una instalación nueva:
 
 **Cuándo:** primera vez que clonas el repo, o después de un reset total.
 
-### `composer dev`
+### `composer run dev`
 
 ```bash
-composer dev
+composer run dev
 ```
 
-Levanta el entorno de desarrollo completo en paralelo (con colores por proceso):
+Ejecuta `php artisan dev`, que levanta en paralelo el roster de `Illuminate\Foundation\DevCommands` (con colores por proceso):
 
 - 🟦 `php artisan serve` (servidor HTTP)
-- 🟪 `php artisan queue:listen` (cola)
+- 🟪 `php artisan queue:listen` (procesa la cola configurada en `QUEUE_CONNECTION`)
 - 🟥 `php artisan pail` (logs en tiempo real)
 - 🟧 `npm run dev` (Vite con HMR)
+- 🟩 `php artisan reverb:start` (servidor WebSocket local)
 
-**Cuándo:** sesión de desarrollo normal. Reemplaza el `php artisan serve` manual.
+**Cuándo:** sesión de desarrollo normal. Reemplaza iniciar esos procesos por separado. `composer dev` es el alias corto del mismo script.
+
+### Broadcasting local con Laravel Reverb
+
+`.env.example` configura `BROADCAST_CONNECTION=reverb` y `QUEUE_CONNECTION=database`. La configuración que realmente usa Laravel sale de `.env` y de la caché de configuración, así que verifica los valores resueltos antes de depurar una notificación que no llega:
+
+```bash
+php artisan config:show broadcasting.default
+php artisan config:show queue.default
+```
+
+El primer comando debe mostrar `reverb` para que Laravel emita broadcasts al servidor Reverb; si muestra `log`, los broadcasts se escriben en el log y no llegan a Echo. El segundo muestra la cola que `queue:listen` procesa. Si editaste `.env` con la configuración cacheada, ejecuta `php artisan config:clear` y vuelve a consultar ambos valores.
+
+Las variables tienen dos usos:
+
+- **Servidor Laravel/Reverb:** `REVERB_APP_ID`, `REVERB_APP_KEY` y `REVERB_APP_SECRET` son las credenciales de la aplicación Reverb. `REVERB_HOST`, `REVERB_PORT` y `REVERB_SCHEME` indican a Laravel dónde publicar los eventos. No expongas `REVERB_APP_SECRET` al frontend.
+- **Cliente React/Vite:** `VITE_REVERB_APP_KEY`, `VITE_REVERB_HOST`, `VITE_REVERB_PORT` y `VITE_REVERB_SCHEME` contienen la clave pública y los datos de conexión del navegador. El ejemplo deriva estos valores de sus equivalentes `REVERB_*`; Vite los incorpora al bundle, por lo que reinicia Vite o recompila después de cambiarlos.
+
+`composer run dev` inicia Reverb y `queue:listen` junto al servidor HTTP y Vite; no arranques otra instancia de Reverb en paralelo. Para reiniciar el servidor Reverb activo de forma ordenada:
+
+```bash
+php artisan reverb:restart
+```
+
+Después de modificar variables de entorno, limpia la caché de configuración si aplica y reinicia `composer run dev` para que Reverb, Laravel, la cola y Vite vuelvan a leer la configuración actual. Comprueba otra vez `broadcasting.default` y que el roster de desarrollo muestre el proceso Reverb.
 
 ### `composer phpstan-clear-cache`
 

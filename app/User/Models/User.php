@@ -23,6 +23,7 @@ use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
@@ -72,7 +73,7 @@ use Spatie\Permission\Traits\HasRoles;
     'app_authentication_secret',
     'app_authentication_recovery_codes',
 ])]
-class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasMedia
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasLocalePreference, HasMedia
 {
     /**
      * @use HasFactory<UserFactory>
@@ -148,6 +149,22 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function isSuspended(): bool
     {
         return $this->status === AccountStatus::Suspended;
+    }
+
+    /**
+     * Get the user's preferred locale for notifications and mail.
+     */
+    public function preferredLocale(): string
+    {
+        return $this->preferred_locale->value;
+    }
+
+    /**
+     * Get the private channel used for this user's broadcast notifications.
+     */
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return 'users.'.$this->id.'.notifications';
     }
 
     public function canAccessPanel(Panel $panel): bool

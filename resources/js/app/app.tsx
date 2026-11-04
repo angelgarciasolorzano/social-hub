@@ -16,6 +16,7 @@ import {
   sharedAnnouncementsOf,
 } from "@/modules/announcement/hooks/useAnnouncementDismiss";
 import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
+import NotificationRealtimeListener from "@/modules/notification/components/NotificationRealtimeListener";
 import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
 import FlashToaster from "@/shared/components/FlashToaster";
@@ -82,17 +83,28 @@ void createInertiaApp({
     }
   },
   withApp(app, { page }) {
-    const { locale } = page.props as unknown as SharedData;
+    const sharedData = page.props as unknown as SharedData;
+    const { locale } = sharedData;
+    const authenticatedUserId = isAuthenticatedPage(page.props) ? sharedData.auth.user.id : null;
 
     return (
       <TooltipProvider>
         <DocumentLanguageSync initialLocale={locale} />
+
+        <NotificationRealtimeListener
+          initialUnreadNotificationsCount={sharedData.unreadNotificationsCount}
+          initialUserId={authenticatedUserId}
+        />
+
         <SystemAnnouncements
           initialAnnouncements={sharedAnnouncementsOf(page.props)}
           initialIsAuthenticated={isAuthenticatedPage(page.props)}
         />
+
         {app}
+
         <FlashToaster />
+
         <TanStackDevtools plugins={[tableDevtoolsPlugin(), hotkeysDevtoolsPlugin()]} />
       </TooltipProvider>
     );

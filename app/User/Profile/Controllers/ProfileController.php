@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Comment\Props\CommentThreadProps;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Resources\PostResource;
+use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
 use App\User\Resources\UserResource;
 use Illuminate\Support\Facades\Auth;
@@ -28,8 +29,12 @@ class ProfileController extends Controller
         return $viewer;
     }
 
-    public function index(CommentThreadProps $commentThreadProps): Response
-    {
+    public function index(
+        CommentThreadProps $commentThreadProps,
+        FrontendTranslations $frontendTranslations,
+    ): Response {
+        $frontendTranslations->use('notification/center');
+
         $cursorPaginator = Post::query()
             ->with(['user.media', 'media'])
             ->withEngagementFor($this->viewer())
@@ -44,8 +49,13 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function show(User $user, CommentThreadProps $commentThreadProps): Response
-    {
+    public function show(
+        User $user,
+        CommentThreadProps $commentThreadProps,
+        FrontendTranslations $frontendTranslations,
+    ): Response {
+        $frontendTranslations->use('notification/center');
+
         $cursorPaginator = Post::query()
             ->with(['user.media', 'media'])
             ->withEngagementFor($this->viewer())
