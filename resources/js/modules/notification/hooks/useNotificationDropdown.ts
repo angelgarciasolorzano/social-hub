@@ -16,6 +16,7 @@ import type { SharedData } from "@/shared/types";
 
 import { useNotificationStore } from "../stores/notificationStore";
 import type { Notification } from "../types/notification";
+import { excludeRemovedNotifications } from "../utils/excludeRemovedNotifications";
 
 const RECENT_NOTIFICATION_LIMIT = 5;
 
@@ -48,6 +49,10 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
 
   const realtimeNotifications = useNotificationStore((state) =>
     state.authenticatedUserId === userId ? state.notifications : [],
+  );
+
+  const removedNotificationIds = useNotificationStore((state) =>
+    state.authenticatedUserId === userId ? state.removedNotificationIds : undefined,
   );
 
   const storeUnreadCount = useNotificationStore((state) =>
@@ -90,15 +95,25 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
   }, [initializeForUser, storeUnreadCount, storeUserId, unreadNotificationsCount, userId]);
 
   const notifications = useMemo<Notification[]>(() => {
+    const activeRealtimeNotifications = excludeRemovedNotifications(
+      realtimeNotifications,
+      removedNotificationIds,
+    );
+
+    const activeRecentNotifications = excludeRemovedNotifications(
+      recentNotifications,
+      removedNotificationIds,
+    );
+
     const realtimeNotificationsById = new Map(
-      realtimeNotifications.map((notification) => [notification.id, notification]),
+      activeRealtimeNotifications.map((notification) => [notification.id, notification]),
     );
 
     const recentNotificationIds = new Set(
-      recentNotifications.map((notification) => notification.id),
+      activeRecentNotifications.map((notification) => notification.id),
     );
 
-    const mergedRecentNotifications = recentNotifications.map((notification) => {
+    const mergedRecentNotifications = activeRecentNotifications.map((notification) => {
       const realtimeNotification = realtimeNotificationsById.get(notification.id);
 
       if (realtimeNotification === undefined) {
@@ -113,7 +128,7 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
       };
     });
 
-    const newRealtimeNotifications = realtimeNotifications.filter(
+    const newRealtimeNotifications = activeRealtimeNotifications.filter(
       (notification) => !recentNotificationIds.has(notification.id),
     );
 
@@ -121,7 +136,7 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
       0,
       RECENT_NOTIFICATION_LIMIT,
     );
-  }, [realtimeNotifications, recentNotifications]);
+  }, [realtimeNotifications, recentNotifications, removedNotificationIds]);
 
   const getNotificationPostUrl = useCallback<(notification: Notification) => string | null>(
     (notification) => {

@@ -13,6 +13,7 @@ import { useTranslation } from "@/shared/hooks";
 
 import { useNotificationStore } from "../stores/notificationStore";
 import type { Notification } from "../types/notification";
+import { excludeRemovedNotifications } from "../utils/excludeRemovedNotifications";
 
 interface UseNotificationHistoryParams {
   initialUnreadCount: number;
@@ -45,6 +46,10 @@ function useNotificationHistory({
     state.authenticatedUserId === userId ? state.notifications : [],
   );
 
+  const removedNotificationIds = useNotificationStore((state) =>
+    state.authenticatedUserId === userId ? state.removedNotificationIds : undefined,
+  );
+
   const storeUnreadCount = useNotificationStore((state) =>
     state.authenticatedUserId === userId ? state.unreadCount : null,
   );
@@ -71,13 +76,23 @@ function useNotificationHistory({
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState<boolean>(false);
 
   const notifications = useMemo<Notification[]>(() => {
+    const activeRealtimeNotifications = excludeRemovedNotifications(
+      realtimeNotifications,
+      removedNotificationIds,
+    );
+
+    const activePageNotifications = excludeRemovedNotifications(
+      pageNotifications,
+      removedNotificationIds,
+    );
+
     const realtimeNotificationsById = new Map(
-      realtimeNotifications.map((notification) => [notification.id, notification]),
+      activeRealtimeNotifications.map((notification) => [notification.id, notification]),
     );
 
     const pageNotificationIds = new Set<string>();
 
-    const uniquePageNotifications = pageNotifications.flatMap((notification) => {
+    const uniquePageNotifications = activePageNotifications.flatMap((notification) => {
       if (pageNotificationIds.has(notification.id)) {
         return [];
       }
@@ -87,12 +102,12 @@ function useNotificationHistory({
       return [realtimeNotificationsById.get(notification.id) ?? notification];
     });
 
-    const newRealtimeNotifications = realtimeNotifications.filter(
+    const newRealtimeNotifications = activeRealtimeNotifications.filter(
       (notification) => !pageNotificationIds.has(notification.id),
     );
 
     return [...newRealtimeNotifications, ...uniquePageNotifications];
-  }, [pageNotifications, realtimeNotifications]);
+  }, [pageNotifications, realtimeNotifications, removedNotificationIds]);
 
   const isNotificationRead = useCallback<(notification: Notification) => boolean>(
     (notification) => {
@@ -173,6 +188,7 @@ function useNotificationHistory({
       const readAtTimestamp = Date.parse(readAt);
 
       setAllReadBefore(readAtTimestamp);
+
       setReadNotificationIds(
         (currentIds) =>
           new Set([
