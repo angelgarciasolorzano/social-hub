@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
@@ -123,4 +124,25 @@ it('does not add queries per row for the roles column', function (): void {
     countUsersListWithRolesQueries();
 
     expect(countUsersListWithRolesQueries())->toBe($queriesWithFewUsers);
+});
+
+it('filters by a custom role and shows its label as a badge', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminUsersReader, AdminRole::AdminRolesReader);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte']);
+    $supportUser = createUser();
+    $supportUser->assignRole($customRole);
+
+    createUser()->assignRole(AdminRole::AdminPostsReader->value);
+
+    $testable = Livewire::test(ListUsers::class)
+        ->call('loadTable')
+        ->set('tableRecordsPerPage', 50)
+        ->set('tableFilters.admin_roles', ['values' => ['custom-soporte']]);
+
+    expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
+        ->toBe([FilamentTableRecords::recordKey($supportUser)]);
+
+    $testable->assertSee('Soporte');
 });

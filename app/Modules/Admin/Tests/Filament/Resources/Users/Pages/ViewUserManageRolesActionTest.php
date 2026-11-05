@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
 use Filament\Notifications\Notification;
@@ -169,4 +171,48 @@ it('shows the modal in Spanish', function (): void {
         'Contraseña actual',
         'Guardar roles',
     ]]);
+});
+
+it('assigns a custom role like a system role, with its label in the modal', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsUserRolesManager($testCase);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte', 'description' => 'Atiende a los usuarios.']);
+    $user = createUser();
+
+    $testable = Livewire::test(ViewUser::class, ['record' => $user->id])->call('mountAction', 'manageRoles');
+    $testable->__call('assertMountedActionModalSee', [['Soporte', 'Atiende a los usuarios.']]);
+
+    $testable
+        ->set('mountedActions.0.data.roles', [$customRole->name])
+        ->set('mountedActions.0.data.current_password', 'password')
+        ->call('callMountedAction')
+        ->assertHasNoErrors();
+
+    expect(managedUserRoleNames($user))->toBe(['custom-soporte'])
+        ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleGranted->value)->sole()->properties?->get('role'))
+        ->toBe('custom-soporte');
+});
+
+it('summarizes the roles to assign and remove before saving', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsUserRolesManager($testCase);
+    RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte']);
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminUsersReader->value);
+
+    $testable = Livewire::test(ViewUser::class, ['record' => $user->id])->call('mountAction', 'manageRoles');
+    $testable->__call('assertMountedActionModalSee', [[TranslatedText::of('admin/roles.actions.manage_roles.summary_none')]]);
+
+    $testable->set('mountedActions.0.data.roles', ['custom-soporte']);
+    $testable->__call('assertMountedActionModalSee', [[
+        trans_choice('admin/roles.actions.manage_roles.summary_grant', 1, ['count' => 1, 'list' => 'Soporte']),
+        trans_choice('admin/roles.actions.manage_roles.summary_revoke', 1, [
+            'count' => 1,
+            'list' => translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.catalog.roles.admin_users_reader.label'),
+        ]),
+    ]]);
+
+    expect(managedUserRoleNames($user))->toBe([AdminRole::AdminUsersReader->value]);
 });
