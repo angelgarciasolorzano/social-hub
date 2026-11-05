@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\ActivityLogName;
+use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
@@ -105,4 +106,22 @@ it('names and describes every cataloged role, permission and permission area in 
     )));
 
     expect($missingKeys)->toBe([], "lang/{$locale}/admin/roles.php is missing catalog keys");
+})->with(['en', 'es']);
+
+it('names every role type and describes every authorization failure in both languages', function (string $locale): void {
+    $requiredKeys = array_map(
+        static fn (string $key): string => 'types.'.$key,
+        ['column', 'filter', 'system', 'custom', 'system_tooltip', 'custom_tooltip'],
+    );
+
+    foreach (AdminAuthorizationFailure::cases() as $adminAuthorizationFailure) {
+        $requiredKeys[] = 'failures.'.$adminAuthorizationFailure->value;
+    }
+
+    $missingKeys = array_values(array_filter(
+        $requiredKeys,
+        static fn (string $key): bool => ! Lang::has("admin/roles.{$key}", $locale, false),
+    ));
+
+    expect($missingKeys)->toBe([], "lang/{$locale}/admin/roles.php is missing role type or failure keys");
 })->with(['en', 'es']);
