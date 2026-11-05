@@ -17,8 +17,9 @@ use Override;
 use Spatie\Permission\Models\Permission;
 
 /**
- * Which permissions each cataloged role grants, as a read-only table of permissions (rows, grouped by
- * area) by roles (columns). Roles are edited from their own detail page.
+ * Which permissions each role of the `admin` guard grants, as a read-only table of permissions (rows,
+ * grouped by area) by roles (columns: system roles in catalog order, then custom roles by name). Roles
+ * are edited from their own detail page.
  */
 class RolePermissionMatrix extends Page
 {
@@ -50,31 +51,25 @@ class RolePermissionMatrix extends Page
     }
 
     /**
-     * The cataloged roles that exist, in catalog order, with the permissions each grants. One query.
+     * The roles of the `admin` guard with the shown name, description and permissions of each, system
+     * roles first in catalog order and then custom roles by name. One query for the roles and one for
+     * their permissions, whatever the number of roles.
      *
      * @return list<array{label: string, description: string, permissions: array<int, string>}>
      */
     public function getMatrixRoles(): array
     {
-        $permissionsByRole = [];
-
-        foreach (Role::query()->where('guard_name', 'admin')->with('permissions')->get() as $role) {
-            $permissionsByRole[$role->name] = $role->permissions
-                ->map(static fn (Permission $permission): string => $permission->name)
-                ->values()
-                ->all();
-        }
-
         $matrixRoles = [];
 
-        foreach (AdminRole::cases() as $adminRole) {
-            if (\array_key_exists($adminRole->value, $permissionsByRole)) {
-                $matrixRoles[] = [
-                    'label' => $adminRole->label(),
-                    'description' => $adminRole->description(),
-                    'permissions' => $permissionsByRole[$adminRole->value],
-                ];
-            }
+        foreach ($this->inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->with('permissions')->get()) as $role) {
+            $matrixRoles[] = [
+                'label' => $role->displayName(),
+                'description' => $role->displayDescription() ?? '',
+                'permissions' => $role->permissions
+                    ->map(static fn (Permission $permission): string => $permission->name)
+                    ->values()
+                    ->all(),
+            ];
         }
 
         return $matrixRoles;
@@ -98,5 +93,33 @@ class RolePermissionMatrix extends Page
         }
 
         return $matrixAreas;
+    }
+
+    /**
+     * The system roles in catalog order, then the custom roles by their shown name.
+     *
+     * @param  iterable<Role>  $roles
+     * @return list<Role>
+     */
+    private function inDisplayOrder(iterable $roles): array
+    {
+        $catalogPositions = array_flip(array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()));
+        $systemRoles = [];
+        $customRoles = [];
+
+        foreach ($roles as $role) {
+            $adminRole = $role->adminRole();
+
+            if ($adminRole instanceof AdminRole) {
+                $systemRoles[$catalogPositions[$adminRole->value]] = $role;
+            } else {
+                $customRoles[] = $role;
+            }
+        }
+
+        ksort($systemRoles);
+        usort($customRoles, static fn (Role $first, Role $second): int => strnatcasecmp($first->displayName(), $second->displayName()));
+
+        return [...array_values($systemRoles), ...$customRoles];
     }
 }

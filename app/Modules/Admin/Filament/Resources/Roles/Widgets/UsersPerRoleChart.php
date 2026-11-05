@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Gate;
 use Override;
 
 /**
- * How many users hold each cataloged role, in catalog order.
+ * How many users hold each role of the `admin` guard: system roles in catalog order, then custom roles
+ * by name.
  */
 class UsersPerRoleChart extends ChartWidget
 {
@@ -65,21 +66,13 @@ class UsersPerRoleChart extends ChartWidget
     #[Override]
     protected function getData(): array
     {
-        $usersCountByRole = [];
-
-        foreach (Role::query()->where('guard_name', 'admin')->withCount('users')->get() as $role) {
-            $usersCount = $role->getAttribute('users_count');
-            $usersCountByRole[$role->name] = \is_int($usersCount) ? $usersCount : 0;
-        }
-
         $labels = [];
         $counts = [];
 
-        foreach (AdminRole::cases() as $adminRole) {
-            if (\array_key_exists($adminRole->value, $usersCountByRole)) {
-                $labels[] = $adminRole->label();
-                $counts[] = $usersCountByRole[$adminRole->value];
-            }
+        foreach ($this->inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->withCount('users')->get()) as $role) {
+            $usersCount = $role->getAttribute('users_count');
+            $labels[] = $role->displayName();
+            $counts[] = \is_int($usersCount) ? $usersCount : 0;
         }
 
         if ($labels === []) {
@@ -99,5 +92,33 @@ class UsersPerRoleChart extends ChartWidget
     protected function getType(): string
     {
         return 'bar';
+    }
+
+    /**
+     * The system roles in catalog order, then the custom roles by their shown name.
+     *
+     * @param  iterable<Role>  $roles
+     * @return list<Role>
+     */
+    private function inDisplayOrder(iterable $roles): array
+    {
+        $catalogPositions = array_flip(array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()));
+        $systemRoles = [];
+        $customRoles = [];
+
+        foreach ($roles as $role) {
+            $adminRole = $role->adminRole();
+
+            if ($adminRole instanceof AdminRole) {
+                $systemRoles[$catalogPositions[$adminRole->value]] = $role;
+            } else {
+                $customRoles[] = $role;
+            }
+        }
+
+        ksort($systemRoles);
+        usort($customRoles, static fn (Role $first, Role $second): int => strnatcasecmp($first->displayName(), $second->displayName()));
+
+        return [...array_values($systemRoles), ...$customRoles];
     }
 }
