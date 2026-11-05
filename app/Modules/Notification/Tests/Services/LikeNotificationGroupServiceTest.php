@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\Modules\Notification\Notifications\LikeNotification;
 use App\Modules\Notification\Services\LikeNotificationGroupService;
 use App\User\Enums\PreferredLocale;
@@ -25,7 +26,7 @@ it('groups distinct actors into one unread notification for each destination', f
     $likeNotificationGroupService->sync($user, $firstActor, $comment, liked: true);
 
     $databaseNotification->refresh();
-    $notifications = $user->notifications()->where('type', LikeNotification::TYPE)->get();
+    $notifications = $user->notifications()->where('type', NotificationType::LikesGrouped->value)->get();
     $commentGroup = $notifications->firstWhere('data.target.commentId', $comment->id);
 
     expect($notifications)->toHaveCount(2)

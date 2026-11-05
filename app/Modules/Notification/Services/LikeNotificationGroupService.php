@@ -6,6 +6,7 @@ namespace App\Modules\Notification\Services;
 
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Notification\Enums\NotificationType;
 use App\Modules\Notification\Notifications\LikeNotification;
 use App\Modules\Post\Models\Post;
 use App\User\Models\User;
@@ -38,7 +39,7 @@ final class LikeNotificationGroupService
             }
 
             $builder = $recipient->notifications()
-                ->where('type', LikeNotification::TYPE)
+                ->where('type', NotificationType::LikesGrouped->value)
                 ->whereNull('read_at');
 
             $builder->getQuery()->getQuery()
