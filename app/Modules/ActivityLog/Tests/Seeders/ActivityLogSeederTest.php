@@ -5,8 +5,12 @@ declare(strict_types=1);
 use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Modules\ActivityLog\Database\Seeders\ActivityLogSeeder;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ViewActivityLog;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
@@ -19,7 +23,9 @@ use App\User\Database\Seeders\UserSeeder;
 use App\User\Models\AccountStatusChange;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 const ACTIVITY_LOG_SEEDER_SENTINEL_TEXT = 'Texto centinela del seeder de actividad';
@@ -231,6 +237,67 @@ it('records a few role permissions Angel revoked and later granted back', functi
             ->and($revocation->getProperty('role'))->toBe($role->name)
             ->and(is_string($permissionName) && $role->hasPermissionTo($permissionName))->toBeTrue();
     }
+});
+
+it('records Angel creating every custom role with its permissions before granting it', function (): void {
+    ['angel' => $angel, 'administrator' => $administrator] = seedActivityLogSourceData($this);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-soporte']);
+    $customRole->givePermissionTo([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value]);
+
+    $administrator->assignRole($customRole);
+
+    $this->seed(ActivityLogSeeder::class);
+
+    $roleCreated = ActivityLog::query()->where('event', 'admin.role_created')->sole();
+    $customRoleGrant = ActivityLog::query()
+        ->where('event', 'admin.role_granted')
+        ->get()
+        ->sole(static fn (ActivityLog $activityLog): bool => $activityLog->getProperty('role') === 'custom-soporte');
+
+    expect($roleCreated)
+        ->causer_id->toBe($angel->id)
+        ->subject_type->toBe(AppServiceProvider::ROLE_MORPH_NAME)
+        ->subject_id->toBe($customRole->id)
+        ->and($roleCreated->getProperty('role'))->toBe('custom-soporte')
+        ->and($roleCreated->getProperty('permissions'))->toBe([AdminPermission::AdminUsersViewAny->value, AdminPermission::AdminUsersView->value])
+        ->and($roleCreated->getProperty('label'))->toBeNull()
+        ->and($customRoleGrant->subject_id)->toBe($administrator->id)
+        ->and($customRoleGrant->created_at?->getTimestamp())->toBeGreaterThanOrEqual($roleCreated->created_at?->getTimestamp() ?? PHP_INT_MAX);
+});
+
+it('never simulates permission changes on the locked admin role', function (): void {
+    seedActivityLogSourceData($this);
+    $adminRole = Role::query()->where('name', AdminRole::Admin->value)->where('guard_name', 'admin')->sole();
+
+    foreach (range(1, 5) as $attempt) {
+        ActivityLog::query()->delete();
+
+        $this->seed(ActivityLogSeeder::class);
+
+        expect(ActivityLog::query()
+            ->whereIn('event', ['admin.role_permission_revoked', 'admin.role_permission_granted'])
+            ->where('subject_type', AppServiceProvider::ROLE_MORPH_NAME)
+            ->where('subject_id', $adminRole->id)
+            ->exists())->toBeFalse();
+    }
+});
+
+it('links the role of a seeded role creation to its detail for a roles reader', function (): void {
+    ['administrator' => $administrator] = seedActivityLogSourceData($this);
+    $customRole = RoleFactory::new()->createOne();
+    $administrator->assignRole($customRole);
+
+    $this->seed(ActivityLogSeeder::class);
+
+    $activityLog = ActivityLog::query()->where('event', 'admin.role_created')->sole();
+
+    Filament::setCurrentPanel('admin');
+    $user = createUser();
+    $user->assignRole(AdminRole::Admin->value, AdminRole::AdminActivityReader->value, AdminRole::AdminRolesReader->value);
+    $this->actingAs($user, 'admin');
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertSee(RoleResource::getUrl('view', ['record' => $customRole]), false);
 });
 
 it('never stores the content of posts or comments', function (): void {
