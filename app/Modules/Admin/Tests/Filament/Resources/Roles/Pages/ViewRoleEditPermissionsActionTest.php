@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
@@ -59,6 +60,38 @@ function submitEditPermissions(Role $role, array $adminPermissions, string $curr
     return $testable
         ->set('mountedActions.0.data.current_password', $currentPassword)
         ->call('callMountedAction');
+}
+
+/**
+ * Open the edit permissions modal and submit the whole selection at once, as a direct call would,
+ * without the live dependency handling of each checkbox list.
+ *
+ * @param  list<AdminPermission>  $adminPermissions
+ * @return Testable<ViewRole>
+ */
+function submitRawEditPermissions(Role $role, array $adminPermissions): Testable
+{
+    $permissionsByArea = [];
+
+    foreach ($adminPermissions as $adminPermission) {
+        $permissionsByArea[$adminPermission->area()][] = $adminPermission->value;
+    }
+
+    return Livewire::test(ViewRole::class, ['record' => $role->getKey()])
+        ->call('mountAction', 'editPermissions')
+        ->set('mountedActions.0.data.permissions', $permissionsByArea)
+        ->set('mountedActions.0.data.current_password', 'password')
+        ->call('callMountedAction');
+}
+
+/**
+ * The permission names of a role, sorted.
+ *
+ * @return array<int, mixed>
+ */
+function storedRolePermissionNames(Role $role): array
+{
+    return $role->refresh()->permissions->pluck('name')->sort()->values()->all();
 }
 
 /**
@@ -157,18 +190,107 @@ it('requires the current password', function (): void {
     expect(editedRolePermissionNames(AdminRole::AdminPostsReader))->toHaveCount(2);
 });
 
-it('refuses to remove the last panel access and says why', function (): void {
+it('lets a roles manager change the permissions of a custom role', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsRolesManager($testCase);
+    $customRole = RoleFactory::new()->createOne();
+    $customRole->givePermissionTo(AdminPermission::AdminPostsViewAny->value);
+
+    submitEditPermissions($customRole, [AdminPermission::AdminBackupsView])->assertHasNoErrors();
+
+    expect(storedRolePermissionNames($customRole))->toBe([AdminPermission::AdminBackupsView->value])
+        ->and(ActivityLog::query()->where('log_name', 'admin')->count())->toBe(2);
+});
+
+it('refuses to remove the last panel access through a custom role and says why', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::AdminRolesManager);
+    $gatekeeperRole = RoleFactory::new()->createOne();
+    $gatekeeperRole->givePermissionTo(AdminPermission::AdminAccess->value);
+
+    $user->assignRole($gatekeeperRole);
+
+    submitEditPermissions($gatekeeperRole, [AdminPermission::AdminPostsViewAny])->assertHasNoErrors();
+
+    Notification::assertNotified(AdminAuthorizationFailure::LastAdminAccess->message());
+
+    expect(storedRolePermissionNames($gatekeeperRole))->toBe([AdminPermission::AdminAccess->value])
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('does not offer the action on the locked admin role and ignores a direct call', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsRolesManager($testCase);
+    $adminRole = editableAdminRole(AdminRole::Admin);
+
+    Livewire::test(ViewRole::class, ['record' => $adminRole->getKey()])
+        ->assertDontSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.actions.edit_permissions.label'));
+
+    submitEditPermissions($adminRole, [AdminPermission::AdminAccess, AdminPermission::AdminDashboardView]);
+
+    expect(editedRolePermissionNames(AdminRole::Admin))->toBe([AdminPermission::AdminAccess->value])
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('checks the requirements of a permission as soon as it is checked', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     actingAsRolesManager($testCase);
 
-    submitEditPermissions(editableAdminRole(AdminRole::Admin), [AdminPermission::AdminPostsView])
-        ->assertHasNoErrors();
+    Livewire::test(ViewRole::class, ['record' => editableAdminRole(AdminRole::AdminPostsReader)->getKey()])
+        ->call('mountAction', 'editPermissions')
+        ->set('mountedActions.0.data.permissions.users', [AdminPermission::AdminUsersSuspend->value])
+        ->assertSet('mountedActions.0.data.permissions.users', [
+            AdminPermission::AdminUsersViewAny->value,
+            AdminPermission::AdminUsersView->value,
+            AdminPermission::AdminUsersSuspend->value,
+        ])
+        ->set('mountedActions.0.data.permissions.posts', [AdminPermission::AdminPostsView->value])
+        ->assertSet('mountedActions.0.data.permissions.posts', []);
+});
 
-    Notification::assertNotified(AdminAuthorizationFailure::LastAdminAccess->message());
+it('summarizes the change before saving', function (): void {
+    app()->setLocale(PreferredLocale::SPANISH->value);
 
-    expect(editedRolePermissionNames(AdminRole::Admin))->toBe([AdminPermission::AdminAccess->value])
-        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsRolesManager($testCase);
+
+    $testable = Livewire::test(ViewRole::class, ['record' => editableAdminRole(AdminRole::AdminPostsReader)->getKey()])
+        ->call('mountAction', 'editPermissions');
+
+    $testable->__call('assertMountedActionModalSee', [[
+        translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.summary.heading'),
+        translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.summary.none'),
+    ]]);
+
+    $testable->set('mountedActions.0.data.permissions.backups', [AdminPermission::AdminBackupsView->value]);
+
+    $testable->__call('assertMountedActionModalSee', [[
+        trans_choice('admin/roles.summary.grant', 1, ['count' => 1, 'list' => AdminPermission::AdminBackupsView->label()]),
+    ]]);
+});
+
+it('refuses a direct call with a selection that lacks a requirement and says why', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsRolesManager($testCase);
+
+    submitRawEditPermissions(editableAdminRole(AdminRole::AdminPostsReader), [
+        AdminPermission::AdminPostsViewAny,
+        AdminPermission::AdminPostsView,
+        AdminPermission::AdminUsersView,
+    ])->assertHasNoErrors();
+
+    Notification::assertNotified(AdminAuthorizationFailure::PermissionDependencyMissing->message());
+
+    expect(editedRolePermissionNames(AdminRole::AdminPostsReader))->toBe([
+        AdminPermission::AdminPostsView->value,
+        AdminPermission::AdminPostsViewAny->value,
+    ])->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
 
 it('refuses a change that removes the manager own access to this action', function (): void {
@@ -198,16 +320,6 @@ it('hides the action from a roles reader and ignores a direct call', function ()
     submitEditPermissions($role, [AdminPermission::AdminBackupsDownload]);
 
     expect(editedRolePermissionNames(AdminRole::AdminPostsReader))->toHaveCount(2);
-});
-
-it('does not offer the action on a role outside the catalog', function (): void {
-    /** @var TestCase $testCase */
-    $testCase = $this;
-    actingAsRolesManager($testCase);
-    $role = Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin']);
-
-    Livewire::test(ViewRole::class, ['record' => $role->getKey()])
-        ->assertDontSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.actions.edit_permissions.label'));
 });
 
 it('shows the modal in Spanish', function (): void {
