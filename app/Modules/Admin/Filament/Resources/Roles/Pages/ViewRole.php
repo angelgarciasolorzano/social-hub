@@ -22,6 +22,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\On;
 use Override;
 
 class ViewRole extends ViewRecord
@@ -31,6 +32,12 @@ class ViewRole extends ViewRecord
 
     #[Override]
     protected static string $resource = RoleResource::class;
+
+    /**
+     * Dispatched by the users tab when it adds or removes users, so the user count and the delete
+     * action of this page reflect the change without a reload.
+     */
+    public const string ROLE_USERS_CHANGED_EVENT = 'role-users-changed';
 
     private const string EDIT_PERMISSIONS_ACTION = 'editPermissions';
 
@@ -45,6 +52,15 @@ class ViewRole extends ViewRecord
     private const string DESCRIPTION_FIELD = 'description';
 
     private const string CURRENT_PASSWORD_ERROR_KEY = 'mountedActions.0.data.current_password';
+
+    /**
+     * Render the page again after the users tab changed who holds the role.
+     */
+    #[On(self::ROLE_USERS_CHANGED_EVENT)]
+    public function refreshAfterRoleUsersChanged(): void
+    {
+        $this->getRecord()->unsetRelation('users');
+    }
 
     /**
      * @return Action[]

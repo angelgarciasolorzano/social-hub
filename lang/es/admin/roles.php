@@ -351,16 +351,16 @@ return [
             ],
             'unused_roles' => [
                 'label' => 'Roles sin usuarios',
-                'description' => 'Roles del catálogo que nadie tiene',
+                'description' => 'Roles de sistema y personalizados que nadie tiene',
             ],
             'changes' => [
                 'label' => 'Cambios de autorización (30 días)',
-                'description' => 'Roles y permisos concedidos o quitados',
+                'description' => 'Roles asignados o quitados, cambios de permisos y roles creados, editados o eliminados',
             ],
         ],
         'users_per_role' => [
             'heading' => 'Usuarios por rol',
-            'description' => 'Cuántos usuarios tienen cada rol del catálogo.',
+            'description' => 'Cuántos usuarios tienen cada rol, de sistema o personalizado.',
             'dataset' => 'Usuarios',
             'empty_heading' => 'Todavía no hay roles',
             'empty_description' => 'Ejecuta el seeder de autorización de Admin para crear el catálogo.',

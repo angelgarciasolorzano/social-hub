@@ -351,16 +351,16 @@ return [
             ],
             'unused_roles' => [
                 'label' => 'Roles without users',
-                'description' => 'Cataloged roles nobody holds',
+                'description' => 'System and custom roles nobody holds',
             ],
             'changes' => [
                 'label' => 'Authorization changes (30 days)',
-                'description' => 'Roles and permissions granted or revoked',
+                'description' => 'Roles assigned or removed, permission changes and roles created, edited or deleted',
             ],
         ],
         'users_per_role' => [
             'heading' => 'Users per role',
-            'description' => 'How many users hold each cataloged role.',
+            'description' => 'How many users hold each role, system and custom.',
             'dataset' => 'Users',
             'empty_heading' => 'No roles yet',
             'empty_description' => 'Run the Admin authorization seeder to create the catalog.',

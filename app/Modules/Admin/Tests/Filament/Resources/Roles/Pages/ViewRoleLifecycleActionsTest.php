@@ -222,3 +222,19 @@ it('hides the lifecycle actions from a roles reader', function (): void {
 
     expect(Role::query()->whereKey($role->id)->exists())->toBeTrue();
 });
+
+it('updates its user count and the delete action when the users tab changes the holders', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsLifecycleRolesManager($testCase);
+    $role = RoleFactory::new()->createOne();
+
+    $testable = lifecycleRolePage($role);
+    $testable->__call('assertActionEnabled', ['delete']);
+
+    createUser()->assignRole($role);
+
+    $testable->dispatch(ViewRole::ROLE_USERS_CHANGED_EVENT);
+    $testable->__call('assertActionDisabled', ['delete']);
+    $testable->assertSee(trans_choice('admin/roles.actions.delete.blocked_by_users', 1, ['count' => 1]));
+});

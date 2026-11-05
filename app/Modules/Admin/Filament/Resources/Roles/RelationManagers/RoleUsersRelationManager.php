@@ -188,6 +188,8 @@ class RoleUsersRelationManager extends RelationManager
             ->title(trans_choice('admin/roles.relations.users.add.success', $addedCount, ['count' => $addedCount]))
             ->success()
             ->send();
+
+        $this->dispatch(ViewRole::ROLE_USERS_CHANGED_EVENT);
     }
 
     private function removeFromRole(User $user, AdminAuthorizationService $adminAuthorizationService): void
@@ -211,6 +213,8 @@ class RoleUsersRelationManager extends RelationManager
             ]))
             ->success()
             ->send();
+
+        $this->dispatch(ViewRole::ROLE_USERS_CHANGED_EVENT);
     }
 
     /**

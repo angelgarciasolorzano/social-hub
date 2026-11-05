@@ -230,3 +230,23 @@ it('hides both actions without admin.users.roles and ignores a direct call', fun
         ->and($holder->refresh()->hasRole($customRole))->toBeTrue()
         ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
+
+it('tells the role page to refresh after adding or removing users', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $user = createUser();
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'addUsers')
+        ->set('mountedActions.0.data.users', [$user->id])
+        ->set('mountedActions.0.data.current_password', 'password')
+        ->call('callMountedAction')
+        ->assertDispatched(ViewRole::ROLE_USERS_CHANGED_EVENT);
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'removeFromRole', $user->getKey())
+        ->call('callMountedAction')
+        ->assertDispatched(ViewRole::ROLE_USERS_CHANGED_EVENT);
+});
