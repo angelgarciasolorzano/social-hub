@@ -132,4 +132,32 @@ class Role extends SpatieRole
     {
         return $this->adminRole()?->description() ?? $this->description;
     }
+
+    /**
+     * The roles as the panel lists them: system roles in catalog order, then custom roles by shown name.
+     *
+     * @param  iterable<Role>  $roles
+     * @return list<Role>
+     */
+    public static function inDisplayOrder(iterable $roles): array
+    {
+        $catalogPositions = array_flip(array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()));
+        $systemRoles = [];
+        $customRoles = [];
+
+        foreach ($roles as $role) {
+            $adminRole = $role->adminRole();
+
+            if ($adminRole instanceof AdminRole) {
+                $systemRoles[$catalogPositions[$adminRole->value]] = $role;
+            } else {
+                $customRoles[] = $role;
+            }
+        }
+
+        ksort($systemRoles);
+        usort($customRoles, static fn (Role $first, Role $second): int => strnatcasecmp($first->displayName(), $second->displayName()));
+
+        return [...array_values($systemRoles), ...$customRoles];
+    }
 }

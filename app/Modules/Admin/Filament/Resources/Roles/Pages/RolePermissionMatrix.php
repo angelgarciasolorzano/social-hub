@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\Pages;
 
 use App\Modules\Admin\Enums\AdminPermission;
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
@@ -61,7 +60,7 @@ class RolePermissionMatrix extends Page
     {
         $matrixRoles = [];
 
-        foreach ($this->inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->with('permissions')->get()) as $role) {
+        foreach (Role::inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->with('permissions')->get()) as $role) {
             $matrixRoles[] = [
                 'label' => $role->displayName(),
                 'description' => $role->displayDescription() ?? '',
@@ -93,33 +92,5 @@ class RolePermissionMatrix extends Page
         }
 
         return $matrixAreas;
-    }
-
-    /**
-     * The system roles in catalog order, then the custom roles by their shown name.
-     *
-     * @param  iterable<Role>  $roles
-     * @return list<Role>
-     */
-    private function inDisplayOrder(iterable $roles): array
-    {
-        $catalogPositions = array_flip(array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()));
-        $systemRoles = [];
-        $customRoles = [];
-
-        foreach ($roles as $role) {
-            $adminRole = $role->adminRole();
-
-            if ($adminRole instanceof AdminRole) {
-                $systemRoles[$catalogPositions[$adminRole->value]] = $role;
-            } else {
-                $customRoles[] = $role;
-            }
-        }
-
-        ksort($systemRoles);
-        usort($customRoles, static fn (Role $first, Role $second): int => strnatcasecmp($first->displayName(), $second->displayName()));
-
-        return [...array_values($systemRoles), ...$customRoles];
     }
 }

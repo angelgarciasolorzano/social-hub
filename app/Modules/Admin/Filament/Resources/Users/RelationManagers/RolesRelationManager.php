@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Users\RelationManagers;
 
 use App\Modules\Admin\Enums\AdminPermission;
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
@@ -63,12 +62,12 @@ class RolesRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('name')
                     ->label(TranslatedText::of('admin/roles.users.relation.role'))
-                    ->formatStateUsing(fn (string $state): string => AdminRole::tryFrom($state)?->label() ?? $state)
+                    ->formatStateUsing(fn (Role $record): string => $record->displayName())
                     ->description(fn (Role $record): string => $record->name),
                 TextColumn::make('description')
                     ->label(TranslatedText::of('admin/roles.users.relation.description'))
-                    ->state(fn (Role $record): ?string => AdminRole::tryFrom($record->name)?->description())
-                    ->placeholder(TranslatedText::of('admin/roles.table.not_editable'))
+                    ->state(fn (Role $record): ?string => $record->displayDescription())
+                    ->placeholder('—')
                     ->wrap(),
                 TextColumn::make('permissions_list')
                     ->label(TranslatedText::of('admin/roles.users.relation.permissions'))

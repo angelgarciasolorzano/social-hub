@@ -263,6 +263,9 @@ return [
             'submit' => 'Save roles',
             'success' => '{1} :count role changed|[0,*] :count roles changed',
             'unchanged' => 'The roles did not change',
+            'summary_grant' => '{1} Assigns :count role: :list|[0,*] Assigns :count roles: :list',
+            'summary_revoke' => '{1} Removes :count role: :list|[0,*] Removes :count roles: :list',
+            'summary_none' => 'The roles do not change.',
         ],
         'create' => [
             'label' => 'New role',

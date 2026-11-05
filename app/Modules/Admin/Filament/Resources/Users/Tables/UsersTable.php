@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Tables;
 
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Models\Role;
@@ -151,8 +150,8 @@ class UsersTable
     private static function adminRoleLabels(User $user): array
     {
         return $user->roles
-            ->filter(static fn (Role $role): bool => $role->guard_name === 'admin')
-            ->map(static fn (Role $role): string => AdminRole::tryFrom($role->name)?->label() ?? $role->name)
+            ->filter(static fn (Role $role): bool => $role->guard_name === Role::GUARD_NAME)
+            ->map(static fn (Role $role): string => $role->displayName())
             ->values()
             ->all();
     }
@@ -164,15 +163,15 @@ class UsersTable
     {
         $adminRoleOptions = [];
 
-        foreach (AdminRole::cases() as $adminRole) {
-            $adminRoleOptions[$adminRole->value] = $adminRole->label();
+        foreach (Role::inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->get()) as $role) {
+            $adminRoleOptions[$role->name] = $role->displayName();
         }
 
         return $adminRoleOptions;
     }
 
     /**
-     * Keep the users holding any of the selected cataloged roles of the admin guard.
+     * Keep the users holding any of the selected roles of the admin guard, system or custom.
      *
      * @param  Builder<User>  $query
      * @return Builder<User>
@@ -181,13 +180,17 @@ class UsersTable
     {
         $roleNames = array_values(array_filter(
             \is_array($selectedRoleNames) ? $selectedRoleNames : [],
-            static fn (mixed $roleName): bool => \is_string($roleName) && AdminRole::tryFrom($roleName) instanceof AdminRole,
+            \is_string(...),
         ));
 
         if ($roleNames === []) {
             return $query;
         }
 
-        return $query->role($roleNames, 'admin');
+        return $query->whereHas('roles', static function (Builder $roles) use ($roleNames): Builder {
+            $roles->getQuery()->where('guard_name', Role::GUARD_NAME)->whereIn('name', $roleNames);
+
+            return $roles;
+        });
     }
 }

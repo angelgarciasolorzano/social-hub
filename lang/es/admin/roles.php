@@ -263,6 +263,9 @@ return [
             'submit' => 'Guardar roles',
             'success' => '{1} Se cambió :count rol|[0,*] Se cambiaron :count roles',
             'unchanged' => 'Los roles no cambiaron',
+            'summary_grant' => '{1} Asigna :count rol: :list|[0,*] Asigna :count roles: :list',
+            'summary_revoke' => '{1} Quita :count rol: :list|[0,*] Quita :count roles: :list',
+            'summary_none' => 'Los roles no cambian.',
         ],
         'create' => [
             'label' => 'Nuevo rol',
