@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
+use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleUsersRelationManager;
@@ -11,6 +14,7 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
+use Filament\Actions\Action;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -33,6 +37,23 @@ function roleUsersRelationManagerFor(Role $role): Testable
         'ownerRecord' => $role,
         'pageClass' => ViewRole::class,
     ]);
+}
+
+/**
+ * The names of the given table actions, in order.
+ *
+ * @param  array<mixed>  $actions
+ * @return list<string|null>
+ */
+function tableActionNames(array $actions): array
+{
+    $actionNames = [];
+
+    foreach ($actions as $action) {
+        $actionNames[] = $action instanceof Action ? $action->getName() : null;
+    }
+
+    return $actionNames;
 }
 
 beforeEach(function (): void {
@@ -67,15 +88,15 @@ it('lists only the users holding the role, linked to their detail', function ():
         ]);
 });
 
-it('offers no create, attach, detach or edit actions', function (): void {
+it('offers adding and removing users, but no create, edit or bulk actions', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
 
     $table = FilamentTableRecords::table(roleUsersRelationManagerFor(roleWithUsers(AdminRole::AdminPostsReader)))->getTable();
 
-    expect($table->getHeaderActions())->toBeEmpty()
-        ->and($table->getRecordActions())->toBeEmpty()
+    expect(tableActionNames($table->getHeaderActions()))->toBe(['addUsers'])
+        ->and(tableActionNames($table->getRecordActions()))->toBe(['removeFromRole'])
         ->and($table->getToolbarActions())->toBeEmpty();
 });
 
@@ -102,4 +123,110 @@ it('hides the tab from a roles reader who cannot list users', function (): void 
     expect(RoleUsersRelationManager::canViewForRecord($role, ViewRole::class))->toBeFalse();
 
     roleUsersRelationManagerFor($role)->assertForbidden();
+});
+
+it('adds two users to a custom role and removes one, with one activity per change', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $firstUser = createUser();
+    $secondUser = createUser();
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'addUsers')
+        ->set('mountedActions.0.data.users', [$firstUser->id, $secondUser->id])
+        ->set('mountedActions.0.data.current_password', 'password')
+        ->call('callMountedAction')
+        ->assertHasNoErrors();
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'removeFromRole', $firstUser->getKey())
+        ->call('callMountedAction');
+
+    $activityLogs = ActivityLog::query()->where('log_name', 'admin')->get();
+
+    expect($firstUser->refresh()->hasRole($customRole))->toBeFalse()
+        ->and($secondUser->refresh()->hasRole($customRole))->toBeTrue()
+        ->and($activityLogs->pluck('event')->sort()->values()->all())->toBe([
+            ActivityLogAdminEvent::RoleGranted->value,
+            ActivityLogAdminEvent::RoleGranted->value,
+            ActivityLogAdminEvent::RoleRevoked->value,
+        ])
+        ->and($activityLogs->pluck('causer_id')->unique()->all())->toBe([$user->id]);
+});
+
+it('never offers the administrator own account', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $otherUser = createUser();
+    $role = roleWithUsers(AdminRole::AdminRolesManager);
+
+    $testable = roleUsersRelationManagerFor($role);
+    $searchResults = new ReflectionMethod(RoleUsersRelationManager::class, 'addableUserOptions')->invoke($testable->instance(), '');
+
+    expect($searchResults)->toBeArray()->toHaveKey($otherUser->id)->not->toHaveKey($user->id);
+
+    $testable->__call('assertTableActionHidden', ['removeFromRole', $user]);
+
+    roleUsersRelationManagerFor($role)
+        ->call('mountTableAction', 'addUsers')
+        ->set('mountedActions.0.data.users', [$user->id])
+        ->set('mountedActions.0.data.current_password', 'password')
+        ->call('callMountedAction');
+
+    roleUsersRelationManagerFor($role)
+        ->call('mountTableAction', 'removeFromRole', $user->getKey())
+        ->call('callMountedAction');
+
+    expect($user->refresh()->hasRole($role))->toBeTrue()
+        ->and($otherUser->refresh()->hasRole($role))->toBeFalse()
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('changes nothing with a wrong password', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $user = createUser();
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'addUsers')
+        ->set('mountedActions.0.data.users', [$user->id])
+        ->set('mountedActions.0.data.current_password', 'wrong-password')
+        ->call('callMountedAction')
+        ->assertHasErrors(['mountedActions.0.data.current_password']);
+
+    expect($user->refresh()->hasRole($customRole))->toBeFalse();
+});
+
+it('hides both actions without admin.users.roles and ignores a direct call', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    $customRole = RoleFactory::new()->createOne();
+    $holder = createUser();
+    $holder->assignRole($customRole);
+
+    $user = createUser();
+
+    $testable = roleUsersRelationManagerFor($customRole);
+    $testable->__call('assertTableActionHidden', ['addUsers']);
+    $testable->__call('assertTableActionHidden', ['removeFromRole', $holder]);
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'addUsers')
+        ->set('mountedActions.0.data.users', [$user->id])
+        ->set('mountedActions.0.data.current_password', 'password')
+        ->call('callMountedAction');
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'removeFromRole', $holder->getKey())
+        ->call('callMountedAction');
+
+    expect($user->refresh()->hasRole($customRole))->toBeFalse()
+        ->and($holder->refresh()->hasRole($customRole))->toBeTrue()
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
