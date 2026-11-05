@@ -142,6 +142,7 @@ it('adds two users to a custom role and removes one, with one activity per chang
 
     roleUsersRelationManagerFor($customRole)
         ->call('mountTableAction', 'removeFromRole', $firstUser->getKey())
+        ->set('mountedActions.0.data.current_password', 'password')
         ->call('callMountedAction');
 
     $activityLogs = ActivityLog::query()->where('log_name', 'admin')->get();
@@ -178,6 +179,7 @@ it('never offers the administrator own account', function (): void {
 
     roleUsersRelationManagerFor($role)
         ->call('mountTableAction', 'removeFromRole', $user->getKey())
+        ->set('mountedActions.0.data.current_password', 'password')
         ->call('callMountedAction');
 
     expect($user->refresh()->hasRole($role))->toBeTrue()
@@ -185,7 +187,7 @@ it('never offers the administrator own account', function (): void {
         ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
 
-it('changes nothing with a wrong password', function (): void {
+it('adds and removes nothing with a wrong password', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
@@ -199,7 +201,18 @@ it('changes nothing with a wrong password', function (): void {
         ->call('callMountedAction')
         ->assertHasErrors(['mountedActions.0.data.current_password']);
 
-    expect($user->refresh()->hasRole($customRole))->toBeFalse();
+    $holder = createUser();
+    $holder->assignRole($customRole);
+
+    roleUsersRelationManagerFor($customRole)
+        ->call('mountTableAction', 'removeFromRole', $holder->getKey())
+        ->set('mountedActions.0.data.current_password', 'wrong-password')
+        ->call('callMountedAction')
+        ->assertHasErrors(['mountedActions.0.data.current_password']);
+
+    expect($user->refresh()->hasRole($customRole))->toBeFalse()
+        ->and($holder->refresh()->hasRole($customRole))->toBeTrue()
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
 
 it('hides both actions without admin.users.roles and ignores a direct call', function (): void {
@@ -224,6 +237,7 @@ it('hides both actions without admin.users.roles and ignores a direct call', fun
 
     roleUsersRelationManagerFor($customRole)
         ->call('mountTableAction', 'removeFromRole', $holder->getKey())
+        ->set('mountedActions.0.data.current_password', 'password')
         ->call('callMountedAction');
 
     expect($user->refresh()->hasRole($customRole))->toBeFalse()
@@ -247,6 +261,7 @@ it('tells the role page to refresh after adding or removing users', function ():
 
     roleUsersRelationManagerFor($customRole)
         ->call('mountTableAction', 'removeFromRole', $user->getKey())
+        ->set('mountedActions.0.data.current_password', 'password')
         ->call('callMountedAction')
         ->assertDispatched(ViewRole::ROLE_USERS_CHANGED_EVENT);
 });

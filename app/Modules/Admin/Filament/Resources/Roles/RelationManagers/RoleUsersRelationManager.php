@@ -43,6 +43,8 @@ class RoleUsersRelationManager extends RelationManager
 
     private const string ADD_PASSWORD_THROTTLE_PREFIX = 'admin-roles:add-users:';
 
+    private const string REMOVE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:remove-user:';
+
     private const int USER_SEARCH_LIMIT = 50;
 
     #[Override]
@@ -128,15 +130,17 @@ class RoleUsersRelationManager extends RelationManager
             ->label(TranslatedText::of('admin/roles.relations.users.remove.label'))
             ->icon(Heroicon::OutlinedUserMinus)
             ->color('danger')
-            ->requiresConfirmation()
             ->authorize(fn (User $record): bool => self::mayManageRolesOf($record))
             ->modalHeading(fn (User $record): string => TranslatedText::of('admin/roles.relations.users.remove.modal_heading', [
                 'role' => $this->role()->displayName(),
                 'name' => $record->name,
             ]))
             ->modalDescription(TranslatedText::of('admin/roles.relations.users.remove.modal_description'))
+            ->modalIcon(Heroicon::OutlinedUserMinus)
+            ->modalIconColor('danger')
             ->modalSubmitActionLabel(TranslatedText::of('admin/roles.relations.users.remove.submit'))
-            ->action(fn (User $record, AdminAuthorizationService $adminAuthorizationService) => $this->removeFromRole($record, $adminAuthorizationService));
+            ->schema([self::currentPasswordField()])
+            ->action(fn (User $record, array $data, AdminAuthorizationService $adminAuthorizationService) => $this->removeFromRole($record, $data, $adminAuthorizationService));
     }
 
     /**
@@ -192,11 +196,27 @@ class RoleUsersRelationManager extends RelationManager
         $this->dispatch(ViewRole::ROLE_USERS_CHANGED_EVENT);
     }
 
-    private function removeFromRole(User $user, AdminAuthorizationService $adminAuthorizationService): void
+    /**
+     * Confirm the password and take the role away from the user.
+     *
+     * @param  array<mixed>  $data
+     *
+     * @throws ValidationException when the password is wrong or its attempts are exhausted
+     */
+    private function removeFromRole(User $user, array $data, AdminAuthorizationService $adminAuthorizationService): void
     {
         $administrator = self::administrator();
+        $currentPassword = $data[self::CURRENT_PASSWORD_FIELD] ?? null;
 
         abort_unless($administrator instanceof User && self::mayManageRolesOf($user), 403);
+        abort_unless(\is_string($currentPassword), 422);
+
+        self::ensureCurrentPassword(
+            $administrator,
+            $currentPassword,
+            self::REMOVE_PASSWORD_THROTTLE_PREFIX,
+            'mountedActions.0.data.'.self::CURRENT_PASSWORD_FIELD,
+        );
 
         try {
             $adminAuthorizationService->revokeRole($user, $this->role(), $administrator);
