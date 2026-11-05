@@ -367,6 +367,7 @@ return [
             'description' => 'Los roles de sistema vienen con la aplicación; los personalizados se crean desde el panel.',
             'system' => 'Roles de sistema',
             'custom' => 'Roles personalizados',
+            'unused_custom' => 'Roles personalizados sin usuarios',
         ],
     ],
 

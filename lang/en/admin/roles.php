@@ -367,6 +367,7 @@ return [
             'description' => 'System roles come with the application; custom roles are created from the panel.',
             'system' => 'System roles',
             'custom' => 'Custom roles',
+            'unused_custom' => 'Custom roles without users',
         ],
     ],
 

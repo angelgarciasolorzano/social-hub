@@ -10,6 +10,7 @@ use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Concerns\EditsRolePermissions;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Roles\Widgets\RolesOverview;
+use App\Modules\Admin\Filament\Resources\Roles\Widgets\RoleTypesOverview;
 use App\Modules\Admin\Filament\Resources\Roles\Widgets\UsersPerRoleChart;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
@@ -96,6 +97,7 @@ class ListRoles extends ListRecords
     {
         return [
             RolesOverview::class,
+            RoleTypesOverview::class,
             UsersPerRoleChart::class,
         ];
     }
