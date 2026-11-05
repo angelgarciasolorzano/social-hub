@@ -11,14 +11,14 @@ Aislar de forma consistente el centro React de las notificaciones Filament y de 
 - El defecto está presente en cuatro superficies backend: historial y recientes en NotificationController, ambas acciones de lectura y el conteo diferido en NotificationProps.
 - SOC-71 ya define la lista cerrada de tres tipos y la coexistencia por usuario con notificaciones Filament/desconocidas. El filtro debe aplicarse en la consulta antes de ordenar, limitar o paginar.
 - El frontend también recibe eventos por Echo directamente en NotificationRealtimeListener. El listener y el store no reciben datos a través de las consultas HTTP, así que el filtro de servidor solo no cierra toda la frontera React.
-- La revisión encontró pruebas de Notification ya existentes, pero phpunit.xml y tests/Pest.php no registran app/Modules/Notification/Tests. El plan corrige ese hueco antes de añadir cobertura.
+- phpunit.xml y tests/Pest.php ya incluyen el módulo Notification desde su carpeta raíz. TASK-001 acota ambos registros a app/Modules/Notification/Tests, como hacen los demás módulos, y evita descubrir por accidente archivos ajenos a tests.
 - La expansión se mantiene acotada: no se cambia la tabla, las rutas ni el shape JSON, no se reemplaza Filament y no se añade una infraestructura compartida PHP/TypeScript.
 
 ## Prerequisites
 
 - SOC-71 permanece en Backlog y su criterio funcional es filtrar comment_on_post, comment_reply y likes_grouped en las superficies del centro React.
 - Laravel ya persiste notificaciones en la tabla notifications mediante User::notifications(); Filament y el centro React comparten esa persistencia.
-- El módulo Notification y sus pruebas ya existen. El módulo aún no está registrado en phpunit.xml ni en la configuración Pest de tests/Pest.php.
+- El módulo Notification y sus pruebas ya existen y están incluidas indirectamente por sus carpetas raíz en phpunit.xml y tests/Pest.php. TASK-001 estrecha esos registros a la carpeta Tests.
 - No se requieren migraciones, rutas nuevas ni dependencias.
 
 ## Non-Goals
@@ -50,9 +50,9 @@ Aislar de forma consistente el centro React de las notificaciones Filament y de 
 
 ## Tasks
 
-### TASK-001: Registrar las pruebas del módulo Notification
+### TASK-001: Acotar el registro de pruebas del módulo Notification
 
-Añadir app/Modules/Notification/Tests a los directorios de PHPUnit y Pest. La suite del módulo ya existe, pero las configuraciones observadas no la registran; habilitarla antes de basar el arreglo en pruebas que de otro modo podrían quedar fuera de la ejecución normal.
+Cambiar el directorio del testsuite Notification en phpunit.xml y la ruta de Pest desde app/Modules/Notification hasta app/Modules/Notification/Tests. El registro actual ya incluye las pruebas de forma indirecta desde la raíz del módulo; alinear ambos archivos con los demás módulos hace explícito el alcance de descubrimiento.
 
 **Type:** chore  
 **Effort:** S  
@@ -62,9 +62,9 @@ Añadir app/Modules/Notification/Tests a los directorios de PHPUnit y Pest. La s
 
 **Acceptance Criteria:**
 
-1. phpunit.xml incluye app/Modules/Notification/Tests y Pest aplica allí el TestCase/configuración del proyecto.
-2. La prueba existente CommentNotificationsTest.php se ejecuta correctamente mediante php artisan test.
-3. Las pruebas del módulo se incluyen en la ejecución del suite configurado.
+1. phpunit.xml y Pest registran explícitamente app/Modules/Notification/Tests, no la raíz del módulo.
+2. Las pruebas del módulo conservan el TestCase y RefreshDatabase de Pest.
+3. El testsuite Notification ejecuta las pruebas existentes desde su directorio dedicado.
 
 **Write scope:**
 
@@ -74,7 +74,7 @@ Añadir app/Modules/Notification/Tests a los directorios de PHPUnit y Pest. La s
 **Validate command:**
 
 ```bash
-rtk php artisan test --compact app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php
+rtk php artisan test --compact --testsuite=Notification
 ```
 
 ### TASK-002: Definir la enum canónica de tipos soportados
@@ -308,7 +308,7 @@ rtk git diff --check -- CLAUDE.md docs/architecture/backend.md docs/architecture
 
 ## Ship Cut
 
-- El corte seguro requiere el registro de tests, la enum usada por emisores/agrupación/consultas, cobertura de coexistencia para usuario dueño, el guard Echo, y documentación sincronizada.
+- El corte seguro requiere el registro explícito del directorio Tests, la enum usada por emisores/agrupación/consultas, cobertura de coexistencia para usuario dueño, el guard Echo y documentación sincronizada.
 - Mantener intactos paginación estable, límite de cinco recientes, payload JSON, respuestas 404 para recursos ajenos/no admitidos y comportamiento de lectura de tipos conocidos.
 - Después de las tareas PHP, ejecutar los gates del repo: Pint dirty, PHPStan, Rector clear-cache → dry → apply, y la suite Pest completa. Ejecutar los gates frontend: format:check, lint:check, types, build y build:ssr. composer doctor es el gate local backend final; no ejecutar comprobaciones posteriores.
 - Como no hay suite React, verificar manualmente una sesión con eventos soportados y un payload Echo desconocido, incluyendo que solo likes_grouped deleted produce la eliminación local.
@@ -318,7 +318,7 @@ rtk git diff --check -- CLAUDE.md docs/architecture/backend.md docs/architecture
 
 | Área | Cobertura | Invariante protegida |
 |---|---|---|
-| Registro de suite del módulo | phpunit.xml, tests/Pest.php y app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php | Descubrimiento y configuración Pest de las pruebas del módulo Notification. |
+| Alcance de registro de suite | phpunit.xml, tests/Pest.php y testsuite Notification | PHPUnit y Pest descubren desde Tests y mantienen el TestCase compartido. |
 | Lista canónica | app/Modules/Notification/Tests/Enums/NotificationTypeTest.php | Valores admitidos exactos y rechazo de tipos desconocidos. |
 | Tipos de emisores | app/Modules/Notification/Tests/Notifications/CommentNotificationsTest.php y app/Modules/Notification/Tests/Listeners/LikeNotificationSubscriberTest.php | Tipos de base de datos/broadcast siguen estables tras centralizarlos. |
 | Agrupación de likes | app/Modules/Notification/Tests/Services/LikeNotificationGroupServiceTest.php | Búsqueda y actualización del grupo por el tipo canonical, conservando el id y semántica de unlike. |
@@ -331,7 +331,7 @@ rtk git diff --check -- CLAUDE.md docs/architecture/backend.md docs/architecture
 - Tareas: 9.
 - Capas DAG: TASK-001 → TASK-002 → TASK-003 + TASK-004 + TASK-006 + TASK-007 + TASK-008 → TASK-005 → TASK-009.
 - Ruta crítica (5 tareas): TASK-001 → TASK-002 → TASK-004 → TASK-005 → TASK-009.
-- Resumen: Registrar las pruebas del módulo → definir la enum canónica → alinear servicio de likes → cambiar el emisor de likes → sincronizar documentación.
+- Resumen: Acotar el registro de pruebas → definir la enum canónica → alinear servicio de likes → cambiar el emisor de likes → sincronizar documentación.
 - Las capas muestran dependencias reales; el proyecto exige ejecutar una tarea atómica y detenerse para revisión antes de avanzar.
 
 ## Task Dependencies
