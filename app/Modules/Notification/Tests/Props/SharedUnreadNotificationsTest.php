@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\User\Models\User;
+use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -11,11 +13,11 @@ use Inertia\Testing\AssertableInertia as Assert;
 /**
  * Create a notification row for a shared unread-count integration test.
  */
-function createSharedUnreadNotification(User $user, bool $isRead = false): DatabaseNotification
+function createSharedUnreadNotification(User $user, bool $isRead = false, ?string $type = null): DatabaseNotification
 {
     return $user->notifications()->create([
         'id' => Str::uuid()->toString(),
-        'type' => 'notification.shared-test',
+        'type' => $type ?? NotificationType::CommentOnPost->value,
         'data' => [],
         'read_at' => $isRead ? now() : null,
     ]);
@@ -74,7 +76,11 @@ it('shares only the authenticated user unread notification count', function (): 
     $user = createUser();
     createSharedUnreadNotification($user);
     createSharedUnreadNotification($user);
+    createSharedUnreadNotification($user, type: NotificationType::CommentReply->value);
+    createSharedUnreadNotification($user, type: NotificationType::LikesGrouped->value);
     createSharedUnreadNotification($user, isRead: true);
+    createSharedUnreadNotification($user, type: FilamentDatabaseNotification::class);
+    createSharedUnreadNotification($user, type: 'unknown_notification');
 
     $otherUser = createUser();
     createSharedUnreadNotification($otherUser);
@@ -84,7 +90,7 @@ it('shares only the authenticated user unread notification count', function (): 
         ->assertInertia(fn (Assert $assert): Assert => $assert
             ->missing('unreadNotificationsCount')
             ->loadDeferredProps(fn (Assert $deferredAssert): Assert => $deferredAssert
-                ->where('unreadNotificationsCount', 2)
+                ->where('unreadNotificationsCount', 4)
             )
         );
 });

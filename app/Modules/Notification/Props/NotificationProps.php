@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notification\Props;
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\User\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -27,7 +28,9 @@ final readonly class NotificationProps implements ProvidesInertiaProperties
                     return 0;
                 }
 
-                return $user->unreadNotifications()->count();
+                return $user->unreadNotifications()
+                    ->whereIn('type', NotificationType::values())
+                    ->count();
             }),
         ];
     }
