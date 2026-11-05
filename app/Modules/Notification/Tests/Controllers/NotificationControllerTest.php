@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
+use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -17,10 +19,11 @@ function createNotificationControllerTestNotification(
     CarbonImmutable $createdAt,
     ?string $id = null,
     ?CarbonImmutable $readAt = null,
+    ?string $type = null,
 ): DatabaseNotification {
     return $user->notifications()->create([
         'id' => $id ?? Str::uuid()->toString(),
-        'type' => 'comment_on_post',
+        'type' => $type ?? NotificationType::CommentOnPost->value,
         'data' => [
             'summary' => 'A user commented on your post.',
             'actors' => [],
@@ -111,21 +114,33 @@ it('requires authentication for notification history, recent notifications, and 
     $this->post(route('notifications.read-all'))->assertRedirect(route('login'));
 });
 
-it('returns only the five most recent notifications owned by the authenticated user', function (): void {
+it('returns only the five most recent supported notifications owned by the authenticated user', function (): void {
     $user = createUser();
     $otherUser = createUser();
     $baseTime = CarbonImmutable::parse('2026-11-01T10:00:00+00:00');
     $notificationIds = [];
+    $notificationTypes = NotificationType::cases();
 
     foreach (range(0, 6) as $offset) {
         $notification = createNotificationControllerTestNotification(
             $user,
             $baseTime->addSeconds($offset),
+            type: $notificationTypes[$offset % count($notificationTypes)]->value,
         );
 
         $notificationIds[] = $notification->id;
     }
 
+    $filamentNotification = createNotificationControllerTestNotification(
+        $user,
+        $baseTime->addSeconds(7),
+        type: FilamentDatabaseNotification::class,
+    );
+    $unknownNotification = createNotificationControllerTestNotification(
+        $user,
+        $baseTime->addSeconds(8),
+        type: 'unknown_notification',
+    );
     $databaseNotification = createNotificationControllerTestNotification(
         $otherUser,
         $baseTime->addDay(),
@@ -141,7 +156,9 @@ it('returns only the five most recent notifications owned by the authenticated u
 
     expect(notificationControllerTestIds($testResponse))
         ->toBe($expectedIds)
-        ->not->toContain($databaseNotification->id);
+        ->not->toContain($databaseNotification->id)
+        ->not->toContain($filamentNotification->id)
+        ->not->toContain($unknownNotification->id);
 });
 
 it('serves stable cursor-paginated history newest first using the creation time and id', function (): void {
@@ -149,19 +166,31 @@ it('serves stable cursor-paginated history newest first using the creation time 
     $otherUser = createUser();
     $createdAt = CarbonImmutable::parse('2026-11-01T10:00:00+00:00');
     $notificationIds = [];
+    $notificationTypes = NotificationType::cases();
 
     foreach (range(1, 22) as $number) {
         $notification = createNotificationControllerTestNotification(
             $user,
             $createdAt,
+            type: $notificationTypes[($number - 1) % count($notificationTypes)]->value,
         );
 
         $notificationIds[] = $notification->id;
     }
 
+    $filamentNotification = createNotificationControllerTestNotification(
+        $user,
+        $createdAt->addSecond(),
+        type: FilamentDatabaseNotification::class,
+    );
+    $unknownNotification = createNotificationControllerTestNotification(
+        $user,
+        $createdAt->addSeconds(2),
+        type: 'unknown_notification',
+    );
     $databaseNotification = createNotificationControllerTestNotification(
         $otherUser,
-        $createdAt->addSecond(),
+        $createdAt->addSeconds(3),
     );
     sort($notificationIds, SORT_STRING);
     $expectedIds = array_reverse($notificationIds);
@@ -182,7 +211,9 @@ it('serves stable cursor-paginated history newest first using the creation time 
         ->toBe(array_slice($expectedIds, 0, 20))
         ->and($secondPage['notificationIds'])
         ->toBe(array_slice($expectedIds, 20))
-        ->and($expectedIds)->not->toContain($databaseNotification->id);
+        ->and($expectedIds)->not->toContain($databaseNotification->id)
+        ->not->toContain($filamentNotification->id)
+        ->not->toContain($unknownNotification->id);
 });
 
 it('shares the notification center translations on the history page', function (): void {
@@ -231,14 +262,55 @@ it('marks only the authenticated user notification as read and returns not found
         ->and($otherUserNotification->refresh()->read_at)->toBeNull();
 });
 
-it('marks only the authenticated users unread notifications as read', function (): void {
+it('returns not found and preserves read status when a notification has an unsupported type', function (string $type): void {
+    $user = createUser();
+    $databaseNotification = createNotificationControllerTestNotification(
+        $user,
+        CarbonImmutable::parse('2026-11-01T10:00:00+00:00'),
+        type: $type,
+    );
+
+    $this->actingAs($user)
+        ->post(route('notifications.read', ['notificationId' => $databaseNotification->id]))
+        ->assertNotFound();
+
+    expect($databaseNotification->refresh()->read_at)->toBeNull();
+})->with([
+    'Filament notification' => FilamentDatabaseNotification::class,
+    'unknown notification' => 'unknown_notification',
+]);
+
+it('marks only the authenticated users supported unread notifications as read', function (): void {
     $user = createUser();
     $otherUser = createUser();
     $createdAt = CarbonImmutable::parse('2026-11-01T10:00:00+00:00');
-    $databaseNotification = createNotificationControllerTestNotification($user, $createdAt);
-    $secondUnread = createNotificationControllerTestNotification($user, $createdAt->addSecond());
+    $databaseNotification = createNotificationControllerTestNotification(
+        $user,
+        $createdAt,
+        type: NotificationType::CommentOnPost->value,
+    );
+    $secondUnread = createNotificationControllerTestNotification(
+        $user,
+        $createdAt->addSecond(),
+        type: NotificationType::CommentReply->value,
+    );
+    $thirdUnread = createNotificationControllerTestNotification(
+        $user,
+        $createdAt->addSeconds(2),
+        type: NotificationType::LikesGrouped->value,
+    );
     $existingReadAt = $createdAt->addMinute();
-    $alreadyRead = createNotificationControllerTestNotification($user, $createdAt->addMinutes(2), readAt: $existingReadAt);
+    $alreadyRead = createNotificationControllerTestNotification($user, $createdAt->addMinutes(3), readAt: $existingReadAt);
+    $filamentUnread = createNotificationControllerTestNotification(
+        $user,
+        $createdAt->addMinutes(4),
+        type: FilamentDatabaseNotification::class,
+    );
+    $unknownUnread = createNotificationControllerTestNotification(
+        $user,
+        $createdAt->addMinutes(5),
+        type: 'unknown_notification',
+    );
     $otherUserUnread = createNotificationControllerTestNotification($otherUser, $createdAt);
 
     $this->actingAs($user)
@@ -247,7 +319,10 @@ it('marks only the authenticated users unread notifications as read', function (
 
     expect($databaseNotification->refresh()->read_at)->not->toBeNull()
         ->and($secondUnread->refresh()->read_at)->not->toBeNull()
+        ->and($thirdUnread->refresh()->read_at)->not->toBeNull()
         ->and($alreadyRead->refresh()->read_at?->toIso8601String())->toBe($existingReadAt->toIso8601String())
+        ->and($filamentUnread->refresh()->read_at)->toBeNull()
+        ->and($unknownUnread->refresh()->read_at)->toBeNull()
         ->and($otherUserUnread->refresh()->read_at)->toBeNull();
 });
 
