@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\Schemas;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Enums\UserImageType;
@@ -19,7 +20,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class UserInfolist
 {

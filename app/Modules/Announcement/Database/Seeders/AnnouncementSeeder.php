@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Announcement\Database\Seeders;
 
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Database\Factories\AnnouncementReviewFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
@@ -20,7 +21,6 @@ use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 
 /**
  * Sample announcements with a history over the last days: five fixed ones that cover every case of the banner,

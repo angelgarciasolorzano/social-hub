@@ -44,6 +44,8 @@ test('admin RBAC catalogs retain every existing public identifier', function ():
         'admin.roles.viewAny',
         'admin.roles.view',
         'admin.roles.update',
+        'admin.roles.create',
+        'admin.roles.delete',
     ])->and(array_map(
         fn (AdminRole $adminRole): string => $adminRole->value,
         AdminRole::cases(),

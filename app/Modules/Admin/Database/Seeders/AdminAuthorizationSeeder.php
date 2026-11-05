@@ -6,10 +6,10 @@ namespace App\Modules\Admin\Database\Seeders;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class AdminAuthorizationSeeder extends Seeder
@@ -83,6 +83,8 @@ class AdminAuthorizationSeeder extends Seeder
                     AdminPermission::AdminRolesViewAny,
                     AdminPermission::AdminRolesView,
                     AdminPermission::AdminRolesUpdate,
+                    AdminPermission::AdminRolesCreate,
+                    AdminPermission::AdminRolesDelete,
                     AdminPermission::AdminUsersRoles,
                     AdminPermission::AdminUsersViewAny,
                     AdminPermission::AdminUsersView,
@@ -93,9 +95,15 @@ class AdminAuthorizationSeeder extends Seeder
                 $role = Role::query()->firstOrCreate([
                     'name' => $roleName,
                     'guard_name' => self::GUARD,
+                ], [
+                    'is_system' => true,
                 ]);
 
                 if (! $role->wasRecentlyCreated) {
+                    if (! $role->isSystem()) {
+                        $role->update(['is_system' => true]);
+                    }
+
                     continue;
                 }
 

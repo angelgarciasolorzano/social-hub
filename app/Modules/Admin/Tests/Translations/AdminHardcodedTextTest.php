@@ -42,6 +42,7 @@ const ADMIN_TRANSLATED_PATHS = [
     'app/Modules/Admin/Filament/Pages/Backups',
     'app/Modules/Admin/Filament/Concerns/ConfirmsCurrentPassword.php',
     'app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php',
+    'app/Modules/Admin/Filament/Concerns/EditsRolePermissions.php',
     'app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php',
     'app/Modules/Admin/UI/Views/filament/widgets',
     'app/Modules/Admin/UI/Views/filament/backups',
@@ -189,8 +190,12 @@ it('scans Activity Log, Announcements, Posts, independent Comments, Roles and th
             'app/Modules/Admin/Filament/Resources/Roles/RoleResource.php',
             'app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php',
             'app/Modules/Admin/Filament/Resources/Roles/Widgets/UsersPerRoleChart.php',
+            'app/Modules/Admin/Filament/Resources/Roles/Widgets/RoleTypesOverview.php',
+            'app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php',
+            'app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php',
         )
         ->and($translatedPaths)->toContain('app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php')
+        ->and($translatedPaths)->toContain('app/Modules/Admin/Filament/Concerns/EditsRolePermissions.php')
         ->and($announcementPaths)->not->toBeEmpty()
         ->and($postPaths)->not->toBeEmpty()
         ->and($commentPaths)->not->toBeEmpty()

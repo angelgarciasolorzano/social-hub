@@ -5,12 +5,12 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\User\Database\Factories\UserFactory;
 use App\User\Models\User;
 use Filament\Panel;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
 function runBootstrapAdmin(string $email, ?User $user = null): int

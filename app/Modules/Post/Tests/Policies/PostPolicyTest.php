@@ -5,11 +5,11 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Policies\PostPolicy;
 use App\User\Models\User;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
 
 /**
  * A user holding only the given Admin permissions, through a role made for the test.

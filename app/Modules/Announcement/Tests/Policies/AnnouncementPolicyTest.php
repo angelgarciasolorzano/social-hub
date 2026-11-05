@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Database\Factories\AnnouncementFactory;
 use App\Modules\Announcement\Enums\AnnouncementAudience;
 use App\Modules\Announcement\Enums\AnnouncementReviewAction;
@@ -13,7 +14,6 @@ use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Policies\AnnouncementPolicy;
 use App\User\Models\User;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Role;
 
 /**
  * A user holding only the given Admin permission, through a role made for the test.

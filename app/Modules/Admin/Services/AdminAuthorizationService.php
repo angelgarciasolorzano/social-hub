@@ -11,19 +11,23 @@ use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
+use App\Modules\Admin\Models\Role;
 use App\User\Models\User;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * The only writer of the Admin authorization catalog outside the seeders: grants and revokes cataloged
- * roles and role permissions for the console commands and the panel. Each change locks the `admin`
- * role, the `admin.access` permission and the affected rows, never leaves the panel without a user
- * holding `admin.access`, and records the activity only when something changed.
+ * The only writer of the Admin authorization catalog outside the seeders: creates, edits, duplicates
+ * and deletes custom roles, and grants and revokes the roles of the `admin` guard, system or custom, and
+ * their cataloged permissions, for the console commands and the panel. Each change locks the `admin` role, the `admin.access` permission and the affected rows,
+ * never changes the permissions of the locked `admin` role, never leaves a role with a permission
+ * whose requirements it lacks, never leaves the panel without a user holding `admin.access`, and
+ * records the activity only when something changed.
  *
  * It does not authorize: the console commands validate their actor and the panel asks the policies.
  */
@@ -42,30 +46,30 @@ final readonly class AdminAuthorizationService
      *
      * @throws AdminAuthorizationException
      */
-    public function lockCatalog(AdminRole $adminRole): void
+    public function lockCatalog(Role $role): void
     {
-        $this->lockCatalogRole($adminRole);
+        $this->lockCatalogRole($role);
     }
 
     /**
-     * Assign a cataloged role to the user; returns false when the user already had it.
+     * Assign a role of the `admin` guard to the user; returns false when the user already had it.
      *
      * @throws AdminAuthorizationException
      */
-    public function grantRole(User $user, AdminRole $adminRole, User $actor): bool
+    public function grantRole(User $user, Role $role, User $actor): bool
     {
-        return DB::transaction(function () use ($user, $adminRole, $actor): bool {
-            ['role' => $role] = $this->lockCatalogRole($adminRole);
+        return DB::transaction(function () use ($user, $role, $actor): bool {
+            ['role' => $lockedRole] = $this->lockCatalogRole($role);
 
             $this->lockUser($user);
 
-            if ($user->hasRole($role)) {
+            if ($user->hasRole($lockedRole)) {
                 return false;
             }
 
-            $user->assignRole($role);
+            $user->assignRole($lockedRole);
 
-            $this->activityLogger->record(ActivityLogAdminEvent::RoleGranted, $user, $actor, ['role' => $adminRole->value]);
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleGranted, $user, $actor, ['role' => $lockedRole->name]);
             $this->forgetCachedPermissionsAfterCommit();
 
             return true;
@@ -73,34 +77,34 @@ final readonly class AdminAuthorizationService
     }
 
     /**
-     * Remove a cataloged role from the user; returns false when the user did not have it.
+     * Remove a role of the `admin` guard from the user; returns false when the user did not have it.
      *
      * @throws AdminAuthorizationException when it would leave no user with `admin.access`
      */
-    public function revokeRole(User $user, AdminRole $adminRole, User $actor): bool
+    public function revokeRole(User $user, Role $role, User $actor): bool
     {
-        return DB::transaction(function () use ($user, $adminRole, $actor): bool {
-            ['role' => $role, 'adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRole($adminRole);
+        return DB::transaction(function () use ($user, $role, $actor): bool {
+            ['role' => $lockedRole, 'adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRole($role);
 
             $this->lockUser($user);
 
-            if (! $user->hasRole($role)) {
+            if (! $user->hasRole($lockedRole)) {
                 return false;
             }
 
-            $roleGrantsAdminAccess = $role->permissions()
+            $roleGrantsAdminAccess = $lockedRole->permissions()
                 ->whereKey($adminAccessPermission->getKey())
                 ->exists();
 
             throw_if(
-                $roleGrantsAdminAccess && $this->isLastAdminAccessHolderWithout($user, $role, $adminAccessPermission),
+                $roleGrantsAdminAccess && $this->isLastAdminAccessHolderWithout($user, $lockedRole, $adminAccessPermission),
                 AdminAuthorizationException::class,
                 AdminAuthorizationFailure::LastAdminAccess,
             );
 
-            $user->removeRole($role);
+            $user->removeRole($lockedRole);
 
-            $this->activityLogger->record(ActivityLogAdminEvent::RoleRevoked, $user, $actor, ['role' => $adminRole->value]);
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleRevoked, $user, $actor, ['role' => $lockedRole->name]);
             $this->forgetCachedPermissionsAfterCommit();
 
             return true;
@@ -108,110 +112,108 @@ final readonly class AdminAuthorizationService
     }
 
     /**
-     * Grant a cataloged permission to a cataloged role; returns false when the role already had it.
+     * Grant a cataloged permission to a role; returns false when the role already had it.
      *
-     * @throws AdminAuthorizationException
+     * @throws AdminAuthorizationException when the role is locked or lacks a requirement of the permission
      */
-    public function grantPermission(AdminRole $adminRole, AdminPermission $adminPermission, User $user): bool
+    public function grantPermission(Role $role, AdminPermission $adminPermission, User $user): bool
     {
-        return DB::transaction(function () use ($adminRole, $adminPermission, $user): bool {
-            ['role' => $role, 'adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRole($adminRole);
+        return DB::transaction(function () use ($role, $adminPermission, $user): bool {
+            ['role' => $lockedRole, 'adminAccessPermission' => $adminAccessPermission] = $this->lockEditableRole($role);
 
             $permission = $this->catalogPermission($adminPermission, $adminAccessPermission);
+            $currentPermissions = $this->catalogPermissionsOf($lockedRole);
 
-            if ($role->permissions()->whereKey($permission->getKey())->exists()) {
+            if (\in_array($adminPermission, $currentPermissions, true)) {
                 return false;
             }
 
-            $role->givePermissionTo($permission);
+            $this->ensureRequirementsMet([...$currentPermissions, $adminPermission]);
 
-            $this->activityLogger->record(ActivityLogAdminEvent::RolePermissionGranted, $role, $user, [
-                'role' => $adminRole->value,
-                'permission' => $adminPermission->value,
-            ]);
-
-            $this->forgetCachedPermissionsAfterCommit();
+            $this->applyPermissionGrant($lockedRole, $adminPermission, $permission, $user);
 
             return true;
         });
     }
 
     /**
-     * Revoke a cataloged permission from a cataloged role; returns false when the role did not have it.
+     * Revoke a cataloged permission from a role; returns false when the role did not have it.
      *
-     * @throws AdminAuthorizationException when revoking `admin.access` would leave no user with it
+     * @throws AdminAuthorizationException when the role is locked, another of its permissions requires
+     *                                     this one, or revoking `admin.access` would leave no user with it
      */
-    public function revokePermission(AdminRole $adminRole, AdminPermission $adminPermission, User $user): bool
+    public function revokePermission(Role $role, AdminPermission $adminPermission, User $user): bool
     {
-        return DB::transaction(function () use ($adminRole, $adminPermission, $user): bool {
-            ['role' => $role, 'adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRole($adminRole);
+        return DB::transaction(function () use ($role, $adminPermission, $user): bool {
+            ['role' => $lockedRole, 'adminAccessPermission' => $adminAccessPermission] = $this->lockEditableRole($role);
 
             $permission = $this->catalogPermission($adminPermission, $adminAccessPermission);
+            $currentPermissions = $this->catalogPermissionsOf($lockedRole);
 
-            if (! $role->permissions()->whereKey($permission->getKey())->exists()) {
+            if (! \in_array($adminPermission, $currentPermissions, true)) {
                 return false;
             }
 
-            throw_if(
-                $adminPermission === AdminPermission::AdminAccess
-                    && ! $this->aUserRetainsAdminAccessAfterRevocation($role, $adminAccessPermission),
-                AdminAuthorizationException::class,
-                AdminAuthorizationFailure::LastAdminAccess,
-            );
+            $this->ensureRequirementsMet(array_values(array_filter(
+                $currentPermissions,
+                static fn (AdminPermission $currentPermission): bool => $currentPermission !== $adminPermission,
+            )));
 
-            $role->revokePermissionTo($permission);
-
-            $this->activityLogger->record(ActivityLogAdminEvent::RolePermissionRevoked, $role, $user, [
-                'role' => $adminRole->value,
-                'permission' => $adminPermission->value,
-            ]);
-
-            $this->forgetCachedPermissionsAfterCommit();
+            $this->applyPermissionRevocation($lockedRole, $adminPermission, $permission, $adminAccessPermission, $user);
 
             return true;
         });
     }
 
     /**
-     * Leave the user with exactly the selected cataloged roles, in one transaction. Roles outside the
-     * catalog are kept. Grants run before revocations, so moving access between roles never trips the
-     * last `admin.access` check, and the whole sync is rolled back when it would remove the acting
-     * administrator's own access to the panel or to this action. Like every other write, it locks the
-     * `admin` role before the user, so a concurrent change of the same user from the console waits for
-     * it instead of deadlocking.
+     * Leave the user with exactly the selected roles of the `admin` guard, system or custom, in one
+     * transaction. Roles of other guards are kept. Grants run before revocations, so moving access
+     * between roles never trips the last `admin.access` check, and the whole sync is rolled back when it
+     * would remove the acting administrator's own access to the panel or to this action. Like every
+     * other write, it locks the `admin` role before the user, so a concurrent change of the same user
+     * from the console waits for it instead of deadlocking.
      *
-     * @param  list<AdminRole>  $adminRoles
+     * @param  list<Role>  $roles
      *
      * @throws AdminAuthorizationException
      */
-    public function syncUserRoles(User $user, array $adminRoles, User $actor): AdminAuthorizationChanges
+    public function syncUserRoles(User $user, array $roles, User $actor): AdminAuthorizationChanges
     {
-        return $this->syncWithinTransaction(function () use ($user, $adminRoles, $actor): AdminAuthorizationChanges {
-            $this->lockCatalogRole(AdminRole::Admin);
+        return $this->syncWithinTransaction(function () use ($user, $roles, $actor): AdminAuthorizationChanges {
+            $this->lockCatalogRoot();
             $this->lockUser($user);
 
-            $currentRoles = $user->roles
-                ->filter(static fn (Role $role): bool => $role->guard_name === self::GUARD)
-                ->map(static fn (Role $role): ?AdminRole => AdminRole::tryFrom($role->name))
-                ->filter()
-                ->values()
-                ->all();
+            /** @var array<int, Role> $selectedRoles */
+            $selectedRoles = [];
+
+            foreach ($roles as $role) {
+                $selectedRoles[$role->id] = $role;
+            }
+
+            ksort($selectedRoles);
+
+            /** @var array<int, Role> $currentRoles */
+            $currentRoles = [];
+
+            foreach ($user->roles as $currentRole) {
+                if ($currentRole->guard_name === self::GUARD) {
+                    $currentRoles[$currentRole->id] = $currentRole;
+                }
+            }
+
+            ksort($currentRoles);
 
             $granted = [];
             $revoked = [];
 
-            foreach (AdminRole::cases() as $adminRole) {
-                if (\in_array($adminRole, $adminRoles, true) && ! \in_array($adminRole, $currentRoles, true)) {
-                    $this->grantRole($user, $adminRole, $actor);
-                    $granted[] = $adminRole->value;
-                }
+            foreach (array_diff_key($selectedRoles, $currentRoles) as $role) {
+                $this->grantRole($user, $role, $actor);
+                $granted[] = $role->name;
             }
 
-            foreach (AdminRole::cases() as $adminRole) {
-                if (\in_array($adminRole, $currentRoles, true) && ! \in_array($adminRole, $adminRoles, true)) {
-                    $this->revokeRole($user, $adminRole, $actor);
-                    $revoked[] = $adminRole->value;
-                }
+            foreach (array_diff_key($currentRoles, $selectedRoles) as $role) {
+                $this->revokeRole($user, $role, $actor);
+                $revoked[] = $role->name;
             }
 
             $this->ensureActorKeepsAccess($actor, AdminPermission::AdminUsersRoles);
@@ -221,41 +223,39 @@ final readonly class AdminAuthorizationService
     }
 
     /**
-     * Leave the cataloged role with exactly the selected cataloged permissions, in one transaction.
-     * Permissions outside the catalog are kept, and the whole sync is rolled back when it would remove
-     * the acting administrator's own access to the panel or to this action.
+     * Leave the role with exactly the selected cataloged permissions, in one transaction. Permissions
+     * outside the catalog are kept. The selection must bring every requirement of its permissions, the
+     * locked `admin` role cannot be changed, and the whole sync is rolled back when it would remove the
+     * acting administrator's own access to the panel or to this action.
      *
      * @param  list<AdminPermission>  $adminPermissions
      *
      * @throws AdminAuthorizationException
      */
-    public function syncRolePermissions(AdminRole $adminRole, array $adminPermissions, User $user): AdminAuthorizationChanges
+    public function syncRolePermissions(Role $role, array $adminPermissions, User $user): AdminAuthorizationChanges
     {
-        return $this->syncWithinTransaction(function () use ($adminRole, $adminPermissions, $user): AdminAuthorizationChanges {
-            ['role' => $role] = $this->lockCatalogRole($adminRole);
+        return $this->syncWithinTransaction(function () use ($role, $adminPermissions, $user): AdminAuthorizationChanges {
+            ['role' => $lockedRole, 'adminAccessPermission' => $adminAccessPermission] = $this->lockEditableRole($role);
 
-            $currentPermissions = Permission::query()
-                ->where('guard_name', self::GUARD)
-                ->whereHas('roles', fn (Builder $builder): Builder => $builder->whereKey($role->getKey()))
-                ->get()
-                ->map(static fn (Permission $permission): ?AdminPermission => AdminPermission::tryFrom($permission->name))
-                ->filter()
-                ->values()
-                ->all();
+            $this->ensureRequirementsMet($adminPermissions);
+
+            $currentPermissions = $this->catalogPermissionsOf($lockedRole);
 
             $granted = [];
             $revoked = [];
 
             foreach (AdminPermission::cases() as $adminPermission) {
                 if (\in_array($adminPermission, $adminPermissions, true) && ! \in_array($adminPermission, $currentPermissions, true)) {
-                    $this->grantPermission($adminRole, $adminPermission, $user);
+                    $permission = $this->catalogPermission($adminPermission, $adminAccessPermission);
+                    $this->applyPermissionGrant($lockedRole, $adminPermission, $permission, $user);
                     $granted[] = $adminPermission->value;
                 }
             }
 
             foreach (AdminPermission::cases() as $adminPermission) {
                 if (\in_array($adminPermission, $currentPermissions, true) && ! \in_array($adminPermission, $adminPermissions, true)) {
-                    $this->revokePermission($adminRole, $adminPermission, $user);
+                    $permission = $this->catalogPermission($adminPermission, $adminAccessPermission);
+                    $this->applyPermissionRevocation($lockedRole, $adminPermission, $permission, $adminAccessPermission, $user);
                     $revoked[] = $adminPermission->value;
                 }
             }
@@ -264,6 +264,295 @@ final readonly class AdminAuthorizationService
 
             return new AdminAuthorizationChanges($granted, $revoked);
         });
+    }
+
+    /**
+     * Create a custom role with the given texts and cataloged permissions. Its stored name is
+     * `custom-` plus the slug of the label, with a numeric suffix when that name is taken.
+     *
+     * @param  list<AdminPermission>  $adminPermissions
+     *
+     * @throws AdminAuthorizationException when the label is taken or the permissions lack a requirement
+     * @throws InvalidArgumentException when a text is blank or too long
+     */
+    public function createRole(string $label, ?string $description, array $adminPermissions, User $user): Role
+    {
+        $label = $this->normalizedLabel($label);
+        $description = $this->normalizedDescription($description);
+
+        return DB::transaction(function () use ($label, $description, $adminPermissions, $user): Role {
+            ['adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRoot();
+
+            $this->ensureLabelAvailable($label);
+            $this->ensureRequirementsMet($adminPermissions);
+
+            $selectedPermissions = $this->inCatalogOrder($adminPermissions);
+            $permissions = array_map(
+                fn (AdminPermission $adminPermission): Permission => $this->catalogPermission($adminPermission, $adminAccessPermission),
+                $selectedPermissions,
+            );
+
+            $role = $this->newCustomRole($label, $description);
+            $role->givePermissionTo($permissions);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleCreated, $role, $user, [
+                'role' => $role->name,
+                'permissions' => array_map(static fn (AdminPermission $adminPermission): string => $adminPermission->value, $selectedPermissions),
+            ]);
+
+            $this->forgetCachedPermissionsAfterCommit();
+
+            return $role;
+        });
+    }
+
+    /**
+     * Change the label and description of a custom role; its stored name never changes. Returns false
+     * when nothing changed.
+     *
+     * @throws AdminAuthorizationException when the role is a system role or the label is taken
+     * @throws InvalidArgumentException when a text is blank or too long
+     */
+    public function updateRoleDetails(Role $role, string $label, ?string $description, User $user): bool
+    {
+        $label = $this->normalizedLabel($label);
+        $description = $this->normalizedDescription($description);
+
+        return DB::transaction(function () use ($role, $label, $description, $user): bool {
+            ['role' => $lockedRole] = $this->lockCatalogRole($role);
+
+            throw_if($lockedRole->isSystem(), AdminAuthorizationException::class, AdminAuthorizationFailure::SystemRoleProtected);
+
+            $changedAttributes = [];
+
+            if ($lockedRole->label !== $label) {
+                $this->ensureLabelAvailable($label, $lockedRole);
+                $changedAttributes[] = 'label';
+            }
+
+            if ($lockedRole->description !== $description) {
+                $changedAttributes[] = 'description';
+            }
+
+            if ($changedAttributes === []) {
+                return false;
+            }
+
+            $lockedRole->update(['label' => $label, 'description' => $description]);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleUpdated, $lockedRole, $user, [
+                'role' => $lockedRole->name,
+                'changed_attributes' => $changedAttributes,
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
+     * Create a custom role with the given label and the description and cataloged permissions of the
+     * source role, system or custom.
+     *
+     * @throws AdminAuthorizationException when the source no longer exists or the label is taken
+     * @throws InvalidArgumentException when the label is blank or too long
+     */
+    public function duplicateRole(Role $source, string $label, User $user): Role
+    {
+        $label = $this->normalizedLabel($label);
+
+        return DB::transaction(function () use ($source, $label, $user): Role {
+            ['role' => $lockedSource] = $this->lockCatalogRole($source);
+
+            $this->ensureLabelAvailable($label);
+
+            $role = $this->newCustomRole($label, $this->normalizedDescription($lockedSource->displayDescription()));
+            $role->givePermissionTo($lockedSource->permissions);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleDuplicated, $role, $user, [
+                'role' => $role->name,
+                'source_role_id' => $lockedSource->id,
+            ]);
+
+            $this->forgetCachedPermissionsAfterCommit();
+
+            return $role;
+        });
+    }
+
+    /**
+     * Delete a custom role nobody holds, together with its permission grants.
+     *
+     * @throws AdminAuthorizationException when the role is a system role or still has users
+     */
+    public function deleteRole(Role $role, User $user): void
+    {
+        DB::transaction(function () use ($role, $user): void {
+            ['role' => $lockedRole] = $this->lockCatalogRole($role);
+
+            throw_if($lockedRole->isSystem(), AdminAuthorizationException::class, AdminAuthorizationFailure::SystemRoleProtected);
+            throw_if($lockedRole->users()->exists(), AdminAuthorizationException::class, AdminAuthorizationFailure::RoleHasUsers);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleDeleted, $lockedRole, $user, ['role' => $lockedRole->name]);
+
+            $lockedRole->delete();
+
+            $this->forgetCachedPermissionsAfterCommit();
+        });
+    }
+
+    /**
+     * Store a custom role of the `admin` guard under the first free name derived from its label.
+     */
+    private function newCustomRole(string $label, ?string $description): Role
+    {
+        $baseName = Role::CUSTOM_NAME_PREFIX.(Str::slug($label) !== '' ? Str::slug($label) : 'role');
+        $name = $baseName;
+        $suffix = 1;
+
+        while (Role::query()->where('name', $name)->where('guard_name', self::GUARD)->exists()) {
+            $suffix++;
+            $name = "{$baseName}-{$suffix}";
+        }
+
+        return Role::query()->create([
+            'name' => $name,
+            'guard_name' => self::GUARD,
+            'is_system' => false,
+            'label' => $label,
+            'description' => $description,
+        ]);
+    }
+
+    /**
+     * @throws AdminAuthorizationException when another role of the `admin` guard has the label, ignoring case
+     */
+    private function ensureLabelAvailable(string $label, ?Role $exceptRole = null): void
+    {
+        $labelTaken = Role::query()
+            ->where('guard_name', self::GUARD)
+            ->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])
+            ->when($exceptRole instanceof Role, fn (Builder $builder): Builder => $builder->whereKeyNot($exceptRole?->getKey()))
+            ->exists();
+
+        throw_if($labelTaken, AdminAuthorizationException::class, AdminAuthorizationFailure::RoleLabelTaken);
+    }
+
+    /**
+     * @throws InvalidArgumentException when the label is blank or longer than the column allows
+     */
+    private function normalizedLabel(string $label): string
+    {
+        $label = trim($label);
+
+        if ($label === '' || mb_strlen($label) > Role::LABEL_MAX_LENGTH) {
+            throw new InvalidArgumentException(\sprintf('A role label must have between 1 and %d characters.', Role::LABEL_MAX_LENGTH));
+        }
+
+        return $label;
+    }
+
+    /**
+     * @throws InvalidArgumentException when the description is longer than the column allows
+     */
+    private function normalizedDescription(?string $description): ?string
+    {
+        $description = trim((string) $description);
+
+        if (mb_strlen($description) > Role::DESCRIPTION_MAX_LENGTH) {
+            throw new InvalidArgumentException(\sprintf('A role description must have at most %d characters.', Role::DESCRIPTION_MAX_LENGTH));
+        }
+
+        return $description === '' ? null : $description;
+    }
+
+    /**
+     * @param  list<AdminPermission>  $adminPermissions
+     * @return list<AdminPermission>
+     */
+    private function inCatalogOrder(array $adminPermissions): array
+    {
+        return array_values(array_filter(
+            AdminPermission::cases(),
+            static fn (AdminPermission $adminPermission): bool => \in_array($adminPermission, $adminPermissions, true),
+        ));
+    }
+
+    private function applyPermissionGrant(Role $role, AdminPermission $adminPermission, Permission $permission, User $user): void
+    {
+        $role->givePermissionTo($permission);
+
+        $this->activityLogger->record(ActivityLogAdminEvent::RolePermissionGranted, $role, $user, [
+            'role' => $role->name,
+            'permission' => $adminPermission->value,
+        ]);
+
+        $this->forgetCachedPermissionsAfterCommit();
+    }
+
+    /**
+     * @throws AdminAuthorizationException when revoking `admin.access` would leave no user with it
+     */
+    private function applyPermissionRevocation(
+        Role $role,
+        AdminPermission $adminPermission,
+        Permission $permission,
+        Permission $adminAccessPermission,
+        User $user,
+    ): void {
+        throw_if(
+            $adminPermission === AdminPermission::AdminAccess
+                && ! $this->aUserRetainsAdminAccessAfterRevocation($role, $adminAccessPermission),
+            AdminAuthorizationException::class,
+            AdminAuthorizationFailure::LastAdminAccess,
+        );
+
+        $role->revokePermissionTo($permission);
+
+        $this->activityLogger->record(ActivityLogAdminEvent::RolePermissionRevoked, $role, $user, [
+            'role' => $role->name,
+            'permission' => $adminPermission->value,
+        ]);
+
+        $this->forgetCachedPermissionsAfterCommit();
+    }
+
+    /**
+     * @param  list<AdminPermission>  $adminPermissions
+     *
+     * @throws AdminAuthorizationException when a permission of the set lacks one of its requirements
+     */
+    private function ensureRequirementsMet(array $adminPermissions): void
+    {
+        throw_unless(
+            AdminPermission::missingRequirements($adminPermissions) === [],
+            AdminAuthorizationException::class,
+            AdminAuthorizationFailure::PermissionDependencyMissing,
+        );
+    }
+
+    /**
+     * The cataloged permissions the role holds; permissions outside the catalog are left out.
+     *
+     * @return list<AdminPermission>
+     */
+    private function catalogPermissionsOf(Role $role): array
+    {
+        $adminPermissions = [];
+
+        $permissions = Permission::query()
+            ->where('guard_name', self::GUARD)
+            ->whereHas('roles', fn (Builder $builder): Builder => $builder->whereKey($role->getKey()))
+            ->get();
+
+        foreach ($permissions as $permission) {
+            $adminPermission = AdminPermission::tryFrom($permission->name);
+
+            if ($adminPermission instanceof AdminPermission) {
+                $adminPermissions[] = $adminPermission;
+            }
+        }
+
+        return $adminPermissions;
     }
 
     /**
@@ -301,14 +590,14 @@ final readonly class AdminAuthorizationService
     }
 
     /**
-     * Lock the `admin` role and the `admin.access` permission together with the requested role, in
-     * that order, so concurrent changes of the catalog are serialized.
+     * Lock the `admin` role and the `admin.access` permission, in that order, so concurrent changes of
+     * the catalog are serialized.
      *
-     * @return array{role: Role, adminAccessPermission: Permission}
+     * @return array{adminRole: Role, adminAccessPermission: Permission}
      *
      * @throws AdminAuthorizationException
      */
-    private function lockCatalogRole(AdminRole $adminRole): array
+    private function lockCatalogRoot(): array
     {
         $adminRoleLock = Role::query()
             ->where('name', AdminRole::Admin->value)
@@ -324,17 +613,48 @@ final readonly class AdminAuthorizationService
 
         throw_if(! $adminRoleLock instanceof Role || ! $adminAccessPermission instanceof Permission, AdminAuthorizationException::class, AdminAuthorizationFailure::CatalogNotInitialized);
 
-        $role = $adminRole === AdminRole::Admin
+        return ['adminRole' => $adminRoleLock, 'adminAccessPermission' => $adminAccessPermission];
+    }
+
+    /**
+     * Lock the catalog root and then the requested role of the `admin` guard by its id, reading it
+     * again so a role deleted or changed meanwhile is not used from a stale instance.
+     *
+     * @return array{role: Role, adminAccessPermission: Permission}
+     *
+     * @throws AdminAuthorizationException
+     */
+    private function lockCatalogRole(Role $role): array
+    {
+        ['adminRole' => $adminRoleLock, 'adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRoot();
+
+        $lockedRole = $adminRoleLock->is($role)
             ? $adminRoleLock
             : Role::query()
-                ->where('name', $adminRole->value)
                 ->where('guard_name', self::GUARD)
+                ->whereKey($role->getKey())
                 ->lockForUpdate()
                 ->first();
 
-        throw_unless($role instanceof Role, AdminAuthorizationException::class, AdminAuthorizationFailure::RoleNotInitialized);
+        throw_unless($lockedRole instanceof Role, AdminAuthorizationException::class, AdminAuthorizationFailure::RoleNotInitialized);
 
-        return ['role' => $role, 'adminAccessPermission' => $adminAccessPermission];
+        return ['role' => $lockedRole, 'adminAccessPermission' => $adminAccessPermission];
+    }
+
+    /**
+     * Lock the role like {@see lockCatalogRole()} and refuse it when its permissions cannot change.
+     *
+     * @return array{role: Role, adminAccessPermission: Permission}
+     *
+     * @throws AdminAuthorizationException
+     */
+    private function lockEditableRole(Role $role): array
+    {
+        $lockedCatalogRole = $this->lockCatalogRole($role);
+
+        throw_if($lockedCatalogRole['role']->isLocked(), AdminAuthorizationException::class, AdminAuthorizationFailure::RoleLocked);
+
+        return $lockedCatalogRole;
     }
 
     /**

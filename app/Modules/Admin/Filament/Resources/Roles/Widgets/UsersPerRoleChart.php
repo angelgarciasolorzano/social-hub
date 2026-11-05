@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles\Widgets;
 
-use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
- * How many users hold each cataloged role, in catalog order.
+ * How many users hold each role of the `admin` guard: system roles in catalog order, then custom roles
+ * by name.
  */
 class UsersPerRoleChart extends ChartWidget
 {
@@ -65,21 +65,13 @@ class UsersPerRoleChart extends ChartWidget
     #[Override]
     protected function getData(): array
     {
-        $usersCountByRole = [];
-
-        foreach (Role::query()->where('guard_name', 'admin')->withCount('users')->get() as $role) {
-            $usersCount = $role->getAttribute('users_count');
-            $usersCountByRole[$role->name] = \is_int($usersCount) ? $usersCount : 0;
-        }
-
         $labels = [];
         $counts = [];
 
-        foreach (AdminRole::cases() as $adminRole) {
-            if (\array_key_exists($adminRole->value, $usersCountByRole)) {
-                $labels[] = $adminRole->label();
-                $counts[] = $usersCountByRole[$adminRole->value];
-            }
+        foreach (Role::inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->withCount('users')->get()) as $role) {
+            $usersCount = $role->getAttribute('users_count');
+            $labels[] = $role->displayName();
+            $counts[] = \is_int($usersCount) ? $usersCount : 0;
         }
 
         if ($labels === []) {

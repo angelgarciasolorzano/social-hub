@@ -9,6 +9,7 @@ use App\Modules\Admin\Filament\Resources\Comments\CommentResource;
 use App\Modules\Admin\Filament\Resources\Posts\PostResource;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Post\Models\Post;
 use App\Support\Translation\TranslatedText;
@@ -16,7 +17,6 @@ use App\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
 
 /**
  * Describes who performed an activity and what it was performed on, by type and id only,

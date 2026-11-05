@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Auth\Models\TrustedDeviceEvent;
 use App\Console\Commands\MediaLibraryCleanFoldersCommand;
 use App\Modules\Admin\Models\AdminInvitation;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
@@ -19,12 +20,11 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Override;
-use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
     /**
-     * The morph name of Spatie's Role model, which is audited as an activity log subject.
+     * The morph name of the Admin module's Role model, which is audited as an activity log subject.
      */
     public const string ROLE_MORPH_NAME = 'role';
 

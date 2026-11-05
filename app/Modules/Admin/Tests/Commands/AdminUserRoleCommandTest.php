@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\User\Models\User;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\Permission\Models\Role;
 use Symfony\Component\Console\Command\Command;
 
 function runAdminUserRole(string $action, string $email, string $role, ?User $user = null): int
@@ -115,6 +116,54 @@ it('rejects an unknown role without changing existing assignments', function ():
         ->and($user->hasRole(AdminRole::Admin->value))->toBeTrue()
         ->and($user->hasRole('unlisted-role'))->toBeFalse()
         ->and(Role::query()->where('name', 'unlisted-role')->exists())->toBeFalse();
+});
+
+it('lists the stored roles of the admin guard, custom ones included, for an unknown role', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    RoleFactory::new()->createOne(['name' => 'custom-soporte']);
+
+    $exitCode = runAdminUserRole('grant', createUser()->email, 'unlisted-role', createAdminCommandActor());
+
+    expect($exitCode)->toBe(Command::INVALID)
+        ->and(Artisan::output())->toContain('custom-soporte')
+        ->toContain(AdminRole::AdminUsersReader->value);
+});
+
+it('grants and revokes a custom role and records its name', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-soporte']);
+    $customRole->givePermissionTo(AdminPermission::AdminUsersViewAny->value);
+
+    $actor = createAdminCommandActor();
+    $user = createUser();
+
+    $grantExitCode = runAdminUserRole('grant', $user->email, 'custom-soporte', $actor);
+    $grantOutput = Artisan::output();
+    $userCouldViewUsers = $user->refresh()->can(AdminPermission::AdminUsersViewAny->value);
+    $revokeExitCode = runAdminUserRole('revoke', $user->email, 'custom-soporte', $actor);
+
+    expect([$grantExitCode, $revokeExitCode])->toBe([Command::SUCCESS, Command::SUCCESS])
+        ->and($grantOutput)->toContain("Role custom-soporte is assigned to {$user->email}.")
+        ->and($userCouldViewUsers)->toBeTrue()
+        ->and($user->refresh()->hasRole('custom-soporte'))->toBeFalse()
+        ->and(adminRoleActivities('admin.role_granted')->sole()->properties?->get('role'))->toBe('custom-soporte')
+        ->and(adminRoleActivities('admin.role_revoked')->sole()->properties?->get('role'))->toBe('custom-soporte');
+});
+
+it('refuses to revoke a custom role that gives the last panel access', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    $gatekeeperRole = RoleFactory::new()->createOne(['name' => 'custom-gatekeeper']);
+    $gatekeeperRole->givePermissionTo(AdminPermission::AdminAccess->value);
+
+    $user = createUser();
+    $user->assignRole($gatekeeperRole);
+
+    $exitCode = runAdminUserRole('revoke', $user->email, 'custom-gatekeeper', $user);
+
+    expect($exitCode)->toBe(Command::FAILURE)
+        ->and(Artisan::output())->toContain('would leave no user with admin.access')
+        ->and($user->refresh()->hasRole('custom-gatekeeper'))->toBeTrue()
+        ->and(adminRoleActivities('admin.role_revoked'))->toBeEmpty();
 });
 
 it('rejects actions other than grant or revoke without mutation', function (): void {

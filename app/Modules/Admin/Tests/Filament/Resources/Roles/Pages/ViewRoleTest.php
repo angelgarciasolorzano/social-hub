@@ -2,15 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -73,17 +75,36 @@ it('titles the page and breadcrumb with the translated role name', function (): 
     viewRolePage($role)->assertSee($label);
 });
 
-it('shows an empty state for a role outside the catalog without permissions', function (): void {
+it('shows a custom role with its label, identifier, type and an empty state without permissions', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
-    $role = Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin']);
+    $role = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte', 'description' => 'Atiende a los usuarios.']);
 
     viewRolePage($role)
         ->assertOk()
-        ->assertSee('legacy-role')
-        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.table.not_editable_tooltip'))
-        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.infolist.permissions.empty'));
+        ->assertSee('Soporte')
+        ->assertSee('custom-soporte')
+        ->assertSee('Atiende a los usuarios.')
+        ->assertSee(TranslatedText::of('admin/roles.types.custom'))
+        ->assertSee(TranslatedText::of('admin/roles.infolist.permissions.empty'))
+        ->assertDontSee(TranslatedText::of('admin/roles.locked.notice'));
+
+    expect(RoleResource::getRecordTitle($role))->toBe('Soporte');
+});
+
+it('shows that the admin role is locked', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    viewRolePage(adminGuardRole(AdminRole::Admin))
+        ->assertOk()
+        ->assertSee(TranslatedText::of('admin/roles.locked.notice'))
+        ->assertSee(TranslatedText::of('admin/roles.types.system'));
+
+    viewRolePage(adminGuardRole(AdminRole::AdminPostsReader))
+        ->assertDontSee(TranslatedText::of('admin/roles.locked.notice'));
 });
 
 it('does not open a role of another guard', function (): void {

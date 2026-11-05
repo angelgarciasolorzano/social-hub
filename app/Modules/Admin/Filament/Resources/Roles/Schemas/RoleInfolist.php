@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\Schemas;
 
 use App\Modules\Admin\Enums\AdminPermission;
-use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class RoleInfolist
 {
@@ -25,14 +24,33 @@ class RoleInfolist
                     ->icon(Heroicon::OutlinedShieldCheck)
                     ->columns(2)
                     ->schema([
+                        TextEntry::make('locked_notice')
+                            ->hiddenLabel()
+                            ->state(TranslatedText::of('admin/roles.locked.notice'))
+                            ->icon(Heroicon::OutlinedLockClosed)
+                            ->color('warning')
+                            ->visible(fn (Role $record): bool => $record->isLocked())
+                            ->columnSpanFull(),
                         TextEntry::make('name')
                             ->label(TranslatedText::of('admin/roles.table.name'))
-                            ->formatStateUsing(fn (string $state): string => AdminRole::tryFrom($state)?->label() ?? $state)
+                            ->formatStateUsing(fn (Role $record): string => $record->displayName())
                             ->helperText(fn (Role $record): string => $record->name),
+                        TextEntry::make('is_system')
+                            ->label(TranslatedText::of('admin/roles.types.column'))
+                            ->badge()
+                            ->formatStateUsing(fn (Role $record): string => TranslatedText::of($record->isSystem() ? 'admin/roles.types.system' : 'admin/roles.types.custom'))
+                            ->color(fn (Role $record): string => $record->isSystem() ? 'gray' : 'info')
+                            ->icon(fn (Role $record): ?Heroicon => $record->isLocked() ? Heroicon::OutlinedLockClosed : null)
+                            ->tooltip(fn (Role $record): string => TranslatedText::of(match (true) {
+                                $record->isLocked() => 'admin/roles.locked.tooltip',
+                                $record->isSystem() => 'admin/roles.types.system_tooltip',
+                                default => 'admin/roles.types.custom_tooltip',
+                            })),
                         TextEntry::make('description')
                             ->label(TranslatedText::of('admin/roles.table.description'))
-                            ->state(fn (Role $record): ?string => AdminRole::tryFrom($record->name)?->description())
-                            ->placeholder(TranslatedText::of('admin/roles.table.not_editable_tooltip')),
+                            ->state(fn (Role $record): ?string => $record->displayDescription())
+                            ->placeholder('—')
+                            ->columnSpanFull(),
                         TextEntry::make('guard_name')
                             ->label(TranslatedText::of('admin/roles.table.guard'))
                             ->badge()

@@ -9,12 +9,12 @@ use App\Modules\ActivityLog\Services\ActivityLogger;
 use App\Modules\Admin\Console\Concerns\InteractsWithAdminCatalog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Models\Role;
 use App\User\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 
 #[Signature('admin:bootstrap-admin {email : Verified email of the existing user to promote} {--actor= : Verified email of the person running the command, which may be the promoted user}')]
 #[Description('Promote the first verified user to the administrator roles.')]

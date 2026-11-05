@@ -22,6 +22,16 @@ enum AdminAuthorizationFailure: string
 
     case ActorWouldLoseAccess = 'actor_would_lose_access';
 
+    case RoleLocked = 'role_locked';
+
+    case SystemRoleProtected = 'system_role_protected';
+
+    case RoleHasUsers = 'role_has_users';
+
+    case RoleLabelTaken = 'role_label_taken';
+
+    case PermissionDependencyMissing = 'permission_dependency_missing';
+
     public function message(): string
     {
         return TranslatedText::of('admin/roles.failures.'.$this->value);

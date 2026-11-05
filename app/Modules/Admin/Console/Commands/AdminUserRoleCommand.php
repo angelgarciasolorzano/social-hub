@@ -6,8 +6,8 @@ namespace App\Modules\Admin\Console\Commands;
 
 use App\Modules\Admin\Console\Concerns\InteractsWithAdminCatalog;
 use App\Modules\Admin\Enums\AdminAuthorizationFailure;
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\User\Models\User;
 use Illuminate\Console\Attributes\Description;
@@ -15,8 +15,8 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-#[Signature('admin:user-role {action : grant or revoke} {email : User account email} {role : Role name from the Admin catalog} {--actor= : Email of the administrator running the command}')]
-#[Description('Grant or revoke a cataloged Admin role for a user.')]
+#[Signature('admin:user-role {action : grant or revoke} {email : User account email} {role : Name of an Admin role, system or custom} {--actor= : Email of the administrator running the command}')]
+#[Description('Grant or revoke an Admin role, system or custom, for a user.')]
 class AdminUserRoleCommand extends Command
 {
     use InteractsWithAdminCatalog;
@@ -33,20 +33,9 @@ class AdminUserRoleCommand extends Command
             return self::INVALID;
         }
 
-        $adminRole = AdminRole::tryFrom($roleName);
+        $role = $this->adminGuardRole($roleName);
 
-        if (! $adminRole instanceof AdminRole) {
-            $availableRoles = array_map(
-                fn (AdminRole $adminRole): string => $adminRole->value,
-                AdminRole::cases(),
-            );
-
-            $this->error(\sprintf(
-                'Unknown Admin role "%s". Available roles: %s.',
-                $roleName,
-                implode(', ', $availableRoles),
-            ));
-
+        if (! $role instanceof Role) {
             return self::INVALID;
         }
 
@@ -62,11 +51,11 @@ class AdminUserRoleCommand extends Command
             return self::INVALID;
         }
 
-        return DB::transaction(function () use ($action, $email, $adminRole, $actorEmail, $adminAuthorizationService): int {
+        return DB::transaction(function () use ($action, $email, $role, $actorEmail, $adminAuthorizationService): int {
             try {
-                $adminAuthorizationService->lockCatalog($adminRole);
+                $adminAuthorizationService->lockCatalog($role);
             } catch (AdminAuthorizationException $adminAuthorizationException) {
-                return $this->reportFailure($adminAuthorizationException->failure, $adminRole);
+                return $this->reportFailure($adminAuthorizationException->failure, $role);
             }
 
             $actor = $this->resolveActor($actorEmail);
@@ -88,28 +77,28 @@ class AdminUserRoleCommand extends Command
 
             try {
                 if ($action === self::ACTION_GRANT) {
-                    $adminAuthorizationService->grantRole($user, $adminRole, $actor);
+                    $adminAuthorizationService->grantRole($user, $role, $actor);
 
-                    $this->info("Role {$adminRole->value} is assigned to {$email}.");
+                    $this->info("Role {$role->name} is assigned to {$email}.");
 
                     return self::SUCCESS;
                 }
 
-                $adminAuthorizationService->revokeRole($user, $adminRole, $actor);
+                $adminAuthorizationService->revokeRole($user, $role, $actor);
             } catch (AdminAuthorizationException $adminAuthorizationException) {
-                return $this->reportFailure($adminAuthorizationException->failure, $adminRole);
+                return $this->reportFailure($adminAuthorizationException->failure, $role);
             }
 
-            $this->info("Role {$adminRole->value} is absent from {$email}.");
+            $this->info("Role {$role->name} is absent from {$email}.");
 
             return self::SUCCESS;
         });
     }
 
-    private function reportFailure(AdminAuthorizationFailure $adminAuthorizationFailure, AdminRole $adminRole): int
+    private function reportFailure(AdminAuthorizationFailure $adminAuthorizationFailure, Role $role): int
     {
         $this->error(
-            $this->catalogFailureMessage($adminAuthorizationFailure, $adminRole)
+            $this->catalogFailureMessage($adminAuthorizationFailure, $role)
                 ?? 'Cannot revoke this role because it would leave no user with admin.access.',
         );
 

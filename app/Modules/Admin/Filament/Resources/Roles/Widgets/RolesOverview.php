@@ -7,8 +7,8 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Widgets;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -18,10 +18,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Gate;
 use Override;
-use Spatie\Permission\Models\Role;
 
 /**
- * Who can enter the panel, which cataloged roles nobody holds and how often authorization changed.
+ * Who can enter the panel, which roles of the `admin` guard nobody holds and how often authorization
+ * changed.
  */
 class RolesOverview extends StatsOverviewWidget
 {
@@ -64,8 +64,7 @@ class RolesOverview extends StatsOverviewWidget
             Stat::make(
                 TranslatedText::of('admin/roles.widgets.overview.unused_roles.label'),
                 Role::query()
-                    ->where('guard_name', 'admin')
-                    ->whereIn('name', array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()))
+                    ->where('guard_name', Role::GUARD_NAME)
                     ->doesntHave('users')
                     ->count(),
             )
@@ -86,7 +85,8 @@ class RolesOverview extends StatsOverviewWidget
     }
 
     /**
-     * The roles granted to or revoked from users and the permissions granted to or revoked from roles.
+     * The roles granted to or revoked from users, the permissions granted to or revoked from roles, and
+     * the custom roles created, edited, duplicated or deleted.
      *
      * @return Builder<ActivityLog>
      */
@@ -99,6 +99,10 @@ class RolesOverview extends StatsOverviewWidget
             ActivityLogAdminEvent::RoleRevoked->value,
             ActivityLogAdminEvent::RolePermissionGranted->value,
             ActivityLogAdminEvent::RolePermissionRevoked->value,
+            ActivityLogAdminEvent::RoleCreated->value,
+            ActivityLogAdminEvent::RoleUpdated->value,
+            ActivityLogAdminEvent::RoleDuplicated->value,
+            ActivityLogAdminEvent::RoleDeleted->value,
         ]);
 
         return $builder;

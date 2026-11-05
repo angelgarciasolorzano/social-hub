@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\PreferredLocale;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -58,18 +59,23 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
-it('marks exactly the permissions each cataloged role grants', function (): void {
+it('marks exactly the permissions each role grants, system roles first and then custom roles by name', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
-    Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin']);
+    RoleFactory::new()->createOne(['label' => 'Zeta']);
+    RoleFactory::new()->createOne(['label' => 'Soporte'])->givePermissionTo(AdminPermission::AdminPostsViewAny->value);
+    Role::query()->create(['name' => 'custom-web-role', 'guard_name' => 'web']);
 
     $permissionsByRoleLabel = matrixPermissionsByRoleLabel();
 
-    expect(array_keys($permissionsByRoleLabel))->toBe(array_map(
-        static fn (AdminRole $adminRole): string => $adminRole->label(),
-        AdminRole::cases(),
-    ))
+    expect(array_keys($permissionsByRoleLabel))->toBe([
+        ...array_map(static fn (AdminRole $adminRole): string => $adminRole->label(), AdminRole::cases()),
+        'Soporte',
+        'Zeta',
+    ])
+        ->and($permissionsByRoleLabel['Soporte'])->toBe([AdminPermission::AdminPostsViewAny->value])
+        ->and($permissionsByRoleLabel['Zeta'])->toBeEmpty()
         ->and($permissionsByRoleLabel[AdminRole::AdminUsersModerator->label()])->toContain(AdminPermission::AdminUsersSuspend->value)
         ->and($permissionsByRoleLabel[AdminRole::AdminPostsReader->label()])->not->toContain(AdminPermission::AdminUsersSuspend->value)
         ->and($permissionsByRoleLabel[AdminRole::Admin->label()])->toBe([AdminPermission::AdminAccess->value]);
@@ -127,9 +133,8 @@ it('runs the same number of queries whatever the number of roles and their permi
     countPermissionMatrixQueries();
     $queriesBefore = countPermissionMatrixQueries();
 
-    foreach (['legacy-role-one', 'legacy-role-two'] as $roleName) {
-        Role::query()
-            ->create(['name' => $roleName, 'guard_name' => 'admin'])
+    foreach (range(1, 2) as $index) {
+        RoleFactory::new()->createOne()
             ->givePermissionTo(AdminPermission::AdminPostsView->value, AdminPermission::AdminUsersView->value);
     }
 

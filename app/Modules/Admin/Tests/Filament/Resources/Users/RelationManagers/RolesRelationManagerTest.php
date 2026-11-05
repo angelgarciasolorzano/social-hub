@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\RolesRelationManager;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\User\Enums\PreferredLocale;
@@ -12,7 +14,6 @@ use App\User\Models\User;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -120,4 +121,22 @@ it('explains when the user has no admin permissions', function (): void {
 
     Livewire::test(ViewUser::class, ['record' => createUser()->id])
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.users.effective_permissions.empty'));
+});
+
+it('lists a custom role with its label and description', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte', 'description' => 'Atiende a los usuarios.']);
+    $user = createUser();
+    $user->assignRole($customRole);
+
+    $testable = userRolesRelationManagerFor($user)
+        ->assertOk()
+        ->assertSee('Soporte')
+        ->assertSee('custom-soporte')
+        ->assertSee('Atiende a los usuarios.');
+
+    expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), Role::class))
+        ->toBe([FilamentTableRecords::recordKey($customRole)]);
 });

@@ -17,6 +17,14 @@ enum ActivityLogAdminEvent: string implements ActivityLogEvent
 
     case RolePermissionRevoked = 'admin.role_permission_revoked';
 
+    case RoleCreated = 'admin.role_created';
+
+    case RoleUpdated = 'admin.role_updated';
+
+    case RoleDuplicated = 'admin.role_duplicated';
+
+    case RoleDeleted = 'admin.role_deleted';
+
     case AdminBootstrapped = 'admin.bootstrapped';
 
     case InvitationIssued = 'admin.invitation_issued';

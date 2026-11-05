@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Widgets\UsersPerRoleChart;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\PreferredLocale;
 use Filament\Widgets\ChartWidget;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -55,7 +56,7 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
-it('has one bar per cataloged role with its users, labeled in Spanish', function (): void {
+it('has one bar per role of the admin guard with its users, system roles in Spanish first and then custom roles', function (): void {
     app()->setLocale(PreferredLocale::SPANISH->value);
 
     /** @var TestCase $testCase */
@@ -63,12 +64,17 @@ it('has one bar per cataloged role with its users, labeled in Spanish', function
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
     createUser()->assignRole(AdminRole::AdminPostsReader->value);
     createUser()->assignRole(AdminRole::AdminPostsReader->value);
-    Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin']);
+    RoleFactory::new()->createOne(['label' => 'Zeta']);
+    $supportRole = RoleFactory::new()->createOne(['label' => 'Soporte']);
+    createUser()->assignRole($supportRole);
+    Role::query()->create(['name' => 'custom-web-role', 'guard_name' => 'web']);
 
     $counts = usersPerRoleChartCounts();
     $label = static fn (AdminRole $adminRole): string => translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.roles.'.$adminRole->translationKey().'.label');
 
-    expect(array_keys($counts))->toBe(array_map($label, AdminRole::cases()))
+    expect(array_keys($counts))->toBe([...array_map($label, AdminRole::cases()), 'Soporte', 'Zeta'])
+        ->and($counts['Soporte'])->toBe(1)
+        ->and($counts['Zeta'])->toBe(0)
         ->and($counts[$label(AdminRole::AdminPostsReader)])->toBe(2)
         ->and($counts[$label(AdminRole::Admin)])->toBe(1)
         ->and($counts[$label(AdminRole::AdminRolesReader)])->toBe(1)

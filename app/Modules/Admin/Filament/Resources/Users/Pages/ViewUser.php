@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Users\Pages;
 
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Filament\Resources\Users\Widgets\UserActivityOverview;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
@@ -21,11 +21,14 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\ValidationException;
 use LogicException;
 use Override;
-use Spatie\Permission\Models\Role;
 
 class ViewUser extends ViewRecord
 {
@@ -61,16 +64,8 @@ class ViewUser extends ViewRecord
                 ->modalDescription(TranslatedText::of('admin/roles.actions.manage_roles.modal_description'))
                 ->modalSubmitActionLabel(TranslatedText::of('admin/roles.actions.manage_roles.submit'))
                 ->modalWidth('3xl')
-                ->fillForm(fn (User $record): array => [self::ROLES_FIELD => $this->catalogRoleNames($record)])
-                ->schema([
-                    CheckboxList::make(self::ROLES_FIELD)
-                        ->label(TranslatedText::of('admin/roles.actions.manage_roles.field'))
-                        ->options($this->roleOptions())
-                        ->descriptions($this->roleDescriptions())
-                        ->columns(2)
-                        ->bulkToggleable(),
-                    self::currentPasswordField(),
-                ])
+                ->fillForm(fn (User $record): array => [self::ROLES_FIELD => $this->adminRoleNamesOf($record)])
+                ->schema(fn (): array => $this->manageRolesSchema())
                 ->action(fn (array $data, AdminAuthorizationService $adminAuthorizationService) => $this->manageRoles($data, $adminAuthorizationService)),
             Action::make(self::SUSPEND_ACTION)
                 ->label(TranslatedText::of('admin/users.actions.suspend.label'))
@@ -201,10 +196,9 @@ class ViewUser extends ViewRecord
         $administrator = Filament::auth()->user();
         $model = $this->getRecord();
         $currentPassword = $data[self::CURRENT_PASSWORD_FIELD] ?? null;
-        $selectedRoleNames = $data[self::ROLES_FIELD] ?? [];
 
         abort_unless($administrator instanceof User && $model instanceof User, 403);
-        abort_unless(\is_string($currentPassword) && \is_array($selectedRoleNames), 422);
+        abort_unless(\is_string($currentPassword), 422);
 
         self::ensureCurrentPassword(
             $administrator,
@@ -213,10 +207,11 @@ class ViewUser extends ViewRecord
             'mountedActions.0.data.'.self::CURRENT_PASSWORD_FIELD,
         );
 
-        $selectedRoles = array_values(array_filter(array_map(
-            static fn (mixed $roleName): ?AdminRole => \is_string($roleName) ? AdminRole::tryFrom($roleName) : null,
-            $selectedRoleNames,
-        )));
+        $selectedRoleNames = $this->selectedRoleNames($data[self::ROLES_FIELD] ?? []);
+        $selectedRoles = array_values(array_filter(
+            $this->adminRoles(),
+            static fn (Role $role): bool => \in_array($role->name, $selectedRoleNames, true),
+        ));
 
         try {
             $adminAuthorizationChanges = $adminAuthorizationService->syncUserRoles($model, $selectedRoles, $administrator);
@@ -240,48 +235,111 @@ class ViewUser extends ViewRecord
     }
 
     /**
-     * The cataloged roles of the user, as the form's initial state.
+     * Every role of the `admin` guard, system or custom, with its description, a live summary of what
+     * saving would assign and remove, and the current password.
+     *
+     * @return list<Component>
+     */
+    private function manageRolesSchema(): array
+    {
+        $options = [];
+        $descriptions = [];
+
+        foreach ($this->adminRoles() as $role) {
+            $options[$role->name] = $role->displayName();
+            $descriptions[$role->name] = $role->displayDescription() ?? '';
+        }
+
+        return [
+            CheckboxList::make(self::ROLES_FIELD)
+                ->label(TranslatedText::of('admin/roles.actions.manage_roles.field'))
+                ->options($options)
+                ->descriptions($descriptions)
+                ->columns(2)
+                ->bulkToggleable()
+                ->live(),
+            Section::make(TranslatedText::of('admin/roles.summary.heading'))
+                ->compact()
+                ->schema([
+                    Text::make(fn (Get $get, User $record): string => $this->roleChangeSummary($this->adminRoleNamesOf($record), $this->selectedRoleNames($get(self::ROLES_FIELD)))),
+                ]),
+            self::currentPasswordField(),
+        ];
+    }
+
+    /**
+     * What saving would assign and remove, with the shown role names, or a sentence saying nothing changes.
+     *
+     * @param  list<string>  $before
+     * @param  list<string>  $after
+     */
+    private function roleChangeSummary(array $before, array $after): string
+    {
+        $displayNames = [];
+
+        foreach ($this->adminRoles() as $role) {
+            $displayNames[$role->name] = $role->displayName();
+        }
+
+        $assigned = array_values(array_filter(array_keys($displayNames), static fn (string $roleName): bool => \in_array($roleName, $after, true) && ! \in_array($roleName, $before, true)));
+        $removed = array_values(array_filter(array_keys($displayNames), static fn (string $roleName): bool => \in_array($roleName, $before, true) && ! \in_array($roleName, $after, true)));
+
+        if ($assigned === [] && $removed === []) {
+            return TranslatedText::of('admin/roles.actions.manage_roles.summary_none');
+        }
+
+        $sentences = [];
+
+        foreach (['summary_grant' => $assigned, 'summary_revoke' => $removed] as $key => $roleNames) {
+            if ($roleNames !== []) {
+                $sentences[] = trans_choice('admin/roles.actions.manage_roles.'.$key, \count($roleNames), [
+                    'count' => \count($roleNames),
+                    'list' => implode(', ', array_map(static fn (string $roleName): string => $displayNames[$roleName], $roleNames)),
+                ]);
+            }
+        }
+
+        return implode('. ', $sentences).'.';
+    }
+
+    /**
+     * The roles of the `admin` guard in the order the panel lists them.
+     *
+     * @return list<Role>
+     */
+    private function adminRoles(): array
+    {
+        return Role::inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->get());
+    }
+
+    /**
+     * The names of the user's roles of the `admin` guard, as the form's initial state.
      *
      * @return list<string>
      */
-    private function catalogRoleNames(User $user): array
+    private function adminRoleNamesOf(User $user): array
     {
-        $roleNames = $user->roles
-            ->filter(static fn (Role $role): bool => $role->guard_name === 'admin')
-            ->map(static fn (Role $role): string => $role->name)
-            ->all();
+        $roleNames = [];
 
+        foreach ($user->roles as $role) {
+            if ($role->guard_name === Role::GUARD_NAME) {
+                $roleNames[] = $role->name;
+            }
+        }
+
+        return $roleNames;
+    }
+
+    /**
+     * The submitted role names; anything that is not a string is ignored.
+     *
+     * @return list<string>
+     */
+    private function selectedRoleNames(mixed $selectedRoleNames): array
+    {
         return array_values(array_filter(
-            array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases()),
-            static fn (string $roleName): bool => \in_array($roleName, $roleNames, true),
+            \is_array($selectedRoleNames) ? $selectedRoleNames : [],
+            \is_string(...),
         ));
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function roleOptions(): array
-    {
-        $roleOptions = [];
-
-        foreach (AdminRole::cases() as $adminRole) {
-            $roleOptions[$adminRole->value] = $adminRole->label();
-        }
-
-        return $roleOptions;
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function roleDescriptions(): array
-    {
-        $roleDescriptions = [];
-
-        foreach (AdminRole::cases() as $adminRole) {
-            $roleDescriptions[$adminRole->value] = $adminRole->description();
-        }
-
-        return $roleDescriptions;
     }
 }
