@@ -7,13 +7,14 @@ import { useEchoNotification } from "@laravel/echo-react";
 import { toast } from "sonner";
 
 import { useNotificationStore } from "../stores/notificationStore";
+import { isNotificationType } from "../types/notification";
 import type { Notification } from "../types/notification";
 
 type NotificationBroadcastData = Pick<Notification, "actors" | "summary" | "target">;
 
 interface NotificationBroadcastEnvelope {
   id: string;
-  type: Notification["type"];
+  type: string;
 }
 
 interface NotificationBroadcastDeletion extends NotificationBroadcastEnvelope {
@@ -106,6 +107,10 @@ function AuthenticatedNotificationListener({
 
   const handleNotification = useCallback<(payload: NotificationBroadcastPayload) => void>(
     (payload) => {
+      if (!isNotificationType(payload.type)) {
+        return;
+      }
+
       if (isNotificationDeletionPayload(payload)) {
         if (payload.type === "likes_grouped") {
           removeNotification(payload.id);

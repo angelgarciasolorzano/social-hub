@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\Modules\Notification\Props\NotificationProps;
 use App\User\Models\User;
+use Filament\Notifications\DatabaseNotification as FilamentDatabaseNotification;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\DB;
@@ -15,11 +17,11 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 
-function createNotificationPropsTestNotification(User $user, bool $isRead = false): DatabaseNotification
+function createNotificationPropsTestNotification(User $user, bool $isRead = false, ?string $type = null): DatabaseNotification
 {
     return $user->notifications()->create([
         'id' => Str::uuid()->toString(),
-        'type' => 'notification.props.test',
+        'type' => $type ?? NotificationType::CommentOnPost->value,
         'data' => [],
         'read_at' => $isRead ? now() : null,
     ]);
@@ -31,13 +33,16 @@ beforeEach(function (): void {
     ]));
 });
 
-it('defers the count and includes only unread notifications owned by the authenticated user', function (): void {
+it('defers the count and includes only unread supported notifications owned by the authenticated user', function (): void {
     $user = createUser();
     createNotificationPropsTestNotification($user);
     createNotificationPropsTestNotification($user, isRead: true);
+    createNotificationPropsTestNotification($user, type: FilamentDatabaseNotification::class);
+    createNotificationPropsTestNotification($user, type: 'unknown_notification');
 
     $otherUser = createUser();
     createNotificationPropsTestNotification($otherUser);
+    createNotificationPropsTestNotification($otherUser, type: 'unknown_notification');
 
     $connection = DB::connection();
     $connection->enableQueryLog();

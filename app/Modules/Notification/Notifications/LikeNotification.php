@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Notification\Notifications;
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\User\Models\User;
 use Illuminate\Notifications\Notification;
 
 final class LikeNotification extends Notification
 {
-    public const string TYPE = 'likes_grouped';
-
     /**
      * @param  list<array{id: int, name: string}>  $actors
      * @param  array{postId: int, commentId: int|null}  $target
@@ -34,12 +33,12 @@ final class LikeNotification extends Notification
 
     public function databaseType(User $user): string
     {
-        return self::TYPE;
+        return NotificationType::LikesGrouped->value;
     }
 
     public function broadcastType(): string
     {
-        return self::TYPE;
+        return NotificationType::LikesGrouped->value;
     }
 
     /**

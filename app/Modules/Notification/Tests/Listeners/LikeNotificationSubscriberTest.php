@@ -3,11 +3,19 @@
 declare(strict_types=1);
 
 use App\Modules\Like\Events\LikeToggled;
+use App\Modules\Notification\Enums\NotificationType;
 use App\Modules\Notification\Listeners\LikeNotificationSubscriber;
 use App\Modules\Notification\Notifications\LikeNotification;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+
+it('uses the supported type for database and broadcast delivery', function (): void {
+    $likeNotification = new LikeNotification([], ['postId' => 1, 'commentId' => null], 'like-group-id');
+
+    expect($likeNotification->databaseType(createUser()))->toBe(NotificationType::LikesGrouped->value)
+        ->and($likeNotification->broadcastType())->toBe(NotificationType::LikesGrouped->value);
+});
 
 it('groups likes on a post for its owner', function (): void {
     $user = createUser();
@@ -21,7 +29,7 @@ it('groups likes on a post for its owner', function (): void {
     $databaseNotification = $user->notifications()->firstOrFail();
 
     expect($user->notifications()->count())->toBe(1)
-        ->and($databaseNotification->type)->toBe(LikeNotification::TYPE)
+        ->and($databaseNotification->type)->toBe(NotificationType::LikesGrouped->value)
         ->and($databaseNotification->data['actors'])->toBe([
             ['id' => $firstActor->id, 'name' => $firstActor->name],
             ['id' => $secondActor->id, 'name' => $secondActor->name],
@@ -41,7 +49,7 @@ it('updates only the matching comment group when an actor unlikes it', function 
     event(new LikeToggled($firstActor, $secondComment, liked: true));
     event(new LikeToggled($firstActor, $firstComment, liked: false));
 
-    $notifications = $user->notifications()->where('type', LikeNotification::TYPE)->get();
+    $notifications = $user->notifications()->where('type', NotificationType::LikesGrouped->value)->get();
     $firstGroup = $notifications->firstWhere('data.target.commentId', $firstComment->id);
     $secondGroup = $notifications->firstWhere('data.target.commentId', $secondComment->id);
 

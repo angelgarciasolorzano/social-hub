@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Notification\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Notification\Enums\NotificationType;
 use App\Modules\Notification\Resources\NotificationResource;
 use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
@@ -26,6 +27,7 @@ class NotificationController extends Controller
 
         $cursorPaginator = $this->authenticatedUser($request)
             ->notifications()
+            ->whereIn('type', NotificationType::values())
             ->latest()
             ->orderByDesc('id')
             ->cursorPaginate(self::HISTORY_PER_PAGE);
@@ -39,6 +41,7 @@ class NotificationController extends Controller
     {
         $notifications = $this->authenticatedUser($request)
             ->notifications()
+            ->whereIn('type', NotificationType::values())
             ->latest()
             ->orderByDesc('id')
             ->limit(self::RECENT_LIMIT)
@@ -51,7 +54,10 @@ class NotificationController extends Controller
     {
         $user = $this->authenticatedUser($request);
 
-        $databaseNotification = $user->notifications()->whereKey($notificationId)->firstOrFail();
+        $databaseNotification = $user->notifications()
+            ->whereIn('type', NotificationType::values())
+            ->whereKey($notificationId)
+            ->firstOrFail();
 
         $databaseNotification->markAsRead();
 
@@ -62,6 +68,7 @@ class NotificationController extends Controller
     {
         $this->authenticatedUser($request)
             ->unreadNotifications()
+            ->whereIn('type', NotificationType::values())
             ->update(['read_at' => now()]);
 
         return response()->noContent();
