@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Widgets\RolesOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
@@ -78,6 +79,30 @@ it('counts administrators, unused cataloged roles and authorization changes of t
         ->and($stats['unusedRoles']->getValue())->toBe(1)
         ->and($stats['changes']->getValue())->toBe(4)
         ->and($stats['changes']->getChart())->toBe([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]);
+});
+
+it('counts custom roles nobody holds as unused and their lifecycle as authorization changes', function (): void {
+    $this->travelTo(CarbonImmutable::parse('2026-06-30 12:00:00'));
+
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    foreach (AdminRole::cases() as $adminRole) {
+        createUser()->assignRole($adminRole->value);
+    }
+
+    RoleFactory::new()->createOne();
+    createUser()->assignRole(RoleFactory::new()->createOne());
+
+    foreach ([ActivityLogAdminEvent::RoleCreated, ActivityLogAdminEvent::RoleUpdated, ActivityLogAdminEvent::RoleDuplicated, ActivityLogAdminEvent::RoleDeleted] as $activityLogAdminEvent) {
+        ActivityLogFactory::new()->forEvent($activityLogAdminEvent)->createOne(['created_at' => '2026-06-30 08:00:00']);
+    }
+
+    $stats = rolesOverviewStats();
+
+    expect($stats['unusedRoles']->getValue())->toBe(1)
+        ->and($stats['changes']->getValue())->toBe(4);
 });
 
 it('shows its labels in Spanish', function (): void {
