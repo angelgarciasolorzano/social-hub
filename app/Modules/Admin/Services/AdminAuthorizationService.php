@@ -16,13 +16,15 @@ use App\User\Models\User;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * The only writer of the Admin authorization catalog outside the seeders: grants and revokes the roles
- * of the `admin` guard, system or custom, and their cataloged permissions, for the console commands and
- * the panel. Each change locks the `admin` role, the `admin.access` permission and the affected rows,
+ * The only writer of the Admin authorization catalog outside the seeders: creates, edits, duplicates
+ * and deletes custom roles, and grants and revokes the roles of the `admin` guard, system or custom, and
+ * their cataloged permissions, for the console commands and the panel. Each change locks the `admin` role, the `admin.access` permission and the affected rows,
  * never changes the permissions of the locked `admin` role, never leaves a role with a permission
  * whose requirements it lacks, never leaves the panel without a user holding `admin.access`, and
  * records the activity only when something changed.
@@ -262,6 +264,217 @@ final readonly class AdminAuthorizationService
 
             return new AdminAuthorizationChanges($granted, $revoked);
         });
+    }
+
+    /**
+     * Create a custom role with the given texts and cataloged permissions. Its stored name is
+     * `custom-` plus the slug of the label, with a numeric suffix when that name is taken.
+     *
+     * @param  list<AdminPermission>  $adminPermissions
+     *
+     * @throws AdminAuthorizationException when the label is taken or the permissions lack a requirement
+     * @throws InvalidArgumentException when a text is blank or too long
+     */
+    public function createRole(string $label, ?string $description, array $adminPermissions, User $user): Role
+    {
+        $label = $this->normalizedLabel($label);
+        $description = $this->normalizedDescription($description);
+
+        return DB::transaction(function () use ($label, $description, $adminPermissions, $user): Role {
+            ['adminAccessPermission' => $adminAccessPermission] = $this->lockCatalogRoot();
+
+            $this->ensureLabelAvailable($label);
+            $this->ensureRequirementsMet($adminPermissions);
+
+            $selectedPermissions = $this->inCatalogOrder($adminPermissions);
+            $permissions = array_map(
+                fn (AdminPermission $adminPermission): Permission => $this->catalogPermission($adminPermission, $adminAccessPermission),
+                $selectedPermissions,
+            );
+
+            $role = $this->newCustomRole($label, $description);
+            $role->givePermissionTo($permissions);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleCreated, $role, $user, [
+                'role' => $role->name,
+                'permissions' => array_map(static fn (AdminPermission $adminPermission): string => $adminPermission->value, $selectedPermissions),
+            ]);
+
+            $this->forgetCachedPermissionsAfterCommit();
+
+            return $role;
+        });
+    }
+
+    /**
+     * Change the label and description of a custom role; its stored name never changes. Returns false
+     * when nothing changed.
+     *
+     * @throws AdminAuthorizationException when the role is a system role or the label is taken
+     * @throws InvalidArgumentException when a text is blank or too long
+     */
+    public function updateRoleDetails(Role $role, string $label, ?string $description, User $user): bool
+    {
+        $label = $this->normalizedLabel($label);
+        $description = $this->normalizedDescription($description);
+
+        return DB::transaction(function () use ($role, $label, $description, $user): bool {
+            ['role' => $lockedRole] = $this->lockCatalogRole($role);
+
+            throw_if($lockedRole->isSystem(), AdminAuthorizationException::class, AdminAuthorizationFailure::SystemRoleProtected);
+
+            $changedAttributes = [];
+
+            if ($lockedRole->label !== $label) {
+                $this->ensureLabelAvailable($label, $lockedRole);
+                $changedAttributes[] = 'label';
+            }
+
+            if ($lockedRole->description !== $description) {
+                $changedAttributes[] = 'description';
+            }
+
+            if ($changedAttributes === []) {
+                return false;
+            }
+
+            $lockedRole->update(['label' => $label, 'description' => $description]);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleUpdated, $lockedRole, $user, [
+                'role' => $lockedRole->name,
+                'changed_attributes' => $changedAttributes,
+            ]);
+
+            return true;
+        });
+    }
+
+    /**
+     * Create a custom role with the given label and the description and cataloged permissions of the
+     * source role, system or custom.
+     *
+     * @throws AdminAuthorizationException when the source no longer exists or the label is taken
+     * @throws InvalidArgumentException when the label is blank or too long
+     */
+    public function duplicateRole(Role $source, string $label, User $user): Role
+    {
+        $label = $this->normalizedLabel($label);
+
+        return DB::transaction(function () use ($source, $label, $user): Role {
+            ['role' => $lockedSource] = $this->lockCatalogRole($source);
+
+            $this->ensureLabelAvailable($label);
+
+            $role = $this->newCustomRole($label, $this->normalizedDescription($lockedSource->displayDescription()));
+            $role->givePermissionTo($lockedSource->permissions);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleDuplicated, $role, $user, [
+                'role' => $role->name,
+                'source_role_id' => $lockedSource->id,
+            ]);
+
+            $this->forgetCachedPermissionsAfterCommit();
+
+            return $role;
+        });
+    }
+
+    /**
+     * Delete a custom role nobody holds, together with its permission grants.
+     *
+     * @throws AdminAuthorizationException when the role is a system role or still has users
+     */
+    public function deleteRole(Role $role, User $user): void
+    {
+        DB::transaction(function () use ($role, $user): void {
+            ['role' => $lockedRole] = $this->lockCatalogRole($role);
+
+            throw_if($lockedRole->isSystem(), AdminAuthorizationException::class, AdminAuthorizationFailure::SystemRoleProtected);
+            throw_if($lockedRole->users()->exists(), AdminAuthorizationException::class, AdminAuthorizationFailure::RoleHasUsers);
+
+            $this->activityLogger->record(ActivityLogAdminEvent::RoleDeleted, $lockedRole, $user, ['role' => $lockedRole->name]);
+
+            $lockedRole->delete();
+
+            $this->forgetCachedPermissionsAfterCommit();
+        });
+    }
+
+    /**
+     * Store a custom role of the `admin` guard under the first free name derived from its label.
+     */
+    private function newCustomRole(string $label, ?string $description): Role
+    {
+        $baseName = Role::CUSTOM_NAME_PREFIX.(Str::slug($label) !== '' ? Str::slug($label) : 'role');
+        $name = $baseName;
+        $suffix = 1;
+
+        while (Role::query()->where('name', $name)->where('guard_name', self::GUARD)->exists()) {
+            $suffix++;
+            $name = "{$baseName}-{$suffix}";
+        }
+
+        return Role::query()->create([
+            'name' => $name,
+            'guard_name' => self::GUARD,
+            'is_system' => false,
+            'label' => $label,
+            'description' => $description,
+        ]);
+    }
+
+    /**
+     * @throws AdminAuthorizationException when another role of the `admin` guard has the label, ignoring case
+     */
+    private function ensureLabelAvailable(string $label, ?Role $exceptRole = null): void
+    {
+        $labelTaken = Role::query()
+            ->where('guard_name', self::GUARD)
+            ->whereRaw('LOWER(label) = ?', [mb_strtolower($label)])
+            ->when($exceptRole instanceof Role, fn (Builder $builder): Builder => $builder->whereKeyNot($exceptRole?->getKey()))
+            ->exists();
+
+        throw_if($labelTaken, AdminAuthorizationException::class, AdminAuthorizationFailure::RoleLabelTaken);
+    }
+
+    /**
+     * @throws InvalidArgumentException when the label is blank or longer than the column allows
+     */
+    private function normalizedLabel(string $label): string
+    {
+        $label = trim($label);
+
+        if ($label === '' || mb_strlen($label) > Role::LABEL_MAX_LENGTH) {
+            throw new InvalidArgumentException(\sprintf('A role label must have between 1 and %d characters.', Role::LABEL_MAX_LENGTH));
+        }
+
+        return $label;
+    }
+
+    /**
+     * @throws InvalidArgumentException when the description is longer than the column allows
+     */
+    private function normalizedDescription(?string $description): ?string
+    {
+        $description = trim((string) $description);
+
+        if (mb_strlen($description) > Role::DESCRIPTION_MAX_LENGTH) {
+            throw new InvalidArgumentException(\sprintf('A role description must have at most %d characters.', Role::DESCRIPTION_MAX_LENGTH));
+        }
+
+        return $description === '' ? null : $description;
+    }
+
+    /**
+     * @param  list<AdminPermission>  $adminPermissions
+     * @return list<AdminPermission>
+     */
+    private function inCatalogOrder(array $adminPermissions): array
+    {
+        return array_values(array_filter(
+            AdminPermission::cases(),
+            static fn (AdminPermission $adminPermission): bool => \in_array($adminPermission, $adminPermissions, true),
+        ));
     }
 
     private function applyPermissionGrant(Role $role, AdminPermission $adminPermission, Permission $permission, User $user): void
