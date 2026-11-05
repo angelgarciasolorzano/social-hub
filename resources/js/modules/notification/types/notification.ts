@@ -1,5 +1,13 @@
-export type NotificationType =
-  "comment_on_post" | "comment_reply" | "likes_grouped" | (string & {});
+const supportedNotificationTypes = ["comment_on_post", "comment_reply", "likes_grouped"] as const;
+
+export type NotificationType = (typeof supportedNotificationTypes)[number];
+
+export function isNotificationType(value: unknown): value is NotificationType {
+  return (
+    typeof value === "string" &&
+    supportedNotificationTypes.some((notificationType) => notificationType === value)
+  );
+}
 
 export interface NotificationActor {
   id: number;
