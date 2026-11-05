@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notification\Notifications;
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Illuminate\Bus\Queueable;
@@ -13,8 +14,6 @@ use Illuminate\Notifications\Notification;
 class CommentedOnPostNotification extends Notification implements ShouldQueue
 {
     use Queueable;
-
-    private const string TYPE = 'comment_on_post';
 
     public function __construct(
         private int $actorId,
@@ -33,12 +32,12 @@ class CommentedOnPostNotification extends Notification implements ShouldQueue
 
     public function databaseType(User $user): string
     {
-        return self::TYPE;
+        return NotificationType::CommentOnPost->value;
     }
 
     public function broadcastType(): string
     {
-        return self::TYPE;
+        return NotificationType::CommentOnPost->value;
     }
 
     /**

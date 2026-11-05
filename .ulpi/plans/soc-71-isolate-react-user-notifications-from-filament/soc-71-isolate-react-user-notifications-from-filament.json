@@ -115,7 +115,7 @@
     {
       "id": "TASK-003",
       "title": "Usar la enum en notificaciones de comentarios",
-      "description": "Cambiar CommentedOnPostNotification y RepliedToCommentNotification para devolver los valores de NotificationType en databaseType() y broadcastType(). Ajustar CommentNotificationsTest para comprobar que el contrato literal continúa siendo comment_on_post y comment_reply.",
+      "description": "Cambiar CommentedOnPostNotification y RepliedToCommentNotification para devolver los valores de NotificationType en databaseType() y broadcastType(). Alinear CommentNotificationsTest con el caso de enum que corresponde a cada emisor; NotificationTypeTest ya fija los literales públicos.",
       "type": "refactor",
       "priority": "P1",
       "effort": "S",
@@ -130,7 +130,7 @@
       ],
       "acceptanceCriteria": [
         "Las notificaciones de comentario y respuesta usan la enum para los tipos de base de datos y broadcast.",
-        "El test mantiene los literales públicos actuales y comprueba que comentario y respuesta no intercambian sus tipos.",
+        "CommentNotificationsTest comprueba que cada emisor usa su caso de enum; NotificationTypeTest fija los literales públicos y hace fallar un cambio accidental de valor.",
         "Resumen, destinatario, canales y payload de ambas notificaciones siguen comportándose igual."
       ],
       "filesToModify": [

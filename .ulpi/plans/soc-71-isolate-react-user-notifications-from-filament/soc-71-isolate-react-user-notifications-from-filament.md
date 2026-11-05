@@ -106,7 +106,7 @@ rtk php artisan test --compact app/Modules/Notification/Tests/Enums/Notification
 
 ### TASK-003: Usar la enum en notificaciones de comentarios
 
-Cambiar CommentedOnPostNotification y RepliedToCommentNotification para devolver los valores de NotificationType en databaseType() y broadcastType(). Ajustar CommentNotificationsTest para comprobar que el contrato literal continúa siendo comment_on_post y comment_reply.
+Cambiar CommentedOnPostNotification y RepliedToCommentNotification para devolver los valores de NotificationType en databaseType() y broadcastType(). Alinear CommentNotificationsTest con el caso de enum que corresponde a cada emisor; NotificationTypeTest ya fija los literales públicos.
 
 **Type:** refactor  
 **Effort:** S  
@@ -117,7 +117,7 @@ Cambiar CommentedOnPostNotification y RepliedToCommentNotification para devolver
 **Acceptance Criteria:**
 
 1. Las notificaciones de comentario y respuesta usan la enum para los tipos de base de datos y broadcast.
-2. El test mantiene los literales públicos actuales y comprueba que comentario y respuesta no intercambian sus tipos.
+2. CommentNotificationsTest comprueba que cada emisor usa su caso de enum; NotificationTypeTest fija los literales públicos y hace fallar un cambio accidental de valor.
 3. Resumen, destinatario, canales y payload de ambas notificaciones siguen comportándose igual.
 
 **Write scope:**

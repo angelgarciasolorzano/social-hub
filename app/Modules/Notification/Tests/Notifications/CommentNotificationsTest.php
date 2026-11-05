@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Notification\Enums\NotificationType;
 use App\Modules\Notification\Notifications\CommentedOnPostNotification;
 use App\Modules\Notification\Notifications\RepliedToCommentNotification;
 use App\Support\Translation\TranslatedText;
@@ -23,8 +24,8 @@ it('queues a comment-on-post notification through database and broadcast with a 
         $user,
         CommentedOnPostNotification::class,
         fn (CommentedOnPostNotification $commentedOnPostNotification): bool => $commentedOnPostNotification->via($user) === ['database', 'broadcast']
-            && $commentedOnPostNotification->databaseType($user) === 'comment_on_post'
-            && $commentedOnPostNotification->broadcastType() === 'comment_on_post',
+            && $commentedOnPostNotification->databaseType($user) === NotificationType::CommentOnPost->value
+            && $commentedOnPostNotification->broadcastType() === NotificationType::CommentOnPost->value,
     );
 });
 
@@ -43,10 +44,9 @@ it('queues a comment-reply notification through database and broadcast with a st
         $user,
         RepliedToCommentNotification::class,
         fn (RepliedToCommentNotification $repliedToCommentNotification): bool => $repliedToCommentNotification->via($user) === ['database', 'broadcast']
-            && $repliedToCommentNotification->databaseType($user) === 'comment_reply'
-            && $repliedToCommentNotification->broadcastType() === 'comment_reply',
+            && $repliedToCommentNotification->databaseType($user) === NotificationType::CommentReply->value
+            && $repliedToCommentNotification->broadcastType() === NotificationType::CommentReply->value,
     );
-
 });
 
 it('serializes a minimal localized comment-on-post payload after its comment is deleted', function (PreferredLocale $preferredLocale): void {
