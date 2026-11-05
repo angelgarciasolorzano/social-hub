@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use Illuminate\Support\Facades\DB;
 use Livewire\Features\SupportTesting\Testable;
@@ -84,15 +86,51 @@ it('lists every cataloged role of the admin guard with its permission and user c
         ->and($roles[AdminRole::AdminRolesManager->value]->getAttribute('permissions_count'))->toBe(8);
 });
 
-it('shows a role outside the catalog as not editable', function (): void {
+it('lists a custom role with its label, its description and the custom type', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
-    Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin']);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte', 'description' => 'Atiende a los usuarios.']);
 
-    rolesListPage()
-        ->assertSee('legacy-role')
-        ->assertSee('Not editable');
+    $testable = rolesListPage()
+        ->assertSee('Soporte')
+        ->assertSee('custom-soporte')
+        ->assertSee('Atiende a los usuarios.')
+        ->assertSee(TranslatedText::of('admin/roles.types.custom'))
+        ->assertSee(TranslatedText::of('admin/roles.types.system'))
+        ->assertDontSee(TranslatedText::of('admin/roles.table.not_editable'));
+
+    expect(listedRoles($testable))->toHaveKey($customRole->name);
+});
+
+it('filters the roles by type', function (string $type, bool $expectsSystemRoles): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    $customRole = RoleFactory::new()->createOne();
+
+    $testable = rolesListPage();
+    $testable->__call('filterTable', ['type', $type]);
+
+    $expectedNames = $expectsSystemRoles
+        ? array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases())
+        : [$customRole->name];
+
+    expect(array_keys(listedRoles($testable)))->toEqualCanonicalizing($expectedNames);
+})->with([
+    'system' => ['system', true],
+    'custom' => ['custom', false],
+]);
+
+it('finds a custom role by its label', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    $customRole = RoleFactory::new()->createOne(['name' => 'custom-auditoria', 'label' => 'Auditoría externa']);
+
+    $testable = rolesListPage()->call('$set', 'tableSearch', 'externa');
+
+    expect(array_keys(listedRoles($testable)))->toBe([$customRole->name]);
 });
 
 it('shows the catalog in Spanish and finds a role by its translated name', function (): void {
@@ -143,6 +181,12 @@ it('runs the same number of queries whatever the number of users holding roles',
         createUser()->assignRole($adminRole->value);
         createUser()->assignRole($adminRole->value);
     }
+
+    foreach (range(1, 3) as $index) {
+        createUser()->assignRole(RoleFactory::new()->createOne());
+    }
+
+    countRolesListQueries();
 
     expect(countRolesListQueries())->toBe($queriesWithFewUsers);
 });
