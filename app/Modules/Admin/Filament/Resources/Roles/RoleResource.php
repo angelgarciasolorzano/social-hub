@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles;
 
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
@@ -28,13 +27,11 @@ use Illuminate\Database\Eloquent\Model;
 use Override;
 
 /**
- * The Admin roles and their permissions. Access is decided by RolePolicy; the catalog is closed, so
- * roles are never created or deleted here.
+ * The Admin roles and their permissions: the system roles of the catalog and the custom roles created
+ * from the panel. Access is decided by RolePolicy.
  */
 class RoleResource extends Resource
 {
-    private const string GUARD = 'admin';
-
     #[Override]
     protected static ?string $model = Role::class;
 
@@ -50,9 +47,7 @@ class RoleResource extends Resource
     #[Override]
     public static function getRecordTitle(?Model $record): string
     {
-        $roleName = $record instanceof Role ? $record->name : '';
-
-        return AdminRole::tryFrom($roleName)?->label() ?? $roleName;
+        return $record instanceof Role ? $record->displayName() : '';
     }
 
     #[Override]
@@ -86,7 +81,7 @@ class RoleResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $builder = parent::getEloquentQuery();
-        $builder->getQuery()->where('guard_name', self::GUARD);
+        $builder->getQuery()->where('guard_name', Role::GUARD_NAME);
 
         return $builder;
     }

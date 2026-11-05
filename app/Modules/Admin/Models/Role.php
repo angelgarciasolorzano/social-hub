@@ -41,6 +41,16 @@ class Role extends SpatieRole
     public const int DESCRIPTION_MAX_LENGTH = 255;
 
     /**
+     * A role created without saying otherwise is custom, also before it is read back from the database.
+     *
+     * @var array<string, mixed>
+     */
+    #[Override]
+    protected $attributes = [
+        'is_system' => false,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
