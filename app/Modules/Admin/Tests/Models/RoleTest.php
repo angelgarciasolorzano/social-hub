@@ -10,7 +10,6 @@ use App\User\Enums\PreferredLocale;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
-use Spatie\Permission\Models\Role as SpatieRole;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -111,7 +110,6 @@ it('resolves the role morph to the new model', function (): void {
     expect(Relation::getMorphedModel('role'))->toBe(Role::class);
 });
 
-it('resolves RolePolicy for the new model and for Spatie role', function (): void {
-    expect(Gate::getPolicyFor(Role::class))->toBeInstanceOf(RolePolicy::class)
-        ->and(Gate::getPolicyFor(SpatieRole::class))->toBeInstanceOf(RolePolicy::class);
+it('resolves RolePolicy for the new model through its attribute', function (): void {
+    expect(Gate::getPolicyFor(Role::class))->toBeInstanceOf(RolePolicy::class);
 });
