@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Auth\Database\Seeders\TrustedDeviceSeeder;
 use App\Modules\ActivityLog\Database\Seeders\ActivityLogSeeder;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
+use App\Modules\Admin\Database\Seeders\AdminCustomRoleSeeder;
 use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
 use App\Modules\Announcement\Database\Seeders\AnnouncementSeeder;
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
@@ -27,6 +28,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             AdminAuthorizationSeeder::class,
             AdminUserSeeder::class,
+            AdminCustomRoleSeeder::class,
             TrustedDeviceSeeder::class,
             AccountStatusSeeder::class,
             AnnouncementSeeder::class,

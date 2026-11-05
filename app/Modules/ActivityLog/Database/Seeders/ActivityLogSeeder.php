@@ -211,7 +211,8 @@ class ActivityLogSeeder extends Seeder
     }
 
     /**
-     * Angel bootstraps the panel and then grants every other administrator their roles from the console.
+     * Angel bootstraps the panel, creates the custom roles from the panel and then grants every other
+     * administrator their roles; a custom role is always granted after it was created.
      */
     private function seedAdminActivity(): void
     {
@@ -227,17 +228,58 @@ class ActivityLogSeeder extends Seeder
             'roles' => $this->roleNames($bootstrapAdmin),
         ]);
 
+        $customRoleCreatedAt = $this->seedCustomRoleActivity($bootstrapAdmin, $bootstrappedAt);
+
         User::query()
             ->role(AdminRole::Admin->value, 'admin')
             ->whereKeyNot($bootstrapAdmin->id)
             ->with('roles')
-            ->each(function (User $user) use ($bootstrapAdmin, $bootstrappedAt): void {
+            ->each(function (User $user) use ($bootstrapAdmin, $bootstrappedAt, $customRoleCreatedAt): void {
                 foreach ($this->roleNames($user) as $roleName) {
-                    $this->queue(ActivityLogAdminEvent::RoleGranted, $bootstrapAdmin->id, User::MORPH_NAME, $user->id, $this->dateAfter($bootstrappedAt), ['role' => $roleName]);
+                    $grantedAfter = $customRoleCreatedAt[$roleName] ?? $bootstrappedAt;
+
+                    $this->queue(ActivityLogAdminEvent::RoleGranted, $bootstrapAdmin->id, User::MORPH_NAME, $user->id, $this->dateAfter($grantedAfter), ['role' => $roleName]);
                 }
             });
 
         $this->seedRolePermissionActivity($bootstrapAdmin, $bootstrappedAt);
+    }
+
+    /**
+     * Angel creates each custom role from the panel after bootstrapping it, with the permissions the role
+     * holds. Returns when each one was created, keyed by its stored name.
+     *
+     * @return array<string, CarbonImmutable>
+     */
+    private function seedCustomRoleActivity(User $user, CarbonImmutable $bootstrappedAt): array
+    {
+        $createdAtByRoleName = [];
+
+        foreach (Role::query()->where('guard_name', 'admin')->where('is_system', false)->with('permissions')->orderBy('id')->get() as $role) {
+            $roleId = $role->getKey();
+
+            if (! \is_int($roleId)) {
+                continue;
+            }
+
+            $createdAt = $this->dateAfter($bootstrappedAt);
+            $permissionNames = $role->permissions->pluck('name')->all();
+
+            $this->queue(ActivityLogAdminEvent::RoleCreated, $user->id, AppServiceProvider::ROLE_MORPH_NAME, $roleId, $createdAt, [
+                'role' => $role->name,
+                'permissions' => array_values(array_map(
+                    static fn (AdminPermission $adminPermission): string => $adminPermission->value,
+                    array_filter(
+                        AdminPermission::cases(),
+                        static fn (AdminPermission $adminPermission): bool => \in_array($adminPermission->value, $permissionNames, true),
+                    ),
+                )),
+            ], web: true);
+
+            $createdAtByRoleName[$role->name] = $createdAt;
+        }
+
+        return $createdAtByRoleName;
     }
 
     /**
@@ -251,7 +293,7 @@ class ActivityLogSeeder extends Seeder
         foreach (Role::query()->where('guard_name', 'admin')->with('permissions')->get() as $role) {
             $roleId = $role->getKey();
 
-            if (! \is_int($roleId) || ! AdminRole::tryFrom($role->name) instanceof AdminRole) {
+            if (! \is_int($roleId) || ! AdminRole::tryFrom($role->name) instanceof AdminRole || $role->isLocked()) {
                 continue;
             }
 
