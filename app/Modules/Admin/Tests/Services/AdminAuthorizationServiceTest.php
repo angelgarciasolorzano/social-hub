@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
@@ -19,6 +20,31 @@ use Spatie\Permission\Models\Permission;
 function adminAuthorizationService(): AdminAuthorizationService
 {
     return resolve(AdminAuthorizationService::class);
+}
+
+/**
+ * The role of the `admin` guard with the given catalog name.
+ */
+function authorizationServiceRole(AdminRole $adminRole): Role
+{
+    return Role::query()
+        ->where('name', $adminRole->value)
+        ->where('guard_name', Role::GUARD_NAME)
+        ->sole();
+}
+
+/**
+ * A custom role of the `admin` guard with the given cataloged permissions.
+ */
+function authorizationServiceCustomRole(AdminPermission ...$adminPermissions): Role
+{
+    $role = RoleFactory::new()->createOne();
+    $role->givePermissionTo(array_map(
+        static fn (AdminPermission $adminPermission): string => $adminPermission->value,
+        $adminPermissions,
+    ));
+
+    return $role;
 }
 
 function adminAuthorizationActivityCount(ActivityLogAdminEvent $activityLogAdminEvent): int
@@ -48,8 +74,8 @@ it('grants a role once and records only the real change', function (): void {
     $actor = createAdminCommandActor();
     $user = createUser();
 
-    $firstGrant = adminAuthorizationService()->grantRole($user, AdminRole::AdminUsersReader, $actor);
-    $repeatedGrant = adminAuthorizationService()->grantRole($user, AdminRole::AdminUsersReader, $actor);
+    $firstGrant = adminAuthorizationService()->grantRole($user, authorizationServiceRole(AdminRole::AdminUsersReader), $actor);
+    $repeatedGrant = adminAuthorizationService()->grantRole($user, authorizationServiceRole(AdminRole::AdminUsersReader), $actor);
 
     $activityLog = ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleGranted->value)->sole();
 
@@ -66,8 +92,8 @@ it('revokes a role and records it, and records nothing when the user did not hav
     $user = createUser();
     $user->assignRole(AdminRole::AdminPostsReader->value);
 
-    $revocation = adminAuthorizationService()->revokeRole($user, AdminRole::AdminPostsReader, $actor);
-    $repeatedRevocation = adminAuthorizationService()->revokeRole($user, AdminRole::AdminPostsReader, $actor);
+    $revocation = adminAuthorizationService()->revokeRole($user, authorizationServiceRole(AdminRole::AdminPostsReader), $actor);
+    $repeatedRevocation = adminAuthorizationService()->revokeRole($user, authorizationServiceRole(AdminRole::AdminPostsReader), $actor);
 
     expect($revocation)->toBeTrue()
         ->and($repeatedRevocation)->toBeFalse()
@@ -79,7 +105,7 @@ it('refuses to revoke the role that gives the last administrator panel access', 
     $user = createAdminCommandActor();
 
     $failure = adminAuthorizationFailureOf(
-        static fn (): bool => adminAuthorizationService()->revokeRole($user, AdminRole::Admin, $user),
+        static fn (): bool => adminAuthorizationService()->revokeRole($user, authorizationServiceRole(AdminRole::Admin), $user),
     );
 
     expect($failure)->toBe(AdminAuthorizationFailure::LastAdminAccess)
@@ -91,7 +117,7 @@ it('revokes the admin role when another administrator keeps panel access', funct
     $actor = createAdminCommandActor();
     $user = createAdminCommandActor();
 
-    expect(adminAuthorizationService()->revokeRole($user, AdminRole::Admin, $actor))->toBeTrue()
+    expect(adminAuthorizationService()->revokeRole($user, authorizationServiceRole(AdminRole::Admin), $actor))->toBeTrue()
         ->and($user->fresh()?->can(AdminPermission::AdminAccess->value))->toBeFalse();
 });
 
@@ -100,31 +126,91 @@ it('grants and revokes role permissions with the role as the recorded subject', 
     $user = createUser();
     $user->assignRole(AdminRole::AdminUsersReader->value);
 
-    $grant = adminAuthorizationService()->grantPermission(AdminRole::AdminUsersReader, AdminPermission::AdminPostsView, $actor);
-    $userCanAfterGrant = $user->fresh()?->can(AdminPermission::AdminPostsView->value);
-    $repeatedGrant = adminAuthorizationService()->grantPermission(AdminRole::AdminUsersReader, AdminPermission::AdminPostsView, $actor);
-    $revocation = adminAuthorizationService()->revokePermission(AdminRole::AdminUsersReader, AdminPermission::AdminPostsView, $actor);
-    $repeatedRevocation = adminAuthorizationService()->revokePermission(AdminRole::AdminUsersReader, AdminPermission::AdminPostsView, $actor);
+    $role = authorizationServiceRole(AdminRole::AdminUsersReader);
 
-    $role = Role::query()->where('name', AdminRole::AdminUsersReader->value)->where('guard_name', 'admin')->sole();
+    $grant = adminAuthorizationService()->grantPermission($role, AdminPermission::AdminPostsViewAny, $actor);
+    $userCanAfterGrant = $user->fresh()?->can(AdminPermission::AdminPostsViewAny->value);
+    $repeatedGrant = adminAuthorizationService()->grantPermission($role, AdminPermission::AdminPostsViewAny, $actor);
+    $revocation = adminAuthorizationService()->revokePermission($role, AdminPermission::AdminPostsViewAny, $actor);
+    $repeatedRevocation = adminAuthorizationService()->revokePermission($role, AdminPermission::AdminPostsViewAny, $actor);
+
     $activityLog = ActivityLog::query()->where('event', ActivityLogAdminEvent::RolePermissionGranted->value)->sole();
 
     expect([$grant, $repeatedGrant, $revocation, $repeatedRevocation])->toBe([true, false, true, false])
         ->and($userCanAfterGrant)->toBeTrue()
-        ->and($user->fresh()?->can(AdminPermission::AdminPostsView->value))->toBeFalse()
+        ->and($user->fresh()?->can(AdminPermission::AdminPostsViewAny->value))->toBeFalse()
         ->and($activityLog->subject_type)->toBe(AppServiceProvider::ROLE_MORPH_NAME)
         ->and($activityLog->subject_id)->toBe($role->id)
         ->and($activityLog->causer_id)->toBe($actor->id)
         ->and($activityLog->properties?->get('role'))->toBe(AdminRole::AdminUsersReader->value)
-        ->and($activityLog->properties?->get('permission'))->toBe(AdminPermission::AdminPostsView->value)
+        ->and($activityLog->properties?->get('permission'))->toBe(AdminPermission::AdminPostsViewAny->value)
         ->and(adminAuthorizationActivityCount(ActivityLogAdminEvent::RolePermissionRevoked))->toBe(1);
 });
 
-it('refuses to revoke admin.access from the admin role when nobody else would keep it', function (): void {
+it('grants a custom role like a system role and records its stored name', function (): void {
+    $actor = createAdminCommandActor();
+    $user = createUser();
+    $customRole = authorizationServiceCustomRole(AdminPermission::AdminPostsViewAny);
+
+    expect(adminAuthorizationService()->grantRole($user, $customRole, $actor))->toBeTrue()
+        ->and($user->fresh()?->can(AdminPermission::AdminPostsViewAny->value))->toBeTrue()
+        ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleGranted->value)->sole()->properties?->get('role'))
+        ->toBe($customRole->name);
+});
+
+it('refuses to change the permissions of the locked admin role and records nothing', function (): void {
     $user = createAdminCommandActor();
+    $adminRole = authorizationServiceRole(AdminRole::Admin);
+
+    $grantFailure = adminAuthorizationFailureOf(
+        static fn (): bool => adminAuthorizationService()->grantPermission($adminRole, AdminPermission::AdminDashboardView, $user),
+    );
+    $revocationFailure = adminAuthorizationFailureOf(
+        static fn (): bool => adminAuthorizationService()->revokePermission($adminRole, AdminPermission::AdminAccess, $user),
+    );
+
+    expect($grantFailure)->toBe(AdminAuthorizationFailure::RoleLocked)
+        ->and($revocationFailure)->toBe(AdminAuthorizationFailure::RoleLocked)
+        ->and($adminRole->refresh()->permissions->pluck('name')->all())->toBe([AdminPermission::AdminAccess->value])
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('refuses a permission whose requirements the role lacks', function (): void {
+    $user = createAdminCommandActor();
+    $role = authorizationServiceCustomRole();
 
     $failure = adminAuthorizationFailureOf(
-        static fn (): bool => adminAuthorizationService()->revokePermission(AdminRole::Admin, AdminPermission::AdminAccess, $user),
+        static fn (): bool => adminAuthorizationService()->grantPermission($role, AdminPermission::AdminUsersView, $user),
+    );
+
+    expect($failure)->toBe(AdminAuthorizationFailure::PermissionDependencyMissing)
+        ->and($role->permissions()->exists())->toBeFalse()
+        ->and(adminAuthorizationActivityCount(ActivityLogAdminEvent::RolePermissionGranted))->toBe(0);
+});
+
+it('refuses to revoke a permission that another permission of the role requires', function (): void {
+    $user = createAdminCommandActor();
+    $role = authorizationServiceRole(AdminRole::AdminUsersReader);
+
+    $failure = adminAuthorizationFailureOf(
+        static fn (): bool => adminAuthorizationService()->revokePermission($role, AdminPermission::AdminUsersViewAny, $user),
+    );
+
+    expect($failure)->toBe(AdminAuthorizationFailure::PermissionDependencyMissing)
+        ->and($role->refresh()->permissions->pluck('name')->sort()->values()->all())->toBe([
+            AdminPermission::AdminUsersView->value,
+            AdminPermission::AdminUsersViewAny->value,
+        ])
+        ->and(adminAuthorizationActivityCount(ActivityLogAdminEvent::RolePermissionRevoked))->toBe(0);
+});
+
+it('refuses to revoke admin.access from a role when nobody else would keep it', function (): void {
+    $gatekeeperRole = authorizationServiceCustomRole(AdminPermission::AdminAccess);
+    $user = createUser();
+    $user->assignRole($gatekeeperRole);
+
+    $failure = adminAuthorizationFailureOf(
+        static fn (): bool => adminAuthorizationService()->revokePermission($gatekeeperRole, AdminPermission::AdminAccess, $user),
     );
 
     expect($failure)->toBe(AdminAuthorizationFailure::LastAdminAccess)
@@ -132,31 +218,29 @@ it('refuses to revoke admin.access from the admin role when nobody else would ke
         ->and(adminAuthorizationActivityCount(ActivityLogAdminEvent::RolePermissionRevoked))->toBe(0);
 });
 
-it('revokes admin.access from the admin role when a user keeps it through another role', function (): void {
+it('revokes admin.access from a role when a user keeps it through another role', function (): void {
     $user = createAdminCommandActor();
-    Role::query()
-        ->where('name', AdminRole::AdminUsersReader->value)
-        ->where('guard_name', 'admin')
-        ->sole()
-        ->givePermissionTo(AdminPermission::AdminAccess->value);
-    $user->assignRole(AdminRole::AdminUsersReader->value);
+    $gatekeeperRole = authorizationServiceCustomRole(AdminPermission::AdminAccess);
+    $user->assignRole($gatekeeperRole);
 
-    expect(adminAuthorizationService()->revokePermission(AdminRole::Admin, AdminPermission::AdminAccess, $user))->toBeTrue()
+    expect(adminAuthorizationService()->revokePermission($gatekeeperRole, AdminPermission::AdminAccess, $user))->toBeTrue()
         ->and($user->fresh()?->can(AdminPermission::AdminAccess->value))->toBeTrue();
 });
 
 it('reports a catalog that is not initialized and changes nothing', function (): void {
     $actor = createAdminCommandActor();
     $user = createUser();
+    $rolesReaderRole = authorizationServiceRole(AdminRole::AdminRolesReader);
+    $usersReaderRole = authorizationServiceRole(AdminRole::AdminUsersReader);
 
-    Role::query()->where('name', AdminRole::AdminRolesReader->value)->delete();
+    $rolesReaderRole->delete();
     $missingRoleFailure = adminAuthorizationFailureOf(
-        static fn (): bool => adminAuthorizationService()->grantRole($user, AdminRole::AdminRolesReader, $actor),
+        static fn (): bool => adminAuthorizationService()->grantRole($user, $rolesReaderRole, $actor),
     );
 
-    Role::query()->where('name', AdminRole::Admin->value)->delete();
+    authorizationServiceRole(AdminRole::Admin)->delete();
     $missingCatalogFailure = adminAuthorizationFailureOf(
-        static fn (): bool => adminAuthorizationService()->grantRole($user, AdminRole::AdminUsersReader, $actor),
+        static fn (): bool => adminAuthorizationService()->grantRole($user, $usersReaderRole, $actor),
     );
 
     expect($missingRoleFailure)->toBe(AdminAuthorizationFailure::RoleNotInitialized)
@@ -165,12 +249,25 @@ it('reports a catalog that is not initialized and changes nothing', function ():
         ->and(adminAuthorizationActivityCount(ActivityLogAdminEvent::RoleGranted))->toBe(0);
 });
 
+it('refuses a role of another guard', function (): void {
+    $actor = createAdminCommandActor();
+    $user = createUser();
+    $webRole = Role::query()->create(['name' => 'web-only-role', 'guard_name' => 'web']);
+
+    $failure = adminAuthorizationFailureOf(
+        static fn (): bool => adminAuthorizationService()->grantRole($user, $webRole, $actor),
+    );
+
+    expect($failure)->toBe(AdminAuthorizationFailure::RoleNotInitialized)
+        ->and($user->fresh()?->roles()->exists())->toBeFalse();
+});
+
 it('reports a cataloged permission that is not initialized', function (): void {
     $user = createAdminCommandActor();
     Permission::query()->where('name', AdminPermission::AdminRolesUpdate->value)->delete();
 
     $failure = adminAuthorizationFailureOf(
-        static fn (): bool => adminAuthorizationService()->grantPermission(AdminRole::AdminUsersReader, AdminPermission::AdminRolesUpdate, $user),
+        static fn (): bool => adminAuthorizationService()->grantPermission(authorizationServiceRole(AdminRole::AdminUsersReader), AdminPermission::AdminRolesUpdate, $user),
     );
 
     expect($failure)->toBe(AdminAuthorizationFailure::PermissionNotInitialized)
@@ -192,7 +289,7 @@ it('ignores roles of other guards with the same name', function (): void {
     $user = createUser();
     Role::query()->create(['name' => AdminRole::AdminUsersReader->value, 'guard_name' => 'web']);
 
-    adminAuthorizationService()->grantRole($user, AdminRole::AdminUsersReader, $actor);
+    adminAuthorizationService()->grantRole($user, authorizationServiceRole(AdminRole::AdminUsersReader), $actor);
 
     $adminGuardRole = Role::query()
         ->where('name', AdminRole::AdminUsersReader->value)
@@ -206,7 +303,7 @@ it('keeps the callers user instance in sync with the stored roles', function ():
     $actor = createAdminCommandActor();
     $user = User::query()->with('roles')->findOrFail(createUser()->id);
 
-    adminAuthorizationService()->grantRole($user, AdminRole::AdminUsersReader, $actor);
+    adminAuthorizationService()->grantRole($user, authorizationServiceRole(AdminRole::AdminUsersReader), $actor);
 
     expect($user->hasRole(AdminRole::AdminUsersReader->value, 'admin'))->toBeTrue();
 });

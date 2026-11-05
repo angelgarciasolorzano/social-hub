@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
@@ -22,6 +23,17 @@ function createRolesManager(): User
     $user->assignRole(AdminRole::Admin->value, AdminRole::AdminRolesManager->value);
 
     return $user;
+}
+
+/**
+ * The role of the `admin` guard with the given catalog name.
+ */
+function syncedRole(AdminRole $adminRole): Role
+{
+    return Role::query()
+        ->where('name', $adminRole->value)
+        ->where('guard_name', Role::GUARD_NAME)
+        ->sole();
 }
 
 /**
@@ -64,7 +76,7 @@ it('syncs the roles of a user, granting before revoking, and records each change
 
     $adminAuthorizationChanges = resolve(AdminAuthorizationService::class)->syncUserRoles(
         $user,
-        [AdminRole::AdminPostsReader, AdminRole::AdminUsersReader],
+        [syncedRole(AdminRole::AdminPostsReader), syncedRole(AdminRole::AdminUsersReader)],
         $actor,
     );
 
@@ -83,28 +95,50 @@ it('returns no changes and records nothing when the roles are already the select
     $user = createUser();
     $user->assignRole(AdminRole::AdminUsersReader->value);
 
-    $adminAuthorizationChanges = resolve(AdminAuthorizationService::class)->syncUserRoles($user, [AdminRole::AdminUsersReader], $actor);
+    $adminAuthorizationChanges = resolve(AdminAuthorizationService::class)->syncUserRoles($user, [syncedRole(AdminRole::AdminUsersReader)], $actor);
 
     expect($adminAuthorizationChanges->hasChanges())->toBeFalse()
         ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
 
-it('keeps the roles of a user that are outside the catalog', function (): void {
+it('grants and revokes custom roles like system roles', function (): void {
     $actor = createRolesManager();
     $user = createUser();
-    $customRole = Role::query()->create(['name' => 'admin-auditor', 'guard_name' => 'admin']);
-    $user->assignRole($customRole, AdminRole::AdminUsersReader->value);
+    $auditorRole = RoleFactory::new()->createOne(['name' => 'custom-auditor']);
+    $editorRole = RoleFactory::new()->createOne(['name' => 'custom-editor']);
+    $user->assignRole($auditorRole);
+
+    $adminAuthorizationChanges = resolve(AdminAuthorizationService::class)->syncUserRoles(
+        $user,
+        [$editorRole, syncedRole(AdminRole::AdminUsersReader)],
+        $actor,
+    );
+
+    expect($adminAuthorizationChanges->granted)->toBe([AdminRole::AdminUsersReader->value, 'custom-editor'])
+        ->and($adminAuthorizationChanges->revoked)->toBe(['custom-auditor'])
+        ->and($user->fresh()?->getRoleNames()->sort()->values()->all())->toBe([
+            AdminRole::AdminUsersReader->value,
+            'custom-editor',
+        ]);
+});
+
+it('keeps the roles of a user that belong to another guard', function (): void {
+    $actor = createRolesManager();
+    $user = createUser();
+    $webRole = Role::query()->create(['name' => 'web-only-role', 'guard_name' => 'web']);
+    $user->roles()->attach($webRole);
+    $user->assignRole(AdminRole::AdminUsersReader->value);
 
     resolve(AdminAuthorizationService::class)->syncUserRoles($user, [], $actor);
 
-    expect($user->fresh()?->getRoleNames()->all())->toBe(['admin-auditor']);
+    expect($user->fresh()?->roles->pluck('name')->all())->toBe(['web-only-role']);
 });
 
 it('syncs the permissions of a role', function (): void {
     $user = createRolesManager();
 
     $adminAuthorizationChanges = resolve(AdminAuthorizationService::class)->syncRolePermissions(
-        AdminRole::AdminPostsReader,
+        syncedRole(AdminRole::AdminPostsReader),
         [AdminPermission::AdminPostsViewAny, AdminPermission::AdminActivityViewAny],
         $user,
     );
@@ -122,8 +156,14 @@ it('rolls the whole sync back when the manager would lose the permission to edit
     $permissionsBefore = catalogRolePermissionNames(AdminRole::AdminRolesManager);
 
     $failure = syncFailureOf(static fn (): mixed => resolve(AdminAuthorizationService::class)->syncRolePermissions(
-        AdminRole::AdminRolesManager,
-        [AdminPermission::AdminRolesViewAny, AdminPermission::AdminRolesView, AdminPermission::AdminUsersRoles, AdminPermission::AdminPostsView],
+        syncedRole(AdminRole::AdminRolesManager),
+        [
+            AdminPermission::AdminRolesViewAny,
+            AdminPermission::AdminRolesView,
+            AdminPermission::AdminUsersViewAny,
+            AdminPermission::AdminUsersView,
+            AdminPermission::AdminUsersRoles,
+        ],
         $user,
     ));
 
@@ -139,7 +179,7 @@ it('rolls the whole sync back when the manager would lose panel access', functio
 
     $failure = syncFailureOf(static fn (): mixed => resolve(AdminAuthorizationService::class)->syncUserRoles(
         $user,
-        [AdminRole::AdminRolesManager, AdminRole::AdminPostsReader],
+        [syncedRole(AdminRole::AdminRolesManager), syncedRole(AdminRole::AdminPostsReader)],
         $user,
     ));
 
@@ -152,18 +192,60 @@ it('rolls the whole sync back when the manager would lose panel access', functio
 });
 
 it('rolls back the grants of a sync when a later revocation protects the last panel access', function (): void {
-    $user = createRolesManager();
+    $gatekeeperRole = RoleFactory::new()->createOne();
+    $gatekeeperRole->givePermissionTo([
+        AdminPermission::AdminAccess->value,
+        AdminPermission::AdminRolesViewAny->value,
+        AdminPermission::AdminRolesView->value,
+        AdminPermission::AdminRolesUpdate->value,
+    ]);
+    $user = createUser();
+    $user->assignRole($gatekeeperRole);
 
     $failure = syncFailureOf(static fn (): mixed => resolve(AdminAuthorizationService::class)->syncRolePermissions(
-        AdminRole::Admin,
-        [AdminPermission::AdminPostsView],
+        $gatekeeperRole,
+        [
+            AdminPermission::AdminRolesViewAny,
+            AdminPermission::AdminRolesView,
+            AdminPermission::AdminRolesUpdate,
+            AdminPermission::AdminPostsViewAny,
+        ],
         $user,
     ));
 
     expect($failure)->toBe(AdminAuthorizationFailure::LastAdminAccess)
-        ->and(catalogRolePermissionNames(AdminRole::Admin))->toBe([AdminPermission::AdminAccess->value])
+        ->and($gatekeeperRole->refresh()->permissions->pluck('name')->all())->toContain(AdminPermission::AdminAccess->value)
         ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse()
-        ->and($user->fresh()?->can(AdminPermission::AdminPostsView->value))->toBeFalse();
+        ->and($user->fresh()?->can(AdminPermission::AdminPostsViewAny->value))->toBeFalse();
+});
+
+it('refuses to sync the permissions of the locked admin role', function (): void {
+    $user = createRolesManager();
+
+    $failure = syncFailureOf(static fn (): mixed => resolve(AdminAuthorizationService::class)->syncRolePermissions(
+        syncedRole(AdminRole::Admin),
+        [AdminPermission::AdminAccess, AdminPermission::AdminDashboardView],
+        $user,
+    ));
+
+    expect($failure)->toBe(AdminAuthorizationFailure::RoleLocked)
+        ->and(catalogRolePermissionNames(AdminRole::Admin))->toBe([AdminPermission::AdminAccess->value])
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
+});
+
+it('refuses a selection that lacks a requirement and writes nothing', function (): void {
+    $user = createRolesManager();
+    $permissionsBefore = catalogRolePermissionNames(AdminRole::AdminUsersReader);
+
+    $failure = syncFailureOf(static fn (): mixed => resolve(AdminAuthorizationService::class)->syncRolePermissions(
+        syncedRole(AdminRole::AdminUsersReader),
+        [AdminPermission::AdminUsersView, AdminPermission::AdminPostsViewAny],
+        $user,
+    ));
+
+    expect($failure)->toBe(AdminAuthorizationFailure::PermissionDependencyMissing)
+        ->and(catalogRolePermissionNames(AdminRole::AdminUsersReader))->toBe($permissionsBefore)
+        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
 
 it('locks the admin role before the user, the same order as the console commands', function (): void {
@@ -173,7 +255,7 @@ it('locks the admin role before the user, the same order as the console commands
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    resolve(AdminAuthorizationService::class)->syncUserRoles($user, [AdminRole::AdminPostsReader], $actor);
+    resolve(AdminAuthorizationService::class)->syncUserRoles($user, [syncedRole(AdminRole::AdminPostsReader)], $actor);
 
     $lockedTables = [];
 
