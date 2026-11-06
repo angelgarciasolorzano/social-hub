@@ -19,8 +19,8 @@ use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 
 /**
- * Describes who performed an activity and what it was performed on, by type and id only,
- * with a link when the administrator may open that record. Content is never shown.
+ * Describes who performed an activity and what it was performed on, by type and id only (a role by
+ * its shown name), with a link when the administrator may open that record. Content is never shown.
  */
 trait DescribesActivityLogParties
 {
@@ -53,6 +53,10 @@ trait DescribesActivityLogParties
     {
         if ($activityLog->subject_type === null) {
             return TranslatedText::of('admin/common.none');
+        }
+
+        if ($activityLog->subject instanceof Role) {
+            return $activityLog->subject->displayName();
         }
 
         $replace = [

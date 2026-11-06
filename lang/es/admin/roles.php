@@ -340,6 +340,36 @@ return [
         ],
         'history' => [
             'title' => 'Historial',
+            'columns' => [
+                'change_type' => 'Tipo de cambio',
+                'detail' => 'Detalle',
+            ],
+            'change_types' => [
+                'permissions' => 'Permisos',
+                'users' => 'Usuarios',
+                'lifecycle' => 'Ciclo de vida del rol',
+            ],
+            'filters' => [
+                'change_type' => 'Tipo de cambio',
+            ],
+            'group' => [
+                'day' => 'Día',
+            ],
+            'detail' => [
+                'permission_granted' => 'Agregó el permiso :permission',
+                'permission_revoked' => 'Quitó el permiso :permission',
+                'role_granted' => 'Asignó el rol a :user',
+                'role_revoked' => 'Quitó el rol a :user',
+                'bootstrapped' => 'Asignó el rol a :user al configurar el panel',
+                'created' => '{0} Creó el rol sin permisos|{1} Creó el rol con :count permiso|[2,*] Creó el rol con :count permisos',
+                'updated_label' => 'Cambió el nombre',
+                'updated_description' => 'Cambió la descripción',
+                'updated_label_and_description' => 'Cambió el nombre y la descripción',
+                'updated' => 'Cambió los datos del rol',
+                'duplicated' => 'Creado como copia de :role',
+                'deleted' => 'Eliminó el rol',
+                'unknown' => 'Cambio sin detalles',
+            ],
         ],
     ],
 

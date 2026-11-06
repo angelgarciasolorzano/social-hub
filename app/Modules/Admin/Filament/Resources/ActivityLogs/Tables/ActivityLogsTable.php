@@ -60,42 +60,8 @@ class ActivityLogsTable
                     ->label(TranslatedText::of('admin/activity-log.table.event'))
                     ->options(ActivityLogEventCatalog::eventOptions())
                     ->searchable(),
-                Filter::make('causer')
-                    ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
-                    ->schema([
-                        Select::make('causer_id')
-                            ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
-                            ->searchable()
-                            ->getSearchResultsUsing(fn (string $search): array => User::query()
-                                ->whereLike('name', "%{$search}%")
-                                ->orderBy('name')
-                                ->limit(50)
-                                ->pluck('name', 'id')
-                                ->all())
-                            ->getOptionLabelUsing(fn (mixed $value): ?string => is_numeric($value)
-                                ? User::query()->find((int) $value)?->name
-                                : null),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => self::filterByCauser($query, $data)),
-                Filter::make('created_at')
-                    ->label(TranslatedText::of('admin/common.fields.date'))
-                    ->schema([
-                        DatePicker::make('created_from')->label(TranslatedText::of('admin/common.filters.from')),
-                        DatePicker::make('created_until')->label(TranslatedText::of('admin/common.filters.until')),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when(
-                            $data['created_from'] ?? null,
-                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
-                                ? $builder->whereDate('created_at', '>=', $date)
-                                : $builder,
-                        )
-                        ->when(
-                            $data['created_until'] ?? null,
-                            fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
-                                ? $builder->whereDate('created_at', '<=', $date)
-                                : $builder,
-                        )),
+                self::causerFilter(),
+                self::dateRangeFilter(),
             ])
             ->defaultSort('id', 'desc')
             ->paginated([10, 25, 50])
@@ -107,6 +73,56 @@ class ActivityLogsTable
                     ->url(fn (ActivityLog $activityLog): string => ActivityLogResource::getUrl('view', ['record' => $activityLog])),
             ])
             ->toolbarActions([]);
+    }
+
+    /**
+     * The activity performed by one user, chosen in a searchable select.
+     */
+    public static function causerFilter(): Filter
+    {
+        return Filter::make('causer')
+            ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
+            ->schema([
+                Select::make('causer_id')
+                    ->label(TranslatedText::of('admin/activity-log.table.performed_by'))
+                    ->searchable()
+                    ->getSearchResultsUsing(fn (string $search): array => User::query()
+                        ->whereLike('name', "%{$search}%")
+                        ->orderBy('name')
+                        ->limit(50)
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => is_numeric($value)
+                        ? User::query()->find((int) $value)?->name
+                        : null),
+            ])
+            ->query(fn (Builder $query, array $data): Builder => self::filterByCauser($query, $data));
+    }
+
+    /**
+     * The activity recorded between two dates, both included.
+     */
+    public static function dateRangeFilter(): Filter
+    {
+        return Filter::make('created_at')
+            ->label(TranslatedText::of('admin/common.fields.date'))
+            ->schema([
+                DatePicker::make('created_from')->label(TranslatedText::of('admin/common.filters.from')),
+                DatePicker::make('created_until')->label(TranslatedText::of('admin/common.filters.until')),
+            ])
+            ->query(fn (Builder $query, array $data): Builder => $query
+                ->when(
+                    $data['created_from'] ?? null,
+                    fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
+                        ? $builder->whereDate('created_at', '>=', $date)
+                        : $builder,
+                )
+                ->when(
+                    $data['created_until'] ?? null,
+                    fn (Builder $builder, mixed $date): Builder => (\is_string($date) || $date instanceof DateTimeInterface)
+                        ? $builder->whereDate('created_at', '<=', $date)
+                        : $builder,
+                ));
     }
 
     /**

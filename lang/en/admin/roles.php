@@ -340,6 +340,36 @@ return [
         ],
         'history' => [
             'title' => 'History',
+            'columns' => [
+                'change_type' => 'Type of change',
+                'detail' => 'Detail',
+            ],
+            'change_types' => [
+                'permissions' => 'Permissions',
+                'users' => 'Users',
+                'lifecycle' => 'Role lifecycle',
+            ],
+            'filters' => [
+                'change_type' => 'Type of change',
+            ],
+            'group' => [
+                'day' => 'Day',
+            ],
+            'detail' => [
+                'permission_granted' => 'Added the permission :permission',
+                'permission_revoked' => 'Removed the permission :permission',
+                'role_granted' => 'Assigned the role to :user',
+                'role_revoked' => 'Removed the role from :user',
+                'bootstrapped' => 'Assigned the role to :user when setting up the panel',
+                'created' => '{0} Created the role without permissions|{1} Created the role with :count permission|[2,*] Created the role with :count permissions',
+                'updated_label' => 'Changed the name',
+                'updated_description' => 'Changed the description',
+                'updated_label_and_description' => 'Changed the name and the description',
+                'updated' => 'Changed the role details',
+                'duplicated' => 'Created as a copy of :role',
+                'deleted' => 'Deleted the role',
+                'unknown' => 'Change without details',
+            ],
         ],
     ],
 

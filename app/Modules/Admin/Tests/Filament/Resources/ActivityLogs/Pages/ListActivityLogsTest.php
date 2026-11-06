@@ -9,11 +9,14 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogOverview;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Widgets\ActivityLogSummaryWidget;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\User\Enums\PreferredLocale;
@@ -411,6 +414,37 @@ it('lists each activity with readable log, event, performer and subject', functi
         ->assertSeeText('Role Granted')
         ->assertSeeText($user->name)
         ->assertSeeText('User #'.$target->id);
+});
+
+it('names a role subject by its shown name and links it to the role', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader, AdminRole::AdminRolesReader);
+    $systemRole = Role::query()->where('name', AdminRole::AdminPostsReader->value)->where('guard_name', Role::GUARD_NAME)->sole();
+    $customRole = RoleFactory::new()->createOne(['label' => 'Soporte de cuentas']);
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RolePermissionGranted)->performedOn($systemRole)->createOne();
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleCreated)->performedOn($customRole)->createOne();
+
+    activityLogsPageForTesting()
+        ->assertSeeText(AdminRole::AdminPostsReader->label())
+        ->assertSeeText('Soporte de cuentas')
+        ->assertDontSeeText('Role #'.$systemRole->id)
+        ->assertSee(RoleResource::getUrl('view', ['record' => $customRole]), false);
+});
+
+it('keeps the type and id of a deleted role, without a link', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader, AdminRole::AdminRolesReader);
+    $deletedRole = RoleFactory::new()->createOne(['label' => 'Soporte de cuentas']);
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleDeleted)->performedOn($deletedRole)->createOne();
+
+    $deletedRoleId = $deletedRole->id;
+    $deletedRoleUrl = RoleResource::getUrl('view', ['record' => $deletedRole]);
+    $deletedRole->delete();
+
+    activityLogsPageForTesting()
+        ->assertSeeText('Role #'.$deletedRoleId.' (deleted)')
+        ->assertDontSeeText('Soporte de cuentas')
+        ->assertDontSee($deletedRoleUrl, false);
 });
 
 it('lists anonymous activities and deleted performers or subjects without failing', function (): void {

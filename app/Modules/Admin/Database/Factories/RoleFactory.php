@@ -24,7 +24,8 @@ class RoleFactory extends Factory
     protected $model = Role::class;
 
     /**
-     * Define the model's default state: a custom role of the `admin` guard.
+     * Define the model's default state: a custom role of the `admin` guard. Some job titles are longer
+     * than a role label may be, so the label is cut to `Role::LABEL_MAX_LENGTH`.
      *
      * @return array<string, mixed>
      *
@@ -32,7 +33,7 @@ class RoleFactory extends Factory
      */
     public function definition(): array
     {
-        $label = fake()->unique()->jobTitle();
+        $label = rtrim(mb_substr(fake()->unique()->jobTitle(), 0, Role::LABEL_MAX_LENGTH));
 
         return [
             'name' => Role::CUSTOM_NAME_PREFIX.Str::slug($label),

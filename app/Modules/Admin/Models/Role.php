@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Models;
 
+use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
+use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Policies\RolePolicy;
@@ -131,6 +133,34 @@ class Role extends SpatieRole
     public function displayDescription(): ?string
     {
         return $this->adminRole()?->description() ?? $this->description;
+    }
+
+    /**
+     * The activity of this role: its own changes, its grants and revocations to users and the
+     * bootstrap that gave it, counting the last two only after the last deleted role of the same name.
+     *
+     * @return Builder<ActivityLog>
+     */
+    public function activityLogQuery(): Builder
+    {
+        $lastDeletionOfName = ActivityLog::query()
+            ->selectRaw('coalesce(max(id), 0)')
+            ->where('event', ActivityLogAdminEvent::RoleDeleted->value)
+            ->whereJsonContains('properties->role', $this->name);
+
+        return ActivityLog::query()->where(fn (Builder $builder): Builder => $builder
+            ->where(fn (Builder $builder): Builder => $builder
+                ->where('subject_type', $this->getMorphClass())
+                ->where('subject_id', $this->getKey()))
+            ->orWhere(fn (Builder $builder): Builder => $builder
+                ->where('id', '>', $lastDeletionOfName)
+                ->where(fn (Builder $builder): Builder => $builder
+                    ->where(fn (Builder $builder): Builder => $builder
+                        ->whereIn('event', [ActivityLogAdminEvent::RoleGranted->value, ActivityLogAdminEvent::RoleRevoked->value])
+                        ->whereJsonContains('properties->role', $this->name))
+                    ->orWhere(fn (Builder $builder): Builder => $builder
+                        ->where('event', ActivityLogAdminEvent::AdminBootstrapped->value)
+                        ->whereJsonContains('properties->roles', $this->name)))));
     }
 
     /**
