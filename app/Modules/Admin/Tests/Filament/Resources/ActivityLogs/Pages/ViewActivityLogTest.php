@@ -184,6 +184,6 @@ it('links a role subject to the role detail only for an administrator who may vi
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
 
     Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
-        ->assertSeeText('Role #'.$role->id)
+        ->assertSeeText($role->displayName())
         ->assertDontSee(RoleResource::getUrl('view', ['record' => $role]), false);
 });

@@ -71,7 +71,7 @@ Agregar a `App\Modules\Admin\Models\Role` el método `activityLogQuery(): Builde
 
 ### TASK-002: «Sobre» muestra el nombre del rol en todas las tablas de actividad
 
-En `DescribesActivityLogParties::subjectLabel()`, cuando el sujeto cargado es un `Role`, devolver `displayName()` en lugar de `<Tipo> #id`. El rol eliminado (sujeto sin cargar) mantiene el texto actual. El enlace no cambia. Cubrirlo en la prueba de la lista general del registro de actividad.
+En `DescribesActivityLogParties::subjectLabel()`, cuando el sujeto cargado es un `Role`, devolver `displayName()` en lugar de `<Tipo> #id`. El rol eliminado (sujeto sin cargar) mantiene el texto actual. El enlace no cambia. Cubrirlo en la prueba de la lista general del registro de actividad y ajustar la prueba del detalle que esperaba `Role #id` para un rol existente.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
 
@@ -87,8 +87,9 @@ En `DescribesActivityLogParties::subjectLabel()`, cuando el sujeto cargado es un
 
 - `app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php`
 - `app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ViewActivityLogTest.php`
 
-**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/ActivityLogs/Pages/ListActivityLogsTest.php`
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/ActivityLogs`
 
 **Review:** claude
 
