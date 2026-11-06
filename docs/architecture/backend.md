@@ -1,205 +1,31 @@
-# Arquitectura del Backend
+# Backend Architecture
 
-Documento de referencia para crear y mantener módulos del backend en este proyecto Laravel.
+Reference for creating and maintaining backend modules in this Laravel project.
 
-> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines una convención (o cualquier otro cambio de arquitectura del backend), actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de las convenciones del proyecto y no debe quedar desincronizada con el código.
+> ⚠️ **Keeping this document current**: when you add, change or remove a convention (or make any other backend architecture change), update this document in the same PR/commit. The docs are the source of truth for the project's conventions and must not drift from the code.
 
-## 0. Ubicación de los módulos: `app/Modules/` (SOC-38)
+> 📚 **Module documents** (with the detail of each task): [Auth](modules/auth.md), [User](modules/user.md), [Post, Comment and Like](modules/content.md), [Announcement](modules/announcement.md), [Notification](modules/notification.md), [ActivityLog](modules/activity-log.md), [Admin](modules/admin.md), [languages](i18n.md) and [global infrastructure, seeders and tooling](infrastructure.md). This document explains how to build a backend module.
 
-Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\Modules\<Module>\…`). Todo lo que quede **fuera** de `app/Modules/` es global a la aplicación:
+## 0. Where modules live: `app/Modules/` (SOC-38)
 
-| Dentro de `app/Modules/`                                                                | Fuera de `app/Modules/` (global)                                                                                    |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/Commands/`, `app/Support/` |
-| Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                                                      |
+Domain modules live in `app/Modules/<Module>/` (namespace `App\Modules\<Module>\…`). Everything **outside** `app/Modules/` is global to the application:
 
-**Estado de la migración:** la arquitectura es incremental. **Post**, **Comment** y **Like** viven en `app/Modules/Post/`, `app/Modules/Comment/` y `app/Modules/Like/`, y **ActivityLog**, **Announcement** y **Notification** nacieron ahí (SOC-54, SOC-61 y SOC-68); **Admin** vive en `app/Modules/Admin/` como módulo del sistema, no como un dominio CRUD estándar. Los demás dominios (`Auth`, `Friendship`, `Home`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+| Inside `app/Modules/`                                                                 | Outside `app/Modules/` (global)                                                                                   |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| The domain's controllers, models, requests, resources, routes and tests                | `app/Providers/`, `app/Http/` (middleware, base controller), `app/Events/`, `app/Console/Commands/`, `app/Support/` |
+| The module's own providers (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies and services shared by several modules                                                         |
 
-**Código global (SOC-42):** no todo lo que vive hoy en la raíz de `app/` es un dominio pendiente de migrar. Va fuera de `app/Modules/` lo que sirve a varios dominios o al framework y no tiene modelos, rutas ni lógica de negocio propia: comandos de Artisan en `app/Console/Commands/` (se descubren solos; no necesitan provider), providers y middleware globales, y clases compartidas sin dominio en `app/Support/`. `MediaLibrary` es el ejemplo: es una integración con `spatie/laravel-medialibrary` que usan Post y User, así que su path generator vive en `app/Support/MediaLibrary/`, su comando en `app/Console/Commands/MediaLibraryCleanFoldersCommand.php` y sus tests en `tests/Feature/MediaLibrary/` (código global, no en `app/Modules/`). `app/Support/` es una carpeta base aprobada explícitamente en SOC-42; crear otra carpeta base requiere aprobación, como indica `AGENTS.md`. Los comandos destructivos se protegen con `Prohibitable` y se prohíben en producción desde `AppServiceProvider::boot()`.
+**Migration status:** the migration is incremental. **Post**, **Comment** and **Like** moved to `app/Modules/Post/`, `app/Modules/Comment/` and `app/Modules/Like/`, and **ActivityLog**, **Announcement** and **Notification** were born there (SOC-54, SOC-61 and SOC-68); **Admin** lives in `app/Modules/Admin/` as a system module, not a standard CRUD domain. The other domains (`Auth`, `Friendship`, `Home`, `User`) stay in `app/<Domain>/` (the _old architecture_) until their own task moves them; for example, `Auth` will move to `app/Modules/Auth/`. The submodules described in section 3 (`app/<Domain>/Modules/<Feature>/`) also belong to the old architecture: do not confuse them with the top-level `app/Modules/` folder.
 
-**Frontend y Wayfinder:** el namespace del controller determina la ruta de las acciones generadas. Un módulo migrado se importa desde `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; los de la arquitectura vieja, desde `@/shared/wayfinder/actions/App/<Domain>/…`. El directorio está en `.gitignore`: tras mover un módulo, regenera con `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` y actualiza los imports.
+**Global code (SOC-42):** not everything in the root of `app/` is a domain waiting to be migrated. Code that serves several domains or the framework and has no models, routes or business logic of its own goes outside `app/Modules/`: Artisan commands in `app/Console/Commands/` (auto-discovered, no provider needed), global providers and middleware, and shared classes with no domain in `app/Support/`. `MediaLibrary` is the example: it is an integration with `spatie/laravel-medialibrary` that Post and User use, so its path generator lives in `app/Support/MediaLibrary/`, its command in `app/Console/Commands/MediaLibraryCleanFoldersCommand.php` and its tests in `tests/Feature/MediaLibrary/`. `app/Support/` is a base folder explicitly approved in SOC-42; any other new base folder needs approval, as `AGENTS.md` says. Destructive commands use `Prohibitable` and are prohibited in production from `AppServiceProvider::boot()`. Tests for global code live in `tests/Feature/<Area>/`; tests that touch the filesystem redirect `storage_path()` / `public_path()` with `useStoragePath()` / `usePublicPath()` to a temporary directory.
 
-### Centro de notificaciones React en tiempo real (SOC-68)
+**Frontend and Wayfinder:** the controller's namespace decides the path of the generated actions. A migrated module is imported from `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; an old-architecture one from `@/shared/wayfinder/actions/App/<Domain>/…`. The folder is gitignored: after moving a module, regenerate with `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` and update the imports.
 
-`app/Modules/Notification/` es dueño de la entrega de notificaciones que consume el centro React. `NotificationServiceProvider` registra `NotificationRouteServiceProvider` y suscribe `CommentNotificationSubscriber` y `LikeNotificationSubscriber` a los eventos de dominio de Comment y Like. Así, los módulos que originan acciones publican eventos; Notification decide si corresponde avisar y a quién.
+## 1. Naming convention
 
-- **Destinatarios.** Un comentario raíz en una publicación ajena avisa al dueño de la publicación. Una respuesta a un comentario raíz avisa a su autor; una respuesta a otra respuesta usa el `replied_to_user_id` persistido, nunca un destinatario enviado por el navegador. Los likes a publicaciones y comentarios avisan a su dueño. Los subscribers ignoran acciones propias y casos sin destinatario.
-- **Tipos soportados.** `App\Modules\Notification\Enums\NotificationType` es la fuente de verdad para `comment_on_post`, `comment_reply` y `likes_grouped`. Los emisores y el servicio de agrupación usan esos casos; las consultas React obtienen la misma allowlist con `NotificationType::values()`.
-- **Likes agrupados.** `LikeNotificationGroupService` conserva una fila no leída por destinatario y destino (publicación o comentario) en las notificaciones Laravel. Bloquea el destino y el grupo durante la actualización de snapshots únicos de actor. Cada cambio conserva el UUID de la notificación para que los clientes actualicen el mismo elemento; un unlike quita al actor y elimina el grupo no leído cuando ya no quedan actores. Un grupo leído permanece en el historial y un like posterior inicia otro grupo. Su broadcast se solicita después del commit.
-- **Comentarios y respuestas.** `CommentedOnPostNotification` y `RepliedToCommentNotification` implementan `ShouldQueue` y usan los canales Laravel `database` y `broadcast`. Los resúmenes se localizan según el idioma preferido del destinatario. La base de datos conserva el historial; el broadcast es el transporte en vivo, no la fuente de verdad.
-- **Recurso público.** `NotificationResource` expone solo `id`, `type`, `summary`, snapshots de actores `{id, name}`, snapshots de destino `{postId, commentId}`, `readAt` y `createdAt`. No serializa el cuerpo del comentario, el email ni modelos de contenido cargados. El resumen guardado sobrevive a la eliminación del contenido original; navegar a su destino aún puede responder 404 si la publicación ya no existe.
-- **Rutas y autorización.** El módulo tiene `GET /notifications` (historial Inertia con cursor, ordenado por fecha de creación e id), `GET /notifications/recent` (hasta cinco filas), `POST /notifications/{notificationId}/read` y `POST /notifications/read-all`. El historial aplica la allowlist antes de `cursorPaginate` y recientes antes del límite; marcar una notificación propia de tipo no admitido responde 404 sin cambiarla, y mark-all modifica únicamente filas no leídas admitidas. Usan el middleware web `auth` y `verified`; las escrituras tienen un límite de 30 por minuto y las consultas/cambios pasan por la relación de notificaciones del usuario autenticado. `User::receivesBroadcastNotificationsOn()` define `users.{id}.notifications`; el canal del módulo se carga desde `routes/channels.php` y autoriza solo al mismo usuario si no está suspendido. La autenticación privada usa la sesión web.
-- **Configuración y persistencia compartida.** `.env.example` usa `BROADCAST_CONNECTION=reverb` y `QUEUE_CONNECTION=database`; `composer run dev` inicia Reverb y el listener de colas junto con los servidores web y Vite. Reverb transporta los broadcasts y el worker procesa las notificaciones encoladas de comentarios/respuestas. Filament conserva su emisor, su UI y el polling del panel. Laravel comparte la tabla `notifications`, mientras el centro React limita las consultas a los tres tipos soportados; la persistencia compartida no implica que ambos flujos se mezclen.
-- **Integración Inertia.** `NotificationProps` comparte un contador diferido que cuenta solo notificaciones no leídas de los tipos admitidos; `FrontendTranslations` registra `notification/center` en las páginas que muestran el encabezado compartido y en el historial de notificaciones. El límite de controller/resource evita que otros dominios dependan de Filament o de los componentes React.
+Every file and class uses **PascalCase** and starts with the module name.
 
-### Panel administrativo: Filament y Spatie Permission (SOC-44)
-
-`app/Modules/Admin/` contiene la integración administrativa. Es una excepción al patrón de dos providers y rutas manuales: `AdminPanelProvider` se registra en `bootstrap/providers.php`, configura el panel Filament con id `admin`, URL `/admin` y guard de sesión `admin`, y descubre sus recursos dentro de `app/Modules/Admin/Filament/`. El guard de sesión `admin` usa el provider `users` existente; `web` permanece como guard predeterminado para la autenticación regular de la aplicación. Spatie usa también `admin` como `guard_name` del catálogo de roles y permisos. Son conceptos distintos: el guard de sesión autentica las solicitudes del panel y el guard name de Spatie delimita los roles y permisos compatibles con `User`. `AdminServiceProvider` registra los comandos Artisan del módulo; Filament genera y registra las rutas del panel.
-
-La convención de directorios para las clases Filament del proyecto está documentada en [`.ai/rules/backend.md`](../../.ai/rules/backend.md); consulta también la [documentación de recursos de Filament 5](https://filamentphp.com/docs/5.x/resources/overview) para las APIs del framework.
-
-La autorización de panel y recursos usa Spatie Permission con el guard `admin`, configurado en el modelo `User`. `User::canAccessPanel()` exige el panel `admin`, correo verificado, una cuenta no suspendida (SOC-35) y `admin.access`; además, `AdminPanelProvider` requiere MFA mediante la aplicación. `AdminRole` y `AdminPermission` en `app/Modules/Admin/Enums/` son el catálogo canónico. Los casos de `AdminRole` son los **roles de sistema**; desde SOC-70 también hay **roles personalizados** creados desde el panel (ver más abajo). Los bundles iniciales de los roles de sistema son:
-
-| Rol | Permisos | Capacidad |
-| --- | --- | --- |
-| `admin` | `admin.access` | Entrar al panel, sin acceso implícito a secciones |
-| `admin-dashboard-reader` | `admin.dashboard.view` | Ver el dashboard |
-| `admin-users-reader` | `admin.users.viewAny`, `admin.users.view` | Consultar usuarios y sus detalles |
-| `admin-posts-reader` | `admin.posts.viewAny`, `admin.posts.view` | Consultar publicaciones y sus detalles |
-| `admin-users-provisioner` | `admin.users.viewAny`, `admin.users.create` | Listar usuarios y enviar invitaciones de administrador (SOC-53) |
-| `admin-users-moderator` | `admin.users.viewAny`, `admin.users.view`, `admin.users.suspend`, `admin.users.reactivate` | Suspender y reactivar cuentas desde el detalle del usuario (SOC-35) |
-| `admin-activity-reader` | `admin.activity.viewAny`, `admin.activity.view` | Consultar el registro de actividad y sus detalles (SOC-56) |
-| `admin-backups-reader` | `admin.backups.view` | Consultar metadatos de respaldos y estado del destino (SOC-55), solo lectura |
-| `admin-backups-operator` | `admin.backups.view`, `admin.backups.create`, `admin.backups.download` | Consultar metadatos, encolar respaldos y descargarlos tras confirmar la contraseña (SOC-55) |
-| `admin-announcements-manager` | `admin.announcements.viewAny`, `admin.announcements.view`, `admin.announcements.create`, `admin.announcements.update`, `admin.announcements.delete` | Crear, editar, duplicar, despublicar y borrar anuncios del sistema (SOC-61) |
-| `admin-announcements-reviewer` | `admin.announcements.viewAny`, `admin.announcements.view`, `admin.announcements.review` | Consultar anuncios y revisar los que se enviaron para aprobación (SOC-64) |
-| `admin-roles-reader` | `admin.roles.viewAny`, `admin.roles.view` | Consultar los roles, sus permisos y la matriz de permisos (SOC-69) |
-| `admin-roles-manager` | `admin.roles.viewAny`, `admin.roles.view`, `admin.roles.update`, `admin.roles.create`, `admin.roles.delete`, `admin.users.roles`, `admin.users.viewAny`, `admin.users.view` | Cambiar los permisos de un rol y los roles de otros usuarios desde el panel (SOC-69); crear, editar, duplicar y eliminar roles personalizados (SOC-70) |
-
-El rol `admin-announcements-reviewer` no concede `create`, `update` ni `delete`. AdminUserSeeder asigna este rol a Angel en local/testing; los administradores de producción existentes no lo reciben automáticamente, así que se concede de forma explícita con `php artisan admin:user-role grant <email> admin-announcements-reviewer --actor=<admin-email>`, sin modificar sus otros roles.
-
-Las secciones y acciones comprueban sus permisos; por eso `admin.access` solo permite entrar al panel. Los roles lectores conceden acceso de lectura específico y los roles de provisión, moderación y operación de respaldos conceden únicamente las acciones indicadas en la tabla. El lector de respaldos no puede encolar ni descargar, y la página no tiene acciones manuales para borrar o restaurar respaldos. `AdminAuthorizationSeeder` crea todos los permisos de `AdminPermission` y todos los roles de `AdminRole` bajo el guard `admin`, asignando los bundles predeterminados al crear cada rol y preservando cambios operativos en ejecuciones posteriores; además marca cada rol del catálogo como rol de sistema (`is_system`), también si ya existía, sin tocar sus permisos (SOC-70). `App\User\Policies\UserPolicy`, asociada al modelo User con `#[UsePolicy]`, autoriza la lectura con `admin.users.viewAny` y `admin.users.view`, y solo permite como escritura `suspend` (`admin.users.suspend`, sobre una cuenta activa que no sea la propia) y `reactivate` (`admin.users.reactivate`, sobre una cuenta suspendida); el resto de las operaciones de escritura del recurso está denegado. `App\Modules\ActivityLog\Policies\ActivityLogPolicy` hace lo mismo con el registro de actividad (`admin.activity.viewAny` y `admin.activity.view`) y `App\Modules\Post\Policies\PostPolicy` con las publicaciones (`admin.posts.viewAny` y `admin.posts.view`; `view` también exige que la publicación conserve su autor). `App\Modules\Announcement\Policies\AnnouncementPolicy` (SOC-61) es la única que permite escrituras completas: cada habilidad del panel con su permiso de `admin.announcements.*`, `replicate` con `create`, y niega el borrado masivo y la restauración; además define `dismiss`, que usa la aplicación.
-
-Desde SOC-57 la autorización de los recursos vive en la policy del modelo: ningún recurso sobrescribe `can*()` para leer, Filament consulta la policy y los relation managers y widgets usan la misma policy con `Gate::forUser($user)->allows('viewAny', Modelo::class)` o `allows('view', ...)` en lugar de comprobar `AdminPermission`. Solo la acción de invitar de `ListUsers` y las piezas del dashboard y de Backups, que no dependen de un modelo, siguen comprobando permisos. Filament **permite** cualquier habilidad cuyo método no exista en la policy, así que una policy de solo lectura debe negar explícitamente cada habilidad de escritura (`create`, `update`, `delete`, `deleteAny`, `restore`, `restoreAny`, `forceDelete`, `forceDeleteAny`). `CommentPolicy` agrega `viewAny` y `view` del panel (ambas con `admin.posts.view`, porque los comentarios no tienen permisos propios) junto a `update`/`delete` de la aplicación, que permiten al autor cambiar su comentario; por eso `CommentResource` conserva todas las habilidades de escritura en `false` (`canCreate`, `canEdit`, `canDelete`, `canDeleteAny`, `canRestore(Any)`, `canForceDelete(Any)`), documentadas en la clase: son los únicos overrides de autorización que quedan en los recursos de Admin.
-
-`UserResource` muestra `name`, `email`, `email_verified_at`, `created_at` y `last_login_at`; no presenta contraseñas ni secretos/códigos de 2FA. Su página `ViewUser` agrega `UserActivityOverview`, con conteos de publicaciones, comentarios y dispositivos confiables activos, además de tendencias diarias de publicaciones y comentarios de los últimos siete días.
-
-La página de usuario también muestra tres relaciones de solo lectura, limitadas al usuario autorizado mediante `UserPolicy`:
-
-- `PostsRelationManager` permite buscar y ordenar publicaciones, filtrar por presencia de comentarios y fecha, y abrir el detalle compartido del recurso Posts.
-- `ActivityLogsRelationManager` (pestaña "Activity", SOC-56) lista la actividad donde el usuario es causante o sujeto con la misma tabla del recurso de actividad; además exige `admin.activity.viewAny`.
-- `TrustedDevicesRelationManager` muestra nombre del dispositivo, resumen de navegador/sistema operativo, último uso, vencimiento y estado derivado (activo, expirado o revocado). La consulta selecciona una lista permitida de campos; no expone `token_hash`, IP ni el `user_agent` sin procesar.
-
-`PostResource` es el recurso de solo lectura para consultar publicaciones. Su detalle presenta autor, fechas y contenido, y carga `CommentsRelationManager` con comentarios paginados. La acción de ver un comentario carga sus replies al abrir el detalle; estos datos también son de lectura y no se agregan acciones de mutación.
-
-`AdminPanelProvider` descubre los widgets del dashboard en `app/Modules/Admin/Filament/Widgets/`; por eso esa carpeta y `Console/Commands/` solo contienen clases que se registran o descubren, y el comportamiento compartido vive en traits de `Concerns/` (`Console/Concerns/InteractsWithAdminCatalog.php` para los comandos `admin:user-role`, `admin:role-permissions` y `admin:bootstrap-admin`, incluida la validación de `--actor`, y `Filament/Concerns/BuildsDailyActivityCharts.php` para los widgets de actividad de Posts y Users, y `Filament/Concerns/DescribesActivityLogParties.php` para describir causante y sujeto de una actividad). `RegistrationSummaryWidget` presenta los totales de cuentas y cuentas verificadas, con tendencias de siete días; `RegistrationsChart` muestra altas de usuarios con rangos de 7, 30 y 90 días o 12 meses, y cambia la agrupación entre días, semanas y meses. Cuando el rango no contiene altas, el chart presenta su estado vacío.
-
-Las pruebas del módulo viven en `app/Modules/Admin/Tests/`; las pruebas de recursos Filament siguen la estructura de recurso, páginas y gestores de relaciones, y las pruebas del dashboard se agrupan bajo `Tests/Filament/`.
-
-La migración publicada por Spatie para sus tablas permanece en la carpeta global `database/migrations/`. Las migraciones publicadas por paquetes externos se mantienen allí; la implementación propia de Admin, sus seeders y pruebas viven en `app/Modules/Admin/`.
-
-`DatabaseSeeder` ejecuta `AdminAuthorizationSeeder`, `AdminUserSeeder` y `AdminCustomRoleSeeder`. El segundo seeder solo modifica usuarios en `local` y `testing`: asigna al administrador local predeterminado el rol `admin`, los cinco roles lectores (dashboard, usuarios, publicaciones, actividad y respaldos), `admin-users-moderator`, `admin-backups-operator` y `admin-announcements-manager` (SOC-61); promueve usuarios al azar hasta que al menos el 20% (redondeado hacia arriba) tenga `admin`, asignando a cada nuevo administrador de 1 a 4 roles lectores aleatorios y conservando asignaciones previas. `AdminCustomRoleSeeder` (SOC-70, también solo en `local` y `testing`) crea los roles personalizados de ejemplo 'Soporte', 'Editor de contenido' y 'Auditor', con sus requisitos completos, y los asigna a entre 1 y 3 administradores al azar, nunca a Angel; si un rol ya existe no lo toca y no registra actividad. En producción, inicializa el catálogo y ejecuta el bootstrap con una cuenta verificada:
-
-```bash
-php artisan db:seed --class='App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder'
-php artisan admin:bootstrap-admin admin@example.com --actor=admin@example.com
-```
-
-`admin:bootstrap-admin <email> --actor=<email>` solo permite el primer bootstrap: exige el catálogo inicializado, una cuenta existente con correo verificado y que todavía no haya un usuario con `admin.access`; asigna `admin` y los cinco roles lectores (actividad y respaldos incluidos desde SOC-56 y SOC-55). Después, `admin:user-role <grant|revoke> <email> <role> --actor=<admin-email>` modifica una asignación de rol y `admin:role-permissions <grant|revoke> <role> <permission> --actor=<admin-email>` modifica un bundle. Los tres comandos exigen `--actor` (SOC-54): la persona que ejecuta el cambio, que queda como causante en el log `admin` del registro de actividad. Debe ser una cuenta verificada y, salvo en el bootstrap (donde puede ser el mismo usuario promovido), tener `admin.access`. Solo se registran los cambios reales; un rechazo no cambia nada ni deja registro. El primer comando acepta cualquier rol del guard `admin` por su nombre guardado, de sistema o personalizado (SOC-70), y el segundo cualquier caso de `AdminPermission` (ver la tabla de arriba) sobre cualquier rol salvo `admin`, que está bloqueado. Ambos rechazan un rol inexistente o un permiso fuera del enum, protegen el último permiso `admin.access` y rechazan un conjunto de permisos con requisitos faltantes, indicando qué conceder o quitar primero. Desde SOC-69, `admin:user-role` y `admin:role-permissions` validan sus argumentos y el actor y delegan la escritura en `AdminAuthorizationService`; cada `AdminAuthorizationFailure` se traduce al mensaje de consola de siempre.
-
-**Roles y permisos desde el panel (SOC-69).** La gestión ya no es solo por consola. Los permisos siguen limitados a `AdminPermission` (desde el panel no se crean, renombran ni eliminan); los roles son los de sistema y, desde SOC-70, también los personalizados (sección siguiente, que actualiza varios detalles de esta). `AdminAuthorizationService` (`app/Modules/Admin/Services/`) es el único escritor del catálogo fuera de los seeders:
-
-- `grantRole`, `revokeRole`, `grantPermission` y `revokePermission` corren cada una en su transacción, bloquean el rol `admin`, el permiso `admin.access` y las filas afectadas, nunca dejan a nadie sin `admin.access`, auditan solo los cambios reales y limpian la caché de Spatie después del commit. `lockCatalog()` permite que los comandos informen primero un catálogo sin inicializar.
-- `syncUserRoles()` y `syncRolePermissions()`, que usa el panel, aplican la diferencia en una sola transacción (primero conceden y luego quitan), devuelven `AdminAuthorizationChanges` y revierten todo si el administrador que actúa perdería `admin.access` o el permiso que autorizó la acción.
-- Los rechazos son `AdminAuthorizationException` con un caso de `AdminAuthorizationFailure`, cuyo `message()` es el texto del panel.
-
-El servicio no autoriza. `RolePolicy` permite ver con `admin.roles.viewAny`/`admin.roles.view` y editar permisos con `admin.roles.update`; SOC-70 la amplía por tipo de rol. `UserPolicy::manageRoles` exige `admin.users.roles` y nunca permite gestionar los roles propios desde el panel.
-
-En Filament, `Roles/RoleResource` vive en `/admin/roles` (grupo "Control de acceso"):
-
-- El listado muestra nombre, descripción y conteos de permisos y usuarios en una consulta, con los widgets `RolesOverview` y `UsersPerRoleChart`.
-- El detalle tiene la acción "Editar permisos" (casillas por área y contraseña actual) y las pestañas de usuarios e historial.
-- La página `RolePermissionMatrix` (`/admin/roles/matrix`) cruza permisos por área con todos los roles del guard `admin`.
-
-En Users, `ViewUser` agrega "Gestionar roles", la pestaña de roles y la sección "Permisos efectivos", y la tabla agrega la columna y el filtro de roles. Todo eso se muestra solo a quien puede listar roles, y las dos acciones de escritura piden la contraseña con `ConfirmsCurrentPassword` (5 intentos por minuto). Los textos están en `lang/{en,es}/admin/roles.php`; las claves del catálogo usan el nombre del caso en snake_case porque los valores de los permisos tienen puntos.
-
-Una base sembrada antes de SOC-69 obtiene los dos roles y cuatro permisos nuevos volviendo a correr `AdminAuthorizationSeeder`. AdminUserSeeder asigna `admin-roles-manager` a Angel en local/testing; en producción se concede de forma explícita con `php artisan admin:user-role grant <email> admin-roles-manager --actor=<admin-email>`.
-
-**Roles personalizados (SOC-70).** Los administradores pueden crear sus propios roles desde el panel, junto a los de sistema.
-
-- **Modelo.** `App\Modules\Admin\Models\Role` extiende el `Role` de Spatie y es el modelo `role` de `config/permission.php` y de la clave `role` del morph map, así que Spatie y todas las relaciones lo devuelven. La migración `2026_11_04_000000_add_presentation_columns_to_roles_table.php` del módulo agrega `is_system`, `label` (80) y `description` (255). Ofrece los scopes `admin()`, `system()` y `custom()`, y `isSystem()`, `isLocked()`, `adminRole()`, `displayName()`, `displayDescription()` y `inDisplayOrder()` (sistema en orden de catálogo, luego personalizados por nombre).
-- **Reglas.** El `name` de un rol personalizado es `custom-` más el slug de su etiqueta (con sufijo `-2`, `-3`… si está tomado) y nunca cambia; la etiqueta no se repite entre roles del guard `admin` sin distinguir mayúsculas. Los roles de sistema permiten editar sus permisos pero no renombrarse ni eliminarse. El rol `admin` está **bloqueado**: nadie cambia sus permisos. Un rol nunca queda con un permiso sin sus requisitos (`AdminPermission::requires()`, `withRequirements()`, `missingRequirements()` y `dependents()`), y un rol personalizado con usuarios no se puede eliminar.
-- **Servicio.** `AdminAuthorizationService` recibe modelos `Role` y suma `createRole`, `updateRoleDetails`, `duplicateRole` y `deleteRole`. Nuevos fallos de `AdminAuthorizationFailure`: `role_locked`, `system_role_protected`, `role_has_users`, `role_label_taken` y `permission_dependency_missing`. Nuevos eventos de auditoría, sin la etiqueta ni la descripción: `admin.role_created` (`role`, `permissions`), `admin.role_updated` (`role`, `changed_attributes`), `admin.role_duplicated` (`role`, `source_role_id`) y `admin.role_deleted` (`role`).
-- **Policy.** `RolePolicy` recibe el modelo del módulo y decide por tipo: `create` y `replicate` con `admin.roles.create`; `update` (permisos) con `admin.roles.update` salvo en `admin`; `updateDetails` con `admin.roles.update` y `delete` con `admin.roles.delete`, ambos solo en roles personalizados; niega el borrado masivo, restaurar, `forceDelete` y reordenar. El modelo la declara con `#[UsePolicy]`, que es como Laravel la encuentra; `AdminServiceProvider` ya no la registra con `Gate::policy()`.
-- **Panel.** `ListRoles` agrega "Nuevo rol" y el widget `RoleTypesOverview`; la tabla muestra el tipo ("Sistema" / "Personalizado") con su filtro, y ya no existe "No editable". `ViewRole` tiene "Editar permisos" (oculta en `admin`), "Editar detalles", "Duplicar" y "Eliminar" (deshabilitada mientras el rol tenga usuarios), y la pestaña de usuarios permite "Agregar usuarios" y "Quitar del rol" con `admin.users.roles`, nunca sobre la cuenta propia. Las casillas de permisos de "Nuevo rol" y "Editar permisos" vienen de `Filament/Concerns/EditsRolePermissions.php`, que marca los requisitos y desmarca los dependientes en vivo y muestra un resumen antes de guardar. En Users, todos los roles del guard `admin` aparecen en "Gestionar roles" (con su propio resumen), la columna, el filtro y la pestaña de roles.
-- **Datos existentes.** Una base migrada antes de SOC-70 necesita `php artisan migrate` y volver a correr `AdminAuthorizationSeeder`. Los roles `admin-roles-manager` que ya existían no reciben `admin.roles.create` ni `admin.roles.delete` solos: se conceden con `php artisan admin:role-permissions grant admin-roles-manager admin.roles.create --actor=<admin-email>` (y lo mismo con `admin.roles.delete`).
-
-### Idiomas del panel (SOC-65 y SOC-66)
-
-El panel de administración está en español e inglés. Las traducciones viven en `lang/{en,es}/` en la raíz del proyecto, la convención de Laravel; `resources/lang/` se movió ahí y ya no existe. Cada sección del panel tiene su catálogo: `lang/{en,es}/admin/{common,dashboard,users,backups,activity-log,announcements,posts,comments}.php`. `common` guarda solo los textos que usan dos o más secciones.
-
-- **Claves con nombre**, nunca el texto en inglés como clave: `admin/users.table.status`. Los plurales van con `trans_choice` (`{1} :count día|[0,*] :count días`) y los valores con marcadores (`:name`, `:count`). `:Type` pone el valor con la primera letra en mayúscula.
-- **En PHP** todo texto pasa por `App\Support\Translation\TranslatedText::of($clave, $reemplazos)`. Es `__()` tipado como `string`: PHPStan no acepta el `array|string` de `__()` donde Filament espera un texto, y una clave que apunta a un grupo lanza `LogicException`. **En Blade** se usa `__()`.
-- **Propiedades de texto**: `$title`, `$heading`, `$navigationLabel`, `$navigationGroup` y el `$title` de un relation manager no pueden llamar a una función. Por eso la clase sobrescribe el getter correspondiente: `getTitle()`, `getHeading()`, `getNavigationLabel()`, `getNavigationGroup()`, `getModelLabel()`, `getPluralModelLabel()` o el estático `RelationManager::getTitle()`.
-- **Colores e íconos de badges**: nunca comparan la etiqueta traducida. Dependen del registro (`hasVerifiedEmail()`, el booleano de salud de los respaldos) o de una clave: `TrustedDevicesRelationManager` guarda `active`/`expired`/`revoked` como estado y solo traduce la etiqueta.
-- **Fechas**: se formatean con `translatedFormat()` y un formato del catálogo. En español salen como "5 oct.". Los textos propios de Filament (login, MFA, perfil, botones, paginación, filtros) ya vienen traducidos.
-- **Selector de idioma**: es el plugin `bezhansalleh/filament-language-switch` (5.x), configurado en `AdminServiceProvider::configureLanguageSwitch()`.
-  - Ofrece `en` y `es` (`SWITCH_LOCALES`, casos de `PreferredLocale`). El inglés va primero: si el navegador no pide un idioma ofrecido, el plugin elige el primero de la lista, que debe coincidir con `app.locale`.
-  - Aparece dentro del panel y en el login, la configuración obligatoria de MFA y el perfil. No aparece en la página de aceptar invitación.
-  - El idioma se resuelve en este orden: sesión, `?locale=`, `users.preferred_locale` del administrador (leído con `Filament::auth()`), `Accept-Language`, cookie y `app.locale`.
-  - Al elegir un idioma, `StoreAdminPreferredLocale` lo guarda en `preferred_locale` sin auditarlo. Es la misma columna que edita la configuración de cuenta de la aplicación.
-  - El middleware del plugin se registra también como middleware persistente de Livewire. Sin eso, cada actualización de un componente (filtrar, paginar, abrir un modal) respondería en `app.locale`.
-- **Qué está traducido**:
-  - Dashboard.
-  - Users, con `AccountStatus::label()`.
-  - Backups, con los errores de descarga de `BackupManagementService`.
-  - Activity Log: tabla, detalle, widgets, `DescribesActivityLogParties` y nombres de eventos y logs. `ActivityLogEventCatalog` lee `admin/activity-log.events.<valor>` y, si falta la clave, usa el nombre en inglés.
-  - Announcements: recurso, formularios, lista, tabs, acciones, detalle, preview y etiquetas/descripciones de sus enums.
-  - Posts: recurso, tabla, detalle, widgets y el gestor de Comments anidado en Posts.
-  - Comments independiente: recurso oculto sin listado; detalle, tabla/modal de respuestas y widget de actividad traducidos. Mantiene el acceso de solo lectura mediante `CommentPolicy` y `admin.posts.view`.
-- **Fuera del alcance de traducción**:
-  - El contenido authored de anuncios, publicaciones y comentarios, que conserva el idioma usado por su autor.
-  - El correo y la página de aceptación de invitaciones de administrador.
-  - Los nombres de las comprobaciones fallidas de Spatie Backup.
-- **Pruebas que lo protegen** (`app/Modules/Admin/Tests/Translations/`):
-  - `AdminTranslationKeysTest` exige las mismas claves, textos no vacíos y los mismos marcadores en `en` y `es`, además de claves para las opciones de enums de Announcements y nombres para cada evento, log y tipo del morph map.
-  - `AdminHardcodedTextTest` escanea Activity Log, Announcements, Posts y el preview de anuncios; detecta literales en métodos de texto, títulos de tabs, componentes de estadísticas/secciones y texto Blade. Excluye solo el contenido authored.
-
-### Idiomas de la aplicación (SOC-67)
-
-La aplicación de React habla español e inglés, empezando por las páginas de configuración (Perfil, Autenticación en dos pasos y Dispositivos confiables). `lang/` en la raíz es la **única fuente de traducciones** para PHP y para React: no hay paquete de i18n ni catálogos en `resources/js`.
-
-- **Idioma de cada petición**: `App\Http\Middleware\SetApplicationLocale`, en el grupo `web` justo antes de `HandleInertiaRequests`.
-  - Orden: `preferred_locale` del usuario (leído en crudo con `PreferredLocale::tryFrom()`, para que un valor no soportado no rompa) → primer idioma soportado de `Accept-Language`, en el orden del navegador → español (`GUEST_FALLBACK_LOCALE`).
-  - `app.locale` y `app.fallback_locale` siguen en `en`: el selector del panel necesita `app.locale` en inglés, y el panel aplica su idioma por su cuenta con `SwitchLanguageLocale`.
-  - Al registrarse, la cuenta guarda el idioma resuelto. La columna tiene `en` por defecto, así que las cuentas existentes ven inglés hasta cambiarlo en Perfil.
-  - `AccountSettingsController::update()` aplica el idioma recién guardado antes de armar el flash, para que la página siguiente llegue en un solo idioma.
-- **Catálogos para React**: `App\Support\Translation\FrontendTranslations`, con alcance de petición (`#[Scoped]`).
-  - El controlador registra los grupos de su página con `use('setting/common', …)` antes de `Inertia::render()`. Lo hacen Perfil, 2FA (que además registra los grupos de dispositivos, porque muestra ese panel), Dispositivos y Apariencia (solo `setting/common`, por el sidebar).
-  - `toArray()` devuelve cada grupo en el idioma activo **fusionado clave por clave** sobre `fallback_locale`: una clave que falte en `es` llega en inglés, nunca como clave cruda. Un grupo inexistente lanza `InvalidArgumentException`.
-  - `HandleInertiaRequests` comparte `locale` y `translations` (siempre con `dates`) como closure: una recarga parcial que pide otro prop no los reenvía.
-- **Catálogos**: `lang/{en,es}/setting/{common,account-settings,two-factor,trusted-devices,trusted-device-dialogs}.php`, `lang/{en,es}/dates.php` (formatos de dayjs y textos de fecha) y `lang/{en,es}/validation.php` (mensajes de Laravel con su versión en español y `attributes` para los campos de configuración). Mismas reglas que el panel: claves con nombre, plurales `{1} …|[0,*] …`, marcadores.
-- **Textos del backend de estas páginas**: pasan por `TranslatedText::of('setting/…')`. Incluye `TrustedDeviceOperationResult::message()`, `TrustedDeviceAction::label()`, los FormRequests y concerns de TrustedDevice, `TrustedDeviceService`, `TwoFactorController` y sus requests, `PasswordController` y `AccountSettingsController`.
-  - Un `message:` con `:max` deja que el validador ponga el valor de la regla.
-  - `TrustedDeviceDashboardCache::recentActivity()` vuelve a etiquetar las filas en cada lectura, porque la caché la comparten todos los idiomas.
-  - `PasswordNewController` y `PasswordResetLinkController` ya no fuerzan `'es'`.
-- **Pruebas que lo protegen**:
-  - `tests/Feature/Http/SetApplicationLocaleTest.php` y `HandleInertiaRequestsLocaleTest.php`.
-  - En `tests/Feature/Translation/`:
-    - `FrontendTranslationsTest`;
-    - `SettingPageTranslationsTest`: cada página comparte exactamente sus grupos, y el cambio de idioma desde Perfil se ve en la página siguiente;
-    - `SettingTranslationKeysTest`: paridad de claves y marcadores de `setting/*`, `dates` y `validation`;
-    - `FrontendTranslationKeysTest`: cada clave usada en `resources/js` existe en los dos idiomas;
-    - `SettingHardcodedTextTest`: sin textos fijos en las carpetas traducidas.
-  - Las pruebas comparan mensajes con `translatedTextIn()`, sin copiar el texto. Ojo: Symfony manda `Accept-Language: en-us` en cada petición de prueba, así que un invitado de prueba recibe inglés.
-
-### Registro de actividad (ActivityLog)
-
-`app/Modules/ActivityLog/` (SOC-54) registra las acciones de los usuarios y la auditoría administrativa en una sola tabla `activity_log` de `spatie/laravel-activitylog`, separada por `log_name` (`auth`, `content`, `likes`, `trusted_devices`, `account`, `admin`), cada uno con su retención y una purga diaria (`activity-log:purge`). Ningún otro módulo usa el paquete: los módulos despachan eventos de dominio que escuchan los subscribers de `Listeners/`, y la auditoría Admin llama a `Services/ActivityLogger` dentro de su transacción. Nunca se guarda contenido, contraseñas, códigos, tokens ni correos. La decisión de diseño, el catálogo de eventos (`Contracts/ActivityLogEvent` con un enum por dominio en `Enums/Events/`) y la política de privacidad están documentados en CLAUDE.md.
-
-Desde SOC-56 el panel Admin tiene un recurso de solo lectura, `ActivityLogs/ActivityLogResource` (`/admin/activity-logs`), sobre el modelo propio `App\Modules\ActivityLog\Models\ActivityLog` (al que apunta `activitylog.activity_model`) y autorizado por `ActivityLogPolicy`: listado con filtros por log, evento, causante y fechas, y un detalle con las propiedades guardadas, la IP y el user agent. Nunca muestra el contenido de publicaciones o comentarios.
-
-Para tener datos de prueba, `ActivityLogSeeder` (`app/Modules/ActivityLog/Database/Seeders/`) corre al final de `DatabaseSeeder` y genera la actividad a partir de lo ya sembrado: publicaciones, comentarios (creados, respuestas, editados y tombstones), likes, eventos de dispositivos de confianza, logins y auditoría Admin. Reparte las fechas en los últimos 60 días, nunca guarda contenido y no hace nada si la tabla ya tiene registros. Para SOC-64 deriva `admin.announcement_submitted`, `admin.announcement_approved` y `admin.announcement_rejected` de `announcement_reviews`, conservando actor, anuncio e ID del historial, sin copiar comentarios, títulos ni cuerpos; el detalle está en CLAUDE.md.
-
-### Anuncios del sistema (Announcement)
-
-`app/Modules/Announcement/` (SOC-61) permite publicar avisos desde el panel Admin que la aplicación muestra a sus usuarios en su siguiente visita (sin tiempo real). Cada anuncio tiene tipo (`info`, `warning`, `critical`), audiencia (`all`, `authenticated`, `without_two_factor`), fechas de inicio y de fin opcional, un botón opcional, una imagen opcional en MediaLibrary, una presentación (`display`: toast o dialog, que el administrador elige en el formulario desde SOC-63) y puede o no cerrarse; los descartes de cada usuario se guardan en `announcement_dismissals`.
-
-- **Una sola regla de visibilidad.** Los scopes `scheduled`, `running` y `ended` del modelo definen las fechas; `availableTo(?User)` agrega la audiencia y `visibleTo(?User)` excluye anuncios que no estén `approved`, quita lo que el usuario descartó, ordena por gravedad y limita a tres. Las pestañas del panel y la prop de la aplicación usan esos mismos scopes. `dialogs()` y `dialogsOverlapping()` alimentan la pestaña 'Active dialogs' y el aviso del formulario cuando otro dialog se cruza en las mismas fechas.
-- **Flujo de aprobación (SOC-64).** `AnnouncementStatus` define `draft`, `in_review`, `approved` y `rejected`: el autor envía un borrador para revisión, el revisor aprueba o rechaza, y el autor puede reenviar un rechazo. Cambiar el contenido o la imagen de un anuncio aprobado lo devuelve a revisión. El historial append-only vive en `announcement_reviews` (`submitted`, `resubmitted`, `approved`, `rejected`) con actor y comentario; aprobar admite comentario opcional y rechazar lo requiere. `AnnouncementPolicy::submit()` limita el envío al autor de un borrador o rechazo; `review()` requiere el permiso `admin.announcements.review`, estado `in_review`, y que quien revisa no sea ni el autor ni la persona que hizo el envío más reciente.
-- **Notificaciones y privacidad.** El envío notifica a revisores elegibles y la decisión notifica al autor mediante notificaciones de base de datos de Filament, leídas por el panel; no son tiempo real ni correo. Los comentarios se conservan en el historial y en la notificación de decisión, nunca en las propiedades de `activity_log`. Las transiciones registran `admin.announcement_submitted`, `admin.announcement_approved` y `admin.announcement_rejected` sin título, cuerpo ni comentario. El panel nunca escribe el modelo directamente; `AnnouncementData` convierte el estado del formulario.
-- **HTML siempre saneado.** El cuerpo se guarda tal como lo escribe el editor y se muestra solo a través de `Announcement::safeBodyHtml()` (el `RichContentRenderer` de Filament), en el detalle del panel, en la vista previa y en la aplicación.
-- **Aplicación.** `HandleInertiaRequests` comparte la prop `announcements` (lazy, serializada por `AnnouncementBannerResource`, sin autor, audiencia ni fechas). `AnnouncementDismissalController` tiene dos acciones: `dismiss` (`POST announcements/{announcement}/dismiss`) guarda un descarte y `sync` (`POST announcements/dismissals`) guarda los que un invitado cerró en su navegador antes de iniciar sesión, solo los que la policy permite; ambas usan `insertOrIgnore` y tienen throttle propio.
-- **Todo anuncio se puede cerrar (SOC-63).** Con sesión y descartable, el cierre va al servidor y no vuelve en ningún dispositivo; un invitado lo guarda en `localStorage` y se sincroniza al iniciar sesión; uno no descartable se guarda en `sessionStorage` y vuelve en la siguiente sesión del navegador.
-- **Panel.** `Filament/Resources/Announcements/` tiene listado con pestañas, creación, detalle y edición, más las acciones de vista previa (con una maqueta de dialog para los dialogs), duplicar y despublicar, y el campo 'Show as', que pasa solo a Dialog al elegir el tipo Critical mientras el administrador no haya elegido; la imagen usa el plugin oficial `filament/spatie-laravel-media-library-plugin`.
-
-`AnnouncementSeeder` siembra con la factory unos 27 anuncios con historia en los últimos días: cinco fijos que cubren cada caso (el de 2FA como dialog), quince de ejemplo aprobados con un estado al azar (vigente, programado, vencido o despublicado), algunos editados, tres duplicados y cuatro ejemplos del flujo, uno por cada estado, con el historial de cada transición. No pasa por el servicio para no escribir en `activity_log` antes de tiempo: `ActivityLogSeeder` deriva después la auditoría de anuncios y sus revisiones. El detalle completo está en CLAUDE.md.
-
-## 1. Convención de nomenclatura
-
-Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del módulo.
-
-| Tipo                   | Patrón                         | Ejemplo                                 |
+| Kind                   | Pattern                        | Example                                 |
 | ---------------------- | ------------------------------ | --------------------------------------- |
 | Controller             | `{Module}Controller`           | `PostController`                        |
 | Model                  | `{Module}`                     | `Post`                                  |
@@ -215,9 +41,9 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 | Service                | `{Module}Service`              | `PostService`                           |
 | Console Command        | `{Module}{Purpose}Command`     | `MediaLibraryCleanFoldersCommand`       |
 
-**Excepción:** `routes/routes.php` no lleva prefijo (Laravel lo busca así).
+**Exception:** `routes/routes.php` has no prefix (Laravel looks for it by that name).
 
-## 2. Estructura de un módulo
+## 2. Structure of a module
 
 ```
 app/Modules/<Module>/
@@ -231,14 +57,14 @@ app/Modules/<Module>/
 ├── Resources/
 │   └── {Module}Resource.php
 ├── Data/
-│   └── {Module}{Concept}Data.php      ← input, filtros y estructuras no modeladas
+│   └── {Module}{Concept}Data.php      ← input, filters and non-model structures
 ├── Database/
 │   ├── Factories/
 │   │   └── {Module}Factory.php
 │   ├── Migrations/
 │   └── Seeders/
-│       └── {Module}Seeder.php        ← solo si hay datos iniciales
-├── Tests/                             ← solo si el módulo tiene pruebas propias
+│       └── {Module}Seeder.php        ← only when there is seed data
+├── Tests/                             ← only when the module has its own tests
 ├── Providers/
 │   ├── {Module}ServiceProvider.php
 │   └── {Module}RouteServiceProvider.php
@@ -246,193 +72,184 @@ app/Modules/<Module>/
     └── routes.php
 ```
 
-**No todo módulo necesita todo.** Solo crea las carpetas que vayas a usar. El núcleo obligatorio:
+**Not every module needs everything.** Create only the folders you will use. The mandatory core:
 
 - `Models/`
-- `Providers/` (ambos providers)
+- `Providers/` (both providers)
 - `routes/`
 
-## 3. Submódulos (arquitectura vieja)
+A module with its own migrations registers them with `loadMigrationsFrom()` in its service provider. Migrations moved from the global `database/migrations/` keep their original file name, so a database that already ran them does not run them again; published third-party package migrations stay in `database/migrations/`.
 
-> Esta sección describe el layout `app/<Domain>/Modules/<Feature>/` de la arquitectura vieja (Auth y User). Cuando esos dominios se migren, vivirán en `app/Modules/<Domain>/` (p. ej. `app/Modules/Auth/`).
+## 3. Submodules (old architecture)
 
-Cuando un módulo tiene **varias áreas independientes** que ameritan su propio espacio, se subdivide. Ejemplos del proyecto:
+> This section describes the `app/<Domain>/Modules/<Feature>/` layout of the old architecture (Auth and User). When those domains are migrated they will live in `app/Modules/<Domain>/` (e.g. `app/Modules/Auth/`).
+
+When a module has **several independent areas** that deserve their own space, it is split. Examples in the project:
 
 - `app/Auth/Modules/` → `Email/`, `Login/`, `Password/`, `Register/`, `TrustedDevice/`
-- `app/User/` → `Profile/`, `Preferences/`, `Modules/AccountSettings/`, `Modules/TwoFactor/`
-- `app/Auth/Modules/TrustedDevice/` → cookie-backed TOTP bypass (introducido en SOC-14)
+- `app/User/` → `Profile/`, `Preferences/`, `Modules/AccountSettings/`, `Modules/AccountStatus/`, `Modules/TwoFactor/`
 
-La configuración de 2FA de User vive en `app/User/Modules/TwoFactor/`: ahí se agrupan su controller, Form Requests, listener de regeneración de códigos y pruebas. Las rutas siguen en `app/User/routes/security.php`. `UserServiceProvider` registra `app/User/Providers/UserEventServiceProvider.php`, que conecta el evento Fortify de regeneración con el listener de User; `AuthEventServiceProvider` conserva los listeners de TrustedDevice. El challenge de 2FA durante el login continúa siendo responsabilidad de Auth.
+How Auth and User split their features (TrustedDevice, the 2FA settings, AccountSettings, AccountStatus, the password change owned by Auth) is described in [Auth](modules/auth.md) and [User](modules/user.md). Laravel's initial migrations stay in the root `database/migrations/` folder.
 
-La configuración privada de la cuenta vive en `app/User/Modules/AccountSettings/`: agrupa el controller, Form Request, Data object construido con los datos validados, `AccountSettingsResource`, listener de último acceso y pruebas del módulo. El controller resuelve siempre al usuario autenticado. `UserResource` sigue reservado al perfil público; la información privada de configuración no se agrega a esa serialización. El perfil público continúa en `app/User/Profile/` y las preferencias existentes siguen en `app/User/Preferences/`.
+### When to split
 
-El cambio de contraseña conserva su responsabilidad de backend en `app/Auth/Modules/Password/`, incluida su validación y la revocación de dispositivos confiables. AccountSettings lo presenta en un diálogo y envía la actualización al endpoint `PUT /setting/password`; no existe un GET ni una vista independiente para cambiar la contraseña.
+| ✅ Yes                                                     | ❌ No                             |
+| ---------------------------------------------------------- | --------------------------------- |
+| There are independent flows (login vs. registration)       | It is a small, cohesive module    |
+| Each area has its own Requests with different validation   | The files are tightly coupled     |
+| The areas will evolve separately                           | You only have 2-3 files           |
 
-La infraestructura compartida de User se organiza en `app/User/Database/{Migrations,Factories,Seeders}/`. `UserServiceProvider` carga las migraciones modulares; la migración de AccountSettings se encuentra allí. Las migraciones iniciales de Laravel permanecen en la carpeta raíz `database/migrations/` y no se mueven a User.
-
-El estado de cuenta (SOC-35) se guarda en `users.status` (enum `AccountStatus`: `active` / `suspended`) y cada cambio agrega una fila a `account_status_changes` con su motivo obligatorio y el administrador que lo hizo. Solo `app/User/Modules/AccountStatus/Services/AccountStatusService` lo cambia: al suspender revoca los dispositivos confiables y registra la actividad sin el motivo. Una cuenta suspendida no puede entrar por contraseña, reto 2FA, dispositivo confiable ni panel admin, y el middleware global `EnsureAccountIsActive` cierra las sesiones abiertas. AccountSettings muestra el estado guardado de solo lectura y no lo infiere de la verificación del correo, el último acceso ni la sesión activa; el detalle está en CLAUDE.md.
-
-### Cuándo subdividir
-
-| ✅ Sí                                                           | ❌ No                            |
-| --------------------------------------------------------------- | -------------------------------- |
-| Hay flujos independientes (login vs registro)                   | Es un módulo pequeño y cohesivo  |
-| Cada área tiene sus propias Requests con validaciones distintas | Los archivos están muy acoplados |
-| Las áreas evolucionarán por separado                            | Solo tienes 2-3 archivos         |
-
-### Estructura de un submódulo
+### Structure of a submodule
 
 ```
 app/<Module>/<Submodule>/
 ├── Controllers/
 │   └── <Submodule>Controller.php
-├── Services/                         ← lógica de negocio compartida de la feature
+├── Services/                         ← shared business logic of the feature
 │   └── <Submodule>Service.php
-└── Requests/                          ← solo si hay validaciones específicas
+└── Requests/                          ← only when there is specific validation
     └── <Submodule>Request.php
 ```
 
-**Importante:** los submódulos NO tienen providers propios. Las rutas se centralizan en `app/<Module>/routes/` con un archivo por submódulo:
+**Important:** submodules have NO providers of their own. Routes are centralized in `app/<Module>/routes/` with one file per submodule:
 
 ```
 app/Auth/routes/
-├── routes.php        ← carga los includes
+├── routes.php        ← loads the includes
 ├── email.php
 ├── login.php
 ├── password.php
 └── register.php
 ```
 
-### Convención `Modules/<Feature>/` (introducida en SOC-14)
+### The `Modules/<Feature>/` convention (introduced in SOC-14)
 
-Cuando una feature **dentro de un módulo crece lo suficiente como para merecer su propio namespace**, se extrae bajo `app/<Module>/Modules/<Feature>/`. Ejemplo canónico: `app/Auth/Modules/TrustedDevice/`.
+When a feature **inside a module grows enough to deserve its own namespace**, it is extracted under `app/<Module>/Modules/<Feature>/`. Canonical example: `app/Auth/Modules/TrustedDevice/`.
 
-**Lo que el submodule SÍ tiene** (espeja el lado de features del módulo padre):
+**What the submodule DOES have** (it mirrors the feature side of the parent module):
 
 ```
 app/<Module>/Modules/<Feature>/
-├── Concerns/        ← traits / helpers locales (ej. HasPasswordConfirmation.php)
-├── Controllers/     ← controladores específicos de la feature
-├── Listeners/       ← listeners de Fortify / eventos del dominio scoped a la feature
-├── Data/            ← filtros y estructuras tipadas que no representan modelos
-├── Requests/        ← FormRequests de la feature
-├── Resources/       ← Eloquent API Resources de los modelos de la feature
-└── Services/        ← lógica de negocio compartida de la feature
+├── Concerns/        ← local traits / helpers (e.g. HasPasswordConfirmation.php)
+├── Controllers/     ← the feature's controllers
+├── Listeners/       ← Fortify / domain event listeners scoped to the feature
+├── Data/            ← typed filters and structures that are not models
+├── Requests/        ← the feature's FormRequests
+├── Resources/       ← Eloquent API Resources of the feature's models
+└── Services/        ← shared business logic of the feature
 ```
 
-**Lo que se queda en el módulo padre** (nunca se duplica dentro del submodule):
+**What stays in the parent module** (never duplicated inside the submodule):
 
-- `Providers/` — el `<Module>ServiceProvider` y `<Module>RouteServiceProvider` ya cubren la feature.
-- `Models/` — el modelo Eloquent vive en el padre para que las relaciones (`User::trustedDevices()`) queden junto al resto del dominio.
-- `routes/` — se registran a través del `AuthRouteServiceProvider` central con un archivo por concern (ej. `routes/trustedDevice.php`).
-- `Database/Migrations/`, `Database/Factories/` y `Database/Seeders/` — migraciones y factories se registran vía `<Module>ServiceProvider::loadMigrationsFrom`; los seeders se invocan desde `DatabaseSeeder`.
-- `config/` — la configuración del módulo vive en el padre.
+- `Providers/` — the `<Module>ServiceProvider` and `<Module>RouteServiceProvider` already cover the feature.
+- `Models/` — the Eloquent model lives in the parent so its relations (`User::trustedDevices()`) stay with the rest of the domain.
+- `routes/` — registered through the central `AuthRouteServiceProvider` with one file per concern (e.g. `routes/trustedDevice.php`).
+- `Database/Migrations/`, `Database/Factories/` and `Database/Seeders/` — migrations and factories are registered through `<Module>ServiceProvider::loadMigrationsFrom`; seeders are called from `DatabaseSeeder`.
+- `config/` — the module's configuration lives in the parent.
 
-**Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantenla en el concern correspondiente del módulo padre. SOC-32 define una excepción explícita para Auth: Email, Login y Register viven en `app/Auth/Modules/{Email,Login,Register}/` y sus pruebas se co-ubican allí; Login y Register quedan por debajo del umbral general, pero siguen la estructura acordada para esa tarea.
+**Rule of thumb for extracting a submodule**: the feature has its own event listeners **or** 3+ controllers/requests of its own. Below that, keep it in the matching concern of the parent module. SOC-32 sets an explicit exception for Auth: Email, Login and Register live in `app/Auth/Modules/{Email,Login,Register}/` with their tests co-located; Login and Register are below the general threshold but follow the structure agreed for that task.
 
-## 4. Responsabilidad de cada archivo
+## 4. What each file is responsible for
 
-| Tipo                       | Qué hace                                                                    |
-| -------------------------- | --------------------------------------------------------------------------- |
-| **Controller**             | Orquesta HTTP: recibe Request → llama al modelo → retorna Response          |
-| **Model**                  | Entidad del dominio + relaciones Eloquent                                   |
-| **Request**                | Valida input del usuario (FormRequest con FluentRule)                       |
-| **Resource**               | Transforma un modelo al JSON que verá el cliente                            |
-| **Data**                   | Representa y normaliza input, filtros o estructuras no modeladas            |
-| **Factory**                | Genera instancias falsas para tests/seeders                                 |
-| **Seeder**                 | Puebla la BD con datos iniciales                                            |
-| **Policy**                 | Reglas de autorización (quién puede hacer qué)                              |
-| **Service**                | Lógica de negocio compleja que no encaja en un controller                   |
-| **Console Command**        | Operaciones Artisan: batch, mantenimiento (global: `app/Console/Commands/`) |
-| **Service Provider**       | Registra bindings en el contenedor de Laravel                               |
-| **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                            |
+| Kind                       | What it does                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| **Controller**             | Orchestrates HTTP: receives the Request → calls the model/service → returns a Response |
+| **Model**                  | Domain entity + Eloquent relations                                                |
+| **Request**                | Validates user input (FormRequest with FluentRule)                                |
+| **Resource**               | Turns a model into the JSON the client sees                                       |
+| **Data**                   | Represents and normalizes input, filters or non-model structures                  |
+| **Factory**                | Builds fake instances for tests/seeders                                           |
+| **Seeder**                 | Fills the database with initial data                                              |
+| **Policy**                 | Authorization rules (who can do what)                                             |
+| **Service**                | Complex business logic that does not fit in a controller                          |
+| **Console Command**        | Artisan operations: batch, maintenance (global: `app/Console/Commands/`)          |
+| **Service Provider**       | Registers bindings in Laravel's container                                         |
+| **Route Service Provider** | Loads the module's routes under the `web` middleware                              |
 
-> 💡 Si una acción no cabe en un controller (muchos casos, reglas complejas, transacciones múltiples) → crea un **Service**. Si una autorización es reutilizable → crea una **Policy**.
+> 💡 If an action does not fit in a controller (many cases, complex rules, several transactions) → create a **Service**. If an authorization rule is reusable → create a **Policy**.
 
-### Data y Resources
+### Data and Resources
 
-- Usa `spatie/laravel-data` para filtros, input y estructuras internas tipadas que no representan un modelo Eloquent.
-- Usa `JsonResource` para serializar modelos Eloquent hacia Inertia o APIs.
-- No dupliques en un `Data` la transformación de un modelo que ya pertenece a un `Resource`.
+- Use `spatie/laravel-data` for typed filters, input and internal structures that are not Eloquent models.
+- Use `JsonResource` to serialize Eloquent models for Inertia or APIs.
+- Do not duplicate in a `Data` class a model transformation that belongs to a `Resource`.
 
-### Organización de pruebas
+### Test organization
 
-Las pruebas nuevas se guardan junto al módulo dueño de la funcionalidad:
+New tests live next to the module that owns the behavior:
 
-- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (Post, Comment y Like), además del módulo del sistema `app/Modules/Admin/Tests/`.
-- Módulo de dominio en la arquitectura vieja: `app/<Domain>/Tests/`.
-- Funcionalidad de un submódulo (arquitectura vieja): `app/<Domain>/Modules/<Feature>/Tests/`.
-- Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes que aún no se hayan migrado; no agregues allí nuevas pruebas específicas de un módulo.
+- A module on the new architecture: `app/Modules/<Domain>/Tests/`, plus the system module's `app/Modules/Admin/Tests/`.
+- A domain module on the old architecture: `app/<Domain>/Tests/`.
+- A submodule feature (old architecture): `app/<Domain>/Modules/<Feature>/Tests/`.
+- Keep `tests/` for cross-module/infrastructure tests and existing tests not yet migrated; do not add new module-specific tests there.
 
-Dentro de cada `Tests/`, agrupa por responsabilidad:
+Inside each `Tests/`, group by responsibility:
 
-- `Crud/` para crear, actualizar y eliminar recursos.
-- `Database/` para verificar factories y seeders cuando corresponda.
-- `Models/` para relaciones, morph map y colecciones de media del modelo.
-- `Lifecycle/` para renovaciones, reactivaciones y otros cambios de ciclo de vida.
-- `Listeners/` para comportamiento disparado por listeners.
-- `Queries/` para índices, listados y filtros.
-- `Requests/` para reglas y mensajes de validación de FormRequests.
-- `Resources/` para la serialización de los Resources.
-- `Security/` para regresiones de seguridad y robustez: rate limiting, normalización de entrada, límites de anidación y conteo de consultas.
+- `Crud/` to create, update and delete resources.
+- `Factories/` and `Seeders/` for factories and seeders (the Admin module keeps `Database/` for its own).
+- `Models/` for relations, the morph map and the model's media collections.
+- `Lifecycle/` for renewals, reactivations and other lifecycle changes.
+- `Listeners/` for behavior triggered by listeners.
+- `Queries/` for indexes, listings and filters.
+- `Requests/` for FormRequest validation rules and messages.
+- `Resources/` for Resource serialization.
+- `Security/` for security and robustness regressions: rate limiting, input normalization, nesting limits and query counts.
 
-Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
-Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente ya están registrados `app/Modules/Post/Tests/`, `app/Modules/Comment/Tests/`, `app/Modules/Like/Tests/` y los de Auth/User (`app/Auth/Modules/*/Tests/`, `app/User/Modules/*/Tests/`).
+Create a new folder (for example `Services/`) only when there is code of that kind to test. When you add a new modular test folder, register it in `phpunit.xml` and configure its base case and shared traits in `tests/Pest.php`. The test infrastructure (parallel runs, shared helpers) is described in [infrastructure.md](infrastructure.md#test-infrastructure).
 
-## 5. Cómo crear un módulo nuevo
+## 5. How to create a new module
 
-Sigue esta checklist en orden:
+Follow this checklist in order:
 
-1. **Crear la estructura de carpetas:**
+1. **Create the folder structure:**
 
    ```bash
    mkdir -p app/Modules/{Module}/{Models,Providers,routes,Controllers,Requests,Resources,Database/{Migrations,Factories,Seeders}}
    ```
 
-2. **Crear el modelo** en `app/Modules/{Module}/Models/{Module}.php`
+2. **Create the model** in `app/Modules/{Module}/Models/{Module}.php`.
 
-3. **Crear la factory** en `app/Modules/{Module}/Database/Factories/{Module}Factory.php`. Su estado predeterminado debe cubrir los campos persistidos del modelo y su migración con valores realistas o `null` explícito; deja que Eloquent gestione la clave primaria y los timestamps.
+3. **Create the factory** in `app/Modules/{Module}/Database/Factories/{Module}Factory.php`. Its default state covers the model's persisted fields and its migration with realistic values or an explicit `null`; let Eloquent manage the primary key and the timestamps.
 
-4. **Crear los dos providers:**
-   - `app/Modules/{Module}/Providers/{Module}ServiceProvider.php` — su `boot()` registra el `RouteServiceProvider`
-   - `app/Modules/{Module}/Providers/{Module}RouteServiceProvider.php` — extiende `Illuminate\Foundation\Support\Providers\RouteServiceProvider`, carga `app/Modules/{Module}/routes/routes.php` con middleware `web`
+4. **Create both providers:**
+   - `app/Modules/{Module}/Providers/{Module}ServiceProvider.php` — its `boot()` registers the `RouteServiceProvider`.
+   - `app/Modules/{Module}/Providers/{Module}RouteServiceProvider.php` — extends `Illuminate\Foundation\Support\Providers\RouteServiceProvider` and loads `app/Modules/{Module}/routes/routes.php` with the `web` middleware.
 
-5. **Registrar el `{Module}ServiceProvider`** en `bootstrap/providers.php`
+5. **Register `{Module}ServiceProvider`** in `bootstrap/providers.php`.
 
-6. **Crear el controller** en `app/Modules/{Module}/Controllers/{Module}Controller.php`
+6. **Create the controller** in `app/Modules/{Module}/Controllers/{Module}Controller.php`.
 
-7. **Crear las Requests** según las acciones (Store, Update, u otras específicas)
+7. **Create the Requests** for the actions (Store, Update or other specific ones).
 
-8. **Crear la Resource** (los listados paginados se serializan con `->through()` sobre la Resource; no se crea una Collection)
+8. **Create the Resource** (paginated listings are serialized with `->through()` over the Resource; no Collection class is created).
 
-9. **Definir las rutas** en `app/Modules/{Module}/routes/routes.php`
+9. **Define the routes** in `app/Modules/{Module}/routes/routes.php`.
 
-10. **Crear las pruebas junto al código que cubren:** `app/Modules/{Module}/Tests/` para pruebas del módulo (en la arquitectura vieja: `app/{Module}/Tests/` o `app/{Module}/Modules/{Feature}/Tests/` para un submódulo). Registra la carpeta en `phpunit.xml` y `tests/Pest.php` para que Pest la descubra y aplique la configuración correcta.
+10. **Create the tests next to the code they cover:** `app/Modules/{Module}/Tests/` for module tests (old architecture: `app/{Module}/Tests/` or `app/{Module}/Modules/{Feature}/Tests/` for a submodule). Register the folder in `phpunit.xml` and `tests/Pest.php` so Pest discovers it with the right configuration.
 
-## 6. Convenciones adicionales
+## 6. Additional conventions
 
-- Todo archivo PHP empieza con `declare(strict_types=1);`
-- Namespaces PSR-4: `App\Modules\{Module}\{Type}` (arquitectura vieja: `App\{Module}\{Type}`)
-- Al cambiar un modelo o su esquema, revisa y actualiza su factory para cubrir sus campos persistidos con datos realistas o `null` explícito; omite solo los campos que Eloquent administra automáticamente, como la clave primaria y los timestamps.
-- Relaciones Eloquent declaran genéricos en PHPDoc: `@return HasMany<Post, $this>`
-- Models con `HasFactory` declaran el genérico: `/** @use HasFactory<{Module}Factory> */`
-- Constantes del modelo (MORPH_NAME, MORPH_COLUMN) llevan docblock descriptivo
-- Si el módulo es polimórfico, registra el morph en `App\Providers\AppServiceProvider::boot()` (`Relation::enforceMorphMap`)
-- En una tabla polimórfica propia del dominio, las columnas y la relación comparten el sufijo `{adjetivo}able` de la convención de Laravel: `morphs('commentable')` genera `commentable_type` y `commentable_id`, y el modelo expone `commentable()` (igual que `likeable` en Like). `model_type` y `model_id` es la convención de las tablas genéricas de paquetes como Spatie (`media`, permisos), no de las tablas de dominio.
-- El nombre del placeholder de una ruta debe coincidir con el parámetro tipado del controller cuando se usa binding implícito de enum o modelo (por ejemplo `{post}` ↔ `Post $post`); si no coinciden, Laravel resuelve la clase desde el contenedor y la ruta responde 500. Rector renombra los parámetros según su tipo, así que corrige la ruta y no el parámetro.
-- Las rutas que escriben datos llevan `throttle`. Cuando un módulo tiene varias rutas con throttle, usa el tercer argumento como prefijo (`throttle:6,1,comments.store`): Laravel firma los throttles sin nombre solo por usuario, y sin prefijo todas las rutas compartirían el mismo cupo.
-- Normaliza la entrada de texto libre en `prepareForValidation()` del FormRequest (por ejemplo, quitar caracteres de control conservando tabulaciones y saltos de línea, y recortar) para que las reglas se evalúen sobre el valor que realmente se guarda.
-- Los listados paginados por cursor se serializan con `cursorPaginate()->through(fn (Model $model): array => new {Module}Resource($model)->resolve($request))`; no se envuelven en una Collection manual que reconstruya `data`, `meta` y `links`. Se devuelve el paginador tal cual. Solo se envuelve en `Inertia::scroll(...)` cuando la página usa el componente `<InfiniteScroll>` de Inertia (como `posts` en Home y Profile): `Inertia::scroll` agrega a la respuesta instrucciones de merge (`mergeProps`) y metadata de scroll (`scrollProps`) que, sin ese componente, nadie consume (la lista de comentarios la maneja un hook que recarga con `reset` y conserva su propio estado).
-- Los datos de un diálogo o lista que solo se necesitan al abrirlos salen como props `Inertia::optional` de una clase `ProvidesInertiaProperties` en `Props/` (ver `app/Modules/Comment/Props/CommentThreadProps.php`), que el controlador de la página anfitriona incluye en `Inertia::render`. No llevan ruta propia: el cliente hace un partial reload con `only`. El límite de tasa de esa lectura se aplica con `RateLimiter` dentro de la clase, ya que no hay middleware de ruta.
-- Un controlador con una sola acción es invocable (`__invoke`), por ejemplo los controladores de Auth/TrustedDevice; cuando un módulo tiene varias acciones sobre el mismo recurso se agrupan en un solo controlador con un método por acción, por ejemplo `CommentController` (`store`, `update` y `destroy`) y `LikeController` (`toggleComment` y `togglePost`, que comparten un método privado).
-- Los hilos de comentarios tienen un solo nivel con mención (SOC-41): responder a una respuesta se acepta y se aplana. `CommentController::store()` cuelga el comentario nuevo del comentario padre del hilo y guarda en `replied_to_user_id` (FK nullable a `users`, `nullOnDelete`) al autor de la respuesta respondida; el usuario lo deriva el servidor, nunca el cliente. `CommentResource` expone `repliedTo: {id, name}` o `null` solo cuando `repliedToUser` está cargado (`whenLoaded`), y `CommentThreadProps` lo precarga con `repliedToUser:id,name` para mantener el número de consultas constante. Responder a un post o a un comentario raíz no guarda mención.
-- Editar y eliminar comentarios propios (SOC-52): las rutas `comments.update` (PATCH) y `comments.destroy` (DELETE) viven en `CommentController` junto a `store`, con `throttle:10,1,comments.update` y `throttle:10,1,comments.destroy`. La autorización la hace `CommentPolicy` (`app/Modules/Comment/Policies/`, registrada con `#[UsePolicy]` en el modelo, porque el descubrimiento por nombre no la encuentra bajo `Modules/`) y se aplica con `#[Authorize('update'|'delete', 'comment')]` en el método del controlador: corre tras el route model binding y antes del FormRequest, así que un usuario ajeno recibe 403 aunque envíe datos inválidos. Solo el autor puede editar o eliminar y nunca un comentario ya eliminado.
-- Borrado mixto con tombstone (SOC-52): `comments` usa `SoftDeletes` y `edited_at` (migración nueva, las originales no se editan). Un comentario con respuestas se elimina de forma lógica y se muestra como "Comentario eliminado" para no romper el hilo; uno sin respuestas se elimina de forma física junto con sus likes (la tabla `likes` no tiene FK, así que se borran de forma explícita) dentro de la misma `DB::transaction`, y si era la última respuesta de un padre ya eliminado, el padre también se elimina de forma física para no dejar tombstones vacíos. Un tombstone nunca expone contenido ni autor (`content` y `user` en `null`). Como `SoftDeletes` cambia las consultas por defecto, `Post::comments()`, `User::comments()` y el panel Admin dejan de ver los tombstones; los listados de hilos usan `withTrashed()` donde deben mostrarlos, y publicar sobre un tombstone responde 404.
-- Contadores reales en listados (SOC-50): `Post::withEngagementFor(User)` es un `#[Scope]` que añade en la misma consulta `root_comments_count` (comentarios raíz vivos), `replies_count` (respuestas, incluidas las de un tombstone, con subconsulta correlacionada y `withTrashed()`), `likes_count` y `liked_by_me`; `Post::commentsTotal()` suma los dos contadores y `PostResource` expone `commentsCount` y `likesInfo`, así el listado de publicaciones mantiene un número constante de consultas. Las respuestas de un comentario se listan de la más antigua a la más nueva (id ascendente) y los comentarios de una publicación de la más nueva a la más antigua. El máximo del contenido de un comentario vive en `Comment::CONTENT_MAX_LENGTH` y lo usan `CommentStoreRequest` y `CommentUpdateRequest`; el frontend lo replica en `modules/comment/constants/commentContent.ts` y ambos deben cambiarse juntos.
-- Un `JsonResource` con varios bloques los reparte en métodos privados con el mismo estilo (`author()`, `repliedTo()`, `repliesInfo()`, `likesInfo()`, `isMine()`), y los indicadores que dependen del usuario autenticado (`isMine`, `likedByMe`) se calculan comparando atributos ya cargados, sin Gate ni consultas adicionales.
-- Los listados que serializan contadores de relaciones los precargan con `withCount()` en el query; el accesor del modelo reutiliza `{relation}_count` cuando existe y consulta solo si no está precargado, para que el costo de una página sea constante.
+- Every PHP file starts with `declare(strict_types=1);`.
+- PSR-4 namespaces: `App\Modules\{Module}\{Type}` (old architecture: `App\{Module}\{Type}`).
+- When a model or its schema changes, review and update its factory so it covers the persisted fields with realistic data or an explicit `null`; omit only the fields Eloquent manages (primary key and timestamps).
+- Eloquent relations declare their generics in PHPDoc: `@return HasMany<Post, $this>`.
+- Models with `HasFactory` declare the generic: `/** @use HasFactory<{Module}Factory> */`.
+- Model constants (`MORPH_NAME`, `MORPH_COLUMN`) carry a descriptive docblock.
+- A polymorphic model registers its key in `App\Providers\AppServiceProvider::registerMorphMap()` (`Relation::enforceMorphMap`).
+- In a domain's own polymorphic table, the columns and the relation share Laravel's `{adjective}able` suffix: `morphs('commentable')` creates `commentable_type` and `commentable_id`, and the model exposes `commentable()` (like `likeable` in Like). `model_type` / `model_id` is the convention of generic package tables such as Spatie's (`media`, permissions), not of domain tables.
+- A policy under `Modules/` is attached with `#[UsePolicy]` on the model (Laravel's name-based discovery does not find it) and applied with `#[Authorize('<ability>', '<routeParameter>')]` on the controller method: it runs after route-model binding and before the FormRequest, so a stranger gets 403 even with invalid input.
+- The route placeholder must match the controller's typed parameter when using implicit enum or model binding (e.g. `{post}` ↔ `Post $post`); otherwise Laravel resolves the class from the container and the route answers 500. Rector renames parameters to match their type, so fix the route, not the parameter.
+- Routes that write data have a `throttle`. When a module has several throttled routes, use the third argument as a prefix (`throttle:6,1,comments.store`): Laravel signs unnamed throttles by user only, so without a prefix every route would share one budget.
+- Normalize free-text input in the FormRequest's `prepareForValidation()` (for example, strip control characters while keeping tabs and line breaks, and trim) so the rules run on the value that is actually stored.
+- Cursor-paginated listings are serialized with `cursorPaginate()->through(fn (Model $model): array => new {Module}Resource($model)->resolve($request))`; they are not wrapped in a hand-made Collection that rebuilds `data`, `meta` and `links`. The paginator is returned as is. Wrap it in `Inertia::scroll(...)` only when the page uses Inertia's `<InfiniteScroll>` component (like `posts` in Home and Profile): `Inertia::scroll` adds merge instructions (`mergeProps`) and scroll metadata (`scrollProps`) that nobody consumes without that component.
+- Data for a dialog or list that is only needed when it opens is sent as `Inertia::optional` props from a `ProvidesInertiaProperties` class in `Props/` (see `app/Modules/Comment/Props/CommentThreadProps.php`), which the host page's controller includes in `Inertia::render`. They have no route of their own: the client does a partial reload with `only`. The read's rate limit is applied with `RateLimiter` inside the class, since there is no route middleware.
+- A controller with a single action is invokable (`__invoke`), e.g. the Auth/TrustedDevice controllers; when a module has several actions on the same resource they are grouped in one controller with one method per action, e.g. `CommentController` (`store`, `update` and `destroy`) and `LikeController` (`toggleComment` and `togglePost`, which share a private method).
+- Deleting a record with dependants is decided explicitly inside a `DB::transaction` (the comment tombstones of SOC-52 are the example in [content.md](modules/content.md)). Adding `SoftDeletes` changes the default queries of every module and of the Admin panel, so run the full suite and update tests that used `delete()` as a hard delete.
+- A `JsonResource` with several blocks splits them into private methods with the same style (`author()`, `repliedTo()`, `repliesInfo()`, `likesInfo()`, `isMine()`), and flags that depend on the authenticated user (`isMine`, `likedByMe`) are computed by comparing already loaded attributes, without a Gate or extra queries.
+- Listings that serialize relation counters preload them with `withCount()` (or `withExists()`, or a scope such as `Post::withEngagementFor()`) in the query; the model's accessor reuses `{relation}_count` when present and queries only when it was not preloaded, so a page has a constant cost. Back it with a query-count test.
+- A maximum length shared with the frontend lives in a model constant (e.g. `Comment::CONTENT_MAX_LENGTH`) mirrored in TypeScript; change both together.
 
-## Ejemplo canónico: módulo `Post`
+## Canonical example: the `Post` module
 
 ```
 app/Modules/Post/
@@ -440,7 +257,9 @@ app/Modules/Post/
 ├── Database/
 │   ├── Factories/PostFactory.php
 │   └── Seeders/PostSeeder.php
+├── Events/PostCreated.php
 ├── Models/Post.php
+├── Policies/PostPolicy.php
 ├── Providers/
 │   ├── PostServiceProvider.php
 │   └── PostRouteServiceProvider.php
@@ -448,11 +267,14 @@ app/Modules/Post/
 ├── Resources/PostResource.php
 ├── Tests/
 │   ├── Crud/
-│   ├── Database/
+│   ├── Factories/
 │   ├── Models/
+│   ├── Policies/
+│   ├── Queries/
 │   ├── Requests/
-│   └── Resources/
+│   ├── Resources/
+│   └── Seeders/
 └── routes/routes.php
 ```
 
-Usa este módulo como referencia al crear nuevos. `app/Modules/Comment/` es el segundo ejemplo: agrega `Concerns/`, `Enums/`, `Policies/`, `Props/` y `Tests/Security/`. `app/Modules/Like/` es el tercero y muestra un módulo con `Database/Migrations/` movidas desde la carpeta global, un solo controlador con una acción por tipo de likeable (comentarios y publicaciones) y `routes/routes.php`.
+Use this module as the reference when creating new ones. `app/Modules/Comment/` is the second example: it adds `Concerns/`, `Enums/`, `Policies/`, `Props/` and `Tests/Security/`. `app/Modules/Like/` is the third and shows a module with `Database/Migrations/` moved from the global folder, a single controller with one action per likeable kind (comments and posts) and `routes/routes.php`.
