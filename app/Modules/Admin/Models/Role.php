@@ -9,6 +9,7 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Policies\RolePolicy;
+use App\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
@@ -143,17 +144,12 @@ class Role extends SpatieRole
      */
     public function activityLogQuery(): Builder
     {
-        $lastDeletionOfName = ActivityLog::query()
-            ->selectRaw('coalesce(max(id), 0)')
-            ->where('event', ActivityLogAdminEvent::RoleDeleted->value)
-            ->whereJsonContains('properties->role', $this->name);
-
         return ActivityLog::query()->where(fn (Builder $builder): Builder => $builder
             ->where(fn (Builder $builder): Builder => $builder
                 ->where('subject_type', $this->getMorphClass())
                 ->where('subject_id', $this->getKey()))
             ->orWhere(fn (Builder $builder): Builder => $builder
-                ->where('id', '>', $lastDeletionOfName)
+                ->where('id', '>', $this->lastDeletionOfNameQuery())
                 ->where(fn (Builder $builder): Builder => $builder
                     ->where(fn (Builder $builder): Builder => $builder
                         ->whereIn('event', [ActivityLogAdminEvent::RoleGranted->value, ActivityLogAdminEvent::RoleRevoked->value])
@@ -161,6 +157,77 @@ class Role extends SpatieRole
                     ->orWhere(fn (Builder $builder): Builder => $builder
                         ->where('event', ActivityLogAdminEvent::AdminBootstrapped->value)
                         ->whereJsonContains('properties->roles', $this->name)))));
+    }
+
+    /**
+     * The grants of this role to users, only after the last deleted role of the same name.
+     *
+     * @return Builder<ActivityLog>
+     */
+    public function grantActivityQuery(): Builder
+    {
+        $builder = ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleGranted->value);
+        $builder->whereJsonContains('properties->role', $this->name);
+
+        return $builder->where('id', '>', $this->lastDeletionOfNameQuery());
+    }
+
+    /**
+     * The latest grant of this role to each of the given users, with its causer, keyed by user id; a
+     * user without a recorded grant is left out.
+     *
+     * @param  array<int>  $userIds
+     * @return array<int, ActivityLog>
+     */
+    public function latestGrantsFor(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        $grants = $this->grantActivityQuery()
+            ->where('subject_type', User::MORPH_NAME)
+            ->whereIn('subject_id', array_values(array_unique($userIds)))
+            ->with('causer')
+            ->orderByDesc('id')
+            ->get();
+
+        $latestGrants = [];
+
+        foreach ($grants as $grant) {
+            if ($grant->subject_id !== null && ! isset($latestGrants[$grant->subject_id])) {
+                $latestGrants[$grant->subject_id] = $grant;
+            }
+        }
+
+        return $latestGrants;
+    }
+
+    /**
+     * The date of the latest grant of this role to the user of the outer `users` query, for selecting,
+     * sorting and filtering users by it.
+     *
+     * @return Builder<ActivityLog>
+     */
+    public function latestGrantDateSubquery(): Builder
+    {
+        $builder = $this->grantActivityQuery()->where('subject_type', User::MORPH_NAME);
+        $builder->whereColumn('subject_id', 'users.id')->selectRaw('max(created_at)');
+
+        return $builder;
+    }
+
+    /**
+     * The id of the last deletion of a role with this stored name, or 0, as a subquery.
+     *
+     * @return Builder<ActivityLog>
+     */
+    private function lastDeletionOfNameQuery(): Builder
+    {
+        $builder = ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleDeleted->value);
+        $builder->whereJsonContains('properties->role', $this->name)->selectRaw('coalesce(max(id), 0)');
+
+        return $builder;
     }
 
     /**
