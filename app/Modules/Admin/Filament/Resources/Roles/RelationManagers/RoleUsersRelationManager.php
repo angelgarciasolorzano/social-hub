@@ -4,40 +4,41 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles\RelationManagers;
 
+use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
-use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
-use App\Modules\Admin\Filament\Resources\Users\UserResource;
+use App\Modules\Admin\Filament\Resources\Roles\Tables\RoleUsersTable;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
-use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Override;
 
 /**
- * The users holding a role. An administrator who may manage the roles of other users can add users to
- * the role and remove it from them; their own account is never offered, as on the user's detail.
+ * The users holding a role, with the columns of `RoleUsersTable`. An administrator who may manage the
+ * roles of other users can add users to the role and remove it from them; their own account is never
+ * offered, as on the user's detail.
  */
 class RoleUsersRelationManager extends RelationManager
 {
     use ConfirmsCurrentPassword;
-    use DescribesAccountStatus;
 
     private const string USERS_FIELD = 'users';
 
@@ -45,7 +46,16 @@ class RoleUsersRelationManager extends RelationManager
 
     private const string REMOVE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:remove-user:';
 
+    private const string BULK_REMOVE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:remove-users:';
+
     private const int USER_SEARCH_LIMIT = 50;
+
+    /**
+     * The latest grants of the role to the users on the current page, loaded once per request.
+     *
+     * @var array<int, ActivityLog>|null
+     */
+    private ?array $latestGrantsByUser = null;
 
     #[Override]
     protected static string $relationship = 'users';
@@ -73,32 +83,34 @@ class RoleUsersRelationManager extends RelationManager
     #[Override]
     public function table(Table $table): Table
     {
-        return $table
-            ->loadingSkeleton()
-            ->defaultSort('name')
-            ->columns([
-                TextColumn::make('name')
-                    ->label(TranslatedText::of('admin/roles.relations.users.name'))
-                    ->searchable()
-                    ->sortable()
-                    ->url(fn (User $record): ?string => UserResource::canView($record)
-                        ? UserResource::getUrl('view', ['record' => $record])
-                        : null),
-                TextColumn::make('email')
-                    ->label(TranslatedText::of('admin/roles.relations.users.email'))
-                    ->searchable(),
-                TextColumn::make('status')
-                    ->label(TranslatedText::of('admin/common.fields.status'))
-                    ->badge()
-                    ->formatStateUsing(fn (AccountStatus $state): string => self::accountStatusLabel($state))
-                    ->color(fn (AccountStatus $state): string => self::accountStatusColor($state)),
-            ])
-            ->emptyStateHeading(TranslatedText::of('admin/roles.relations.users.empty'))
-            ->paginated([10, 25, 50])
-            ->defaultPaginationPageOption(10)
+        return RoleUsersTable::configure($table, $this->role(), fn (): array => $this->latestGrantsByUser())
             ->headerActions([$this->addUsersAction()])
             ->recordActions([$this->removeFromRoleAction()])
-            ->toolbarActions([]);
+            ->toolbarActions([$this->removeSelectedFromRoleAction()])
+            ->checkIfRecordIsSelectableUsing(fn (User $record): bool => self::mayManageRolesOf($record));
+    }
+
+    /**
+     * The latest grant of the role to each user on the current page, loaded once per request.
+     *
+     * @return array<int, ActivityLog>
+     */
+    private function latestGrantsByUser(): array
+    {
+        if ($this->latestGrantsByUser !== null) {
+            return $this->latestGrantsByUser;
+        }
+
+        $tableRecords = $this->getTableRecords();
+        $userIds = [];
+
+        foreach ($tableRecords instanceof Collection ? $tableRecords->all() : $tableRecords->items() as $tableRecord) {
+            if ($tableRecord instanceof User) {
+                $userIds[] = $tableRecord->id;
+            }
+        }
+
+        return $this->latestGrantsByUser = $this->role()->latestGrantsFor($userIds);
     }
 
     private function addUsersAction(): Action
@@ -323,6 +335,84 @@ class RoleUsersRelationManager extends RelationManager
     private function userLabel(User $user): string
     {
         return "{$user->name} ({$user->email})";
+    }
+
+    private function removeSelectedFromRoleAction(): BulkAction
+    {
+        return BulkAction::make('removeSelectedFromRole')
+            ->label(TranslatedText::of('admin/roles.relations.users.bulk_remove.label'))
+            ->icon(Heroicon::OutlinedUserMinus)
+            ->color('danger')
+            ->visible(fn (): bool => self::administrator()?->can(AdminPermission::AdminUsersRoles->value) ?? false)
+            ->authorizeIndividualRecords('manageRoles')
+            ->modalHeading(fn (): string => TranslatedText::of('admin/roles.relations.users.bulk_remove.modal_heading', [
+                'role' => $this->role()->displayName(),
+            ]))
+            ->modalDescription(TranslatedText::of('admin/roles.relations.users.bulk_remove.modal_description'))
+            ->modalIcon(Heroicon::OutlinedUserMinus)
+            ->modalIconColor('danger')
+            ->modalSubmitActionLabel(TranslatedText::of('admin/roles.relations.users.bulk_remove.submit'))
+            ->schema([self::currentPasswordField()])
+            ->deselectRecordsAfterCompletion()
+            ->action(fn (EloquentCollection $records, array $data, AdminAuthorizationService $adminAuthorizationService) => $this->removeSelectedFromRole($records, $data, $adminAuthorizationService));
+    }
+
+    /**
+     * Confirm the password and take the role away from every selected user the administrator may
+     * manage, in one transaction: if one of them cannot lose it, nobody does.
+     *
+     * @param  EloquentCollection<int, Model>  $records
+     * @param  array<mixed>  $data
+     *
+     * @throws ValidationException when the password is wrong or its attempts are exhausted
+     */
+    private function removeSelectedFromRole(EloquentCollection $records, array $data, AdminAuthorizationService $adminAuthorizationService): void
+    {
+        $administrator = self::administrator();
+        $currentPassword = $data[self::CURRENT_PASSWORD_FIELD] ?? null;
+
+        abort_unless($administrator instanceof User, 403);
+        abort_unless(\is_string($currentPassword), 422);
+
+        self::ensureCurrentPassword(
+            $administrator,
+            $currentPassword,
+            self::BULK_REMOVE_PASSWORD_THROTTLE_PREFIX,
+            'mountedActions.0.data.'.self::CURRENT_PASSWORD_FIELD,
+        );
+
+        $users = [];
+
+        foreach ($records as $record) {
+            if ($record instanceof User && self::mayManageRolesOf($record)) {
+                $users[] = $record;
+            }
+        }
+
+        try {
+            $removedCount = DB::transaction(function () use ($users, $administrator, $adminAuthorizationService): int {
+                $removedCount = 0;
+
+                foreach ($users as $user) {
+                    if ($adminAuthorizationService->revokeRole($user, $this->role(), $administrator)) {
+                        $removedCount++;
+                    }
+                }
+
+                return $removedCount;
+            });
+        } catch (AdminAuthorizationException $adminAuthorizationException) {
+            $this->notifyFailure($adminAuthorizationException);
+
+            return;
+        }
+
+        Notification::make()
+            ->title(trans_choice('admin/roles.relations.users.bulk_remove.success', $removedCount, ['count' => $removedCount]))
+            ->success()
+            ->send();
+
+        $this->dispatch(ViewRole::ROLE_USERS_CHANGED_EVENT);
     }
 
     private function notifyFailure(AdminAuthorizationException $adminAuthorizationException): void
