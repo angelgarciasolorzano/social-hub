@@ -1,87 +1,88 @@
-# Arquitectura del Frontend
+# Frontend Architecture
 
-Documento de referencia para crear y mantener módulos del frontend en este proyecto React + Inertia v3.
+Reference for creating and maintaining frontend modules in this React + Inertia v3 project.
 
-> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines una convención (o cualquier otro cambio de arquitectura del frontend), actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de las convenciones del proyecto y no debe quedar desincronizada con el código.
+> ⚠️ **Keeping this document current**: when you add, change or remove a convention (or make any other frontend architecture change), update this document in the same PR/commit. The docs are the source of truth for the project's conventions and must not drift from the code.
 
-> 📚 **Documentos por módulo** (en inglés, con el detalle de cada tarea): [Auth](modules/auth.md), [User](modules/user.md), [Post, Comment y Like](modules/content.md), [Announcement](modules/announcement.md), [Notification](modules/notification.md), [ActivityLog](modules/activity-log.md), [Admin](modules/admin.md), [idiomas](i18n.md) e [infraestructura global, seeders y tooling](infrastructure.md). Este documento explica cómo construir un módulo; las secciones por módulo de abajo son resúmenes.
+> 📚 **Module documents** (with the detail of each task): [Auth](modules/auth.md), [User](modules/user.md), [Post, Comment and Like](modules/content.md), [Announcement](modules/announcement.md), [Notification](modules/notification.md), [ActivityLog](modules/activity-log.md), [Admin](modules/admin.md), [languages](i18n.md) and [global infrastructure, seeders and tooling](infrastructure.md). This document explains how to build a frontend module.
 
-## 1. Convención de nomenclatura
+## 1. Naming convention
 
-| Tipo                         | Patrón                                           | Ejemplo                                                     |
-| ---------------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
-| Página / vista               | `PascalCase.tsx`                                 | `TwoFactorDisabled.tsx`, `Login.tsx`                        |
-| Componente de feature        | `PascalCase.tsx`                                 | `PostCard`, `CommentDialog`, `TwoFactorSetupDialog`         |
-| Sub-componente de paso       | `PascalCaseStep.tsx`                             | `ChooseMethodStep`, `VerifyOtpStep`, `TwoFactorSuccessStep` |
-| Hook                         | `useCamelCase.ts`                                | `useTwoFactorAuth`, `useClipboard`, `useDialog`             |
-| Tipo / interface             | `PascalCase`                                     | `Comment`, `TwoFactorSetupDialogProps`                      |
-| Enum (const + tipo derivado) | `PascalCase` (const) / `PascalCaseValues` (tipo) | `CommentType` → `CommentTypeValues`                           |
-| Tipo unión con const-as-keys | `{concept}Key` (const) / `PascalCase` (tipo)     | `twoFactorActivationStepKey` → `TwoFactorActivationStep`    |
-| Utilidad                     | `camelCase.ts`                                   | `downloadRecoveryCodes`, `colorHoverMap`                    |
-| Datos estáticos / fixtures   | `camelCase.ts`                                   | `twoFactorDisabled`, `twoFactorEnable`                      |
-| Layout                       | `PascalCaseLayout.tsx`                           | `AuthCardLayout`                                            |
+| Kind                              | Pattern                                           | Example                                                     |
+| --------------------------------- | ------------------------------------------------- | ----------------------------------------------------------- |
+| Page / view                       | `PascalCase.tsx`                                  | `TwoFactorDisabled.tsx`, `Login.tsx`                        |
+| Feature component                 | `PascalCase.tsx`                                  | `PostCard`, `CommentDialog`, `TwoFactorSetupDialog`         |
+| Step sub-component                | `PascalCaseStep.tsx`                              | `ChooseMethodStep`, `VerifyOtpStep`, `TwoFactorSuccessStep` |
+| Hook                              | `useCamelCase.ts`                                 | `useTwoFactorAuth`, `useClipboard`, `useDialog`             |
+| Type / interface                  | `PascalCase`                                      | `Comment`, `TwoFactorSetupDialogProps`                      |
+| Enum (const + derived type)       | `PascalCase` (const) / `PascalCaseValues` (type)  | `CommentType` → `CommentTypeValues`                         |
+| Union type with const-as-keys     | `{concept}Key` (const) / `PascalCase` (type)      | `twoFactorActivationStepKey` → `TwoFactorActivationStep`    |
+| Utility                           | `camelCase.ts`                                    | `downloadRecoveryCodes`, `colorHoverMap`                    |
+| Static data / fixtures            | `camelCase.ts`                                    | `twoFactorDisabled`, `twoFactorEnable`                      |
+| Layout                            | `PascalCaseLayout.tsx`                            | `AuthCardLayout`                                            |
 
-## 2. Estructura general de `resources/js/`
+## 2. Overall structure of `resources/js/`
 
 ```
 resources/js/
-├── app.tsx                                ← entrypoint Inertia + React
-├── modules/                               ← features por dominio
-│   ├── announcement/                      ← anuncios del sistema (toasts persistentes)
+├── app.tsx                                ← Inertia + React entrypoint
+├── modules/                               ← features per domain
+│   ├── announcement/                      ← system announcements (toasts and dialogs)
 │   ├── auth/
 │   ├── comment/
 │   ├── home/
+│   ├── notification/                      ← real-time notification center
 │   ├── post/
 │   ├── profile/
 │   ├── setting/
 │   └── static/
-└── shared/                                ← código reutilizable
-    ├── assets/                            ← imágenes, íconos SVG, etc.
+└── shared/                                ← reusable code
+    ├── assets/                            ← images, SVG icons, etc.
     ├── components/
     │   ├── AlertError.tsx
     │   ├── TextLink.tsx
-    │   ├── form/                          ← inputs, labels, errores
-    │   ├── logo/                          ← logos y brand
-    │   ├── reactBits/                     ← animaciones / efectos
-    │   └── shadcn/ui/                     ← primitivas shadcn (no editar a mano)
-    ├── hooks/                             ← hooks genéricos (useDialog, useClipboard, …)
-    ├── lib/                               ← utilidades (cn, validImage, …)
-    ├── types/                             ← tipos compartidos (User, LengthAwarePagination, …)
-    └── wayfinder/                         ← autogenerado por Vite (no editar)
+    │   ├── form/                          ← inputs, labels, errors
+    │   ├── logo/                          ← logos and brand
+    │   ├── reactBits/                     ← animations / effects
+    │   └── shadcn/ui/                     ← shadcn primitives (do not edit by hand)
+    ├── hooks/                             ← generic hooks (useDialog, useClipboard, …)
+    ├── lib/                               ← utilities (cn, validImage, …)
+    ├── types/                             ← shared types (User, LengthAwarePagination, …)
+    └── wayfinder/                         ← generated by Vite (do not edit)
 ```
 
-**Reglas clave:**
+**Key rules:**
 
-- **Alias `@/`** apunta a `resources/js/`. Usalo en todos los imports (`@/shared/...`, `@/modules/...`).
-- **No edites** lo que esté bajo `shared/wayfinder/` — se regenera por el plugin de Vite.
-- **No edites** lo que esté bajo `shared/components/shadcn/ui/` salvo que sea para actualizar shadcn. Para wrappers propios, creá un componente nuevo en `shared/components/` o en el módulo.
+- **The `@/` alias** points to `resources/js/`. Use it in every import (`@/shared/...`, `@/modules/...`).
+- **Do not edit** anything under `shared/wayfinder/`: the Vite plugin regenerates it.
+- **Do not edit** anything under `shared/components/shadcn/ui/` except to update shadcn. For your own wrappers, create a new component in `shared/components/` or in the module.
 
-## 3. Estructura de un módulo
+## 3. Structure of a module
 
-Un módulo representa un **dominio de feature** y vive en `resources/js/modules/<domain>/`. La estructura típica:
+A module is a **feature domain** and lives in `resources/js/modules/<domain>/`. The typical structure:
 
 ```
 resources/js/modules/<domain>/
-├── index.ts                               ← barrel export (público)
-├── assets/                                ← imágenes y SVGs del módulo
-├── components/                            ← componentes de UI del feature
+├── index.ts                               ← barrel export (public)
+├── assets/                                ← module images and SVGs
+├── components/                            ← the feature's UI components
 │   ├── <Feature>Card.tsx
 │   ├── <Feature>Dialog.tsx
-│   └── forms/                             ← formularios específicos
-├── data/                                  ← fixtures, arrays de UI (no lógica)
-├── enums/                                 ← const-as-keys enums del módulo
-├── hooks/                                 ← hooks específicos del feature
-├── types/                                 ← tipos e interfaces del módulo
-├── utils/                                 ← utilidades puras del módulo
-├── views/                                 ← páginas del módulo (si las hay)
-└── layouts/                               ← layouts compartidos del módulo (raro)
+│   └── forms/                             ← module-specific forms
+├── data/                                  ← fixtures, UI arrays (no logic)
+├── enums/                                 ← the module's const-as-keys enums
+├── hooks/                                 ← feature-specific hooks
+├── types/                                 ← the module's types and interfaces
+├── utils/                                 ← pure utilities of the module
+├── views/                                 ← the module's pages (if any)
+└── layouts/                               ← shared layouts of the module (rare)
 ```
 
-**No todo módulo necesita todo.** Creá solo las carpetas que vayas a usar.
+**Not every module needs everything.** Create only the folders you will use.
 
 ### Barrel export (`index.ts`)
 
-Cada módulo expone sus componentes públicos vía `index.ts`:
+Each module exposes its public components through `index.ts`:
 
 ```ts
 // resources/js/modules/post/index.ts
@@ -92,61 +93,58 @@ export { default as postPlaceholder } from "./assets/post-placeholder.png";
 export * from "./types/post";
 ```
 
-Y se consume desde otros módulos así:
+Other modules consume it like this:
 
 ```ts
 import { type Post, PostCard } from "@/modules/post";
 ```
 
-## 4. Submódulos
+## 4. Submodules
 
-Cuando un módulo tiene **varias áreas grandes e independientes**, se subdivide. Ejemplos del proyecto:
+When a module has **several large, independent areas**, it is split. Examples in the project:
 
 - `resources/js/modules/setting/modules/twoFactor/`
-- `resources/js/modules/setting/modules/accountSettings/`
+- `resources/js/modules/setting/modules/accountSettings/` (see [User](modules/user.md))
+- `resources/js/modules/setting/modules/trustedDevice/` (see [Auth](modules/auth.md))
 - `resources/js/modules/setting/modules/profile/`
 - `resources/js/modules/setting/modules/preference/`
 
-### AccountSettings (SOC-34)
+Code reused by two or more `setting` submodules lives in `modules/setting/shared/{components,layouts,utils}/`; a utility used by a single submodule stays private to it.
 
-La página de configuración de la cuenta vive en `resources/js/modules/setting/modules/accountSettings/`. `AccountSettings.tsx` compone el formulario (`AccountSettingsProfileForm`), el resumen (`AccountSettingsSummaryCard`), las acciones (`AccountActionsPanel`) y las secciones presentacionales de privacidad y preferencias de comunicación. Los arrays de privacidad y comunicación son estáticos y tipados en `data/accountSettingsSections.ts`; los switches y el botón “Ver actividad” son visuales y no ejecutan acciones. El perfil público conserva su ruta existente. El cambio de contraseña se inicia desde `AccountSettingsPasswordDialog`, componente de `AccountActionsPanel` que envía la actualización a `PUT /setting/password`; no hay una vista independiente ni un GET para cambiar la contraseña. `AccountSettingsDeleteDialog` confirma el borrado mediante `user.destroy`.
+### When to split
 
-Desde SOC-35, `AccountSettingsSummaryCard` muestra “Estado de la cuenta” como un badge de solo lectura (“Activa” / “Suspendida”) a partir de `accountSettings.status`, tipado por `AccountStatus` en `types/accountSettings.ts`, espejo del enum del backend. La vista no infiere ese estado de la verificación del correo, del último acceso ni de la sesión activa, y no ofrece ningún control para cambiarlo.
+| ✅ Yes                                              | ❌ No                                  |
+| --------------------------------------------------- | -------------------------------------- |
+| The area has its own state, hooks and types         | It is just one more component          |
+| The areas evolve separately                         | There are 2-3 small files              |
+| It has complete sub-screens (not just a form)       | The files are tightly coupled          |
 
-### Cuándo subdividir
-
-| ✅ Sí                                              | ❌ No                                |
-| -------------------------------------------------- | ------------------------------------ |
-| El área tiene su propio estado, hooks y tipos      | Es solo un componente más del módulo |
-| Las áreas evolucionan por separado                 | Hay 2-3 archivos chicos              |
-| Tiene sub-pantallas completas (no es solo un form) | Los archivos están acoplados         |
-
-### Estructura de un submódulo
+### Structure of a submodule
 
 ```
 resources/js/modules/<parent>/<submodule>/
 ├── components/
-│   ├── dialog/                            ← modales del submódulo
+│   ├── dialog/                            ← the submodule's modals
 │   │   └── <Submodule>Dialog.tsx
-│   │       └── steps/                     ← un archivo por paso del flujo
+│   │       └── steps/                     ← one file per step of the flow
 │   │           ├── <Step1>Step.tsx
 │   │           ├── <Step2>Step.tsx
 │   │           └── <StepN>Step.tsx
-│   └── ui/                                ← piezas reutilizables del submódulo
-├── data/                                  ← fixtures específicos
-├── hooks/                                 ← hooks del submódulo
-├── types/                                 ← tipos y const-as-keys
-├── utils/                                 ← utilidades del submódulo
-└── views/                                 ← vista principal del submódulo
+│   └── ui/                                ← reusable pieces of the submodule
+├── data/                                  ← specific fixtures
+├── hooks/                                 ← the submodule's hooks
+├── types/                                 ← types and const-as-keys
+├── utils/                                 ← the submodule's utilities
+└── views/                                 ← the submodule's main view
 ```
 
-**No hay routing de frontend** en sí: las rutas las maneja el backend (Laravel) y se exponen via Wayfinder. Los "submódulos" son puramente una **agrupación de carpetas** para mantener cohesión.
+**There is no frontend routing**: the backend (Laravel) owns the routes and exposes them through Wayfinder. "Submodules" are only a **folder grouping** that keeps things cohesive.
 
-## 5. Convenciones de tipos
+## 5. Type conventions
 
-### 5.1. Enums con **const-as-keys**
+### 5.1. Enums with **const-as-keys**
 
-**Siempre** que necesites un set finito de valores identificados (estados, tipos, categorías), usá el patrón **const-as-keys**. Es la fuente única de verdad: el `const` declara los valores y el `type` se deriva automáticamente.
+**Whenever** you need a finite set of named values (states, types, categories), use the **const-as-keys** pattern. It is the single source of truth: the `const` declares the values and the `type` is derived from it.
 
 ```ts
 // resources/js/modules/comment/enums/commentType.ts
@@ -158,31 +156,33 @@ export const CommentType = {
 export type CommentTypeValues = (typeof CommentType)[keyof typeof CommentType];
 ```
 
-Uso en `switch`, `setState`, comparaciones:
+Use it in `switch`, `setState` and comparisons:
 
 ```tsx
-// switch con autocomplete y exhaustiveness implícita
+// switch with autocomplete and implicit exhaustiveness
 switch (kind) {
   case CommentType.COMMENT: ...
   case CommentType.POST: ...
 }
 
-// setState seguro (no permite strings fuera del union)
+// safe setState (rejects strings outside the union)
 setKind(CommentType.POST);
 
-// comparación sin typos
+// typo-free comparison
 if (kind === CommentType.COMMENT) { ... }
 ```
 
-**Beneficios:**
+**Benefits:**
 
-- **Refactor seguro**: renombrar un valor en el `const` se propaga a todos los call-sites.
-- **Autocomplete IDE**: `case CommentType.` te sugiere los valores.
-- **Exhaustiveness implícita**: si la función no retorna `undefined` y agregás un valor al `const`, TS marca error en los `switch` que olviden un `case`.
+- **Safe refactors**: renaming a value in the `const` propagates to every call site.
+- **IDE autocomplete**: `case CommentType.` suggests the values.
+- **Implicit exhaustiveness**: if the function never returns `undefined` and you add a value to the `const`, TypeScript flags every `switch` that misses a `case`.
 
-### 5.2. Tipo unión con const-as-keys para state machines
+A const that mirrors a backend enum (`CommentType`, `AccountStatus`, `AnnouncementType`, `AnnouncementDisplay`, `NotificationType`, `Locale`) must change together with it.
 
-Cuando un componente tiene varios pasos discretos (wizard, modal flow, etc.), declaralo como unión tipada y derivá un `const` para los valores:
+### 5.2. Union type with const-as-keys for state machines
+
+When a component has several discrete steps (wizard, modal flow, etc.), declare them as a typed union and derive a `const` for the values:
 
 ```ts
 // resources/js/modules/setting/modules/twoFactor/types/twoFactorActivationStep.ts
@@ -200,7 +200,7 @@ export const DEFAULT_TWO_FACTOR_ACTIVATION_STEP: TwoFactorActivationStep =
   twoFactorActivationStepKey.chooseMethod;
 ```
 
-Después en el `switch`:
+Then in the `switch`:
 
 ```tsx
 switch (step) {
@@ -211,11 +211,11 @@ switch (step) {
 }
 ```
 
-**Evitá** booleanos sueltos (`isStep1`, `isStep2`, ...) para representar estados — escalan mal y son propensos a estados intermedios inválidos. Usá un único `useState<TwoFactorActivationStep>`.
+**Avoid** loose booleans (`isStep1`, `isStep2`, ...) to represent states: they scale badly and allow invalid intermediate states. Use a single `useState<TwoFactorActivationStep>`.
 
-### 5.3. Props tipadas con `interface`
+### 5.3. Props typed with `interface`
 
-Los props de cada componente se declaran con `interface Props` (no `type`) y se exportan solo si se reutilizan:
+Each component's props are declared with an `interface` (not `type`) and exported only when reused:
 
 ```ts
 interface TwoFactorSetupDialogProps {
@@ -226,9 +226,9 @@ interface TwoFactorSetupDialogProps {
 }
 ```
 
-### 5.4. Tipos derivados con `Pick<>` y `Omit<>`
+### 5.4. Derived types with `Pick<>` and `Omit<>`
 
-Para tipos parciales (ej. "Comment pero solo content + id") preferí los utility types sobre redeclarar:
+For partial types (e.g. "a Comment with only content + id"), prefer utility types over redeclaring:
 
 ```ts
 export type CommentFormData = Pick<Comment, "content"> & {
@@ -237,24 +237,24 @@ export type CommentFormData = Pick<Comment, "content"> & {
 };
 ```
 
-## 6. Convenciones de hooks
+## 6. Hook conventions
 
-### 6.1. Custom hook para flujos con estado
+### 6.1. Custom hook for stateful flows
 
-Cuando un componente maneja un flujo de varios pasos, **extraé la lógica a un custom hook** y dejá el componente solo con el render. Esto:
+When a component drives a multi-step flow, **extract the logic into a custom hook** and leave the component with the render only. This:
 
-- Separa **lógica** (state + transiciones) de **vista** (JSX).
-- Hace el hook testeable de forma aislada.
-- Mantiene el componente del dialog corto y legible.
+- Separates **logic** (state + transitions) from **view** (JSX).
+- Makes the hook testable in isolation.
+- Keeps the dialog component short and readable.
 
-**Regla de capas del hook:**
+**Hook layering rule:**
 
-| ✅ En el hook                                     | ❌ Fuera del hook (en el componente)        |
-| ------------------------------------------------- | ------------------------------------------- |
-| `useState`, `useEffect`, `useMemo`, `useCallback` | `renderStep()` con JSX                      |
-| Transiciones (`handleX`, `goToY`)                 | `DialogHeaderIcon` y otros helpers visuales |
-| `modalConfig` (datos: título + descripción)       | Botones / wrappers con JSX                  |
-| `useEffect` de setup data y reset                 |                                             |
+| ✅ In the hook                                    | ❌ Outside the hook (in the component)     |
+| ------------------------------------------------- | ------------------------------------------ |
+| `useState`, `useEffect`, `useMemo`, `useCallback` | `renderStep()` with JSX                    |
+| Transitions (`handleX`, `goToY`)                  | `DialogHeaderIcon` and other visual helpers |
+| `modalConfig` (data: title + description)         | Buttons / wrappers with JSX                |
+| Setup-data and reset `useEffect`s                 |                                            |
 
 ```ts
 // hooks/useTwoFactorActivationFlow.ts
@@ -266,7 +266,7 @@ export function useTwoFactorActivationFlow(
 }
 ```
 
-El componente consume el hook y renderiza:
+The component consumes the hook and renders:
 
 ```tsx
 const { step, modalConfig, renderStep, handleClose } = useTwoFactorActivationFlow({...});
@@ -281,9 +281,9 @@ return (
 );
 ```
 
-### 6.2. Hook de visibilidad de diálogos (`useDialog`)
+### 6.2. Dialog visibility hook (`useDialog`)
 
-Para abrir/cerrar un `<Dialog>` de shadcn/ui, **usá el hook genérico `useDialog`** de `@/shared/hooks`. No crees un hook específico por feature que duplique la misma lógica.
+To open and close a shadcn/ui `<Dialog>`, **use the generic `useDialog` hook** from `@/shared/hooks`. Do not create a per-feature hook that duplicates the same logic.
 
 ```ts
 // resources/js/shared/hooks/useDialog.ts
@@ -293,20 +293,20 @@ export function useDialog(initialState: boolean = false): UseDialogReturn {
 }
 ```
 
-Uso (renombrando localmente para mayor claridad):
+Usage (renamed locally for clarity):
 
 ```ts
 const { open: showSetupModal, setOpen: setShowSetupModal } = useDialog();
 ```
 
-**Cuándo crear un hook propio:** **nunca** para visibilidad de dialogs. `useDialog` ya encapsula el `useState<boolean>` y se puede llamar múltiples veces en el mismo componente para manejar varios dialogs independientes. No crees `useFooDialog` ni similares..
+**When to create your own hook:** **never** for dialog visibility. `useDialog` already wraps the `useState<boolean>` and can be called several times in the same component for independent dialogs. Do not create `useFooDialog` or similar.
 
-### 6.3. Hooks de feature con un solo return tipado
+### 6.3. Feature hooks with a single typed return
 
-Cada hook de feature (ej. `useTwoFactorAuth`) declara un `type UseXxxReturn` y devuelve **un solo objeto** con todos los valores y callbacks:
+Each feature hook (e.g. `useTwoFactorAuth`) declares a `type UseXxxReturn` and returns **a single object** with every value and callback:
 
 ```ts
-// El type NO se exporta — solo lo consume la firma del hook dentro del archivo.
+// The type is NOT exported: only the hook's signature in this file uses it.
 type UseTwoFactorAuthReturn = {
   qrCodeSvg: string | null;
   manualSetupKey: string | null;
@@ -321,31 +321,31 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 };
 ```
 
-**Regla de visibilidad de tipos:**
+**Type visibility rule:**
 
-- ✅ **Exportar** solo tipos que se consumen **fuera del archivo** (ej. enums, tipos de props compartidas, tipos de modelo de dominio).
-- ❌ **NO exportar** el `type UseXxxReturn` ni similares que solo existen para tipar la firma del propio hook. Mantenerlos como type/interface internos (sin `export`) reduce el surface area del módulo y deja claro que son detalles de implementación.
+- ✅ **Export** only types consumed **outside the file** (enums, shared prop types, domain model types).
+- ❌ **Do NOT export** `type UseXxxReturn` or similar types that only exist to type the hook's own signature. Keeping them internal (no `export`) reduces the module's surface and makes clear they are implementation details.
 
-Ejemplos válidos del proyecto:
+Valid examples in the project:
 
-| Hook                         | Tipo interno                       | Exportado al exterior                                     |
-| ---------------------------- | ---------------------------------- | --------------------------------------------------------- |
-| `useTwoFactorAuth`           | `UseTwoFactorAuthReturn`           | ❌ (solo firma)                                           |
-| `useTwoFactorActivationFlow` | `UseTwoFactorActivationFlowReturn` | ❌ (solo firma)                                           |
-| `useAppearance`              | `UseAppearanceReturn`              | ❌ (solo firma)                                           |
-| `useAppearance`              | `Appearance`, `ResolvedAppearance` | ✅ (consumidos en `Appearance.tsx`, `appearanceItems.ts`) |
+| Hook                         | Internal type                      | Exported                                                 |
+| ---------------------------- | ---------------------------------- | -------------------------------------------------------- |
+| `useTwoFactorAuth`           | `UseTwoFactorAuthReturn`           | ❌ (signature only)                                      |
+| `useTwoFactorActivationFlow` | `UseTwoFactorActivationFlowReturn` | ❌ (signature only)                                      |
+| `useAppearance`              | `UseAppearanceReturn`              | ❌ (signature only)                                      |
+| `useAppearance`              | `Appearance`, `ResolvedAppearance` | ✅ (used in `Appearance.tsx`, `appearanceItems.ts`)      |
 
-### 6.4. Hooks de UI encapsulando comportamiento + estado
+### 6.4. UI hooks that wrap behavior + state
 
-Cuando un componente combina **estado local + efectos + UI** (ej. copiar al portapapeles con countdown y barra de progreso), extraé esa lógica a un hook de feature. El componente queda con **solo render** y el hook es **testeable de forma aislada**.
+When a component combines **local state + effects + UI** (e.g. copy to clipboard with a countdown and a progress bar), extract that logic into a feature hook. The component keeps **only the render** and the hook is **testable in isolation**.
 
-**Cuándo aplica:**
+**When it applies:**
 
-- Hay un `useState` + `useEffect` + `useCallback` coordinados en el componente.
-- La lógica es reutilizable potencialmente (puede que otro feature necesite "copy con feedback temporal").
-- Sacarla del componente mejora la legibilidad (componente >150 líneas con lógica intercalada).
+- A `useState` + `useEffect` + `useCallback` are coordinated inside the component.
+- The logic could be reused (another feature may need "copy with temporary feedback").
+- Moving it out improves readability (a component over 150 lines with interleaved logic).
 
-**Ejemplo del proyecto — `useCopyWithCountdown`:**
+**Project example: `useCopyWithCountdown`**
 
 ```ts
 // resources/js/modules/setting/modules/twoFactor/hooks/useCopyWithCountdown.ts
@@ -367,12 +367,12 @@ export function useCopyWithCountdown({
   durationMs,
   tickMs,
 }: UseCopyWithCountdownParams): UseCopyWithCountdownReturn {
-  // Encapsula: useClipboard + countdown + intervalo + cleanup
+  // Wraps: useClipboard + countdown + interval + cleanup
   // ...
 }
 ```
 
-El componente consume el hook y queda enfocado en el render:
+The component consumes the hook and focuses on rendering:
 
 ```tsx
 function ManualSetupStep({ manualSetupKey }: Props) {
@@ -397,28 +397,32 @@ function ManualSetupStep({ manualSetupKey }: Props) {
 }
 ```
 
-**Convención de ubicación:**
+**Location convention:**
 
-| Tipo de hook                              | Ubicación                                                     |
-| ----------------------------------------- | ------------------------------------------------------------- |
-| Hook genérico (sin dominio de negocio)    | `resources/js/shared/hooks/useXxx.ts`                         |
-| Hook de feature (específico de un módulo) | `resources/js/modules/<domain>/hooks/useXxx.ts`               |
-| Hook de submódulo                         | `resources/js/modules/<parent>/modules/<sub>/hooks/useXxx.ts` |
+| Kind of hook                             | Location                                                      |
+| ---------------------------------------- | ------------------------------------------------------------- |
+| Generic hook (no business domain)        | `resources/js/shared/hooks/useXxx.ts`                         |
+| Feature hook (specific to a module)      | `resources/js/modules/<domain>/hooks/useXxx.ts`               |
+| Submodule hook                           | `resources/js/modules/<parent>/modules/<sub>/hooks/useXxx.ts` |
 
-**Diferencia con §6.1 (`useTwoFactorActivationFlow`):**
+**Difference from §6.1 (`useTwoFactorActivationFlow`):**
 
-- §6.1 — **State machine**: hook que coordina transiciones entre pasos (`step: "chooseMethod" | "verifyingOTP" | …`).
-- §6.4 — **Comportamiento + UI**: hook que encapsula un efecto concreto reutilizable (copy, drag, debounce, etc.) con su estado derivado.
+- §6.1: **state machine**, a hook that coordinates transitions between steps (`step: "chooseMethod" | "verifyingOTP" | …`).
+- §6.4: **behavior + UI**, a hook that wraps a concrete reusable effect (copy, drag, debounce, etc.) with its derived state.
 
-## 7. Convenciones de componentes
+### 6.5. Filter hooks and React StrictMode
 
-### 7.1. Componentes de paso (steps) para flujos modales
+A full-page toolbar keeps its filters in the URL (`router.get()`), while a dialog's filters are ephemeral (`router.reload({ data, only, preserveUrl: true, replace: true })`); both expose `committedFilters` for UI that must match the rendered data (rule in `.ai/rules/frontend.md`, example in [Auth](modules/auth.md#frontend)). `app.tsx` runs React StrictMode, which double-invokes mount effects in development: flip any "skip the first render" ref only inside the user-facing setter, never in the effect's early return.
 
-Cuando un modal tiene varios pasos visuales, cada paso es **un componente aparte** en `components/dialog/<...>/steps/`. El padre (`Dialog`) solo:
+## 7. Component conventions
 
-- Decide qué step renderizar (vía el `step` del hook).
-- Renderiza el header (título, descripción, ícono).
-- Pasa los callbacks del hook a cada step.
+### 7.1. Step components for modal flows
+
+When a modal has several visual steps, each step is **a separate component** in `components/dialog/<...>/steps/`. The parent (`Dialog`) only:
+
+- Decides which step to render (from the hook's `step`).
+- Renders the header (title, description, icon).
+- Passes the hook's callbacks to each step.
 
 ```tsx
 // components/dialog/twoFactorDisabled/steps/VerifyOtpStep.tsx
@@ -434,12 +438,12 @@ function VerifyOtpStep({ onBack, onSuccess }: VerifyOtpStepProps) {
 export default VerifyOtpStep;
 ```
 
-**Convención:** cada step recibe **solo lo que necesita** (callbacks + estado), nada más. La lógica de transición vive en el hook.
+**Convention:** each step receives **only what it needs** (callbacks + state), nothing more. The transition logic lives in the hook.
 
-### 7.2. Componentes default export, helpers named export
+### 7.2. Components as default export, helpers unexported
 
-- **Componentes** se exportan con `export default function Name()`.
-- **Helpers internos** (íconos, headers, wrappers) se quedan en el mismo archivo pero como funciones aparte sin `export`.
+- **Components** are exported with `export default function Name()`.
+- **Internal helpers** (icons, headers, wrappers) stay in the same file as separate functions without `export`.
 
 ```tsx
 function DialogHeaderIcon({ step }: { step: TwoFactorActivationStep }) { ... }
@@ -448,21 +452,23 @@ function DialogHeaderIconWrapper({ icon, ... }) { ... }
 export default function TwoFactorSetupDialog() { ... }
 ```
 
-### 7.3. Usá shadcn/ui como base
+The order of components and their props inside a file is set in `.ai/rules/frontend.md`.
 
-Para cualquier UI nueva:
+### 7.3. Build on shadcn/ui
 
-- Botones, inputs, dialogs, alerts, dropdowns → `shared/components/shadcn/ui/`.
-- Wrappers o composiciones → en `shared/components/` (genérico) o en el módulo (específico).
-- Animaciones / efectos → `shared/components/reactBits/`.
+For any new UI:
 
-**No inventes** estilos custom para cosas que shadcn ya resuelve.
+- Buttons, inputs, dialogs, alerts, dropdowns → `shared/components/shadcn/ui/`.
+- Wrappers or compositions → `shared/components/` (generic) or the module (specific).
+- Animations / effects → `shared/components/reactBits/`.
 
-## 8. Convenciones de formularios
+**Do not invent** custom styles for things shadcn already solves. Add primitives with `npx shadcn@latest add <name>`, never by copying from the docs.
 
-### 8.1. Form de Inertia + Wayfinder
+## 8. Form conventions
 
-Para enviar datos al backend, usá `<Form>` de `@inertiajs/react` con la action generada por **Wayfinder**:
+### 8.1. Inertia form + Wayfinder
+
+To send data to the backend, use `<Form>` from `@inertiajs/react` with the action generated by **Wayfinder**:
 
 ```tsx
 import { Form } from "@inertiajs/react";
@@ -475,12 +481,12 @@ import { confirm } from "@/shared/wayfinder/routes/two-factor";
 </Form>
 ```
 
-- `confirm.form()` devuelve los props que el form necesita (action + method + token CSRF).
-- `resetOnError` y `resetOnSuccess` resetean inputs nativos. Si tenés un componente controlado (ej. `InputOTP`), pasale `value={...}` y limpia el state en `onError` para que sincronice.
+- `confirm.form()` returns the props the form needs (action + method + CSRF token).
+- `resetOnError` and `resetOnSuccess` reset native inputs. For a controlled component (e.g. `InputOTP`), pass `value={...}` and clear the state in `onError` so it stays in sync.
 
-### 8.2. Inputs OTP con `input-otp`
+### 8.2. OTP inputs with `input-otp`
 
-Para inputs de tipo OTP / PIN, usá el wrapper de shadcn `@/shared/components/shadcn/ui/input-otp` con `REGEXP_ONLY_DIGITS`:
+For OTP / PIN inputs, use the shadcn wrapper `@/shared/components/shadcn/ui/input-otp` with `REGEXP_ONLY_DIGITS`:
 
 ```tsx
 import { REGEXP_ONLY_DIGITS } from "input-otp";
@@ -492,47 +498,49 @@ const [code, setCode] = useState<string>("");
 <InputOTP
   id="otp"
   name="code"
-  value={code} // ← controlado: sincroniza state interno
+  value={code} // ← controlled: keeps the internal state in sync
   onChange={setCode}
   maxLength={OTP_MAX_LENGTH}
   pattern={REGEXP_ONLY_DIGITS}
 >
   <InputOTPGroup>
-    {Array.from({ length: OTP_MAX_LENGTH }, (_, i) => (
-      <InputOTPSlot index={i} key={i} />
+    {Array.from({ length: OTP_MAX_LENGTH }, (_, slotIndex) => (
+      <InputOTPSlot index={slotIndex} key={slotIndex} />
     ))}
   </InputOTPGroup>
 </InputOTP>;
 ```
 
-**Importante:** la lib `input-otp` mantiene state interno. Si solo pasás `onChange` y querés resetear el input (por ejemplo tras un error), **tenés que pasar también `value={code}`** y limpiar el state en `onError`:
+**Important:** the `input-otp` library keeps internal state. If you only pass `onChange` and want to reset the input (for example after an error), **you must also pass `value={code}`** and clear the state in `onError`:
 
 ```tsx
 <Form
   {...confirm.form()}
-  onError={() => setCode("")}      // ← limpia el state → InputOTP se sincroniza
+  onError={() => setCode("")}      // ← clears the state → InputOTP follows
   resetOnError
   resetOnSuccess
 >
 ```
 
-### 8.3. Errores de validación
+The two-factor code fields shared by the settings dialogs (`TwoFactorOtpField`, `TwoFactorCodeField`) live in `modules/setting/shared/components/`.
 
-- Errores **por campo** → `InputError message={errors?.campo}`.
-- Errores **globales** (del setup, fetch fallido, etc.) → `AlertError errors={errors}`.
+### 8.3. Validation errors
+
+- **Per-field** errors → `InputError message={errors?.field}`.
+- **Global** errors (setup, failed fetch, etc.) → `AlertError errors={errors}`.
 
 ```tsx
 {errors?.length ? <AlertError errors={errors} /> : ...}
 <InputError message={errors?.confirmTwoFactorAuthentication?.code} />
 ```
 
-## 9. Convenciones de estilos
+## 9. Style conventions
 
 ### 9.1. Tailwind v4 utility-first
 
-Todo el styling va con **Tailwind utility classes**. No crear archivos CSS por componente.
+All styling uses **Tailwind utility classes**. Do not create per-component CSS files.
 
-- **Combiná clases** con `cn()` de `@/shared/lib` (que usa `clsx` + `tailwind-merge`):
+- **Combine classes** with `cn()` from `@/shared/lib` (`clsx` + `tailwind-merge`):
 
   ```tsx
   import { cn } from "@/shared/lib";
@@ -540,12 +548,13 @@ Todo el styling va con **Tailwind utility classes**. No crear archivos CSS por c
   <div className={cn("base-class", isActive && "active-class", className)} />;
   ```
 
-- **Colores** usá los tokens semánticos de shadcn: `bg-background`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, etc.
-- **Iconos** siempre desde `lucide-react` (per `components.json` → `iconLibrary: "lucide"`).
+- **Colors**: use shadcn's semantic tokens: `bg-background`, `text-foreground`, `border-border`, `bg-muted`, `text-muted-foreground`, etc. `app.css` defines no `warning` token (`blatui.css` is only loaded for Livewire), so use the Tailwind palette with `dark:` variants for warning colors.
+- **Icons** always come from `lucide-react` (`components.json` → `iconLibrary: "lucide"`).
+- The app follows the system theme (`appearance=system`): to check light or dark mode, emulate `prefers-color-scheme` instead of toggling the `dark` class.
 
-### 9.2. Variantes de shadcn
+### 9.2. shadcn variants
 
-Para variantes de Button, Alert, Badge, etc., usá las variantes predefinidas de shadcn:
+For Button, Alert, Badge, etc., use shadcn's predefined variants:
 
 ```tsx
 <Button variant="outline" size="icon-sm" className="...">
@@ -555,88 +564,60 @@ Para variantes de Button, Alert, Badge, etc., usá las variantes predefinidas de
 <Alert variant="destructive"> ... </Alert>
 ```
 
-## 10. Convenciones de Inertia + Wayfinder
+## 10. Inertia + Wayfinder conventions
 
-- **No hardcodees URLs.** Usá siempre las funciones de Wayfinder generadas:
-  - `@/shared/wayfinder/routes/...` para rutas nombradas.
-  - `@/shared/wayfinder/actions/...` para controllers.
-- **No edites** nada en `shared/wayfinder/`. Se regenera con el plugin de Vite.
-- Para hacer `POST/PUT/DELETE`, usá los helpers `.form()` (auto-incluye CSRF) o `useHttp()` (peticiones standalone v3).
-- **Componentes globales fuera de la página.** Lo que se monta en `withApp` de `app.tsx` (`FlashToaster`, `SystemAnnouncements`) queda fuera del contexto que necesita `usePage()`. Leé las props iniciales del segundo argumento de `withApp` (`{ page }`) y las siguientes de los eventos del router (`router.on("navigate", …)` o `router.on("flash", …)`), y limpiá la suscripción devolviendo el resultado de `router.on` desde el `useEffect`.
+- **Do not hardcode URLs.** Always use the generated Wayfinder functions:
+  - `@/shared/wayfinder/routes/...` for named routes.
+  - `@/shared/wayfinder/actions/...` for controllers (migrated modules under `actions/App/Modules/<Domain>/…`, old-architecture domains under `actions/App/<Domain>/…`).
+- **Do not edit** anything in `shared/wayfinder/`. The Vite plugin regenerates it.
+- For `POST/PUT/DELETE`, use the `.form()` helpers (CSRF included) or `useHttp()` (v3 standalone requests).
+- Where a 404 or 429 must not open Inertia's error modal, `onHttpException` / `onNetworkError` return `false` and the component shows its own message.
+- **Global components outside the page.** What `withApp` mounts in `app.tsx` (`FlashToaster`, `SystemAnnouncements`, `NotificationRealtimeListener`) sits outside the context `usePage()` needs. Read the initial props from `withApp`'s second argument (`{ page }`) and later ones from router events (`router.on("navigate", …)` or `router.on("flash", …)`), and clean up the subscription by returning the result of `router.on` from the `useEffect`.
+- **Texts and dates.** In translated pages, read every text with `useTranslation()` and format dates with `useDateTime()`; the rule is in `.ai/rules/frontend.md` and the design in [Languages](i18n.md#application-soc-67).
 
-### Idiomas de la aplicación (SOC-67)
+## 11. Strict TypeScript
 
-Los textos de las páginas traducidas (hoy, las de configuración) salen de `lang/`, igual que los del backend. El servidor decide el idioma y manda a cada página sus catálogos ya fusionados con el idioma de respaldo; React no carga archivos ni guarda el idioma en estado de módulo, así el SSR nunca mezcla idiomas entre peticiones.
+- `npm run types` must pass cleanly. `tsconfig.json` has `strict: true`.
+- **No `any` or `unknown`** in feature code. If you cannot type something, use `unknown` only in the `catch` of a `try/catch` and narrow it.
+- **Explicit return types** on declared functions (not on assigned arrow functions).
+- **Interfaces end members with `;`** (consistent with the project's Prettier config).
 
-- **Props compartidos**: `locale` (`"en" | "es"`) y `translations` (los grupos de la página más `dates`), tipados en `SharedData`. Ambos se reenvían juntos también en las recargas parciales para evitar combinar datos localizados con un catálogo anterior.
-- **`useTranslation()`** (`@/shared/hooks`) devuelve `{ t, tChoice, locale }`. Las claves son las mismas que en PHP: `t("setting/trusted-devices.table.open_actions", { device: name })`, `tChoice("setting/trusted-device-dialogs.revoke_all.devices_count", total)`.
-  - Los marcadores `:name`, `:Name` y `:NAME` funcionan como en Laravel, y los plurales aceptan `{n}`, `{a,b}`, `[desde,hasta]` y `uno|varios`.
-  - Una clave que no existe devuelve la clave.
-  - `t` y `tChoice` mantienen su identidad mientras no cambien las traducciones, así que sirven como dependencias de hooks.
-  - Las funciones puras viven en `shared/lib/translation.ts`.
-- **`useDateTime()`** (`@/shared/hooks`) da los formateadores de `shared/lib/dateTime.ts` ligados al idioma y al catálogo `dates`. Formatean con `dayjs(iso).locale(locale)`, nunca con el locale global, y sin ese contexto no compilan. Posts y comentarios ya los usan, aunque sus textos sigan en español.
-- **Datos estáticos** (`data/*.ts`): conservan su forma y nombres de campo, pero guardan claves que el componente pasa por `t()`. Los valores que viajan en la URL o al backend (filtros, orden) no cambian con el idioma.
-- **Componentes de presentación** (`OptionCard`, `SummaryCard`, `Timeline`): reciben texto ya traducido; la vista traduce los datos antes de pasarlos.
-- **Utilidades que no son hooks** reciben el texto traducido como parámetro: `deviceLabel(device, unknownDeviceLabel)`, `downloadRecoveryCodes(codes, { locale, t })`.
-- **Textos con una parte resaltada** se parten en claves `_before`/`_after` (o `_emphasis`), para que el `<strong>` quede en el componente.
-- **Cómo agregar un texto**: la clave va en `lang/en/<grupo>.php` y en `lang/es/<grupo>.php` a la vez; la regla completa está en `.ai/rules/frontend.md`. `FrontendTranslationKeysTest` y `SettingHardcodedTextTest` fallan si la clave no existe o si el texto quedó escrito a mano.
+## 12. How to create a new module
 
-### Anuncios del sistema (SOC-61, SOC-63, SOC-64)
+Checklist, in order:
 
-`modules/announcement/` muestra la prop compartida `announcements` según su `display`. Los toasts van a un `Toaster` de Sonner propio (`id="announcements"`, arriba al centro, colapsado), separado del de `FlashToaster`: Sonner solo muestra en cada `Toaster` los toasts con su mismo `toasterId`. Se eligió un toast y no una franja dentro del flujo porque flota sobre cualquier layout, incluido el sidebar fijo de `SettingLayout`. Los dialogs se muestran de uno en uno.
-
-El backend aplica el filtro `status = approved` en `Announcement::availableTo()` (usado por `Announcement::visibleTo()`) antes de compartir la prop. `AnnouncementBannerResource` conserva el payload de presentación `{id, title, bodyHtml, type, display, buttonLabel, buttonUrl, isDismissible, imageUrl}`: no incluye `status` ni historial de revisión. React no modela `draft`, `in_review`, `approved` o `rejected`; recibe solo anuncios aprobados y usa `display` para elegir toast o dialog.
-
-- `SystemAnnouncements` sincroniza la lista: crea o actualiza un toast por anuncio con un id fijo (`duration: Infinity`, sin descartar por arrastre), cierra los que salen de la lista y deja el más grave arriba. Muestra un solo `AnnouncementDialog` con el primero de la cola, y mientras está abierto retiene los toasts, porque el z-index de Sonner los dibujaría encima del fondo del dialog.
-- `AnnouncementContent.tsx` reúne lo que comparten el toast y el dialog: el cuerpo (`bodyHtml`, ya saneado en el servidor, con `dangerouslySetInnerHTML`), el botón (`Link` de Inertia para rutas internas, una pestaña nueva con `rel="noopener noreferrer"` para enlaces externos, y un `onAction` que el dialog usa para contarlo como cerrado) y los colores e íconos por tipo con la paleta de Tailwind y variantes `dark:`.
-- `AnnouncementToast` usa `role="alert"` solo para los críticos y siempre muestra la ✕. `AnnouncementDialog` es el `Dialog` de shadcn teñido por tipo; 'Entendido', `Esc`, el fondo y el botón del anuncio lo cierran, y el cuerpo va en `DialogDescription asChild` sobre un `<div>` porque trae sus propios `<p>` y listas.
-- `useAnnouncementDismiss` decide dónde se guarda cada cierre: en el servidor con `useHttp` y `optimistic` (vuelve si falla, con un toast de error en español en lugar del modal de Inertia), en `localStorage` para un invitado o en `sessionStorage` para un anuncio no descartable. `useGuestDismissalSync` envía los cierres del invitado una vez al iniciar sesión y los borra si salen bien.
-- `utils/announcementDismissalStorage.ts` protege cada acceso al almacenamiento (sin `window`, bloqueado o con un valor alterado); sus funciones de escritura devuelven si guardaron, así que ningún `catch` queda vacío.
-- `types/announcement.ts` replica los enums `AnnouncementType` y `AnnouncementDisplay` del backend: cambialos juntos.
-
-## 11. TypeScript estricto
-
-- `npm run types` debe pasar limpio. Configurado en `tsconfig.json` con `strict: true`.
-- **Ningún `any` ni `unknown`** en el código de feature. Si no podés tipar algo, usá `unknown` solo en el `catch` de un `try/catch` y refinalo.
-- **Tipos de retorno explícitos** en funciones declaradas (no flechas asignadas).
-- **Interfaces con `;` final** (consistente con la config de Prettier del proyecto).
-
-## 12. Cómo crear un módulo nuevo
-
-Checklist en orden:
-
-1. **Crear la estructura de carpetas:**
+1. **Create the folder structure:**
 
    ```bash
    mkdir -p resources/js/modules/<domain>/{components,hooks,types,data}
    ```
 
-2. **Definir los tipos** en `types/` (y enums con const-as-keys si hace falta en `enums/`).
+2. **Define the types** in `types/` (and const-as-keys enums in `enums/` if needed).
 
-3. **Crear los hooks** en `hooks/` (uno de feature, otro de visibilidad si hay modal).
+3. **Create the hooks** in `hooks/` (one for the feature; dialog visibility uses `useDialog`).
 
-4. **Crear los componentes** de UI en `components/`. Si es un modal con varios pasos, hacé sub-componentes en `components/dialog/.../steps/`.
+4. **Create the UI components** in `components/`. For a multi-step modal, add step sub-components in `components/dialog/.../steps/`.
 
-5. **Crear el barrel export** en `index.ts`.
+5. **Create the barrel export** in `index.ts`.
 
-6. **Consumir desde la página o layout** vía `@/modules/<domain>`.
+6. **Consume it from the page or layout** through `@/modules/<domain>`.
 
-7. **Validar:**
+7. **Validate:**
    ```bash
    npm run types
    npm run lint:check
    npm run format:check
    ```
 
-## 13. Ejemplo canónico: módulo `setting/modules/twoFactor`
+## 13. Canonical example: the `setting/modules/twoFactor` module
 
 ```
 resources/js/modules/setting/modules/twoFactor/
 ├── components/
 │   ├── dialog/
 │   │   ├── twoFactorDisabled/
-│   │   │   ├── TwoFactorSetupDialog.tsx       ← shell del modal
-│   │   │   └── steps/                        ← un archivo por paso
+│   │   │   ├── TwoFactorSetupDialog.tsx       ← modal shell
+│   │   │   └── steps/                        ← one file per step
 │   │   │       ├── ChooseMethodStep.tsx
 │   │   │       ├── ManualSetupStep.tsx
 │   │   │       ├── VerifyOtpStep.tsx
@@ -646,41 +627,41 @@ resources/js/modules/setting/modules/twoFactor/
 │   │   │   └── RegenerateCodesDialog.tsx
 │   └── ui/                                   ← SummaryCard, OptionCard, Timeline, etc.
 ├── data/
-│   ├── twoFactorDisabled.ts                  ← arrays de UI (benefits, steps, …)
+│   ├── twoFactorDisabled.ts                  ← UI arrays (benefits, steps, …)
 │   └── twoFactorEnable.ts
 ├── hooks/
-│   ├── useTwoFactorAuth.ts                   ← estado + fetch del feature
-│   ├── useTwoFactorActivationFlow.ts         ← state machine del wizard
-│   └── useTwoFactorActivationFlow.ts         ← state machine del wizard
+│   ├── useTwoFactorAuth.ts                   ← feature state + fetch
+│   ├── useTwoFactorActivationFlow.ts         ← wizard state machine
+│   └── useCopyWithCountdown.ts               ← copy with temporary feedback
 ├── types/
-│   └── twoFactorActivationStep.ts            ← const-as-keys + tipo derivado
+│   └── twoFactorActivationStep.ts            ← const-as-keys + derived type
 ├── utils/
 │   ├── colorHoverMap.ts
 │   └── downloadRecoveryCodes.ts
 └── views/
-    ├── TwoFactorDisabled.tsx                 ← vista principal (deshabilitado)
-    └── TwoFactorEnable.tsx                   ← vista cuando ya está activo
+    ├── TwoFactorDisabled.tsx                 ← main view (disabled)
+    └── TwoFactorEnable.tsx                   ← view once enabled
 ```
 
-**Patrón que implementa:**
+**Pattern it implements:**
 
-- `view` (TwoFactorDisabled) usa `useTwoFactorAuth` (feature) + `useDialog` (visibilidad del modal de setup) y pasa props al `TwoFactorSetupDialog`.
-- `TwoFactorSetupDialog` es solo el shell — la lógica vive en `useTwoFactorActivationFlow`.
-- Cada paso del wizard es un componente aparte en `steps/`, con props mínimas.
-- El tipo de paso es const-as-keys (`twoFactorActivationStepKey` + `TwoFactorActivationStep`).
-- Los íconos del header viven en el dialog padre; el contenido vive en los steps.
+- The view (`TwoFactorDisabled`) uses `useTwoFactorAuth` (feature) + `useDialog` (setup modal visibility) and passes props to `TwoFactorSetupDialog`.
+- `TwoFactorSetupDialog` is only the shell: the logic lives in `useTwoFactorActivationFlow`.
+- Each wizard step is a separate component in `steps/`, with minimal props.
+- The step type is const-as-keys (`twoFactorActivationStepKey` + `TwoFactorActivationStep`).
+- The header icons live in the parent dialog; the content lives in the steps.
 
-Usa este módulo como referencia para wizards / modales con varios pasos.
+Use this module as the reference for wizards and multi-step modals.
 
-## 14. Centro de notificaciones en tiempo real (SOC-68)
+## 14. Modules with their own document
 
-La UI vive en `resources/js/modules/notification/`: `Notifications.tsx` presenta el historial, `NotificationListItem.tsx` muestra cada fila, `NotificationDropdown.tsx` compone la campana del encabezado y `NotificationRealtimeListener.tsx` mantiene la recepción global. `types/notification.ts` deriva `NotificationType` de la tupla cerrada `comment_on_post`, `comment_reply` y `likes_grouped`, que refleja el enum PHP. Cada fila conserva el resumen, snapshots de actores/destino y estado de lectura.
+The frontend detail of each module lives with its backend in the module document:
 
-- **Conexión global.** `resources/js/app/app.tsx` configura Echo con `VITE_REVERB_APP_KEY`, `VITE_REVERB_HOST`, `VITE_REVERB_PORT` y `VITE_REVERB_SCHEME`. `NotificationRealtimeListener` se monta una vez en `withApp`, usa las props iniciales y sigue los eventos `navigate` de Inertia para detectar cambios de sesión/usuario y el contador diferido. Para una sesión activa, `useEchoNotification` escucha el canal privado `users.{id}.notifications`; el servidor autoriza la suscripción. El listener inserta o actualiza la fila en Zustand y Sonner muestra un toast solo cuando el estado recibido cambia.
-- **Frontera runtime de tipos.** `isNotificationType` valida el `type` del broadcast antes de que el listener llame a Zustand o muestre un toast; cualquier tipo desconocido se descarta, también si el payload es un borrado. Los tres tipos admitidos continúan actualizando el estado y solo un marcador `deleted` de `likes_grouped` elimina su grupo.
-- **Estado y deduplicación.** `stores/notificationStore.ts` mantiene el usuario autenticado actual, un contador de no leídas y notificaciones recibidas por Echo. El id de Laravel es la clave: un broadcast repetido no duplica la fila y una actualización de likes modifica el grupo existente. Al cambiar de usuario se limpia el estado anterior; el contador de Inertia se usa para inicializarlo mientras se resuelve la prop diferida.
-- **Campana e historial.** `NotificationDropdown` pide a `GET /notifications/recent` al abrirse, combina esos resultados con las filas en vivo, ofrece el enlace al historial y marca como leída antes de abrir el deep link `posts.show`. `Notifications.tsx` carga `/notifications` como página Inertia, muestra lectura individual/total y pagina con `InfiniteScroll`. Las acciones HTTP usan `useHttp` y helpers Wayfinder; las URLs se generan desde los controladores, no se escriben manualmente.
-- **Traducción y fechas.** Las páginas que usan `HomeLayout` (Home, Profile y Post Show) registran `notification/center` con `FrontendTranslations`; el historial lo registra su controller. Los componentes usan `useTranslation()` y `useDateTime()`, con catálogos `lang/en/notification/center.php` y `lang/es/notification/center.php`.
-- **Límite con Admin.** Filament conserva su emisor, su UI y el polling del panel, y ambos flujos siguen usando la tabla Laravel `notifications`. Historial, recientes, acciones de lectura y contador React filtran los tres tipos admitidos; Echo descarta tipos desconocidos. Las notificaciones Filament no entran en el centro React ni se convierten en broadcasts de la aplicación. Los anuncios del sistema tampoco usan este canal.
-
-La app no tiene una suite React propia; los cambios de este módulo se validan con `npm run types`, ESLint, Prettier y `npm run build:ssr`, más comprobación manual con dos sesiones para canal privado, recepción en vivo, agrupación, toasts y lectura.
+| Module | Frontend | Document |
+| --- | --- | --- |
+| Trusted devices | `modules/setting/modules/trustedDevice/`, the activity dialog and the filter-hook pattern | [modules/auth.md](modules/auth.md#frontend) |
+| Account settings | `modules/setting/modules/accountSettings/` | [modules/user.md](modules/user.md#frontend) |
+| Comments and likes | `modules/comment/`, `useLikeToggle`, `CharacterCounter` | [modules/content.md](modules/content.md#frontend) |
+| Announcements | `modules/announcement/` (toasts, dialogs, dismissals) | [modules/announcement.md](modules/announcement.md#frontend) |
+| Notification center | `modules/notification/` (Echo, Zustand store, bell, history) | [modules/notification.md](modules/notification.md#frontend) |
+| Languages | `useTranslation()`, `useDateTime()`, catalogs from `lang/` | [i18n.md](i18n.md#application-soc-67) |

@@ -1,47 +1,31 @@
-# Arquitectura del Backend
+# Backend Architecture
 
-Documento de referencia para crear y mantener módulos del backend en este proyecto Laravel.
+Reference for creating and maintaining backend modules in this Laravel project.
 
-> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines una convención (o cualquier otro cambio de arquitectura del backend), actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de las convenciones del proyecto y no debe quedar desincronizada con el código.
+> ⚠️ **Keeping this document current**: when you add, change or remove a convention (or make any other backend architecture change), update this document in the same PR/commit. The docs are the source of truth for the project's conventions and must not drift from the code.
 
-> 📚 **Documentos por módulo** (en inglés, con el detalle de cada tarea): [Auth](modules/auth.md), [User](modules/user.md), [Post, Comment y Like](modules/content.md), [Announcement](modules/announcement.md), [Notification](modules/notification.md), [ActivityLog](modules/activity-log.md), [Admin](modules/admin.md), [idiomas](i18n.md) e [infraestructura global, seeders y tooling](infrastructure.md). Este documento explica cómo construir un módulo.
+> 📚 **Module documents** (with the detail of each task): [Auth](modules/auth.md), [User](modules/user.md), [Post, Comment and Like](modules/content.md), [Announcement](modules/announcement.md), [Notification](modules/notification.md), [ActivityLog](modules/activity-log.md), [Admin](modules/admin.md), [languages](i18n.md) and [global infrastructure, seeders and tooling](infrastructure.md). This document explains how to build a backend module.
 
-## 0. Ubicación de los módulos: `app/Modules/` (SOC-38)
+## 0. Where modules live: `app/Modules/` (SOC-38)
 
-Los módulos de dominio viven dentro de `app/Modules/<Module>/` (namespace `App\Modules\<Module>\…`). Todo lo que quede **fuera** de `app/Modules/` es global a la aplicación:
+Domain modules live in `app/Modules/<Module>/` (namespace `App\Modules\<Module>\…`). Everything **outside** `app/Modules/` is global to the application:
 
-| Dentro de `app/Modules/`                                                                | Fuera de `app/Modules/` (global)                                                                                    |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Controllers, models, requests, resources, rutas y tests del dominio                     | `app/Providers/`, `app/Http/` (middleware, controller base), `app/Events/`, `app/Console/Commands/`, `app/Support/` |
-| Providers del propio módulo (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies y servicios compartidos por varios módulos                                                      |
+| Inside `app/Modules/`                                                                 | Outside `app/Modules/` (global)                                                                                   |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| The domain's controllers, models, requests, resources, routes and tests                | `app/Providers/`, `app/Http/` (middleware, base controller), `app/Events/`, `app/Console/Commands/`, `app/Support/` |
+| The module's own providers (`<Module>ServiceProvider`, `<Module>RouteServiceProvider`) | Listeners, policies and services shared by several modules                                                         |
 
-**Estado de la migración:** la arquitectura es incremental. **Post**, **Comment** y **Like** viven en `app/Modules/Post/`, `app/Modules/Comment/` y `app/Modules/Like/`, y **ActivityLog**, **Announcement** y **Notification** nacieron ahí (SOC-54, SOC-61 y SOC-68); **Admin** vive en `app/Modules/Admin/` como módulo del sistema, no como un dominio CRUD estándar. Los demás dominios (`Auth`, `Friendship`, `Home`, `User`) siguen en `app/<Domain>/` —la _arquitectura vieja_— hasta que su propia tarea los mueva; por ejemplo, `Auth` pasará a `app/Modules/Auth/`. Los submódulos descritos en la sección 3 (`app/<Domain>/Modules/<Feature>/`) también pertenecen a esa arquitectura vieja: no los confundas con la carpeta superior `app/Modules/`.
+**Migration status:** the migration is incremental. **Post**, **Comment** and **Like** moved to `app/Modules/Post/`, `app/Modules/Comment/` and `app/Modules/Like/`, and **ActivityLog**, **Announcement** and **Notification** were born there (SOC-54, SOC-61 and SOC-68); **Admin** lives in `app/Modules/Admin/` as a system module, not a standard CRUD domain. The other domains (`Auth`, `Friendship`, `Home`, `User`) stay in `app/<Domain>/` (the _old architecture_) until their own task moves them; for example, `Auth` will move to `app/Modules/Auth/`. The submodules described in section 3 (`app/<Domain>/Modules/<Feature>/`) also belong to the old architecture: do not confuse them with the top-level `app/Modules/` folder.
 
-**Código global (SOC-42):** no todo lo que vive hoy en la raíz de `app/` es un dominio pendiente de migrar. Va fuera de `app/Modules/` lo que sirve a varios dominios o al framework y no tiene modelos, rutas ni lógica de negocio propia: comandos de Artisan en `app/Console/Commands/` (se descubren solos; no necesitan provider), providers y middleware globales, y clases compartidas sin dominio en `app/Support/`. `MediaLibrary` es el ejemplo: es una integración con `spatie/laravel-medialibrary` que usan Post y User, así que su path generator vive en `app/Support/MediaLibrary/`, su comando en `app/Console/Commands/MediaLibraryCleanFoldersCommand.php` y sus tests en `tests/Feature/MediaLibrary/` (código global, no en `app/Modules/`). `app/Support/` es una carpeta base aprobada explícitamente en SOC-42; crear otra carpeta base requiere aprobación, como indica `AGENTS.md`. Los comandos destructivos se protegen con `Prohibitable` y se prohíben en producción desde `AppServiceProvider::boot()`.
+**Global code (SOC-42):** not everything in the root of `app/` is a domain waiting to be migrated. Code that serves several domains or the framework and has no models, routes or business logic of its own goes outside `app/Modules/`: Artisan commands in `app/Console/Commands/` (auto-discovered, no provider needed), global providers and middleware, and shared classes with no domain in `app/Support/`. `MediaLibrary` is the example: it is an integration with `spatie/laravel-medialibrary` that Post and User use, so its path generator lives in `app/Support/MediaLibrary/`, its command in `app/Console/Commands/MediaLibraryCleanFoldersCommand.php` and its tests in `tests/Feature/MediaLibrary/`. `app/Support/` is a base folder explicitly approved in SOC-42; any other new base folder needs approval, as `AGENTS.md` says. Destructive commands use `Prohibitable` and are prohibited in production from `AppServiceProvider::boot()`. Tests for global code live in `tests/Feature/<Area>/`; tests that touch the filesystem redirect `storage_path()` / `public_path()` with `useStoragePath()` / `usePublicPath()` to a temporary directory.
 
-**Frontend y Wayfinder:** el namespace del controller determina la ruta de las acciones generadas. Un módulo migrado se importa desde `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; los de la arquitectura vieja, desde `@/shared/wayfinder/actions/App/<Domain>/…`. El directorio está en `.gitignore`: tras mover un módulo, regenera con `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` y actualiza los imports.
+**Frontend and Wayfinder:** the controller's namespace decides the path of the generated actions. A migrated module is imported from `@/shared/wayfinder/actions/App/Modules/<Module>/Controllers/<Controller>`; an old-architecture one from `@/shared/wayfinder/actions/App/<Domain>/…`. The folder is gitignored: after moving a module, regenerate with `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` and update the imports.
 
-### Módulos con documento propio
+## 1. Naming convention
 
-El detalle de cada módulo (decisiones, invariantes, rutas, seeders y pruebas) está en su documento, en inglés. Aquí queda solo para qué sirve cada uno:
+Every file and class uses **PascalCase** and starts with the module name.
 
-| Módulo | Para qué sirve | Documento |
-| --- | --- | --- |
-| Auth | Login, registro, verificación, contraseña, desafío 2FA y dispositivos de confianza | [modules/auth.md](modules/auth.md) |
-| User | Modelo `User`, ajustes y estado de la cuenta (suspensión), ajustes de 2FA | [modules/user.md](modules/user.md) |
-| Post, Comment, Like | Publicaciones, hilos de comentarios de un nivel con mención, likes y contadores | [modules/content.md](modules/content.md) |
-| Announcement | Anuncios del sistema desde el panel, flujo de aprobación, toast o dialog | [modules/announcement.md](modules/announcement.md) |
-| Notification | Centro de notificaciones React en tiempo real (Reverb, canal privado, historial) | [modules/notification.md](modules/notification.md) |
-| ActivityLog | Registro de actividad de usuarios y auditoría administrativa | [modules/activity-log.md](modules/activity-log.md) |
-| Admin | Panel Filament, catálogo de roles y permisos, roles personalizados, comandos, respaldos | [modules/admin.md](modules/admin.md) |
-
-Los idiomas del panel y de la aplicación están en [i18n.md](i18n.md); la morph map, MediaLibrary y discos, seeders, infraestructura de pruebas y tooling, en [infrastructure.md](infrastructure.md).
-
-## 1. Convención de nomenclatura
-
-Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del módulo.
-
-| Tipo                   | Patrón                         | Ejemplo                                 |
+| Kind                   | Pattern                        | Example                                 |
 | ---------------------- | ------------------------------ | --------------------------------------- |
 | Controller             | `{Module}Controller`           | `PostController`                        |
 | Model                  | `{Module}`                     | `Post`                                  |
@@ -57,9 +41,9 @@ Todos los archivos y clases usan **PascalCase** y empiezan con el nombre del mó
 | Service                | `{Module}Service`              | `PostService`                           |
 | Console Command        | `{Module}{Purpose}Command`     | `MediaLibraryCleanFoldersCommand`       |
 
-**Excepción:** `routes/routes.php` no lleva prefijo (Laravel lo busca así).
+**Exception:** `routes/routes.php` has no prefix (Laravel looks for it by that name).
 
-## 2. Estructura de un módulo
+## 2. Structure of a module
 
 ```
 app/Modules/<Module>/
@@ -73,14 +57,14 @@ app/Modules/<Module>/
 ├── Resources/
 │   └── {Module}Resource.php
 ├── Data/
-│   └── {Module}{Concept}Data.php      ← input, filtros y estructuras no modeladas
+│   └── {Module}{Concept}Data.php      ← input, filters and non-model structures
 ├── Database/
 │   ├── Factories/
 │   │   └── {Module}Factory.php
 │   ├── Migrations/
 │   └── Seeders/
-│       └── {Module}Seeder.php        ← solo si hay datos iniciales
-├── Tests/                             ← solo si el módulo tiene pruebas propias
+│       └── {Module}Seeder.php        ← only when there is seed data
+├── Tests/                             ← only when the module has its own tests
 ├── Providers/
 │   ├── {Module}ServiceProvider.php
 │   └── {Module}RouteServiceProvider.php
@@ -88,193 +72,184 @@ app/Modules/<Module>/
     └── routes.php
 ```
 
-**No todo módulo necesita todo.** Solo crea las carpetas que vayas a usar. El núcleo obligatorio:
+**Not every module needs everything.** Create only the folders you will use. The mandatory core:
 
 - `Models/`
-- `Providers/` (ambos providers)
+- `Providers/` (both providers)
 - `routes/`
 
-## 3. Submódulos (arquitectura vieja)
+A module with its own migrations registers them with `loadMigrationsFrom()` in its service provider. Migrations moved from the global `database/migrations/` keep their original file name, so a database that already ran them does not run them again; published third-party package migrations stay in `database/migrations/`.
 
-> Esta sección describe el layout `app/<Domain>/Modules/<Feature>/` de la arquitectura vieja (Auth y User). Cuando esos dominios se migren, vivirán en `app/Modules/<Domain>/` (p. ej. `app/Modules/Auth/`).
+## 3. Submodules (old architecture)
 
-Cuando un módulo tiene **varias áreas independientes** que ameritan su propio espacio, se subdivide. Ejemplos del proyecto:
+> This section describes the `app/<Domain>/Modules/<Feature>/` layout of the old architecture (Auth and User). When those domains are migrated they will live in `app/Modules/<Domain>/` (e.g. `app/Modules/Auth/`).
+
+When a module has **several independent areas** that deserve their own space, it is split. Examples in the project:
 
 - `app/Auth/Modules/` → `Email/`, `Login/`, `Password/`, `Register/`, `TrustedDevice/`
-- `app/User/` → `Profile/`, `Preferences/`, `Modules/AccountSettings/`, `Modules/TwoFactor/`
-- `app/Auth/Modules/TrustedDevice/` → cookie-backed TOTP bypass (introducido en SOC-14)
+- `app/User/` → `Profile/`, `Preferences/`, `Modules/AccountSettings/`, `Modules/AccountStatus/`, `Modules/TwoFactor/`
 
-La configuración de 2FA de User vive en `app/User/Modules/TwoFactor/`: ahí se agrupan su controller, Form Requests, listener de regeneración de códigos y pruebas. Las rutas siguen en `app/User/routes/security.php`. `UserServiceProvider` registra `app/User/Providers/UserEventServiceProvider.php`, que conecta el evento Fortify de regeneración con el listener de User; `AuthEventServiceProvider` conserva los listeners de TrustedDevice. El challenge de 2FA durante el login continúa siendo responsabilidad de Auth.
+How Auth and User split their features (TrustedDevice, the 2FA settings, AccountSettings, AccountStatus, the password change owned by Auth) is described in [Auth](modules/auth.md) and [User](modules/user.md). Laravel's initial migrations stay in the root `database/migrations/` folder.
 
-La configuración privada de la cuenta vive en `app/User/Modules/AccountSettings/`: agrupa el controller, Form Request, Data object construido con los datos validados, `AccountSettingsResource`, listener de último acceso y pruebas del módulo. El controller resuelve siempre al usuario autenticado. `UserResource` sigue reservado al perfil público; la información privada de configuración no se agrega a esa serialización. El perfil público continúa en `app/User/Profile/` y las preferencias existentes siguen en `app/User/Preferences/`.
+### When to split
 
-El cambio de contraseña conserva su responsabilidad de backend en `app/Auth/Modules/Password/`, incluida su validación y la revocación de dispositivos confiables. AccountSettings lo presenta en un diálogo y envía la actualización al endpoint `PUT /setting/password`; no existe un GET ni una vista independiente para cambiar la contraseña.
+| ✅ Yes                                                     | ❌ No                             |
+| ---------------------------------------------------------- | --------------------------------- |
+| There are independent flows (login vs. registration)       | It is a small, cohesive module    |
+| Each area has its own Requests with different validation   | The files are tightly coupled     |
+| The areas will evolve separately                           | You only have 2-3 files           |
 
-La infraestructura compartida de User se organiza en `app/User/Database/{Migrations,Factories,Seeders}/`. `UserServiceProvider` carga las migraciones modulares; la migración de AccountSettings se encuentra allí. Las migraciones iniciales de Laravel permanecen en la carpeta raíz `database/migrations/` y no se mueven a User.
-
-El estado de cuenta (SOC-35) se guarda en `users.status` (enum `AccountStatus`: `active` / `suspended`) y cada cambio agrega una fila a `account_status_changes` con su motivo obligatorio y el administrador que lo hizo. Solo `app/User/Modules/AccountStatus/Services/AccountStatusService` lo cambia: al suspender revoca los dispositivos confiables y registra la actividad sin el motivo. Una cuenta suspendida no puede entrar por contraseña, reto 2FA, dispositivo confiable ni panel admin, y el middleware global `EnsureAccountIsActive` cierra las sesiones abiertas. AccountSettings muestra el estado guardado de solo lectura y no lo infiere de la verificación del correo, el último acceso ni la sesión activa; el detalle está en [modules/user.md](modules/user.md).
-
-### Cuándo subdividir
-
-| ✅ Sí                                                           | ❌ No                            |
-| --------------------------------------------------------------- | -------------------------------- |
-| Hay flujos independientes (login vs registro)                   | Es un módulo pequeño y cohesivo  |
-| Cada área tiene sus propias Requests con validaciones distintas | Los archivos están muy acoplados |
-| Las áreas evolucionarán por separado                            | Solo tienes 2-3 archivos         |
-
-### Estructura de un submódulo
+### Structure of a submodule
 
 ```
 app/<Module>/<Submodule>/
 ├── Controllers/
 │   └── <Submodule>Controller.php
-├── Services/                         ← lógica de negocio compartida de la feature
+├── Services/                         ← shared business logic of the feature
 │   └── <Submodule>Service.php
-└── Requests/                          ← solo si hay validaciones específicas
+└── Requests/                          ← only when there is specific validation
     └── <Submodule>Request.php
 ```
 
-**Importante:** los submódulos NO tienen providers propios. Las rutas se centralizan en `app/<Module>/routes/` con un archivo por submódulo:
+**Important:** submodules have NO providers of their own. Routes are centralized in `app/<Module>/routes/` with one file per submodule:
 
 ```
 app/Auth/routes/
-├── routes.php        ← carga los includes
+├── routes.php        ← loads the includes
 ├── email.php
 ├── login.php
 ├── password.php
 └── register.php
 ```
 
-### Convención `Modules/<Feature>/` (introducida en SOC-14)
+### The `Modules/<Feature>/` convention (introduced in SOC-14)
 
-Cuando una feature **dentro de un módulo crece lo suficiente como para merecer su propio namespace**, se extrae bajo `app/<Module>/Modules/<Feature>/`. Ejemplo canónico: `app/Auth/Modules/TrustedDevice/`.
+When a feature **inside a module grows enough to deserve its own namespace**, it is extracted under `app/<Module>/Modules/<Feature>/`. Canonical example: `app/Auth/Modules/TrustedDevice/`.
 
-**Lo que el submodule SÍ tiene** (espeja el lado de features del módulo padre):
+**What the submodule DOES have** (it mirrors the feature side of the parent module):
 
 ```
 app/<Module>/Modules/<Feature>/
-├── Concerns/        ← traits / helpers locales (ej. HasPasswordConfirmation.php)
-├── Controllers/     ← controladores específicos de la feature
-├── Listeners/       ← listeners de Fortify / eventos del dominio scoped a la feature
-├── Data/            ← filtros y estructuras tipadas que no representan modelos
-├── Requests/        ← FormRequests de la feature
-├── Resources/       ← Eloquent API Resources de los modelos de la feature
-└── Services/        ← lógica de negocio compartida de la feature
+├── Concerns/        ← local traits / helpers (e.g. HasPasswordConfirmation.php)
+├── Controllers/     ← the feature's controllers
+├── Listeners/       ← Fortify / domain event listeners scoped to the feature
+├── Data/            ← typed filters and structures that are not models
+├── Requests/        ← the feature's FormRequests
+├── Resources/       ← Eloquent API Resources of the feature's models
+└── Services/        ← shared business logic of the feature
 ```
 
-**Lo que se queda en el módulo padre** (nunca se duplica dentro del submodule):
+**What stays in the parent module** (never duplicated inside the submodule):
 
-- `Providers/` — el `<Module>ServiceProvider` y `<Module>RouteServiceProvider` ya cubren la feature.
-- `Models/` — el modelo Eloquent vive en el padre para que las relaciones (`User::trustedDevices()`) queden junto al resto del dominio.
-- `routes/` — se registran a través del `AuthRouteServiceProvider` central con un archivo por concern (ej. `routes/trustedDevice.php`).
-- `Database/Migrations/`, `Database/Factories/` y `Database/Seeders/` — migraciones y factories se registran vía `<Module>ServiceProvider::loadMigrationsFrom`; los seeders se invocan desde `DatabaseSeeder`.
-- `config/` — la configuración del módulo vive en el padre.
+- `Providers/` — the `<Module>ServiceProvider` and `<Module>RouteServiceProvider` already cover the feature.
+- `Models/` — the Eloquent model lives in the parent so its relations (`User::trustedDevices()`) stay with the rest of the domain.
+- `routes/` — registered through the central `AuthRouteServiceProvider` with one file per concern (e.g. `routes/trustedDevice.php`).
+- `Database/Migrations/`, `Database/Factories/` and `Database/Seeders/` — migrations and factories are registered through `<Module>ServiceProvider::loadMigrationsFrom`; seeders are called from `DatabaseSeeder`.
+- `config/` — the module's configuration lives in the parent.
 
-**Regla práctica para extraer un submodule**: la feature tiene sus propios listeners de eventos **o** ≥3 controllers/requests propios. Por debajo de eso, mantenla en el concern correspondiente del módulo padre. SOC-32 define una excepción explícita para Auth: Email, Login y Register viven en `app/Auth/Modules/{Email,Login,Register}/` y sus pruebas se co-ubican allí; Login y Register quedan por debajo del umbral general, pero siguen la estructura acordada para esa tarea.
+**Rule of thumb for extracting a submodule**: the feature has its own event listeners **or** 3+ controllers/requests of its own. Below that, keep it in the matching concern of the parent module. SOC-32 sets an explicit exception for Auth: Email, Login and Register live in `app/Auth/Modules/{Email,Login,Register}/` with their tests co-located; Login and Register are below the general threshold but follow the structure agreed for that task.
 
-## 4. Responsabilidad de cada archivo
+## 4. What each file is responsible for
 
-| Tipo                       | Qué hace                                                                    |
-| -------------------------- | --------------------------------------------------------------------------- |
-| **Controller**             | Orquesta HTTP: recibe Request → llama al modelo → retorna Response          |
-| **Model**                  | Entidad del dominio + relaciones Eloquent                                   |
-| **Request**                | Valida input del usuario (FormRequest con FluentRule)                       |
-| **Resource**               | Transforma un modelo al JSON que verá el cliente                            |
-| **Data**                   | Representa y normaliza input, filtros o estructuras no modeladas            |
-| **Factory**                | Genera instancias falsas para tests/seeders                                 |
-| **Seeder**                 | Puebla la BD con datos iniciales                                            |
-| **Policy**                 | Reglas de autorización (quién puede hacer qué)                              |
-| **Service**                | Lógica de negocio compleja que no encaja en un controller                   |
-| **Console Command**        | Operaciones Artisan: batch, mantenimiento (global: `app/Console/Commands/`) |
-| **Service Provider**       | Registra bindings en el contenedor de Laravel                               |
-| **Route Service Provider** | Carga las rutas del módulo bajo middleware `web`                            |
+| Kind                       | What it does                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| **Controller**             | Orchestrates HTTP: receives the Request → calls the model/service → returns a Response |
+| **Model**                  | Domain entity + Eloquent relations                                                |
+| **Request**                | Validates user input (FormRequest with FluentRule)                                |
+| **Resource**               | Turns a model into the JSON the client sees                                       |
+| **Data**                   | Represents and normalizes input, filters or non-model structures                  |
+| **Factory**                | Builds fake instances for tests/seeders                                           |
+| **Seeder**                 | Fills the database with initial data                                              |
+| **Policy**                 | Authorization rules (who can do what)                                             |
+| **Service**                | Complex business logic that does not fit in a controller                          |
+| **Console Command**        | Artisan operations: batch, maintenance (global: `app/Console/Commands/`)          |
+| **Service Provider**       | Registers bindings in Laravel's container                                         |
+| **Route Service Provider** | Loads the module's routes under the `web` middleware                              |
 
-> 💡 Si una acción no cabe en un controller (muchos casos, reglas complejas, transacciones múltiples) → crea un **Service**. Si una autorización es reutilizable → crea una **Policy**.
+> 💡 If an action does not fit in a controller (many cases, complex rules, several transactions) → create a **Service**. If an authorization rule is reusable → create a **Policy**.
 
-### Data y Resources
+### Data and Resources
 
-- Usa `spatie/laravel-data` para filtros, input y estructuras internas tipadas que no representan un modelo Eloquent.
-- Usa `JsonResource` para serializar modelos Eloquent hacia Inertia o APIs.
-- No dupliques en un `Data` la transformación de un modelo que ya pertenece a un `Resource`.
+- Use `spatie/laravel-data` for typed filters, input and internal structures that are not Eloquent models.
+- Use `JsonResource` to serialize Eloquent models for Inertia or APIs.
+- Do not duplicate in a `Data` class a model transformation that belongs to a `Resource`.
 
-### Organización de pruebas
+### Test organization
 
-Las pruebas nuevas se guardan junto al módulo dueño de la funcionalidad:
+New tests live next to the module that owns the behavior:
 
-- Módulo migrado a la nueva arquitectura: `app/Modules/<Domain>/Tests/` (Post, Comment y Like), además del módulo del sistema `app/Modules/Admin/Tests/`.
-- Módulo de dominio en la arquitectura vieja: `app/<Domain>/Tests/`.
-- Funcionalidad de un submódulo (arquitectura vieja): `app/<Domain>/Modules/<Feature>/Tests/`.
-- Reserva `tests/` para pruebas transversales/de infraestructura y las pruebas existentes que aún no se hayan migrado; no agregues allí nuevas pruebas específicas de un módulo.
+- A module on the new architecture: `app/Modules/<Domain>/Tests/`, plus the system module's `app/Modules/Admin/Tests/`.
+- A domain module on the old architecture: `app/<Domain>/Tests/`.
+- A submodule feature (old architecture): `app/<Domain>/Modules/<Feature>/Tests/`.
+- Keep `tests/` for cross-module/infrastructure tests and existing tests not yet migrated; do not add new module-specific tests there.
 
-Dentro de cada `Tests/`, agrupa por responsabilidad:
+Inside each `Tests/`, group by responsibility:
 
-- `Crud/` para crear, actualizar y eliminar recursos.
-- `Database/` para verificar factories y seeders cuando corresponda.
-- `Models/` para relaciones, morph map y colecciones de media del modelo.
-- `Lifecycle/` para renovaciones, reactivaciones y otros cambios de ciclo de vida.
-- `Listeners/` para comportamiento disparado por listeners.
-- `Queries/` para índices, listados y filtros.
-- `Requests/` para reglas y mensajes de validación de FormRequests.
-- `Resources/` para la serialización de los Resources.
-- `Security/` para regresiones de seguridad y robustez: rate limiting, normalización de entrada, límites de anidación y conteo de consultas.
+- `Crud/` to create, update and delete resources.
+- `Factories/` and `Seeders/` for factories and seeders (the Admin module keeps `Database/` for its own).
+- `Models/` for relations, the morph map and the model's media collections.
+- `Lifecycle/` for renewals, reactivations and other lifecycle changes.
+- `Listeners/` for behavior triggered by listeners.
+- `Queries/` for indexes, listings and filters.
+- `Requests/` for FormRequest validation rules and messages.
+- `Resources/` for Resource serialization.
+- `Security/` for security and robustness regressions: rate limiting, input normalization, nesting limits and query counts.
 
-Si aparece una nueva responsabilidad —por ejemplo `Services/`— se crea su carpeta únicamente cuando exista código de esa categoría que probar.
-Al agregar una nueva carpeta modular de pruebas, regístrala en `phpunit.xml` y configura en `tests/Pest.php` el caso base y los traits compartidos que correspondan; actualmente ya están registrados `app/Modules/Post/Tests/`, `app/Modules/Comment/Tests/`, `app/Modules/Like/Tests/` y los de Auth/User (`app/Auth/Modules/*/Tests/`, `app/User/Modules/*/Tests/`).
+Create a new folder (for example `Services/`) only when there is code of that kind to test. When you add a new modular test folder, register it in `phpunit.xml` and configure its base case and shared traits in `tests/Pest.php`. The test infrastructure (parallel runs, shared helpers) is described in [infrastructure.md](infrastructure.md#test-infrastructure).
 
-## 5. Cómo crear un módulo nuevo
+## 5. How to create a new module
 
-Sigue esta checklist en orden:
+Follow this checklist in order:
 
-1. **Crear la estructura de carpetas:**
+1. **Create the folder structure:**
 
    ```bash
    mkdir -p app/Modules/{Module}/{Models,Providers,routes,Controllers,Requests,Resources,Database/{Migrations,Factories,Seeders}}
    ```
 
-2. **Crear el modelo** en `app/Modules/{Module}/Models/{Module}.php`
+2. **Create the model** in `app/Modules/{Module}/Models/{Module}.php`.
 
-3. **Crear la factory** en `app/Modules/{Module}/Database/Factories/{Module}Factory.php`. Su estado predeterminado debe cubrir los campos persistidos del modelo y su migración con valores realistas o `null` explícito; deja que Eloquent gestione la clave primaria y los timestamps.
+3. **Create the factory** in `app/Modules/{Module}/Database/Factories/{Module}Factory.php`. Its default state covers the model's persisted fields and its migration with realistic values or an explicit `null`; let Eloquent manage the primary key and the timestamps.
 
-4. **Crear los dos providers:**
-   - `app/Modules/{Module}/Providers/{Module}ServiceProvider.php` — su `boot()` registra el `RouteServiceProvider`
-   - `app/Modules/{Module}/Providers/{Module}RouteServiceProvider.php` — extiende `Illuminate\Foundation\Support\Providers\RouteServiceProvider`, carga `app/Modules/{Module}/routes/routes.php` con middleware `web`
+4. **Create both providers:**
+   - `app/Modules/{Module}/Providers/{Module}ServiceProvider.php` — its `boot()` registers the `RouteServiceProvider`.
+   - `app/Modules/{Module}/Providers/{Module}RouteServiceProvider.php` — extends `Illuminate\Foundation\Support\Providers\RouteServiceProvider` and loads `app/Modules/{Module}/routes/routes.php` with the `web` middleware.
 
-5. **Registrar el `{Module}ServiceProvider`** en `bootstrap/providers.php`
+5. **Register `{Module}ServiceProvider`** in `bootstrap/providers.php`.
 
-6. **Crear el controller** en `app/Modules/{Module}/Controllers/{Module}Controller.php`
+6. **Create the controller** in `app/Modules/{Module}/Controllers/{Module}Controller.php`.
 
-7. **Crear las Requests** según las acciones (Store, Update, u otras específicas)
+7. **Create the Requests** for the actions (Store, Update or other specific ones).
 
-8. **Crear la Resource** (los listados paginados se serializan con `->through()` sobre la Resource; no se crea una Collection)
+8. **Create the Resource** (paginated listings are serialized with `->through()` over the Resource; no Collection class is created).
 
-9. **Definir las rutas** en `app/Modules/{Module}/routes/routes.php`
+9. **Define the routes** in `app/Modules/{Module}/routes/routes.php`.
 
-10. **Crear las pruebas junto al código que cubren:** `app/Modules/{Module}/Tests/` para pruebas del módulo (en la arquitectura vieja: `app/{Module}/Tests/` o `app/{Module}/Modules/{Feature}/Tests/` para un submódulo). Registra la carpeta en `phpunit.xml` y `tests/Pest.php` para que Pest la descubra y aplique la configuración correcta.
+10. **Create the tests next to the code they cover:** `app/Modules/{Module}/Tests/` for module tests (old architecture: `app/{Module}/Tests/` or `app/{Module}/Modules/{Feature}/Tests/` for a submodule). Register the folder in `phpunit.xml` and `tests/Pest.php` so Pest discovers it with the right configuration.
 
-## 6. Convenciones adicionales
+## 6. Additional conventions
 
-- Todo archivo PHP empieza con `declare(strict_types=1);`
-- Namespaces PSR-4: `App\Modules\{Module}\{Type}` (arquitectura vieja: `App\{Module}\{Type}`)
-- Al cambiar un modelo o su esquema, revisa y actualiza su factory para cubrir sus campos persistidos con datos realistas o `null` explícito; omite solo los campos que Eloquent administra automáticamente, como la clave primaria y los timestamps.
-- Relaciones Eloquent declaran genéricos en PHPDoc: `@return HasMany<Post, $this>`
-- Models con `HasFactory` declaran el genérico: `/** @use HasFactory<{Module}Factory> */`
-- Constantes del modelo (MORPH_NAME, MORPH_COLUMN) llevan docblock descriptivo
-- Si el módulo es polimórfico, registra el morph en `App\Providers\AppServiceProvider::boot()` (`Relation::enforceMorphMap`)
-- En una tabla polimórfica propia del dominio, las columnas y la relación comparten el sufijo `{adjetivo}able` de la convención de Laravel: `morphs('commentable')` genera `commentable_type` y `commentable_id`, y el modelo expone `commentable()` (igual que `likeable` en Like). `model_type` y `model_id` es la convención de las tablas genéricas de paquetes como Spatie (`media`, permisos), no de las tablas de dominio.
-- El nombre del placeholder de una ruta debe coincidir con el parámetro tipado del controller cuando se usa binding implícito de enum o modelo (por ejemplo `{post}` ↔ `Post $post`); si no coinciden, Laravel resuelve la clase desde el contenedor y la ruta responde 500. Rector renombra los parámetros según su tipo, así que corrige la ruta y no el parámetro.
-- Las rutas que escriben datos llevan `throttle`. Cuando un módulo tiene varias rutas con throttle, usa el tercer argumento como prefijo (`throttle:6,1,comments.store`): Laravel firma los throttles sin nombre solo por usuario, y sin prefijo todas las rutas compartirían el mismo cupo.
-- Normaliza la entrada de texto libre en `prepareForValidation()` del FormRequest (por ejemplo, quitar caracteres de control conservando tabulaciones y saltos de línea, y recortar) para que las reglas se evalúen sobre el valor que realmente se guarda.
-- Los listados paginados por cursor se serializan con `cursorPaginate()->through(fn (Model $model): array => new {Module}Resource($model)->resolve($request))`; no se envuelven en una Collection manual que reconstruya `data`, `meta` y `links`. Se devuelve el paginador tal cual. Solo se envuelve en `Inertia::scroll(...)` cuando la página usa el componente `<InfiniteScroll>` de Inertia (como `posts` en Home y Profile): `Inertia::scroll` agrega a la respuesta instrucciones de merge (`mergeProps`) y metadata de scroll (`scrollProps`) que, sin ese componente, nadie consume (la lista de comentarios la maneja un hook que recarga con `reset` y conserva su propio estado).
-- Los datos de un diálogo o lista que solo se necesitan al abrirlos salen como props `Inertia::optional` de una clase `ProvidesInertiaProperties` en `Props/` (ver `app/Modules/Comment/Props/CommentThreadProps.php`), que el controlador de la página anfitriona incluye en `Inertia::render`. No llevan ruta propia: el cliente hace un partial reload con `only`. El límite de tasa de esa lectura se aplica con `RateLimiter` dentro de la clase, ya que no hay middleware de ruta.
-- Un controlador con una sola acción es invocable (`__invoke`), por ejemplo los controladores de Auth/TrustedDevice; cuando un módulo tiene varias acciones sobre el mismo recurso se agrupan en un solo controlador con un método por acción, por ejemplo `CommentController` (`store`, `update` y `destroy`) y `LikeController` (`toggleComment` y `togglePost`, que comparten un método privado).
-- Los hilos de comentarios tienen un solo nivel con mención (SOC-41): responder a una respuesta se acepta y se aplana. `CommentController::store()` cuelga el comentario nuevo del comentario padre del hilo y guarda en `replied_to_user_id` (FK nullable a `users`, `nullOnDelete`) al autor de la respuesta respondida; el usuario lo deriva el servidor, nunca el cliente. `CommentResource` expone `repliedTo: {id, name}` o `null` solo cuando `repliedToUser` está cargado (`whenLoaded`), y `CommentThreadProps` lo precarga con `repliedToUser:id,name` para mantener el número de consultas constante. Responder a un post o a un comentario raíz no guarda mención.
-- Editar y eliminar comentarios propios (SOC-52): las rutas `comments.update` (PATCH) y `comments.destroy` (DELETE) viven en `CommentController` junto a `store`, con `throttle:10,1,comments.update` y `throttle:10,1,comments.destroy`. La autorización la hace `CommentPolicy` (`app/Modules/Comment/Policies/`, registrada con `#[UsePolicy]` en el modelo, porque el descubrimiento por nombre no la encuentra bajo `Modules/`) y se aplica con `#[Authorize('update'|'delete', 'comment')]` en el método del controlador: corre tras el route model binding y antes del FormRequest, así que un usuario ajeno recibe 403 aunque envíe datos inválidos. Solo el autor puede editar o eliminar y nunca un comentario ya eliminado.
-- Borrado mixto con tombstone (SOC-52): `comments` usa `SoftDeletes` y `edited_at` (migración nueva, las originales no se editan). Un comentario con respuestas se elimina de forma lógica y se muestra como "Comentario eliminado" para no romper el hilo; uno sin respuestas se elimina de forma física junto con sus likes (la tabla `likes` no tiene FK, así que se borran de forma explícita) dentro de la misma `DB::transaction`, y si era la última respuesta de un padre ya eliminado, el padre también se elimina de forma física para no dejar tombstones vacíos. Un tombstone nunca expone contenido ni autor (`content` y `user` en `null`). Como `SoftDeletes` cambia las consultas por defecto, `Post::comments()`, `User::comments()` y el panel Admin dejan de ver los tombstones; los listados de hilos usan `withTrashed()` donde deben mostrarlos, y publicar sobre un tombstone responde 404.
-- Contadores reales en listados (SOC-50): `Post::withEngagementFor(User)` es un `#[Scope]` que añade en la misma consulta `root_comments_count` (comentarios raíz vivos), `replies_count` (respuestas, incluidas las de un tombstone, con subconsulta correlacionada y `withTrashed()`), `likes_count` y `liked_by_me`; `Post::commentsTotal()` suma los dos contadores y `PostResource` expone `commentsCount` y `likesInfo`, así el listado de publicaciones mantiene un número constante de consultas. Las respuestas de un comentario se listan de la más antigua a la más nueva (id ascendente) y los comentarios de una publicación de la más nueva a la más antigua. El máximo del contenido de un comentario vive en `Comment::CONTENT_MAX_LENGTH` y lo usan `CommentStoreRequest` y `CommentUpdateRequest`; el frontend lo replica en `modules/comment/constants/commentContent.ts` y ambos deben cambiarse juntos.
-- Un `JsonResource` con varios bloques los reparte en métodos privados con el mismo estilo (`author()`, `repliedTo()`, `repliesInfo()`, `likesInfo()`, `isMine()`), y los indicadores que dependen del usuario autenticado (`isMine`, `likedByMe`) se calculan comparando atributos ya cargados, sin Gate ni consultas adicionales.
-- Los listados que serializan contadores de relaciones los precargan con `withCount()` en el query; el accesor del modelo reutiliza `{relation}_count` cuando existe y consulta solo si no está precargado, para que el costo de una página sea constante.
+- Every PHP file starts with `declare(strict_types=1);`.
+- PSR-4 namespaces: `App\Modules\{Module}\{Type}` (old architecture: `App\{Module}\{Type}`).
+- When a model or its schema changes, review and update its factory so it covers the persisted fields with realistic data or an explicit `null`; omit only the fields Eloquent manages (primary key and timestamps).
+- Eloquent relations declare their generics in PHPDoc: `@return HasMany<Post, $this>`.
+- Models with `HasFactory` declare the generic: `/** @use HasFactory<{Module}Factory> */`.
+- Model constants (`MORPH_NAME`, `MORPH_COLUMN`) carry a descriptive docblock.
+- A polymorphic model registers its key in `App\Providers\AppServiceProvider::registerMorphMap()` (`Relation::enforceMorphMap`).
+- In a domain's own polymorphic table, the columns and the relation share Laravel's `{adjective}able` suffix: `morphs('commentable')` creates `commentable_type` and `commentable_id`, and the model exposes `commentable()` (like `likeable` in Like). `model_type` / `model_id` is the convention of generic package tables such as Spatie's (`media`, permissions), not of domain tables.
+- A policy under `Modules/` is attached with `#[UsePolicy]` on the model (Laravel's name-based discovery does not find it) and applied with `#[Authorize('<ability>', '<routeParameter>')]` on the controller method: it runs after route-model binding and before the FormRequest, so a stranger gets 403 even with invalid input.
+- The route placeholder must match the controller's typed parameter when using implicit enum or model binding (e.g. `{post}` ↔ `Post $post`); otherwise Laravel resolves the class from the container and the route answers 500. Rector renames parameters to match their type, so fix the route, not the parameter.
+- Routes that write data have a `throttle`. When a module has several throttled routes, use the third argument as a prefix (`throttle:6,1,comments.store`): Laravel signs unnamed throttles by user only, so without a prefix every route would share one budget.
+- Normalize free-text input in the FormRequest's `prepareForValidation()` (for example, strip control characters while keeping tabs and line breaks, and trim) so the rules run on the value that is actually stored.
+- Cursor-paginated listings are serialized with `cursorPaginate()->through(fn (Model $model): array => new {Module}Resource($model)->resolve($request))`; they are not wrapped in a hand-made Collection that rebuilds `data`, `meta` and `links`. The paginator is returned as is. Wrap it in `Inertia::scroll(...)` only when the page uses Inertia's `<InfiniteScroll>` component (like `posts` in Home and Profile): `Inertia::scroll` adds merge instructions (`mergeProps`) and scroll metadata (`scrollProps`) that nobody consumes without that component.
+- Data for a dialog or list that is only needed when it opens is sent as `Inertia::optional` props from a `ProvidesInertiaProperties` class in `Props/` (see `app/Modules/Comment/Props/CommentThreadProps.php`), which the host page's controller includes in `Inertia::render`. They have no route of their own: the client does a partial reload with `only`. The read's rate limit is applied with `RateLimiter` inside the class, since there is no route middleware.
+- A controller with a single action is invokable (`__invoke`), e.g. the Auth/TrustedDevice controllers; when a module has several actions on the same resource they are grouped in one controller with one method per action, e.g. `CommentController` (`store`, `update` and `destroy`) and `LikeController` (`toggleComment` and `togglePost`, which share a private method).
+- Deleting a record with dependants is decided explicitly inside a `DB::transaction` (the comment tombstones of SOC-52 are the example in [content.md](modules/content.md)). Adding `SoftDeletes` changes the default queries of every module and of the Admin panel, so run the full suite and update tests that used `delete()` as a hard delete.
+- A `JsonResource` with several blocks splits them into private methods with the same style (`author()`, `repliedTo()`, `repliesInfo()`, `likesInfo()`, `isMine()`), and flags that depend on the authenticated user (`isMine`, `likedByMe`) are computed by comparing already loaded attributes, without a Gate or extra queries.
+- Listings that serialize relation counters preload them with `withCount()` (or `withExists()`, or a scope such as `Post::withEngagementFor()`) in the query; the model's accessor reuses `{relation}_count` when present and queries only when it was not preloaded, so a page has a constant cost. Back it with a query-count test.
+- A maximum length shared with the frontend lives in a model constant (e.g. `Comment::CONTENT_MAX_LENGTH`) mirrored in TypeScript; change both together.
 
-## Ejemplo canónico: módulo `Post`
+## Canonical example: the `Post` module
 
 ```
 app/Modules/Post/
@@ -282,7 +257,9 @@ app/Modules/Post/
 ├── Database/
 │   ├── Factories/PostFactory.php
 │   └── Seeders/PostSeeder.php
+├── Events/PostCreated.php
 ├── Models/Post.php
+├── Policies/PostPolicy.php
 ├── Providers/
 │   ├── PostServiceProvider.php
 │   └── PostRouteServiceProvider.php
@@ -290,11 +267,14 @@ app/Modules/Post/
 ├── Resources/PostResource.php
 ├── Tests/
 │   ├── Crud/
-│   ├── Database/
+│   ├── Factories/
 │   ├── Models/
+│   ├── Policies/
+│   ├── Queries/
 │   ├── Requests/
-│   └── Resources/
+│   ├── Resources/
+│   └── Seeders/
 └── routes/routes.php
 ```
 
-Usa este módulo como referencia al crear nuevos. `app/Modules/Comment/` es el segundo ejemplo: agrega `Concerns/`, `Enums/`, `Policies/`, `Props/` y `Tests/Security/`. `app/Modules/Like/` es el tercero y muestra un módulo con `Database/Migrations/` movidas desde la carpeta global, un solo controlador con una acción por tipo de likeable (comentarios y publicaciones) y `routes/routes.php`.
+Use this module as the reference when creating new ones. `app/Modules/Comment/` is the second example: it adds `Concerns/`, `Enums/`, `Policies/`, `Props/` and `Tests/Security/`. `app/Modules/Like/` is the third and shows a module with `Database/Migrations/` moved from the global folder, a single controller with one action per likeable kind (comments and posts) and `routes/routes.php`.
