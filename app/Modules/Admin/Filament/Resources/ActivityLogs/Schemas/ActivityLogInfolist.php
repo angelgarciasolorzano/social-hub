@@ -6,7 +6,10 @@ namespace App\Modules\Admin\Filament\Resources\ActivityLogs\Schemas;
 
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\ActivityLog\Support\ActivityLogEventCatalog;
+use App\Modules\Admin\Enums\RoleActivityChangeType;
 use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
+use App\Modules\Admin\Filament\Concerns\DescribesRoleActivity;
+use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Carbon\CarbonInterface;
 use Filament\Infolists\Components\KeyValueEntry;
@@ -20,6 +23,7 @@ use Illuminate\Support\Facades\Date;
 class ActivityLogInfolist
 {
     use DescribesActivityLogParties;
+    use DescribesRoleActivity;
 
     /**
      * Properties shown in their own section instead of among the details.
@@ -62,6 +66,11 @@ class ActivityLogInfolist
                             ->label(TranslatedText::of('admin/activity-log.table.subject'))
                             ->state(fn (ActivityLog $activityLog): string => self::subjectLabel($activityLog))
                             ->url(fn (ActivityLog $activityLog): ?string => self::subjectUrl($activityLog)),
+                        TextEntry::make('role_change_detail')
+                            ->label(TranslatedText::of('admin/roles.relations.history.columns.detail'))
+                            ->state(fn (ActivityLog $activityLog): string => self::roleActivityDetail($activityLog, self::sourceRoleNameById($activityLog)))
+                            ->visible(fn (ActivityLog $activityLog): bool => RoleActivityChangeType::forEvent($activityLog->event) instanceof RoleActivityChangeType)
+                            ->columnSpanFull(),
                     ])
                     ->columns([
                         'default' => 1,
@@ -93,6 +102,24 @@ class ActivityLogInfolist
                         'sm' => 2,
                     ]),
             ]);
+    }
+
+    /**
+     * The shown name of the role a duplicate was copied from, keyed by its id, or nothing.
+     *
+     * @return array<int, string>
+     */
+    private static function sourceRoleNameById(ActivityLog $activityLog): array
+    {
+        $sourceRoleId = $activityLog->getProperty('source_role_id');
+
+        if (! \is_int($sourceRoleId)) {
+            return [];
+        }
+
+        $sourceRole = Role::query()->find($sourceRoleId);
+
+        return $sourceRole instanceof Role ? [$sourceRoleId => $sourceRole->displayName()] : [];
     }
 
     /**

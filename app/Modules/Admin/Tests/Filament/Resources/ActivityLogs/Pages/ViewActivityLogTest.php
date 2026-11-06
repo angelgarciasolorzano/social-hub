@@ -5,12 +5,15 @@ declare(strict_types=1);
 use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
+use App\Modules\Admin\Database\Factories\RoleFactory;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\ActivityLogs\Pages\ViewActivityLog;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -186,4 +189,37 @@ it('links a role subject to the role detail only for an administrator who may vi
     Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
         ->assertSeeText($role->displayName())
         ->assertDontSee(RoleResource::getUrl('view', ['record' => $role]), false);
+});
+
+it('describes a role permission change in readable words', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $role = RoleFactory::new()->createOne();
+    $activityLog = ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RolePermissionGranted)->performedOn($role)
+        ->createOne(['properties' => ['role' => $role->name, 'permission' => AdminPermission::AdminUsersView->value]]);
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertSeeText(TranslatedText::of('admin/roles.relations.history.columns.detail'))
+        ->assertSeeText(TranslatedText::of('admin/roles.relations.history.detail.permission_granted', [
+            'permission' => AdminPermission::AdminUsersView->label(),
+        ]));
+});
+
+it('names the role a duplicated role was copied from', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $sourceRole = RoleFactory::new()->createOne(['label' => 'Soporte de cuentas']);
+    $role = RoleFactory::new()->createOne();
+    $activityLog = ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleDuplicated)->performedOn($role)
+        ->createOne(['properties' => ['role' => $role->name, 'source_role_id' => $sourceRole->id]]);
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertSeeText(TranslatedText::of('admin/roles.relations.history.detail.duplicated', ['role' => 'Soporte de cuentas']));
+});
+
+it('does not describe an activity that is not a role change', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminActivityReader);
+    $activityLog = ActivityLogFactory::new()->forEvent(ActivityLogContentEvent::PostCreated)->createOne();
+
+    Livewire::test(ViewActivityLog::class, ['record' => $activityLog->getKey()])
+        ->assertOk()
+        ->assertDontSeeText(TranslatedText::of('admin/roles.relations.history.detail.unknown'));
 });
