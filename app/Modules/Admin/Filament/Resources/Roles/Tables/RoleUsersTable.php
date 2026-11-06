@@ -12,12 +12,19 @@ use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
+use Carbon\CarbonImmutable;
 use Closure;
+use DateTimeInterface;
+use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * The users holding one role: since when and from whom they hold it, whether they can enter the panel
@@ -32,6 +39,13 @@ class RoleUsersTable
      * The alias of the date of each user's latest grant of the role, selected with the users.
      */
     public const string ASSIGNED_AT_COLUMN = 'role_assigned_at';
+
+    /**
+     * The choices of the "no sign-in in" filter, in days.
+     *
+     * @var list<int>
+     */
+    private const array INACTIVITY_DAYS = [30, 90, 180];
 
     /**
      * Configure the table; `$grantsByUser` returns the latest grants of the users on the page, loaded
@@ -104,6 +118,35 @@ class RoleUsersTable
                     ->state(fn (User $record): array => self::otherRoleNames($record, $role))
                     ->toggleable(),
             ])
+            ->filters([
+                SelectFilter::make('status')
+                    ->label(TranslatedText::of('admin/roles.relations.users.filters.status'))
+                    ->options(self::accountStatusOptions()),
+                TernaryFilter::make('panel_mfa')
+                    ->label(TranslatedText::of('admin/roles.relations.users.filters.panel_mfa'))
+                    ->trueLabel(TranslatedText::of('admin/roles.relations.users.mfa.configured'))
+                    ->falseLabel(TranslatedText::of('admin/roles.relations.users.mfa.missing'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereNotNull('app_authentication_secret'),
+                        false: fn (Builder $query): Builder => $query->whereNull('app_authentication_secret'),
+                    ),
+                SelectFilter::make('also_has_role')
+                    ->label(TranslatedText::of('admin/roles.relations.users.filters.also_has_role'))
+                    ->multiple()
+                    ->options(fn (): array => self::otherRoleOptions($role))
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByOtherRoles($query, $data['values'] ?? [], $role)),
+                Filter::make('assigned_between')
+                    ->label(TranslatedText::of('admin/roles.relations.users.filters.assigned_between'))
+                    ->schema([
+                        DatePicker::make('assigned_from')->label(TranslatedText::of('admin/common.filters.from')),
+                        DatePicker::make('assigned_until')->label(TranslatedText::of('admin/common.filters.until')),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByAssignmentDate($query, $data, $role)),
+                SelectFilter::make('inactive_for')
+                    ->label(TranslatedText::of('admin/roles.relations.users.filters.inactive_for'))
+                    ->options(self::inactivityOptions())
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByInactivity($query, $data['value'] ?? null)),
+            ])
             ->emptyStateHeading(TranslatedText::of('admin/roles.relations.users.empty'))
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10);
@@ -125,5 +168,135 @@ class RoleUsersTable
         }
 
         return array_map(static fn (Role $otherRole): string => $otherRole->displayName(), Role::inDisplayOrder($otherRoles));
+    }
+
+    /**
+     * The other roles of the `admin` guard, in display order, by stored name.
+     *
+     * @return array<string, string>
+     */
+    private static function otherRoleOptions(Role $role): array
+    {
+        $otherRoleOptions = [];
+        $otherRoles = Role::query()->where('guard_name', Role::GUARD_NAME)->whereKeyNot($role->getKey())->get();
+
+        foreach (Role::inDisplayOrder($otherRoles) as $otherRole) {
+            $otherRoleOptions[$otherRole->name] = $otherRole->displayName();
+        }
+
+        return $otherRoleOptions;
+    }
+
+    /**
+     * Keep the users who also hold any of the selected other roles of the `admin` guard.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    private static function filterByOtherRoles(Builder $query, mixed $selectedRoleNames, Role $role): Builder
+    {
+        $roleNames = array_values(array_filter(
+            \is_array($selectedRoleNames) ? $selectedRoleNames : [],
+            static fn (mixed $roleName): bool => \is_string($roleName) && $roleName !== $role->name,
+        ));
+
+        if ($roleNames === []) {
+            return $query;
+        }
+
+        return $query->whereHas('roles', static function (Builder $roles) use ($roleNames): Builder {
+            $roles->getQuery()->where('guard_name', Role::GUARD_NAME)->whereIn('name', $roleNames);
+
+            return $roles;
+        });
+    }
+
+    /**
+     * Keep the users whose latest grant of the role falls between the chosen dates, both included.
+     *
+     * @param  Builder<User>  $query
+     * @param  array<mixed>  $data
+     * @return Builder<User>
+     */
+    private static function filterByAssignmentDate(Builder $query, array $data, Role $role): Builder
+    {
+        $assignedFrom = self::filterDate($data['assigned_from'] ?? null);
+        $assignedUntil = self::filterDate($data['assigned_until'] ?? null);
+
+        if ($assignedFrom instanceof CarbonImmutable) {
+            self::whereLatestGrantDate($query, $role, '>=', $assignedFrom->startOfDay());
+        }
+
+        if ($assignedUntil instanceof CarbonImmutable) {
+            self::whereLatestGrantDate($query, $role, '<=', $assignedUntil->endOfDay());
+        }
+
+        return $query;
+    }
+
+    /**
+     * Compare each user's latest grant date of the role with a date; users without a grant never match.
+     *
+     * @param  Builder<User>  $query
+     * @param  '>='|'<='  $operator
+     */
+    private static function whereLatestGrantDate(Builder $query, Role $role, string $operator, CarbonImmutable $date): void
+    {
+        $query->getQuery()->where(static function (QueryBuilder $subquery) use ($role): void {
+            $builder = $role->latestGrantDateSubquery()->toBase();
+
+            $subquery->from($builder->from)
+                ->selectRaw('max(created_at)')
+                ->mergeWheres($builder->wheres, $builder->getRawBindings()['where']);
+        }, $operator, $date->toDateTimeString());
+    }
+
+    /**
+     * The days of each "no sign-in in" option, with their text.
+     *
+     * @return array<int, string>
+     */
+    private static function inactivityOptions(): array
+    {
+        $inactivityOptions = [];
+
+        foreach (self::INACTIVITY_DAYS as $days) {
+            $inactivityOptions[$days] = TranslatedText::of('admin/roles.relations.users.filters.inactive_option', ['days' => $days]);
+        }
+
+        return $inactivityOptions;
+    }
+
+    /**
+     * Keep the users who never signed in or did not sign in during the chosen number of days.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    private static function filterByInactivity(Builder $query, mixed $selectedDays): Builder
+    {
+        $days = is_numeric($selectedDays) ? (int) $selectedDays : null;
+
+        if (! \in_array($days, self::INACTIVITY_DAYS, true)) {
+            return $query;
+        }
+
+        $query->getQuery()->where(static fn (QueryBuilder $builder): QueryBuilder => $builder
+            ->whereNull('last_login_at')
+            ->orWhere('last_login_at', '<', now()->subDays($days)));
+
+        return $query;
+    }
+
+    /**
+     * A date chosen in a filter, or null when none was chosen.
+     */
+    private static function filterDate(mixed $date): ?CarbonImmutable
+    {
+        if ($date instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($date);
+        }
+
+        return \is_string($date) && $date !== '' ? CarbonImmutable::parse($date) : null;
     }
 }
