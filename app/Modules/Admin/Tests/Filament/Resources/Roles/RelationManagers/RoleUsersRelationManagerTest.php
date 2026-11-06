@@ -127,7 +127,7 @@ it('lists only the users holding the role, linked to their detail', function ():
         ]);
 });
 
-it('offers adding and removing users, but no create, edit or bulk actions', function (): void {
+it('offers adding, removing and removing several users, but no create or edit actions', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
@@ -136,7 +136,7 @@ it('offers adding and removing users, but no create, edit or bulk actions', func
 
     expect(tableActionNames($table->getHeaderActions()))->toBe(['addUsers'])
         ->and(tableActionNames($table->getRecordActions()))->toBe(['removeFromRole'])
-        ->and($table->getToolbarActions())->toBeEmpty();
+        ->and(tableActionNames($table->getToolbarActions()))->toBe(['removeSelectedFromRole']);
 });
 
 it('shows an empty state in Spanish for a role nobody holds', function (): void {
