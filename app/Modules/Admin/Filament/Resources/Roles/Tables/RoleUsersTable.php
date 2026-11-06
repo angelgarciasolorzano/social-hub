@@ -48,6 +48,11 @@ class RoleUsersTable
     private const array INACTIVITY_DAYS = [30, 90, 180];
 
     /**
+     * The days without a sign-in after which the summary counts a holder as inactive.
+     */
+    private const int SUMMARY_INACTIVITY_DAYS = 90;
+
+    /**
      * Configure the table; `$grantsByUser` returns the latest grants of the users on the page, loaded
      * once, keyed by user id.
      *
@@ -60,6 +65,7 @@ class RoleUsersTable
                 ->addSelect([self::ASSIGNED_AT_COLUMN => $role->latestGrantDateSubquery()])
                 ->with('roles'))
             ->loadingSkeleton()
+            ->description(fn (): ?string => self::holdersSummary($role))
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
@@ -150,6 +156,53 @@ class RoleUsersTable
             ->emptyStateHeading(TranslatedText::of('admin/roles.relations.users.empty'))
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10);
+    }
+
+    /**
+     * How many holders of the role lack the panel MFA, did not sign in for 90 days or are suspended, in
+     * one query, or nothing when nobody holds the role.
+     */
+    public static function holdersSummary(Role $role): ?string
+    {
+        $summary = User::query()
+            ->whereHas('roles', static function (Builder $roles) use ($role): Builder {
+                $roles->getQuery()->where('roles.id', $role->getKey());
+
+                return $roles;
+            })
+            ->selectRaw(
+                'count(*) as holders, '
+                .'coalesce(sum(case when app_authentication_secret is null then 1 else 0 end), 0) as without_mfa, '
+                .'coalesce(sum(case when last_login_at is null or last_login_at < ? then 1 else 0 end), 0) as inactive, '
+                .'coalesce(sum(case when status = ? then 1 else 0 end), 0) as suspended',
+                [now()->subDays(self::SUMMARY_INACTIVITY_DAYS), AccountStatus::Suspended->value],
+            )
+            ->toBase()
+            ->first();
+
+        $summaryRow = \is_object($summary) ? get_object_vars($summary) : [];
+
+        if (self::summaryCount($summaryRow, 'holders') === 0) {
+            return null;
+        }
+
+        return TranslatedText::of('admin/roles.relations.users.summary', [
+            'without_mfa' => self::summaryCount($summaryRow, 'without_mfa'),
+            'inactive' => self::summaryCount($summaryRow, 'inactive'),
+            'suspended' => self::summaryCount($summaryRow, 'suspended'),
+        ]);
+    }
+
+    /**
+     * One count of the summary row, as a number.
+     *
+     * @param  array<mixed>  $summaryRow
+     */
+    private static function summaryCount(array $summaryRow, string $column): int
+    {
+        $count = $summaryRow[$column] ?? null;
+
+        return is_numeric($count) ? (int) $count : 0;
     }
 
     /**
