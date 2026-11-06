@@ -356,6 +356,9 @@ return [
                 'assigned_between' => 'Assigned between',
                 'inactive_for' => 'No sign-in in',
                 'inactive_option' => 'The last :days days',
+                'assigned_from' => 'Assigned from',
+                'assigned_until' => 'Assigned until',
+                'all_holders' => 'All holders',
             ],
             'bulk_remove' => [
                 'label' => 'Remove the role',

@@ -356,6 +356,9 @@ return [
                 'assigned_between' => 'Asignado entre',
                 'inactive_for' => 'Sin acceso en',
                 'inactive_option' => 'Los últimos :days días',
+                'assigned_from' => 'Asignado desde',
+                'assigned_until' => 'Asignado hasta',
+                'all_holders' => 'Todos los titulares',
             ],
             'bulk_remove' => [
                 'label' => 'Quitar el rol',

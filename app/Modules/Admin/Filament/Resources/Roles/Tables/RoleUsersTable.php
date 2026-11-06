@@ -53,6 +53,11 @@ class RoleUsersTable
     private const int SUMMARY_INACTIVITY_DAYS = 90;
 
     /**
+     * How many other roles a row shows before the rest fold under "and N more".
+     */
+    private const int OTHER_ROLES_SHOWN = 2;
+
+    /**
      * Configure the table; `$grantsByUser` returns the latest grants of the users on the page, loaded
      * once, keyed by user id.
      *
@@ -122,6 +127,9 @@ class RoleUsersTable
                     ->label(TranslatedText::of('admin/roles.relations.users.columns.other_roles'))
                     ->badge()
                     ->state(fn (User $record): array => self::otherRoleNames($record, $role))
+                    ->listWithLineBreaks()
+                    ->limitList(self::OTHER_ROLES_SHOWN)
+                    ->expandableLimitedList()
                     ->toggleable(),
             ])
             ->filters([
@@ -130,6 +138,7 @@ class RoleUsersTable
                     ->options(self::accountStatusOptions()),
                 TernaryFilter::make('panel_mfa')
                     ->label(TranslatedText::of('admin/roles.relations.users.filters.panel_mfa'))
+                    ->placeholder(TranslatedText::of('admin/roles.relations.users.filters.all_holders'))
                     ->trueLabel(TranslatedText::of('admin/roles.relations.users.mfa.configured'))
                     ->falseLabel(TranslatedText::of('admin/roles.relations.users.mfa.missing'))
                     ->queries(
@@ -144,8 +153,8 @@ class RoleUsersTable
                 Filter::make('assigned_between')
                     ->label(TranslatedText::of('admin/roles.relations.users.filters.assigned_between'))
                     ->schema([
-                        DatePicker::make('assigned_from')->label(TranslatedText::of('admin/common.filters.from')),
-                        DatePicker::make('assigned_until')->label(TranslatedText::of('admin/common.filters.until')),
+                        DatePicker::make('assigned_from')->label(TranslatedText::of('admin/roles.relations.users.filters.assigned_from')),
+                        DatePicker::make('assigned_until')->label(TranslatedText::of('admin/roles.relations.users.filters.assigned_until')),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => self::filterByAssignmentDate($query, $data, $role)),
                 SelectFilter::make('inactive_for')
