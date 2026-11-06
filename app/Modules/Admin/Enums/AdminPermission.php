@@ -89,6 +89,35 @@ enum AdminPermission: string
     }
 
     /**
+     * Whether this permission gives control over other administrators, their access or exported data,
+     * so the panel marks it and asks to confirm granting it.
+     */
+    public function isSensitive(): bool
+    {
+        return match ($this) {
+            self::AdminUsersRoles,
+            self::AdminUsersCreate,
+            self::AdminUsersSuspend,
+            self::AdminUsersReactivate,
+            self::AdminRolesUpdate,
+            self::AdminRolesCreate,
+            self::AdminRolesDelete,
+            self::AdminBackupsDownload => true,
+            default => false,
+        };
+    }
+
+    /**
+     * The sensitive permissions, in catalog order.
+     *
+     * @return list<AdminPermission>
+     */
+    public static function sensitive(): array
+    {
+        return array_values(array_filter(self::cases(), static fn (self $adminPermission): bool => $adminPermission->isSensitive()));
+    }
+
+    /**
      * The permissions this one needs to be usable: seeing a record needs its list, and every write
      * or action of an area needs both. Creating users only needs the list, where the invite lives.
      *
