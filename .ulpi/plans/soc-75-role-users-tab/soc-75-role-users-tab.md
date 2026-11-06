@@ -71,7 +71,7 @@ En `App\Modules\Admin\Models\Role`, extraer la regla de asignaciones a `grantAct
 
 ### TASK-002: Textos de la pestaña de usuarios (en/es)
 
-Agregar en `lang/{en,es}/admin/roles.php`, dentro de `relations.users`: `columns.{assigned_at,assigned_by,panel_mfa,last_login_at,other_roles}`; `not_recorded`; `mfa.{configured,missing}`; `filters.{status,panel_mfa,also_has_role,assigned_between,inactive_for}` con `filters.inactive_days` (`{30} …|{90} …|{180} …` o claves `30`, `90`, `180` con `:days`); `bulk_remove.{label,modal_heading,modal_description,submit,success}` (`success` en plural con `:count`); `summary` (una frase con `:without_mfa`, `:inactive` y `:suspended`).
+Agregar en `lang/{en,es}/admin/roles.php`, dentro de `relations.users`: `columns.{assigned_at,assigned_by,panel_mfa,last_login_at,other_roles}`; `not_recorded`; `mfa.{configured,missing}`; `filters.{status,panel_mfa,also_has_role,assigned_between,inactive_for}` y `filters.inactive_option` (`:days`, una sola clave para 30, 90 y 180); `bulk_remove.{label,modal_heading,modal_description,submit,success}` (`success` en plural con `:count`); `summary` (una frase con `:without_mfa`, `:inactive` y `:suspended`).
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
