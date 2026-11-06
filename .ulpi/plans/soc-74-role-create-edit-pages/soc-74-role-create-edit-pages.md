@@ -69,7 +69,7 @@ Agregar a `AdminPermission` los métodos `isSensitive()` y `sensitive()` según 
 
 ### TASK-002: Textos de las páginas de crear y editar (en/es)
 
-Agregar en `lang/{en,es}/admin/roles.php`: `pages.create.{title,breadcrumb}` y `pages.edit.{title,breadcrumb}` (`:role`); `wizard.{details,permissions,review}.{label,description}`; `form.start_from` y `form.start_from_helper`; `form.read_only_details` (aviso para roles de sistema); `form.sensitive` (la marca); `summary.{count,areas,sensitive_heading,no_sensitive}` (con `:count` y `:areas`); `form.acknowledge_sensitive` y su mensaje de error; `actions.edit.label`; `actions.edit.success` (`:role`) y `actions.edit.unchanged`.
+Agregar en `lang/{en,es}/admin/roles.php`: `pages.create.{title,breadcrumb}` y `pages.edit.{title,breadcrumb}` (`:role`); `wizard.{details,permissions,review}.{label,description}`; `form.start_from` y `form.start_from_helper`; `form.read_only_details` (aviso para roles de sistema); `form.sensitive` (la marca); `summary.{count,areas,no_areas,sensitive_heading,no_sensitive}` (con `:count` y `:areas`); `form.acknowledge_sensitive` y `form.acknowledge_sensitive_required`; `actions.edit.label`; `actions.edit.success` (`:role`) y `actions.edit.unchanged`.
 
 **Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P0
 
