@@ -1,10 +1,10 @@
-# Comandos del Frontend
+# Frontend Commands
 
-Referencia de los comandos npm más usados para mantener consistencia y calidad en el código del frontend.
+Reference for the most used npm commands that keep the frontend code consistent and of good quality.
 
-> ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines un comando, script de npm, alias o workflow del frontend, actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de los comandos y no debe quedar desincronizada con `package.json` o los scripts de CI.
+> ⚠️ **Keeping this document current**: when you add, change or remove a frontend command, npm script, alias or workflow, update this document in the same PR/commit. The docs are the source of truth for the commands and must not drift from `package.json` or the CI scripts.
 
-## Instalación reproducible (CI)
+## Reproducible install (CI)
 
 ### `npm run install:ci`
 
@@ -12,30 +12,30 @@ Referencia de los comandos npm más usados para mantener consistencia y calidad 
 npm run install:ci
 ```
 
-Wrapper de `npm ci --no-audit --no-fund`. Instala dependencias desde `package-lock.json` de forma **reproducible y rápida**.
+Wrapper around `npm ci --no-audit --no-fund`. Installs dependencies from `package-lock.json` **reproducibly and quickly**.
 
-- 🔒 Falla si `package-lock.json` está desincronizado con `package.json`
-- ⏩ Más rápido que `npm install` (no resuelve dependencias)
-- 🔇 Sin auditoría ni funding (limpio para logs de CI)
+- 🔒 Fails when `package-lock.json` is out of sync with `package.json`
+- ⏩ Faster than `npm install` (it resolves no dependencies)
+- 🔇 No audit or funding output (clean CI logs)
 
-**Cuándo:**
+**When:**
 
-- En CI, en los workflows de [Format](../../.github/workflows/frontend-code-quality-format.yml), [Lint](../../.github/workflows/frontend-code-quality-lint.yml) y [Types](../../.github/workflows/frontend-code-quality-types.yml)
-- Localmente, antes de pushear, para validar que tu `package-lock.json` esté en sync
+- In CI, in the [Format](../../.github/workflows/frontend-code-quality-format.yml), [Lint](../../.github/workflows/frontend-code-quality-lint.yml) and [Types](../../.github/workflows/frontend-code-quality-types.yml) workflows
+- Locally, before pushing, to check that your `package-lock.json` is in sync
 
-**No usar para desarrollo normal** — usa `npm install` cuando agregues dependencias nuevas.
+**Not for normal development**: use `npm install` when you add new dependencies.
 
-## Workflows de CI
+## CI workflows
 
-Los tres workflows corren en `push` y `pull_request` hacia `main` y `develop`, y cada uno reporta su propio gate:
+The three workflows run on `push` and `pull_request` to `main` and `develop`, and each reports its own gate:
 
-- [Frontend Code Quality Format](../../.github/workflows/frontend-code-quality-format.yml) ejecuta `npm run format:check`. Prepara PHP y Laravel y genera Wayfinder porque Prettier revisa todo `resources/`, incluidos los archivos generados.
-- [Frontend Code Quality Lint](../../.github/workflows/frontend-code-quality-lint.yml) ejecuta `npm run lint:check`. Prepara PHP y Laravel, instala las dependencias npm y genera Wayfinder antes del gate. Aunque ESLint excluye los archivos generados del análisis, necesita esos módulos para resolver los imports del código fuente.
-- [Frontend Code Quality Types](../../.github/workflows/frontend-code-quality-types.yml) ejecuta `npm run types`. Prepara PHP y Laravel y genera Wayfinder, que TypeScript necesita para resolver esos tipos.
+- [Frontend Code Quality Format](../../.github/workflows/frontend-code-quality-format.yml) runs `npm run format:check`. It sets up PHP and Laravel and generates Wayfinder, because Prettier checks all of `resources/`, generated files included.
+- [Frontend Code Quality Lint](../../.github/workflows/frontend-code-quality-lint.yml) runs `npm run lint:check`. It sets up PHP and Laravel, installs the npm dependencies and generates Wayfinder before the gate. ESLint excludes the generated files from the analysis, but it needs those modules to resolve the source code's imports.
+- [Frontend Code Quality Types](../../.github/workflows/frontend-code-quality-types.yml) runs `npm run types`. It sets up PHP and Laravel and generates Wayfinder, which TypeScript needs to resolve those types.
 
-## 1. Comandos esenciales (antes de cada commit)## 1. Comandos esenciales (antes de cada commit)
+## 1. Essential commands (before every commit)
 
-Tres comandos — equivalentes a `pint-dirty`/`phpstan`/`rector-dry` del backend. **Ejecuta los tres en orden** antes de hacer commit.
+Three commands, the counterparts of the backend's `pint-dirty` / `phpstan` / `rector-dry`. **Run all three in order** before committing.
 
 ### `npm run format:check`
 
@@ -43,12 +43,12 @@ Tres comandos — equivalentes a `pint-dirty`/`phpstan`/`rector-dry` del backend
 npm run format:check
 ```
 
-Verifica que el formato Prettier esté aplicado en `resources/`.
+Checks that Prettier formatting is applied in `resources/`.
 
-- :lupa: **Solo lee**, no modifica archivos
-- :x: Falla con exit code != 0 si hay archivos mal formateados
+- 🔍 **Read-only**, changes no files
+- ❌ Fails with a non-zero exit code when files are badly formatted
 
-**Cuándo:** después de modificar TS/TSX/CSS/JSON, antes de commit.
+**When:** after changing TS/TSX/CSS/JSON, before committing.
 
 ### `npm run lint:check`
 
@@ -56,18 +56,18 @@ Verifica que el formato Prettier esté aplicado en `resources/`.
 npm run lint:check
 ```
 
-Ejecuta ESLint sin auto-fix. Revisa reglas de:
+Runs ESLint without auto-fix. It checks rules for:
 
 - React hooks
 - TypeScript
 - Imports
-- Estilo (Prettier como regla ESLint vía `eslint-plugin-prettier`)
+- Style (Prettier as an ESLint rule through `eslint-plugin-prettier`)
 - Sorting (perfectionist, trivago)
 
-- :lupa: **Solo lee**, no modifica archivos
-- :x: Falla con exit code != 0 si hay violations
+- 🔍 **Read-only**, changes no files
+- ❌ Fails with a non-zero exit code on violations
 
-**Cuándo:** después de modificar TS/TSX, antes de commit.
+**When:** after changing TS/TSX, before committing.
 
 ### `npm run types`
 
@@ -75,40 +75,40 @@ Ejecuta ESLint sin auto-fix. Revisa reglas de:
 npm run types
 ```
 
-Ejecuta `tsc --noEmit` — verifica tipos TypeScript sin generar output.
+Runs `tsc --noEmit`: checks TypeScript types without emitting output.
 
-- :lupa: Detecta errores de tipo, firmas incorrectas, propiedades faltantes
-- :x: Falla con exit code != 0 si encuentra issues
+- 🔍 Finds type errors, wrong signatures and missing properties
+- ❌ Fails with a non-zero exit code when it finds issues
 
-**Cuándo:** después de modificar TS/TSX, antes de commit. Especialmente importante si trabajas con tipos de Laravel (resources, wayfinder).
+**When:** after changing TS/TSX, before committing. Especially important when working with types that come from Laravel (resources, Wayfinder).
 
-## 2. Orden recomendado antes de commit
+## 2. Recommended order before committing
 
 ```bash
-# 1. Verificar formato
+# 1. Check formatting
 npm run format:check
 
-# 2. Verificar linting
+# 2. Check linting
 npm run lint:check
 
-# 3. Verificar tipos
+# 3. Check types
 npm run types
 ```
 
-Si alguno falla:
+If one fails:
 
 ```bash
-# Auto-fix formato
+# Auto-fix formatting
 npm run format
 
 # Auto-fix linting
 npm run lint
 
-# Para errores de tipo, hay que corregirlos manualmente
-# (TypeScript no auto-arregla)
+# Type errors must be fixed by hand
+# (TypeScript does not auto-fix)
 ```
 
-## 3. Otros comandos útiles
+## 3. Other useful commands
 
 ### `npm run dev`
 
@@ -116,9 +116,9 @@ npm run lint
 npm run dev
 ```
 
-Levanta Vite con HMR (Hot Module Replacement). Servidor de desarrollo que recompila al guardar.
+Starts Vite with HMR (Hot Module Replacement): a development server that recompiles on save.
 
-**Cuándo:** sesión de desarrollo frontend normal. En este proyecto se ejecuta en paralelo con `composer dev`.
+**When:** only when the PHP processes are already running. `composer run dev` already starts Vite together with the server, queue, logs and Reverb, so do not run both.
 
 ### `npm run build`
 
@@ -126,13 +126,13 @@ Levanta Vite con HMR (Hot Module Replacement). Servidor de desarrollo que recomp
 npm run build
 ```
 
-Compila el bundle de producción con Vite. Genera assets optimizados en `public/build/`.
+Builds the production bundle with Vite. It writes optimized assets to `public/build/`.
 
-**Cuándo:**
+**When:**
 
-- Antes de deploy
-- Antes de commitear cambios grandes en configuración de Vite/Tailwind
-- En CI para validar que el build no rompe
+- Before opening a PR (it must compile)
+- Before deploying
+- Before committing large changes to the Vite/Tailwind configuration
 
 ### `npm run build:ssr`
 
@@ -140,9 +140,9 @@ Compila el bundle de producción con Vite. Genera assets optimizados en `public/
 npm run build:ssr
 ```
 
-Compila el bundle para Server-Side Rendering. Útil si activas SSR en `config/inertia.php`.
+Builds the client bundle and the Server-Side Rendering bundle.
 
-**Cuándo:** solo si usas SSR. Si no, ignora este comando.
+**When:** before opening a PR, together with `npm run build`: both must compile.
 
 ### `npm run format`
 
@@ -150,10 +150,10 @@ Compila el bundle para Server-Side Rendering. Útil si activas SSR en `config/in
 npm run format
 ```
 
-Aplica Prettier a **todo** `resources/` (no solo modificado).
+Applies Prettier to **all** of `resources/` (not only modified files).
 
-- :advertencia: Modifica muchos archivos — útil para reformatear después de cambios en `.prettierrc`
-- :alto_voltaje: Para cambios locales, mejor usar formato on-save en VSCode
+- ⚠️ Touches many files: useful to reformat after changing `.prettierrc`
+- ⚡ For local changes, format-on-save in VS Code is more convenient
 
 ### `npm run lint`
 
@@ -161,58 +161,58 @@ Aplica Prettier a **todo** `resources/` (no solo modificado).
 npm run lint
 ```
 
-Ejecuta ESLint con `--fix`. Corrige automáticamente:
+Runs ESLint with `--fix`. It automatically fixes:
 
-- Problemas de estilo (Prettier)
-- Imports duplicados
-- Sorting (si perfectionist lo tiene configurado)
-- Algunas reglas React
+- Style problems (Prettier)
+- Duplicated imports
+- Sorting (where perfectionist is configured)
+- Some React rules
 
-**Cuándo:** después de que `lint:check` falle y quieras auto-fix.
+**When:** after `lint:check` fails and you want the auto-fix.
 
-### `shadcn` (no es script npm)
+### `shadcn` (not an npm script)
 
 ```bash
-npx shadcn@latest add <componente>
+npx shadcn@latest add <component>
 ```
 
-Añade componentes de shadcn/ui al proyecto. El CLI los copia a `resources/js/shared/components/shadcn/ui/`.
+Adds shadcn/ui components to the project. The CLI copies them to `resources/js/shared/components/shadcn/ui/`.
 
-**Cuándo:** cuando necesites un nuevo componente UI del set de shadcn (Button, Dialog, Select, etc.).
+**When:** when you need a new UI component from the shadcn set (Button, Dialog, Select, etc.). Never copy them by hand from the docs.
 
-## 4. Comparación con comandos del backend
+## 4. Comparison with the backend commands
 
-| Backend               | Frontend               | Qué hace             |
+| Backend               | Frontend               | What it does         |
 | --------------------- | ---------------------- | -------------------- |
-| `composer pint-dirty` | `npm run format:check` | Verifica formato     |
-| `composer phpstan`    | `npm run types`        | Verifica tipos       |
-| `composer rector-dry` | `npm run lint:check`   | Verifica reglas/lint |
-| `composer pint-fix`   | `npm run format`       | Aplica formato       |
-| `composer rector`     | `npm run lint`         | Aplica fixes         |
-| `composer ide-helper` | (no aplica)            | Genera helpers IDE   |
+| `composer pint-dirty` | `npm run format:check` | Checks formatting    |
+| `composer phpstan`    | `npm run types`        | Checks types         |
+| `composer rector-dry` | `npm run lint:check`   | Checks rules / lint  |
+| `composer pint-fix`   | `npm run format`       | Applies formatting   |
+| `composer rector`     | `npm run lint`         | Applies fixes        |
+| `composer ide-helper` | (not applicable)       | Generates IDE helpers |
 
-> :bombilla: **Diferencia clave:** ESLint con `--fix` aplica automáticamente reglas de formato (porque Prettier corre dentro de ESLint vía `eslint-plugin-prettier`). Backend y frontend tienen filosofías similares pero herramientas distintas.
+> 💡 **Key difference:** ESLint with `--fix` also applies formatting rules (Prettier runs inside ESLint through `eslint-plugin-prettier`). Backend and frontend share a similar philosophy with different tools.
 
-## 5. Resumen rápido
+## 5. Quick summary
 
-| Comando                   | Para qué                 | Cuándo                            |
-| ------------------------- | ------------------------ | --------------------------------- |
-| `npm run install:ci`      | Instalación reproducible | En CI o antes de pushear          |
-| `npm run format:check`    | Verificar formato        | Antes de commit                   |
-| `npm run lint:check`      | Verificar linting        | Antes de commit                   |
-| `npm run types`           | Verificar tipos TS       | Antes de commit                   |
-| `npm run format`          | Aplicar formato          | Después de fallos de format:check |
-| `npm run lint`            | Auto-fix linting         | Después de fallos de lint:check   |
-| `npm run dev`             | Servidor dev con HMR     | Sesión de desarrollo              |
-| `npm run build`           | Build producción         | Antes de deploy                   |
-| `npm run build:ssr`       | Build con SSR            | Solo si usas SSR                  |
-| `npx shadcn@latest add X` | Añadir componente shadcn | Cuando necesites UI nuevo         |
+| Command                   | What for                  | When                              |
+| ------------------------- | ------------------------- | --------------------------------- |
+| `npm run install:ci`      | Reproducible install      | In CI or before pushing           |
+| `npm run format:check`    | Check formatting          | Before committing                 |
+| `npm run lint:check`      | Check linting             | Before committing                 |
+| `npm run types`           | Check TS types            | Before committing                 |
+| `npm run format`          | Apply formatting          | After `format:check` fails        |
+| `npm run lint`            | Auto-fix linting          | After `lint:check` fails          |
+| `npm run dev`             | Dev server with HMR       | Only without `composer run dev`   |
+| `npm run build`           | Production build          | Before a PR and before deploying  |
+| `npm run build:ssr`       | Build with SSR            | Before a PR                       |
+| `npx shadcn@latest add X` | Add a shadcn component    | When you need new UI              |
 
-## 6. Configuración on-save (VSCode)
+## 6. On-save configuration (VS Code)
 
-Con la config de `.vscode/settings.json`, todo esto corre **automáticamente al guardar**:
+With the `.vscode/settings.json` configuration, this runs **automatically on save**:
 
-- Prettier formatea el archivo
-- ESLint aplica auto-fix
+- Prettier formats the file
+- ESLint applies its auto-fix
 
-Pero las versiones `*:check` siguen siendo necesarias en CI y pre-commit porque validan sin modificar.
+The `*:check` versions are still needed in CI and before committing, because they validate without changing anything.
