@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
@@ -12,9 +13,12 @@ use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -54,6 +58,41 @@ function tableActionNames(array $actions): array
     }
 
     return $actionNames;
+}
+
+/**
+ * Give the role to a user and record the grant as the service would, made by the administrator at the
+ * given time.
+ */
+function grantRoleWithActivity(Role $role, User $user, User $administrator, string $grantedAt): void
+{
+    $user->assignRole($role);
+
+    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->performedOn($user)->causedBy($administrator)
+        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($grantedAt)]);
+}
+
+/**
+ * Count the queries that rendering the users tab with the given page size runs, leaving out Spatie's
+ * permission lookups, which depend on its cache and not on the rows. Tests render once before measuring so
+ * the signed-in administrator's own roles are already loaded.
+ */
+function countRoleUsersQueries(Role $role, int $recordsPerPage): int
+{
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    roleUsersRelationManagerFor($role)->set('tableRecordsPerPage', $recordsPerPage)->assertOk();
+
+    $tabQueries = array_filter(
+        array_column(DB::getQueryLog(), 'query'),
+        fn (string $query): bool => preg_match('/\b(permissions|role_has_permissions|model_has_permissions)\b/', $query) !== 1
+            || str_contains($query, 'activity_log'),
+    );
+
+    DB::disableQueryLog();
+
+    return count($tabQueries);
 }
 
 beforeEach(function (): void {
@@ -264,4 +303,98 @@ it('tells the role page to refresh after adding or removing users', function ():
         ->set('mountedActions.0.data.current_password', 'password')
         ->call('callMountedAction')
         ->assertDispatched(ViewRole::ROLE_USERS_CHANGED_EVENT);
+});
+
+it('shows when and by whom each user received the role, or that it was not recorded', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $user = createUser();
+    $grantedUser = createUser();
+    $userWithoutGrant = createUser();
+
+    grantRoleWithActivity($customRole, $grantedUser, $user, '2026-10-02 09:15:00');
+    $userWithoutGrant->assignRole($customRole);
+
+    $testable = roleUsersRelationManagerFor($customRole)
+        ->assertSeeText($user->name)
+        ->assertSeeText(TranslatedText::of('admin/roles.relations.users.not_recorded'));
+    $testable->__call('assertTableColumnStateSet', ['assigned_by', $user->name, $grantedUser]);
+    $testable->__call('assertTableColumnStateSet', ['assigned_by', TranslatedText::of('admin/roles.relations.users.not_recorded'), $userWithoutGrant]);
+    $testable->__call('assertTableColumnStateNotSet', ['role_assigned_at', null, $grantedUser]);
+});
+
+it('sorts the users by the date they received the role', function (string $direction): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $user = createUser();
+    $earlierUser = createUser();
+    $laterUser = createUser();
+
+    grantRoleWithActivity($customRole, $laterUser, $user, '2026-10-05 10:00:00');
+    grantRoleWithActivity($customRole, $earlierUser, $user, '2026-10-01 10:00:00');
+
+    $testable = roleUsersRelationManagerFor($customRole);
+    $testable->__call('sortTable', ['role_assigned_at', $direction]);
+
+    $expectedOrder = [FilamentTableRecords::recordKey($earlierUser), FilamentTableRecords::recordKey($laterUser)];
+
+    expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
+        ->toBe($direction === 'asc' ? $expectedOrder : array_reverse($expectedOrder));
+})->with(['asc', 'desc']);
+
+it('shows whether each user configured the panel MFA without exposing it', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $userWithMfa = createUser();
+    $userWithMfa->forceFill([
+        'app_authentication_secret' => 'PANELSECRETSENTINEL',
+        'app_authentication_recovery_codes' => ['RECOVERYSENTINEL'],
+    ])->save();
+    $userWithoutMfa = createUser();
+    $userWithMfa->assignRole($customRole);
+    $userWithoutMfa->assignRole($customRole);
+
+    $testable = roleUsersRelationManagerFor($customRole)
+        ->assertDontSee('PANELSECRETSENTINEL')
+        ->assertDontSee('RECOVERYSENTINEL');
+    $testable->__call('assertTableColumnStateSet', ['panel_mfa', true, $userWithMfa]);
+    $testable->__call('assertTableColumnStateSet', ['panel_mfa', false, $userWithoutMfa]);
+});
+
+it('lists the other roles of each user without this role', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne(['label' => 'Soporte de cuentas']);
+    $otherRole = RoleFactory::new()->createOne(['label' => 'Auditor externo']);
+    $user = createUser();
+    $user->assignRole($customRole);
+    $user->assignRole($otherRole);
+
+    $testable = roleUsersRelationManagerFor($customRole);
+    $testable->__call('assertTableColumnStateSet', ['other_roles', ['Auditor externo'], $user]);
+});
+
+it('runs the same number of queries for 10 and for 50 users', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $customRole = RoleFactory::new()->createOne();
+    $otherRole = RoleFactory::new()->createOne();
+
+    foreach (range(1, 50) as $index) {
+        $user = createUser();
+        grantRoleWithActivity($customRole, $user, createUser(), '2026-10-01 10:00:00');
+        $user->assignRole($otherRole);
+    }
+
+    countRoleUsersQueries($customRole, 10);
+
+    expect(countRoleUsersQueries($customRole, 50))->toBe(countRoleUsersQueries($customRole, 10));
 });
