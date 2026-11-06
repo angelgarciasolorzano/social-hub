@@ -16,7 +16,7 @@ When you read this skill, the project conventions are already in effect. Treat t
 
 ### Backend
 
-- **Module architecture (SOC-38, SOC-40, SOC-42).** Domain modules live under `app/Modules/<Domain>/` (namespace `App\Modules\<Domain>\…`). Everything **outside** `app/Modules/` (`app/Providers/`, `app/Http/`, `app/Events/`, `app/Console/`, `app/Support/`, global listeners, policies, middleware) is a global application file. The migration is incremental: **`Post`, `Comment` and `Like` have moved** (`app/Modules/Post/`, `app/Modules/Comment/`, `app/Modules/Like/`); `Auth`, `Friendship`, `Home` and `User` still live at `app/<Domain>/` (the *old architecture*) until their own task moves them (e.g. Auth → `app/Modules/Auth/`). New domains go under `app/Modules/`.
+- **Module architecture (SOC-38, SOC-40, SOC-42).** Domain modules live under `app/Modules/<Domain>/` (namespace `App\Modules\<Domain>\…`). Everything **outside** `app/Modules/` (`app/Providers/`, `app/Http/`, `app/Events/`, `app/Console/`, `app/Support/`, global listeners, policies, middleware) is a global application file. The migration is incremental: **`Post`, `Comment`, `Like`, `Announcement`, `Notification` and `ActivityLog` have moved**, as has the system module `Admin` (see the module map in [`CLAUDE.md`](../../../CLAUDE.md)); `Auth`, `Friendship`, `Home` and `User` still live at `app/<Domain>/` (the *old architecture*) until their own task moves them (e.g. Auth → `app/Modules/Auth/`). New domains go under `app/Modules/`.
 - **Global infrastructure (SOC-42).** Code that serves several domains or the framework and has no models, routes or business logic of its own is not a module: Artisan commands go in `app/Console/Commands/` (auto-discovered, no provider needed; name `{Purpose}Command` like `MediaLibraryCleanFoldersCommand`), and shared classes that belong to no domain go in `app/Support/` (e.g. `app/Support/MediaLibrary/MediaLibraryCustomPathGenerator.php`, wired in `config/media-library.php`). `app/Support/` was approved as a base folder in SOC-42; any other new base folder still needs explicit approval. Destructive commands use `Illuminate\Console\Prohibitable` and are prohibited in production from `AppServiceProvider::boot()`. Tests for global code live in `tests/Feature/<Area>/`, not in `app/Modules/`; tests that touch the filesystem must redirect `storage_path()`/`public_path()` with `useStoragePath()`/`usePublicPath()` to a temporary directory.
 - Each domain owns its controllers, models, requests, resources, routes, providers, factories, seeders, enums, listeners. Paths below written as `app/<Domain>/` apply to the old architecture; a migrated module uses the same layout under `app/Modules/<Domain>/`.
 - Each domain registers two providers in `bootstrap/providers.php`:
@@ -37,7 +37,7 @@ When you read this skill, the project conventions are already in effect. Treat t
 - Create files with the appropriate `php artisan make:*` command (`--no-interaction`). Don't hand-author migrations, models, requests, controllers, or tests when a generator exists.
 - **Submodule convention — old architecture** (`app/<Domain>/Modules/<Feature>/`) — established in SOC-14. Don't confuse it with the top-level `app/Modules/` folder; Auth/User submodules will be relocated when those domains migrate. Use when a feature grows beyond a per-concern folder and earns its own namespace (canonical example: `app/Auth/Modules/TrustedDevice/`). The submodule mirrors the parent's *feature-side* layout (`Controllers/`, `Requests/`, `Listeners/`, `Resources/`, `Concerns/`) but **does not duplicate providers, models, routes, migrations, or factories** — those stay shared at the parent so the feature integrates with the domain's wiring without owning its own bootstrap. Extraction rule of thumb: the feature owns its own event listeners, or has 3+ controllers/requests of its own.
 - **Route and input hardening (SOC-40).** The route placeholder must match the controller's typed parameter name when using implicit enum/model binding (`{commentType}` ↔ `CommentType $commentType`; Rector renames parameters to match their type, so fix the route, not the parameter). Routes that write data get `throttle`; when a module has several throttled routes pass a prefix as the third argument (`throttle:6,1,comments.store`) because unnamed throttles are keyed by user only. Normalize free-text input in the FormRequest's `prepareForValidation()`. Preload relation counters with `withCount()` and reuse `{relation}_count` in model accessors so listings cost a constant number of queries. Back each fix with a regression test under the module's `Tests/Security/`. Comment threads have a single level with a mention (SOC-41): replying to a reply is flattened to the thread's parent and the replied author is stored server-side in `replied_to_user_id`; never take that user from the request, and preload `repliedToUser:id,name` in listings. **Several actions on one resource (SOC-52):** a module groups them in a single resource-style controller with one method per action (`CommentController::store/update/destroy`, routes declared with `Route::controller(...)->prefix(...)->name(...)` like `app/Auth/routes/trustedDevice.php`); single-action controllers stay invokable. Changes to a user's own record are authorized with a policy registered via `#[UsePolicy]` and applied with `#[Authorize('<ability>', '<routeParameter>')]` on the method, so a stranger gets 403 before validation. Deleting a record that has dependants is decided explicitly (soft delete with a tombstone when it has replies, hard delete with its likes otherwise, all inside `DB::transaction`) because `likes` has no foreign key; adding `SoftDeletes` changes the default queries of every module and of the Admin panel, so run the full suite (`php -d memory_limit=2G vendor/bin/pest`) and update tests that used `delete()` as a hard delete. Resource flags that depend on the viewer (`isMine`, `likedByMe`) are computed from loaded attributes, never with a Gate query per row. **Engagement counters (SOC-50):** a listing that shows counts or "liked by me" loads them in the same query (`Post::withEngagementFor($user)` with correlated subqueries, `withCount`, `withExists`) and has a constant-query-count test; a max length shared with the frontend lives in a model constant (`Comment::CONTENT_MAX_LENGTH`) mirrored in `modules/comment/constants/commentContent.ts`, so change both; a toggle that serves several likeables is one controller with one method per likeable (`LikeController::toggleComment/togglePost`) and the frontend reuses `shared/hooks/useLikeToggle` and `shared/components/form/CharacterCounter`.
-- See [`CLAUDE.md`](../../CLAUDE.md) "Modular service-provider pattern" and "Models and relations" sections for the canonical references.
+- See [`CLAUDE.md`](../../../CLAUDE.md) "Conventions" (module wiring) and "Invariants and traps" for the canonical references, and the module's own document in [`docs/architecture/modules/`](../../../docs/architecture/modules/) for its models and relations.
 
 ### Frontend
 
@@ -56,7 +56,7 @@ When you read this skill, the project conventions are already in effect. Treat t
 
 ## 2. Backend QA gates (run in this order)
 
-Always prefix shell commands with `rtk` per [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md) (the hook lives in `.github/hooks/rtk-rewrite.json`).
+Always prefix shell commands with `rtk` per [`.github/copilot-instructions.md`](../../../.github/copilot-instructions.md) (the hook lives in `.github/hooks/rtk-rewrite.json`).
 
 ```bash
 # 1. Format changed files
@@ -78,7 +78,7 @@ php artisan test --compact --filter=testName
 php artisan test --compact
 ```
 
-Details and rationale for each command: [`docs/development/backend-commands.md`](../../docs/development/backend-commands.md).
+Details and rationale for each command: [`docs/development/backend-commands.md`](../../../docs/development/backend-commands.md).
 
 Hard rules:
 
@@ -101,7 +101,7 @@ npm run lint:check
 npm run types
 ```
 
-Details: [`docs/development/frontend-commands.md`](../../docs/development/frontend-commands.md).
+Details: [`docs/development/frontend-commands.md`](../../../docs/development/frontend-commands.md).
 
 Hard rules:
 
@@ -116,11 +116,12 @@ Before moving an issue to `Done`, every one of these must be true:
 
 1. **Gates green**: `vendor/bin/pint --dirty --format agent`, `composer phpstan`, `composer rector-clear-cache` (first), `composer rector-dry` (preview), `composer rector` (apply), `php artisan test --compact`, `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build`, `npm run build:ssr`. CI (SOC-7 backend, SOC-11 frontend) must be green too. Rector is split into two steps on purpose: always preview first, then apply the suggested changes automatically.
 2. **Doc sync** — update the docs that the change actually touched:
-   - [`CLAUDE.md`](../../CLAUDE.md) when the change touches: domain structure, the morph map, package versions, the Wayfinder layout, or the project's tooling/conventions.
-   - [`AGENTS.md`](../../AGENTS.md) when the change touches: package-specific rules (Inertia, Fortify, Wayfinder, MediaLibrary, FluentValidation, Pint, PHPUnit) or Laravel/React conventions.
-   - [`docs/architecture/backend.md`](../../docs/architecture/backend.md) / [`docs/architecture/frontend.md`](../../docs/architecture/frontend.md) for architectural changes.
-   - [`docs/development/backend-commands.md`](../../docs/development/backend-commands.md) / [`docs/development/frontend-commands.md`](../../docs/development/frontend-commands.md) when commands, scripts, or gates change.
-3. **PR template**: open the PR using [`../../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`](../../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) (Summary + Changes + Notes sections). Use `but pr new <branch> -F pr_body.md` to attach the filled template in one step — `but pr new -m "..."` only sets the title. Do not skip the linked-issue line, the change summary, or the test plan.
+   - [`CLAUDE.md`](../../../CLAUDE.md) when the change touches: domain structure (the module map), the morph map, package versions, the Wayfinder layout, the project's tooling/conventions, or a non-obvious invariant. Keep it short: no per-task detail.
+   - The module's document in [`docs/architecture/modules/`](../../../docs/architecture/modules/) (or [`i18n.md`](../../../docs/architecture/i18n.md) / [`infrastructure.md`](../../../docs/architecture/infrastructure.md)) for the detail of what the task built or changed.
+   - [`AGENTS.md`](../../../AGENTS.md) when the change touches: package-specific rules (Inertia, Fortify, Wayfinder, MediaLibrary, FluentValidation, Pint, PHPUnit) or Laravel/React conventions.
+   - [`docs/architecture/backend.md`](../../../docs/architecture/backend.md) / [`docs/architecture/frontend.md`](../../../docs/architecture/frontend.md) for architectural changes.
+   - [`docs/development/backend-commands.md`](../../../docs/development/backend-commands.md) / [`docs/development/frontend-commands.md`](../../../docs/development/frontend-commands.md) when commands, scripts, or gates change.
+3. **PR template**: open the PR using [`../../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`](../../../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) (Summary + Changes + Notes sections). Use `but pr new <branch> -F pr_body.md` to attach the filled template in one step — `but pr new -m "..."` only sets the title. Do not skip the linked-issue line, the change summary, or the test plan.
 4. **Linear summary**: post a closing comment on the issue mirroring the SOC-13 style — context, decisions (with a small table when applicable), implementation summary, criteria cumplidos (checkbox list), link to the PR. The comment is what reviewers read first; treat it as the deliverable's front page.
 
 If any item above is missing, the change is **not done**. Don't move the issue to `Done` — leave it in `In Progress` and finish the missing step.

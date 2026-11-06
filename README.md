@@ -10,22 +10,23 @@ Una red social construida **solo como proyecto de práctica**: el objetivo del p
 
 ## Arquitectura
 
-El dominio está dividido en módulos autocontenidos. Cada módulo tiene sus propios controllers, models, providers, requests, resources y rutas (y, cuando aplica, factories, enums y seeders):
+El dominio está dividido en módulos autocontenidos. Cada módulo tiene sus propios controllers, models, providers, requests, resources y rutas (y, cuando aplica, factories, enums y seeders). Los módulos se están migrando de forma incremental a `app/Modules/<Dominio>/`; los que aún no se migraron siguen en `app/<Dominio>/`.
 
-- **Auth:** login, registro, verificación de email, recuperación de contraseña, 2FA y dispositivos de confianza.
-- **User:** perfil y ajustes de cuenta.
-- **Home:** páginas de inicio.
-- **Post:** publicaciones con imágenes.
-- **Comment:** comentarios (en publicaciones y en otros comentarios).
-- **Like:** "me gusta" en publicaciones y comentarios.
-- **Friendship:** solicitudes y relaciones de amistad.
-- **MediaLibrary:** personalizaciones de archivos multimedia.
+| Módulo | Ubicación | Qué hace | Documento |
+| --- | --- | --- | --- |
+| Auth | `app/Auth/` | Login, registro, verificación de email, recuperación de contraseña, 2FA y dispositivos de confianza | [auth.md](docs/architecture/modules/auth.md) |
+| User | `app/User/` | Perfil, ajustes y estado de la cuenta | [user.md](docs/architecture/modules/user.md) |
+| Home | `app/Home/` | Páginas de inicio | — |
+| Friendship | `app/Friendship/` | Solicitudes y relaciones de amistad | — |
+| Post, Comment, Like | `app/Modules/{Post,Comment,Like}/` | Publicaciones con imagen, comentarios y "me gusta" | [content.md](docs/architecture/modules/content.md) |
+| Announcement | `app/Modules/Announcement/` | Anuncios del sistema publicados desde el panel | [announcement.md](docs/architecture/modules/announcement.md) |
+| Notification | `app/Modules/Notification/` | Centro de notificaciones en tiempo real | [notification.md](docs/architecture/modules/notification.md) |
+| ActivityLog | `app/Modules/ActivityLog/` | Registro de actividad y auditoría administrativa | [activity-log.md](docs/architecture/modules/activity-log.md) |
+| Admin | `app/Modules/Admin/` | Panel de administración (Filament), roles y permisos, backups | [admin.md](docs/architecture/modules/admin.md) |
 
-Los módulos se están migrando de forma incremental a `app/Modules/<Dominio>/`. Por ahora solo **Post** vive ahí; el resto sigue en `app/<Dominio>/`.
+El código que sirve a varios dominios (MediaLibrary, traducciones, seeding) vive en `app/Support/` y `app/Console/`. En el frontend, `resources/js/modules/` refleja los dominios del backend y `resources/js/shared/` contiene el código reutilizable.
 
-En el frontend, `resources/js/modules/` refleja los dominios del backend y `resources/js/shared/` contiene el código reutilizable.
-
-Para más detalle consulta [CLAUDE.md](CLAUDE.md), [AGENTS.md](AGENTS.md) y la carpeta [docs/](docs).
+Para más detalle consulta [CLAUDE.md](CLAUDE.md) (mapa del proyecto e invariantes), [AGENTS.md](AGENTS.md), [docs/architecture/](docs/architecture) (un documento por módulo, más [idiomas](docs/architecture/i18n.md) e [infraestructura](docs/architecture/infrastructure.md)) y [docs/development/](docs/development).
 
 ## Requisitos previos
 
@@ -144,15 +145,15 @@ En [docs/development/](docs/development) hay una referencia más completa de com
 
 ```text
 app/
-├── Modules/          # módulos migrados a la nueva arquitectura (hoy solo Post)
+├── Modules/          # módulos migrados a la nueva arquitectura (Post, Comment, Like, Admin, ...)
 ├── Auth/ User/ ...   # dominios que siguen en la arquitectura anterior
 ├── Providers/        # providers globales de la aplicación
-└── Http/ Events/ ... # archivos globales (middleware, eventos, comandos)
+└── Http/ Support/ ... # archivos globales (middleware, eventos, comandos, utilidades)
 resources/js/
 ├── modules/          # páginas y componentes por dominio (auth, home, post, setting, ...)
 └── shared/           # componentes, hooks y utilidades reutilizables
 docs/
-├── architecture/     # guías de arquitectura de backend y frontend
+├── architecture/     # guías de backend y frontend, y un documento por módulo (modules/)
 ├── development/      # referencia de comandos de desarrollo
 └── github/           # plantillas de PR y de revisión
 ```
@@ -162,4 +163,4 @@ docs/
 - **Tests por módulo:** las pruebas específicas de un módulo viven en su carpeta `Tests/` (por ejemplo `app/Modules/Post/Tests/`); `tests/` se reserva para pruebas transversales.
 - **Commits:** siguen [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`).
 - **Pull requests:** usan la plantilla de [.github/PULL_REQUEST_TEMPLATE/](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md).
-- **Documentación:** si cambias la estructura de módulos o las convenciones, actualiza `CLAUDE.md` en el mismo PR.
+- **Documentación:** si cambias la estructura de módulos o las convenciones, actualiza `CLAUDE.md` en el mismo PR; el detalle de un módulo va en su documento de `docs/architecture/modules/`.

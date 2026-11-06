@@ -187,7 +187,7 @@ Añade componentes de shadcn/ui al proyecto. El CLI los copia a `resources/js/sh
 | `composer pint-dirty` | `npm run format:check` | Verifica formato     |
 | `composer phpstan`    | `npm run types`        | Verifica tipos       |
 | `composer rector-dry` | `npm run lint:check`   | Verifica reglas/lint |
-| `composer pint`       | `npm run format`       | Aplica formato       |
+| `composer pint-fix`   | `npm run format`       | Aplica formato       |
 | `composer rector`     | `npm run lint`         | Aplica fixes         |
 | `composer ide-helper` | (no aplica)            | Genera helpers IDE   |
 

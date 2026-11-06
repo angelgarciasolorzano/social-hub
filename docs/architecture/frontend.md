@@ -4,6 +4,8 @@ Documento de referencia para crear y mantener módulos del frontend en este proy
 
 > ⚠️ **Mantenimiento de la doc**: cuando agregues, modifiques o elimines una convención (o cualquier otro cambio de arquitectura del frontend), actualizá este documento en el mismo PR/commit. La doc es la fuente de verdad de las convenciones del proyecto y no debe quedar desincronizada con el código.
 
+> 📚 **Documentos por módulo** (en inglés, con el detalle de cada tarea): [Auth](modules/auth.md), [User](modules/user.md), [Post, Comment y Like](modules/content.md), [Announcement](modules/announcement.md), [Notification](modules/notification.md), [ActivityLog](modules/activity-log.md), [Admin](modules/admin.md), [idiomas](i18n.md) e [infraestructura global, seeders y tooling](infrastructure.md). Este documento explica cómo construir un módulo; las secciones por módulo de abajo son resúmenes.
+
 ## 1. Convención de nomenclatura
 
 | Tipo                         | Patrón                                           | Ejemplo                                                     |
