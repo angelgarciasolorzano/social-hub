@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles;
 
+use App\Modules\Admin\Filament\Resources\Roles\Pages\CreateRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
@@ -115,6 +116,7 @@ class RoleResource extends Resource
     {
         return [
             'index' => ListRoles::route('/'),
+            'create' => CreateRole::route('/create'),
             'matrix' => RolePermissionMatrix::route('/matrix'),
             'view' => ViewRole::route('/{record}'),
         ];
