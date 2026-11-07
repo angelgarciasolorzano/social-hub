@@ -233,9 +233,13 @@ Initial setup of a fresh install:
 1. `composer install`
 2. Copies `.env.example` → `.env`
 3. Generates `APP_KEY`
-4. Runs the migrations
-5. `npm install`
-6. `npm run build`
+4. Creates the application database with `php artisan db:create-application`
+5. Creates the testing database with `php artisan db:create-testing`
+6. Runs the migrations
+7. `npm install`
+8. `npm run build`
+
+The configured MySQL account must be allowed to create databases. `db:create-application` is restricted to the local environment. When `DB_URL` is set, it uses that URL's database, endpoint and credentials; otherwise, it uses the individual `DB_*` values, with `DB_DATABASE` defaulting to `laravel` in `.env.example`.
 
 **When:** the first time you clone the repo, or after a full reset.
 
@@ -298,10 +302,11 @@ Each gate runs in its own GitHub Actions workflow, in parallel, with the same tr
 | Backend Code Quality Test              | `backend-code-quality-test.yml`           | `composer test`       | MySQL 8.4 service and `.env.testing` from `.env.testing.example` |
 | Backend Code Quality Pint              | `backend-code-quality-pint.yml`           | `composer pint-ci`    | None                                                      |
 | Backend Code Quality Rector            | `backend-code-quality-rector.yml`         | `composer rector-dry` | `storage/rector` cache                                    |
-| Backend Code Quality PHPStan           | `backend-code-quality-phpstan.yml`        | `composer phpstan`    | `.env.ci` + SQLite + migrations + `composer ide-helper`, and `storage/phpstan` cache |
-| Backend Code Quality Laravel Doctor    | `backend-code-quality-doctor.yml`         | `composer doctor-ci`  | `.env.ci` + SQLite + migrations                           |
+| Backend Code Quality PHPStan           | `backend-code-quality-phpstan.yml`        | `composer phpstan`    | MySQL 8.4 service + `.env.ci` + migrations + `composer ide-helper`, and `storage/phpstan` cache |
+| Backend Code Quality Laravel Doctor    | `backend-code-quality-doctor.yml`         | `composer doctor-ci`  | MySQL 8.4 service + `.env.ci` + migrations                 |
 
 - PHPStan **needs** `composer ide-helper` before analyzing: `phpstan.neon` scans `_ide_helper_models.php`, which is generated and not in git.
+- PHPStan and Laravel Doctor use the MySQL connection values from `.env.ci` with their isolated MySQL 8.4 service. Other CI workflows that copy `.env.ci` do not connect to a database.
 - PHPCPD and Sloppy are not in CI (experimental).
 - If you change a workflow or the name of a check, also update the protected branch's required checks on GitHub.
 

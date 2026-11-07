@@ -9,7 +9,7 @@ Una red social construida **solo como proyecto de práctica**: el objetivo es ap
 - PHP 8.5 con las extensiones habituales de Laravel.
 - [Composer](https://getcomposer.org) 2.
 - Node.js 22 (la versión del CI) y npm.
-- **MySQL** corriendo en local. La aplicación usa SQLite, pero los tests necesitan MySQL, y `composer run setup` crea su base de datos.
+- **MySQL** corriendo en local. La aplicación y los tests utilizan MySQL, y `composer run setup` crea ambas bases de datos.
 
 ## Arrancar el proyecto
 
@@ -19,7 +19,7 @@ cd social-hub
 composer run setup
 ```
 
-`composer run setup` instala las dependencias de PHP y JavaScript, crea `.env` y `.env.testing` con su `APP_KEY`, crea la base de pruebas en MySQL, corre las migraciones y compila el frontend.
+`composer run setup` instala las dependencias de PHP y JavaScript, crea `.env` y `.env.testing` con su `APP_KEY`, crea las bases de datos de la aplicación y de pruebas en MySQL, corre las migraciones y compila el frontend.
 
 Carga datos de ejemplo (opcional):
 
@@ -45,7 +45,7 @@ composer test
 
 ## Problemas frecuentes
 
-- **`composer run setup` falla en `db:create-testing`:** MySQL no está corriendo o no acepta los datos de `.env.testing` (por defecto `root` sin contraseña en `127.0.0.1:3306`). Inícialo o ajusta `DB_USERNAME` y `DB_PASSWORD` en `.env.testing`, y vuelve a ejecutar `php artisan --env=testing db:create-testing`.
+- **`composer run setup` falla al crear una base:** MySQL no está corriendo o las credenciales no tienen permiso para crear bases. Inícialo o revisa `DB_URL` (si está configurada) o `DB_HOST`, `DB_PORT`, `DB_USERNAME` y `DB_PASSWORD` en `.env` y `.env.testing`.
 - **`composer run dev` falla al arrancar Reverb:** el puerto `8080` está ocupado (cambia `REVERB_PORT` en `.env`) o a tu `.env` le faltan las variables `REVERB_*` y `VITE_REVERB_*`; cópialas de `.env.example`.
 
 ## Documentación
