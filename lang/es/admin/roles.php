@@ -199,6 +199,32 @@ return [
         'custom_tooltip' => 'Creado desde el panel. Se puede renombrar, duplicar y eliminar.',
     ],
 
+    'pages' => [
+        'create' => [
+            'title' => 'Nuevo rol',
+            'breadcrumb' => 'Nuevo',
+        ],
+        'edit' => [
+            'title' => 'Editar :role',
+            'breadcrumb' => 'Editar',
+        ],
+    ],
+
+    'wizard' => [
+        'details' => [
+            'label' => 'Datos',
+            'description' => 'Nombre y propósito',
+        ],
+        'permissions' => [
+            'label' => 'Permisos',
+            'description' => 'Qué permite el rol',
+        ],
+        'review' => [
+            'label' => 'Revisión',
+            'description' => 'Revisar y confirmar',
+        ],
+    ],
+
     'form' => [
         'label' => 'Nombre',
         'label_helper' => 'El nombre que se muestra en el panel. No puede repetirse entre roles.',
@@ -207,6 +233,12 @@ return [
         'permissions' => 'Permisos',
         'permissions_helper' => 'Lo que puede hacer un usuario con este rol, agrupado por área del panel.',
         'dependencies_note' => 'Al marcar un permiso se marcan los que necesita, y al desmarcarlo se desmarcan los que dependen de él.',
+        'start_from' => 'Partir de un rol existente',
+        'start_from_helper' => 'Copia los permisos de ese rol al siguiente paso, donde todavía puedes cambiarlos. El rol nuevo no queda vinculado a él.',
+        'read_only_details' => 'Los roles de sistema conservan el nombre y la descripción del catálogo. Solo se pueden cambiar sus permisos.',
+        'sensitive' => 'Sensible: da control sobre otros administradores, sus accesos o datos exportados.',
+        'acknowledge_sensitive' => 'Entiendo que este rol concederá permisos sensibles.',
+        'acknowledge_sensitive_required' => 'Confirma que quieres conceder permisos sensibles.',
     ],
 
     'locked' => [
@@ -220,6 +252,11 @@ return [
         'grant' => '{1} Concede :count permiso: :list|[0,*] Concede :count permisos: :list',
         'revoke' => '{1} Quita :count permiso: :list|[0,*] Quita :count permisos: :list',
         'none' => 'Los permisos no cambian.',
+        'count' => '{0} Sin permisos|{1} :count permiso|[2,*] :count permisos',
+        'areas' => 'Áreas: :areas',
+        'no_areas' => 'Todavía no cubre ningún área.',
+        'sensitive_heading' => 'Permisos sensibles',
+        'no_sensitive' => 'Sin permisos sensibles.',
     ],
 
     'table' => [
@@ -246,14 +283,10 @@ return [
     ],
 
     'actions' => [
-        'edit_permissions' => [
-            'label' => 'Editar permisos',
-            'modal_heading' => 'Editar los permisos de :role',
-            'modal_description' => 'Cada usuario con este rol recibe los permisos seleccionados en su siguiente petición. El cambio queda en el registro de actividad.',
-            'field' => 'Permisos',
-            'submit' => 'Guardar permisos',
-            'success' => '{1} Se cambió :count permiso|[0,*] Se cambiaron :count permisos',
-            'unchanged' => 'Los permisos no cambiaron',
+        'edit' => [
+            'label' => 'Editar',
+            'success' => 'Se actualizó :role',
+            'unchanged' => 'No cambió nada.',
         ],
         'manage_roles' => [
             'label' => 'Gestionar roles',
@@ -269,16 +302,7 @@ return [
         ],
         'create' => [
             'label' => 'Nuevo rol',
-            'modal_heading' => 'Crear un rol',
-            'submit' => 'Crear rol',
             'success' => 'Se creó el rol :role',
-        ],
-        'edit_details' => [
-            'label' => 'Editar datos',
-            'modal_heading' => 'Editar los datos de :role',
-            'submit' => 'Guardar datos',
-            'success' => 'Se guardaron los datos de :role',
-            'unchanged' => 'Los datos no cambiaron',
         ],
         'duplicate' => [
             'label' => 'Duplicar',

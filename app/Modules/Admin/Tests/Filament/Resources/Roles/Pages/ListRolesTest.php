@@ -159,6 +159,26 @@ it('links each role to its detail page', function (): void {
     );
 });
 
+it('links the new role button to the create page for a roles manager', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+
+    $testable = Livewire::test(ListRoles::class);
+    $testable->__call('assertActionVisible', ['createRole']);
+    $testable->__call('assertActionHasUrl', ['createRole', RoleResource::getUrl('create')]);
+});
+
+it('hides the new role button from a roles reader', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    $testable = Livewire::test(ListRoles::class);
+    $testable->__call('assertActionHidden', ['createRole']);
+    $testable->assertDontSee(TranslatedText::of('admin/roles.actions.create.label'));
+});
+
 it('denies the list to an administrator without admin.roles.viewAny', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;

@@ -7,10 +7,13 @@ namespace App\Modules\Admin\Filament\Concerns;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Enums\FontWeight;
+use Illuminate\Support\HtmlString;
 
 /**
  * The permission checkboxes of a role form: one list per panel area with each permission's description,
@@ -22,6 +25,8 @@ use Filament\Schemas\Components\Utilities\Set;
 trait EditsRolePermissions
 {
     protected const string PERMISSIONS_FIELD = 'permissions';
+
+    protected const string ACKNOWLEDGE_SENSITIVE_FIELD = 'acknowledge_sensitive';
 
     /**
      * One live checkbox list per area, in catalog order.
@@ -167,6 +172,85 @@ trait EditsRolePermissions
     }
 
     /**
+     * The live summary of the selection beside the checkboxes: how many permissions and which areas,
+     * what saving would change compared with the role being edited, and the sensitive ones chosen.
+     *
+     * @return list<Text>
+     */
+    protected static function permissionSummarySchema(): array
+    {
+        return [
+            Text::make(fn (Get $get): string => self::permissionSelectionOverview(self::selectedPermissions($get(self::PERMISSIONS_FIELD)))),
+            self::permissionChangeSummaryText(),
+            Text::make(TranslatedText::of('admin/roles.summary.sensitive_heading'))->weight(FontWeight::SemiBold),
+            Text::make(fn (Get $get): string => self::sensitivePermissionsText(self::selectedPermissions($get(self::PERMISSIONS_FIELD)))),
+        ];
+    }
+
+    /**
+     * A required checkbox that appears only when the selection grants a sensitive permission the role
+     * did not have (any sensitive permission for a new role); hidden, it is not validated.
+     */
+    protected static function sensitiveAcknowledgementField(): Checkbox
+    {
+        return Checkbox::make(self::ACKNOWLEDGE_SENSITIVE_FIELD)
+            ->label(TranslatedText::of('admin/roles.form.acknowledge_sensitive'))
+            ->accepted()
+            ->validationMessages(['accepted' => TranslatedText::of('admin/roles.form.acknowledge_sensitive_required')])
+            ->visible(fn (Get $get, ?Role $record): bool => self::grantsNewSensitivePermission(
+                self::selectedPermissions(self::permissionsByArea($record)),
+                self::selectedPermissions($get(self::PERMISSIONS_FIELD)),
+            ))
+            ->dehydrated(false);
+    }
+
+    /**
+     * Whether the selection grants a sensitive permission that was not granted before.
+     *
+     * @param  list<AdminPermission>  $before
+     * @param  list<AdminPermission>  $after
+     */
+    protected static function grantsNewSensitivePermission(array $before, array $after): bool
+    {
+        return array_any($after, fn (AdminPermission $adminPermission): bool => $adminPermission->isSensitive() && ! \in_array($adminPermission, $before, true));
+    }
+
+    /**
+     * How many permissions are selected and which panel areas they cover.
+     *
+     * @param  list<AdminPermission>  $adminPermissions
+     */
+    protected static function permissionSelectionOverview(array $adminPermissions): string
+    {
+        $count = trans_choice('admin/roles.summary.count', \count($adminPermissions), ['count' => \count($adminPermissions)]);
+        $areas = array_values(array_unique(array_map(
+            static fn (AdminPermission $adminPermission): string => TranslatedText::of('admin/roles.catalog.areas.'.$adminPermission->area()),
+            $adminPermissions,
+        )));
+
+        return $count.'. '.($areas === []
+            ? TranslatedText::of('admin/roles.summary.no_areas')
+            : TranslatedText::of('admin/roles.summary.areas', ['areas' => implode(', ', $areas)]));
+    }
+
+    /**
+     * The sensitive permissions among the selected ones, by name, or a sentence saying there are none.
+     *
+     * @param  list<AdminPermission>  $adminPermissions
+     */
+    protected static function sensitivePermissionsText(array $adminPermissions): string
+    {
+        $sensitivePermissions = array_values(array_filter(
+            $adminPermissions,
+            static fn (AdminPermission $adminPermission): bool => $adminPermission->isSensitive(),
+        ));
+
+        return $sensitivePermissions === []
+            ? TranslatedText::of('admin/roles.summary.no_sensitive')
+            : self::permissionLabels($sensitivePermissions);
+    }
+
+    /**
      * The panel areas of the catalog, in catalog order.
      *
      * @return list<string>
@@ -191,7 +275,7 @@ trait EditsRolePermissions
         foreach (AdminPermission::cases() as $adminPermission) {
             if ($adminPermission->area() === $area) {
                 $options[$adminPermission->value] = $adminPermission->label();
-                $descriptions[$adminPermission->value] = $adminPermission->description();
+                $descriptions[$adminPermission->value] = self::permissionDescription($adminPermission);
             }
         }
 
@@ -209,6 +293,18 @@ trait EditsRolePermissions
 
                 $set(self::PERMISSIONS_FIELD, self::applyPermissionDependencies($permissionsByAreaBefore, $permissionsByAreaAfter));
             });
+    }
+
+    /**
+     * A permission's description, followed on its own line by the sensitive mark when it has one.
+     */
+    private static function permissionDescription(AdminPermission $adminPermission): string|HtmlString
+    {
+        if (! $adminPermission->isSensitive()) {
+            return $adminPermission->description();
+        }
+
+        return new HtmlString(e($adminPermission->description()).'<br><strong>'.e(TranslatedText::of('admin/roles.form.sensitive')).'</strong>');
     }
 
     /**

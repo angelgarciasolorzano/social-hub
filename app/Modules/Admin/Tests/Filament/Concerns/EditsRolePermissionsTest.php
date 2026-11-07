@@ -7,8 +7,10 @@ use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\EditsRolePermissions;
 use App\Modules\Admin\Models\Role;
+use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use Filament\Forms\Components\CheckboxList;
+use Illuminate\Contracts\Support\Htmlable;
 
 /*
  * The concern is used by anonymous classes: a named class in a test file would break Composer's PSR-4
@@ -114,6 +116,62 @@ function editorChangeSummary(array $before, array $after): string
             return self::permissionChangeSummary($before, $after);
         }
     })->summary($before, $after);
+}
+
+/**
+ * @param  list<AdminPermission>  $adminPermissions
+ */
+function editorSelectionOverview(array $adminPermissions): string
+{
+    return (new class
+    {
+        use EditsRolePermissions;
+
+        /**
+         * @param  list<AdminPermission>  $adminPermissions
+         */
+        public function overview(array $adminPermissions): string
+        {
+            return self::permissionSelectionOverview($adminPermissions);
+        }
+    })->overview($adminPermissions);
+}
+
+/**
+ * @param  list<AdminPermission>  $adminPermissions
+ */
+function editorSensitivePermissionsText(array $adminPermissions): string
+{
+    return (new class
+    {
+        use EditsRolePermissions;
+
+        /**
+         * @param  list<AdminPermission>  $adminPermissions
+         */
+        public function sensitiveText(array $adminPermissions): string
+        {
+            return self::sensitivePermissionsText($adminPermissions);
+        }
+    })->sensitiveText($adminPermissions);
+}
+
+/**
+ * The description each checkbox shows, by permission value, as plain text.
+ *
+ * @return array<string, string>
+ */
+function editorPermissionDescriptions(): array
+{
+    $descriptions = [];
+
+    foreach (editorPermissionCheckboxLists() as $checkboxList) {
+        foreach ($checkboxList->getDescriptions() as $permissionValue => $description) {
+            $descriptions[(string) $permissionValue] = $description instanceof Htmlable ? $description->toHtml() : $description;
+        }
+    }
+
+    return $descriptions;
 }
 
 /**
@@ -238,4 +296,24 @@ it('groups the permissions of a role by area, and starts a new role empty', func
         ->and(array_merge(...array_values($permissionsByArea)))->toHaveCount(2)
         ->and(array_filter($emptyState))->toBeEmpty()
         ->and(array_keys($emptyState))->toBe(array_keys($permissionsByArea));
+});
+
+it('marks only the sensitive permissions in their checkbox', function (AdminPermission $adminPermission): void {
+    $description = editorPermissionDescriptions()[$adminPermission->value];
+    $sensitiveMark = e(TranslatedText::of('admin/roles.form.sensitive'));
+
+    expect($description)->toContain(e($adminPermission->description()))
+        ->and(str_contains($description, $sensitiveMark))->toBe($adminPermission->isSensitive());
+})->with(AdminPermission::cases());
+
+it('summarizes how many permissions are selected and which areas they cover', function (): void {
+    expect(editorSelectionOverview([AdminPermission::AdminUsersViewAny, AdminPermission::AdminUsersView, AdminPermission::AdminPostsViewAny]))
+        ->toBe('3 permissions. Areas: '.TranslatedText::of('admin/roles.catalog.areas.users').', '.TranslatedText::of('admin/roles.catalog.areas.posts'))
+        ->and(editorSelectionOverview([]))->toBe('No permissions. '.TranslatedText::of('admin/roles.summary.no_areas'));
+});
+
+it('lists the sensitive permissions of the selection, or says there are none', function (): void {
+    expect(editorSensitivePermissionsText([AdminPermission::AdminUsersViewAny, AdminPermission::AdminUsersRoles, AdminPermission::AdminRolesDelete]))
+        ->toBe(AdminPermission::AdminUsersRoles->label().', '.AdminPermission::AdminRolesDelete->label())
+        ->and(editorSensitivePermissionsText([AdminPermission::AdminUsersViewAny]))->toBe(TranslatedText::of('admin/roles.summary.no_sensitive'));
 });

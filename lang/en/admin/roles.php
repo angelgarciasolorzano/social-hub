@@ -199,6 +199,32 @@ return [
         'custom_tooltip' => 'Created from the panel. It can be renamed, duplicated and deleted.',
     ],
 
+    'pages' => [
+        'create' => [
+            'title' => 'New role',
+            'breadcrumb' => 'New',
+        ],
+        'edit' => [
+            'title' => 'Edit :role',
+            'breadcrumb' => 'Edit',
+        ],
+    ],
+
+    'wizard' => [
+        'details' => [
+            'label' => 'Details',
+            'description' => 'Name and purpose',
+        ],
+        'permissions' => [
+            'label' => 'Permissions',
+            'description' => 'What the role allows',
+        ],
+        'review' => [
+            'label' => 'Review',
+            'description' => 'Check and confirm',
+        ],
+    ],
+
     'form' => [
         'label' => 'Name',
         'label_helper' => 'The name shown in the panel. It must be unique among roles.',
@@ -207,6 +233,12 @@ return [
         'permissions' => 'Permissions',
         'permissions_helper' => 'What a user with this role can do, grouped by panel area.',
         'dependencies_note' => 'Checking a permission also checks the ones it needs, and unchecking it unchecks the ones that need it.',
+        'start_from' => 'Start from an existing role',
+        'start_from_helper' => 'Copies the permissions of that role into the next step, where you can still change them. The new role does not stay linked to it.',
+        'read_only_details' => 'System roles keep the name and description of the catalog. Only their permissions can be changed.',
+        'sensitive' => 'Sensitive: gives control over other administrators, their access or exported data.',
+        'acknowledge_sensitive' => 'I understand that this role will grant sensitive permissions.',
+        'acknowledge_sensitive_required' => 'Confirm that you want to grant sensitive permissions.',
     ],
 
     'locked' => [
@@ -220,6 +252,11 @@ return [
         'grant' => '{1} Grants :count permission: :list|[0,*] Grants :count permissions: :list',
         'revoke' => '{1} Revokes :count permission: :list|[0,*] Revokes :count permissions: :list',
         'none' => 'No permission changes.',
+        'count' => '{0} No permissions|{1} :count permission|[2,*] :count permissions',
+        'areas' => 'Areas: :areas',
+        'no_areas' => 'It does not cover any area yet.',
+        'sensitive_heading' => 'Sensitive permissions',
+        'no_sensitive' => 'No sensitive permissions.',
     ],
 
     'table' => [
@@ -246,14 +283,10 @@ return [
     ],
 
     'actions' => [
-        'edit_permissions' => [
-            'label' => 'Edit permissions',
-            'modal_heading' => 'Edit the permissions of :role',
-            'modal_description' => 'Every user with this role gets the selected permissions on their next request. The change is recorded in the activity log.',
-            'field' => 'Permissions',
-            'submit' => 'Save permissions',
-            'success' => '{1} :count permission changed|[0,*] :count permissions changed',
-            'unchanged' => 'The permissions did not change',
+        'edit' => [
+            'label' => 'Edit',
+            'success' => ':role was updated',
+            'unchanged' => 'Nothing changed.',
         ],
         'manage_roles' => [
             'label' => 'Manage roles',
@@ -269,16 +302,7 @@ return [
         ],
         'create' => [
             'label' => 'New role',
-            'modal_heading' => 'Create a role',
-            'submit' => 'Create role',
             'success' => 'The role :role was created',
-        ],
-        'edit_details' => [
-            'label' => 'Edit details',
-            'modal_heading' => 'Edit the details of :role',
-            'submit' => 'Save details',
-            'success' => 'The details of :role were saved',
-            'unchanged' => 'The details did not change',
         ],
         'duplicate' => [
             'label' => 'Duplicate',
