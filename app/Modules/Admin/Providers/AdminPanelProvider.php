@@ -34,6 +34,7 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->profile()
             ->databaseNotifications()
+            ->unsavedChangesAlerts()
             ->multiFactorAuthentication([
                 AppAuthentication::make()
                     ->recoverable()
