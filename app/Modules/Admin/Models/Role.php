@@ -231,6 +231,95 @@ class Role extends SpatieRole
     }
 
     /**
+     * The date of the latest change of the role of the outer `roles` query (its creation, details,
+     * duplicate or permissions; never its grants to users), for selecting, sorting and filtering roles by
+     * it. Null when the role has no recorded change.
+     *
+     * @return Builder<ActivityLog>
+     */
+    public static function lastChangeDateSubquery(): Builder
+    {
+        $builder = self::changeActivityQuery();
+        $builder->whereColumn('subject_id', 'roles.id')->selectRaw('max(created_at)');
+
+        return $builder;
+    }
+
+    /**
+     * The latest change of each of the given roles, with its causer, keyed by role id; a role without a
+     * recorded change is left out.
+     *
+     * @param  array<int|string>  $roleIds
+     * @return array<int, ActivityLog>
+     */
+    public static function latestChangesFor(array $roleIds): array
+    {
+        if ($roleIds === []) {
+            return [];
+        }
+
+        $changes = self::changeActivityQuery()
+            ->whereIn('subject_id', array_values(array_unique($roleIds)))
+            ->with('causer')
+            ->orderByDesc('id')
+            ->get();
+
+        return self::firstActivityPerSubject($changes);
+    }
+
+    /**
+     * The creation of each of the given roles, with its causer, keyed by role id; a role created without
+     * a record (a seeded system role) is left out.
+     *
+     * @param  array<int|string>  $roleIds
+     * @return array<int, ActivityLog>
+     */
+    public static function creationsFor(array $roleIds): array
+    {
+        if ($roleIds === []) {
+            return [];
+        }
+
+        $creations = self::changeActivityQuery()
+            ->where('event', ActivityLogAdminEvent::RoleCreated->value)
+            ->whereIn('subject_id', array_values(array_unique($roleIds)))
+            ->with('causer')
+            ->orderByDesc('id')
+            ->get();
+
+        return self::firstActivityPerSubject($creations);
+    }
+
+    /**
+     * The activity whose subject is a role: the changes of the role itself.
+     *
+     * @return Builder<ActivityLog>
+     */
+    private static function changeActivityQuery(): Builder
+    {
+        return ActivityLog::query()->where('subject_type', new self()->getMorphClass());
+    }
+
+    /**
+     * The first activity of each subject, keyed by subject id.
+     *
+     * @param  iterable<ActivityLog>  $activityLogs
+     * @return array<int, ActivityLog>
+     */
+    private static function firstActivityPerSubject(iterable $activityLogs): array
+    {
+        $firstActivities = [];
+
+        foreach ($activityLogs as $activityLog) {
+            if ($activityLog->subject_id !== null && ! isset($firstActivities[$activityLog->subject_id])) {
+                $firstActivities[$activityLog->subject_id] = $activityLog;
+            }
+        }
+
+        return $firstActivities;
+    }
+
+    /**
      * The roles as the panel lists them: system roles in catalog order, then custom roles by shown name.
      *
      * @param  iterable<Role>  $roles
