@@ -212,7 +212,7 @@ trait EditsRolePermissions
      */
     protected static function grantsNewSensitivePermission(array $before, array $after): bool
     {
-        return array_any($after, fn(AdminPermission $adminPermission): bool => $adminPermission->isSensitive() && ! \in_array($adminPermission, $before, true));
+        return array_any($after, fn (AdminPermission $adminPermission): bool => $adminPermission->isSensitive() && ! \in_array($adminPermission, $before, true));
     }
 
     /**
