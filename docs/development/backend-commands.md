@@ -233,9 +233,13 @@ Initial setup of a fresh install:
 1. `composer install`
 2. Copies `.env.example` → `.env`
 3. Generates `APP_KEY`
-4. Runs the migrations
-5. `npm install`
-6. `npm run build`
+4. Creates the application database with `php artisan db:create-application`
+5. Creates the testing database with `php artisan db:create-testing`
+6. Runs the migrations
+7. `npm install`
+8. `npm run build`
+
+The configured MySQL account must be allowed to create databases. `db:create-application` is restricted to the local environment and creates the database named by `DB_DATABASE` (which defaults to `laravel` in `.env.example`).
 
 **When:** the first time you clone the repo, or after a full reset.
 
