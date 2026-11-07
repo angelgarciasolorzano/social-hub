@@ -59,6 +59,34 @@ it('rejects invalid identifiers before touching MySQL', function (string $key, s
     'collation with a semicolon' => ['collation', 'utf8mb4_unicode_ci;'],
 ]);
 
+it('rejects malformed MySQL connection addresses before connecting', function (string $key, string $value): void {
+    config(['database.connections.mysql.'.$key => $value]);
+
+    $this->artisan('db:create-testing')
+        ->expectsOutputToContain('contains an invalid connection address')
+        ->assertFailed();
+})->with([
+    'host with a DSN separator' => ['host', '127.0.0.1;dbname=unexpected'],
+    'non-numeric port' => ['port', '3306;dbname=unexpected'],
+    'socket with a DSN separator' => ['unix_socket', '/tmp/mysql.sock;host=unexpected'],
+]);
+
+it('fails when a MySQL connection address is not a string', function (): void {
+    config(['database.connections.mysql.host' => ['127.0.0.1']]);
+
+    $this->artisan('db:create-testing')
+        ->expectsOutputToContain('must contain string values')
+        ->assertFailed();
+});
+
+it('rejects non-array PDO connection options before connecting', function (): void {
+    config(['database.connections.mysql.options' => 'invalid options']);
+
+    $this->artisan('db:create-testing')
+        ->expectsOutputToContain('contains invalid connection options')
+        ->assertFailed();
+});
+
 it('fails with a generic message and never leaks the credentials when MySQL is unreachable', function (): void {
     config([
         'database.connections.mysql.unix_socket' => '/nonexistent/mysql.sock',
