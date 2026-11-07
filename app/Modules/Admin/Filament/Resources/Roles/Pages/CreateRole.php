@@ -27,6 +27,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard\Step;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +52,11 @@ class CreateRole extends CreateRecord
     private const string DESCRIPTION_FIELD = 'description';
 
     private const string START_FROM_FIELD = 'start_from';
+
+    /**
+     * Keeps the summary in view beside the permissions while they scroll, on wide screens only.
+     */
+    private const string STICKY_SUMMARY_CLASSES = 'lg:sticky lg:top-24 lg:self-start';
 
     #[Override]
     protected static string $resource = RoleResource::class;
@@ -122,6 +128,7 @@ class CreateRole extends CreateRecord
                                 ]),
                             Section::make(TranslatedText::of('admin/roles.summary.heading'))
                                 ->compact()
+                                ->extraAttributes(['class' => self::STICKY_SUMMARY_CLASSES])
                                 ->schema(self::permissionSummarySchema()),
                         ]),
                 ]),
@@ -131,8 +138,10 @@ class CreateRole extends CreateRecord
                 ->schema([
                     Section::make(TranslatedText::of('admin/roles.summary.heading'))
                         ->schema([
-                            Text::make(fn (Get $get): string => \is_string($get(self::LABEL_FIELD)) ? $get(self::LABEL_FIELD) : ''),
-                            Text::make(fn (Get $get): string => \is_string($get(self::DESCRIPTION_FIELD)) ? $get(self::DESCRIPTION_FIELD) : ''),
+                            Text::make(fn (Get $get): string => \is_string($get(self::LABEL_FIELD)) ? $get(self::LABEL_FIELD) : '')
+                                ->weight(FontWeight::SemiBold),
+                            Text::make(fn (Get $get): string => \is_string($get(self::DESCRIPTION_FIELD)) ? $get(self::DESCRIPTION_FIELD) : '')
+                                ->visible(fn (Get $get): bool => \is_string($get(self::DESCRIPTION_FIELD)) && trim($get(self::DESCRIPTION_FIELD)) !== ''),
                             ...self::permissionSummarySchema(),
                         ]),
                     self::sensitiveAcknowledgementField(),

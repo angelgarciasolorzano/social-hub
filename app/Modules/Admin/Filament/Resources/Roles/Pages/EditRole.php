@@ -47,6 +47,12 @@ class EditRole extends EditRecord
 
     private const string DESCRIPTION_FIELD = 'description';
 
+    /**
+     * Keeps the summary, the confirmation and the password in view beside the permissions while they
+     * scroll, on wide screens only.
+     */
+    private const string STICKY_SUMMARY_CLASSES = 'lg:sticky lg:top-24 lg:self-start';
+
     #[Override]
     protected static string $resource = RoleResource::class;
 
@@ -88,6 +94,7 @@ class EditRole extends EditRecord
                                     ]),
                             ]),
                         Grid::make(1)
+                            ->extraAttributes(['class' => self::STICKY_SUMMARY_CLASSES])
                             ->schema([
                                 Section::make(TranslatedText::of('admin/roles.summary.heading'))
                                     ->compact()

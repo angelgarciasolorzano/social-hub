@@ -40,7 +40,7 @@ function editRolePage(Role $role): Testable
 /**
  * A role of the catalog.
  */
-function catalogRole(AdminRole $adminRole): Role
+function editableCatalogRole(AdminRole $adminRole): Role
 {
     return Role::query()->where('name', $adminRole->value)->where('guard_name', Role::GUARD_NAME)->sole();
 }
@@ -163,7 +163,7 @@ it('changes only the permissions of a system role and ignores a label sent by ha
     /** @var TestCase $testCase */
     $testCase = $this;
     actingAsRoleEditor($testCase);
-    $role = catalogRole(AdminRole::AdminPostsReader);
+    $role = editableCatalogRole(AdminRole::AdminPostsReader);
 
     editRolePage($role)
         ->assertSee(TranslatedText::of('admin/roles.form.read_only_details'))
@@ -215,7 +215,7 @@ it('checks the requirements of a permission as soon as it is checked', function 
     $testCase = $this;
     actingAsRoleEditor($testCase);
 
-    editRolePage(catalogRole(AdminRole::AdminPostsReader))
+    editRolePage(editableCatalogRole(AdminRole::AdminPostsReader))
         ->set('data.permissions.users', [AdminPermission::AdminUsersSuspend->value])
         ->assertSet('data.permissions.users', [
             AdminPermission::AdminUsersViewAny->value,
@@ -230,7 +230,7 @@ it('denies the page of the locked admin role and to a roles reader', function (s
 
     if ($case === 'locked admin role') {
         actingAsRoleEditor($testCase);
-        $role = catalogRole(AdminRole::Admin);
+        $role = editableCatalogRole(AdminRole::Admin);
     } else {
         AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
         $role = RoleFactory::new()->createOne();
