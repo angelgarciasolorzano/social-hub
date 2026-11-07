@@ -6,7 +6,7 @@ Environment variables and the services behind them. Everything is defined in `.e
 
 ## Database, session, queue and cache
 
-- Development uses SQLite (`DB_CONNECTION=sqlite`) and the `database` driver for `SESSION_DRIVER`, `QUEUE_CONNECTION` and `CACHE_STORE`, so no extra service is needed to run the app.
+- Development uses MySQL (`DB_CONNECTION=mysql`) and the `database` driver for `SESSION_DRIVER`, `QUEUE_CONNECTION` and `CACHE_STORE`. MySQL must be running locally to use the app.
 - Tests use MySQL (see `.env.testing`: `root` without password on `127.0.0.1:3306`, database `social-hub-testing`). `composer test` runs in parallel and creates one database per worker (`social-hub-testing_test_N`), so the MySQL user must be able to create databases.
 - Sample data: `php artisan migrate:fresh --seed`. The local test account is `angel@gmail.com` with the password `password` (no 2FA, so the login asks for no OTP).
 
