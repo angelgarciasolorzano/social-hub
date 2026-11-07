@@ -135,6 +135,7 @@ class CreateRole extends CreateRecord
                             Text::make(fn (Get $get): string => \is_string($get(self::DESCRIPTION_FIELD)) ? $get(self::DESCRIPTION_FIELD) : ''),
                             ...self::permissionSummarySchema(),
                         ]),
+                    self::sensitiveAcknowledgementField(),
                     self::currentPasswordField(),
                 ]),
         ];

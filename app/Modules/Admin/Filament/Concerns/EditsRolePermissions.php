@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Concerns;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
@@ -24,6 +25,8 @@ use Illuminate\Support\HtmlString;
 trait EditsRolePermissions
 {
     protected const string PERMISSIONS_FIELD = 'permissions';
+
+    protected const string ACKNOWLEDGE_SENSITIVE_FIELD = 'acknowledge_sensitive';
 
     /**
      * One live checkbox list per area, in catalog order.
@@ -182,6 +185,34 @@ trait EditsRolePermissions
             Text::make(TranslatedText::of('admin/roles.summary.sensitive_heading'))->weight(FontWeight::SemiBold),
             Text::make(fn (Get $get): string => self::sensitivePermissionsText(self::selectedPermissions($get(self::PERMISSIONS_FIELD)))),
         ];
+    }
+
+    /**
+     * A required checkbox that appears only when the selection grants a sensitive permission the role
+     * did not have (any sensitive permission for a new role); hidden, it is not validated.
+     */
+    protected static function sensitiveAcknowledgementField(): Checkbox
+    {
+        return Checkbox::make(self::ACKNOWLEDGE_SENSITIVE_FIELD)
+            ->label(TranslatedText::of('admin/roles.form.acknowledge_sensitive'))
+            ->accepted()
+            ->validationMessages(['accepted' => TranslatedText::of('admin/roles.form.acknowledge_sensitive_required')])
+            ->visible(fn (Get $get, ?Role $record): bool => self::grantsNewSensitivePermission(
+                self::selectedPermissions(self::permissionsByArea($record)),
+                self::selectedPermissions($get(self::PERMISSIONS_FIELD)),
+            ))
+            ->dehydrated(false);
+    }
+
+    /**
+     * Whether the selection grants a sensitive permission that was not granted before.
+     *
+     * @param  list<AdminPermission>  $before
+     * @param  list<AdminPermission>  $after
+     */
+    protected static function grantsNewSensitivePermission(array $before, array $after): bool
+    {
+        return array_any($after, fn(AdminPermission $adminPermission): bool => $adminPermission->isSensitive() && ! \in_array($adminPermission, $before, true));
     }
 
     /**

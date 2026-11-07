@@ -92,6 +92,7 @@ class EditRole extends EditRecord
                                 Section::make(TranslatedText::of('admin/roles.summary.heading'))
                                     ->compact()
                                     ->schema(self::permissionSummarySchema()),
+                                self::sensitiveAcknowledgementField(),
                                 self::currentPasswordField(),
                             ]),
                     ]),
