@@ -267,6 +267,26 @@ return [
         'guard' => 'Guard',
         'not_editable' => 'Not editable',
         'not_editable_tooltip' => 'This role is not part of the catalog, so it cannot be edited from the panel.',
+        'areas' => 'Areas',
+        'last_changed_at' => 'Last change',
+        'created_by' => 'Created by',
+        'not_recorded' => 'Not recorded',
+        'groups' => [
+            'type' => 'Type',
+        ],
+        'filters' => [
+            'includes_permission' => 'Includes permission',
+            'covers_area' => 'Covers area',
+            'sensitive' => 'Sensitive permissions',
+            'has_sensitive' => 'With sensitive permissions',
+            'no_sensitive' => 'Without sensitive permissions',
+            'with_users' => 'Users',
+            'has_users' => 'With users',
+            'no_users' => 'Without users',
+            'last_changed_between' => 'Last change between',
+            'last_changed_from' => 'Last change from',
+            'last_changed_until' => 'Last change until',
+        ],
     ],
 
     'infolist' => [
@@ -465,6 +485,17 @@ return [
         'permission' => 'Permission',
         'granted' => 'Granted',
         'not_granted' => 'Not granted',
+        'sensitive' => 'Sensitive permission',
+    ],
+
+    'compare' => [
+        'action' => 'Compare roles',
+        'bulk_action' => 'Compare selected',
+        'roles' => 'Roles to compare',
+        'roles_helper' => 'Pick between :min and :max roles to see them side by side.',
+        'only_differences' => 'Only differences',
+        'invalid_selection' => 'The roles to compare were not valid, so every role is shown. Pick between :min and :max existing roles.',
+        'wrong_count' => 'Select between :min and :max roles to compare them.',
     ],
 
     'users' => [
