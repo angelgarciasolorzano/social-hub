@@ -9,7 +9,7 @@ Una red social construida **solo como proyecto de práctica**: el objetivo es ap
 - PHP 8.5 con las extensiones habituales de Laravel.
 - [Composer](https://getcomposer.org) 2.
 - Node.js 22 (la versión del CI) y npm.
-- **MySQL** corriendo en local. La aplicación usa SQLite, pero los tests necesitan MySQL, y `composer run setup` crea su base de datos.
+- **MySQL** corriendo en local. La aplicación y los tests utilizan MySQL, y `composer run setup` crea la base de datos de pruebas.
 
 ## Arrancar el proyecto
 
