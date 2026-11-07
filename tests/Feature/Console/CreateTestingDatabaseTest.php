@@ -87,6 +87,22 @@ it('rejects non-array PDO connection options before connecting', function (): vo
         ->assertFailed();
 });
 
+it('rejects a DB_URL that resolves to a non-MySQL driver before connecting', function (): void {
+    config(['database.connections.mysql.url' => 'pgsql://testing:secret@127.0.0.1:5432/not-mysql']);
+
+    $this->artisan('db:create-testing')
+        ->expectsOutputToContain('must resolve to a MySQL connection')
+        ->assertFailed();
+});
+
+it('fails clearly when DB_URL is not a string', function (): void {
+    config(['database.connections.mysql.url' => ['mysql://127.0.0.1/social-hub-testing']]);
+
+    $this->artisan('db:create-testing')
+        ->expectsOutputToContain('must contain a string DB_URL')
+        ->assertFailed();
+});
+
 it('fails with a generic message and never leaks the credentials when MySQL is unreachable', function (): void {
     config([
         'database.connections.mysql.unix_socket' => '/nonexistent/mysql.sock',

@@ -239,7 +239,7 @@ Initial setup of a fresh install:
 7. `npm install`
 8. `npm run build`
 
-The configured MySQL account must be allowed to create databases. `db:create-application` is restricted to the local environment and creates the database named by `DB_DATABASE` (which defaults to `laravel` in `.env.example`).
+The configured MySQL account must be allowed to create databases. `db:create-application` is restricted to the local environment. When `DB_URL` is set, it uses that URL's database, endpoint and credentials; otherwise, it uses the individual `DB_*` values, with `DB_DATABASE` defaulting to `laravel` in `.env.example`.
 
 **When:** the first time you clone the repo, or after a full reset.
 

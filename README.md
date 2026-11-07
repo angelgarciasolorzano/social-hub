@@ -45,7 +45,7 @@ composer test
 
 ## Problemas frecuentes
 
-- **`composer run setup` falla al crear una base:** MySQL no está corriendo o las credenciales no tienen permiso para crear bases. Inícialo o revisa `DB_HOST`, `DB_PORT`, `DB_USERNAME` y `DB_PASSWORD` en `.env` y `.env.testing`.
+- **`composer run setup` falla al crear una base:** MySQL no está corriendo o las credenciales no tienen permiso para crear bases. Inícialo o revisa `DB_URL` (si está configurada) o `DB_HOST`, `DB_PORT`, `DB_USERNAME` y `DB_PASSWORD` en `.env` y `.env.testing`.
 - **`composer run dev` falla al arrancar Reverb:** el puerto `8080` está ocupado (cambia `REVERB_PORT` en `.env`) o a tu `.env` le faltan las variables `REVERB_*` y `VITE_REVERB_*`; cópialas de `.env.example`.
 
 ## Documentación

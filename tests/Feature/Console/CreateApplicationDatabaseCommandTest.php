@@ -111,3 +111,55 @@ it('creates the configured application database with the configured charset and 
         $pdo->exec(sprintf('DROP DATABASE IF EXISTS `%s`', $database));
     }
 });
+
+it('uses the application DB_URL instead of conflicting individual connection settings', function (): void {
+    $databaseFromUrl = applicationThrowawayDatabaseName();
+    $databaseFromSeparateSettings = applicationThrowawayDatabaseName();
+    $this->app->instance('env', 'local');
+
+    /** @var array<string, mixed> $originalConnection */
+    $originalConnection = config('database.connections.mysql');
+    $pdo = applicationMysqlAdminPdo();
+    $encodedDatabaseFromUrl = str_replace('_', '%5F', $databaseFromUrl);
+    $databaseUrl = sprintf(
+        'mysql://%s:%s@%s:%s/%s?charset=utf8mb4&collation=utf8mb4_unicode_ci',
+        rawurlencode((string) $originalConnection['username']),
+        rawurlencode((string) $originalConnection['password']),
+        $originalConnection['host'],
+        $originalConnection['port'],
+        $encodedDatabaseFromUrl,
+    );
+
+    config([
+        'database.default' => 'mysql',
+        'database.connections.mysql.url' => $databaseUrl,
+        'database.connections.mysql.database' => $databaseFromSeparateSettings,
+        'database.connections.mysql.host' => 'invalid.example.test',
+        'database.connections.mysql.port' => '3307',
+        'database.connections.mysql.username' => 'invalid-user',
+        'database.connections.mysql.password' => 'invalid-password',
+        'database.connections.mysql.charset' => 'latin1',
+        'database.connections.mysql.collation' => 'latin1_swedish_ci',
+    ]);
+
+    try {
+        $this->artisan('db:create-application')
+            ->expectsOutputToContain(sprintf('Application database [%s] is ready.', $databaseFromUrl))
+            ->assertSuccessful();
+
+        $statement = $pdo->prepare('SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?');
+        $statement->execute([$databaseFromUrl]);
+
+        expect($statement->fetch(PDO::FETCH_NUM))->toBe(['utf8mb4', 'utf8mb4_unicode_ci']);
+
+        $statement->execute([$databaseFromSeparateSettings]);
+
+        expect($statement->fetchColumn())->toBeFalse();
+    } finally {
+        foreach ([$databaseFromUrl, $databaseFromSeparateSettings] as $databaseName) {
+            $pdo->exec(sprintf('DROP DATABASE IF EXISTS `%s`', $databaseName));
+        }
+
+        config(['database.connections.mysql' => $originalConnection]);
+    }
+});
