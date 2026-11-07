@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
-use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
@@ -14,7 +13,6 @@ use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
-use Filament\Notifications\Notification;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -50,65 +48,33 @@ beforeEach(function (): void {
     AdminFilamentTestContext::configure($testCase);
 });
 
-it('renames a custom role without changing its stored name', function (): void {
+it('links the edit button to the edit page of custom and system roles', function (string $roleType): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     actingAsLifecycleRolesManager($testCase);
-    $role = RoleFactory::new()->createOne(['name' => 'custom-auditor', 'label' => 'Auditor', 'description' => null]);
-
-    lifecycleRolePage($role)
-        ->call('mountAction', 'editDetails')
-        ->assertSet('mountedActions.0.data.label', 'Auditor')
-        ->set('mountedActions.0.data.label', 'Auditor externo')
-        ->set('mountedActions.0.data.description', 'Revisa la actividad.')
-        ->call('callMountedAction')
-        ->assertHasNoErrors();
-
-    Notification::assertNotified(TranslatedText::of('admin/roles.actions.edit_details.success', ['role' => 'Auditor externo']));
-
-    $role->refresh();
-
-    expect($role->name)->toBe('custom-auditor')
-        ->and($role->label)->toBe('Auditor externo')
-        ->and($role->description)->toBe('Revisa la actividad.')
-        ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleUpdated->value)->count())->toBe(1);
-});
-
-it('reports a taken label when renaming', function (): void {
-    /** @var TestCase $testCase */
-    $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
-    RoleFactory::new()->createOne(['label' => 'Soporte']);
-    $role = RoleFactory::new()->createOne(['label' => 'Auditor']);
-
-    lifecycleRolePage($role)
-        ->call('mountAction', 'editDetails')
-        ->set('mountedActions.0.data.label', 'soporte')
-        ->call('callMountedAction');
-
-    Notification::assertNotified(AdminAuthorizationFailure::RoleLabelTaken->message());
-
-    expect($role->refresh()->label)->toBe('Auditor');
-});
-
-it('offers neither renaming nor deleting on a system role', function (): void {
-    /** @var TestCase $testCase */
-    $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
-    $role = lifecycleSystemRole(AdminRole::AdminPostsReader);
+    $role = $roleType === 'custom' ? RoleFactory::new()->createOne() : lifecycleSystemRole(AdminRole::AdminPostsReader);
 
     $testable = lifecycleRolePage($role);
-    $testable->__call('assertActionHidden', ['editDetails']);
+    $testable->__call('assertActionVisible', ['edit']);
+    $testable->__call('assertActionHasUrl', ['edit', RoleResource::getUrl('edit', ['record' => $role])]);
+})->with(['custom', 'system']);
+
+it('does not offer editing on the locked admin role', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsLifecycleRolesManager($testCase);
+
+    lifecycleRolePage(lifecycleSystemRole(AdminRole::Admin))->__call('assertActionHidden', ['edit']);
+});
+
+it('does not offer deleting a system role', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    actingAsLifecycleRolesManager($testCase);
+
+    $testable = lifecycleRolePage(lifecycleSystemRole(AdminRole::AdminPostsReader));
     $testable->__call('assertActionHidden', ['delete']);
     $testable->__call('assertActionVisible', ['duplicate']);
-
-    $testable
-        ->call('mountAction', 'editDetails')
-        ->set('mountedActions.0.data.label', 'Lectores')
-        ->call('callMountedAction');
-
-    expect($role->refresh()->label)->toBeNull()
-        ->and(ActivityLog::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
 
 it('duplicates a system role as a custom role with its permissions and opens it', function (): void {
@@ -211,7 +177,7 @@ it('hides the lifecycle actions from a roles reader', function (): void {
     $role = RoleFactory::new()->createOne();
 
     $testable = lifecycleRolePage($role);
-    $testable->__call('assertActionHidden', ['editDetails']);
+    $testable->__call('assertActionHidden', ['edit']);
     $testable->__call('assertActionHidden', ['duplicate']);
     $testable->__call('assertActionHidden', ['delete']);
 

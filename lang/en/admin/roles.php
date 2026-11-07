@@ -288,15 +288,6 @@ return [
             'success' => ':role was updated',
             'unchanged' => 'Nothing changed.',
         ],
-        'edit_permissions' => [
-            'label' => 'Edit permissions',
-            'modal_heading' => 'Edit the permissions of :role',
-            'modal_description' => 'Every user with this role gets the selected permissions on their next request. The change is recorded in the activity log.',
-            'field' => 'Permissions',
-            'submit' => 'Save permissions',
-            'success' => '{1} :count permission changed|[0,*] :count permissions changed',
-            'unchanged' => 'The permissions did not change',
-        ],
         'manage_roles' => [
             'label' => 'Manage roles',
             'modal_heading' => 'Manage the roles of :name',
@@ -311,16 +302,7 @@ return [
         ],
         'create' => [
             'label' => 'New role',
-            'modal_heading' => 'Create a role',
-            'submit' => 'Create role',
             'success' => 'The role :role was created',
-        ],
-        'edit_details' => [
-            'label' => 'Edit details',
-            'modal_heading' => 'Edit the details of :role',
-            'submit' => 'Save details',
-            'success' => 'The details of :role were saved',
-            'unchanged' => 'The details did not change',
         ],
         'duplicate' => [
             'label' => 'Duplicate',

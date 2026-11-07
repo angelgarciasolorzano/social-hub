@@ -6,7 +6,6 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Pages;
 
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
-use App\Modules\Admin\Filament\Concerns\EditsRolePermissions;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
@@ -14,12 +13,9 @@ use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Text;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\On;
@@ -28,7 +24,6 @@ use Override;
 class ViewRole extends ViewRecord
 {
     use ConfirmsCurrentPassword;
-    use EditsRolePermissions;
 
     #[Override]
     protected static string $resource = RoleResource::class;
@@ -39,17 +34,11 @@ class ViewRole extends ViewRecord
      */
     public const string ROLE_USERS_CHANGED_EVENT = 'role-users-changed';
 
-    private const string EDIT_PERMISSIONS_ACTION = 'editPermissions';
-
-    private const string PASSWORD_THROTTLE_PREFIX = 'admin-roles:edit-permissions:';
-
     private const string DUPLICATE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:duplicate:';
 
     private const string DELETE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:delete:';
 
     private const string LABEL_FIELD = 'label';
-
-    private const string DESCRIPTION_FIELD = 'description';
 
     private const string CURRENT_PASSWORD_ERROR_KEY = 'mountedActions.0.data.current_password';
 
@@ -69,41 +58,11 @@ class ViewRole extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make(self::EDIT_PERMISSIONS_ACTION)
-                ->label(TranslatedText::of('admin/roles.actions.edit_permissions.label'))
-                ->icon(Heroicon::OutlinedKey)
-                ->authorize('update')
-                ->modalHeading(fn (Role $record): string => TranslatedText::of('admin/roles.actions.edit_permissions.modal_heading', [
-                    'role' => $record->displayName(),
-                ]))
-                ->modalDescription(TranslatedText::of('admin/roles.actions.edit_permissions.modal_description'))
-                ->modalSubmitActionLabel(TranslatedText::of('admin/roles.actions.edit_permissions.submit'))
-                ->modalWidth('3xl')
-                ->fillForm(fn (Role $record): array => [self::PERMISSIONS_FIELD => self::permissionsByArea($record)])
-                ->schema([
-                    Text::make(TranslatedText::of('admin/roles.form.dependencies_note')),
-                    ...self::permissionCheckboxLists(),
-                    Section::make(TranslatedText::of('admin/roles.summary.heading'))
-                        ->compact()
-                        ->schema([self::permissionChangeSummaryText()]),
-                    self::currentPasswordField(),
-                ])
-                ->action(fn (array $data, AdminAuthorizationService $adminAuthorizationService) => $this->editPermissions($data, $adminAuthorizationService)),
-            Action::make('editDetails')
-                ->label(TranslatedText::of('admin/roles.actions.edit_details.label'))
+            Action::make('edit')
+                ->label(TranslatedText::of('admin/roles.actions.edit.label'))
                 ->icon(Heroicon::OutlinedPencilSquare)
-                ->color('gray')
-                ->authorize('updateDetails')
-                ->modalHeading(fn (Role $record): string => TranslatedText::of('admin/roles.actions.edit_details.modal_heading', [
-                    'role' => $record->displayName(),
-                ]))
-                ->modalSubmitActionLabel(TranslatedText::of('admin/roles.actions.edit_details.submit'))
-                ->fillForm(fn (Role $record): array => [
-                    self::LABEL_FIELD => $record->label,
-                    self::DESCRIPTION_FIELD => $record->description,
-                ])
-                ->schema([$this->labelField(), $this->descriptionField()])
-                ->action(fn (array $data, AdminAuthorizationService $adminAuthorizationService) => $this->editDetails($data, $adminAuthorizationService)),
+                ->authorize('update')
+                ->url(fn (Role $record): string => RoleResource::getUrl('edit', ['record' => $record])),
             Action::make('duplicate')
                 ->label(TranslatedText::of('admin/roles.actions.duplicate.label'))
                 ->icon(Heroicon::OutlinedDocumentDuplicate)
@@ -135,37 +94,6 @@ class ViewRole extends ViewRecord
                 ->schema([self::currentPasswordField()])
                 ->action(fn (array $data, AdminAuthorizationService $adminAuthorizationService) => $this->deleteRole($data, $adminAuthorizationService)),
         ];
-    }
-
-    /**
-     * Save the label and description of a custom role and report whether they changed.
-     *
-     * @param  array<mixed>  $data
-     */
-    private function editDetails(array $data, AdminAuthorizationService $adminAuthorizationService): void
-    {
-        [$administrator, $role] = $this->administratorAndRole();
-        $label = $data[self::LABEL_FIELD] ?? null;
-        $description = $data[self::DESCRIPTION_FIELD] ?? null;
-
-        abort_unless(\is_string($label) && ($description === null || \is_string($description)), 422);
-
-        try {
-            $changed = $adminAuthorizationService->updateRoleDetails($role, $label, $description, $administrator);
-        } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
-
-            return;
-        }
-
-        $role->refresh();
-
-        Notification::make()
-            ->title($changed
-                ? TranslatedText::of('admin/roles.actions.edit_details.success', ['role' => $role->displayName()])
-                : TranslatedText::of('admin/roles.actions.edit_details.unchanged'))
-            ->success()
-            ->send();
     }
 
     /**
@@ -275,15 +203,6 @@ class ViewRole extends ViewRecord
             ->maxLength(Role::LABEL_MAX_LENGTH);
     }
 
-    private function descriptionField(): Textarea
-    {
-        return Textarea::make(self::DESCRIPTION_FIELD)
-            ->label(TranslatedText::of('admin/roles.form.description'))
-            ->helperText(TranslatedText::of('admin/roles.form.description_helper'))
-            ->rows(2)
-            ->maxLength(Role::DESCRIPTION_MAX_LENGTH);
-    }
-
     private function userCount(Role $role): int
     {
         return $role->users()->count();
@@ -294,43 +213,5 @@ class ViewRole extends ViewRecord
         $userCount = $this->userCount($role);
 
         return trans_choice('admin/roles.actions.delete.blocked_by_users', $userCount, ['count' => $userCount]);
-    }
-
-    /**
-     * Confirm the password, leave the role with the selected permissions and report what changed, or
-     * why nothing did.
-     *
-     * @param  array<mixed>  $data
-     *
-     * @throws ValidationException when the password is wrong or its attempts are exhausted
-     */
-    private function editPermissions(array $data, AdminAuthorizationService $adminAuthorizationService): void
-    {
-        [$administrator, $role] = $this->administratorAndRole();
-
-        $this->confirmPassword($administrator, $data, self::PASSWORD_THROTTLE_PREFIX);
-
-        try {
-            $adminAuthorizationChanges = $adminAuthorizationService->syncRolePermissions(
-                $role,
-                self::selectedPermissions($data[self::PERMISSIONS_FIELD] ?? []),
-                $administrator,
-            );
-        } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
-
-            return;
-        }
-
-        $role->unsetRelation('permissions');
-
-        $changeCount = $adminAuthorizationChanges->changeCount();
-
-        Notification::make()
-            ->title($adminAuthorizationChanges->hasChanges()
-                ? trans_choice('admin/roles.actions.edit_permissions.success', $changeCount, ['count' => $changeCount])
-                : TranslatedText::of('admin/roles.actions.edit_permissions.unchanged'))
-            ->success()
-            ->send();
     }
 }

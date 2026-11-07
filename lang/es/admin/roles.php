@@ -288,15 +288,6 @@ return [
             'success' => 'Se actualizó :role',
             'unchanged' => 'No cambió nada.',
         ],
-        'edit_permissions' => [
-            'label' => 'Editar permisos',
-            'modal_heading' => 'Editar los permisos de :role',
-            'modal_description' => 'Cada usuario con este rol recibe los permisos seleccionados en su siguiente petición. El cambio queda en el registro de actividad.',
-            'field' => 'Permisos',
-            'submit' => 'Guardar permisos',
-            'success' => '{1} Se cambió :count permiso|[0,*] Se cambiaron :count permisos',
-            'unchanged' => 'Los permisos no cambiaron',
-        ],
         'manage_roles' => [
             'label' => 'Gestionar roles',
             'modal_heading' => 'Gestionar los roles de :name',
@@ -311,16 +302,7 @@ return [
         ],
         'create' => [
             'label' => 'Nuevo rol',
-            'modal_heading' => 'Crear un rol',
-            'submit' => 'Crear rol',
             'success' => 'Se creó el rol :role',
-        ],
-        'edit_details' => [
-            'label' => 'Editar datos',
-            'modal_heading' => 'Editar los datos de :role',
-            'submit' => 'Guardar datos',
-            'success' => 'Se guardaron los datos de :role',
-            'unchanged' => 'Los datos no cambiaron',
         ],
         'duplicate' => [
             'label' => 'Duplicar',
