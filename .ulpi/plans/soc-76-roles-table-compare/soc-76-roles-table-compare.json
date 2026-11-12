@@ -13,7 +13,7 @@
   "reviewDefault": "claude",
   "date": "2026-11-07",
   "overview": "Hacer que la tabla de roles responda preguntas de auditoría: qué roles tienen un permiso, cubren un área, conceden permisos sensibles o no tienen usuarios, y cuándo y quién los cambió por última vez. Se agrupa por tipo (sistema / personalizado), se agregan las columnas de áreas cubiertas, último cambio y creado por, y la matriz de permisos pasa a servir para comparar de 2 a 4 roles con «Solo diferencias». Como extras del modo EXPANSION: comparar los roles seleccionados en la tabla con una acción masiva, y marcar los permisos sensibles en la matriz.",
-  "scopeChallenge": "EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «último cambio» cuenta solo la actividad cuyo sujeto es el rol (creación, edición de datos, duplicado y cambios de permisos), no las asignaciones a usuarios; «Comparar roles» se hace en la matriz de permisos, con la selección en la URL para compartirla. Extras elegidos al planificar: acción masiva «Comparar seleccionados» en la tabla y la marca de permisos sensibles en las filas de la matriz. Hallazgos: `RolesTable` solo filtra por tipo y carga `withCount(['permissions', 'users'])`; `RolePermissionMatrix` es una página con vista Blade propia (`admin::filament.roles.permission-matrix`) que muestra todos los roles; `AdminPermission::isSensitive()` (SOC-74) y `Role::activityLogQuery()` (SOC-73) existen; la tabla no tiene acciones masivas ni grupos.",
+  "scopeChallenge": "EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «último cambio» cuenta solo la actividad cuyo sujeto es el rol (creación, edición de datos, duplicado y cambios de permisos), no las asignaciones a usuarios; «Comparar roles» se hace en la matriz de permisos, con la selección en la URL para compartirla. Extras elegidos al planificar: acción masiva «Comparar seleccionados» en la tabla y la marca de permisos sensibles en las filas de la matriz. Hallazgos: `RolesTable` solo filtra por tipo y carga `withCount(['permissions', 'users'])`; `RolePermissionMatrix` es una página con vista Blade propia (`admin::filament.roles.permission-matrix`) que muestra todos los roles; `AdminPermission::isSensitive()` (SOC-74) y `Role::activityLogQuery()` (SOC-73) existen; la tabla no tiene acciones masivas ni grupos. Ajuste del 2026-11-07, tras ver los filtros de TASK-003 en el navegador: el filtro de tipo pasa a pestañas sobre la tabla (Todos / Sistema / Personalizado, con conteos) y los demás filtros a un panel plegable encima de la tabla, en 3 columnas y aplicados al momento (`deferFilters(false)`). Filament 5 no permite poner solo algunos filtros junto al buscador (TASK-010 y TASK-011).",
   "prerequisites": [
     "SOC-73 mergeado: los cambios de un rol se registran con el rol como sujeto (`admin.role_created|updated|duplicated|deleted`, `admin.role_permission_granted|revoked`).",
     "SOC-74 mergeado: `AdminPermission::isSensitive()` y `sensitive()`.",
@@ -31,7 +31,8 @@
     "`RolesTable` agrupa por tipo con títulos traducidos (Sistema / Personalizado), agrega «Áreas» (badges con los nombres de área de sus permisos, con `permissions` precargados), «Último cambio» (fecha ordenable con el autor debajo, o `not_recorded`) y «Creado por» (solo roles personalizados; `not_recorded` si no hay `admin.role_created`). Fechas y autores se cargan una vez por página: el número de consultas no depende de la cantidad de roles.",
     "La matriz acepta `?roles[]=<nombre>&only_differences=1`: con 2 a 4 roles del guard `admin` muestra solo esos (en orden de visualización); con «Solo diferencias» oculta las filas en que todos coinciden y las áreas que quedan vacías. Una selección de menos de 2, más de 4 o con nombres desconocidos se ignora y muestra la matriz completa con un aviso; la página sigue autorizada con `viewAny` de roles.",
     "`ListRoles` agrega «Comparar roles» (enlace a la matriz) y `RolesTable` la acción masiva «Comparar seleccionados» (2 a 4 filas; con otra cantidad notifica y no navega).",
-    "Textos nuevos en `lang/{en,es}/admin/roles.php` (claves exactas en TASK-002)."
+    "Textos nuevos en `lang/{en,es}/admin/roles.php` (claves exactas en TASK-002).",
+    "`ListRoles::getTabs()` da `all` (predeterminada), `system` y `custom`, cada una con el número de roles del guard `admin` de ese tipo; `RolesTable` deja de tener el filtro `type` y muestra sus filtros con `FiltersLayout::AboveContentCollapsible`, `filtersFormColumns(3)` y `deferFilters(false)`."
   ],
   "existingCodeLeverage": [
     "`RolesTable`: filtro de tipo, búsqueda y `withCount`.",
@@ -126,13 +127,13 @@
     {
       "id": "TASK-004",
       "title": "Columnas nuevas y agrupación por tipo",
-      "description": "En `RolesTable`, agregar el grupo por tipo y las columnas «Áreas», «Último cambio» (`last_changed_at` con `lastChangeDateSubquery()`, ordenable, autor en la descripción) y «Creado por», todas ocultables, con `permissions` precargados. `RolesTable::configure()` recibe dos `Closure` que devuelven los cambios y las creaciones de los roles de la página; `ListRoles` los carga una vez por petición con `latestChangesFor()` y `creationsFor()` a partir de `getTableRecords()`.",
+      "description": "En `RolesTable`, agregar el grupo por tipo y las columnas «Áreas», «Último cambio» (`last_changed_at` con `lastChangeDateSubquery()`, ordenable, autor en la descripción) y «Creado por», todas ocultables, con `permissions` precargados. `RolesTable::configure()` recibe dos `Closure` que devuelven los cambios y las creaciones de los roles de la página; `ListRoles` los carga una vez por petición con `latestChangesFor()` y `creationsFor()` a partir de `getTableRecords()`. Con las pestañas de tipo (TASK-010), la agrupación por tipo solo se nota en la pestaña «Todos».",
       "priority": "P1",
       "type": "feature",
       "effort": "L",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-003"
+        "TASK-011"
       ],
       "acceptanceCriteria": [
         "Un rol personalizado creado y editado muestra sus áreas, la fecha y el autor del último cambio y quién lo creó; un rol de sistema sin actividad muestra `not_recorded` en ambas columnas.",
@@ -290,6 +291,64 @@
       "validateCommand": "rtk composer phpstan && rtk composer test && rtk composer doctor",
       "writeScope": [],
       "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Pestañas de tipo en la lista de roles",
+      "description": "Agregar `ListRoles::getTabs()` con `all`, `system` y `custom` (badges con el conteo de cada tipo, `all` predeterminada) y la clave `types.all` en `lang/{en,es}/admin/roles.php`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "La pestaña «Sistema» lista solo los roles del catálogo y «Personalizado» solo los creados desde el panel; «Todos» es la predeterminada.",
+        "Cada pestaña muestra el número de roles del guard `admin` de su tipo; un rol de otro guard no cuenta."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php app/Modules/Admin/Tests/Translations",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Filtros de roles encima de la tabla",
+      "description": "En `RolesTable`, quitar el filtro `type` (lo reemplazan las pestañas) y mostrar los demás filtros con `FiltersLayout::AboveContentCollapsible`, `filtersFormColumns(3)` y `deferFilters(false)`. Pasar las pruebas de tipo de `ListRolesTest` a las pestañas, y `RolesTableFiltersTest` a la pestaña `custom`.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Las pruebas de tipo usan las pestañas y pasan; el filtro `type` ya no existe en la tabla.",
+        "Los filtros de TASK-003 siguen funcionando aplicados al momento, sin el botón «Aplicar filtros», y se combinan con la pestaña activa."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Tables/RolesTableFiltersTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Tables app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Tables/RolesTableFiltersTest.php"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -322,10 +381,14 @@
     ],
     "Accesos desde la lista": [
       "TASK-006"
+    ],
+    "Pestañas y disposición de filtros": [
+      "TASK-010",
+      "TASK-011"
     ]
   },
   "executionSummary": {
-    "taskCount": 9,
+    "taskCount": 11,
     "layers": [
       [
         "TASK-001",
@@ -336,8 +399,14 @@
         "TASK-005"
       ],
       [
-        "TASK-004",
-        "TASK-007"
+        "TASK-007",
+        "TASK-010"
+      ],
+      [
+        "TASK-011"
+      ],
+      [
+        "TASK-004"
       ],
       [
         "TASK-006"
@@ -352,6 +421,8 @@
     "criticalPath": [
       "TASK-001",
       "TASK-003",
+      "TASK-010",
+      "TASK-011",
       "TASK-004",
       "TASK-006",
       "TASK-008",
@@ -366,7 +437,7 @@
       "TASK-002"
     ],
     "TASK-004": [
-      "TASK-003"
+      "TASK-011"
     ],
     "TASK-005": [
       "TASK-002"
@@ -384,6 +455,12 @@
     ],
     "TASK-009": [
       "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-003"
+    ],
+    "TASK-011": [
+      "TASK-010"
     ]
   }
 }

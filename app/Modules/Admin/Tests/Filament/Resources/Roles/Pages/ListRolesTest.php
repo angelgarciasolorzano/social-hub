@@ -103,20 +103,29 @@ it('lists a custom role with its label, its description and the custom type', fu
     expect(listedRoles($testable))->toHaveKey($customRole->name);
 });
 
-it('filters the roles by type', function (string $type, bool $expectsSystemRoles): void {
+it('splits the roles by type in tabs with their counts, all of them by default', function (string $tab, bool $expectsSystemRoles): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
     $customRole = RoleFactory::new()->createOne();
+    Role::query()->create(['name' => 'web-only-role', 'guard_name' => 'web']);
 
-    $testable = rolesListPage();
-    $testable->__call('filterTable', ['type', $type]);
+    $testable = Livewire::test(ListRoles::class)
+        ->set('activeTab', $tab)
+        ->call('loadTable')
+        ->set('tableRecordsPerPage', 50);
 
     $expectedNames = $expectsSystemRoles
         ? array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases())
         : [$customRole->name];
+    $tabs = new ListRoles()->getTabs();
 
-    expect(array_keys(listedRoles($testable)))->toEqualCanonicalizing($expectedNames);
+    expect(array_keys(listedRoles($testable)))->toEqualCanonicalizing($expectedNames)
+        ->and($tabs['all']->getBadge())->toEqual(count(AdminRole::cases()) + 1)
+        ->and($tabs['system']->getBadge())->toEqual(count(AdminRole::cases()))
+        ->and($tabs['custom']->getBadge())->toEqual(1);
+
+    rolesListPage()->assertSet('activeTab', 'all');
 })->with([
     'system' => ['system', true],
     'custom' => ['custom', false],

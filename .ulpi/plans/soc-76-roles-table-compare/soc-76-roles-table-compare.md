@@ -8,7 +8,7 @@ Hacer que la tabla de roles responda preguntas de auditoría: qué roles tienen 
 
 ## Scope Challenge
 
-EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «último cambio» cuenta solo la actividad cuyo sujeto es el rol (creación, edición de datos, duplicado y cambios de permisos), no las asignaciones a usuarios; «Comparar roles» se hace en la matriz de permisos, con la selección en la URL para compartirla. Extras elegidos al planificar: acción masiva «Comparar seleccionados» en la tabla y la marca de permisos sensibles en las filas de la matriz. Hallazgos: `RolesTable` solo filtra por tipo y carga `withCount(['permissions', 'users'])`; `RolePermissionMatrix` es una página con vista Blade propia (`admin::filament.roles.permission-matrix`) que muestra todos los roles; `AdminPermission::isSensitive()` (SOC-74) y `Role::activityLogQuery()` (SOC-73) existen; la tabla no tiene acciones masivas ni grupos.
+EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «último cambio» cuenta solo la actividad cuyo sujeto es el rol (creación, edición de datos, duplicado y cambios de permisos), no las asignaciones a usuarios; «Comparar roles» se hace en la matriz de permisos, con la selección en la URL para compartirla. Extras elegidos al planificar: acción masiva «Comparar seleccionados» en la tabla y la marca de permisos sensibles en las filas de la matriz. Hallazgos: `RolesTable` solo filtra por tipo y carga `withCount(['permissions', 'users'])`; `RolePermissionMatrix` es una página con vista Blade propia (`admin::filament.roles.permission-matrix`) que muestra todos los roles; `AdminPermission::isSensitive()` (SOC-74) y `Role::activityLogQuery()` (SOC-73) existen; la tabla no tiene acciones masivas ni grupos. Ajuste del 2026-11-07, tras ver los filtros de TASK-003 en el navegador: el filtro de tipo pasa a pestañas sobre la tabla (Todos / Sistema / Personalizado, con conteos) y los demás filtros a un panel plegable encima de la tabla, en 3 columnas y aplicados al momento (`deferFilters(false)`). Filament 5 no permite poner solo algunos filtros junto al buscador (TASK-010 y TASK-011).
 
 ## Prerequisites
 
@@ -31,6 +31,7 @@ EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «últim
 - La matriz acepta `?roles[]=<nombre>&only_differences=1`: con 2 a 4 roles del guard `admin` muestra solo esos (en orden de visualización); con «Solo diferencias» oculta las filas en que todos coinciden y las áreas que quedan vacías. Una selección de menos de 2, más de 4 o con nombres desconocidos se ignora y muestra la matriz completa con un aviso; la página sigue autorizada con `viewAny` de roles.
 - `ListRoles` agrega «Comparar roles» (enlace a la matriz) y `RolesTable` la acción masiva «Comparar seleccionados» (2 a 4 filas; con otra cantidad notifica y no navega).
 - Textos nuevos en `lang/{en,es}/admin/roles.php` (claves exactas en TASK-002).
+- `ListRoles::getTabs()` da `all` (predeterminada), `system` y `custom`, cada una con el número de roles del guard `admin` de ese tipo; `RolesTable` deja de tener el filtro `type` y muestra sus filtros con `FiltersLayout::AboveContentCollapsible`, `filtersFormColumns(3)` y `deferFilters(false)`.
 
 ## Existing Code Leverage
 
@@ -112,11 +113,11 @@ Agregar a `RolesTable` los filtros del contrato: «Incluye el permiso» (`Select
 
 ### TASK-004: Columnas nuevas y agrupación por tipo
 
-En `RolesTable`, agregar el grupo por tipo y las columnas «Áreas», «Último cambio» (`last_changed_at` con `lastChangeDateSubquery()`, ordenable, autor en la descripción) y «Creado por», todas ocultables, con `permissions` precargados. `RolesTable::configure()` recibe dos `Closure` que devuelven los cambios y las creaciones de los roles de la página; `ListRoles` los carga una vez por petición con `latestChangesFor()` y `creationsFor()` a partir de `getTableRecords()`.
+En `RolesTable`, agregar el grupo por tipo y las columnas «Áreas», «Último cambio» (`last_changed_at` con `lastChangeDateSubquery()`, ordenable, autor en la descripción) y «Creado por», todas ocultables, con `permissions` precargados. `RolesTable::configure()` recibe dos `Closure` que devuelven los cambios y las creaciones de los roles de la página; `ListRoles` los carga una vez por petición con `latestChangesFor()` y `creationsFor()` a partir de `getTableRecords()`. Con las pestañas de tipo (TASK-010), la agrupación por tipo solo se nota en la pestaña «Todos».
 
 **Type:** feature · **Effort:** L · **Agent:** laravel-senior-engineer · **Priority:** P1
 
-**Depends on:** TASK-003
+**Depends on:** TASK-011
 
 **Acceptance Criteria:**
 
@@ -247,6 +248,52 @@ Pint (`--dirty --format agent`), `composer rector-clear-cache` → `rector-dry` 
 
 **Review:** claude
 
+### TASK-010: Pestañas de tipo en la lista de roles
+
+Agregar `ListRoles::getTabs()` con `all`, `system` y `custom` (badges con el conteo de cada tipo, `all` predeterminada) y la clave `types.all` en `lang/{en,es}/admin/roles.php`.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-003
+
+**Acceptance Criteria:**
+
+1. La pestaña «Sistema» lista solo los roles del catálogo y «Personalizado» solo los creados desde el panel; «Todos» es la predeterminada.
+2. Cada pestaña muestra el número de roles del guard `admin` de su tipo; un rol de otro guard no cuenta.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php`
+- `lang/en/admin/roles.php`
+- `lang/es/admin/roles.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php app/Modules/Admin/Tests/Translations`
+
+**Review:** claude
+
+### TASK-011: Filtros de roles encima de la tabla
+
+En `RolesTable`, quitar el filtro `type` (lo reemplazan las pestañas) y mostrar los demás filtros con `FiltersLayout::AboveContentCollapsible`, `filtersFormColumns(3)` y `deferFilters(false)`. Pasar las pruebas de tipo de `ListRolesTest` a las pestañas, y `RolesTableFiltersTest` a la pestaña `custom`.
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-010
+
+**Acceptance Criteria:**
+
+1. Las pruebas de tipo usan las pestañas y pasan; el filtro `type` ya no existe en la tabla.
+2. Los filtros de TASK-003 siguen funcionando aplicados al momento, sin el botón «Aplicar filtros», y se combinan con la pestaña activa.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Tables/RolesTableFiltersTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Tables app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php`
+
+**Review:** claude
+
 ## Failure Modes
 
 - Un rol de sistema sembrado no tiene actividad: «Último cambio» y «Creado por» muestran `not_recorded`, y el filtro de fechas lo deja fuera.
@@ -269,19 +316,22 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
 | Columnas y agrupación | TASK-004 |
 | Comparación en la matriz | TASK-005, TASK-007 |
 | Accesos desde la lista | TASK-006 |
+| Pestañas y disposición de filtros | TASK-010, TASK-011 |
 
 ## Execution Summary
 
-- Tareas: 9
-- Ruta crítica: TASK-001 → TASK-003 → TASK-004 → TASK-006 → TASK-008 → TASK-009
+- Tareas: 11
+- Ruta crítica: TASK-001 → TASK-003 → TASK-010 → TASK-011 → TASK-004 → TASK-006 → TASK-008 → TASK-009
 - Capas paralelas:
 
   1. TASK-001, TASK-002
   2. TASK-003, TASK-005
-  3. TASK-004, TASK-007
-  4. TASK-006
-  5. TASK-008
-  6. TASK-009
+  3. TASK-007, TASK-010
+  4. TASK-011
+  5. TASK-004
+  6. TASK-006
+  7. TASK-008
+  8. TASK-009
 
 ## Task Dependencies
 
@@ -290,9 +340,11 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
 | TASK-001 | — |
 | TASK-002 | — |
 | TASK-003 | TASK-001, TASK-002 |
-| TASK-004 | TASK-003 |
+| TASK-004 | TASK-011 |
 | TASK-005 | TASK-002 |
 | TASK-006 | TASK-004, TASK-005 |
 | TASK-007 | TASK-005 |
 | TASK-008 | TASK-006, TASK-007 |
 | TASK-009 | TASK-008 |
+| TASK-010 | TASK-003 |
+| TASK-011 | TASK-010 |

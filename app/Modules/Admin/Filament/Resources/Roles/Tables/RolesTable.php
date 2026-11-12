@@ -4,21 +4,25 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles\Tables;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
+use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 class RolesTable
 {
-    private const string TYPE_SYSTEM = 'system';
-
-    private const string TYPE_CUSTOM = 'custom';
-
     public static function configure(Table $table): Table
     {
         return $table
@@ -53,27 +57,204 @@ class RolesTable
                     ->sortable(),
             ])
             ->filters([
-                SelectFilter::make('type')
-                    ->label(TranslatedText::of('admin/roles.types.filter'))
-                    ->options([
-                        self::TYPE_SYSTEM => TranslatedText::of('admin/roles.types.system'),
-                        self::TYPE_CUSTOM => TranslatedText::of('admin/roles.types.custom'),
+                SelectFilter::make('includes_permission')
+                    ->label(TranslatedText::of('admin/roles.table.filters.includes_permission'))
+                    ->multiple()
+                    ->searchable()
+                    ->options(fn (): array => self::permissionOptionsByArea())
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByPermissions($query, $data['values'] ?? [])),
+                SelectFilter::make('covers_area')
+                    ->label(TranslatedText::of('admin/roles.table.filters.covers_area'))
+                    ->options(fn (): array => self::areaOptions())
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByArea($query, $data['value'] ?? null)),
+                TernaryFilter::make('sensitive')
+                    ->label(TranslatedText::of('admin/roles.table.filters.sensitive'))
+                    ->placeholder(TranslatedText::of('admin/roles.table.filters.all'))
+                    ->trueLabel(TranslatedText::of('admin/roles.table.filters.has_sensitive'))
+                    ->falseLabel(TranslatedText::of('admin/roles.table.filters.no_sensitive'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => self::filterBySensitivePermissions($query, hasSensitive: true),
+                        false: fn (Builder $query): Builder => self::filterBySensitivePermissions($query, hasSensitive: false),
+                    ),
+                TernaryFilter::make('with_users')
+                    ->label(TranslatedText::of('admin/roles.table.filters.with_users'))
+                    ->placeholder(TranslatedText::of('admin/roles.table.filters.all'))
+                    ->trueLabel(TranslatedText::of('admin/roles.table.filters.has_users'))
+                    ->falseLabel(TranslatedText::of('admin/roles.table.filters.no_users'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereHas('users'),
+                        false: fn (Builder $query): Builder => $query->whereDoesntHave('users'),
+                    ),
+                Filter::make('last_changed_between')
+                    ->label(TranslatedText::of('admin/roles.table.filters.last_changed_between'))
+                    ->schema([
+                        DatePicker::make('last_changed_from')->label(TranslatedText::of('admin/roles.table.filters.last_changed_from')),
+                        DatePicker::make('last_changed_until')->label(TranslatedText::of('admin/roles.table.filters.last_changed_until')),
                     ])
-                    ->query(fn (Builder $query, array $data): Builder => self::filterByType($query, $data['value'] ?? null)),
-            ]);
+                    ->columns(2)
+                    ->columnSpan(2)
+                    ->query(fn (Builder $query, array $data): Builder => self::filterByLastChangeDate($query, $data)),
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(3)
+            ->deferFilters(false);
     }
 
     /**
+     * The permissions of the catalog grouped by the translated name of their area, by stored name.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private static function permissionOptionsByArea(): array
+    {
+        $permissionOptions = [];
+
+        foreach (AdminPermission::cases() as $adminPermission) {
+            $permissionOptions[self::areaLabel($adminPermission->area())][$adminPermission->value] = $adminPermission->label();
+        }
+
+        return $permissionOptions;
+    }
+
+    /**
+     * The panel areas of the catalog, in catalog order, with their translated names.
+     *
+     * @return array<string, string>
+     */
+    private static function areaOptions(): array
+    {
+        $areaOptions = [];
+
+        foreach (AdminPermission::cases() as $adminPermission) {
+            $areaOptions[$adminPermission->area()] = self::areaLabel($adminPermission->area());
+        }
+
+        return $areaOptions;
+    }
+
+    private static function areaLabel(string $area): string
+    {
+        return TranslatedText::of('admin/roles.catalog.areas.'.$area);
+    }
+
+    /**
+     * Keep the roles that hold every selected permission of the catalog.
+     *
      * @param  Builder<Role>  $query
      * @return Builder<Role>
      */
-    private static function filterByType(Builder $query, mixed $type): Builder
+    private static function filterByPermissions(Builder $query, mixed $selectedPermissions): Builder
     {
-        return match ($type) {
-            self::TYPE_SYSTEM => $query->where('is_system', true),
-            self::TYPE_CUSTOM => $query->where('is_system', false),
-            default => $query,
+        $adminPermissions = array_filter(array_map(
+            static fn (mixed $permissionName): ?AdminPermission => \is_string($permissionName) ? AdminPermission::tryFrom($permissionName) : null,
+            \is_array($selectedPermissions) ? $selectedPermissions : [],
+        ));
+
+        foreach ($adminPermissions as $adminPermission) {
+            $query->whereHas('permissions', static function (Builder $permissions) use ($adminPermission): Builder {
+                $permissions->getQuery()->where('name', $adminPermission->value);
+
+                return $permissions;
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Keep the roles that hold at least one permission of the selected area.
+     *
+     * @param  Builder<Role>  $query
+     * @return Builder<Role>
+     */
+    private static function filterByArea(Builder $query, mixed $area): Builder
+    {
+        $areaPermissionNames = array_values(array_map(
+            static fn (AdminPermission $adminPermission): string => $adminPermission->value,
+            array_filter(AdminPermission::cases(), static fn (AdminPermission $adminPermission): bool => $adminPermission->area() === $area),
+        ));
+
+        if ($areaPermissionNames === []) {
+            return $query;
+        }
+
+        return $query->whereHas('permissions', static function (Builder $permissions) use ($areaPermissionNames): Builder {
+            $permissions->getQuery()->whereIn('name', $areaPermissionNames);
+
+            return $permissions;
+        });
+    }
+
+    /**
+     * Keep the roles that hold at least one sensitive permission, or the roles that hold none.
+     *
+     * @param  Builder<Role>  $query
+     * @return Builder<Role>
+     */
+    private static function filterBySensitivePermissions(Builder $query, bool $hasSensitive): Builder
+    {
+        $sensitivePermissionNames = array_map(
+            static fn (AdminPermission $adminPermission): string => $adminPermission->value,
+            AdminPermission::sensitive(),
+        );
+        $constraint = static function (Builder $permissions) use ($sensitivePermissionNames): Builder {
+            $permissions->getQuery()->whereIn('name', $sensitivePermissionNames);
+
+            return $permissions;
         };
+
+        return $hasSensitive
+            ? $query->whereHas('permissions', $constraint)
+            : $query->whereDoesntHave('permissions', $constraint);
+    }
+
+    /**
+     * Keep the roles whose latest change falls between the chosen dates, both included; a role without
+     * a recorded change never matches.
+     *
+     * @param  Builder<Role>  $query
+     * @param  array<mixed>  $data
+     * @return Builder<Role>
+     */
+    private static function filterByLastChangeDate(Builder $query, array $data): Builder
+    {
+        $changedFrom = self::filterDate($data['last_changed_from'] ?? null);
+        $changedUntil = self::filterDate($data['last_changed_until'] ?? null);
+
+        if ($changedFrom instanceof CarbonImmutable) {
+            self::whereLastChangeDate($query, '>=', $changedFrom->startOfDay());
+        }
+
+        if ($changedUntil instanceof CarbonImmutable) {
+            self::whereLastChangeDate($query, '<=', $changedUntil->endOfDay());
+        }
+
+        return $query;
+    }
+
+    /**
+     * Compare each role's latest change date with a date.
+     *
+     * @param  Builder<Role>  $query
+     * @param  '>='|'<='  $operator
+     */
+    private static function whereLastChangeDate(Builder $query, string $operator, CarbonImmutable $date): void
+    {
+        $query->getQuery()->where(static function (QueryBuilder $subquery): void {
+            $builder = Role::lastChangeDateSubquery()->toBase();
+
+            $subquery->from($builder->from)
+                ->selectRaw('max(created_at)')
+                ->mergeWheres($builder->wheres, $builder->getRawBindings()['where']);
+        }, $operator, $date->toDateTimeString());
+    }
+
+    private static function filterDate(mixed $date): ?CarbonImmutable
+    {
+        if ($date instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($date);
+        }
+
+        return \is_string($date) && $date !== '' ? CarbonImmutable::parse($date) : null;
     }
 
     private static function typeLabel(Role $role): string

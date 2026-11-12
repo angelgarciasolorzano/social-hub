@@ -193,6 +193,7 @@ return [
     'types' => [
         'column' => 'Tipo',
         'filter' => 'Tipo',
+        'all' => 'Todos',
         'system' => 'Sistema',
         'custom' => 'Personalizado',
         'system_tooltip' => 'Viene con la aplicación. Sus permisos se pueden editar, pero no se puede renombrar ni eliminar.',
@@ -275,6 +276,7 @@ return [
             'type' => 'Tipo',
         ],
         'filters' => [
+            'all' => 'Todos',
             'includes_permission' => 'Incluye el permiso',
             'covers_area' => 'Cubre el área',
             'sensitive' => 'Permisos sensibles',

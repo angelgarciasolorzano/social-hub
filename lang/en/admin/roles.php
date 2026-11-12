@@ -193,6 +193,7 @@ return [
     'types' => [
         'column' => 'Type',
         'filter' => 'Type',
+        'all' => 'All',
         'system' => 'System',
         'custom' => 'Custom',
         'system_tooltip' => 'Comes with the application. Its permissions can be edited, but it cannot be renamed or deleted.',
@@ -275,6 +276,7 @@ return [
             'type' => 'Type',
         ],
         'filters' => [
+            'all' => 'All',
             'includes_permission' => 'Includes permission',
             'covers_area' => 'Covers area',
             'sensitive' => 'Sensitive permissions',
