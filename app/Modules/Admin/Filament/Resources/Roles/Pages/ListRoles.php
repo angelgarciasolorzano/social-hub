@@ -35,6 +35,11 @@ class ListRoles extends ListRecords
                 ->icon(Heroicon::OutlinedPlus)
                 ->authorize('create')
                 ->url(RoleResource::getUrl('create')),
+            Action::make('compareRoles')
+                ->label(TranslatedText::of('admin/roles.compare.action'))
+                ->icon(Heroicon::OutlinedArrowsRightLeft)
+                ->color('gray')
+                ->url(RoleResource::getUrl('matrix')),
             Action::make('openMatrix')
                 ->label(TranslatedText::of('admin/roles.actions.open_matrix.label'))
                 ->icon(Heroicon::OutlinedTableCells)

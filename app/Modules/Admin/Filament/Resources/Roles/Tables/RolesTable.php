@@ -8,11 +8,15 @@ use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
@@ -154,7 +158,41 @@ class RolesTable
                     ->query(fn (Builder $query, array $data): Builder => self::filterByLastChangeDate($query, $data)),
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersFormColumns(3)
-            ->deferFilters(false);
+            ->deferFilters(false)
+            ->toolbarActions([self::compareSelectedAction()]);
+    }
+
+    /**
+     * Open the selected roles side by side in the permission matrix, showing only their differences. It
+     * changes nothing, so anyone who can list roles may use it; with fewer than 2 or more than 4 roles it
+     * only says how many to pick.
+     */
+    private static function compareSelectedAction(): BulkAction
+    {
+        return BulkAction::make('compareSelected')
+            ->label(TranslatedText::of('admin/roles.compare.bulk_action'))
+            ->icon(Heroicon::OutlinedArrowsRightLeft)
+            ->color('gray')
+            ->action(function (Collection $records, BulkAction $action): void {
+                $roleNames = array_map(
+                    static fn (Role $role): string => $role->name,
+                    Role::inDisplayOrder($records->filter(static fn (mixed $record): bool => $record instanceof Role)),
+                );
+
+                if (\count($roleNames) < RolePermissionMatrix::MIN_COMPARED_ROLES || \count($roleNames) > RolePermissionMatrix::MAX_COMPARED_ROLES) {
+                    Notification::make()
+                        ->title(TranslatedText::of('admin/roles.compare.wrong_count', [
+                            'min' => RolePermissionMatrix::MIN_COMPARED_ROLES,
+                            'max' => RolePermissionMatrix::MAX_COMPARED_ROLES,
+                        ]))
+                        ->warning()
+                        ->send();
+
+                    return;
+                }
+
+                $action->redirect(RoleResource::getUrl('matrix', ['roles' => $roleNames, 'only_differences' => 1]));
+            });
     }
 
     /**
