@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles\Tables;
 
+use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Carbon\CarbonImmutable;
@@ -13,22 +15,53 @@ use DateTimeInterface;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Collection;
+use WeakMap;
 
 class RolesTable
 {
+    use DescribesActivityLogParties;
+
+    /**
+     * The alias of the date of each role's latest change, selected with the roles.
+     */
+    public const string LAST_CHANGED_AT_COLUMN = 'last_changed_at';
+
+    /**
+     * The areas shown in a row before the rest are folded away.
+     */
+    private const int AREAS_SHOWN = 3;
+
+    /**
+     * The latest changes and creations of the roles a table shows, loaded once per table and page of
+     * records so the number of queries does not depend on how many roles there are.
+     *
+     * @var WeakMap<HasTable, array{recordKeys: string, latestChanges: array<int, ActivityLog>, creations: array<int, ActivityLog>}>|null
+     */
+    private static ?WeakMap $weakMap = null;
+
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount(['permissions', 'users']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => self::withListingData($query))
             ->loadingSkeleton()
             ->defaultSort('name')
+            ->groups([
+                Group::make('is_system')
+                    ->label(TranslatedText::of('admin/roles.table.groups.type'))
+                    ->getTitleFromRecordUsing(fn (Role $record): string => self::typeLabel($record))
+                    ->collapsible(),
+            ])
+            ->defaultGroup('is_system')
             ->columns([
                 TextColumn::make('name')
                     ->label(TranslatedText::of('admin/roles.table.name'))
@@ -55,6 +88,31 @@ class RolesTable
                     ->label(TranslatedText::of('admin/roles.table.users_count'))
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('areas')
+                    ->label(TranslatedText::of('admin/roles.table.areas'))
+                    ->badge()
+                    ->color('gray')
+                    ->state(fn (Role $record): array => self::areaLabelsOf($record))
+                    ->limitList(self::AREAS_SHOWN)
+                    ->expandableLimitedList()
+                    ->toggleable(),
+                TextColumn::make(self::LAST_CHANGED_AT_COLUMN)
+                    ->label(TranslatedText::of('admin/roles.table.last_changed_at'))
+                    ->dateTime()
+                    ->placeholder(TranslatedText::of('admin/roles.table.not_recorded'))
+                    ->description(fn (Role $record, HasTable $livewire): ?string => self::causerOf(self::changesOf($livewire)['latestChanges'][$record->id] ?? null))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy(self::LAST_CHANGED_AT_COLUMN, $direction === 'desc' ? 'desc' : 'asc'))
+                    ->toggleable(),
+                TextColumn::make('created_by')
+                    ->label(TranslatedText::of('admin/roles.table.created_by'))
+                    ->state(fn (Role $record, HasTable $livewire): string => self::causerOf(self::changesOf($livewire)['creations'][$record->id] ?? null)
+                        ?? TranslatedText::of('admin/roles.table.not_recorded'))
+                    ->url(function (Role $record, HasTable $livewire): ?string {
+                        $creation = self::changesOf($livewire)['creations'][$record->id] ?? null;
+
+                        return $creation instanceof ActivityLog ? self::causerUrl($creation) : null;
+                    })
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('includes_permission')
@@ -97,6 +155,80 @@ class RolesTable
             ], layout: FiltersLayout::AboveContentCollapsible)
             ->filtersFormColumns(3)
             ->deferFilters(false);
+    }
+
+    /**
+     * Count the permissions and users of each role, load its permissions for its areas and select the
+     * date of its latest change.
+     *
+     * @param  Builder<Role>  $query
+     * @return Builder<Role>
+     */
+    private static function withListingData(Builder $query): Builder
+    {
+        $query->withCount(['permissions', 'users'])->with('permissions');
+        $query->getQuery()->selectSub(Role::lastChangeDateSubquery()->toBase(), self::LAST_CHANGED_AT_COLUMN);
+
+        return $query;
+    }
+
+    /**
+     * The translated names of the areas the role's permissions belong to, in catalog order.
+     *
+     * @return list<string>
+     */
+    private static function areaLabelsOf(Role $role): array
+    {
+        $permissionNames = $role->permissions->pluck('name')->all();
+        $areas = [];
+
+        foreach (AdminPermission::cases() as $adminPermission) {
+            if (\in_array($adminPermission->value, $permissionNames, true)) {
+                $areas[$adminPermission->area()] = self::areaLabel($adminPermission->area());
+            }
+        }
+
+        return array_values($areas);
+    }
+
+    /**
+     * Who made a recorded change, or null when it was not recorded.
+     */
+    private static function causerOf(?ActivityLog $activityLog): ?string
+    {
+        return $activityLog instanceof ActivityLog ? self::causerLabel($activityLog) : null;
+    }
+
+    /**
+     * The latest changes and creations of the roles the table shows now, keyed by role id, loaded once
+     * for each page of records.
+     *
+     * @return array{recordKeys: string, latestChanges: array<int, ActivityLog>, creations: array<int, ActivityLog>}
+     */
+    private static function changesOf(HasTable $livewire): array
+    {
+        $tableRecords = $livewire->getTableRecords();
+        $roleIds = [];
+
+        foreach ($tableRecords instanceof Collection ? $tableRecords->all() : $tableRecords->items() as $tableRecord) {
+            if ($tableRecord instanceof Role) {
+                $roleIds[] = $tableRecord->id;
+            }
+        }
+
+        $recordKeys = implode(',', $roleIds);
+        self::$weakMap ??= new WeakMap;
+        $changes = self::$weakMap[$livewire] ?? null;
+
+        if ($changes !== null && $changes['recordKeys'] === $recordKeys) {
+            return $changes;
+        }
+
+        return self::$weakMap[$livewire] = [
+            'recordKeys' => $recordKeys,
+            'latestChanges' => Role::latestChangesFor($roleIds),
+            'creations' => Role::creationsFor($roleIds),
+        ];
     }
 
     /**
