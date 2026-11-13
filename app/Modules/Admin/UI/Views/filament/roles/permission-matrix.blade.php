@@ -5,6 +5,17 @@
 @endphp
 
 <x-filament-panels::page>
+    <x-filament::section> {{ $this->compareForm }} </x-filament::section>
+
+    @if ($this->hasInvalidComparison())
+        <x-filament::callout
+            color="warning"
+            icon="heroicon-o-exclamation-triangle"
+            :heading="__('admin/roles.compare.invalid_selection', ['min' => $this::MIN_COMPARED_ROLES, 'max' => $this::MAX_COMPARED_ROLES])"
+            data-matrix-invalid-comparison
+        />
+    @endif
+
     <x-filament::section>
         <div class="relative overflow-x-auto">
             <table class="w-full border-collapse text-sm">
@@ -28,7 +39,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($this->getMatrixAreas() as $areaLabel => $areaPermissions)
+                    @foreach ($this->getMatrixAreas($matrixRoles) as $areaLabel => $areaPermissions)
                         <tr class="bg-gray-50 dark:bg-white/5">
                             <th
                                 scope="colgroup"
