@@ -405,6 +405,31 @@
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Tables/RolesTableColumnsTest.php"
       ],
       "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "«Mostrar N más» en la columna Áreas",
+      "description": "En `RolesTable`, la columna «Áreas» se comporta como «Otros roles» de la pestaña Usuarios de un rol: una etiqueta por línea (`listWithLineBreaks()`), dos visibles y el resto detrás de «Mostrar N más».",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "Un rol con tres áreas muestra dos y «Mostrar 1 más», que despliega la tercera.",
+        "Un rol con dos áreas o menos las muestra todas sin enlace."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Tables",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -444,11 +469,12 @@
     ],
     "Hallazgos de la prueba en el navegador": [
       "TASK-012",
-      "TASK-013"
+      "TASK-013",
+      "TASK-014"
     ]
   },
   "executionSummary": {
-    "taskCount": 13,
+    "taskCount": 14,
     "layers": [
       [
         "TASK-001",
@@ -480,6 +506,9 @@
       [
         "TASK-012",
         "TASK-013"
+      ],
+      [
+        "TASK-014"
       ]
     ],
     "criticalPath": [
@@ -491,7 +520,8 @@
       "TASK-006",
       "TASK-008",
       "TASK-009",
-      "TASK-012"
+      "TASK-013",
+      "TASK-014"
     ]
   },
   "dependencyMap": {
@@ -532,6 +562,9 @@
     ],
     "TASK-013": [
       "TASK-009"
+    ],
+    "TASK-014": [
+      "TASK-013"
     ]
   }
 }

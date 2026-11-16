@@ -339,6 +339,27 @@ En `RolesTable`, la descripción muestra a lo más 2 líneas con el texto comple
 
 **Review:** claude
 
+### TASK-014: «Mostrar N más» en la columna Áreas
+
+En `RolesTable`, la columna «Áreas» se comporta como «Otros roles» de la pestaña Usuarios de un rol: una etiqueta por línea (`listWithLineBreaks()`), dos visibles y el resto detrás de «Mostrar N más».
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-013
+
+**Acceptance Criteria:**
+
+1. Un rol con tres áreas muestra dos y «Mostrar 1 más», que despliega la tercera.
+2. Un rol con dos áreas o menos las muestra todas sin enlace.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Tables`
+
+**Review:** claude
+
 ## Failure Modes
 
 - Un rol de sistema sembrado no tiene actividad: «Último cambio» y «Creado por» muestran `not_recorded`, y el filtro de fechas lo deja fuera.
@@ -362,12 +383,12 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
 | Comparación en la matriz | TASK-005, TASK-007 |
 | Accesos desde la lista | TASK-006 |
 | Pestañas y disposición de filtros | TASK-010, TASK-011 |
-| Hallazgos de la prueba en el navegador | TASK-012, TASK-013 |
+| Hallazgos de la prueba en el navegador | TASK-012, TASK-013, TASK-014 |
 
 ## Execution Summary
 
-- Tareas: 13
-- Ruta crítica: TASK-001 → TASK-003 → TASK-010 → TASK-011 → TASK-004 → TASK-006 → TASK-008 → TASK-009 → TASK-012
+- Tareas: 14
+- Ruta crítica: TASK-001 → TASK-003 → TASK-010 → TASK-011 → TASK-004 → TASK-006 → TASK-008 → TASK-009 → TASK-013 → TASK-014
 - Capas paralelas:
 
   1. TASK-001, TASK-002
@@ -379,6 +400,7 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
   7. TASK-008
   8. TASK-009
   9. TASK-012, TASK-013
+  10. TASK-014
 
 ## Task Dependencies
 
@@ -397,3 +419,4 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
 | TASK-011 | TASK-010 |
 | TASK-012 | TASK-009 |
 | TASK-013 | TASK-009 |
+| TASK-014 | TASK-013 |

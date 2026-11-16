@@ -41,9 +41,10 @@ class RolesTable
     public const string LAST_CHANGED_AT_COLUMN = 'last_changed_at';
 
     /**
-     * The areas shown in a row before the rest are folded away.
+     * The areas shown in a row before the rest fold behind 'Show N more', as the other roles of a
+     * role's users tab.
      */
-    private const int AREAS_SHOWN = 3;
+    private const int AREAS_SHOWN = 2;
 
     /**
      * The latest changes and creations of the roles a table shows, loaded once per table and page of
@@ -99,6 +100,7 @@ class RolesTable
                     ->badge()
                     ->color('gray')
                     ->state(fn (Role $record): array => self::areaLabelsOf($record))
+                    ->listWithLineBreaks()
                     ->limitList(self::AREAS_SHOWN)
                     ->expandableLimitedList()
                     ->toggleable(),
