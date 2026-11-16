@@ -75,6 +75,20 @@ it('returns the latest change of each role with the administrator who made it an
         ->and($latestChanges[$role->id]->causer?->getKey())->toBe($user->id);
 });
 
+it('takes the author of the latest change from the newest date, even when an older change has a higher id', function (): void {
+    $role = RoleFactory::new()->createOne();
+    $user = createUser();
+
+    $activityLog = recordRoleChange($role, ActivityLogAdminEvent::RoleUpdated, $user, '2026-10-10 10:00:00');
+    recordRoleChange($role, ActivityLogAdminEvent::RolePermissionGranted, createUser(), '2026-10-01 10:00:00');
+
+    $latestChanges = Role::latestChangesFor([$role->id]);
+
+    expect($latestChanges[$role->id]->id)->toBe($activityLog->id)
+        ->and($latestChanges[$role->id]->causer?->getKey())->toBe($user->id)
+        ->and(lastChangeDates([$role]))->toBe([$role->id => '2026-10-10 10:00:00']);
+});
+
 it('loads the latest changes of many roles in two queries and leaves out roles without activity', function (): void {
     $roles = [RoleFactory::new()->createOne(), RoleFactory::new()->createOne(), RoleFactory::new()->createOne()];
     $roleWithoutActivity = RoleFactory::new()->createOne();

@@ -247,7 +247,8 @@ class Role extends SpatieRole
 
     /**
      * The latest change of each of the given roles, with its causer, keyed by role id; a role without a
-     * recorded change is left out.
+     * recorded change is left out. The latest is the one with the newest date, as the shown date reads
+     * it, and the highest id among changes recorded at the same time.
      *
      * @param  array<int|string>  $roleIds
      * @return array<int, ActivityLog>
@@ -261,6 +262,7 @@ class Role extends SpatieRole
         $changes = self::changeActivityQuery()
             ->whereIn('subject_id', array_values(array_unique($roleIds)))
             ->with('causer')
+            ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
 
