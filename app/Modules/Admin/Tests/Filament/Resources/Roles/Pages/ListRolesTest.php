@@ -5,12 +5,15 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
+use Filament\Actions\Testing\TestAction;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -60,6 +63,23 @@ function countRolesListQueries(): int
     return $queryCount;
 }
 
+/**
+ * Compare the given roles from the list with the bulk action, signed in as a roles reader.
+ *
+ * @param  list<Role>  $roles
+ * @return Testable<ListRoles>
+ */
+function compareSelectedRoles(TestCase $testCase, array $roles): Testable
+{
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    $testable = rolesListPage();
+    $testable->__call('selectTableRecords', [array_map(static fn (Role $role): int|string => $role->id, $roles)]);
+    $testable->__call('callAction', [TestAction::make('compareSelected')->table()->bulk()]);
+
+    return $testable;
+}
+
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -103,20 +123,29 @@ it('lists a custom role with its label, its description and the custom type', fu
     expect(listedRoles($testable))->toHaveKey($customRole->name);
 });
 
-it('filters the roles by type', function (string $type, bool $expectsSystemRoles): void {
+it('splits the roles by type in tabs with their counts, all of them by default', function (string $tab, bool $expectsSystemRoles): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
     $customRole = RoleFactory::new()->createOne();
+    Role::query()->create(['name' => 'web-only-role', 'guard_name' => 'web']);
 
-    $testable = rolesListPage();
-    $testable->__call('filterTable', ['type', $type]);
+    $testable = Livewire::test(ListRoles::class)
+        ->set('activeTab', $tab)
+        ->call('loadTable')
+        ->set('tableRecordsPerPage', 50);
 
     $expectedNames = $expectsSystemRoles
         ? array_map(static fn (AdminRole $adminRole): string => $adminRole->value, AdminRole::cases())
         : [$customRole->name];
+    $tabs = new ListRoles()->getTabs();
 
-    expect(array_keys(listedRoles($testable)))->toEqualCanonicalizing($expectedNames);
+    expect(array_keys(listedRoles($testable)))->toEqualCanonicalizing($expectedNames)
+        ->and($tabs['all']->getBadge())->toEqual(count(AdminRole::cases()) + 1)
+        ->and($tabs['system']->getBadge())->toEqual(count(AdminRole::cases()))
+        ->and($tabs['custom']->getBadge())->toEqual(1);
+
+    rolesListPage()->assertSet('activeTab', 'all');
 })->with([
     'system' => ['system', true],
     'custom' => ['custom', false],
@@ -193,6 +222,7 @@ it('runs the same number of queries whatever the number of users holding roles',
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    RoleFactory::new()->createOne();
 
     countRolesListQueries();
     $queriesWithFewUsers = countRolesListQueries();
@@ -210,3 +240,48 @@ it('runs the same number of queries whatever the number of users holding roles',
 
     expect(countRolesListQueries())->toBe($queriesWithFewUsers);
 });
+
+it('links a roles reader to compare roles in the matrix and offers comparing as the only bulk action', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    $testable = rolesListPage();
+    $testable->__call('assertActionVisible', ['compareRoles']);
+    $testable->__call('assertActionHasUrl', ['compareRoles', RoleResource::getUrl('matrix')]);
+    $testable->__call('assertActionVisible', [TestAction::make('compareSelected')->table()->bulk()]);
+
+    expect(array_keys(FilamentTableRecords::table($testable)->getTable()->getFlatBulkActions()))->toBe(['compareSelected']);
+});
+
+it('opens the selected roles in the matrix showing only their differences', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $roles = [
+        RoleFactory::new()->createOne(),
+        RoleFactory::new()->createOne(),
+        RoleFactory::new()->createOne(),
+    ];
+
+    compareSelectedRoles($testCase, $roles)->assertRedirect(RoleResource::getUrl('matrix', [
+        'roles' => array_map(static fn (Role $role): string => $role->name, Role::inDisplayOrder($roles)),
+        'only_differences' => 1,
+    ]));
+});
+
+it('does not compare fewer than two or more than four roles and says how many to pick', function (int $roleCount): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    $roles = [];
+
+    foreach (range(1, $roleCount) as $index) {
+        $roles[] = RoleFactory::new()->createOne();
+    }
+
+    compareSelectedRoles($testCase, $roles)->assertNoRedirect();
+
+    Notification::assertNotified(TranslatedText::of('admin/roles.compare.wrong_count', [
+        'min' => RolePermissionMatrix::MIN_COMPARED_ROLES,
+        'max' => RolePermissionMatrix::MAX_COMPARED_ROLES,
+    ]));
+})->with([1, 5]);

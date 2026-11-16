@@ -193,6 +193,7 @@ return [
     'types' => [
         'column' => 'Tipo',
         'filter' => 'Tipo',
+        'all' => 'Todos',
         'system' => 'Sistema',
         'custom' => 'Personalizado',
         'system_tooltip' => 'Viene con la aplicación. Sus permisos se pueden editar, pero no se puede renombrar ni eliminar.',
@@ -267,6 +268,27 @@ return [
         'guard' => 'Guard',
         'not_editable' => 'No editable',
         'not_editable_tooltip' => 'Este rol no forma parte del catálogo, así que no se puede editar desde el panel.',
+        'areas' => 'Áreas',
+        'last_changed_at' => 'Último cambio',
+        'created_by' => 'Creado por',
+        'not_recorded' => 'Sin registro',
+        'groups' => [
+            'type' => 'Tipo',
+        ],
+        'filters' => [
+            'all' => 'Todos',
+            'includes_permission' => 'Incluye el permiso',
+            'covers_area' => 'Cubre el área',
+            'sensitive' => 'Permisos sensibles',
+            'has_sensitive' => 'Con permisos sensibles',
+            'no_sensitive' => 'Sin permisos sensibles',
+            'with_users' => 'Usuarios',
+            'has_users' => 'Con usuarios',
+            'no_users' => 'Sin usuarios',
+            'last_changed_between' => 'Último cambio entre',
+            'last_changed_from' => 'Último cambio desde',
+            'last_changed_until' => 'Último cambio hasta',
+        ],
     ],
 
     'infolist' => [
@@ -465,6 +487,17 @@ return [
         'permission' => 'Permiso',
         'granted' => 'Concedido',
         'not_granted' => 'No concedido',
+        'sensitive' => 'Permiso sensible',
+    ],
+
+    'compare' => [
+        'action' => 'Comparar roles',
+        'bulk_action' => 'Comparar seleccionados',
+        'roles' => 'Roles a comparar',
+        'roles_helper' => 'Elige entre :min y :max roles para verlos lado a lado.',
+        'only_differences' => 'Solo diferencias',
+        'invalid_selection' => 'Los roles a comparar no eran válidos, así que se muestran todos. Elige entre :min y :max roles existentes.',
+        'wrong_count' => 'Selecciona entre :min y :max roles para compararlos.',
     ],
 
     'users' => [
