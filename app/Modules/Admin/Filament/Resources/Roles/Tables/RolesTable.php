@@ -83,7 +83,9 @@ class RolesTable
                 TextColumn::make('description')
                     ->label(TranslatedText::of('admin/roles.table.description'))
                     ->state(fn (Role $record): ?string => $record->displayDescription())
-                    ->wrap(),
+                    ->wrap()
+                    ->lineClamp(2)
+                    ->tooltip(fn (Role $record): ?string => $record->displayDescription()),
                 TextColumn::make('permissions_count')
                     ->label(TranslatedText::of('admin/roles.table.permissions_count'))
                     ->numeric()
@@ -116,7 +118,7 @@ class RolesTable
 
                         return $creation instanceof ActivityLog ? self::causerUrl($creation) : null;
                     })
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('includes_permission')

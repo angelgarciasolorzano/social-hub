@@ -111,6 +111,20 @@ it('returns the creation of a custom role and nothing for a seeded system role',
         ->and(Role::creationsFor([]))->toBeEmpty();
 });
 
+it('counts the duplication of a copy as its creation, with the administrator who duplicated it', function (): void {
+    $role = RoleFactory::new()->createOne();
+    $user = createUser();
+
+    $activityLog = recordRoleChange($role, ActivityLogAdminEvent::RoleDuplicated, $user, '2026-09-01 10:00:00');
+    recordRoleChange($role, ActivityLogAdminEvent::RolePermissionGranted, createUser(), '2026-10-01 10:00:00');
+
+    $creations = Role::creationsFor([$role->id]);
+
+    expect(array_keys($creations))->toBe([$role->id])
+        ->and($creations[$role->id]->id)->toBe($activityLog->id)
+        ->and($creations[$role->id]->causer?->getKey())->toBe($user->id);
+});
+
 it('selects the date of the latest change of each role, or null without one', function (): void {
     $changedRole = RoleFactory::new()->createOne();
     $grantedOnlyRole = RoleFactory::new()->createOne();

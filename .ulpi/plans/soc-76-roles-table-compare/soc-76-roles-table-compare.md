@@ -8,7 +8,7 @@ Hacer que la tabla de roles responda preguntas de auditoría: qué roles tienen 
 
 ## Scope Challenge
 
-EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «último cambio» cuenta solo la actividad cuyo sujeto es el rol (creación, edición de datos, duplicado y cambios de permisos), no las asignaciones a usuarios; «Comparar roles» se hace en la matriz de permisos, con la selección en la URL para compartirla. Extras elegidos al planificar: acción masiva «Comparar seleccionados» en la tabla y la marca de permisos sensibles en las filas de la matriz. Hallazgos: `RolesTable` solo filtra por tipo y carga `withCount(['permissions', 'users'])`; `RolePermissionMatrix` es una página con vista Blade propia (`admin::filament.roles.permission-matrix`) que muestra todos los roles; `AdminPermission::isSensitive()` (SOC-74) y `Role::activityLogQuery()` (SOC-73) existen; la tabla no tiene acciones masivas ni grupos. Ajuste del 2026-11-07, tras ver los filtros de TASK-003 en el navegador: el filtro de tipo pasa a pestañas sobre la tabla (Todos / Sistema / Personalizado, con conteos) y los demás filtros a un panel plegable encima de la tabla, en 3 columnas y aplicados al momento (`deferFilters(false)`). Filament 5 no permite poner solo algunos filtros junto al buscador (TASK-010 y TASK-011).
+EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «último cambio» cuenta solo la actividad cuyo sujeto es el rol (creación, edición de datos, duplicado y cambios de permisos), no las asignaciones a usuarios; «Comparar roles» se hace en la matriz de permisos, con la selección en la URL para compartirla. Extras elegidos al planificar: acción masiva «Comparar seleccionados» en la tabla y la marca de permisos sensibles en las filas de la matriz. Hallazgos: `RolesTable` solo filtra por tipo y carga `withCount(['permissions', 'users'])`; `RolePermissionMatrix` es una página con vista Blade propia (`admin::filament.roles.permission-matrix`) que muestra todos los roles; `AdminPermission::isSensitive()` (SOC-74) y `Role::activityLogQuery()` (SOC-73) existen; la tabla no tiene acciones masivas ni grupos. Ajuste del 2026-11-07, tras ver los filtros de TASK-003 en el navegador: el filtro de tipo pasa a pestañas sobre la tabla (Todos / Sistema / Personalizado, con conteos) y los demás filtros a un panel plegable encima de la tabla, en 3 columnas y aplicados al momento (`deferFilters(false)`). Filament 5 no permite poner solo algunos filtros junto al buscador (TASK-010 y TASK-011). Hallazgos de la prueba en el navegador de TASK-009 (2026-11-16): «Creado por» no reconoce los roles duplicados, la tabla queda más ancha que la pantalla, y el JavaScript de Livewire 4 no entiende `roles[]=` (corchetes vacíos) en la URL, que debe llevar índices (`roles[0]=…`) (TASK-012 y TASK-013).
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-07): «últim
 - `Role::lastChangeDateSubquery(): Builder<ActivityLog>` es una subconsulta correlacionada con `roles.id` que da la fecha de la última actividad cuyo sujeto es el rol; `Role::latestChangesFor(array<int> $roleIds): array<int, ActivityLog>` da esa última actividad con su autor, y `Role::creationsFor(array<int> $roleIds): array<int, ActivityLog>` el `admin.role_created` de cada rol con su autor; ambas en una consulta más la de autores, indexadas por id de rol.
 - Filtros de `RolesTable`: «Incluye el permiso» (múltiple, agrupado por área; el rol debe tener todos los elegidos), «Cubre el área» (al menos un permiso del área), «Con permisos sensibles» (ternario), «Con usuarios» (ternario) y «Último cambio entre» (desde/hasta sobre `lastChangeDateSubquery()`; un rol sin actividad registrada queda fuera).
 - `RolesTable` agrupa por tipo con títulos traducidos (Sistema / Personalizado), agrega «Áreas» (badges con los nombres de área de sus permisos, con `permissions` precargados), «Último cambio» (fecha ordenable con el autor debajo, o `not_recorded`) y «Creado por» (solo roles personalizados; `not_recorded` si no hay `admin.role_created`). Fechas y autores se cargan una vez por página: el número de consultas no depende de la cantidad de roles.
-- La matriz acepta `?roles[]=<nombre>&only_differences=1`: con 2 a 4 roles del guard `admin` muestra solo esos (en orden de visualización); con «Solo diferencias» oculta las filas en que todos coinciden y las áreas que quedan vacías. Una selección de menos de 2, más de 4 o con nombres desconocidos se ignora y muestra la matriz completa con un aviso; la página sigue autorizada con `viewAny` de roles.
+- La matriz acepta `?roles[0]=<nombre>&roles[1]=<nombre>&only_differences=1` (con índices: Livewire 4 no lee `roles[]=`): con 2 a 4 roles del guard `admin` muestra solo esos (en orden de visualización); con «Solo diferencias» oculta las filas en que todos coinciden y las áreas que quedan vacías. Una selección de menos de 2, más de 4 o con nombres desconocidos se ignora y muestra la matriz completa con un aviso; la página sigue autorizada con `viewAny` de roles.
 - `ListRoles` agrega «Comparar roles» (enlace a la matriz) y `RolesTable` la acción masiva «Comparar seleccionados» (2 a 4 filas; con otra cantidad notifica y no navega).
 - Textos nuevos en `lang/{en,es}/admin/roles.php` (claves exactas en TASK-002).
 - `ListRoles::getTabs()` da `all` (predeterminada), `system` y `custom`, cada una con el número de roles del guard `admin` de ese tipo; `RolesTable` deja de tener el filtro `type` y muestra sus filtros con `FiltersLayout::AboveContentCollapsible`, `filtersFormColumns(3)` y `deferFilters(false)`.
@@ -294,6 +294,51 @@ En `RolesTable`, quitar el filtro `type` (lo reemplazan las pestañas) y mostrar
 
 **Review:** claude
 
+### TASK-012: Creador de los roles duplicados y URL de comparación en la doc
+
+`Role::creationsFor()` cuenta también `admin.role_duplicated` (cuyo sujeto es la copia) como creación del rol. Prueba en `RoleChangeActivityTest`. En `admin.md`, la URL de comparación usa índices (`roles[0]=…`) y se explica que Livewire 4 no lee `roles[]=`.
+
+**Type:** bugfix · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-009
+
+**Acceptance Criteria:**
+
+1. Un rol duplicado muestra en «Creado por» a quien lo duplicó; un rol de sistema sin actividad sigue sin creador.
+2. La documentación no muestra `roles[]=` como formato válido.
+
+**writeScope:**
+
+- `app/Modules/Admin/Models/Role.php`
+- `app/Modules/Admin/Tests/Models/RoleChangeActivityTest.php`
+- `docs/architecture/modules/admin.md`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Models`
+
+**Review:** claude
+
+### TASK-013: Ancho de la tabla de roles
+
+En `RolesTable`, la descripción muestra a lo más 2 líneas con el texto completo en el tooltip, y «Creado por» queda oculta por defecto (se puede activar desde el administrador de columnas).
+
+**Type:** feature · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-009
+
+**Acceptance Criteria:**
+
+1. «Creado por» está oculta por defecto y se puede mostrar; su valor no cambia.
+2. La descripción larga se recorta a 2 líneas y conserva el texto completo en el tooltip.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Tables/RolesTable.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Tables/RolesTableColumnsTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles`
+
+**Review:** claude
+
 ## Failure Modes
 
 - Un rol de sistema sembrado no tiene actividad: «Último cambio» y «Creado por» muestran `not_recorded`, y el filtro de fechas lo deja fuera.
@@ -317,11 +362,12 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
 | Comparación en la matriz | TASK-005, TASK-007 |
 | Accesos desde la lista | TASK-006 |
 | Pestañas y disposición de filtros | TASK-010, TASK-011 |
+| Hallazgos de la prueba en el navegador | TASK-012, TASK-013 |
 
 ## Execution Summary
 
-- Tareas: 11
-- Ruta crítica: TASK-001 → TASK-003 → TASK-010 → TASK-011 → TASK-004 → TASK-006 → TASK-008 → TASK-009
+- Tareas: 13
+- Ruta crítica: TASK-001 → TASK-003 → TASK-010 → TASK-011 → TASK-004 → TASK-006 → TASK-008 → TASK-009 → TASK-012
 - Capas paralelas:
 
   1. TASK-001, TASK-002
@@ -332,6 +378,7 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
   6. TASK-006
   7. TASK-008
   8. TASK-009
+  9. TASK-012, TASK-013
 
 ## Task Dependencies
 
@@ -348,3 +395,5 @@ Mínimo entregable: TASK-001 a TASK-005 y TASK-009 (consultas, textos, filtros, 
 | TASK-009 | TASK-008 |
 | TASK-010 | TASK-003 |
 | TASK-011 | TASK-010 |
+| TASK-012 | TASK-009 |
+| TASK-013 | TASK-009 |

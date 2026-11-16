@@ -144,3 +144,10 @@ it('runs the same number of queries with few and many changed roles', function (
 
     expect(countCustomRolesListQueries())->toBe($queriesWithFewRoles);
 });
+
+it('hides the creator column by default and shows it when toggled on', function (): void {
+    $testable = rolesColumnsList('custom');
+    $testable->__call('assertCanNotRenderTableColumn', ['created_by']);
+    $testable->__call('toggleAllTableColumns', []);
+    $testable->__call('assertCanRenderTableColumn', ['created_by']);
+});

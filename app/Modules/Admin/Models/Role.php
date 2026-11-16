@@ -268,8 +268,9 @@ class Role extends SpatieRole
     }
 
     /**
-     * The creation of each of the given roles, with its causer, keyed by role id; a role created without
-     * a record (a seeded system role) is left out.
+     * The creation of each of the given roles, with its causer, keyed by role id: its `admin.role_created`
+     * or, for a copy, its `admin.role_duplicated`. A role created without a record (a seeded system role)
+     * is left out.
      *
      * @param  array<int|string>  $roleIds
      * @return array<int, ActivityLog>
@@ -281,7 +282,7 @@ class Role extends SpatieRole
         }
 
         $creations = self::changeActivityQuery()
-            ->where('event', ActivityLogAdminEvent::RoleCreated->value)
+            ->whereIn('event', [ActivityLogAdminEvent::RoleCreated->value, ActivityLogAdminEvent::RoleDuplicated->value])
             ->whereIn('subject_id', array_values(array_unique($roleIds)))
             ->with('causer')
             ->orderByDesc('id')
