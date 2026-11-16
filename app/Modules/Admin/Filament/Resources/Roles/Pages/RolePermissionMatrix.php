@@ -144,11 +144,12 @@ class RolePermissionMatrix extends Page
     }
 
     /**
-     * The cataloged permissions grouped by area, in catalog order. With "only differences", only the
-     * permissions some of the given roles grant and others do not, and only the areas left with one.
+     * The cataloged permissions grouped by area, in catalog order, each saying whether it is sensitive.
+     * With "only differences", only the permissions some of the given roles grant and others do not, and
+     * only the areas left with one.
      *
      * @param  list<array{name: string, label: string, description: string, permissions: array<int, string>}>|null  $matrixRoles
-     * @return array<string, list<array{name: string, label: string, description: string}>>
+     * @return array<string, list<array{name: string, label: string, description: string, sensitive: bool}>>
      */
     public function getMatrixAreas(?array $matrixRoles = null): array
     {
@@ -164,6 +165,7 @@ class RolePermissionMatrix extends Page
                 'name' => $adminPermission->value,
                 'label' => $adminPermission->label(),
                 'description' => $adminPermission->description(),
+                'sensitive' => $adminPermission->isSensitive(),
             ];
         }
 

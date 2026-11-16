@@ -251,3 +251,38 @@ it('updates the comparison when roles are picked on the page', function (): void
         ->assertSee(AdminPermission::AdminUsersView->label())
         ->assertDontSee(AdminPermission::AdminBackupsView->label());
 });
+
+it('marks the sensitive permissions and only them, also when comparing only the differences', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    $sensitivePermissionNames = array_map(static fn (AdminPermission $adminPermission): string => $adminPermission->value, AdminPermission::sensitive());
+    $fullMatrixHtml = Livewire::test(RolePermissionMatrix::class)->html();
+
+    $comparedTestable = Livewire::withQueryParams([
+        'roles' => [AdminRole::AdminUsersReader->value, AdminRole::AdminUsersModerator->value],
+        'only_differences' => '1',
+    ])->test(RolePermissionMatrix::class);
+
+    $component = $comparedTestable->instance();
+
+    throw_unless($component instanceof RolePermissionMatrix, LogicException::class, 'The permission matrix page must be mounted.');
+
+    $markedPermissionNames = [];
+    $shownSensitiveRowCount = 0;
+
+    foreach ($component->getMatrixAreas() as $areaPermissions) {
+        foreach ($areaPermissions as $areaPermission) {
+            if ($areaPermission['sensitive']) {
+                $markedPermissionNames[] = $areaPermission['name'];
+                $shownSensitiveRowCount++;
+            }
+        }
+    }
+
+    expect(substr_count($fullMatrixHtml, 'data-matrix-sensitive'))->toBe(\count($sensitivePermissionNames))
+        ->and($shownSensitiveRowCount)->toBeGreaterThan(0)
+        ->and(array_diff($markedPermissionNames, $sensitivePermissionNames))->toBeEmpty()
+        ->and(substr_count($comparedTestable->html(), 'data-matrix-sensitive'))->toBe($shownSensitiveRowCount);
+});

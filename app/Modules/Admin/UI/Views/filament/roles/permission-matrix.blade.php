@@ -27,6 +27,7 @@
                         >
                             {{ __('admin/roles.matrix.permission') }}
                         </th>
+
                         @foreach ($matrixRoles as $matrixRole)
                             <th
                                 scope="col"
@@ -57,8 +58,22 @@
                                     title="{{ $matrixPermission['description'] }}"
                                 >
                                     {{ $matrixPermission['label'] }}
+
+                                    @if ($matrixPermission['sensitive'])
+                                        <span class="ms-1 inline-flex align-middle" data-matrix-sensitive>
+                                            <x-filament::badge
+                                                color="warning"
+                                                size="sm"
+                                                icon="heroicon-m-shield-exclamation"
+                                            >
+                                                {{ __('admin/roles.matrix.sensitive') }}
+                                            </x-filament::badge>
+                                        </span>
+                                    @endif
+
                                     <span class="block font-mono text-xs text-gray-500 dark:text-gray-400">{{ $matrixPermission['name'] }}</span>
                                 </th>
+
                                 @foreach ($matrixRoles as $matrixRole)
                                     <td class="px-2 py-2 text-center">
                                         @if (in_array($matrixPermission['name'], $matrixRole['permissions'], true))
@@ -67,6 +82,7 @@
                                                 class="text-success-600 dark:text-success-400 mx-auto h-5 w-5"
                                                 data-matrix-cell="granted"
                                             />
+
                                             <span class="sr-only">{{ __('admin/roles.matrix.granted') }}</span>
                                         @else
                                             <span class="text-gray-300 dark:text-gray-600" aria-hidden="true">·</span>
