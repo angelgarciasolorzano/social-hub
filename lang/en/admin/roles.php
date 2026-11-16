@@ -500,6 +500,36 @@ return [
         'wrong_count' => 'Select between :min and :max roles to compare them.',
     ],
 
+    'access' => [
+        'title' => 'Who can do this',
+        'description' => 'Pick a permission to see the roles that grant it and the administrators who hold it through them.',
+        'link' => 'See who can do this',
+        'permission' => 'Permission',
+        'permission_placeholder' => 'Pick a permission',
+        'choose' => 'Pick a permission to see who holds it.',
+        'sensitive_description' => 'It gives control over other administrators, their access or exported data.',
+        'requirements' => [
+            'requires' => 'Needs',
+            'dependents' => 'Needed by',
+            'none' => 'None',
+        ],
+        'warnings' => [
+            'heading' => 'Some holders cannot use it today',
+            'suspended' => '{1} :count holder is suspended.|[0,*] :count holders are suspended.',
+            'without_mfa' => '{1} :count holder has no panel MFA.|[0,*] :count holders have no panel MFA.',
+        ],
+        'roles' => [
+            'heading' => 'Roles that grant it',
+            'users_count' => '{0} No users|{1} :count user|[2,*] :count users',
+            'empty' => 'No role grants this permission.',
+        ],
+        'users' => [
+            'heading' => 'Users who hold it',
+            'via_roles' => 'Through the roles',
+            'empty' => 'Nobody holds this permission.',
+        ],
+    ],
+
     'users' => [
         'column' => 'Roles',
         'filter' => 'Role',

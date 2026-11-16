@@ -500,6 +500,36 @@ return [
         'wrong_count' => 'Selecciona entre :min y :max roles para compararlos.',
     ],
 
+    'access' => [
+        'title' => 'Quién puede hacer esto',
+        'description' => 'Elige un permiso para ver los roles que lo conceden y los administradores que lo tienen por ellos.',
+        'link' => 'Ver quién puede hacer esto',
+        'permission' => 'Permiso',
+        'permission_placeholder' => 'Elige un permiso',
+        'choose' => 'Elige un permiso para ver quién lo tiene.',
+        'sensitive_description' => 'Da control sobre otros administradores, su acceso o datos exportados.',
+        'requirements' => [
+            'requires' => 'Necesita',
+            'dependents' => 'Lo necesitan',
+            'none' => 'Ninguno',
+        ],
+        'warnings' => [
+            'heading' => 'Algunos titulares no pueden usarlo hoy',
+            'suspended' => '{1} :count titular está suspendido.|[0,*] :count titulares están suspendidos.',
+            'without_mfa' => '{1} :count titular no tiene MFA del panel.|[0,*] :count titulares no tienen MFA del panel.',
+        ],
+        'roles' => [
+            'heading' => 'Roles que lo conceden',
+            'users_count' => '{0} Sin usuarios|{1} :count usuario|[2,*] :count usuarios',
+            'empty' => 'Ningún rol concede este permiso.',
+        ],
+        'users' => [
+            'heading' => 'Usuarios que lo tienen',
+            'via_roles' => 'Por los roles',
+            'empty' => 'Nadie tiene este permiso.',
+        ],
+    ],
+
     'users' => [
         'column' => 'Roles',
         'filter' => 'Rol',
