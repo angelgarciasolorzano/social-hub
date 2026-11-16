@@ -1,0 +1,458 @@
+{
+  "id": "soc-77-permission-holders-page",
+  "title": "SOC-77: Página «Quién puede hacer esto» con los roles y usuarios que tienen un permiso",
+  "issue": {
+    "identifier": "SOC-77",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-77/feature-add-a-who-can-do-this-page-that-lists-the-roles-and-users"
+  },
+  "parent": {
+    "identifier": "SOC-72",
+    "url": "https://linear.app/social-hub-ang/issue/SOC-72/feature-improve-the-roles-module-of-the-admin-panel-pages-filters-and"
+  },
+  "mode": "EXPANSION",
+  "reviewDefault": "claude",
+  "date": "2026-11-16",
+  "overview": "Responder la pregunta inversa de la matriz, «¿quién puede hacer X?»: una página del recurso de roles (`/admin/roles/access`) donde se elige un permiso del catálogo (o llega en `?permission=`) y se ven los roles del guard `admin` que lo tienen y los usuarios que lo heredan por cualquiera de ellos, con por qué rol(es), su estado, MFA del panel y último acceso, filtros por estado y MFA, y avisos de cuántos no pueden usarlo hoy y de si el permiso es sensible. Se enlaza desde cada permiso del detalle de un rol y de la matriz. Como extras del modo EXPANSION: la página muestra qué permisos necesita el elegido y cuáles lo necesitan (`requires()` / `dependents()`), y «Permisos efectivos» del detalle de usuario también enlaza a ella.",
+  "scopeChallenge": "EXPANSION con revisión de Claude. Decisiones del usuario (2026-11-16): los usuarios se muestran en una tabla de Filament (la página implementa `HasTable`, con paginación, búsqueda y filtros nativos), y los roles en una sección compacta encima. Extras elegidos: requisitos y dependientes del permiso con enlaces a la misma página, y enlaces desde «Permisos efectivos» del detalle de usuario. Hallazgos: `RolePermissionMatrix` es el modelo de página de recurso con vista Blade propia, `#[Url]` y `canAccess()` por `Gate`; `RoleUsersTable` (SOC-75) ya tiene la columna y el filtro de MFA del panel (`app_authentication_secret`), el estado con `DescribesAccountStatus` y un resumen agregado en una consulta (`holdersSummary()`); la columna y el filtro de MFA se extraen a un concern para no duplicarlos. La ruta `access` debe registrarse antes de `view` (`/{record}`) en `RoleResource::getPages()`, igual que `matrix`. Las pruebas de texto fijo ya recorren `Filament/Resources/Roles` y `UI/Views/filament/roles`, así que cubren los archivos nuevos sin cambios.",
+  "prerequisites": [
+    "SOC-73 a SOC-76 mergeados: `Role::inDisplayOrder()`, `displayName()`, `AdminPermission::isSensitive()`, `requires()`, `dependents()`, `area()`, la matriz con comparación y `RoleUsersTable` con MFA y estado.",
+    "`RolePolicy::viewAny` (`admin.roles.viewAny`) y `UserPolicy::viewAny` (`admin.users.viewAny`).",
+    "El proyecto no asigna permisos directamente a usuarios: todo permiso llega por un rol."
+  ],
+  "nonGoals": [
+    "Permisos asignados directamente a usuarios, sin rol.",
+    "Editar roles, permisos o asignaciones desde esta página (no tiene acciones de escritura ni masivas).",
+    "Entrada propia en la navegación: se llega por enlaces (detalle de rol, matriz, detalle de usuario).",
+    "Limpiar duplicaciones previas del módulo de roles fuera de la columna y el filtro de MFA (eso es SOC-81)."
+  ],
+  "contracts": [
+    "Página `Roles/Pages/PermissionHolders` (resource page de `RoleResource`, clave `access`, URL `/admin/roles/access`, vista `admin::filament.roles.permission-holders`), registrada antes de `view`. `canAccess()` exige `viewAny` de `Role` y `viewAny` de `User` con `Gate::forUser(Filament::auth()->user())`; si falta alguno, 403.",
+    "Propiedad `#[Url] public ?string $permission`. `selectedPermission(): ?AdminPermission` usa `AdminPermission::tryFrom()`; en `mount()` un valor desconocido se vacía (`null`), así la página carga sin error con el selector vacío.",
+    "Formulario `permissionForm()`: un `Select` `permission` buscable y `live`, con opciones agrupadas por el nombre traducido del área (`admin/roles.catalog.areas.<area>`) en orden de catálogo, valor = `AdminPermission::value`, etiqueta = `label()`; la descripción del permiso elegido se muestra como texto de ayuda.",
+    "`getHolderRoles(): list<array{name, label, isSystem, usersCount, url}>`: los roles del guard `admin` que tienen el permiso, en `Role::inDisplayOrder()`, con `withCount('users')`, en una consulta; `url` al detalle si `RoleResource::canView()`, si no `null`.",
+    "`getHolderSummary(): array{holders, suspended, withoutMfa}` cuenta en una consulta agregada los usuarios distintos que heredan el permiso, los suspendidos (`AccountStatus::Suspended`) y los que no tienen MFA del panel (`app_authentication_secret` nulo). La vista muestra un aviso con ambos números cuando alguno es mayor que cero, y la insignia «Permiso sensible» cuando `isSensitive()`.",
+    "Tabla de usuarios (`Roles/Tables/PermissionHoldersTable::configure(Table, ?AdminPermission)`): consulta `User` con `whereHas('roles', guard admin + whereHas('permissions', name = permiso, guard admin))` (sin duplicados por construcción) y `with(['roles' => solo los roles que tienen el permiso])`; sin permiso elegido, ninguna fila. Columnas: nombre (enlace a `UserResource` si `canView`), correo, estado (`DescribesAccountStatus`), MFA del panel y último acceso (`last_login_at`), «Por los roles» (badges con `displayName()` en orden de visualización). Filtros: estado y MFA del panel. Orden por nombre, paginada 10/25/50.",
+    "`Filament/Concerns/DescribesPanelMfa` da `panelMfaColumn(): IconColumn` y `panelMfaFilter(): TernaryFilter` con las claves existentes `admin/roles.relations.users.mfa.*` y `filters.panel_mfa`; `RoleUsersTable` y `PermissionHoldersTable` los usan.",
+    "Extra: la página muestra «Necesita» (`requires()`) y «Lo necesitan» (`dependents()`) del permiso elegido, cada uno como enlace a `RoleResource::getUrl('access', ['permission' => …])`.",
+    "Enlaces de entrada a `RoleResource::getUrl('access', ['permission' => <valor>])`, solo cuando `PermissionHolders::canAccess()`: cada badge de permiso en `RoleInfolist`, la etiqueta de cada fila de la matriz y (extra) cada badge de «Permisos efectivos» en `UserInfolist`. Sin acceso, el texto se muestra sin enlace.",
+    "Número constante de consultas: renderizar la página con un permiso elegido no depende de cuántos roles o usuarios lo tengan.",
+    "Textos nuevos en `lang/{en,es}/admin/roles.php` bajo `access.*` (título, descripción, selector, secciones, columnas, avisos, estados vacíos, requisitos) y `access.link` para los enlaces de entrada."
+  ],
+  "existingCodeLeverage": [
+    "`RolePermissionMatrix` + su vista: página de recurso con `#[Url]`, formulario Livewire en la vista, `canAccess()` por `Gate` y agrupación de permisos por área.",
+    "`RoleUsersTable` (SOC-75): columnas de estado, MFA del panel y último acceso, filtros de estado y MFA, y el resumen agregado `holdersSummary()` como patrón de una sola consulta.",
+    "`DescribesAccountStatus`: etiqueta, color y opciones del estado de cuenta.",
+    "`Role::inDisplayOrder()`, `displayName()`, `isSystem()`; claves `admin/roles.types.system|custom` para el tipo.",
+    "`AdminPermission::label()`, `description()`, `area()`, `isSensitive()`, `requires()`, `dependents()`; clave `admin/roles.matrix.sensitive` para la insignia.",
+    "`AdminFilamentTestContext` y los ayudantes de `RolePermissionMatrixTest` (conteo de consultas) como patrón de pruebas."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Textos de la página «Quién puede hacer esto» (en/es)",
+      "description": "Agregar a `lang/en/admin/roles.php` y `lang/es/admin/roles.php` el grupo `access` con todas las claves del contrato (título, subtítulo, selector y su placeholder, sección de roles y sus columnas, columna «Por los roles», avisos con `trans_choice` para suspendidos y sin MFA, estado vacío sin permiso elegido, estado vacío sin titulares, «Necesita» / «Lo necesitan» / «Ninguno» y el título del enlace de entrada). Reutilizar las claves existentes para estado, MFA, tipo de rol e insignia de sensible.",
+      "priority": "P0",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "Las mismas claves `access.*` existen en inglés y en español, con los mismos marcadores (`:count`, `:suspended`…).",
+        "Las pruebas de paridad de claves siguen en verde; una clave solo en un idioma las haría fallar."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php < /dev/null",
+      "writeScope": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Extraer la columna y el filtro de MFA del panel a un concern",
+      "description": "Crear `Filament/Concerns/DescribesPanelMfa` con `panelMfaColumn()` y `panelMfaFilter()` tomados tal cual de `RoleUsersTable`, y hacer que `RoleUsersTable` los use. Sin cambio de comportamiento.",
+      "priority": "P0",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "La pestaña de usuarios del rol muestra la misma columna de MFA (iconos y tooltips) y el filtro ternario filtra igual: sus pruebas existentes pasan sin cambios.",
+        "El concern no tiene texto fijo: usa las claves `admin/roles.relations.users.mfa.*` (la prueba de texto fijo lo recorre)."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Concerns/DescribesPanelMfa.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RoleUsersTable.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers app/Modules/Admin/Tests/Translations/AdminHardcodedTextTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Concerns/DescribesPanelMfa.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/RoleUsersTable.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Página con selector de permiso, roles, avisos y requisitos",
+      "description": "Crear la página `PermissionHolders` y su vista, y registrarla en `RoleResource::getPages()` como `access` antes de `view`. Implementar `canAccess()`, `mount()` con la normalización de `?permission=`, `permissionForm()`, `selectedPermission()`, `getHolderRoles()`, `getHolderSummary()` y los requisitos/dependientes. La vista muestra el selector, la descripción, la insignia de sensible, el aviso de suspendidos/sin MFA, la lista de roles (nombre con enlace, tipo, número de usuarios), «Necesita» / «Lo necesitan» y los estados vacíos. La tabla de usuarios llega en TASK-005.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "acceptanceCriteria": [
+        "`/admin/roles/access` resuelve a la página (no a un rol llamado «access») y `?permission=admin.backups.download` llega con el permiso elegido.",
+        "Un valor desconocido en `?permission=` no falla: la página carga con el selector vacío y el estado «elige un permiso».",
+        "PHPStan pasa sobre los archivos nuevos sin `mixed` ni ignorados."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php app/Modules/Admin/Filament/Resources/Roles/RoleResource.php && rtk php artisan route:list --name=filament.admin.resources.roles.access",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RoleResource.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Pruebas de la página: roles, URL, autorización y textos",
+      "description": "Nuevo archivo de pruebas de la página con ayudantes al principio. Cubre los criterios 1 (parte de roles), 2, 3 y 4 de la issue, los avisos, la insignia de sensible y los requisitos/dependientes.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Lista exactamente los roles del guard `admin` que tienen el permiso (no los de `web` con el mismo nombre ni los que no lo tienen), en orden de visualización y con su número de usuarios.",
+        "Un permiso que nadie tiene muestra el estado vacío; un valor desconocido en la URL muestra el selector vacío; sin `viewAny` de roles o sin `viewAny` de usuarios responde 403 (dataset).",
+        "La página se ve en español y en inglés con los textos de `admin/roles.access.*` comparados con `translatedTextIn()`; los avisos cuentan bien suspendidos y sin MFA, y la insignia de sensible aparece solo en permisos sensibles."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
+      ],
+      "filesToModify": [],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Tabla de usuarios que heredan el permiso",
+      "description": "Crear `PermissionHoldersTable` según el contrato (reutilizando `DescribesAccountStatus` y `DescribesPanelMfa`), hacer que la página implemente `HasTable` con `InteractsWithTable` y mostrar `{{ $this->table }}` en la vista. Al cambiar el permiso elegido, la tabla vuelve a la primera página.",
+      "priority": "P1",
+      "type": "feature",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-004"
+      ],
+      "acceptanceCriteria": [
+        "Un usuario que tiene el permiso por dos roles aparece una sola vez, con ambos roles en «Por los roles» y sin los roles que no lo conceden.",
+        "Sin permiso elegido la tabla no muestra filas ni ejecuta la consulta de usuarios con un permiso vacío.",
+        "Las pruebas de TASK-004 siguen en verde."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/PermissionHoldersTable.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php"
+      ],
+      "validateCommand": "rtk vendor/bin/phpstan analyse --memory-limit=2G app/Modules/Admin/Filament/Resources/Roles/Tables/PermissionHoldersTable.php app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php && rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Tables/PermissionHoldersTable.php",
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Pruebas de la tabla de usuarios y del número de consultas",
+      "description": "Nuevo archivo de pruebas para la tabla: titulares sin duplicados, «Por los roles», filtros de estado y MFA, enlaces al usuario y número constante de consultas de toda la página.",
+      "priority": "P1",
+      "type": "test",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "acceptanceCriteria": [
+        "La tabla muestra exactamente los usuarios que heredan el permiso por cualquier rol del guard `admin`, sin duplicar a quien lo tiene por varios, y no muestra a quien solo tiene roles sin él.",
+        "Los filtros de estado (suspendido / activo) y de MFA del panel dejan solo las filas que corresponden.",
+        "Renderizar la página con un permiso cuesta las mismas consultas con 1 rol y 1 usuario que con 4 roles y 12 usuarios."
+      ],
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersUsersTest.php"
+      ],
+      "filesToModify": [],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersUsersTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersUsersTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Enlaces desde los permisos del detalle de un rol",
+      "description": "En `RoleInfolist`, cada badge de permiso enlaza a la página con ese permiso cuando el administrador puede abrirla; si no, se muestra igual que hoy. Verificar con `search-docs` cómo dar una URL por elemento de una lista de badges en Filament 5 antes de elegir la forma.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Con `viewAny` de roles y de usuarios, el detalle de un rol enlaza cada permiso concedido a `/admin/roles/access?permission=<valor>`.",
+        "Un lector de roles sin `viewAny` de usuarios ve los permisos sin enlace.",
+        "Las pruebas existentes del detalle del rol siguen en verde."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Schemas/RoleInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Schemas/RoleInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Enlaces desde las filas de la matriz",
+      "description": "En la vista de la matriz, la etiqueta de cada permiso enlaza a la página con ese permiso cuando el administrador puede abrirla; la comparación y «solo diferencias» no cambian.",
+      "priority": "P2",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "acceptanceCriteria": [
+        "Cada fila de permiso de la matriz enlaza a `/admin/roles/access?permission=<valor>` para quien puede abrir la página.",
+        "Sin `viewAny` de usuarios la matriz se ve sin enlaces y sin error.",
+        "Las pruebas existentes de la matriz (comparación, sensibles, consultas) siguen en verde."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/UI/Views/filament/roles/permission-matrix.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Extra: enlaces desde «Permisos efectivos» del detalle de usuario",
+      "description": "En `UserInfolist`, cada badge de «Permisos efectivos» enlaza a la página con ese permiso cuando el administrador puede abrirla, con la misma forma elegida en TASK-007.",
+      "priority": "P3",
+      "type": "feature",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "Con acceso a la página, cada permiso efectivo del usuario enlaza a `/admin/roles/access?permission=<valor>`.",
+        "Sin acceso, los permisos se ven sin enlace; las pruebas existentes del detalle de usuario siguen en verde."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/Schemas/UserInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php < /dev/null",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/Schemas/UserInfolist.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/Pages/ViewUserTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Documentar la página en la arquitectura del módulo Admin",
+      "description": "Agregar a `docs/architecture/modules/admin.md` la sección «Who can do this (SOC-77)»: ruta y orden de registro, autorización doble, `?permission=`, consultas, concern `DescribesPanelMfa`, enlaces de entrada, textos y pruebas. `CLAUDE.md` no cambia salvo que aparezca una invariante nueva.",
+      "priority": "P3",
+      "type": "docs",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006",
+        "TASK-008",
+        "TASK-009"
+      ],
+      "acceptanceCriteria": [
+        "La doc nombra las clases, la URL y las claves reales, sin rutas inventadas.",
+        "Menciona que `access` debe registrarse antes de `view`, igual que `matrix`."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/modules/admin.md"
+      ],
+      "validateCommand": "rtk grep -n 'SOC-77' docs/architecture/modules/admin.md",
+      "writeScope": [
+        "docs/architecture/modules/admin.md"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Gates completos y prueba en el navegador",
+      "description": "Pint, Rector (cache limpia, dry y aplicar, sobre todo el proyecto), PHPStan, `composer test` y `composer doctor`. Luego probar en Chrome del usuario en http://127.0.0.1:8000/admin/roles/access: elegir permisos, `?permission=` desconocido, filtros, enlaces desde el detalle del rol, la matriz y el detalle de usuario, en inglés y español y en modo claro y oscuro. Sin commit.",
+      "priority": "P1",
+      "type": "chore",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "acceptanceCriteria": [
+        "Todos los gates del backend pasan; los fallos se corrigen o se informan con su salida.",
+        "La página funciona en el navegador sin errores de consola, y los hallazgos se agregan al plan como tareas nuevas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "validateCommand": "rtk composer test && rtk composer doctor",
+      "writeScope": [],
+      "review": "claude"
+    }
+  ],
+  "failureModes": [
+    "`?permission=` con un valor que no está en el catálogo, vacío o con un permiso de otro guard: se vacía en `mount()` y se muestra el selector vacío.",
+    "Un rol de `web` con un permiso del mismo nombre: no aparece (se filtra por guard en roles y permisos).",
+    "Un usuario con el permiso por varios roles: una fila, varios badges en «Por los roles».",
+    "Ruta `access` registrada después de `view`: `/admin/roles/access` buscaría un rol con id «access» y respondería 404; la prueba de URL lo detecta.",
+    "Un administrador que puede ver roles pero no usuarios: 403 en la página y los permisos sin enlace en el detalle y la matriz.",
+    "Un permiso concedido a un rol sin usuarios: el rol aparece con 0 usuarios y la tabla muestra su estado vacío."
+  ],
+  "shipCut": "Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas de los 4 criterios, enlaces del detalle del rol y la matriz). Los requisitos/dependientes (dentro de TASK-003/004) y TASK-009 son los extras del modo EXPANSION.",
+  "testCoverageMap": {
+    "Criterio 1: roles y usuarios exactos, sin duplicados": [
+      "TASK-004",
+      "TASK-006"
+    ],
+    "Criterio 2: estado vacío y valor desconocido en la URL": [
+      "TASK-004"
+    ],
+    "Criterio 3: 403 sin viewAny de roles o usuarios": [
+      "TASK-004"
+    ],
+    "Criterio 4: textos traducidos": [
+      "TASK-001",
+      "TASK-004"
+    ],
+    "Filtros de estado y MFA": [
+      "TASK-002",
+      "TASK-006"
+    ],
+    "Número constante de consultas": [
+      "TASK-006"
+    ],
+    "Enlaces de entrada": [
+      "TASK-007",
+      "TASK-008",
+      "TASK-009"
+    ]
+  },
+  "executionSummary": {
+    "taskCount": 11,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002"
+      ],
+      [
+        "TASK-003"
+      ],
+      [
+        "TASK-004",
+        "TASK-007",
+        "TASK-008"
+      ],
+      [
+        "TASK-005",
+        "TASK-009"
+      ],
+      [
+        "TASK-006"
+      ],
+      [
+        "TASK-010"
+      ],
+      [
+        "TASK-011"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-003",
+      "TASK-004",
+      "TASK-005",
+      "TASK-006",
+      "TASK-010",
+      "TASK-011"
+    ]
+  },
+  "dependencyMap": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [
+      "TASK-001"
+    ],
+    "TASK-004": [
+      "TASK-003"
+    ],
+    "TASK-005": [
+      "TASK-002",
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-003"
+    ],
+    "TASK-008": [
+      "TASK-003"
+    ],
+    "TASK-009": [
+      "TASK-007"
+    ],
+    "TASK-010": [
+      "TASK-006",
+      "TASK-008",
+      "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-010"
+    ]
+  }
+}
