@@ -316,6 +316,32 @@ Hallazgo de TASK-011: la sección de requisitos de `permission-holders.blade.php
 
 **Review:** claude
 
+### TASK-013: Rediseño de la cabecera de la página (ficha + métricas)
+
+Rediseño de todo lo que está sobre la tabla de «Quién puede hacer esto» (dirección «Ficha + métricas», elegida por el usuario). 1) El selector queda arriba, compacto. 2) Ficha del permiso: ícono, nombre grande, clave en monoespaciada (`admin.access`), badge del área y badge «Sensible» cuando aplica, descripción; debajo 4 métricas en tarjetas: roles que lo conceden, titulares, sin MFA del panel y suspendidos. Las dos últimas en color de peligro cuando son > 0 y gris cuando son 0; reemplazan al callout rojo de avisos y al callout de sensible (se conservan los atributos `data-access-warnings`, `data-access-warning="suspended"`/`"without-mfa"` y `data-access-sensitive` en los nuevos elementos). 3) Roles que lo conceden como cuadrícula de tarjetas enlazadas: nombre, badge de tipo, número de usuarios y una barra con la proporción de titulares que llegan por ese rol. 4) Permisos relacionados como cadena «Necesita → permiso actual → Lo necesitan» con chips enlazados. Solo Blade + Tailwind con componentes de Filament (`x-filament::section`, `badge`, `icon`, `link`); sin dependencias nuevas. `getHolderRoles()` agrega `share` (porcentaje). Textos nuevos en `lang/{en,es}/admin/roles.php` (métricas). Revisar en claro y oscuro, inglés y español, y en ancho de móvil.
+
+**Type:** feat · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-012
+
+**Acceptance Criteria:**
+
+1. La ficha muestra nombre, clave, área, marca de sensible, descripción y las 4 métricas; las métricas de riesgo cambian de color según su valor.
+2. Los roles se ven como tarjetas con su proporción de titulares, y los requisitos como cadena enlazada; la vista funciona en claro/oscuro, en/es y móvil.
+3. Las pruebas existentes de la página siguen pasando (se conservan los atributos `data-access-*`) y hay prueba de las métricas y de `share`.
+
+**writeScope:**
+
+- `app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php`
+- `app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php`
+- `lang/en/admin/roles.php`
+- `lang/es/admin/roles.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages`
+
+**Review:** claude
+
 ## Failure Modes
 
 - `?permission=` con un valor que no está en el catálogo, vacío o con un permiso de otro guard: se vacía en `mount()` y se muestra el selector vacío.
@@ -341,7 +367,7 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 
 ## Execution Summary
 
-**Tareas:** 12
+**Tareas:** 13
 
 **Capas:**
 
@@ -353,8 +379,9 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 6. TASK-010
 7. TASK-011
 8. TASK-012
+9. TASK-013
 
-**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012
+**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013
 
 ## Dependency Map
 
@@ -371,4 +398,5 @@ TASK-009 ← TASK-007
 TASK-010 ← TASK-006, TASK-008, TASK-009
 TASK-011 ← TASK-010
 TASK-012 ← TASK-011
+TASK-013 ← TASK-012
 ```
