@@ -286,3 +286,29 @@ it('marks the sensitive permissions and only them, also when comparing only the 
         ->and(array_diff($markedPermissionNames, $sensitivePermissionNames))->toBeEmpty()
         ->and(substr_count($comparedTestable->html(), 'data-matrix-sensitive'))->toBe($shownSensitiveRowCount);
 });
+
+it('links each permission row to who holds it, also when comparing', function (array $queryParameters): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+
+    $html = Livewire::withQueryParams($queryParameters)->test(RolePermissionMatrix::class)->html();
+
+    expect(substr_count($html, 'href="'.e(RoleResource::getUrl('access')).'?permission='))->toBe(substr_count($html, 'scope="row"'))
+        ->and($html)->toContain('href="'.e(RoleResource::getUrl('access', ['permission' => AdminPermission::AdminUsersSuspend->value])).'"');
+})->with([
+    'whole matrix' => [[]],
+    'only the differences of two roles' => [['roles' => [AdminRole::AdminUsersReader->value, AdminRole::AdminUsersModerator->value], 'only_differences' => '1']],
+]);
+
+it('shows the permission rows without links to an administrator who cannot see who holds them', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    Livewire::test(RolePermissionMatrix::class)
+        ->assertOk()
+        ->assertSee(AdminPermission::AdminUsersSuspend->label())
+        ->assertDontSeeHtml('data-matrix-holders-link')
+        ->assertDontSeeHtml(RoleResource::getUrl('access'));
+});
