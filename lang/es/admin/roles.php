@@ -514,6 +514,13 @@ return [
             'dependents' => 'Lo necesitan',
             'none' => 'Ninguno',
         ],
+        'metrics' => [
+            'roles' => 'Roles que lo conceden',
+            'holders' => 'Titulares',
+            'without_mfa' => 'Sin MFA del panel',
+            'suspended' => 'Suspendidos',
+            'ready' => 'Todos los titulares pueden usarlo hoy.',
+        ],
         'warnings' => [
             'heading' => 'Algunos titulares no pueden usarlo hoy',
             'suspended' => '{1} :count titular está suspendido.|[0,*] :count titulares están suspendidos.',
@@ -522,6 +529,7 @@ return [
         'roles' => [
             'heading' => 'Roles que lo conceden',
             'users_count' => '{0} Sin usuarios|{1} :count usuario|[2,*] :count usuarios',
+            'share' => ':share % de los titulares',
             'empty' => 'Ningún rol concede este permiso.',
         ],
         'users' => [

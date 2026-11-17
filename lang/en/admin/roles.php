@@ -514,6 +514,13 @@ return [
             'dependents' => 'Needed by',
             'none' => 'None',
         ],
+        'metrics' => [
+            'roles' => 'Granting roles',
+            'holders' => 'Holders',
+            'without_mfa' => 'Without panel MFA',
+            'suspended' => 'Suspended',
+            'ready' => 'Every holder can use it today.',
+        ],
         'warnings' => [
             'heading' => 'Some holders cannot use it today',
             'suspended' => '{1} :count holder is suspended.|[0,*] :count holders are suspended.',
@@ -522,6 +529,7 @@ return [
         'roles' => [
             'heading' => 'Roles that grant it',
             'users_count' => '{0} No users|{1} :count user|[2,*] :count users',
+            'share' => ':share% of the holders',
             'empty' => 'No role grants this permission.',
         ],
         'users' => [

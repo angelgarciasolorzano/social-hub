@@ -40,6 +40,13 @@ class PermissionHolders extends Page implements HasTable
     #[Url]
     public ?string $permission = null;
 
+    /**
+     * The holder summary of this request, so the metrics and the role shares share one query.
+     *
+     * @var array{holders: int, suspended: int, withoutMfa: int}|null
+     */
+    private ?array $holderSummary = null;
+
     #[Override]
     protected static string $resource = RoleResource::class;
 
@@ -89,7 +96,7 @@ class PermissionHolders extends Page implements HasTable
     }
 
     /**
-     * The cataloged permission to look up, kept in the URL, grouped by area with its description below.
+     * The cataloged permission to look up, kept in the URL, grouped by area.
      */
     public function permissionForm(Schema $schema): Schema
     {
@@ -98,7 +105,6 @@ class PermissionHolders extends Page implements HasTable
                 ->label(TranslatedText::of('admin/roles.access.permission'))
                 ->placeholder(TranslatedText::of('admin/roles.access.permission_placeholder'))
                 ->options(fn (): array => $this->permissionOptions())
-                ->helperText(fn (): ?string => $this->selectedPermission()?->description())
                 ->searchable()
                 ->live(),
         ]);
@@ -109,6 +115,7 @@ class PermissionHolders extends Page implements HasTable
      */
     public function updatedPermission(): void
     {
+        $this->holderSummary = null;
         $this->resetPage();
     }
 
@@ -127,9 +134,10 @@ class PermissionHolders extends Page implements HasTable
 
     /**
      * The roles of the `admin` guard that grant the chosen permission, in display order, with their
-     * number of users and a link to their detail when the administrator may open it. One query.
+     * number of users, the percentage of the holders they reach and a link to their detail when the
+     * administrator may open it. One query, plus the holder summary.
      *
-     * @return list<array{name: string, label: string, isSystem: bool, usersCount: int, url: string|null}>
+     * @return list<array{name: string, label: string, isSystem: bool, usersCount: int, share: int, url: string|null}>
      */
     public function getHolderRoles(): array
     {
@@ -140,16 +148,19 @@ class PermissionHolders extends Page implements HasTable
         }
 
         $roles = $this->grantingRoleQuery($adminPermission)->withCount('users')->get();
+        $holders = $this->getHolderSummary()['holders'];
         $holderRoles = [];
 
         foreach (Role::inDisplayOrder($roles) as $role) {
-            $usersCount = $role->getAttribute('users_count');
+            $usersCountAttribute = $role->getAttribute('users_count');
+            $usersCount = is_numeric($usersCountAttribute) ? (int) $usersCountAttribute : 0;
 
             $holderRoles[] = [
                 'name' => $role->name,
                 'label' => $role->displayName(),
                 'isSystem' => $role->isSystem(),
-                'usersCount' => is_numeric($usersCount) ? (int) $usersCount : 0,
+                'usersCount' => $usersCount,
+                'share' => $holders > 0 ? (int) round($usersCount * 100 / $holders) : 0,
                 'url' => RoleResource::canView($role) ? RoleResource::getUrl('view', ['record' => $role]) : null,
             ];
         }
@@ -171,6 +182,10 @@ class PermissionHolders extends Page implements HasTable
             return ['holders' => 0, 'suspended' => 0, 'withoutMfa' => 0];
         }
 
+        if ($this->holderSummary !== null) {
+            return $this->holderSummary;
+        }
+
         $summary = self::holdersQuery($adminPermission)
             ->selectRaw(
                 'count(*) as holders, '
@@ -183,7 +198,7 @@ class PermissionHolders extends Page implements HasTable
 
         $summaryRow = \is_object($summary) ? get_object_vars($summary) : [];
 
-        return [
+        return $this->holderSummary = [
             'holders' => $this->summaryCount($summaryRow, 'holders'),
             'suspended' => $this->summaryCount($summaryRow, 'suspended'),
             'withoutMfa' => $this->summaryCount($summaryRow, 'without_mfa'),

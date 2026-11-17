@@ -342,6 +342,30 @@ Rediseño de todo lo que está sobre la tabla de «Quién puede hacer esto» (di
 
 **Review:** claude
 
+### TASK-014: Explicar la sección de permisos relacionados
+
+La sección «Permisos relacionados» no se entiende sin contexto (comentario del usuario). Explicarla con el comportamiento real del editor de roles (`EditsRolePermissions::applyPermissionDependencies()`: marcar un permiso marca lo que requiere; desmarcarlo desmarca lo que depende de él). 1) Descripción de la sección: «Un permiso solo funciona si el rol también tiene los que requiere. Al marcarlo en un rol se marcan solos los que requiere; al desmarcarlo se desmarcan los que dependen de él.» 2) Etiquetas más claras: «Necesita» → «Requiere», «Lo necesitan» → «Dependen de este» (en: «Requires» / «Required by»). 3) Una línea de ayuda bajo cada columna: «Se agregan solos al darle este permiso a un rol.» y «Se quitan si le quitas este permiso a un rol.». 4) Un tooltip en cada chip: «Ver quién puede hacer esto». Claves nuevas en `lang/{en,es}/admin/roles.php` (`access.requirements.description`, `requires_help`, `dependents_help`) y prueba en español.
+
+**Type:** feat · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-013
+
+**Acceptance Criteria:**
+
+1. La sección explica qué significan las dos columnas y qué pasa al editar un rol, en inglés y español.
+2. Las pruebas de la página y de traducciones pasan con las claves nuevas.
+
+**writeScope:**
+
+- `lang/en/admin/roles.php`
+- `lang/es/admin/roles.php`
+- `app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php`
+
+**Review:** claude
+
 ## Failure Modes
 
 - `?permission=` con un valor que no está en el catálogo, vacío o con un permiso de otro guard: se vacía en `mount()` y se muestra el selector vacío.
@@ -367,7 +391,7 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 
 ## Execution Summary
 
-**Tareas:** 13
+**Tareas:** 14
 
 **Capas:**
 
@@ -380,8 +404,9 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 7. TASK-011
 8. TASK-012
 9. TASK-013
+10. TASK-014
 
-**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013
+**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013 → TASK-014
 
 ## Dependency Map
 
@@ -399,4 +424,5 @@ TASK-010 ← TASK-006, TASK-008, TASK-009
 TASK-011 ← TASK-010
 TASK-012 ← TASK-011
 TASK-013 ← TASK-012
+TASK-014 ← TASK-013
 ```

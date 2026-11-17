@@ -406,6 +406,37 @@
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
       ],
       "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Explicar la sección de permisos relacionados",
+      "description": "La sección «Permisos relacionados» no se entiende sin contexto (comentario del usuario). Explicarla con el comportamiento real del editor de roles (`EditsRolePermissions::applyPermissionDependencies()`: marcar un permiso marca lo que requiere; desmarcarlo desmarca lo que depende de él). 1) Descripción de la sección: «Un permiso solo funciona si el rol también tiene los que requiere. Al marcarlo en un rol se marcan solos los que requiere; al desmarcarlo se desmarcan los que dependen de él.» 2) Etiquetas más claras: «Necesita» → «Requiere», «Lo necesitan» → «Dependen de este» (en: «Requires» / «Required by»). 3) Una línea de ayuda bajo cada columna: «Se agregan solos al darle este permiso a un rol.» y «Se quitan si le quitas este permiso a un rol.». 4) Un tooltip en cada chip: «Ver quién puede hacer esto». Claves nuevas en `lang/{en,es}/admin/roles.php` (`access.requirements.description`, `requires_help`, `dependents_help`) y prueba en español.",
+      "priority": "P2",
+      "type": "feat",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "acceptanceCriteria": [
+        "La sección explica qué significan las dos columnas y qué pasa al editar un rol, en inglés y español.",
+        "Las pruebas de la página y de traducciones pasan con las claves nuevas."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php",
+      "writeScope": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -446,7 +477,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 13,
+    "taskCount": 14,
     "layers": [
       [
         "TASK-001",
@@ -478,6 +509,9 @@
       ],
       [
         "TASK-013"
+      ],
+      [
+        "TASK-014"
       ]
     ],
     "criticalPath": [
@@ -489,7 +523,8 @@
       "TASK-010",
       "TASK-011",
       "TASK-012",
-      "TASK-013"
+      "TASK-013",
+      "TASK-014"
     ]
   },
   "dependencyMap": {
@@ -530,6 +565,9 @@
     ],
     "TASK-013": [
       "TASK-012"
+    ],
+    "TASK-014": [
+      "TASK-013"
     ]
   }
 }

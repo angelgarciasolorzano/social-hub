@@ -45,7 +45,7 @@ it('is served at /admin/roles/access, not as a role record', function (): void {
         ->and(PermissionHolders::urlFor(AdminPermission::AdminBackupsDownload))->toBe(RoleResource::getUrl('access', ['permission' => 'admin.backups.download']));
 });
 
-it('lists exactly the roles of the admin guard that grant the permission, in display order, with their users', function (): void {
+it('lists exactly the roles of the admin guard that grant the permission, in display order, with their users and share of holders', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
@@ -59,9 +59,9 @@ it('lists exactly the roles of the admin guard that grant the permission, in dis
 
     $holderRoles = permissionHoldersInstance(permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value))->getHolderRoles();
 
-    expect(array_map(static fn (array $holderRole): array => [$holderRole['label'], $holderRole['isSystem'], $holderRole['usersCount']], $holderRoles))->toBe([
-        [AdminRole::AdminBackupsOperator->label(), true, 2],
-        ['Soporte', false, 0],
+    expect(array_map(static fn (array $holderRole): array => [$holderRole['label'], $holderRole['isSystem'], $holderRole['usersCount'], $holderRole['share']], $holderRoles))->toBe([
+        [AdminRole::AdminBackupsOperator->label(), true, 2, 100],
+        ['Soporte', false, 0, 0],
     ])
         ->and($holderRoles[0]['url'])->toBe(RoleResource::getUrl('view', ['record' => $role]));
 });
@@ -146,13 +146,35 @@ it('counts the holders who are suspended or lack the panel MFA and warns about t
     expect(permissionHoldersInstance($testable)->getHolderSummary())->toBe(['holders' => 3, 'suspended' => 1, 'withoutMfa' => 1]);
 });
 
-it('does not warn when every holder can use the permission', function (): void {
+it('does not warn when every holder can use the permission and says so', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
     createUserHoldingRoles(adminCatalogRole(AdminRole::AdminBackupsOperator))->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
 
-    permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)->assertDontSeeHtml('data-access-warnings');
+    permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)
+        ->assertDontSeeHtml('data-access-warnings')
+        ->assertDontSeeHtml('data-access-warning=')
+        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.access.metrics.ready'));
+});
+
+it('splits the holders among the roles that grant the permission', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    $role = adminCatalogRole(AdminRole::AdminBackupsOperator);
+    $customRole = RoleFactory::new()->createOne(['label' => 'Soporte']);
+    $customRole->givePermissionTo(AdminPermission::AdminBackupsView->value, AdminPermission::AdminBackupsDownload->value);
+    createUserHoldingRoles($role, $customRole);
+    createUserHoldingRoles($role);
+    createUserHoldingRoles($role);
+
+    $holderRoles = permissionHoldersInstance(permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value))->getHolderRoles();
+
+    expect(array_column($holderRoles, 'share', 'label'))->toBe([
+        AdminRole::AdminBackupsOperator->label() => 100,
+        'Soporte' => 33,
+    ]);
 });
 
 it('marks a sensitive permission and only those', function (AdminPermission $adminPermission): void {
