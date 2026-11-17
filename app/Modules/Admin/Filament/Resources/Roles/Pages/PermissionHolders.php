@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Pages;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Filament\Resources\Roles\Tables\PermissionHoldersTable;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
@@ -15,6 +16,9 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
@@ -23,11 +27,13 @@ use Override;
 
 /**
  * Who can do something: the roles of the `admin` guard that grant one cataloged permission and the
- * users who hold it through any of them. The permission is kept in the URL (`?permission=<value>`), so
+ * users who hold it through any of them, in a table filtered by status and panel MFA. The permission is kept in the URL (`?permission=<value>`), so
  * other screens link here; an unknown value leaves the selector empty. Read-only.
  */
-class PermissionHolders extends Page
+class PermissionHolders extends Page implements HasTable
 {
+    use InteractsWithTable;
+
     /**
      * The value of the chosen permission, as the URL or the selector sent it.
      */
@@ -96,6 +102,22 @@ class PermissionHolders extends Page
                 ->searchable()
                 ->live(),
         ]);
+    }
+
+    /**
+     * Another permission was picked: show its holders from the first page, keeping the filters.
+     */
+    public function updatedPermission(): void
+    {
+        $this->resetPage();
+    }
+
+    /**
+     * The users who hold the chosen permission; see PermissionHoldersTable.
+     */
+    public function table(Table $table): Table
+    {
+        return PermissionHoldersTable::configure($table, $this->selectedPermission(...));
     }
 
     public function selectedPermission(): ?AdminPermission
@@ -224,7 +246,7 @@ class PermissionHolders extends Page
      *
      * @return Closure(Builder<Model>): Builder<Model>
      */
-    private static function grantsPermission(AdminPermission $adminPermission): Closure
+    public static function grantsPermission(AdminPermission $adminPermission): Closure
     {
         return static function (Builder $permissions) use ($adminPermission): Builder {
             $permissions->getQuery()

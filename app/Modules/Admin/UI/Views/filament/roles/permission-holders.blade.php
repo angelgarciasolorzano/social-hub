@@ -109,5 +109,7 @@
                 @endforeach
             </dl>
         </x-filament::section>
+
+        <div data-access-users>{{ $this->table }}</div>
     @endif
 </x-filament-panels::page>
