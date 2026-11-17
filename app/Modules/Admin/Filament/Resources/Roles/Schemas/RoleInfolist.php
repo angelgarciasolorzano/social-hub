@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\Schemas;
 
 use App\Modules\Admin\Enums\AdminPermission;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Filament\Infolists\Components\TextEntry;
@@ -69,7 +70,7 @@ class RoleInfolist
                             ->hiddenLabel()
                             ->state(TranslatedText::of('admin/roles.infolist.permissions.empty'))
                             ->color('gray')
-                            ->visible(fn (Role $record): bool => self::permissionLabelsIn($record) === [])
+                            ->visible(fn (Role $record): bool => self::permissionValuesIn($record) === [])
                             ->columnSpanFull(),
                         ...array_map(self::areaEntry(...), self::areas()),
                     ]),
@@ -90,31 +91,35 @@ class RoleInfolist
     }
 
     /**
-     * The cataloged permissions the role grants in one area, as badges; hidden when there are none.
+     * The cataloged permissions the role grants in one area, as badges that open who else holds each
+     * one when the administrator may see it; hidden when there are none.
      */
     private static function areaEntry(string $area): TextEntry
     {
         return TextEntry::make('permissions_'.$area)
             ->label(TranslatedText::of('admin/roles.catalog.areas.'.$area))
-            ->state(fn (Role $record): array => self::permissionLabelsIn($record, $area))
+            ->state(fn (Role $record): array => self::permissionValuesIn($record, $area))
+            ->formatStateUsing(fn (string $state): string => AdminPermission::from($state)->label())
+            ->url(fn (string $state): ?string => PermissionHolders::urlFor(AdminPermission::from($state)))
+            ->tooltip(fn (): ?string => PermissionHolders::canAccess() ? TranslatedText::of('admin/roles.access.link') : null)
             ->badge()
-            ->visible(fn (Role $record): bool => self::permissionLabelsIn($record, $area) !== []);
+            ->visible(fn (Role $record): bool => self::permissionValuesIn($record, $area) !== []);
     }
 
     /**
-     * The labels of the cataloged permissions the role grants, optionally only those of one area, in
+     * The values of the cataloged permissions the role grants, optionally only those of one area, in
      * catalog order. Reads the role's loaded permissions, so the whole section costs one query.
      *
      * @return list<string>
      */
-    private static function permissionLabelsIn(Role $role, ?string $area = null): array
+    private static function permissionValuesIn(Role $role, ?string $area = null): array
     {
         $grantedNames = $role->permissions
             ->map(static fn (Permission $permission): string => $permission->name)
             ->all();
 
         return array_values(array_map(
-            static fn (AdminPermission $adminPermission): string => $adminPermission->label(),
+            static fn (AdminPermission $adminPermission): string => $adminPermission->value,
             array_filter(
                 AdminPermission::cases(),
                 static fn (AdminPermission $adminPermission): bool => \in_array($adminPermission->value, $grantedNames, true)
