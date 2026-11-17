@@ -200,6 +200,7 @@ it('shows the page in Spanish', function (): void {
     permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.title'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.roles.heading'))
+        ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.heading'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.requires'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.permissions.admin_backups_download.description'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.roles.admin_backups_operator.label'));

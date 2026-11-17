@@ -509,6 +509,7 @@ return [
         'choose' => 'Elige un permiso para ver quién lo tiene.',
         'sensitive_description' => 'Da control sobre otros administradores, su acceso o datos exportados.',
         'requirements' => [
+            'heading' => 'Permisos relacionados',
             'requires' => 'Necesita',
             'dependents' => 'Lo necesitan',
             'none' => 'Ninguno',

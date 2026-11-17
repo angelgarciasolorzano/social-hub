@@ -343,6 +343,35 @@
       "validateCommand": "rtk composer test && rtk composer doctor",
       "writeScope": [],
       "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Título para la sección de requisitos",
+      "description": "Hallazgo de TASK-011: la sección de requisitos de `permission-holders.blade.php` muestra una cabecera con solo el ícono de enlace y sin título. Agregar la clave `admin/roles.access.requirements.heading` (en: «Related permissions», es: «Permisos relacionados») en ambos idiomas y pasarla como `:heading` a la sección; ampliar la prueba en español para verla.",
+      "priority": "P2",
+      "type": "fix",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-011"
+      ],
+      "acceptanceCriteria": [
+        "La sección de requisitos muestra su título en inglés y en español, con el ícono a su lado.",
+        "Las pruebas de traducciones y `PermissionHoldersTest` pasan con la clave nueva."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php",
+      "writeScope": [
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -383,7 +412,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 11,
+    "taskCount": 12,
     "layers": [
       [
         "TASK-001",
@@ -409,6 +438,9 @@
       ],
       [
         "TASK-011"
+      ],
+      [
+        "TASK-012"
       ]
     ],
     "criticalPath": [
@@ -418,7 +450,8 @@
       "TASK-005",
       "TASK-006",
       "TASK-010",
-      "TASK-011"
+      "TASK-011",
+      "TASK-012"
     ]
   },
   "dependencyMap": {
@@ -453,6 +486,9 @@
     ],
     "TASK-011": [
       "TASK-010"
+    ],
+    "TASK-012": [
+      "TASK-011"
     ]
   }
 }

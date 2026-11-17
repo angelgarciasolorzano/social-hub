@@ -293,6 +293,29 @@ Pint, Rector (cache limpia, dry y aplicar, sobre todo el proyecto), PHPStan, `co
 
 **Review:** claude
 
+### TASK-012: Título para la sección de requisitos
+
+Hallazgo de TASK-011: la sección de requisitos de `permission-holders.blade.php` muestra una cabecera con solo el ícono de enlace y sin título. Agregar la clave `admin/roles.access.requirements.heading` (en: «Related permissions», es: «Permisos relacionados») en ambos idiomas y pasarla como `:heading` a la sección; ampliar la prueba en español para verla.
+
+**Type:** fix · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-011
+
+**Acceptance Criteria:**
+
+1. La sección de requisitos muestra su título en inglés y en español, con el ícono a su lado.
+2. Las pruebas de traducciones y `PermissionHoldersTest` pasan con la clave nueva.
+
+**writeScope:**
+
+- `lang/en/admin/roles.php`
+- `lang/es/admin/roles.php`
+- `app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php`
+
+**Review:** claude
+
 ## Failure Modes
 
 - `?permission=` con un valor que no está en el catálogo, vacío o con un permiso de otro guard: se vacía en `mount()` y se muestra el selector vacío.
@@ -318,7 +341,7 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 
 ## Execution Summary
 
-**Tareas:** 11
+**Tareas:** 12
 
 **Capas:**
 
@@ -329,8 +352,9 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 5. TASK-006
 6. TASK-010
 7. TASK-011
+8. TASK-012
 
-**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011
+**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012
 
 ## Dependency Map
 
@@ -346,4 +370,5 @@ TASK-008 ← TASK-003
 TASK-009 ← TASK-007
 TASK-010 ← TASK-006, TASK-008, TASK-009
 TASK-011 ← TASK-010
+TASK-012 ← TASK-011
 ```

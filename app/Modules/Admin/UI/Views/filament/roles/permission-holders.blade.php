@@ -84,7 +84,7 @@
             @endif
         </x-filament::section>
 
-        <x-filament::section icon="heroicon-o-link" compact>
+        <x-filament::section :heading="__('admin/roles.access.requirements.heading')" icon="heroicon-o-link" compact>
             <dl class="grid gap-4 text-sm sm:grid-cols-2">
                 @foreach (['requires', 'dependents'] as $relation)
                     <div data-access-requirements="{{ $relation }}">

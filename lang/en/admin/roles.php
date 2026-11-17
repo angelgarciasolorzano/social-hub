@@ -509,6 +509,7 @@ return [
         'choose' => 'Pick a permission to see who holds it.',
         'sensitive_description' => 'It gives control over other administrators, their access or exported data.',
         'requirements' => [
+            'heading' => 'Related permissions',
             'requires' => 'Needs',
             'dependents' => 'Needed by',
             'none' => 'None',
