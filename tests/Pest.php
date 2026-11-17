@@ -8,7 +8,9 @@ use App\Auth\Modules\TrustedDevice\Enums\TrustedDeviceAction;
 use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
 use App\Modules\Admin\Models\AdminInvitation;
+use App\Modules\Admin\Models\Role as AdminGuardRole;
 use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
@@ -22,6 +24,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\Features\SupportTesting\Testable;
+use Livewire\Livewire;
 use PragmaRX\Google2FA\Google2FA;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -579,6 +584,36 @@ function grantAdminPermissionThroughTestRole(User $user, AdminPermission $adminP
     $role->givePermissionTo(Permission::findByName($adminPermission->value, 'admin'));
 
     $user->assignRole($role);
+}
+
+/**
+ * The stored role of the `admin` guard for a catalog case. The Admin authorization catalog must be
+ * seeded first.
+ */
+function adminCatalogRole(AdminRole $adminRole): AdminGuardRole
+{
+    return AdminGuardRole::query()->where('guard_name', AdminGuardRole::GUARD_NAME)->where('name', $adminRole->value)->firstOrFail();
+}
+
+/**
+ * Create a persisted User holding the given roles of the `admin` guard.
+ */
+function createUserHoldingRoles(AdminGuardRole ...$roles): User
+{
+    $user = createUser();
+    $user->assignRole($roles);
+
+    return $user;
+}
+
+/**
+ * The page mounted with a permission in the URL, as a link from another screen opens it.
+ *
+ * @return Testable<Component>
+ */
+function permissionHoldersPageFor(?string $permission): Testable
+{
+    return Livewire::withQueryParams($permission === null ? [] : ['permission' => $permission])->test(PermissionHolders::class);
 }
 
 /**

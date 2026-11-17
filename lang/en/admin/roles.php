@@ -491,13 +491,56 @@ return [
     ],
 
     'compare' => [
-        'action' => 'Compare roles',
         'bulk_action' => 'Compare selected',
         'roles' => 'Roles to compare',
         'roles_helper' => 'Pick between :min and :max roles to see them side by side.',
         'only_differences' => 'Only differences',
         'invalid_selection' => 'The roles to compare were not valid, so every role is shown. Pick between :min and :max existing roles.',
         'wrong_count' => 'Select between :min and :max roles to compare them.',
+    ],
+
+    'access' => [
+        'title' => 'Who can do this',
+        'description' => 'Pick a permission to see the roles that grant it and the administrators who hold it through them.',
+        'link' => 'See who can do this',
+        'permission' => 'Permission',
+        'permission_placeholder' => 'Pick a permission',
+        'choose' => 'Pick a permission to see who holds it.',
+        'sensitive_description' => 'It gives control over other administrators, their access or exported data.',
+        'requirements' => [
+            'heading' => 'Related permissions',
+            'description' => 'A permission only works when the role also has the ones it requires. Checking it on a role checks what it requires; unchecking it unchecks what depends on it.',
+            'requires' => 'Requires',
+            'dependents' => 'Required by',
+            'requires_help' => 'Added on their own when a role gets this permission.',
+            'dependents_help' => 'Removed when a role loses this permission.',
+            'none' => 'None',
+        ],
+        'metrics' => [
+            'roles' => 'Granting roles',
+            'holders' => 'Holders',
+            'without_mfa' => 'Without panel MFA',
+            'suspended' => 'Suspended',
+            'ready' => 'Every holder can use it today.',
+        ],
+        'warnings' => [
+            'heading' => 'Some holders cannot use it today',
+            'suspended' => '{1} :count holder is suspended.|[0,*] :count holders are suspended.',
+            'without_mfa' => '{1} :count holder has no panel MFA.|[0,*] :count holders have no panel MFA.',
+            'unverified' => '{1} :count holder has not verified their email.|[0,*] :count holders have not verified their email.',
+            'without_panel_access' => '{1} :count holder has no role that lets them enter the panel.|[0,*] :count holders have no role that lets them enter the panel.',
+        ],
+        'roles' => [
+            'heading' => 'Roles that grant it',
+            'users_count' => '{0} No users|{1} :count user|[2,*] :count users',
+            'share' => ':share% of the holders',
+            'empty' => 'No role grants this permission.',
+        ],
+        'users' => [
+            'heading' => 'Users who hold it',
+            'via_roles' => 'Through the roles',
+            'empty' => 'Nobody holds this permission.',
+        ],
     ],
 
     'users' => [

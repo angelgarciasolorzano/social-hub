@@ -42,6 +42,7 @@ const ADMIN_TRANSLATED_PATHS = [
     'app/Modules/Admin/Filament/Pages/Backups',
     'app/Modules/Admin/Filament/Concerns/ConfirmsCurrentPassword.php',
     'app/Modules/Admin/Filament/Concerns/DescribesActivityLogParties.php',
+    'app/Modules/Admin/Filament/Concerns/DescribesPanelMfa.php',
     'app/Modules/Admin/Filament/Concerns/EditsRolePermissions.php',
     'app/Modules/Admin/UI/Views/filament/announcements/preview.blade.php',
     'app/Modules/Admin/UI/Views/filament/widgets',

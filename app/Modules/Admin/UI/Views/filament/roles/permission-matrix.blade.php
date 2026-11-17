@@ -1,7 +1,11 @@
 <?php declare(strict_types=1); ?>
 
+@use('App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders')
+@use('App\Modules\Admin\Filament\Resources\Roles\RoleResource')
+
 @php
     $matrixRoles = $this->getMatrixRoles();
+    $canSeePermissionHolders = PermissionHolders::canAccess();
 @endphp
 
 <x-filament-panels::page>
@@ -57,7 +61,17 @@
                                     class="sticky left-0 bg-white px-3 py-2 text-start font-normal text-gray-950 dark:bg-gray-900 dark:text-white"
                                     title="{{ $matrixPermission['description'] }}"
                                 >
-                                    {{ $matrixPermission['label'] }}
+                                    @if ($canSeePermissionHolders)
+                                        <x-filament::link
+                                            :href="RoleResource::getUrl('access', ['permission' => $matrixPermission['name']])"
+                                            :tooltip="__('admin/roles.access.link')"
+                                            data-matrix-holders-link
+                                        >
+                                            {{ $matrixPermission['label'] }}
+                                        </x-filament::link>
+                                    @else
+                                        {{ $matrixPermission['label'] }}
+                                    @endif
 
                                     @if ($matrixPermission['sensitive'])
                                         <span class="ms-1 inline-flex align-middle" data-matrix-sensitive>

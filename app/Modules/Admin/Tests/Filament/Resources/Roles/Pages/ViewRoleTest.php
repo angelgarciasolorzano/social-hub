@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
@@ -23,14 +24,6 @@ function viewRolePage(Role $role): Testable
     return Livewire::test(ViewRole::class, ['record' => $role->getKey()]);
 }
 
-function adminGuardRole(AdminRole $adminRole): Role
-{
-    return Role::query()
-        ->where('name', $adminRole->value)
-        ->where('guard_name', 'admin')
-        ->sole();
-}
-
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -47,7 +40,7 @@ it('shows the role and its permissions grouped by area', function (PreferredLoca
 
     $text = static fn (string $key): string => translatedTextIn($preferredLocale, 'admin/roles.'.$key);
 
-    viewRolePage(adminGuardRole(AdminRole::AdminRolesManager))
+    viewRolePage(adminCatalogRole(AdminRole::AdminRolesManager))
         ->assertOk()
         ->assertSee($text('catalog.roles.admin_roles_manager.label'))
         ->assertSee(AdminRole::AdminRolesManager->value)
@@ -66,7 +59,7 @@ it('titles the page and breadcrumb with the translated role name', function (): 
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
-    $role = adminGuardRole(AdminRole::AdminPostsReader);
+    $role = adminCatalogRole(AdminRole::AdminPostsReader);
     $label = translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.roles.admin_posts_reader.label');
 
     expect(RoleResource::getRecordTitle($role))->toBe($label)
@@ -98,12 +91,12 @@ it('shows that the admin role is locked', function (): void {
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
 
-    viewRolePage(adminGuardRole(AdminRole::Admin))
+    viewRolePage(adminCatalogRole(AdminRole::Admin))
         ->assertOk()
         ->assertSee(TranslatedText::of('admin/roles.locked.notice'))
         ->assertSee(TranslatedText::of('admin/roles.types.system'));
 
-    viewRolePage(adminGuardRole(AdminRole::AdminPostsReader))
+    viewRolePage(adminCatalogRole(AdminRole::AdminPostsReader))
         ->assertDontSee(TranslatedText::of('admin/roles.locked.notice'));
 });
 
@@ -121,5 +114,32 @@ it('denies the detail to an administrator without admin.roles.view', function ()
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminUsersModerator);
 
-    viewRolePage(adminGuardRole(AdminRole::AdminPostsReader))->assertForbidden();
+    viewRolePage(adminCatalogRole(AdminRole::AdminPostsReader))->assertForbidden();
+});
+
+it('links each granted permission to who else holds it', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+
+    $testable = viewRolePage(adminCatalogRole(AdminRole::AdminBackupsOperator))->assertOk();
+
+    foreach ([AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsCreate, AdminPermission::AdminBackupsDownload] as $adminPermission) {
+        $testable->assertSeeHtml('href="'.e(RoleResource::getUrl('access', ['permission' => $adminPermission->value])).'"');
+    }
+
+    $testable->assertDontSeeHtml(e(RoleResource::getUrl('access', ['permission' => AdminPermission::AdminPostsView->value])));
+});
+
+it('shows the permissions without links to an administrator who cannot see who holds them', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+
+    viewRolePage(adminCatalogRole(AdminRole::AdminBackupsOperator))
+        ->assertOk()
+        ->assertSee(AdminPermission::AdminBackupsDownload->label())
+        ->assertDontSeeHtml(RoleResource::getUrl('access'));
+
+    expect(PermissionHolders::canAccess())->toBeFalse();
 });

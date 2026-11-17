@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Users\Schemas;
 
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
@@ -124,7 +125,7 @@ class UserInfolist
                             ->hiddenLabel()
                             ->state(TranslatedText::of('admin/roles.users.effective_permissions.empty'))
                             ->color('gray')
-                            ->visible(fn (User $record): bool => self::effectivePermissionLabels($record) === [])
+                            ->visible(fn (User $record): bool => self::effectivePermissionValues($record) === [])
                             ->columnSpanFull(),
                         ...array_map(self::effectivePermissionsEntry(...), self::permissionAreas()),
                     ]),
@@ -153,25 +154,29 @@ class UserInfolist
     }
 
     /**
-     * The permissions the user gets from their roles in one area, as badges; hidden when there are none.
+     * The permissions the user gets from their roles in one area, as badges that open who else holds
+     * each one when the administrator may see it; hidden when there are none.
      */
     private static function effectivePermissionsEntry(string $area): TextEntry
     {
         return TextEntry::make('effective_permissions_'.$area)
             ->label(TranslatedText::of('admin/roles.catalog.areas.'.$area))
-            ->state(fn (User $record): array => self::effectivePermissionLabels($record, $area))
+            ->state(fn (User $record): array => self::effectivePermissionValues($record, $area))
+            ->formatStateUsing(fn (string $state): string => AdminPermission::from($state)->label())
+            ->url(fn (string $state): ?string => PermissionHolders::urlFor(AdminPermission::from($state)))
+            ->tooltip(fn (): ?string => PermissionHolders::canAccess() ? TranslatedText::of('admin/roles.access.link') : null)
             ->badge()
-            ->visible(fn (User $record): bool => self::effectivePermissionLabels($record, $area) !== []);
+            ->visible(fn (User $record): bool => self::effectivePermissionValues($record, $area) !== []);
     }
 
     /**
-     * The labels of the cataloged permissions the user holds through any role or directly, without
+     * The values of the cataloged permissions the user holds through any role or directly, without
      * duplicates and in catalog order, optionally only those of one area. Reads the user's loaded
      * roles and permissions, so the section costs a constant number of queries.
      *
      * @return list<string>
      */
-    private static function effectivePermissionLabels(User $user, ?string $area = null): array
+    private static function effectivePermissionValues(User $user, ?string $area = null): array
     {
         $permissionNames = [];
 
@@ -182,7 +187,7 @@ class UserInfolist
         }
 
         return array_values(array_map(
-            static fn (AdminPermission $adminPermission): string => $adminPermission->label(),
+            static fn (AdminPermission $adminPermission): string => $adminPermission->value,
             array_filter(
                 AdminPermission::cases(),
                 static fn (AdminPermission $adminPermission): bool => \in_array($adminPermission->value, $permissionNames, true)

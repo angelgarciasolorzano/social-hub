@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\CreateRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\EditRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RelationManagers\RoleActivityLogsRelationManager;
@@ -119,6 +120,7 @@ class RoleResource extends Resource
             'index' => ListRoles::route('/'),
             'create' => CreateRole::route('/create'),
             'matrix' => RolePermissionMatrix::route('/matrix'),
+            'access' => PermissionHolders::route('/access'),
             'view' => ViewRole::route('/{record}'),
             'edit' => EditRole::route('/{record}/edit'),
         ];

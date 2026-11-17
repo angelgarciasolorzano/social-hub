@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Tables;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Concerns\DescribesActivityLogParties;
+use App\Modules\Admin\Filament\Concerns\DescribesPanelMfa;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
@@ -16,12 +17,9 @@ use Carbon\CarbonImmutable;
 use Closure;
 use DateTimeInterface;
 use Filament\Forms\Components\DatePicker;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -34,6 +32,7 @@ class RoleUsersTable
 {
     use DescribesAccountStatus;
     use DescribesActivityLogParties;
+    use DescribesPanelMfa;
 
     /**
      * The alias of the date of each user's latest grant of the role, selected with the users.
@@ -107,16 +106,7 @@ class RoleUsersTable
 
                         return $grant instanceof ActivityLog ? self::causerUrl($grant) : null;
                     }),
-                IconColumn::make('panel_mfa')
-                    ->label(TranslatedText::of('admin/roles.relations.users.columns.panel_mfa'))
-                    ->state(fn (User $record): bool => $record->getRawOriginal('app_authentication_secret') !== null)
-                    ->boolean()
-                    ->trueIcon(Heroicon::OutlinedShieldCheck)
-                    ->falseIcon(Heroicon::OutlinedShieldExclamation)
-                    ->tooltip(fn (bool $state): string => TranslatedText::of($state
-                        ? 'admin/roles.relations.users.mfa.configured'
-                        : 'admin/roles.relations.users.mfa.missing'))
-                    ->toggleable(),
+                self::panelMfaColumn(),
                 TextColumn::make('last_login_at')
                     ->label(TranslatedText::of('admin/roles.relations.users.columns.last_login_at'))
                     ->dateTime()
@@ -136,15 +126,7 @@ class RoleUsersTable
                 SelectFilter::make('status')
                     ->label(TranslatedText::of('admin/roles.relations.users.filters.status'))
                     ->options(self::accountStatusOptions()),
-                TernaryFilter::make('panel_mfa')
-                    ->label(TranslatedText::of('admin/roles.relations.users.filters.panel_mfa'))
-                    ->placeholder(TranslatedText::of('admin/roles.relations.users.filters.all_holders'))
-                    ->trueLabel(TranslatedText::of('admin/roles.relations.users.mfa.configured'))
-                    ->falseLabel(TranslatedText::of('admin/roles.relations.users.mfa.missing'))
-                    ->queries(
-                        true: fn (Builder $query): Builder => $query->whereNotNull('app_authentication_secret'),
-                        false: fn (Builder $query): Builder => $query->whereNull('app_authentication_secret'),
-                    ),
+                self::panelMfaFilter(),
                 SelectFilter::make('also_has_role')
                     ->label(TranslatedText::of('admin/roles.relations.users.filters.also_has_role'))
                     ->multiple()

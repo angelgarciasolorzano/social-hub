@@ -491,13 +491,56 @@ return [
     ],
 
     'compare' => [
-        'action' => 'Comparar roles',
         'bulk_action' => 'Comparar seleccionados',
         'roles' => 'Roles a comparar',
         'roles_helper' => 'Elige entre :min y :max roles para verlos lado a lado.',
         'only_differences' => 'Solo diferencias',
         'invalid_selection' => 'Los roles a comparar no eran válidos, así que se muestran todos. Elige entre :min y :max roles existentes.',
         'wrong_count' => 'Selecciona entre :min y :max roles para compararlos.',
+    ],
+
+    'access' => [
+        'title' => 'Quién puede hacer esto',
+        'description' => 'Elige un permiso para ver los roles que lo conceden y los administradores que lo tienen por ellos.',
+        'link' => 'Ver quién puede hacer esto',
+        'permission' => 'Permiso',
+        'permission_placeholder' => 'Elige un permiso',
+        'choose' => 'Elige un permiso para ver quién lo tiene.',
+        'sensitive_description' => 'Da control sobre otros administradores, su acceso o datos exportados.',
+        'requirements' => [
+            'heading' => 'Permisos relacionados',
+            'description' => 'Un permiso solo funciona si el rol también tiene los que requiere. Al marcarlo en un rol se marcan solos los que requiere; al desmarcarlo se desmarcan los que dependen de él.',
+            'requires' => 'Requiere',
+            'dependents' => 'Dependen de este',
+            'requires_help' => 'Se agregan solos al darle este permiso a un rol.',
+            'dependents_help' => 'Se quitan si le quitas este permiso a un rol.',
+            'none' => 'Ninguno',
+        ],
+        'metrics' => [
+            'roles' => 'Roles que lo conceden',
+            'holders' => 'Titulares',
+            'without_mfa' => 'Sin MFA del panel',
+            'suspended' => 'Suspendidos',
+            'ready' => 'Todos los titulares pueden usarlo hoy.',
+        ],
+        'warnings' => [
+            'heading' => 'Algunos titulares no pueden usarlo hoy',
+            'suspended' => '{1} :count titular está suspendido.|[0,*] :count titulares están suspendidos.',
+            'without_mfa' => '{1} :count titular no tiene MFA del panel.|[0,*] :count titulares no tienen MFA del panel.',
+            'unverified' => '{1} :count titular no ha verificado su email.|[0,*] :count titulares no han verificado su email.',
+            'without_panel_access' => '{1} :count titular no tiene un rol que le permita entrar al panel.|[0,*] :count titulares no tienen un rol que les permita entrar al panel.',
+        ],
+        'roles' => [
+            'heading' => 'Roles que lo conceden',
+            'users_count' => '{0} Sin usuarios|{1} :count usuario|[2,*] :count usuarios',
+            'share' => ':share % de los titulares',
+            'empty' => 'Ningún rol concede este permiso.',
+        ],
+        'users' => [
+            'heading' => 'Usuarios que lo tienen',
+            'via_roles' => 'Por los roles',
+            'empty' => 'Nadie tiene este permiso.',
+        ],
     ],
 
     'users' => [
