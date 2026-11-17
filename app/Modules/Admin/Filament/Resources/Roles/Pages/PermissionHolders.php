@@ -1,0 +1,265 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Admin\Filament\Resources\Roles\Pages;
+
+use App\Modules\Admin\Enums\AdminPermission;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
+use App\Modules\Admin\Models\Role;
+use App\Support\Translation\TranslatedText;
+use App\User\Enums\AccountStatus;
+use App\User\Models\User;
+use Closure;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
+use Filament\Resources\Pages\Page;
+use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
+use Livewire\Attributes\Url;
+use Override;
+
+/**
+ * Who can do something: the roles of the `admin` guard that grant one cataloged permission and the
+ * users who hold it through any of them. The permission is kept in the URL (`?permission=<value>`), so
+ * other screens link here; an unknown value leaves the selector empty. Read-only.
+ */
+class PermissionHolders extends Page
+{
+    /**
+     * The value of the chosen permission, as the URL or the selector sent it.
+     */
+    #[Url]
+    public ?string $permission = null;
+
+    #[Override]
+    protected static string $resource = RoleResource::class;
+
+    #[Override]
+    protected string $view = 'admin::filament.roles.permission-holders';
+
+    /**
+     * Seeing who holds a permission lists roles and users, so it needs to list both.
+     */
+    #[Override]
+    public static function canAccess(array $parameters = []): bool
+    {
+        $authenticatedUser = Filament::auth()->user();
+
+        return $authenticatedUser instanceof User
+            && Gate::forUser($authenticatedUser)->allows('viewAny', Role::class)
+            && Gate::forUser($authenticatedUser)->allows('viewAny', User::class);
+    }
+
+    /**
+     * The URL of this page with a permission chosen, or null when the administrator may not open it.
+     */
+    public static function urlFor(AdminPermission $adminPermission): ?string
+    {
+        return self::canAccess()
+            ? RoleResource::getUrl('access', ['permission' => $adminPermission->value])
+            : null;
+    }
+
+    public function mount(): void
+    {
+        if (! AdminPermission::tryFrom((string) $this->permission) instanceof AdminPermission) {
+            $this->permission = null;
+        }
+    }
+
+    #[Override]
+    public function getTitle(): string
+    {
+        return TranslatedText::of('admin/roles.access.title');
+    }
+
+    #[Override]
+    public function getSubheading(): string
+    {
+        return TranslatedText::of('admin/roles.access.description');
+    }
+
+    /**
+     * The cataloged permission to look up, kept in the URL, grouped by area with its description below.
+     */
+    public function permissionForm(Schema $schema): Schema
+    {
+        return $schema->components([
+            Select::make('permission')
+                ->label(TranslatedText::of('admin/roles.access.permission'))
+                ->placeholder(TranslatedText::of('admin/roles.access.permission_placeholder'))
+                ->options(fn (): array => $this->permissionOptions())
+                ->helperText(fn (): ?string => $this->selectedPermission()?->description())
+                ->searchable()
+                ->live(),
+        ]);
+    }
+
+    public function selectedPermission(): ?AdminPermission
+    {
+        return $this->permission === null ? null : AdminPermission::tryFrom($this->permission);
+    }
+
+    /**
+     * The roles of the `admin` guard that grant the chosen permission, in display order, with their
+     * number of users and a link to their detail when the administrator may open it. One query.
+     *
+     * @return list<array{name: string, label: string, isSystem: bool, usersCount: int, url: string|null}>
+     */
+    public function getHolderRoles(): array
+    {
+        $adminPermission = $this->selectedPermission();
+
+        if (! $adminPermission instanceof AdminPermission) {
+            return [];
+        }
+
+        $roles = $this->grantingRoleQuery($adminPermission)->withCount('users')->get();
+        $holderRoles = [];
+
+        foreach (Role::inDisplayOrder($roles) as $role) {
+            $usersCount = $role->getAttribute('users_count');
+
+            $holderRoles[] = [
+                'name' => $role->name,
+                'label' => $role->displayName(),
+                'isSystem' => $role->isSystem(),
+                'usersCount' => is_numeric($usersCount) ? (int) $usersCount : 0,
+                'url' => RoleResource::canView($role) ? RoleResource::getUrl('view', ['record' => $role]) : null,
+            ];
+        }
+
+        return $holderRoles;
+    }
+
+    /**
+     * How many users hold the chosen permission, and how many of them are suspended or lack the panel
+     * MFA, so they cannot use it today. One query.
+     *
+     * @return array{holders: int, suspended: int, withoutMfa: int}
+     */
+    public function getHolderSummary(): array
+    {
+        $adminPermission = $this->selectedPermission();
+
+        if (! $adminPermission instanceof AdminPermission) {
+            return ['holders' => 0, 'suspended' => 0, 'withoutMfa' => 0];
+        }
+
+        $summary = self::holdersQuery($adminPermission)
+            ->selectRaw(
+                'count(*) as holders, '
+                .'coalesce(sum(case when status = ? then 1 else 0 end), 0) as suspended, '
+                .'coalesce(sum(case when app_authentication_secret is null then 1 else 0 end), 0) as without_mfa',
+                [AccountStatus::Suspended->value],
+            )
+            ->toBase()
+            ->first();
+
+        $summaryRow = \is_object($summary) ? get_object_vars($summary) : [];
+
+        return [
+            'holders' => $this->summaryCount($summaryRow, 'holders'),
+            'suspended' => $this->summaryCount($summaryRow, 'suspended'),
+            'withoutMfa' => $this->summaryCount($summaryRow, 'without_mfa'),
+        ];
+    }
+
+    /**
+     * The permissions the chosen one needs and the ones that need it, each with its label and a link to
+     * this page with it chosen.
+     *
+     * @return array{requires: list<array{label: string, url: string|null}>, dependents: list<array{label: string, url: string|null}>}
+     */
+    public function getRequirements(): array
+    {
+        $adminPermission = $this->selectedPermission();
+
+        if (! $adminPermission instanceof AdminPermission) {
+            return ['requires' => [], 'dependents' => []];
+        }
+
+        $linkTo = static fn (AdminPermission $relatedPermission): array => [
+            'label' => $relatedPermission->label(),
+            'url' => self::urlFor($relatedPermission),
+        ];
+
+        return [
+            'requires' => array_map($linkTo, $adminPermission->requires()),
+            'dependents' => array_map($linkTo, $adminPermission->dependents()),
+        ];
+    }
+
+    /**
+     * The users who hold the permission through any role of the `admin` guard, each once.
+     *
+     * @return Builder<User>
+     */
+    public static function holdersQuery(AdminPermission $adminPermission): Builder
+    {
+        return User::query()->whereHas('roles', static function (Builder $roles) use ($adminPermission): Builder {
+            $roles->getQuery()->where('roles.guard_name', Role::GUARD_NAME);
+
+            return $roles->whereHas('permissions', self::grantsPermission($adminPermission));
+        });
+    }
+
+    /**
+     * The roles of the `admin` guard that grant the permission.
+     *
+     * @return Builder<Role>
+     */
+    private function grantingRoleQuery(AdminPermission $adminPermission): Builder
+    {
+        return Role::query()
+            ->where('guard_name', Role::GUARD_NAME)
+            ->whereHas('permissions', self::grantsPermission($adminPermission));
+    }
+
+    /**
+     * Keep the permissions of the `admin` guard with the given value, for a `whereHas('permissions')`.
+     *
+     * @return Closure(Builder<Model>): Builder<Model>
+     */
+    private static function grantsPermission(AdminPermission $adminPermission): Closure
+    {
+        return static function (Builder $permissions) use ($adminPermission): Builder {
+            $permissions->getQuery()
+                ->where('permissions.guard_name', Role::GUARD_NAME)
+                ->where('permissions.name', $adminPermission->value);
+
+            return $permissions;
+        };
+    }
+
+    /**
+     * The cataloged permissions by translated area, in catalog order, by value.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function permissionOptions(): array
+    {
+        $permissionOptions = [];
+
+        foreach (AdminPermission::cases() as $adminPermission) {
+            $permissionOptions[TranslatedText::of('admin/roles.catalog.areas.'.$adminPermission->area())][$adminPermission->value] = $adminPermission->label();
+        }
+
+        return $permissionOptions;
+    }
+
+    /**
+     * One count of the summary row, as a number.
+     *
+     * @param  array<mixed>  $summaryRow
+     */
+    private function summaryCount(array $summaryRow, string $column): int
+    {
+        $count = $summaryRow[$column] ?? null;
+
+        return is_numeric($count) ? (int) $count : 0;
+    }
+}
