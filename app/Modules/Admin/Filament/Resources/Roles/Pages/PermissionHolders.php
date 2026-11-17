@@ -43,7 +43,7 @@ class PermissionHolders extends Page implements HasTable
     /**
      * The holder summary of this request, so the metrics and the role shares share one query.
      *
-     * @var array{holders: int, suspended: int, withoutMfa: int}|null
+     * @var array{holders: int, suspended: int, withoutMfa: int, unverified: int, withoutPanelAccess: int}|null
      */
     private ?array $holderSummary = null;
 
@@ -169,17 +169,19 @@ class PermissionHolders extends Page implements HasTable
     }
 
     /**
-     * How many users hold the chosen permission, and how many of them are suspended or lack the panel
-     * MFA, so they cannot use it today. One query.
+     * How many users hold the chosen permission, and how many of them cannot enter the panel today, by
+     * each requirement of `User::canAccessPanel()` and the panel's MFA: suspended, without the panel MFA,
+     * with an unverified email, or without `admin.access` through a role of the `admin` guard. Two
+     * queries, the second skipped when the chosen permission is `admin.access` itself.
      *
-     * @return array{holders: int, suspended: int, withoutMfa: int}
+     * @return array{holders: int, suspended: int, withoutMfa: int, unverified: int, withoutPanelAccess: int}
      */
     public function getHolderSummary(): array
     {
         $adminPermission = $this->selectedPermission();
 
         if (! $adminPermission instanceof AdminPermission) {
-            return ['holders' => 0, 'suspended' => 0, 'withoutMfa' => 0];
+            return ['holders' => 0, 'suspended' => 0, 'withoutMfa' => 0, 'unverified' => 0, 'withoutPanelAccess' => 0];
         }
 
         if ($this->holderSummary !== null) {
@@ -190,7 +192,8 @@ class PermissionHolders extends Page implements HasTable
             ->selectRaw(
                 'count(*) as holders, '
                 .'coalesce(sum(case when status = ? then 1 else 0 end), 0) as suspended, '
-                .'coalesce(sum(case when app_authentication_secret is null then 1 else 0 end), 0) as without_mfa',
+                .'coalesce(sum(case when app_authentication_secret is null then 1 else 0 end), 0) as without_mfa, '
+                .'coalesce(sum(case when email_verified_at is null then 1 else 0 end), 0) as unverified',
                 [AccountStatus::Suspended->value],
             )
             ->toBase()
@@ -202,6 +205,12 @@ class PermissionHolders extends Page implements HasTable
             'holders' => $this->summaryCount($summaryRow, 'holders'),
             'suspended' => $this->summaryCount($summaryRow, 'suspended'),
             'withoutMfa' => $this->summaryCount($summaryRow, 'without_mfa'),
+            'unverified' => $this->summaryCount($summaryRow, 'unverified'),
+            'withoutPanelAccess' => $adminPermission === AdminPermission::AdminAccess
+                ? 0
+                : self::holdersQuery($adminPermission)
+                    ->whereDoesntHave('roles', self::grantingAdminRole(AdminPermission::AdminAccess))
+                    ->count(),
         ];
     }
 
@@ -237,11 +246,21 @@ class PermissionHolders extends Page implements HasTable
      */
     public static function holdersQuery(AdminPermission $adminPermission): Builder
     {
-        return User::query()->whereHas('roles', static function (Builder $roles) use ($adminPermission): Builder {
+        return User::query()->whereHas('roles', self::grantingAdminRole($adminPermission));
+    }
+
+    /**
+     * Keep the roles of the `admin` guard that grant the permission, for a `whereHas('roles')`.
+     *
+     * @return Closure(Builder<Model>): Builder<Model>
+     */
+    private static function grantingAdminRole(AdminPermission $adminPermission): Closure
+    {
+        return static function (Builder $roles) use ($adminPermission): Builder {
             $roles->getQuery()->where('roles.guard_name', Role::GUARD_NAME);
 
             return $roles->whereHas('permissions', self::grantsPermission($adminPermission));
-        });
+        };
     }
 
     /**

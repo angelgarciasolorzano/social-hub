@@ -5,7 +5,18 @@
     $holderRoles = $this->getHolderRoles();
     $holderSummary = $this->getHolderSummary();
     $requirements = $this->getRequirements();
-    $hasRisk = $holderSummary['suspended'] > 0 || $holderSummary['withoutMfa'] > 0;
+    $panelBlockers = array_filter([
+        'suspended' => trans_choice('admin/roles.access.warnings.suspended', $holderSummary['suspended'], ['count' => $holderSummary['suspended']]),
+        'without-mfa' => trans_choice('admin/roles.access.warnings.without_mfa', $holderSummary['withoutMfa'], ['count' => $holderSummary['withoutMfa']]),
+        'unverified' => trans_choice('admin/roles.access.warnings.unverified', $holderSummary['unverified'], ['count' => $holderSummary['unverified']]),
+        'without-panel-access' => trans_choice('admin/roles.access.warnings.without_panel_access', $holderSummary['withoutPanelAccess'], ['count' => $holderSummary['withoutPanelAccess']]),
+    ], static fn (string $blocker, string $key): bool => match ($key) {
+        'suspended' => $holderSummary['suspended'] > 0,
+        'without-mfa' => $holderSummary['withoutMfa'] > 0,
+        'unverified' => $holderSummary['unverified'] > 0,
+        'without-panel-access' => $holderSummary['withoutPanelAccess'] > 0,
+    }, ARRAY_FILTER_USE_BOTH);
+    $hasRisk = $panelBlockers !== [];
     $metrics = [
         ['label' => __('admin/roles.access.metrics.roles'), 'value' => count($holderRoles), 'icon' => 'heroicon-o-shield-check', 'warning' => null, 'hint' => null],
         ['label' => __('admin/roles.access.metrics.holders'), 'value' => $holderSummary['holders'], 'icon' => 'heroicon-o-users', 'warning' => null, 'hint' => null],
@@ -92,7 +103,7 @@
                             'bg-danger-50 dark:bg-danger-500/10' => $isRisky,
                             'bg-white dark:bg-gray-900' => ! $isRisky,
                         ])
-                        @if ($isRisky) data-access-warning="{{ $metric['warning'] }}" title="{{ $metric['hint'] }}" @endif
+                        @if ($isRisky) title="{{ $metric['hint'] }}" @endif
                     >
                         <dt @class([
                             'flex items-center gap-1.5 text-sm font-medium',
@@ -115,14 +126,22 @@
             </dl>
 
             @if ($hasRisk)
-                <p class="bg-danger-50/60 text-danger-700 dark:bg-danger-500/5 dark:text-danger-400 flex items-center gap-2 border-t border-gray-950/5 px-6 py-3 text-sm dark:border-white/10">
-                    <x-filament::icon
-                        icon="heroicon-m-exclamation-triangle"
-                        class="size-4 shrink-0"
-                        aria-hidden="true"
-                    />
-                    {{ __('admin/roles.access.warnings.heading') }}
-                </p>
+                <div class="bg-danger-50/60 text-danger-700 dark:bg-danger-500/5 dark:text-danger-400 flex flex-col gap-2 border-t border-gray-950/5 px-6 py-3 text-sm dark:border-white/10">
+                    <p class="flex items-center gap-2 font-medium">
+                        <x-filament::icon
+                            icon="heroicon-m-exclamation-triangle"
+                            class="size-4 shrink-0"
+                            aria-hidden="true"
+                        />
+                        {{ __('admin/roles.access.warnings.heading') }}
+                    </p>
+
+                    <ul class="flex flex-wrap gap-x-4 gap-y-1 ps-6">
+                        @foreach ($panelBlockers as $blockerKey => $blocker)
+                            <li class="list-disc" data-access-warning="{{ $blockerKey }}">{{ $blocker }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             @elseif ($holderSummary['holders'] > 0)
                 <p class="bg-success-50/60 text-success-700 dark:bg-success-500/5 dark:text-success-400 flex items-center gap-2 border-t border-gray-950/5 px-6 py-3 text-sm dark:border-white/10">
                     <x-filament::icon icon="heroicon-m-check-circle" class="size-4 shrink-0" aria-hidden="true" />

@@ -143,19 +143,51 @@ it('counts the holders who are suspended or lack the panel MFA and warns about t
         ->assertSeeHtml('data-access-warning="suspended"')
         ->assertSeeHtml('data-access-warning="without-mfa"');
 
-    expect(permissionHoldersInstance($testable)->getHolderSummary())->toBe(['holders' => 3, 'suspended' => 1, 'withoutMfa' => 1]);
+    expect(permissionHoldersInstance($testable)->getHolderSummary())->toBe(['holders' => 3, 'suspended' => 1, 'withoutMfa' => 1, 'unverified' => 0, 'withoutPanelAccess' => 3]);
 });
 
 it('does not warn when every holder can use the permission and says so', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
-    createUserHoldingRoles(adminCatalogRole(AdminRole::AdminBackupsOperator))->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
+    createUserHoldingRoles(adminCatalogRole(AdminRole::Admin), adminCatalogRole(AdminRole::AdminBackupsOperator))->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
 
     permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)
         ->assertDontSeeHtml('data-access-warnings')
         ->assertDontSeeHtml('data-access-warning=')
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.access.metrics.ready'));
+});
+
+it('warns about holders who cannot enter the panel for any reason', function (string $blocker, Closure $makeHolder, string $summaryKey): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    $makeHolder();
+
+    $testable = permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)
+        ->assertSeeHtml('data-access-warnings')
+        ->assertSeeHtml('data-access-warning="'.$blocker.'"')
+        ->assertDontSee(translatedTextIn(PreferredLocale::ENGLISH, 'admin/roles.access.metrics.ready'));
+
+    expect(permissionHoldersInstance($testable)->getHolderSummary())
+        ->toMatchArray(['holders' => 1, $summaryKey => 1]);
+})->with([
+    'unverified email' => ['unverified', static function (): void {
+        $user = createUserHoldingRoles(adminCatalogRole(AdminRole::Admin), adminCatalogRole(AdminRole::AdminBackupsOperator));
+        $user->forceFill(['app_authentication_secret' => 'PANELSECRET', 'email_verified_at' => null])->save();
+    }, 'unverified'],
+    'no role with admin.access' => ['without-panel-access', static function (): void {
+        createUserHoldingRoles(adminCatalogRole(AdminRole::AdminBackupsOperator))->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
+    }, 'withoutPanelAccess'],
+]);
+
+it('does not count panel access as missing when the chosen permission is admin.access', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+
+    expect(permissionHoldersInstance(permissionHoldersPageFor(AdminPermission::AdminAccess->value))->getHolderSummary()['withoutPanelAccess'])
+        ->toBe(0);
 });
 
 it('splits the holders among the roles that grant the permission', function (): void {

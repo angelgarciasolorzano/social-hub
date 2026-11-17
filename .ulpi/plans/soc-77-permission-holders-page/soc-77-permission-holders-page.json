@@ -470,6 +470,39 @@
         "docs/architecture/modules/admin.md"
       ],
       "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Avisos con todos los bloqueos de entrada al panel",
+      "description": "Comentario de pullfrog en el PR 79 (permission-holders.blade.php:126): la línea verde «Todos los titulares pueden usarlo hoy» solo revisa suspensión y MFA, pero `User::canAccessPanel()` también exige email verificado y `admin.access` (y el panel exige MFA de app). Incluir todos los bloqueos de entrada al panel: `getHolderSummary()` agrega `unverified` (`email_verified_at` nulo, en la misma consulta agregada) y `withoutPanelAccess` (titulares sin ningún rol del guard `admin` que conceda `admin.access`; una consulta extra constante, 0 cuando el permiso elegido es `admin.access`). La vista conserva las 4 métricas y en la franja roja lista cada bloqueo con su conteo (suspendidos, sin MFA, sin verificar, sin acceso al panel, con `data-access-warning`); la línea verde solo aparece cuando los cuatro son 0. Textos nuevos en `lang/{en,es}/admin/roles.php` (`access.warnings.unverified`, `access.warnings.without_panel_access`). Pruebas: titular sin verificar y titular sin `admin.access` hacen aparecer el aviso y no la línea verde; el resumen los cuenta; el número de consultas sigue constante. Responder el comentario en GitHub tras la aprobación del usuario.",
+      "priority": "P1",
+      "type": "fix",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-015"
+      ],
+      "acceptanceCriteria": [
+        "El resumen cuenta titulares suspendidos, sin MFA, sin email verificado y sin `admin.access`, y la línea verde solo aparece cuando ninguno está bloqueado.",
+        "Hay pruebas para un titular sin verificar y uno sin `admin.access`, y la prueba de consultas constantes sigue pasando."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php",
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php",
+        "app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php",
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -510,7 +543,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 15,
+    "taskCount": 16,
     "layers": [
       [
         "TASK-001",
@@ -548,6 +581,9 @@
       ],
       [
         "TASK-015"
+      ],
+      [
+        "TASK-016"
       ]
     ],
     "criticalPath": [
@@ -561,7 +597,8 @@
       "TASK-012",
       "TASK-013",
       "TASK-014",
-      "TASK-015"
+      "TASK-015",
+      "TASK-016"
     ]
   },
   "dependencyMap": {
@@ -608,6 +645,9 @@
     ],
     "TASK-015": [
       "TASK-014"
+    ],
+    "TASK-016": [
+      "TASK-015"
     ]
   }
 }

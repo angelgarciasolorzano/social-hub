@@ -391,6 +391,31 @@ En el listado de roles, «Comparar roles» y «Matriz de permisos» llevan a la 
 
 **Review:** claude
 
+### TASK-016: Avisos con todos los bloqueos de entrada al panel
+
+Comentario de pullfrog en el PR 79 (permission-holders.blade.php:126): la línea verde «Todos los titulares pueden usarlo hoy» solo revisa suspensión y MFA, pero `User::canAccessPanel()` también exige email verificado y `admin.access` (y el panel exige MFA de app). Incluir todos los bloqueos de entrada al panel: `getHolderSummary()` agrega `unverified` (`email_verified_at` nulo, en la misma consulta agregada) y `withoutPanelAccess` (titulares sin ningún rol del guard `admin` que conceda `admin.access`; una consulta extra constante, 0 cuando el permiso elegido es `admin.access`). La vista conserva las 4 métricas y en la franja roja lista cada bloqueo con su conteo (suspendidos, sin MFA, sin verificar, sin acceso al panel, con `data-access-warning`); la línea verde solo aparece cuando los cuatro son 0. Textos nuevos en `lang/{en,es}/admin/roles.php` (`access.warnings.unverified`, `access.warnings.without_panel_access`). Pruebas: titular sin verificar y titular sin `admin.access` hacen aparecer el aviso y no la línea verde; el resumen los cuenta; el número de consultas sigue constante. Responder el comentario en GitHub tras la aprobación del usuario.
+
+**Type:** fix · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-015
+
+**Acceptance Criteria:**
+
+1. El resumen cuenta titulares suspendidos, sin MFA, sin email verificado y sin `admin.access`, y la línea verde solo aparece cuando ninguno está bloqueado.
+2. Hay pruebas para un titular sin verificar y uno sin `admin.access`, y la prueba de consultas constantes sigue pasando.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Pages/PermissionHolders.php`
+- `app/Modules/Admin/UI/Views/filament/roles/permission-holders.blade.php`
+- `lang/en/admin/roles.php`
+- `lang/es/admin/roles.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages`
+
+**Review:** claude
+
 ## Failure Modes
 
 - `?permission=` con un valor que no está en el catálogo, vacío o con un permiso de otro guard: se vacía en `mount()` y se muestra el selector vacío.
@@ -416,7 +441,7 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 
 ## Execution Summary
 
-**Tareas:** 15
+**Tareas:** 16
 
 **Capas:**
 
@@ -431,8 +456,9 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 9. TASK-013
 10. TASK-014
 11. TASK-015
+12. TASK-016
 
-**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013 → TASK-014 → TASK-015
+**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013 → TASK-014 → TASK-015 → TASK-016
 
 ## Dependency Map
 
@@ -452,4 +478,5 @@ TASK-012 ← TASK-011
 TASK-013 ← TASK-012
 TASK-014 ← TASK-013
 TASK-015 ← TASK-014
+TASK-016 ← TASK-015
 ```

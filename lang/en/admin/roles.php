@@ -527,6 +527,8 @@ return [
             'heading' => 'Some holders cannot use it today',
             'suspended' => '{1} :count holder is suspended.|[0,*] :count holders are suspended.',
             'without_mfa' => '{1} :count holder has no panel MFA.|[0,*] :count holders have no panel MFA.',
+            'unverified' => '{1} :count holder has not verified their email.|[0,*] :count holders have not verified their email.',
+            'without_panel_access' => '{1} :count holder has no role that lets them enter the panel.|[0,*] :count holders have no role that lets them enter the panel.',
         ],
         'roles' => [
             'heading' => 'Roles that grant it',

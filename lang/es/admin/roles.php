@@ -527,6 +527,8 @@ return [
             'heading' => 'Algunos titulares no pueden usarlo hoy',
             'suspended' => '{1} :count titular está suspendido.|[0,*] :count titulares están suspendidos.',
             'without_mfa' => '{1} :count titular no tiene MFA del panel.|[0,*] :count titulares no tienen MFA del panel.',
+            'unverified' => '{1} :count titular no ha verificado su email.|[0,*] :count titulares no han verificado su email.',
+            'without_panel_access' => '{1} :count titular no tiene un rol que le permita entrar al panel.|[0,*] :count titulares no tienen un rol que les permita entrar al panel.',
         ],
         'roles' => [
             'heading' => 'Roles que lo conceden',
