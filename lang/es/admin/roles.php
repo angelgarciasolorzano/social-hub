@@ -510,8 +510,11 @@ return [
         'sensitive_description' => 'Da control sobre otros administradores, su acceso o datos exportados.',
         'requirements' => [
             'heading' => 'Permisos relacionados',
-            'requires' => 'Necesita',
-            'dependents' => 'Lo necesitan',
+            'description' => 'Un permiso solo funciona si el rol también tiene los que requiere. Al marcarlo en un rol se marcan solos los que requiere; al desmarcarlo se desmarcan los que dependen de él.',
+            'requires' => 'Requiere',
+            'dependents' => 'Dependen de este',
+            'requires_help' => 'Se agregan solos al darle este permiso a un rol.',
+            'dependents_help' => 'Se quitan si le quitas este permiso a un rol.',
             'none' => 'Ninguno',
         ],
         'metrics' => [

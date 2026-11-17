@@ -210,7 +210,12 @@
         </section>
 
         {{-- The chain of related permissions: what it needs, the permission, and what needs it. --}}
-        <x-filament::section :heading="__('admin/roles.access.requirements.heading')" icon="heroicon-o-link" compact>
+        <x-filament::section
+            :heading="__('admin/roles.access.requirements.heading')"
+            :description="__('admin/roles.access.requirements.description')"
+            icon="heroicon-o-link"
+            compact
+        >
             <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-start">
                 @foreach (['requires', 'dependents'] as $relation)
                     @if ($relation === 'dependents')
@@ -248,6 +253,7 @@
                                 @if ($relatedPermission['url'] !== null)
                                     <a
                                         href="{{ $relatedPermission['url'] }}"
+                                        x-tooltip="{ content: @js(__('admin/roles.access.link')), theme: $store.theme }"
                                         class="hover:border-primary-500 hover:text-primary-600 dark:hover:border-primary-400 dark:hover:text-primary-400 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
                                     >
                                         {{ $relatedPermission['label'] }}
@@ -263,6 +269,10 @@
                                 </span>
                             @endforelse
                         </div>
+
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {{ __('admin/roles.access.requirements.'.$relation.'_help') }}
+                        </p>
                     </div>
                 @endforeach
             </div>

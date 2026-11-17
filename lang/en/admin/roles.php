@@ -510,8 +510,11 @@ return [
         'sensitive_description' => 'It gives control over other administrators, their access or exported data.',
         'requirements' => [
             'heading' => 'Related permissions',
-            'requires' => 'Needs',
-            'dependents' => 'Needed by',
+            'description' => 'A permission only works when the role also has the ones it requires. Checking it on a role checks what it requires; unchecking it unchecks what depends on it.',
+            'requires' => 'Requires',
+            'dependents' => 'Required by',
+            'requires_help' => 'Added on their own when a role gets this permission.',
+            'dependents_help' => 'Removed when a role loses this permission.',
             'none' => 'None',
         ],
         'metrics' => [

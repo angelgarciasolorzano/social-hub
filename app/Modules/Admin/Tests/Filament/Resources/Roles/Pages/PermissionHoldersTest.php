@@ -224,6 +224,9 @@ it('shows the page in Spanish', function (): void {
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.roles.heading'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.heading'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.requires'))
+        ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.description'))
+        ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.requires_help'))
+        ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.access.requirements.dependents_help'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.permissions.admin_backups_download.description'))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.catalog.roles.admin_backups_operator.label'));
 });
