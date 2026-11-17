@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Modules\Admin\Database\Factories\RoleFactory;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\RolesRelationManager;
 use App\Modules\Admin\Models\Role;
@@ -25,14 +27,6 @@ function userRolesRelationManagerFor(User $user): Testable
         'ownerRecord' => $user,
         'pageClass' => ViewUser::class,
     ]);
-}
-
-function userAdminRole(AdminRole $adminRole): Role
-{
-    return Role::query()
-        ->where('name', $adminRole->value)
-        ->where('guard_name', 'admin')
-        ->sole();
 }
 
 beforeEach(function (): void {
@@ -60,7 +54,7 @@ it('lists only the admin roles of the user with their permissions', function (Pr
         ->assertSee(translatedTextIn($preferredLocale, 'admin/roles.catalog.permissions.admin_users_suspend.label'));
 
     expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), Role::class))
-        ->toBe([FilamentTableRecords::recordKey(userAdminRole(AdminRole::AdminUsersModerator))]);
+        ->toBe([FilamentTableRecords::recordKey(adminCatalogRole(AdminRole::AdminUsersModerator))]);
 })->with([PreferredLocale::ENGLISH, PreferredLocale::SPANISH]);
 
 it('offers no write actions', function (): void {
@@ -111,6 +105,21 @@ it('shows the effective permissions of two roles once each, grouped by area', fu
 
     expect(substr_count($html, e($text('catalog.permissions.admin_users_view.label'))))->toBe(1);
 })->with([PreferredLocale::ENGLISH, PreferredLocale::SPANISH]);
+
+it('links each effective permission to who else holds it', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    $user = createUserHoldingRoles(adminCatalogRole(AdminRole::AdminBackupsOperator));
+
+    $html = Livewire::test(ViewUser::class, ['record' => $user->id])->html();
+
+    foreach ([AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsCreate, AdminPermission::AdminBackupsDownload] as $adminPermission) {
+        expect($html)->toContain('href="'.e(RoleResource::getUrl('access', ['permission' => $adminPermission->value])).'"');
+    }
+
+    expect($html)->not->toContain(e(RoleResource::getUrl('access', ['permission' => AdminPermission::AdminPostsView->value])));
+});
 
 it('explains when the user has no admin permissions', function (): void {
     app()->setLocale(PreferredLocale::SPANISH->value);
