@@ -10,22 +10,10 @@ use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\User\Enums\PreferredLocale;
-use App\User\Models\User;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
-use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
-
-/**
- * The page mounted with a permission in the URL, as a link from another screen opens it.
- *
- * @return Testable<Component>
- */
-function permissionHoldersPageFor(?string $permission): Testable
-{
-    return Livewire::withQueryParams($permission === null ? [] : ['permission' => $permission])->test(PermissionHolders::class);
-}
 
 /**
  * The mounted page component of a test.
@@ -39,25 +27,6 @@ function permissionHoldersInstance(Testable $testable): PermissionHolders
     return $component instanceof PermissionHolders
         ? $component
         : throw new LogicException('The permission holders page must be mounted.');
-}
-
-/**
- * Creates a user holding the given role of the `admin` guard.
- */
-function createHolderOf(Role $role): User
-{
-    $user = createUser();
-    $user->assignRole($role);
-
-    return $user;
-}
-
-/**
- * The stored role of the `admin` guard for a catalog case.
- */
-function adminCatalogRole(AdminRole $adminRole): Role
-{
-    return Role::query()->where('guard_name', Role::GUARD_NAME)->where('name', $adminRole->value)->firstOrFail();
 }
 
 beforeEach(function (): void {
@@ -81,8 +50,8 @@ it('lists exactly the roles of the admin guard that grant the permission, in dis
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
     $role = adminCatalogRole(AdminRole::AdminBackupsOperator);
-    createHolderOf($role);
-    createHolderOf($role);
+    createUserHoldingRoles($role);
+    createUserHoldingRoles($role);
     RoleFactory::new()->createOne(['label' => 'Soporte'])->givePermissionTo(AdminPermission::AdminBackupsView->value, AdminPermission::AdminBackupsDownload->value);
     RoleFactory::new()->createOne(['label' => 'Auditoría'])->givePermissionTo(AdminPermission::AdminBackupsView->value);
     $webPermission = Permission::query()->create(['name' => AdminPermission::AdminBackupsDownload->value, 'guard_name' => 'web']);
@@ -166,8 +135,8 @@ it('counts the holders who are suspended or lack the panel MFA and warns about t
     $user = createSuspendedUser();
     $user->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
     $user->assignRole($role, $customRole);
-    createHolderOf($role);
-    createHolderOf($customRole)->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
+    createUserHoldingRoles($role);
+    createUserHoldingRoles($customRole)->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
 
     $testable = permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)
         ->assertSeeHtml('data-access-warnings')
@@ -181,7 +150,7 @@ it('does not warn when every holder can use the permission', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
-    createHolderOf(adminCatalogRole(AdminRole::AdminBackupsOperator))->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
+    createUserHoldingRoles(adminCatalogRole(AdminRole::AdminBackupsOperator))->forceFill(['app_authentication_secret' => 'PANELSECRET'])->save();
 
     permissionHoldersPageFor(AdminPermission::AdminBackupsDownload->value)->assertDontSeeHtml('data-access-warnings');
 });
