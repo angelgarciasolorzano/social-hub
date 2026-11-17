@@ -241,17 +241,28 @@ it('runs the same number of queries whatever the number of users holding roles',
     expect(countRolesListQueries())->toBe($queriesWithFewUsers);
 });
 
-it('links a roles reader to compare roles in the matrix and offers comparing as the only bulk action', function (): void {
+it('links to who can do something and to the matrix, and offers comparing as the only bulk action', function (): void {
+    /** @var TestCase $testCase */
+    $testCase = $this;
+    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+
+    $testable = rolesListPage();
+    $testable->__call('assertActionVisible', ['permissionHolders']);
+    $testable->__call('assertActionHasUrl', ['permissionHolders', RoleResource::getUrl('access')]);
+    $testable->__call('assertActionHasUrl', ['openMatrix', RoleResource::getUrl('matrix')]);
+    $testable->__call('assertActionVisible', [TestAction::make('compareSelected')->table()->bulk()]);
+
+    expect(array_keys(FilamentTableRecords::table($testable)->getTable()->getFlatBulkActions()))->toBe(['compareSelected']);
+});
+
+it('hides who can do something from a roles reader who cannot list users', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
 
     $testable = rolesListPage();
-    $testable->__call('assertActionVisible', ['compareRoles']);
-    $testable->__call('assertActionHasUrl', ['compareRoles', RoleResource::getUrl('matrix')]);
-    $testable->__call('assertActionVisible', [TestAction::make('compareSelected')->table()->bulk()]);
-
-    expect(array_keys(FilamentTableRecords::table($testable)->getTable()->getFlatBulkActions()))->toBe(['compareSelected']);
+    $testable->__call('assertActionHidden', ['permissionHolders']);
+    $testable->__call('assertActionVisible', ['openMatrix']);
 });
 
 it('opens the selected roles in the matrix showing only their differences', function (): void {

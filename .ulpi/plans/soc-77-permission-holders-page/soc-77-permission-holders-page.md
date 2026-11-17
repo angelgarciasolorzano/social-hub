@@ -366,6 +366,31 @@ La sección «Permisos relacionados» no se entiende sin contexto (comentario de
 
 **Review:** claude
 
+### TASK-015: Acción «Quién puede hacer esto» en el listado de roles
+
+En el listado de roles, «Comparar roles» y «Matriz de permisos» llevan a la misma URL (`RoleResource::getUrl('matrix')`). Reemplazar la acción de cabecera `compareRoles` por `permissionHolders` («Quién puede hacer esto», ícono de llave, color gris) con URL a `RoleResource::getUrl('access')`, visible solo cuando `PermissionHolders::canAccess()` (viewAny de roles y de usuarios). Comparar sigue disponible desde el formulario de la matriz y la acción masiva «Comparar seleccionados». Quitar la clave sin uso `admin/roles.compare.action` en ambos idiomas. Actualizar `ListRolesTest` (acción visible con su URL para quien puede abrir la página, oculta para un lector de roles sin viewAny de usuarios; la acción masiva sigue siendo la única) y la línea de `admin.md` si menciona la acción.
+
+**Type:** feat · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-014
+
+**Acceptance Criteria:**
+
+1. El listado de roles ofrece «Nuevo rol», «Quién puede hacer esto» y «Matriz de permisos», cada una a su propia página.
+2. «Quién puede hacer esto» solo aparece para quien puede abrir la página; las pruebas del listado y de traducciones pasan.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php`
+- `lang/en/admin/roles.php`
+- `lang/es/admin/roles.php`
+- `docs/architecture/modules/admin.md`
+
+**validateCommand:** `rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php`
+
+**Review:** claude
+
 ## Failure Modes
 
 - `?permission=` con un valor que no está en el catálogo, vacío o con un permiso de otro guard: se vacía en `mount()` y se muestra el selector vacío.
@@ -391,7 +416,7 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 
 ## Execution Summary
 
-**Tareas:** 14
+**Tareas:** 15
 
 **Capas:**
 
@@ -405,8 +430,9 @@ Mínimo entregable: TASK-001 a TASK-008 y TASK-010/011 (página, tabla, pruebas 
 8. TASK-012
 9. TASK-013
 10. TASK-014
+11. TASK-015
 
-**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013 → TASK-014
+**Ruta crítica:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-010 → TASK-011 → TASK-012 → TASK-013 → TASK-014 → TASK-015
 
 ## Dependency Map
 
@@ -425,4 +451,5 @@ TASK-011 ← TASK-010
 TASK-012 ← TASK-011
 TASK-013 ← TASK-012
 TASK-014 ← TASK-013
+TASK-015 ← TASK-014
 ```

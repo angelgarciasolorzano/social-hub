@@ -437,6 +437,39 @@
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/PermissionHoldersTest.php"
       ],
       "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Acción «Quién puede hacer esto» en el listado de roles",
+      "description": "En el listado de roles, «Comparar roles» y «Matriz de permisos» llevan a la misma URL (`RoleResource::getUrl('matrix')`). Reemplazar la acción de cabecera `compareRoles` por `permissionHolders` («Quién puede hacer esto», ícono de llave, color gris) con URL a `RoleResource::getUrl('access')`, visible solo cuando `PermissionHolders::canAccess()` (viewAny de roles y de usuarios). Comparar sigue disponible desde el formulario de la matriz y la acción masiva «Comparar seleccionados». Quitar la clave sin uso `admin/roles.compare.action` en ambos idiomas. Actualizar `ListRolesTest` (acción visible con su URL para quien puede abrir la página, oculta para un lector de roles sin viewAny de usuarios; la acción masiva sigue siendo la única) y la línea de `admin.md` si menciona la acción.",
+      "priority": "P2",
+      "type": "feat",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "acceptanceCriteria": [
+        "El listado de roles ofrece «Nuevo rol», «Quién puede hacer esto» y «Matriz de permisos», cada una a su propia página.",
+        "«Quién puede hacer esto» solo aparece para quien puede abrir la página; las pruebas del listado y de traducciones pasan."
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "docs/architecture/modules/admin.md"
+      ],
+      "validateCommand": "rtk php artisan test --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
+        "lang/en/admin/roles.php",
+        "lang/es/admin/roles.php",
+        "docs/architecture/modules/admin.md"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -477,7 +510,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 14,
+    "taskCount": 15,
     "layers": [
       [
         "TASK-001",
@@ -512,6 +545,9 @@
       ],
       [
         "TASK-014"
+      ],
+      [
+        "TASK-015"
       ]
     ],
     "criticalPath": [
@@ -524,7 +560,8 @@
       "TASK-011",
       "TASK-012",
       "TASK-013",
-      "TASK-014"
+      "TASK-014",
+      "TASK-015"
     ]
   },
   "dependencyMap": {
@@ -568,6 +605,9 @@
     ],
     "TASK-014": [
       "TASK-013"
+    ],
+    "TASK-015": [
+      "TASK-014"
     ]
   }
 }

@@ -491,7 +491,6 @@ return [
     ],
 
     'compare' => [
-        'action' => 'Compare roles',
         'bulk_action' => 'Compare selected',
         'roles' => 'Roles to compare',
         'roles_helper' => 'Pick between :min and :max roles to see them side by side.',
