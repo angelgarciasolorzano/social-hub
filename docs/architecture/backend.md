@@ -194,8 +194,11 @@ Inside each `Tests/`, group by responsibility:
 - `Requests/` for FormRequest validation rules and messages.
 - `Resources/` for Resource serialization.
 - `Security/` for security and robustness regressions: rate limiting, input normalization, nesting limits and query counts.
+- `Browser/` for browser-driven tests of JavaScript behavior that feature tests cannot reach. Keep them under the owning module's `Tests/Browser/`: `app/Modules/<Domain>/Tests/Browser/`, `app/<Domain>/Tests/Browser/` or `app/<Domain>/Modules/<Feature>/Tests/Browser/` for the old submodule layout.
 
 Create a new folder (for example `Services/`) only when there is code of that kind to test. When you add a new modular test folder, register it in `phpunit.xml` and configure its base case and shared traits in `tests/Pest.php`. The test infrastructure (parallel runs, shared helpers) is described in [infrastructure.md](infrastructure.md#test-infrastructure).
+
+Browser tests use the `browser` Pest group. `tests/Pest.php` assigns that group to module `Tests/Browser/` folders and runs a shared `beforeEach` hook to restore Vite and load the compiled manifest. Run the group with `composer test:browser`; `composer test` excludes it from the parallel suite.
 
 ## 5. How to create a new module
 

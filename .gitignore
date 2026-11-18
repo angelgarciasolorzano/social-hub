@@ -37,3 +37,5 @@ yarn-error.log
 /app/Modules/Post/Database/Seeders/Images/*
 /app/Modules/User/Database/Seeders/Images/*
 /app/User/Database/Seeders/Images/*
+/tests/Browser/Screenshots/
+/tests/Browser/Traces/

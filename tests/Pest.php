@@ -25,6 +25,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Vite;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -64,6 +65,19 @@ pest()->extend(TestCase::class)
         __DIR__.'/../app/User/Modules/AccountSettings/Tests',
         __DIR__.'/../app/User/Modules/AccountStatus/Tests',
         __DIR__.'/../app/User/Tests',
+    );
+
+pest()->group('browser')
+    ->beforeEach(function (): void {
+        $this->withVite();
+
+        Vite::useHotFile(storage_path('framework/testing-vite.hot'));
+    })
+    ->in(
+        __DIR__.'/../app/Auth/Modules/Login/Tests/LoginBrowserTest.php',
+        __DIR__.'/../app/Modules/*/Tests/Browser',
+        __DIR__.'/../app/*/Tests/Browser',
+        __DIR__.'/../app/*/Modules/*/Tests/Browser',
     );
 
 /*
