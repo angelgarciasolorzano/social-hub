@@ -36,9 +36,10 @@ final class RoleActivity
     }
 
     /**
-     * Any admin activity; without a causer it is anonymous, without a date it is recorded now.
+     * Any admin activity; without a causer it is anonymous, without a date it is recorded now. The
+     * properties are stored as given, also malformed ones, for the tests of incomplete activity.
      *
-     * @param  array<string, mixed>  $properties
+     * @param  array<mixed>  $properties
      */
     public static function record(ActivityLogAdminEvent $activityLogAdminEvent, ?Model $model = null, array $properties = [], ?User $user = null, ?string $at = null): ActivityLog
     {
