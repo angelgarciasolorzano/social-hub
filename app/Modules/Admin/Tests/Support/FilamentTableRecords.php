@@ -71,6 +71,20 @@ final class FilamentTableRecords
         );
     }
 
+    /**
+     * The keys of the records the component's table shows, in its order.
+     *
+     * @template TComponent of Component
+     *
+     * @param  Testable<TComponent>  $testable
+     * @param  class-string<Model>  $recordClass
+     * @return list<string>
+     */
+    public static function shownKeys(Testable $testable, string $recordClass): array
+    {
+        return self::visibleRecordKeys(self::table($testable), $recordClass);
+    }
+
     public static function recordKey(Model $model): string
     {
         $key = $model->getKey();
