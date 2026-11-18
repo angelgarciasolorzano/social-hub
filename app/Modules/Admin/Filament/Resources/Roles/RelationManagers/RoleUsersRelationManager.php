@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\RelationManagers;
 
 use App\Modules\ActivityLog\Models\ActivityLog;
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Concerns\NotifiesAdminAuthorizationFailure;
@@ -118,7 +117,7 @@ class RoleUsersRelationManager extends RelationManager
         return Action::make('addUsers')
             ->label(TranslatedText::of('admin/roles.relations.users.add.label'))
             ->icon(Heroicon::OutlinedUserPlus)
-            ->visible(fn (): bool => self::administrator()?->can(AdminPermission::AdminUsersRoles->value) ?? false)
+            ->authorize('manageAnyRoles')
             ->modalHeading(fn (): string => TranslatedText::of('admin/roles.relations.users.add.modal_heading', [
                 'role' => $this->role()->displayName(),
             ]))
@@ -343,7 +342,7 @@ class RoleUsersRelationManager extends RelationManager
             ->label(TranslatedText::of('admin/roles.relations.users.bulk_remove.label'))
             ->icon(Heroicon::OutlinedUserMinus)
             ->color('danger')
-            ->visible(fn (): bool => self::administrator()?->can(AdminPermission::AdminUsersRoles->value) ?? false)
+            ->authorize('manageAnyRoles')
             ->authorizeIndividualRecords('manageRoles')
             ->modalHeading(fn (): string => TranslatedText::of('admin/roles.relations.users.bulk_remove.modal_heading', [
                 'role' => $this->role()->displayName(),

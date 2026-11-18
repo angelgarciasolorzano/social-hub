@@ -185,3 +185,17 @@ it('denies managing roles without admin.users.roles', function (): void {
     expect(Gate::forUser(createUserModerator())->allows('manageRoles', createUser()))->toBeFalse()
         ->and(Gate::forUser($user)->allows('manageRoles', createUser()))->toBeFalse();
 });
+
+it('allows managing roles before choosing a user only with admin.users.roles', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+
+    $user = createUser();
+    $user->assignRole(AdminRole::AdminRolesManager->value);
+
+    $rolesReader = createUser();
+    $rolesReader->assignRole(AdminRole::AdminRolesReader->value);
+
+    expect(Gate::forUser($user)->allows('manageAnyRoles', User::class))->toBeTrue()
+        ->and(Gate::forUser($rolesReader)->allows('manageAnyRoles', User::class))->toBeFalse()
+        ->and(Gate::forUser(createUserModerator())->allows('manageAnyRoles', User::class))->toBeFalse();
+});

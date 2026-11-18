@@ -39,13 +39,21 @@ final class UserPolicy
     }
 
     /**
+     * Assign and remove Admin roles at all, before a user is chosen (adding users to a role, removing it
+     * from a selection); each user is then checked with `manageRoles()`.
+     */
+    public function manageAnyRoles(User $authenticatedUser): bool
+    {
+        return $authenticatedUser->can(AdminPermission::AdminUsersRoles->value);
+    }
+
+    /**
      * Assign and remove the Admin roles of another user; an administrator never changes their own
      * roles from the panel.
      */
     public function manageRoles(User $authenticatedUser, User $user): bool
     {
-        return $authenticatedUser->can(AdminPermission::AdminUsersRoles->value)
-            && $authenticatedUser->isNot($user);
+        return $this->manageAnyRoles($authenticatedUser) && $authenticatedUser->isNot($user);
     }
 
     public function create(): bool
