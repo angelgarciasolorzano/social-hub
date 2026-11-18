@@ -45,7 +45,8 @@ All commands run from the repo root; details in [`docs/development/backend-comma
 
 - `composer run dev` — `serve`, `queue:listen`, `pail`, `vite` and `reverb:start` together (preferred). `npm run dev` runs only Vite.
 - `npm run build` / `npm run build:ssr` — production / SSR bundle (both must compile before a PR).
-- `composer test` — the whole Pest suite **in parallel** (one MySQL database per worker, `--recreate-databases` after changing migrations).
+- `composer test` — the regular Pest suite **in parallel**, excluding the `browser` group (one MySQL database per worker, `--recreate-databases` after changing migrations).
+- `composer test:browser` — builds Vite assets once and runs every test in the `browser` group with Chromium.
 - `php artisan test --compact <path>` or `--filter=testName` — narrow runs (after every edit).
 - `composer ide-helper` — regenerates `_ide_helper_models.php` (PHPStan scans it).
 - `php artisan wayfinder:generate --with-form --path=resources/js/shared/wayfinder` — regenerate the gitignored Wayfinder helpers after route or controller changes.
@@ -69,6 +70,7 @@ Frontend: `npm run format:check`, `npm run lint:check`, `npm run types` (fix wit
 - **Naming:** no single-letter variables in PHP or TypeScript, closures included (only a numeric `for` counter). See `.ai/rules/app.md`.
 - **Frontend:** `resources/js/modules/<domain>/` mirrors the PHP domains; shared code in `resources/js/shared/` (shadcn primitives in `shared/components/shadcn/ui/`); `@/` is `resources/js/`; routes come from `@/shared/wayfinder/` (generated, never edited, never hardcoded URLs). Import order is enforced by Prettier.
 - **Tests:** module tests live in the owning module's `Tests/` (`app/Modules/<Domain>/Tests/`, or `app/<Domain>/…/Tests/` in the old architecture), grouped by responsibility (`Crud/`, `Models/`, `Requests/`, `Resources/`, `Security/`, `Seeders/`…) and registered in `phpunit.xml` + `tests/Pest.php`; `tests/` is for cross-module and infrastructure tests. `make:test` writes under `tests/`, so move the file.
+- Browser tests belong under their module's `Tests/Browser/` folder and use the shared `browser` group and Vite setup in `tests/Pest.php`.
 
 ## Invariants and traps
 
@@ -123,7 +125,7 @@ Each item is explained in the linked module document.
 - Symfony sends `Accept-Language: en-us` on every test request, so a guest gets English. Compare messages with `translatedTextIn()`, never a copied text.
 - Tests that send a wrong OTP use `invalidOtpFor($user)`; tests that reuse a code call `allowOtpReuse()`. Tests that run `UserSeeder` or `PostSeeder` call `Storage::fake('public')` first. Seeder tests never rely on `mt_srand`.
 - In tests, change model data through Eloquent, never `DB::table()->update()` (`.ai/rules/backend.md`).
-- The login browser E2E test runs only in Chromium: install it with `npx playwright install chromium`, then run `composer test:browser-login`. The command builds Vite assets and uses `.env.testing` with the existing `social-hub-testing` database; it does not add other browsers or a CI workflow.
+- Module-owned browser tests live under `Tests/Browser/` and use the shared `browser` Pest group and Vite setup from `tests/Pest.php`. Install only Chromium with `npx playwright install chromium`, then run `composer test:browser`; it builds Vite assets once and runs the whole group. These tests use `.env.testing` with the existing `social-hub-testing` database. `composer test` excludes the `browser` group; no alternate database, other browsers, or CI workflow are configured.
 
 <laravel-boost-guidelines>
 === foundation rules ===
@@ -294,6 +296,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 ## Testing
 
 - Place new module-specific tests under the owning module's `Tests/` directory (`app/Modules/{Domain}/Tests/` for migrated modules; `app/{Domain}/Tests/` or `app/{Domain}/Modules/{Feature}/Tests/` in the old architecture); reserve root `tests/` for cross-module, infrastructure, and existing tests.
+- Put browser tests in the owning module's `Tests/Browser/` subdirectory. `tests/Pest.php` assigns them to the `browser` group and applies the shared Vite setup; run them with `composer test:browser`.
 - Register new module test directories in `phpunit.xml` and configure their Pest base case/shared traits in `tests/Pest.php` as needed.
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
