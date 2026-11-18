@@ -12,7 +12,6 @@ use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Support\Translation\TranslatedText;
-use App\User\Models\User;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -33,14 +32,6 @@ function lifecycleRolePage(Role $role): Testable
     return Livewire::test(ViewRole::class, ['record' => $role->getKey()]);
 }
 
-/**
- * Sign in an administrator holding the base admin role and the roles manager role.
- */
-function actingAsLifecycleRolesManager(TestCase $testCase): User
-{
-    return AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
-}
-
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -51,7 +42,7 @@ beforeEach(function (): void {
 it('links the edit button to the edit page of custom and system roles', function (string $roleType): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = $roleType === 'custom' ? RoleFactory::new()->createOne() : lifecycleSystemRole(AdminRole::AdminPostsReader);
 
     $testable = lifecycleRolePage($role);
@@ -62,7 +53,7 @@ it('links the edit button to the edit page of custom and system roles', function
 it('does not offer editing on the locked admin role', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     lifecycleRolePage(lifecycleSystemRole(AdminRole::Admin))->__call('assertActionHidden', ['edit']);
 });
@@ -70,7 +61,7 @@ it('does not offer editing on the locked admin role', function (): void {
 it('does not offer deleting a system role', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     $testable = lifecycleRolePage(lifecycleSystemRole(AdminRole::AdminPostsReader));
     $testable->__call('assertActionHidden', ['delete']);
@@ -80,7 +71,7 @@ it('does not offer deleting a system role', function (): void {
 it('duplicates a system role as a custom role with its permissions and opens it', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $sourceRole = lifecycleSystemRole(AdminRole::AdminPostsReader);
 
     $testable = lifecycleRolePage($sourceRole)
@@ -107,7 +98,7 @@ it('duplicates a system role as a custom role with its permissions and opens it'
 it('deletes a custom role without users and goes back to the list', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
     $testable = lifecycleRolePage($role)
@@ -125,7 +116,7 @@ it('deletes a custom role without users and goes back to the list', function ():
 it('disables deleting a custom role that has users and explains why', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
     createUser()->assignRole($role);
 
@@ -139,7 +130,7 @@ it('disables deleting a custom role that has users and explains why', function (
 it('ignores a delete submitted after the role gained users', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
     $testable = lifecycleRolePage($role)
@@ -157,7 +148,7 @@ it('ignores a delete submitted after the role gained users', function (): void {
 it('writes nothing with a wrong password', function (string $actionName): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
     lifecycleRolePage($role)
@@ -173,7 +164,7 @@ it('writes nothing with a wrong password', function (string $actionName): void {
 it('hides the lifecycle actions from a roles reader', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase);
     $role = RoleFactory::new()->createOne();
 
     $testable = lifecycleRolePage($role);
@@ -192,7 +183,7 @@ it('hides the lifecycle actions from a roles reader', function (): void {
 it('updates its user count and the delete action when the users tab changes the holders', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsLifecycleRolesManager($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
     $testable = lifecycleRolePage($role);
