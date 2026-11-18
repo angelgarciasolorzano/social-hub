@@ -16,11 +16,9 @@ use Filament\Support\Enums\FontWeight;
 use Illuminate\Support\HtmlString;
 
 /**
- * The permission checkboxes of a role form: one list per panel area with each permission's description,
- * kept complete while the administrator edits them (checking a permission checks what it requires,
- * unchecking one unchecks what depends on it, across areas), and a live summary of what will change.
- *
- * The form state lives under `permissions`, keyed by area: `['users' => ['admin.users.viewAny', …], …]`.
+ * Permission checkboxes for a role form: one list per panel area, kept complete while editing (checking
+ * a permission checks its requirements, unchecking one unchecks its dependents), with a live summary.
+ * The state lives under `permissions`, keyed by area: `['users' => ['admin.users.viewAny', …], …]`.
  */
 trait EditsRolePermissions
 {
@@ -51,8 +49,7 @@ trait EditsRolePermissions
     }
 
     /**
-     * The cataloged permissions the role grants, grouped by area, as the form's initial state. A new
-     * role starts with every area empty.
+     * The role's cataloged permissions by area, as the form's initial state; a new role starts empty.
      *
      * @return array<string, list<string>>
      */
@@ -172,8 +169,8 @@ trait EditsRolePermissions
     }
 
     /**
-     * The live summary of the selection beside the checkboxes: how many permissions and which areas,
-     * what saving would change compared with the role being edited, and the sensitive ones chosen.
+     * The live summary beside the checkboxes: how many permissions and which areas, what saving would
+     * change, and the sensitive permissions chosen.
      *
      * @return list<Text>
      */

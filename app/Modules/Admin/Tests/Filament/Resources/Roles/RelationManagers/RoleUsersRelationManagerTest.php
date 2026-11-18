@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
@@ -13,24 +12,16 @@ use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\Modules\Admin\Tests\Support\QueryLog;
+use App\Modules\Admin\Tests\Support\RoleActivity;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use App\User\Models\User;
-use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
-use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
-
-function roleWithUsers(AdminRole $adminRole): Role
-{
-    return Role::query()
-        ->where('name', $adminRole->value)
-        ->where('guard_name', 'admin')
-        ->sole();
-}
 
 /**
  * @return Testable<Component>
@@ -60,41 +51,6 @@ function tableActionNames(array $actions): array
     return $actionNames;
 }
 
-/**
- * Give the role to a user and record the grant as the service would, made by the administrator at the
- * given time.
- */
-function grantRoleWithActivity(Role $role, User $user, User $administrator, string $grantedAt): void
-{
-    $user->assignRole($role);
-
-    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleGranted)->performedOn($user)->causedBy($administrator)
-        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($grantedAt)]);
-}
-
-/**
- * Count the queries that rendering the users tab with the given page size runs, leaving out Spatie's
- * permission lookups, which depend on its cache and not on the rows. Tests render once before measuring so
- * the signed-in administrator's own roles are already loaded.
- */
-function countRoleUsersQueries(Role $role, int $recordsPerPage): int
-{
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-
-    roleUsersRelationManagerFor($role)->set('tableRecordsPerPage', $recordsPerPage)->assertOk();
-
-    $tabQueries = array_filter(
-        array_column(DB::getQueryLog(), 'query'),
-        fn (string $query): bool => preg_match('/\b(permissions|role_has_permissions|model_has_permissions)\b/', $query) !== 1
-            || str_contains($query, 'activity_log'),
-    );
-
-    DB::disableQueryLog();
-
-    return count($tabQueries);
-}
-
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -105,7 +61,7 @@ beforeEach(function (): void {
 it('lists only the users holding the role, linked to their detail', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $user = createUser();
     $user->assignRole(AdminRole::AdminPostsReader->value);
 
@@ -114,13 +70,13 @@ it('lists only the users holding the role, linked to their detail', function ():
 
     createUser()->assignRole(AdminRole::AdminUsersReader->value);
 
-    $testable = roleUsersRelationManagerFor(roleWithUsers(AdminRole::AdminPostsReader))
+    $testable = roleUsersRelationManagerFor(adminCatalogRole(AdminRole::AdminPostsReader))
         ->assertOk()
         ->assertSee($user->email)
         ->assertSee('Suspended')
         ->assertSee(UserResource::getUrl('view', ['record' => $user]), false);
 
-    expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
+    expect(FilamentTableRecords::shownKeys($testable, User::class))
         ->toEqualCanonicalizing([
             FilamentTableRecords::recordKey($user),
             FilamentTableRecords::recordKey($suspendedPostsReader),
@@ -130,9 +86,9 @@ it('lists only the users holding the role, linked to their detail', function ():
 it('offers adding, removing and removing several users, but no create or edit actions', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
-    $table = FilamentTableRecords::table(roleUsersRelationManagerFor(roleWithUsers(AdminRole::AdminPostsReader)))->getTable();
+    $table = FilamentTableRecords::table(roleUsersRelationManagerFor(adminCatalogRole(AdminRole::AdminPostsReader)))->getTable();
 
     expect(tableActionNames($table->getHeaderActions()))->toBe(['addUsers'])
         ->and(tableActionNames($table->getRecordActions()))->toBe(['removeFromRole'])
@@ -144,20 +100,20 @@ it('shows an empty state in Spanish for a role nobody holds', function (): void 
 
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
-    roleUsersRelationManagerFor(roleWithUsers(AdminRole::AdminBackupsOperator))
+    roleUsersRelationManagerFor(adminCatalogRole(AdminRole::AdminBackupsOperator))
         ->assertSee(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.relations.users.empty'));
 
-    expect(RoleUsersRelationManager::getTitle(roleWithUsers(AdminRole::AdminBackupsOperator), ViewRole::class))
+    expect(RoleUsersRelationManager::getTitle(adminCatalogRole(AdminRole::AdminBackupsOperator), ViewRole::class))
         ->toBe(translatedTextIn(PreferredLocale::SPANISH, 'admin/roles.relations.users.title'));
 });
 
 it('hides the tab from a roles reader who cannot list users', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
-    $role = roleWithUsers(AdminRole::AdminPostsReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase);
+    $role = adminCatalogRole(AdminRole::AdminPostsReader);
 
     expect(RoleUsersRelationManager::canViewForRecord($role, ViewRole::class))->toBeFalse();
 
@@ -167,7 +123,7 @@ it('hides the tab from a roles reader who cannot list users', function (): void 
 it('adds two users to a custom role and removes one, with one activity per change', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $user = AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $firstUser = createUser();
     $secondUser = createUser();
@@ -199,9 +155,9 @@ it('adds two users to a custom role and removes one, with one activity per chang
 it('never offers the administrator own account', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $user = AdminFilamentTestContext::actingAsRolesManager($testCase);
     $otherUser = createUser();
-    $role = roleWithUsers(AdminRole::AdminRolesManager);
+    $role = adminCatalogRole(AdminRole::AdminRolesManager);
 
     $testable = roleUsersRelationManagerFor($role);
     $searchResults = new ReflectionMethod(RoleUsersRelationManager::class, 'addableUserOptions')->invoke($testable->instance(), '');
@@ -229,7 +185,7 @@ it('never offers the administrator own account', function (): void {
 it('adds and removes nothing with a wrong password', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $user = createUser();
 
@@ -257,7 +213,7 @@ it('adds and removes nothing with a wrong password', function (): void {
 it('hides both actions without admin.users.roles and ignores a direct call', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase, AdminRole::AdminUsersReader);
     $customRole = RoleFactory::new()->createOne();
     $holder = createUser();
     $holder->assignRole($customRole);
@@ -287,7 +243,7 @@ it('hides both actions without admin.users.roles and ignores a direct call', fun
 it('tells the role page to refresh after adding or removing users', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $user = createUser();
 
@@ -308,13 +264,14 @@ it('tells the role page to refresh after adding or removing users', function ():
 it('shows when and by whom each user received the role, or that it was not recorded', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $user = createUser();
     $grantedUser = createUser();
     $userWithoutGrant = createUser();
 
-    grantRoleWithActivity($customRole, $grantedUser, $user, '2026-10-02 09:15:00');
+    $grantedUser->assignRole($customRole);
+    RoleActivity::grant($customRole, $grantedUser, $user, '2026-10-02 09:15:00');
     $userWithoutGrant->assignRole($customRole);
 
     $testable = roleUsersRelationManagerFor($customRole)
@@ -328,28 +285,30 @@ it('shows when and by whom each user received the role, or that it was not recor
 it('sorts the users by the date they received the role', function (string $direction): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $user = createUser();
     $earlierUser = createUser();
     $laterUser = createUser();
 
-    grantRoleWithActivity($customRole, $laterUser, $user, '2026-10-05 10:00:00');
-    grantRoleWithActivity($customRole, $earlierUser, $user, '2026-10-01 10:00:00');
+    $laterUser->assignRole($customRole);
+    RoleActivity::grant($customRole, $laterUser, $user, '2026-10-05 10:00:00');
+    $earlierUser->assignRole($customRole);
+    RoleActivity::grant($customRole, $earlierUser, $user, '2026-10-01 10:00:00');
 
     $testable = roleUsersRelationManagerFor($customRole);
     $testable->__call('sortTable', ['role_assigned_at', $direction]);
 
     $expectedOrder = [FilamentTableRecords::recordKey($earlierUser), FilamentTableRecords::recordKey($laterUser)];
 
-    expect(FilamentTableRecords::visibleRecordKeys(FilamentTableRecords::table($testable), User::class))
+    expect(FilamentTableRecords::shownKeys($testable, User::class))
         ->toBe($direction === 'asc' ? $expectedOrder : array_reverse($expectedOrder));
 })->with(['asc', 'desc']);
 
 it('shows whether each user configured the panel MFA without exposing it', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $userWithMfa = createUser();
     $userWithMfa->forceFill([
@@ -370,7 +329,7 @@ it('shows whether each user configured the panel MFA without exposing it', funct
 it('lists the other roles of each user without this role', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne(['label' => 'Soporte de cuentas']);
     $otherRole = RoleFactory::new()->createOne(['label' => 'Auditor externo']);
     $user = createUser();
@@ -384,17 +343,23 @@ it('lists the other roles of each user without this role', function (): void {
 it('runs the same number of queries for 10 and for 50 users', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $customRole = RoleFactory::new()->createOne();
     $otherRole = RoleFactory::new()->createOne();
 
     foreach (range(1, 50) as $index) {
-        $user = createUser();
-        grantRoleWithActivity($customRole, $user, createUser(), '2026-10-01 10:00:00');
-        $user->assignRole($otherRole);
+        RoleActivity::grant($customRole, createUserHoldingRoles($customRole, $otherRole), at: '2026-10-01 10:00:00');
     }
 
-    countRoleUsersQueries($customRole, 10);
+    $renderTab = static fn (int $recordsPerPage): Closure => static fn (): Testable => roleUsersRelationManagerFor($customRole)
+        ->set('tableRecordsPerPage', $recordsPerPage)
+        ->assertOk();
+    // Spatie's permission lookups depend on its cache, not on the rows; the grants are always counted.
+    $keepTabQuery = static fn (string $query): bool => preg_match('/\b(permissions|role_has_permissions|model_has_permissions)\b/', $query) !== 1
+        || str_contains($query, 'activity_log');
 
-    expect(countRoleUsersQueries($customRole, 50))->toBe(countRoleUsersQueries($customRole, 10));
+    // Render once first so the signed-in administrator's own roles are already loaded.
+    QueryLog::count($renderTab(10), $keepTabQuery);
+
+    expect(QueryLog::count($renderTab(50), $keepTabQuery))->toBe(QueryLog::count($renderTab(10), $keepTabQuery));
 });

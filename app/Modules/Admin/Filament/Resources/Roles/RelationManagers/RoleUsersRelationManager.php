@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\RelationManagers;
 
 use App\Modules\ActivityLog\Models\ActivityLog;
-use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
+use App\Modules\Admin\Filament\Concerns\NotifiesAdminAuthorizationFailure;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RoleUsersTable;
+use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
@@ -39,6 +41,7 @@ use Override;
 class RoleUsersRelationManager extends RelationManager
 {
     use ConfirmsCurrentPassword;
+    use NotifiesAdminAuthorizationFailure;
 
     private const string USERS_FIELD = 'users';
 
@@ -73,11 +76,7 @@ class RoleUsersRelationManager extends RelationManager
             return false;
         }
 
-        $authenticatedUser = Filament::auth()->user();
-
-        return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('view', $ownerRecord)
-            && Gate::forUser($authenticatedUser)->allows('viewAny', User::class);
+        return RoleResource::canView($ownerRecord) && UserResource::canViewAny();
     }
 
     #[Override]
@@ -118,7 +117,7 @@ class RoleUsersRelationManager extends RelationManager
         return Action::make('addUsers')
             ->label(TranslatedText::of('admin/roles.relations.users.add.label'))
             ->icon(Heroicon::OutlinedUserPlus)
-            ->visible(fn (): bool => self::administrator()?->can(AdminPermission::AdminUsersRoles->value) ?? false)
+            ->authorize('manageAnyRoles')
             ->modalHeading(fn (): string => TranslatedText::of('admin/roles.relations.users.add.modal_heading', [
                 'role' => $this->role()->displayName(),
             ]))
@@ -195,7 +194,7 @@ class RoleUsersRelationManager extends RelationManager
                 return $addedCount;
             });
         } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             return;
         }
@@ -233,7 +232,7 @@ class RoleUsersRelationManager extends RelationManager
         try {
             $adminAuthorizationService->revokeRole($user, $this->role(), $administrator);
         } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             return;
         }
@@ -343,7 +342,7 @@ class RoleUsersRelationManager extends RelationManager
             ->label(TranslatedText::of('admin/roles.relations.users.bulk_remove.label'))
             ->icon(Heroicon::OutlinedUserMinus)
             ->color('danger')
-            ->visible(fn (): bool => self::administrator()?->can(AdminPermission::AdminUsersRoles->value) ?? false)
+            ->authorize('manageAnyRoles')
             ->authorizeIndividualRecords('manageRoles')
             ->modalHeading(fn (): string => TranslatedText::of('admin/roles.relations.users.bulk_remove.modal_heading', [
                 'role' => $this->role()->displayName(),
@@ -402,7 +401,7 @@ class RoleUsersRelationManager extends RelationManager
                 return $removedCount;
             });
         } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             return;
         }
@@ -413,13 +412,5 @@ class RoleUsersRelationManager extends RelationManager
             ->send();
 
         $this->dispatch(ViewRole::ROLE_USERS_CHANGED_EVENT);
-    }
-
-    private function notifyFailure(AdminAuthorizationException $adminAuthorizationException): void
-    {
-        Notification::make()
-            ->title($adminAuthorizationException->failure->message())
-            ->danger()
-            ->send();
     }
 }

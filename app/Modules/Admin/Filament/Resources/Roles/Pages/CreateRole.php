@@ -8,6 +8,7 @@ use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Concerns\EditsRolePermissions;
+use App\Modules\Admin\Filament\Concerns\NotifiesAdminAuthorizationFailure;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
@@ -18,7 +19,6 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Pages\CreateRecord\Concerns\HasWizard;
 use Filament\Schemas\Components\Grid;
@@ -30,20 +30,19 @@ use Filament\Schemas\Components\Wizard\Step;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use Override;
 
 /**
- * Create a custom role in three steps: its name and purpose (optionally starting from the permissions
- * of an existing role), its permissions with a live summary beside them, and a review with the current
- * password. The role is written by `AdminAuthorizationService::createRole()`.
+ * Creates a custom role in three steps: name and purpose (optionally from another role's permissions),
+ * permissions with a live summary, and a review with the current password.
  */
 class CreateRole extends CreateRecord
 {
     use ConfirmsCurrentPassword;
     use EditsRolePermissions;
     use HasWizard;
+    use NotifiesAdminAuthorizationFailure;
 
     private const string CREATE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:create:';
 
@@ -109,7 +108,7 @@ class CreateRole extends CreateRecord
                         ->live()
                         ->afterStateUpdated(fn (Set $set, mixed $state): mixed => $set(
                             self::PERMISSIONS_FIELD,
-                            self::permissionsByArea(\is_string($state) ? self::adminRoleQuery()->where('name', $state)->first() : null),
+                            self::permissionsByArea(\is_string($state) ? Role::query()->admin()->where('name', $state)->first() : null),
                         ))
                         ->dehydrated(false),
                 ]),
@@ -203,10 +202,7 @@ class CreateRole extends CreateRecord
                 ]);
             }
 
-            Notification::make()
-                ->title($adminAuthorizationException->failure->message())
-                ->danger()
-                ->send();
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             throw new Halt($adminAuthorizationException->getMessage(), $adminAuthorizationException->getCode(), $adminAuthorizationException);
         }
@@ -229,15 +225,13 @@ class CreateRole extends CreateRecord
     }
 
     /**
-     * The roles of the `admin` guard a new role can start from, in display order, by stored name.
-     *
      * @return array<string, string>
      */
     private function startFromOptions(): array
     {
         $options = [];
 
-        foreach (Role::inDisplayOrder(self::adminRoleQuery()->get()) as $role) {
+        foreach (Role::inDisplayOrder(Role::query()->admin()->get()) as $role) {
             $options[$role->name] = $role->displayName();
         }
 
@@ -245,20 +239,13 @@ class CreateRole extends CreateRecord
     }
 
     /**
-     * Whether another role of the `admin` guard already uses this label, ignoring case and spaces around.
+     * Whether a role of the `admin` guard already uses this label, ignoring case and surrounding spaces.
      */
     private static function labelIsTaken(string $label): bool
     {
-        return self::adminRoleQuery()
+        return Role::query()
+            ->admin()
             ->whereRaw('LOWER(label) = ?', [mb_strtolower(trim($label))])
             ->exists();
-    }
-
-    /**
-     * @return Builder<Role>
-     */
-    private static function adminRoleQuery(): Builder
-    {
-        return Role::query()->where('guard_name', Role::GUARD_NAME);
     }
 }

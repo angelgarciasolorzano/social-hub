@@ -51,17 +51,6 @@ function submitBulkRoleRemoval(Testable $testable, string $currentPassword): Tes
 }
 
 /**
- * A new user holding the role.
- */
-function bulkRoleHolder(Role $role): User
-{
-    $user = createUser();
-    $user->assignRole($role);
-
-    return $user;
-}
-
-/**
  * How many `admin.role_revoked` activities were recorded.
  */
 function recordedRoleRevocations(): int
@@ -79,11 +68,11 @@ beforeEach(function (): void {
 it('removes the role from the selected users with one activity each', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
-    $firstUser = bulkRoleHolder($role);
-    $secondUser = bulkRoleHolder($role);
-    $untouchedUser = bulkRoleHolder($role);
+    $firstUser = createUserHoldingRoles($role);
+    $secondUser = createUserHoldingRoles($role);
+    $untouchedUser = createUserHoldingRoles($role);
 
     $testable = submitBulkRoleRemoval(roleUsersTabWithSelection($role, [$firstUser, $secondUser]), 'password');
     $testable->assertHasNoErrors();
@@ -100,9 +89,9 @@ it('removes the role from the selected users with one activity each', function (
 it('removes nobody with a wrong password', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
-    $user = bulkRoleHolder($role);
+    $user = createUserHoldingRoles($role);
 
     submitBulkRoleRemoval(roleUsersTabWithSelection($role, [$user]), 'wrong-password')
         ->assertHasErrors(['mountedActions.0.data.current_password']);
@@ -116,8 +105,8 @@ it('removes nobody when one of the removals is refused', function (): void {
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::AdminRolesManager);
     $adminRole = Role::query()->where('name', AdminRole::Admin->value)->where('guard_name', Role::GUARD_NAME)->sole();
-    $user = bulkRoleHolder($adminRole);
-    $lastAdministrator = bulkRoleHolder($adminRole);
+    $user = createUserHoldingRoles($adminRole);
+    $lastAdministrator = createUserHoldingRoles($adminRole);
 
     submitBulkRoleRemoval(roleUsersTabWithSelection($adminRole, [$user, $lastAdministrator]), 'password');
 
@@ -131,10 +120,10 @@ it('removes nobody when one of the removals is refused', function (): void {
 it('never lets the administrator select or remove their own account', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    $user = AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    $user = AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
     $user->assignRole($role);
-    $otherUser = bulkRoleHolder($role);
+    $otherUser = createUserHoldingRoles($role);
 
     $testable = roleUsersTabWithSelection($role, [$user, $otherUser]);
     $table = FilamentTableRecords::table($testable)->getTable();
@@ -152,9 +141,9 @@ it('never lets the administrator select or remove their own account', function (
 it('hides the action without admin.users.roles and ignores a direct call', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase, AdminRole::AdminUsersReader);
     $role = RoleFactory::new()->createOne();
-    $user = bulkRoleHolder($role);
+    $user = createUserHoldingRoles($role);
 
     $testable = roleUsersTabWithSelection($role, [$user]);
     $testable->__call('assertActionHidden', [TestAction::make('removeSelectedFromRole')->table()->bulk()]);

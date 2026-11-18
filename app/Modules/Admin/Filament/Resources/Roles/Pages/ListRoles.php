@@ -11,6 +11,7 @@ use App\Modules\Admin\Filament\Resources\Roles\Widgets\UsersPerRoleChart;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Icons\Heroicon;
@@ -30,11 +31,9 @@ class ListRoles extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('createRole')
+            CreateAction::make()
                 ->label(TranslatedText::of('admin/roles.actions.create.label'))
-                ->icon(Heroicon::OutlinedPlus)
-                ->authorize('create')
-                ->url(RoleResource::getUrl('create')),
+                ->icon(Heroicon::OutlinedPlus),
             Action::make('permissionHolders')
                 ->label(TranslatedText::of('admin/roles.access.title'))
                 ->icon(Heroicon::OutlinedKey)
@@ -50,15 +49,15 @@ class ListRoles extends ListRecords
     }
 
     /**
-     * Split the roles by type, each tab with how many roles of the `admin` guard it holds.
+     * The roles split by type, each tab with its number of roles of the `admin` guard.
      *
      * @return array<string, Tab>
      */
     #[Override]
     public function getTabs(): array
     {
-        $systemRoleCount = Role::query()->where('guard_name', Role::GUARD_NAME)->where('is_system', true)->count();
-        $roleCount = Role::query()->where('guard_name', Role::GUARD_NAME)->count();
+        $systemRoleCount = Role::query()->admin()->system()->count();
+        $roleCount = Role::query()->admin()->count();
 
         return [
             'all' => Tab::make(TranslatedText::of('admin/roles.types.all'))

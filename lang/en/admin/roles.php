@@ -192,7 +192,6 @@ return [
 
     'types' => [
         'column' => 'Type',
-        'filter' => 'Type',
         'all' => 'All',
         'system' => 'System',
         'custom' => 'Custom',
@@ -243,7 +242,6 @@ return [
     ],
 
     'locked' => [
-        'badge' => 'Locked',
         'tooltip' => 'The Administrator role only grants access to the panel, so it cannot be edited.',
         'notice' => 'This role only grants access to the panel. Give sections through other roles.',
     ],
@@ -267,7 +265,6 @@ return [
         'users_count' => 'Users',
         'guard' => 'Guard',
         'not_editable' => 'Not editable',
-        'not_editable_tooltip' => 'This role is not part of the catalog, so it cannot be edited from the panel.',
         'areas' => 'Areas',
         'last_changed_at' => 'Last change',
         'created_by' => 'Created by',

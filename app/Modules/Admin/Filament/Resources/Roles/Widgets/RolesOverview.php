@@ -8,6 +8,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\BuildsDailyActivityCharts;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
@@ -16,7 +17,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Gate;
 use Override;
 
 /**
@@ -38,10 +38,7 @@ class RolesOverview extends StatsOverviewWidget
     #[Override]
     public static function canView(): bool
     {
-        $authenticatedUser = auth('admin')->user();
-
-        return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('viewAny', Role::class);
+        return RoleResource::canViewAny();
     }
 
     /**
@@ -63,10 +60,7 @@ class RolesOverview extends StatsOverviewWidget
                 ->color('primary'),
             Stat::make(
                 TranslatedText::of('admin/roles.widgets.overview.unused_roles.label'),
-                Role::query()
-                    ->where('guard_name', Role::GUARD_NAME)
-                    ->doesntHave('users')
-                    ->count(),
+                Role::query()->admin()->doesntHave('users')->count(),
             )
                 ->description(TranslatedText::of('admin/roles.widgets.overview.unused_roles.description'))
                 ->descriptionIcon(Heroicon::OutlinedUserMinus)

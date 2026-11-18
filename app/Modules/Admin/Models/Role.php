@@ -7,6 +7,7 @@ namespace App\Modules\Admin\Models;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Policies\RolePolicy;
 use App\User\Models\User;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Override;
 use Spatie\Permission\Models\Role as SpatieRole;
 
@@ -97,6 +99,28 @@ class Role extends SpatieRole
     protected function custom(Builder $builder): void
     {
         $builder->where('is_system', false);
+    }
+
+    /**
+     * Limit a roles query to the roles of the `admin` guard that grant the permission. Takes any builder
+     * because Spatie types the `roles` relation as `Model`, so `whereHas('roles')` cannot use the scopes.
+     *
+     * @template TModel of Model
+     *
+     * @param  Builder<TModel>  $builder
+     * @return Builder<TModel>
+     */
+    public static function grantingPermission(Builder $builder, AdminPermission $adminPermission): Builder
+    {
+        $builder->getQuery()->where('roles.guard_name', self::GUARD_NAME);
+
+        return $builder->whereHas('permissions', static function (Builder $builder) use ($adminPermission): Builder {
+            $builder->getQuery()
+                ->where('permissions.guard_name', self::GUARD_NAME)
+                ->where('permissions.name', $adminPermission->value);
+
+            return $builder;
+        });
     }
 
     public function isSystem(): bool

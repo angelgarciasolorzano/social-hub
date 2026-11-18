@@ -9,6 +9,7 @@ use App\Auth\Modules\TrustedDevice\Services\TrustedDeviceDashboardCache;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
+use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Admin\Models\Role as AdminGuardRole;
 use App\Modules\Comment\Models\Comment;
@@ -614,6 +615,29 @@ function createUserHoldingRoles(AdminGuardRole ...$roles): User
 function permissionHoldersPageFor(?string $permission): Testable
 {
     return Livewire::withQueryParams($permission === null ? [] : ['permission' => $permission])->test(PermissionHolders::class);
+}
+
+/**
+ * The names of the permissions the role holds now, read back from the database and sorted.
+ *
+ * @return list<string>
+ */
+function rolePermissionNames(AdminGuardRole $adminGuardRole): array
+{
+    /** @var list<string> $permissionNames */
+    $permissionNames = $adminGuardRole->refresh()->permissions->pluck('name')->sort()->values()->all();
+
+    return $permissionNames;
+}
+
+/**
+ * The detail page of a role, as opening it from the roles list does.
+ *
+ * @return Testable<ViewRole>
+ */
+function viewRolePageFor(AdminGuardRole $adminGuardRole): Testable
+{
+    return Livewire::test(ViewRole::class, ['record' => $adminGuardRole->getKey()]);
 }
 
 /**

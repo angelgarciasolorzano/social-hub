@@ -8,6 +8,7 @@ use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Concerns\EditsRolePermissions;
+use App\Modules\Admin\Filament\Concerns\NotifiesAdminAuthorizationFailure;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
@@ -16,7 +17,6 @@ use App\User\Models\User;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -32,14 +32,14 @@ use Illuminate\Validation\ValidationException;
 use Override;
 
 /**
- * Edit a role on one page: the name and description of a custom role and the permissions of any role
- * but the locked `admin`, with the live summary beside them and the current password. Both changes are
- * saved together: if one is refused, nothing changes.
+ * Edits a role on one page: the details of a custom role and the permissions of any role but the locked
+ * `admin`, confirmed with the current password and saved together (one refusal changes nothing).
  */
 class EditRole extends EditRecord
 {
     use ConfirmsCurrentPassword;
     use EditsRolePermissions;
+    use NotifiesAdminAuthorizationFailure;
 
     private const string EDIT_PASSWORD_THROTTLE_PREFIX = 'admin-roles:edit:';
 
@@ -48,8 +48,7 @@ class EditRole extends EditRecord
     private const string DESCRIPTION_FIELD = 'description';
 
     /**
-     * Keeps the summary, the confirmation and the password in view beside the permissions while they
-     * scroll, on wide screens only.
+     * Keeps the summary, the confirmation and the password beside the scrolling permissions on wide screens.
      */
     private const string STICKY_SUMMARY_CLASSES = 'lg:sticky lg:top-24 lg:self-start';
 
@@ -166,10 +165,7 @@ class EditRole extends EditRecord
                 ]);
             }
 
-            Notification::make()
-                ->title($adminAuthorizationException->failure->message())
-                ->danger()
-                ->send();
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             throw new Halt($adminAuthorizationException->getMessage(), $adminAuthorizationException->getCode(), $adminAuthorizationException);
         }

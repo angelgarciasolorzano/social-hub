@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminPermission;
@@ -11,10 +10,11 @@ use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\Modules\Admin\Tests\Support\QueryLog;
+use App\Modules\Admin\Tests\Support\RoleActivity;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -33,44 +33,16 @@ function rolesColumnsList(string $tab = 'all'): Testable
 }
 
 /**
- * Record an activity of the role by the given administrator at the given time.
- */
-function recordListedRoleActivity(Role $role, ActivityLogAdminEvent $activityLogAdminEvent, User $user, string $recordedAt): void
-{
-    ActivityLogFactory::new()
-        ->forEvent($activityLogAdminEvent)
-        ->performedOn($role)
-        ->causedBy($user)
-        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($recordedAt)]);
-}
-
-/**
  * A custom role created and then changed by different administrators.
  */
 function changedCustomRole(User $creator, User $editor, string $changedAt = '2026-10-10 10:00:00'): Role
 {
     $role = RoleFactory::new()->createOne();
 
-    recordListedRoleActivity($role, ActivityLogAdminEvent::RoleCreated, $creator, '2026-09-01 10:00:00');
-    recordListedRoleActivity($role, ActivityLogAdminEvent::RolePermissionGranted, $editor, $changedAt);
+    RoleActivity::change($role, ActivityLogAdminEvent::RoleCreated, $creator, '2026-09-01 10:00:00');
+    RoleActivity::change($role, ActivityLogAdminEvent::RolePermissionGranted, $editor, $changedAt);
 
     return $role;
-}
-
-/**
- * Count the queries that rendering the custom roles tab runs.
- */
-function countCustomRolesListQueries(): int
-{
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-
-    rolesColumnsList('custom')->assertOk();
-
-    $queryCount = count(DB::connection()->getQueryLog());
-    DB::disableQueryLog();
-
-    return $queryCount;
 }
 
 beforeEach(function (): void {
@@ -78,7 +50,7 @@ beforeEach(function (): void {
     $testCase = $this;
 
     AdminFilamentTestContext::configure($testCase);
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase);
 });
 
 it('shows the areas, the latest change with its author and the creator of a custom role', function (): void {
@@ -133,16 +105,18 @@ it('runs the same number of queries with few and many changed roles', function (
         changedCustomRole(createUser(), createUser());
     }
 
-    countCustomRolesListQueries();
-    $queriesWithFewRoles = countCustomRolesListQueries();
+    $renderCustomTab = static fn (): Testable => rolesColumnsList('custom')->assertOk();
+
+    QueryLog::count($renderCustomTab);
+    $queriesWithFewRoles = QueryLog::count($renderCustomTab);
 
     foreach (range(1, 15) as $index) {
         changedCustomRole(createUser(), createUser());
     }
 
-    countCustomRolesListQueries();
+    QueryLog::count($renderCustomTab);
 
-    expect(countCustomRolesListQueries())->toBe($queriesWithFewRoles);
+    expect(QueryLog::count($renderCustomTab))->toBe($queriesWithFewRoles);
 });
 
 it('hides the creator column by default and shows it when toggled on', function (): void {

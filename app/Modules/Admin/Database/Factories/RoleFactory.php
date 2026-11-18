@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Database\Factories;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -55,6 +56,18 @@ class RoleFactory extends Factory
             'label' => null,
             'description' => null,
         ]);
+    }
+
+    /**
+     * A role granting exactly the given permissions of the `admin` guard; none when none are given.
+     */
+    public function withPermissions(AdminPermission ...$adminPermissions): static
+    {
+        return $this->afterCreating(static function (Role $role) use ($adminPermissions): void {
+            if ($adminPermissions !== []) {
+                $role->givePermissionTo(array_map(static fn (AdminPermission $adminPermission): string => $adminPermission->value, $adminPermissions));
+            }
+        });
     }
 
     /**

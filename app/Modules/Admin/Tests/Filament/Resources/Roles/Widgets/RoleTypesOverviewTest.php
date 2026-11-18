@@ -7,8 +7,8 @@ use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Widgets\RoleTypesOverview;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\WidgetStats;
 use App\Support\Translation\TranslatedText;
-use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -19,28 +19,9 @@ use Tests\TestCase;
  */
 function roleTypesOverviewStats(): array
 {
-    $component = Livewire::test(RoleTypesOverview::class)->instance();
+    [$system, $custom, $unusedCustom] = WidgetStats::of(RoleTypesOverview::class, 3);
 
-    throw_unless($component instanceof RoleTypesOverview, LogicException::class, 'The role types widget must be mounted.');
-
-    $stats = new ReflectionMethod(StatsOverviewWidget::class, 'getCachedStats')->invoke($component);
-
-    throw_unless(
-        is_array($stats)
-            && count($stats) === 3
-            && $stats[0] instanceof Stat
-            && $stats[1] instanceof Stat
-            && $stats[2] instanceof Stat,
-        LogicException::class,
-        'The role types widget must return three stat cards.',
-    );
-
-    /** @var array{0: Stat, 1: Stat, 2: Stat} $stats */
-    return [
-        'system' => $stats[0],
-        'custom' => $stats[1],
-        'unusedCustom' => $stats[2],
-    ];
+    return ['system' => $system, 'custom' => $custom, 'unusedCustom' => $unusedCustom];
 }
 
 beforeEach(function (): void {

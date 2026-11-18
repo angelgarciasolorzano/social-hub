@@ -12,18 +12,9 @@ use App\Modules\Admin\Filament\Resources\Roles\Pages\CreateRole;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
-use App\User\Models\User;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
-
-/**
- * Sign in an administrator who may create roles.
- */
-function actingAsRoleCreator(TestCase $testCase): User
-{
-    return AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
-}
 
 /**
  * The create role page.
@@ -53,7 +44,7 @@ beforeEach(function (): void {
 it('creates a custom role with its permissions and their requirements, and opens it', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    $user = actingAsRoleCreator($testCase);
+    $user = AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     $testable = createRolePage()
         ->set('data.label', 'Soporte')
@@ -81,7 +72,7 @@ it('creates a custom role with its permissions and their requirements, and opens
 it('starts with no permissions checked', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleCreator($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     createRolePage()
         ->assertSet('data.permissions.users', [])
@@ -91,7 +82,7 @@ it('starts with no permissions checked', function (): void {
 it('copies the permissions of an existing role and lets them change before saving', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleCreator($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     createRolePage()
         ->set('data.start_from', AdminRole::AdminPostsReader->value)
@@ -111,7 +102,7 @@ it('copies the permissions of an existing role and lets them change before savin
 it('does not leave the first step with an empty or taken label', function (string $label): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleCreator($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     RoleFactory::new()->createOne(['label' => 'Soporte']);
 
     $testable = createRolePage()->set('data.label', $label);
@@ -123,7 +114,7 @@ it('does not leave the first step with an empty or taken label', function (strin
 it('reports a label taken while the wizard was open on its field and creates nothing', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleCreator($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     $testable = createRolePage()
         ->set('data.label', 'Soporte')
@@ -141,7 +132,7 @@ it('reports a label taken while the wizard was open on its field and creates not
 it('creates nothing with a wrong password', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleCreator($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     createRolePage()
         ->set('data.label', 'Soporte')
@@ -155,7 +146,7 @@ it('creates nothing with a wrong password', function (): void {
 it('denies the page to a roles reader', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase);
 
     createRolePage()->assertForbidden();
 });

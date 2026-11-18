@@ -51,19 +51,6 @@ function usersRolesPermissions(): array
     return [AdminPermission::AdminUsersViewAny, AdminPermission::AdminUsersView, AdminPermission::AdminUsersRoles];
 }
 
-/**
- * The names of the permissions the role holds, sorted.
- *
- * @return list<string>
- */
-function acknowledgedRolePermissionNames(Role $role): array
-{
-    /** @var list<string> $permissionNames */
-    $permissionNames = $role->refresh()->permissions->pluck('name')->sort()->values()->all();
-
-    return $permissionNames;
-}
-
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -104,7 +91,7 @@ it('does not grant a new sensitive permission to a role until it is acknowledged
         ->call('save')
         ->assertHasErrors(['data.acknowledge_sensitive']);
 
-    expect(acknowledgedRolePermissionNames($role))
+    expect(rolePermissionNames($role))
         ->toBeEmpty();
 
     filledEditRolePage($role, usersRolesPermissions())
@@ -112,7 +99,7 @@ it('does not grant a new sensitive permission to a role until it is acknowledged
         ->call('save')
         ->assertHasNoErrors();
 
-    expect(acknowledgedRolePermissionNames($role))->toContain(AdminPermission::AdminUsersRoles->value);
+    expect(rolePermissionNames($role))->toContain(AdminPermission::AdminUsersRoles->value);
 });
 
 it('does not ask to acknowledge keeping or removing a sensitive permission the role had', function (string $change): void {
@@ -128,5 +115,5 @@ it('does not ask to acknowledge keeping or removing a sensitive permission the r
         ->call('save')
         ->assertHasNoErrors();
 
-    expect(acknowledgedRolePermissionNames($role))->toHaveCount($change === 'keep' ? 4 : 2);
+    expect(rolePermissionNames($role))->toHaveCount($change === 'keep' ? 4 : 2);
 })->with(['keep', 'remove']);

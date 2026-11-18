@@ -13,19 +13,10 @@ use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Support\Translation\TranslatedText;
-use App\User\Models\User;
 use Filament\Notifications\Notification;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
-
-/**
- * Sign in an administrator who may edit roles.
- */
-function actingAsRoleEditor(TestCase $testCase): User
-{
-    return AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
-}
 
 /**
  * The edit page of a role.
@@ -46,19 +37,6 @@ function editableCatalogRole(AdminRole $adminRole): Role
 }
 
 /**
- * The names of the permissions the role holds, sorted.
- *
- * @return list<string>
- */
-function editedPermissionNames(Role $role): array
-{
-    /** @var list<string> $permissionNames */
-    $permissionNames = $role->refresh()->permissions->pluck('name')->sort()->values()->all();
-
-    return $permissionNames;
-}
-
-/**
  * How many admin activities were recorded.
  */
 function recordedAdminActivities(): int
@@ -76,7 +54,7 @@ beforeEach(function (): void {
 it('starts from the current details and permissions of the role', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne(['label' => 'Soporte', 'description' => 'Atiende a los usuarios.']);
     $role->givePermissionTo(AdminPermission::AdminPostsViewAny->value);
 
@@ -90,7 +68,7 @@ it('starts from the current details and permissions of the role', function (): v
 it('saves the details and permissions of a custom role together and goes back to it', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte']);
     $role->givePermissionTo(AdminPermission::AdminPostsViewAny->value);
 
@@ -111,7 +89,7 @@ it('saves the details and permissions of a custom role together and goes back to
     expect($role->name)->toBe('custom-soporte')
         ->and($role->label)->toBe('Soporte de cuentas')
         ->and($role->description)->toBe('Atiende a los usuarios.')
-        ->and(editedPermissionNames($role))->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
+        ->and(rolePermissionNames($role))->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleUpdated->value)->count())->toBe(1)
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RolePermissionGranted->value)->count())->toBe(2)
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RolePermissionRevoked->value)->count())->toBe(1);
@@ -135,14 +113,14 @@ it('changes nothing when the permissions are refused, not even the details', fun
     Notification::assertNotified(AdminAuthorizationFailure::ActorWouldLoseAccess->message());
 
     expect($role->refresh()->label)->toBe('Gestión de roles')
-        ->and(editedPermissionNames($role))->toHaveCount(3)
+        ->and(rolePermissionNames($role))->toHaveCount(3)
         ->and(recordedAdminActivities())->toBe(0);
 });
 
 it('reports a taken label on its field and changes nothing', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     RoleFactory::new()->createOne(['label' => 'Soporte']);
     $role = RoleFactory::new()->createOne(['label' => 'Auditor']);
 
@@ -154,7 +132,7 @@ it('reports a taken label on its field and changes nothing', function (): void {
         ->assertHasErrors(['data.label' => AdminAuthorizationFailure::RoleLabelTaken->message()]);
 
     expect($role->refresh()->label)->toBe('Auditor')
-        ->and(editedPermissionNames($role))
+        ->and(rolePermissionNames($role))
         ->toBeEmpty()
         ->and(recordedAdminActivities())->toBe(0);
 });
@@ -162,7 +140,7 @@ it('reports a taken label on its field and changes nothing', function (): void {
 it('changes only the permissions of a system role and ignores a label sent by hand', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = editableCatalogRole(AdminRole::AdminPostsReader);
 
     editRolePage($role)
@@ -174,14 +152,14 @@ it('changes only the permissions of a system role and ignores a label sent by ha
         ->assertHasNoErrors();
 
     expect($role->refresh()->label)->toBeNull()
-        ->and(editedPermissionNames($role))->toContain(AdminPermission::AdminBackupsView->value)
+        ->and(rolePermissionNames($role))->toContain(AdminPermission::AdminBackupsView->value)
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleUpdated->value)->exists())->toBeFalse();
 });
 
 it('says nothing changed when saving the same role and records nothing', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne(['label' => 'Soporte', 'description' => null]);
 
     editRolePage($role)
@@ -197,7 +175,7 @@ it('says nothing changed when saving the same role and records nothing', functio
 it('changes nothing with a wrong password', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne(['label' => 'Soporte']);
 
     editRolePage($role)
@@ -213,7 +191,7 @@ it('changes nothing with a wrong password', function (): void {
 it('checks the requirements of a permission as soon as it is checked', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
-    actingAsRoleEditor($testCase);
+    AdminFilamentTestContext::actingAsRolesManager($testCase);
 
     editRolePage(editableCatalogRole(AdminRole::AdminPostsReader))
         ->set('data.permissions.users', [AdminPermission::AdminUsersSuspend->value])
@@ -229,10 +207,10 @@ it('denies the page of the locked admin role and to a roles reader', function (s
     $testCase = $this;
 
     if ($case === 'locked admin role') {
-        actingAsRoleEditor($testCase);
+        AdminFilamentTestContext::actingAsRolesManager($testCase);
         $role = editableCatalogRole(AdminRole::Admin);
     } else {
-        AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+        AdminFilamentTestContext::actingAsRolesReader($testCase);
         $role = RoleFactory::new()->createOne();
     }
 

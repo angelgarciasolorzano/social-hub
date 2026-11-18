@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles\Widgets;
 
+use App\Modules\Admin\Filament\Concerns\ReadsAggregateCounts;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
-use App\User\Models\User;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\Gate;
 use Override;
 
 /**
@@ -19,6 +19,8 @@ use Override;
  */
 class RoleTypesOverview extends StatsOverviewWidget
 {
+    use ReadsAggregateCounts;
+
     #[Override]
     protected int|string|array $columnSpan = 'full';
 
@@ -28,10 +30,7 @@ class RoleTypesOverview extends StatsOverviewWidget
     #[Override]
     public static function canView(): bool
     {
-        $authenticatedUser = auth('admin')->user();
-
-        return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('viewAny', Role::class);
+        return RoleResource::canViewAny();
     }
 
     #[Override]
@@ -74,31 +73,18 @@ class RoleTypesOverview extends StatsOverviewWidget
      */
     private function roleTypeCounts(): array
     {
-        $builder = Role::query()
-            ->where('guard_name', Role::GUARD_NAME)
-            ->where('is_system', false)
-            ->doesntHave('users')
-            ->selectRaw('COUNT(*)');
+        $builder = Role::query()->admin()->custom()->doesntHave('users')->selectRaw('COUNT(*)');
 
-        $counts = Role::query()
-            ->where('guard_name', Role::GUARD_NAME)
+        $counts = self::aggregateCounts(Role::query()
+            ->admin()
             ->selectRaw('COALESCE(SUM(CASE WHEN is_system = 1 THEN 1 ELSE 0 END), 0) AS system_count')
             ->selectRaw('COALESCE(SUM(CASE WHEN is_system = 0 THEN 1 ELSE 0 END), 0) AS custom_count')
-            ->selectSub($builder, 'unused_custom_count')
-            ->toBase()
-            ->first();
+            ->selectSub($builder, 'unused_custom_count'), ['system_count', 'custom_count', 'unused_custom_count']);
 
         return [
-            'system' => $this->countIn($counts, 'system_count'),
-            'custom' => $this->countIn($counts, 'custom_count'),
-            'unusedCustom' => $this->countIn($counts, 'unused_custom_count'),
+            'system' => $counts['system_count'],
+            'custom' => $counts['custom_count'],
+            'unusedCustom' => $counts['unused_custom_count'],
         ];
-    }
-
-    private function countIn(?object $counts, string $column): int
-    {
-        $count = $counts === null ? 0 : (get_object_vars($counts)[$column] ?? 0);
-
-        return is_numeric($count) ? (int) $count : 0;
     }
 }

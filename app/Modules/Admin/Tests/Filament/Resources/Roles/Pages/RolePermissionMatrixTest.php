@@ -10,9 +10,11 @@ use App\Modules\Admin\Filament\Resources\Roles\Pages\RolePermissionMatrix;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\QueryLog;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -34,23 +36,6 @@ function matrixPermissionsByRoleLabel(): array
     }
 
     return $permissionsByRoleLabel;
-}
-
-/**
- * Count the queries that rendering the matrix runs. Call it once first, and again after changing
- * permissions, so Spatie's permission cache is warm and the measurements compare the matrix only.
- */
-function countPermissionMatrixQueries(): int
-{
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-
-    Livewire::test(RolePermissionMatrix::class)->assertOk();
-
-    $queryCount = count(DB::connection()->getQueryLog());
-    DB::disableQueryLog();
-
-    return $queryCount;
 }
 
 /**
@@ -165,17 +150,19 @@ it('runs the same number of queries whatever the number of roles and their permi
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
 
-    countPermissionMatrixQueries();
-    $queriesBefore = countPermissionMatrixQueries();
+    $renderMatrix = static fn (): Testable => Livewire::test(RolePermissionMatrix::class)->assertOk();
+
+    QueryLog::count($renderMatrix);
+    $queriesBefore = QueryLog::count($renderMatrix);
 
     foreach (range(1, 2) as $index) {
         RoleFactory::new()->createOne()
             ->givePermissionTo(AdminPermission::AdminPostsView->value, AdminPermission::AdminUsersView->value);
     }
 
-    countPermissionMatrixQueries();
+    QueryLog::count($renderMatrix);
 
-    expect(countPermissionMatrixQueries())->toBe($queriesBefore);
+    expect(QueryLog::count($renderMatrix))->toBe($queriesBefore);
 });
 
 it('shows only the compared roles from the URL, in display order', function (): void {

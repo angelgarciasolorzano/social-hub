@@ -35,4 +35,20 @@ final class AdminFilamentTestContext
 
         return $user;
     }
+
+    /**
+     * An administrator who may create, edit, duplicate and delete roles.
+     */
+    public static function actingAsRolesManager(TestCase $testCase): User
+    {
+        return self::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
+    }
+
+    /**
+     * An administrator who may read roles, plus the given roles.
+     */
+    public static function actingAsRolesReader(TestCase $testCase, AdminRole ...$adminRoles): User
+    {
+        return self::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, ...$adminRoles);
+    }
 }

@@ -36,19 +36,18 @@ class RolesTable
     use DescribesActivityLogParties;
 
     /**
-     * The alias of the date of each role's latest change, selected with the roles.
+     * Alias of each role's latest change date, selected with the roles.
      */
     public const string LAST_CHANGED_AT_COLUMN = 'last_changed_at';
 
     /**
-     * The areas shown in a row before the rest fold behind 'Show N more', as the other roles of a
-     * role's users tab.
+     * Areas shown in a row before the rest fold behind "Show N more".
      */
     private const int AREAS_SHOWN = 2;
 
     /**
-     * The latest changes and creations of the roles a table shows, loaded once per table and page of
-     * records so the number of queries does not depend on how many roles there are.
+     * The latest changes and creations of the shown roles, loaded once per page so the number of
+     * queries does not grow with the roles.
      *
      * @var WeakMap<HasTable, array{recordKeys: string, latestChanges: array<int, ActivityLog>, creations: array<int, ActivityLog>}>|null
      */
@@ -167,9 +166,8 @@ class RolesTable
     }
 
     /**
-     * Open the selected roles side by side in the permission matrix, showing only their differences. It
-     * changes nothing, so anyone who can list roles may use it; with fewer than 2 or more than 4 roles it
-     * only says how many to pick.
+     * Opens the selected roles side by side in the matrix, only their differences. Read-only, so anyone
+     * who lists roles may use it; with fewer than 2 or more than 4 roles it says how many to pick.
      */
     private static function compareSelectedAction(): BulkAction
     {
@@ -200,8 +198,7 @@ class RolesTable
     }
 
     /**
-     * Count the permissions and users of each role, load its permissions for its areas and select the
-     * date of its latest change.
+     * The counts, permissions and latest change date of each role, loaded with the roles.
      *
      * @param  Builder<Role>  $query
      * @return Builder<Role>
@@ -242,8 +239,7 @@ class RolesTable
     }
 
     /**
-     * The latest changes and creations of the roles the table shows now, keyed by role id, loaded once
-     * for each page of records.
+     * The latest changes and creations of the roles on the current page, keyed by role id.
      *
      * @return array{recordKeys: string, latestChanges: array<int, ActivityLog>, creations: array<int, ActivityLog>}
      */
@@ -382,8 +378,8 @@ class RolesTable
     }
 
     /**
-     * Keep the roles whose latest change falls between the chosen dates, both included; a role without
-     * a recorded change never matches.
+     * Keep the roles whose latest change falls between the chosen dates, both included; roles without
+     * a recorded change never match.
      *
      * @param  Builder<Role>  $query
      * @param  array<mixed>  $data
