@@ -68,7 +68,7 @@ Se corrigen el bug de `sendRequest()`, que bloquea a un receptor para todos, y l
 
 ## Non-Goals
 
-- La UI nueva en React: página de amigos, botón de amistad en el perfil y contador en la navegación (SOC-84).
+- El resto de la UI en React: página de amigos con sus pestañas, botón de amistad en el perfil y contador en la navegación (SOC-84). La página de búsqueda sí entra, desde TASK-021, a pedido del usuario.
 - Notificaciones, el activity log y la clave `friendship` en el morph map (SOC-85).
 - El feed de amigos (SOC-86).
 - El panel de Filament (SOC-87).
@@ -102,7 +102,7 @@ JSON `{result: string, state: FriendshipState, message: string}`. El código HTT
 
 ### Respuesta de la búsqueda
 
-JSON con el envoltorio de `CursorPaginator`: `data`, `path`, `per_page`, `next_cursor`, `next_page_url`, `prev_cursor`, `prev_page_url`. Cada elemento es `{id, name, profilePicture, friendshipState, friendshipId, mutualFriendsCount}`, nunca el email. `q` es obligatorio (entre 2 y 50 caracteres); si no, 422. Se excluyen el propio usuario y las cuentas suspendidas.
+Hasta TASK-020: JSON con el envoltorio de `CursorPaginator` y `q` obligatorio (422 si falta). Desde TASK-022: una página Inertia `friendship/Search` con `filters: {q}` y `searchResults` (`Inertia::scroll`). `q` es opcional (máximo 50); sin término o con menos de 2 caracteres, la lista queda vacía sin consultar. Cada elemento sigue siendo `{id, name, profilePicture, friendshipState, friendshipId, mutualFriendsCount}`, nunca el email. Se excluyen el propio usuario y las cuentas suspendidas.
 
 ### Eventos de dominio
 
@@ -791,7 +791,303 @@ Corregir lo que salga sin agregar alcance nuevo.
 2. La suite completa en paralelo pasa con bases recreadas, y no se ejecuta a la vez que la suite de otra tarea.
 3. Los dos builds de frontend compilan.
 
-**validateCommand:** `composer phpstan && composer rector-dry && composer test -- --recreate-databases && npm run build && npm run build:ssr`
+**validateCommand:** `composer phpstan && composer rector-dry && composer test:recreate && npm run build && npm run build:ssr`
+
+### TASK-021: Add the friend search page texts in English and Spanish
+
+**Extensión pedida por el usuario tras TASK-020:** la búsqueda pasa del diálogo del header a una página propia, con `<InfiniteScroll>` y TanStack Virtual como el feed del Home, para que SOC-84 parta de esa base.
+
+Crear `lang/{en,es}/friendship/search.php` con los textos de la página:
+* el título, la descripción y el `placeholder` del campo;
+* la pista para escribir al menos 2 caracteres, el estado vacío y el de carga;
+* "amigos en común" con plural (`{1} …|[2,*] …`);
+* los textos del botón de amistad: `Agregar amigo`, `Solicitud enviada`, `Te envió una solicitud`, `Amigos`, `Ver perfil` y el error genérico;
+* los textos accesibles (`aria-label`, `alt`).
+
+`FriendshipTranslationKeysTest` ya recorre `translationFilesIn('friendship')`, así que cubre el archivo nuevo sin cambios.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P0  
+**Depends on:** TASK-020  
+**Review:** claude
+
+**writeScope:**
+
+- `lang/en/friendship/search.php`
+- `lang/es/friendship/search.php`
+
+**Acceptance Criteria:**
+
+1. `lang/en/friendship/search.php` y `lang/es/friendship/search.php` tienen las mismas claves, sin textos vacíos y con los mismos placeholders (`FriendshipTranslationKeysTest` pasa).
+2. El texto de amigos en común usa la sintaxis de plural de Laravel y `:count`, sin concatenar números.
+3. Ninguna clave usa el texto en inglés como nombre: todas se nombran por su lugar en la página.
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Translations`
+
+### TASK-022: Turn the search endpoint into an Inertia page with infinite scroll
+
+`FriendshipController::search` deja de responder JSON:
+* hace `Inertia::render('friendship/Search', …)` con `filters: {q}` y `searchResults: Inertia::scroll(FriendshipSearchResultResource::collection($cursorPaginator))`, como `NotificationController::index`;
+* registra `friendship/search` y `notification/center` (el header compartido los necesita, como en Home) con `FrontendTranslations`.
+
+La ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throttle).
+
+`FriendshipSearchRequest`:
+* `q` pasa a ser opcional, con un máximo de 50 (error de validación si se excede);
+* sin un mínimo que falle: en una página, la búsqueda vive en la URL, y un 422 obligaría a redirigir hacia atrás.
+
+`FriendshipSearchService::search(User, ?string)` no consulta cuando el término está vacío o tiene menos de `FriendshipSearchRequest::TERM_MIN_LENGTH` caracteres: devuelve una página vacía y **nunca lista a todos los usuarios**. Un `LIKE '%'` sin término los traería a todos.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P0  
+**Depends on:** TASK-021  
+**Review:** claude
+
+**writeScope:**
+
+- `app/Modules/Friendship/Controllers/FriendshipController.php`
+- `app/Modules/Friendship/Requests/FriendshipSearchRequest.php`
+- `app/Modules/Friendship/Services/FriendshipSearchService.php`
+
+**Acceptance Criteria:**
+
+1. `GET friendships/search?q=Ana` renderiza el componente `friendship/Search` con `searchResults` (datos y metadatos de scroll) y `filters.q = 'Ana'`; cada elemento conserva los seis campos del contrato, sin email.
+2. Sin `q`, o con un solo carácter, la página renderiza una lista vacía sin ejecutar la consulta de usuarios. Con más de 50 caracteres responde un error de validación en `q`.
+3. PHPStan pasa y las acciones JSON (`store`, `accept`…) no cambian.
+
+**validateCommand:** `composer phpstan && php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Crud/FriendshipActionsTest.php`
+
+### TASK-023: Adapt the search and security tests to the search page
+
+Reescribir las pruebas de búsqueda de TASK-015 sobre la página. Usan `assertInertia` (componente `friendship/Search`, `searchResults.data`, `filters.q`) en lugar del JSON, y conservan cada comportamiento:
+* la forma exacta y la ausencia del email;
+* los estados y `friendshipId`, y los amigos en común;
+* la exclusión de cuentas suspendidas y del propio usuario;
+* los comodines literales;
+* la paginación con el cursor de Inertia::scroll.
+
+Casos nuevos: sin término o con 1 carácter, lista vacía; más de 50 caracteres, error de validación.
+
+En `FriendshipSecurityTest`, un invitado que abre la página es redirigido al login (ya no recibe 401), el throttle de 60 sigue aplicando y la página hace las mismas consultas con 3 y con 15 resultados.
+
+**Type:** test  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P1  
+**Depends on:** TASK-022  
+**Review:** claude
+
+**writeScope:**
+
+- `app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php`
+- `app/Modules/Friendship/Tests/Security/FriendshipSecurityTest.php`
+
+**Acceptance Criteria:**
+
+1. Cada comportamiento que cubría la búsqueda JSON (sin email, estados, amigos en común, exclusiones, comodines, cursor) sigue probado sobre la página: no se pierde ninguno.
+2. Una búsqueda vacía o de 1 carácter no lista a nadie, y una de 51 caracteres falla en `q`.
+3. La página hace el mismo número de consultas con 3 y con 15 resultados.
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php app/Modules/Friendship/Tests/Security`
+
+### TASK-024: Remove the search messages the page no longer uses
+
+Quitar `validation.search_required` y `validation.search_min` de `lang/{en,es}/friendship/actions.php`: la página ya no los usa (TASK-022), y la pista de los 2 caracteres vive en `friendship/search`. `validation.search_max` se queda.
+
+**Type:** chore  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P2  
+**Depends on:** TASK-022  
+**Review:** claude
+
+**writeScope:**
+
+- `lang/en/friendship/actions.php`
+- `lang/es/friendship/actions.php`
+
+**Acceptance Criteria:**
+
+1. `grep -rn 'search_required\|search_min' app resources lang` no devuelve nada.
+2. `FriendshipTranslationKeysTest` sigue pasando: los dos idiomas tienen las mismas claves.
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Translations`
+
+### TASK-025: Create the friendship types and the search result row in React
+
+Crear el módulo `resources/js/modules/friendship/`:
+* **`types/friendshipSearch.ts`:** `FriendshipState` (espejo del enum PHP), `FriendSearchResult`, la colección de `Inertia::scroll` y `FriendshipActionResponse`. Sustituye a `modules/home/types/friendSearch.ts`.
+* **`components/FriendshipSearchResultRow.tsx`:** la fila con el avatar (`validImage` + iniciales), el nombre, los amigos en común (`tChoice`), el enlace al perfil y el botón de amistad.
+  * El botón envía con `useHttp(() => ({}))`: el estado inicial va como función, por la trampa de TASK-017.
+  * Refleja el `state` que devuelve el servidor y muestra el mensaje de un 409 sin abrir el modal de Inertia.
+  * Todo el texto pasa por `useTranslation()`.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-021  
+**Review:** claude
+
+**writeScope:**
+
+- `resources/js/modules/friendship/types/friendshipSearch.ts`
+- `resources/js/modules/friendship/components/FriendshipSearchResultRow.tsx`
+
+**Acceptance Criteria:**
+
+1. La fila no tiene texto escrito a mano: cada texto visible o accesible usa una clave de `friendship/search` (`FrontendTranslationKeysTest` pasa).
+2. Un 409 deja el botón en el `state` recibido y muestra el `message` del servidor. Un 429 o un error de red muestran el error genérico. Ninguno abre el modal de error de Inertia.
+3. Pasan `npm run types`, `npm run lint:check` y `npm run format:check`.
+
+**validateCommand:** `npm run types && npm run lint:check && npm run format:check`
+
+### TASK-026: Build the search page with InfiniteScroll and TanStack Virtual
+
+**`resources/js/modules/friendship/Search.tsx`:**
+* usa `HomeLayout` con `contentRef` como contenedor del scroll;
+* tiene `Head`, título y campo de búsqueda;
+* lista con `<InfiniteScroll data="searchResults" preserveUrl>` y `useVirtualizer` (`measureElement` y `getItemKey` por id), igual que `Home.tsx`;
+* muestra estados para "escribe al menos 2 caracteres", "sin resultados" y carga.
+
+**`resources/js/modules/friendship/hooks/useFriendshipSearch.ts`:**
+* guarda el término en la URL con `router.get` (página completa, así que la búsqueda se puede compartir), con debounce, `preserveState`, `replace` y `only: ['searchResults', 'filters']`;
+* expone `committedTerm` para los estados vacíos, como `useTrustedDeviceFilters`;
+* usa el patrón `hasInteractedRef` contra el doble efecto de StrictMode.
+
+**Type:** feature  
+**Effort:** L  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-022, TASK-025  
+**Review:** claude
+
+**writeScope:**
+
+- `resources/js/modules/friendship/Search.tsx`
+- `resources/js/modules/friendship/hooks/useFriendshipSearch.ts`
+
+**Acceptance Criteria:**
+
+1. Escribir en el campo actualiza `?q=` sin recargar todo el layout, y recargar la página conserva la búsqueda y sus resultados.
+2. Al bajar se cargan más resultados con el cursor. Solo las filas visibles más el `overscan` están en el DOM, y no se repiten ids.
+3. Mientras corre el debounce, el estado vacío sigue el `committedTerm` y no el texto escrito, así que no muestra el mensaje equivocado. El doble efecto de StrictMode no dispara una búsqueda al montar.
+
+**validateCommand:** `npm run types && npm run lint:check && npm run format:check`
+
+### TASK-027: Link the header search icon to the page and remove the dialog
+
+`HomeSearchHeader.tsx` queda como un enlace (Inertia `Link` con la URL de Wayfinder `friendshipsSearch` o la acción `search`) con la lupa y su tooltip. Se borran el diálogo y `modules/home/types/friendSearch.ts`.
+
+El tooltip sigue en español a mano, como el resto del header de `home`: traducir el header es otra tarea.
+
+**Type:** refactor  
+**Effort:** S  
+**Agent:** react-vite-tailwind-engineer  
+**Priority:** P1  
+**Depends on:** TASK-026  
+**Review:** claude
+
+**writeScope:**
+
+- `resources/js/modules/home/components/header/HomeSearchHeader.tsx`
+- `resources/js/modules/home/types/friendSearch.ts (deleted)`
+
+**Acceptance Criteria:**
+
+1. La lupa navega a `/friendships/search` y no queda ningún `Dialog` ni `useHttp` en `HomeSearchHeader.tsx`.
+2. `grep -rn 'home/types/friendSearch' resources/js` no devuelve nada, y `npm run types` pasa.
+
+**validateCommand:** `npm run types && npm run lint:check && npm run format:check`
+
+### TASK-028: Add a browser test for the search page
+
+Crear `app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php`, que entra al grupo `browser` por la ruta configurada en `tests/Pest.php`. Con un usuario autenticado:
+* visita la página;
+* escribe un nombre y ve los resultados;
+* baja hasta cargar la página siguiente;
+* envía una solicitud y ve "Solicitud enviada".
+
+Llama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que ya existen (el `createRoot` doble y `getSnapshot should be cached`), se reporta al usuario y no se oculta.
+
+**Type:** test  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Depends on:** TASK-027  
+**Review:** claude
+
+**writeScope:**
+
+- `app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php`
+
+**Acceptance Criteria:**
+
+1. La prueba recorre buscar, cargar más resultados y enviar una solicitud en Chromium, y pasa con `composer test:browser`.
+2. `composer test` no la ejecuta, porque está en el grupo `browser`.
+
+**validateCommand:** `composer test:browser`
+
+### TASK-029: Document the search page
+
+En `docs/architecture/modules/friendship.md`:
+* la búsqueda pasa a ser una página Inertia (props, `Inertia::scroll`, término opcional, lista vacía sin término);
+* el frontend vive en `modules/friendship` (`Search.tsx`, `useFriendshipSearch`, `FriendshipSearchResultRow`, InfiniteScroll + TanStack Virtual);
+* la lupa del header es un enlace;
+* la prueba de navegador.
+
+En `CLAUDE.md`, el espejo de `FriendshipState` pasa a `modules/friendship/types/friendshipSearch.ts`, y la descripción del módulo menciona la página de búsqueda.
+
+**Type:** docs  
+**Effort:** S  
+**Agent:** general-purpose  
+**Priority:** P3  
+**Depends on:** TASK-027  
+**Review:** claude
+
+**writeScope:**
+
+- `docs/architecture/modules/friendship.md`
+- `CLAUDE.md`
+
+**Acceptance Criteria:**
+
+1. El documento ya no describe la búsqueda como un endpoint JSON ni el diálogo del header.
+2. Cada archivo, hook y prop que nombra existe (contrastado con `grep`).
+
+**validateCommand:** `grep -n 'friendship/Search' docs/architecture/modules/friendship.md`
+
+### TASK-030: Run the full gates again after the search page
+
+Mismos gates que TASK-020, más la prueba de navegador:
+1. Pint, PHPStan y Rector (`rector-clear-cache` → `rector-dry` → `rector`);
+2. `composer test`;
+3. `composer test:browser`;
+4. `composer doctor`;
+5. `npm run format:check`, `lint:check`, `types`, `build` y `build:ssr`;
+6. una comprobación manual en el navegador, en modo claro y oscuro.
+
+**Type:** chore  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P3  
+**Depends on:** TASK-023, TASK-024, TASK-028, TASK-029  
+**Review:** claude
+
+**writeScope:**
+
+- (sin archivos: verificación)
+
+**Acceptance Criteria:**
+
+1. Pint, PHPStan y Rector no reportan cambios ni errores, y `composer test` pasa completo.
+2. `composer test:browser` y los dos builds pasan, y la página se ve bien en modo claro y oscuro.
+
+**validateCommand:** `composer phpstan && composer rector-dry && composer test && composer test:browser && npm run build && npm run build:ssr`
 
 ## Failure Modes
 
@@ -802,10 +1098,12 @@ Corregir lo que salga sin agregar alcance nuevo.
 - Usuario borrado: `cascadeOnDelete` limpia sus amistades y rechazos. Los eventos ya despachados no dependen de la fila.
 - Una base local que ya corrió la migración original la sigue viendo como ejecutada y conserva el esquema viejo: hay que rehacerla con `php artisan migrate:fresh --seed`. No hay datos de producción que perder.
 - El frontend viejo queda roto entre TASK-003 y TASK-017, porque la tabla cambió y el controlador viejo sigue apuntándole: no se pausa en un PR entre esas tareas.
+- Entre TASK-022 y TASK-027 el diálogo del header llama a un endpoint JSON que ya responde una página Inertia: no se pausa en un PR en ese tramo.
+- Sin término, un `LIKE '%'` listaría a todos los usuarios: el servicio no consulta con un término vacío o corto (TASK-022).
 
 ## Ship Cut
 
-El mínimo entregable es TASK-001 a TASK-015 más TASK-017 y TASK-018: el dominio corregido y la búsqueda segura funcionando en el header. Si la ejecución se corta antes, no se publica un PR, porque el controlador viejo no sirve con el esquema nuevo. El seeder (TASK-016) y la documentación (TASK-019) son recortables solo si el usuario lo aprueba, porque la Definition of Done exige la documentación.
+El mínimo entregable es TASK-001 a TASK-015 más TASK-017 y TASK-018: el dominio corregido y la búsqueda segura funcionando en el header. Si la ejecución se corta antes, no se publica un PR, porque el controlador viejo no sirve con el esquema nuevo. El seeder (TASK-016) y la documentación (TASK-019) son recortables solo si el usuario lo aprueba, porque la Definition of Done exige la documentación. La extensión de la página de búsqueda (TASK-021 a TASK-030) se entrega completa o no se entrega: entre TASK-022 y TASK-027 el header todavía llama a un endpoint JSON que ya no existe.
 
 ## Test Coverage Map
 
@@ -821,10 +1119,12 @@ El mínimo entregable es TASK-001 a TASK-015 más TASK-017 y TASK-018: el domini
 | Paridad de traducciones y mensajes neutros | TASK-005 |
 | Seeder sin pares repetidos e idempotente | TASK-016 |
 | Frontend: tipos, lint y formato, más comprobación manual en el navegador | TASK-017 |
+| Página de búsqueda: props, término opcional, lista vacía sin término, consultas constantes | TASK-023 |
+| Búsqueda, scroll infinito y envío en el navegador | TASK-028 |
 
 ## Execution Summary
 
-- **Tareas:** 20
+- **Tareas:** 30
 - **Capa 1:** TASK-001
 - **Capa 2:** TASK-002, TASK-003, TASK-004
 - **Capa 3:** TASK-006
@@ -836,7 +1136,13 @@ El mínimo entregable es TASK-001 a TASK-015 más TASK-017 y TASK-018: el domini
 - **Capa 9:** TASK-018
 - **Capa 10:** TASK-019
 - **Capa 11:** TASK-020
-- **Ruta crítica:** TASK-001 → TASK-003 → TASK-006 → TASK-007 → TASK-008 → TASK-011 → TASK-014 → TASK-017 → TASK-018 → TASK-019 → TASK-020
+- **Capa 12:** TASK-021
+- **Capa 13:** TASK-022, TASK-025
+- **Capa 14:** TASK-023, TASK-024, TASK-026
+- **Capa 15:** TASK-027
+- **Capa 16:** TASK-028, TASK-029
+- **Capa 17:** TASK-030
+- **Ruta crítica:** TASK-001 → TASK-003 → TASK-006 → TASK-007 → TASK-008 → TASK-011 → TASK-014 → TASK-017 → TASK-018 → TASK-019 → TASK-020 → TASK-021 → TASK-022 → TASK-026 → TASK-027 → TASK-028 → TASK-030
 
 ## Task Dependencies
 
@@ -862,3 +1168,13 @@ El mínimo entregable es TASK-001 a TASK-015 más TASK-017 y TASK-018: el domini
 | TASK-018 | TASK-014, TASK-016, TASK-017 |
 | TASK-019 | TASK-018 |
 | TASK-020 | TASK-005, TASK-015, TASK-019 |
+| TASK-021 | TASK-020 |
+| TASK-022 | TASK-021 |
+| TASK-023 | TASK-022 |
+| TASK-024 | TASK-022 |
+| TASK-025 | TASK-021 |
+| TASK-026 | TASK-022, TASK-025 |
+| TASK-027 | TASK-026 |
+| TASK-028 | TASK-027 |
+| TASK-029 | TASK-027 |
+| TASK-030 | TASK-023, TASK-024, TASK-028, TASK-029 |
