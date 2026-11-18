@@ -2,21 +2,22 @@
 
 ## Overview
 
-Agregar Pest Browser y Playwright con Chromium, probar el formulario real de login como invitado y establecer una arquitectura que permita sumar pruebas Browser por módulo. Las pruebas viven en `Tests/Browser`, comparten la preparación Vite mediante un hook Pest, se agrupan como `browser` y se ejecutan con `composer test:browser`, que compila una vez y excluye ese grupo del comando regular paralelo. Documentar instalación, ejecución y organización.
+Agregar Pest Browser y Playwright con Chromium, probar el formulario real de login como invitado y establecer una arquitectura que permita sumar pruebas Browser por módulo. Las pruebas viven en `Tests/Browser`, comparten la preparación Vite mediante un hook Pest, se agrupan como `browser` y se ejecutan con `composer test:browser`, que compila una vez y excluye ese grupo del comando regular paralelo. El action backend instala dependencias npm para que Pest Browser encuentre Playwright al iniciar `composer test`. Documentar instalación, ejecución y organización en las guías y sus espejos.
 
 ## Scope Challenge
 
-El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80. Después pidió ampliar el alcance para que el comando cubra una suite Browser futura, las pruebas de módulos vivan bajo `Tests/Browser` y la arquitectura quede documentada; confirmó EXPANSION dentro de SOC-80 y mantiene revisión Codex. Ya existe la ruta y página de login, un selector estable para el botón y una suite de pruebas del submódulo Login.
+El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80. Después pidió ampliar el alcance para que el comando cubra una suite Browser futura, las pruebas de módulos vivan bajo `Tests/Browser` y la arquitectura quede documentada; confirmó EXPANSION dentro de SOC-80 y mantiene revisión Codex. Tras revisar Pullfrog en el PR 81, confirmó que se implemente la disponibilidad de Playwright en el action de tests y se corrijan las guías que recomiendan `tests/Browser` fuera de la arquitectura modular.
 
 ## Prerequisites
 
 - Las dependencias PHP y npm existentes están instaladas (`composer install` y `npm install` o `composer setup`).
 - Existe `.env.testing` y MySQL está disponible con la base `social-hub-testing`, como requiere `Tests\TestCase`.
 - La instalación de Chromium se hace mediante Playwright en el cache local del sistema; no se versiona el binario.
+- El lockfile npm resuelve Playwright y `npm run install:ci` instala la dependencia en el workflow backend.
 
 ## Non-Goals
 
-- Añadir pasos o configuración de CI.
+- Ejecutar la suite browser con Chromium en CI; el workflow instala Playwright para que Pest pueda iniciar, y `composer test` sigue excluyendo el grupo browser.
 - Probar Firefox, WebKit u otros navegadores.
 - Probar el envío de credenciales, autenticación, registro, MFA u otros flujos.
 - Crear `.env.e2e`, una base de datos adicional o un seeder E2E.
@@ -32,6 +33,7 @@ El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80. Después
 - `composer test:browser` compila los assets una vez y ejecuta todo el grupo `browser`; `composer test` excluye ese grupo de la suite paralela habitual.
 - El test usa la configuración `.env.testing` existente y `social-hub-testing`; no requiere datos de usuario porque visita el login como invitado.
 - La compatibilidad prevista es Pest 5.2.1 con `pestphp/pest-plugin-browser` 5.0.1 o una versión compatible. Playwright es una dependencia npm de desarrollo; solo se instala Chromium.
+- El workflow `backend-code-quality-test.yml` instala Node 22 y las dependencias del lockfile npm antes de `composer test`, porque el plugin Pest Browser comprueba que Playwright esté disponible incluso cuando el grupo browser se excluye.
 - La guía oficial de Pest documenta el plugin y sus aserciones de visibilidad: https://pestphp.com/docs/browser-testing/. La metadata del plugin 5.0.1 declara Pest `^5.0.4`: https://github.com/pestphp/pest-plugin-browser/blob/v5.0.1/composer.json. Playwright documenta la instalación puntual del navegador: https://playwright.dev/docs/browsers.
 
 ## Existing Code Leverage
@@ -192,6 +194,61 @@ Actualizar las instrucciones de pruebas de `AGENTS.md` y `CLAUDE.md` al comando 
 
 **validateCommand:** `rtk rg -n 'Tests/Browser|tests/Pest.php|composer test:browser|playwright install chromium|social-hub-testing' AGENTS.md CLAUDE.md`
 
+### TASK-009: Instalar dependencias npm en el workflow backend
+
+Configurar Node.js 22 y ejecutar `npm run install:ci` en el job `backend-test` antes de `composer test`. Esto instala el Playwright fijado en `package-lock.json`, que el plugin Pest Browser busca durante el arranque de la suite. La suite normal continúa excluyendo el grupo browser.
+
+**Type:** infra · **Effort:** S · **Agent:** general-purpose · **Priority:** P1
+**Depends on:** TASK-001, TASK-002
+
+**Acceptance Criteria:**
+1. El job `backend-test` configura Node.js 22 con cache npm y ejecuta `npm run install:ci` antes del paso `Execute tests`.
+2. La instalación usa `package-lock.json`, que contiene Playwright, y el comando Composer de la suite normal conserva `--exclude-group=browser`.
+3. Si la instalación npm falla, el job falla antes de empezar `composer test` en vez de fallar al arrancar Pest Browser por Playwright ausente.
+
+**writeScope:**
+- `.github/workflows/backend-code-quality-test.yml`
+
+**validateCommand:** `rtk npx prettier --check .github/workflows/backend-code-quality-test.yml`
+
+### TASK-010: Alinear el resumen de testing Browser con los módulos
+
+Actualizar `SKILL.md` en los tres espejos de `testing-best-practices` para ubicar los Browser tests bajo `app/<Domain>/Tests/Browser/` o `app/<Domain>/Modules/<Feature>/Tests/Browser/`, de acuerdo con la arquitectura del proyecto y el registro de grupos en `tests/Pest.php`.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+1. Las tres copias de `SKILL.md` indican las ubicaciones Browser module-owned y no recomiendan `tests/Browser` como ubicación general.
+2. La guía recuerda que cada ruta debe quedar registrada/configurada por el proyecto en `tests/Pest.php`.
+3. Las tres copias mantienen contenido coincidente para la regla Browser resumida.
+
+**writeScope:**
+- `.agents/skills/testing-best-practices/SKILL.md`
+- `.claude/skills/testing-best-practices/SKILL.md`
+- `.github/skills/testing-best-practices/SKILL.md`
+
+**validateCommand:** `rtk rg -n 'Tests/Browser|tests/Browser|tests/Pest.php' .agents/skills/testing-best-practices/SKILL.md .claude/skills/testing-best-practices/SKILL.md .github/skills/testing-best-practices/SKILL.md`
+
+### TASK-011: Alinear las reglas detalladas de Browser testing
+
+Actualizar `rules/endpoint-tests.md` en los tres espejos de `testing-best-practices`: comandos de ejecución, ubicación, configuración Pest, screenshots y límites de paralelismo deben coincidir con la arquitectura Browser module-owned y `composer test:browser`.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+1. Las reglas indican que Browser tests viven en `Tests/Browser/` bajo su dominio o submódulo y que el grupo `browser` se registra en `tests/Pest.php`.
+2. Los ejemplos de ejecución usan una ruta de módulo para una prueba puntual y `composer test:browser` para toda la suite configurada.
+3. Las tres copias coinciden y no recomiendan una ruta root que el `tests/Pest.php` del proyecto no clasifica como browser.
+
+**writeScope:**
+- `.agents/skills/testing-best-practices/rules/endpoint-tests.md`
+- `.claude/skills/testing-best-practices/rules/endpoint-tests.md`
+- `.github/skills/testing-best-practices/rules/endpoint-tests.md`
+
+**validateCommand:** `rtk rg -n 'Tests/Browser|tests/Browser|composer test:browser|tests/Pest.php' .agents/skills/testing-best-practices/rules/endpoint-tests.md .claude/skills/testing-best-practices/rules/endpoint-tests.md .github/skills/testing-best-practices/rules/endpoint-tests.md`
+
 ## Failure Modes
 
 - Playwright y el binario Chromium quedan en versiones desalineadas: la prueba falla al iniciar el navegador; volver a ejecutar `npx playwright install chromium` con el lockfile vigente.
@@ -200,10 +257,11 @@ Actualizar las instrucciones de pruebas de `AGENTS.md` y `CLAUDE.md` al comando 
 - Falta `.env.testing`, MySQL o la base `social-hub-testing`: la ejecución falla según la configuración existente; no debe crear ni usar una base alterna.
 - Un `public/hot` residual puede apuntar a un Vite apagado: el hook compartido de `tests/Pest.php` debe usar un hot file de prueba propio y resolver los assets desde `public/build`.
 - Un archivo nuevo bajo `Tests/Browser/` debe entrar automáticamente al grupo `browser` y quedar fuera de `composer test`; si no, la suite genérica podría omitirlo o ejecutar Chromium por accidente.
+- Si el workflow ejecuta Composer sin dependencias npm, el plugin Browser falla al inicializar por Playwright ausente antes de que `--exclude-group=browser` pueda omitir las pruebas.
 
 ## Ship Cut
 
-Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. El primer corte revisable tras la expansión es TASK-005; la regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
+Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. Las tareas TASK-009 a TASK-011 responden al review de Pullfrog sobre Playwright en CI y las guías sincronizadas. La regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
 
 ## Test Coverage Map
 
@@ -214,13 +272,15 @@ Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La ex
 - **Configuración Browser reutilizable:** TASK-005
 - **Carpeta Browser y runner genérico:** TASK-006
 - **Documentación de arquitectura Browser:** TASK-007, TASK-008
+- **Playwright en el workflow backend:** TASK-009
+- **Ubicación Browser en las skills:** TASK-010, TASK-011
 
 ## Execution Summary
 
 - **Mode:** EXPANSION
 - **Default review:** codex
-- **Task count:** 8
-- **Layers:** [TASK-001, TASK-002] → [TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007, TASK-008]
+- **Task count:** 11
+- **Layers:** [TASK-001, TASK-002] → [TASK-003, TASK-009] → [TASK-004, TASK-005] → [TASK-006] → [TASK-007, TASK-008, TASK-010, TASK-011]
 - **Critical path:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007
 
 ## Task Dependencies
@@ -233,4 +293,7 @@ Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La ex
 - **TASK-006:** TASK-005
 - **TASK-007:** TASK-006
 - **TASK-008:** TASK-006
+- **TASK-009:** TASK-001, TASK-002
+- **TASK-010:** TASK-006
+- **TASK-011:** TASK-006
 
