@@ -31,8 +31,7 @@ class RoleActivityLogsTable
     use DescribesRoleActivity;
 
     /**
-     * Configure the history; `$sourceRoleNames` returns the names of the duplicated roles' sources on the
-     * page, loaded once.
+     * `$sourceRoleNames` returns the names of the roles the page's duplicates come from, loaded once.
      *
      * @param  Closure(): array<int, string>  $sourceRoleNames
      */

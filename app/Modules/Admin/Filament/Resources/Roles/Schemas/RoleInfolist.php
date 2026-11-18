@@ -91,8 +91,8 @@ class RoleInfolist
     }
 
     /**
-     * The cataloged permissions the role grants in one area, as badges that open who else holds each
-     * one when the administrator may see it; hidden when there are none.
+     * The role's cataloged permissions in one area, as badges linking to who else holds each (when
+     * allowed); hidden when there are none.
      */
     private static function areaEntry(string $area): TextEntry
     {
@@ -107,8 +107,8 @@ class RoleInfolist
     }
 
     /**
-     * The values of the cataloged permissions the role grants, optionally only those of one area, in
-     * catalog order. Reads the role's loaded permissions, so the whole section costs one query.
+     * The cataloged permissions the role grants (optionally of one area), in catalog order, read from
+     * its loaded permissions so the whole section costs one query.
      *
      * @return list<string>
      */
