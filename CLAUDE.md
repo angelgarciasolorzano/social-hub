@@ -45,7 +45,7 @@ All commands run from the repo root; details in [`docs/development/backend-comma
 
 - `composer run dev` — `serve`, `queue:listen`, `pail`, `vite` and `reverb:start` together (preferred). `npm run dev` runs only Vite.
 - `npm run build` / `npm run build:ssr` — production / SSR bundle (both must compile before a PR).
-- `composer test` — the regular Pest suite **in parallel**, excluding the `browser` group (one MySQL database per worker, `--recreate-databases` after changing migrations).
+- `composer test` — the regular Pest suite **in parallel**, excluding the `browser` group (one MySQL database per worker). `composer test:recreate` recreates those databases first (after changing migrations); `composer test -- --recreate-databases` does not work.
 - `composer test:browser` — builds Vite assets once and runs every test in the `browser` group with Chromium.
 - `php artisan test --compact <path>` or `--filter=testName` — narrow runs (after every edit).
 - `composer ide-helper` — regenerates `_ide_helper_models.php` (PHPStan scans it).
