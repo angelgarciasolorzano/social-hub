@@ -243,7 +243,6 @@ return [
     ],
 
     'locked' => [
-        'badge' => 'Bloqueado',
         'tooltip' => 'El rol Administrador solo da acceso al panel, así que no se puede editar.',
         'notice' => 'Este rol solo da acceso al panel. Las secciones se dan con otros roles.',
     ],
@@ -267,7 +266,6 @@ return [
         'users_count' => 'Usuarios',
         'guard' => 'Guard',
         'not_editable' => 'No editable',
-        'not_editable_tooltip' => 'Este rol no forma parte del catálogo, así que no se puede editar desde el panel.',
         'areas' => 'Áreas',
         'last_changed_at' => 'Último cambio',
         'created_by' => 'Creado por',
