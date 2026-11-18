@@ -6,7 +6,7 @@ Agregar Pest Browser y Playwright con Chromium, probar el formulario real de log
 
 ## Scope Challenge
 
-El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80 y después amplió el alcance para una suite Browser futura organizada bajo `Tests/Browser` por módulo, con revisión Codex. Tras revisar Pullfrog en el PR 81, confirmó que se implemente la disponibilidad de Playwright en el action de tests. Aclaró que los espejos de `testing-best-practices` son skills provistas por Laravel Boost que se actualizan desde upstream, por lo que deben conservarse intactos; se responderá al comentario explicando la precedencia de la documentación y configuración específicas del proyecto.
+El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80 y después amplió el alcance para una suite Browser futura organizada bajo `Tests/Browser` por módulo, con revisión Codex. Tras revisar Pullfrog en el PR 81, confirmó que se implemente la disponibilidad de Playwright en el action de tests. Aclaró que los espejos de `testing-best-practices` son skills provistas por Laravel Boost que se actualizan desde upstream, por lo que deben conservarse intactos. El último review pide explicar en la guía local que la configuración Browser del proyecto prevalece sobre las rutas genéricas de la skill; el usuario autorizó añadir esa instrucción sin modificar las skills ni registrar `tests/Browser` en la suite.
 
 ## Prerequisites
 
@@ -212,6 +212,24 @@ Configurar Node.js 22 y ejecutar `npm run install:ci` en el job `backend-test` a
 
 **validateCommand:** `rtk npx prettier --check .github/workflows/backend-code-quality-test.yml`
 
+### TASK-010: Aclarar precedencia de la guía Browser del proyecto
+
+En `AGENTS.md` y `CLAUDE.md`, declarar que las rutas Browser module-owned reconocidas por `tests/Pest.php` prevalecen sobre los ejemplos genéricos de directorio del skill `testing-best-practices` de Laravel Boost. Mantener intactas las copias upstream y no registrar una suite root `tests/Browser`.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P1
+**Depends on:** TASK-008
+
+**Acceptance Criteria:**
+1. `AGENTS.md` indica explícitamente que las ubicaciones Browser del proyecto y los paths configurados en `tests/Pest.php` prevalecen sobre ejemplos genéricos del skill de Laravel Boost.
+2. `CLAUDE.md` comunica la misma precedencia y apunta a las carpetas module-owned `Tests/Browser/` reconocidas por el grupo `browser`.
+3. Los espejos upstream del skill permanecen intactos y `tests/Pest.php` no registra una carpeta root `tests/Browser`.
+
+**writeScope:**
+- `AGENTS.md`
+- `CLAUDE.md`
+
+**validateCommand:** `rtk rg -n 'take precedence over the generic|Laravel Boost|tests/Pest.php|Tests/Browser' AGENTS.md CLAUDE.md`
+
 ## Failure Modes
 
 - Playwright y el binario Chromium quedan en versiones desalineadas: la prueba falla al iniciar el navegador; volver a ejecutar `npx playwright install chromium` con el lockfile vigente.
@@ -221,10 +239,11 @@ Configurar Node.js 22 y ejecutar `npm run install:ci` en el job `backend-test` a
 - Un `public/hot` residual puede apuntar a un Vite apagado: el hook compartido de `tests/Pest.php` debe usar un hot file de prueba propio y resolver los assets desde `public/build`.
 - Un archivo nuevo bajo `Tests/Browser/` debe entrar automáticamente al grupo `browser` y quedar fuera de `composer test`; si no, la suite genérica podría omitirlo o ejecutar Chromium por accidente.
 - Si el workflow ejecuta Composer sin dependencias npm, el plugin Browser falla al inicializar por Playwright ausente antes de que `--exclude-group=browser` pueda omitir las pruebas.
+- Si la guía local no define prioridad sobre los ejemplos genéricos de Boost, un nuevo browser test puede terminar en una ruta no clasificada por el grupo `browser`.
 
 ## Ship Cut
 
-Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. TASK-009 habilita Playwright en el action backend. La respuesta al comentario de Pullfrog explica por qué se mantienen intactas las skills upstream de Boost y dónde se define la convención de este proyecto. La regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
+Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. TASK-009 habilita Playwright en el action backend. TASK-010 aclara en la guía local que esa configuración prevalece sobre los ejemplos genéricos de Boost. La regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
 
 ## Test Coverage Map
 
@@ -236,14 +255,15 @@ Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La ex
 - **Carpeta Browser y runner genérico:** TASK-006
 - **Documentación de arquitectura Browser:** TASK-007, TASK-008
 - **Playwright en el workflow backend:** TASK-009
+- **Precedencia de la guía local Browser:** TASK-010
 
 ## Execution Summary
 
 - **Mode:** EXPANSION
 - **Default review:** codex
-- **Task count:** 9
-- **Layers:** [TASK-001, TASK-002] → [TASK-003, TASK-009] → [TASK-004, TASK-005] → [TASK-006] → [TASK-007, TASK-008]
-- **Critical path:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007
+- **Task count:** 10
+- **Layers:** [TASK-001, TASK-002] → [TASK-003, TASK-009] → [TASK-004, TASK-005] → [TASK-006] → [TASK-007, TASK-008] → [TASK-010]
+- **Critical path:** TASK-001 → TASK-003 → TASK-005 → TASK-006 → TASK-008 → TASK-010
 
 ## Task Dependencies
 
@@ -256,4 +276,5 @@ Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La ex
 - **TASK-007:** TASK-006
 - **TASK-008:** TASK-006
 - **TASK-009:** TASK-001, TASK-002
+- **TASK-010:** TASK-008
 

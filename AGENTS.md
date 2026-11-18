@@ -202,7 +202,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - Place new module-specific tests under the owning module's `Tests/` directory (`app/Modules/{Domain}/Tests/` for modules migrated to the new architecture; `app/{Domain}/Tests/` or `app/{Domain}/Modules/{Feature}/Tests/` in the old architecture); reserve root `tests/` for cross-module, infrastructure, and existing tests.
 - Register new module test directories in `phpunit.xml` and configure their Pest base case/shared traits in `tests/Pest.php` as needed.
-- Put browser tests in the owning module's `Tests/Browser/` subdirectory. `tests/Pest.php` assigns them to the `browser` group and applies the shared Vite setup; run them with `composer test:browser`.
+- For browser test placement, this project's module-owned `Tests/Browser/` paths and the locations configured in `tests/Pest.php` take precedence over the generic `tests/Browser` example in Laravel Boost's `testing-best-practices` skill. Put browser tests in the owning module's `Tests/Browser/` subdirectory so Pest assigns them to the `browser` group and applies the shared Vite setup; run them with `composer test:browser`.
 - When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
 - Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
 - When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
