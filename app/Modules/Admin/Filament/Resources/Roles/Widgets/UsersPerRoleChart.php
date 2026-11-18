@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Admin\Filament\Resources\Roles\Widgets;
 
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
-use App\User\Models\User;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Facades\Gate;
 use Override;
 
 /**
@@ -53,10 +52,7 @@ class UsersPerRoleChart extends ChartWidget
     #[Override]
     public static function canView(): bool
     {
-        $authenticatedUser = auth('admin')->user();
-
-        return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('viewAny', Role::class);
+        return RoleResource::canViewAny();
     }
 
     /**
@@ -68,7 +64,7 @@ class UsersPerRoleChart extends ChartWidget
         $labels = [];
         $counts = [];
 
-        foreach (Role::inDisplayOrder(Role::query()->where('guard_name', Role::GUARD_NAME)->withCount('users')->get()) as $role) {
+        foreach (Role::inDisplayOrder(Role::query()->admin()->withCount('users')->get()) as $role) {
             $usersCount = $role->getAttribute('users_count');
             $labels[] = $role->displayName();
             $counts[] = \is_int($usersCount) ? $usersCount : 0;
