@@ -178,8 +178,8 @@ it('links the new role button to the create page for a roles manager', function 
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesManager);
 
     $testable = Livewire::test(ListRoles::class);
-    $testable->__call('assertActionVisible', ['createRole']);
-    $testable->__call('assertActionHasUrl', ['createRole', RoleResource::getUrl('create')]);
+    $testable->__call('assertActionVisible', ['create']);
+    $testable->__call('assertActionHasUrl', ['create', RoleResource::getUrl('create')]);
 });
 
 it('hides the new role button from a roles reader', function (): void {
@@ -188,7 +188,7 @@ it('hides the new role button from a roles reader', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
 
     $testable = Livewire::test(ListRoles::class);
-    $testable->__call('assertActionHidden', ['createRole']);
+    $testable->__call('assertActionHidden', ['create']);
     $testable->assertDontSee(TranslatedText::of('admin/roles.actions.create.label'));
 });
 
