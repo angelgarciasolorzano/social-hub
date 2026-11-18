@@ -37,19 +37,6 @@ function editableCatalogRole(AdminRole $adminRole): Role
 }
 
 /**
- * The names of the permissions the role holds, sorted.
- *
- * @return list<string>
- */
-function editedPermissionNames(Role $role): array
-{
-    /** @var list<string> $permissionNames */
-    $permissionNames = $role->refresh()->permissions->pluck('name')->sort()->values()->all();
-
-    return $permissionNames;
-}
-
-/**
  * How many admin activities were recorded.
  */
 function recordedAdminActivities(): int
@@ -102,7 +89,7 @@ it('saves the details and permissions of a custom role together and goes back to
     expect($role->name)->toBe('custom-soporte')
         ->and($role->label)->toBe('Soporte de cuentas')
         ->and($role->description)->toBe('Atiende a los usuarios.')
-        ->and(editedPermissionNames($role))->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
+        ->and(rolePermissionNames($role))->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleUpdated->value)->count())->toBe(1)
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RolePermissionGranted->value)->count())->toBe(2)
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RolePermissionRevoked->value)->count())->toBe(1);
@@ -126,7 +113,7 @@ it('changes nothing when the permissions are refused, not even the details', fun
     Notification::assertNotified(AdminAuthorizationFailure::ActorWouldLoseAccess->message());
 
     expect($role->refresh()->label)->toBe('Gestión de roles')
-        ->and(editedPermissionNames($role))->toHaveCount(3)
+        ->and(rolePermissionNames($role))->toHaveCount(3)
         ->and(recordedAdminActivities())->toBe(0);
 });
 
@@ -145,7 +132,7 @@ it('reports a taken label on its field and changes nothing', function (): void {
         ->assertHasErrors(['data.label' => AdminAuthorizationFailure::RoleLabelTaken->message()]);
 
     expect($role->refresh()->label)->toBe('Auditor')
-        ->and(editedPermissionNames($role))
+        ->and(rolePermissionNames($role))
         ->toBeEmpty()
         ->and(recordedAdminActivities())->toBe(0);
 });
@@ -165,7 +152,7 @@ it('changes only the permissions of a system role and ignores a label sent by ha
         ->assertHasNoErrors();
 
     expect($role->refresh()->label)->toBeNull()
-        ->and(editedPermissionNames($role))->toContain(AdminPermission::AdminBackupsView->value)
+        ->and(rolePermissionNames($role))->toContain(AdminPermission::AdminBackupsView->value)
         ->and(ActivityLog::query()->where('event', ActivityLogAdminEvent::RoleUpdated->value)->exists())->toBeFalse();
 });
 

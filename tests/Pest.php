@@ -618,6 +618,19 @@ function permissionHoldersPageFor(?string $permission): Testable
 }
 
 /**
+ * The names of the permissions the role holds now, read back from the database and sorted.
+ *
+ * @return list<string>
+ */
+function rolePermissionNames(AdminGuardRole $adminGuardRole): array
+{
+    /** @var list<string> $permissionNames */
+    $permissionNames = $adminGuardRole->refresh()->permissions->pluck('name')->sort()->values()->all();
+
+    return $permissionNames;
+}
+
+/**
  * The detail page of a role, as opening it from the roles list does.
  *
  * @return Testable<ViewRole>
