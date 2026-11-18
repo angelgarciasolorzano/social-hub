@@ -10,11 +10,11 @@ use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
+use App\Modules\Admin\Tests\Support\QueryLog;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
 use Filament\Actions\Testing\TestAction;
 use Filament\Notifications\Notification;
-use Illuminate\Support\Facades\DB;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -45,22 +45,6 @@ function listedRoles(Testable $testable): array
         array_map(static fn (Role $role): string => $role->name, $roles),
         $roles,
     );
-}
-
-/**
- * Count the queries that rendering the list runs; call it once first so caches are warm.
- */
-function countRolesListQueries(): int
-{
-    DB::flushQueryLog();
-    DB::enableQueryLog();
-
-    rolesListPage()->assertOk();
-
-    $queryCount = count(DB::connection()->getQueryLog());
-    DB::disableQueryLog();
-
-    return $queryCount;
 }
 
 /**
@@ -224,8 +208,10 @@ it('runs the same number of queries whatever the number of users holding roles',
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
     RoleFactory::new()->createOne();
 
-    countRolesListQueries();
-    $queriesWithFewUsers = countRolesListQueries();
+    $renderList = static fn (): Testable => rolesListPage()->assertOk();
+
+    QueryLog::count($renderList);
+    $queriesWithFewUsers = QueryLog::count($renderList);
 
     foreach (AdminRole::cases() as $adminRole) {
         createUser()->assignRole($adminRole->value);
@@ -236,9 +222,9 @@ it('runs the same number of queries whatever the number of users holding roles',
         createUser()->assignRole(RoleFactory::new()->createOne());
     }
 
-    countRolesListQueries();
+    QueryLog::count($renderList);
 
-    expect(countRolesListQueries())->toBe($queriesWithFewUsers);
+    expect(QueryLog::count($renderList))->toBe($queriesWithFewUsers);
 });
 
 it('links to who can do something and to the matrix, and offers comparing as the only bulk action', function (): void {
