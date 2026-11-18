@@ -19,9 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Auth | `app/Auth/` (old) | Login, register, email verification, password reset (Fortify), the 2FA login challenge and trusted devices | [auth.md](docs/architecture/modules/auth.md) |
 | User | `app/User/` (old) | The `User` model, account settings, account status (suspension), 2FA settings, account events | [user.md](docs/architecture/modules/user.md) |
 | Home | `app/Home/` (old) | Landing and dashboard pages | — |
-| Friendship | `app/Friendship/` (old) | Friend requests and relationships | — |
 | Post | `app/Modules/Post/` | Posts with an image (MediaLibrary), engagement counters | [content.md](docs/architecture/modules/content.md) |
 | Comment | `app/Modules/Comment/` | Polymorphic, single-level comment threads with mentions; edit and delete with tombstones | [content.md](docs/architecture/modules/content.md) |
+| Friendship | `app/Modules/Friendship/` | One row per pair of users, friend requests, cooldown after a decline, safe people search (JSON endpoints) | [friendship.md](docs/architecture/modules/friendship.md) |
 | Like | `app/Modules/Like/` | Polymorphic likes on posts and comments (JSON toggle endpoint) | [content.md](docs/architecture/modules/content.md) |
 | Announcement | `app/Modules/Announcement/` | System announcements from the panel, approval workflow, toast/dialog display | [announcement.md](docs/architecture/modules/announcement.md) |
 | Notification | `app/Modules/Notification/` | Real-time React notification center (Reverb, private channel, history page) | [notification.md](docs/architecture/modules/notification.md) |
@@ -103,11 +103,12 @@ Each item is explained in the linked module document.
 
 ### Data
 
+- **A pair of users has one `friendships` row at most:** the virtual generated columns `user_low_id`/`user_high_id` are unique together (virtual, because MySQL rejects `cascadeOnDelete` on the base columns of a stored one). `FriendshipService` is the only writer and handles the race to that index inside its transaction. ([friendship](docs/architecture/modules/friendship.md))
 - **The morph map is enforced** (`AppServiceProvider::registerMorphMap()`): `user`, `post`, `like`, `comment`, `admin_invitation`, `trusted_device_event`, `account_status_change`, `announcement`, `role`. A new polymorphic model needs a key there.
 - **Moved migrations keep their original file name**, so a database that already ran them does not run them again. Published package migrations stay in `database/migrations/`.
 - **`likes` has no foreign key:** deleting a post or comment deletes its likes explicitly. `Comment` uses `SoftDeletes` (tombstones), which changes the default queries of every module and of the panel.
 - **Listings keep a constant number of queries:** counters and "liked by me" are preloaded (`withCount`, `withExists`, `Post::withEngagementFor()`) and reused by accessors; viewer flags never run a query per row.
-- **Values mirrored in TypeScript change together:** `Comment::CONTENT_MAX_LENGTH` ↔ `modules/comment/constants/commentContent.ts`, and backend enums ↔ their TS mirrors (`AccountStatus`, `AnnouncementType`, `AnnouncementDisplay`, `NotificationType`, `PreferredLocale`).
+- **Values mirrored in TypeScript change together:** `Comment::CONTENT_MAX_LENGTH` ↔ `modules/comment/constants/commentContent.ts`, and backend enums ↔ their TS mirrors (`AccountStatus`, `AnnouncementType`, `AnnouncementDisplay`, `FriendshipState`, `NotificationType`, `PreferredLocale`).
 - The route placeholder must match the controller's typed parameter for implicit binding (`{userImageType}` ↔ `UserImageType $userImageType`); Rector renames parameters to their type, so fix the route.
 - Media paths come from `MediaLibraryCustomPathGenerator`; changing it orphans stored files. ([infrastructure](docs/architecture/infrastructure.md))
 
@@ -116,6 +117,7 @@ Each item is explained in the linked module document.
 - Dialogs never mutate the URL for their own filters (`router.reload` with `preserveUrl`); empty states read `committedFilters`, not live `filters`. See `.ai/rules/frontend.md`.
 - React StrictMode double-invokes mount effects in dev: flip "skip first render" refs only in the user-facing setter, never in the effect.
 - `onHttpException` / `onNetworkError` return `false` where a 404/429 must not open Inertia's error modal.
+- `useHttp` takes its initial state as a function (`useHttp(() => ({ q: '' }))`): an object literal is new on every render and loops (`Maximum update depth exceeded`).
 - To check light mode, emulate `prefers-color-scheme`: the app follows the system theme.
 
 ### Tests

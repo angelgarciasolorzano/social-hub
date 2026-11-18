@@ -1,0 +1,66 @@
+# Friendship
+
+Friend requests and friendships (SOC-83, epic SOC-82): one row per pair of users, a service that is the only writer, a policy, JSON endpoints, a safe people search and a seeder.
+
+> Keep this document in sync with the code: update it in the same PR as any change to the module. `CLAUDE.md` keeps only the short orientation and the invariants that break things.
+
+**Friendship** (`app/Modules/Friendship/`) replaced the old `app/Friendship/` module, written when the project started (it blocked a receiver for everybody once anyone had sent them a request, and its search sent whole `User` models, emails included, through a flash). Layout: `Controllers/`, `Database/{Factories,Migrations,Seeders}/`, `Enums/`, `Events/`, `Models/`, `Policies/`, `Providers/`, `Requests/`, `Resources/`, `Services/`, `Tests/`, `config/` and `routes/`; namespace `App\Modules\Friendship\…`. `FriendshipServiceProvider` merges `config/friendship.php` as `module.friendship`, loads the module migrations and registers `FriendshipRouteServiceProvider`.
+
+## Data model: one row per pair
+
+- **`friendships`** — `requester_id` and `receiver_id` (both `cascadeOnDelete`), `status` (`FriendshipStatus`: `pending` / `accepted`), `accepted_at`, timestamps, and two **virtual** generated columns, `user_low_id = LEAST(requester_id, receiver_id)` and `user_high_id = GREATEST(…)`, unique together. Whoever sends the request, a pair of users has one row at most: A→B and B→A cannot coexist, and a double click or two tabs cannot duplicate a request, because the database refuses the second insert.
+- **Why virtual and not stored.** MySQL rejects `ON DELETE CASCADE` on the base columns of a *stored* generated column (error 1215). An indexed *virtual* column keeps both the unique pair and the cascade. The alternatives were two rows per friendship (two rows to keep in sync and no database guarantee against crossed requests) or ordering the pair in PHP (every writer would have to remember it).
+- **No `declined` state.** Declining, canceling and unfriending delete the row, so the pair can start again later. `friend_request_declines` (`requester_id`, `receiver_id`, `declined_at`, unique per pair and direction) remembers only the declines, for the cooldown.
+- **Indexes.** `(receiver_id, status)` and `(requester_id, status)` serve "my received/sent requests" and both sides of "my friends". MySQL silently drops the implicit index it created for a foreign key once a composite index starts with the same column, so a `down()` that removes only those composite indexes would fail with error 1553 unless it recreates the foreign key indexes first.
+- **One migration.** The project was never in production, so `2025_09_26_144358_create_friendships_table.php` was moved into the module with its original name and rewritten in place to create both tables; an existing local database needs `php artisan migrate:fresh --seed`.
+
+## Models and relations
+
+- `Friendship` (`#[UseFactory]`, `#[UsePolicy(FriendshipPolicy::class)]`, `#[Fillable]` without the generated columns): `requester()`, `receiver()`, `isPending()`, `isAccepted()`, `involves(User)`, `otherUserId(User)` (no query; throws `InvalidArgumentException` for a user outside the row) and the scopes `involving(User)`, `between(User, User)` (through the unique pair index), `pending()` and `accepted()`.
+- `FriendRequestDecline` (`#[WithoutTimestamps]`): `requester()`, `receiver()` and `activeFor(User $requester, User $receiver, int $cooldownDays)`.
+- `User` gains `sentFriendRequests()` and `receivedFriendRequests()` (pending `HasMany`), `friends()`, `friendshipWith(User)`, the scope `withFriendshipCounts()` (preloads `sent_accepted_friendships_count`, `received_accepted_friendships_count` and `pending_received_friend_requests_count`) and `friendsCount()` / `pendingReceivedFriendRequestsCount()`, which reuse the preloaded values.
+- **Why `friends()` joins a union.** It joins the friend ids read through the two `(<side>_id, status)` indexes (`joinSub` over a `UNION ALL`). Checked with `EXPLAIN`: an `EXISTS` with `LEAST`/`GREATEST` or an `IN … OR IN …` both scan the whole `users` table, while the join looks each friend up by primary key, so it grows with the number of friends, not with the number of users.
+
+## Writing: `FriendshipService`
+
+The only writer. `send()`, `accept()`, `decline()`, `cancel()` and `remove()` run in `DB::transaction` and answer a `FriendshipOperationResult` instead of throwing for business rules; an actor outside the row is a `LogicException`, because the policy already filtered it.
+
+- **`send()`** locks the requester's row (so the pending limit holds under concurrent requests), refuses a suspended receiver (`ReceiverUnavailable`), explains an existing pair (`AlreadyFriends`, `AlreadyPending` or `IncomingRequestExists`), applies the cooldown (`CooldownActive`) and the pending limit (`PendingLimitReached`), creates the request and dispatches `FriendRequestSent`.
+- **Crossed requests are refused, not accepted.** If B already asked A and A asks B, A gets `IncomingRequestExists` (409) inviting them to accept B's request from their received requests (decision of the planning).
+- **The race to the unique index.** `send()` catches `UniqueConstraintViolationException` **inside** the transaction, around the insert, and reads the pair again with `FOR UPDATE`: in MySQL a duplicate undoes only that statement, and a locking read sees the row the other transaction committed. Catching it outside the transaction does not work: the rollback removes the context and the answer would be a guess.
+- **The other actions** read the row again with `lockForUpdate` (the bound model can be stale) and answer `NoLongerPending` when it changed or disappeared. `decline()` upserts the decline; `cancel()` and `remove()` start no cooldown. `accept()` sets `accepted_at`.
+- **Events**, dispatched inside the transaction and only for real changes: `FriendRequestSent`, `FriendRequestAccepted` and `FriendshipEnded` (`friendshipId`, `actor`, `otherUser`, and a `reason` that `FriendshipOperationResult::endsFriendship()` limits to `Declined`, `Canceled` or `Removed`; the row is already deleted, so it carries only the id). Nobody listens yet; a queued listener (notifications, SOC-85) must use `afterCommit`.
+
+## Authorization: `FriendshipPolicy`
+
+`create(User, User $receiver)` (never oneself, never from or to a suspended account), `accept` / `decline` (the receiver, while pending), `cancel` (the requester, while pending), `delete` (either friend, once accepted), `view` (either user of the row), and `update`, `restore` and `forceDelete` denied explicitly. The controller applies it with `#[Authorize]`; `store` uses `#[Authorize('create', [Friendship::class, 'user'])]`, which passes the class as is and resolves `user` from the route.
+
+## Endpoints
+
+All `auth` + `verified`, JSON, consumed with Inertia's `useHttp`:
+
+| Route | Name | Throttle |
+| --- | --- | --- |
+| `GET friendships/search` | `friendships.search` | `60,1,friendships.search` |
+| `POST friendships/{user}` | `friendships.store` | `20,1,friendships.store` |
+| `POST friendships/{friendship}/accept` | `friendships.accept` | `30,1,friendships.accept` |
+| `DELETE friendships/{friendship}/decline` | `friendships.decline` | `30,1,friendships.decline` |
+| `DELETE friendships/{friendship}/cancel` | `friendships.cancel` | `30,1,friendships.cancel` |
+| `DELETE friendships/{friendship}` | `friendships.destroy` | `30,1,friendships.destroy` |
+
+- **Actions** answer `{result, state, message}`. `FriendshipOperationResult::httpStatus()` gives 200 for a change and 409 for a refusal; `state` (`FriendshipState`: `none`, `request_sent`, `request_received`, `friends`, seen by the signed-in user) is read from the pair **after** the action, so the client shows what is stored. A stranger gets 403 before anything else, a deleted row 404 and an exhausted budget 429.
+- **Search** (`FriendshipSearchRequest`: `q`, 2 to 50 characters) answers the `CursorPaginator` envelope (`data`, `path`, `per_page`, `next_cursor`, `next_page_url`, `prev_cursor`, `prev_page_url`; `withQueryString()` keeps `q`). `FriendshipSearchService` matches active accounts whose name starts with the term, without the viewer, escaping `\`, `%` and `_` so they match literally, ordered by name and id. In the same query it preloads the pair's row with the viewer (through the unique pair index) and the friends in common (each side of the candidate's accepted friendships against the viewer's friend ids). `FriendshipSearchResultResource` exposes only `{id, name, profilePicture, friendshipState, friendshipId, mutualFriendsCount}` (never the email) and runs no query: a page costs the same queries with 3 or 15 results.
+
+## Messages and configuration
+
+- `lang/{en,es}/friendship/actions.php`: `results.<value>` for every `FriendshipOperationResult` and `validation.search_*`. The cooldown and unavailable-receiver texts are neutral on purpose (they never reveal a decline or a suspension), and `no_longer_pending` is generic because `remove()` and the race of `send()` also answer it. `FriendshipTranslationKeysTest` checks parity, placeholders, one text per result and the neutral wording.
+- `module.friendship`: `decline_cooldown_days` (`SOCIALHUB_FRIENDSHIP_DECLINE_COOLDOWN_DAYS`, 7), `max_pending_sent` (`SOCIALHUB_FRIENDSHIP_MAX_PENDING_SENT`, 50) and `search_page_size` (15). A decline is active while `declined_at` is later than now minus the cooldown, so it is over at exactly 7 days.
+
+## Seeding and tests
+
+- `FriendshipSeeder` (after `AccountStatusSeeder`) gives each user 0–25 accepted friendships and 0–5 sent requests (skew 2), sometimes a decline (5%), dated over the last 60 days with `accepted_at` after the request. It builds the rows in PHP with a set of used pairs, so no pair repeats in either direction, nobody relates to themselves and a decline never shares a pair with a row; it inserts 1000 rows at a time with `insertOrIgnore`. Angel (`UserSeeder::TEST_USER_EMAIL`) first gets 5 friends, 3 received and 2 sent requests and a decline from yesterday. It does nothing when `friendships` has rows or there are fewer than two users. A full seed gives about 1 600 friendships and 300 requests.
+- Tests live in `app/Modules/Friendship/Tests/{Models,Services,Policies,Crud,Security,Seeders,Translations}/` (suite `Friendship`). `tests/Pest.php` has `createFriendRequest(?User, ?User)` and `createFriendship(?User, ?User)`. The race test inserts the crossed request from a `creating` listener and flushes the listeners afterwards.
+
+## Frontend
+
+The full UI (friends page, profile button, navigation counter) is SOC-84. Until then `resources/js/modules/home/components/header/HomeSearchHeader.tsx` searches with `useHttp` and the Wayfinder `search` / `store` actions, pages with `next_page_url`, and shows the server's 409 message without Inertia's error modal; its texts are still Spanish by hand, like the rest of `home`. `resources/js/modules/home/types/friendSearch.ts` mirrors `FriendshipState` (change both together). **`useHttp` takes its initial state as a function** (`useHttp(() => ({ q: '' }))`): an object literal is a new object on every render, and here it left `/home` blank with `Maximum update depth exceeded`.
