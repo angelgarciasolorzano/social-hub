@@ -8,6 +8,7 @@ use App\Modules\Admin\Enums\AdminAuthorizationFailure;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Concerns\EditsRolePermissions;
+use App\Modules\Admin\Filament\Concerns\NotifiesAdminAuthorizationFailure;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
@@ -18,7 +19,6 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Pages\CreateRecord\Concerns\HasWizard;
 use Filament\Schemas\Components\Grid;
@@ -42,6 +42,7 @@ class CreateRole extends CreateRecord
     use ConfirmsCurrentPassword;
     use EditsRolePermissions;
     use HasWizard;
+    use NotifiesAdminAuthorizationFailure;
 
     private const string CREATE_PASSWORD_THROTTLE_PREFIX = 'admin-roles:create:';
 
@@ -201,10 +202,7 @@ class CreateRole extends CreateRecord
                 ]);
             }
 
-            Notification::make()
-                ->title($adminAuthorizationException->failure->message())
-                ->danger()
-                ->send();
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             throw new Halt($adminAuthorizationException->getMessage(), $adminAuthorizationException->getCode(), $adminAuthorizationException);
         }
