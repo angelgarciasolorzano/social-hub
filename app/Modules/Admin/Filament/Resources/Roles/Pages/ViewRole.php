@@ -13,6 +13,7 @@ use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -60,11 +61,9 @@ class ViewRole extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('edit')
+            EditAction::make()
                 ->label(TranslatedText::of('admin/roles.actions.edit.label'))
-                ->icon(Heroicon::OutlinedPencilSquare)
-                ->authorize('update')
-                ->url(fn (Role $record): string => RoleResource::getUrl('edit', ['record' => $record])),
+                ->icon(Heroicon::OutlinedPencilSquare),
             Action::make('duplicate')
                 ->label(TranslatedText::of('admin/roles.actions.duplicate.label'))
                 ->icon(Heroicon::OutlinedDocumentDuplicate)
