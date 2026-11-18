@@ -37,7 +37,7 @@ Se corrigen el bug de `sendRequest()`, que bloquea a un receptor para todos, y l
 
 **Qué es nuevo:**
 
-- Columnas generadas `user_low_id` y `user_high_id` (`LEAST`/`GREATEST`) con índice único: una fila por par sin importar quién envió.
+- Columnas generadas virtuales `user_low_id` y `user_high_id` (`LEAST`/`GREATEST`) con índice único: una fila por par sin importar quién envió.
 - La tabla `friend_request_declines`, que guarda los rechazos para la espera.
 - Los enums `FriendshipState` (estado visto por quien consulta) y `FriendshipOperationResult`.
 - `FriendshipService`, `FriendshipSearchService`, `FriendshipPolicy` y los eventos de dominio.
@@ -47,7 +47,7 @@ Se corrigen el bug de `sendRequest()`, que bloquea a un receptor para todos, y l
 
 **Decisiones confirmadas:**
 
-- Una fila por par, confirmado por el usuario: se conservan `requester_id` y `receiver_id` y se agregan las columnas generadas almacenadas `user_low_id`/`user_high_id` con índice único. La base de datos impide A→B y B→A sin que el código tenga que ordenar el par.
+- Una fila por par, confirmado por el usuario: se conservan `requester_id` y `receiver_id` y se agregan las columnas generadas virtuales `user_low_id`/`user_high_id` con índice único (MySQL rechaza `cascadeOnDelete` sobre las columnas base de una columna generada STORED; con VIRTUAL funcionan las dos cosas, comprobado en TASK-003). La base de datos impide A→B y B→A sin que el código tenga que ordenar el par.
 - Solicitud cruzada, confirmado por el usuario: si B ya le envió una solicitud a A y A intenta enviarle otra, se **rechaza con un aviso** (`IncomingRequestExists`, 409) que le dice a A que la acepte desde sus solicitudes recibidas. No se acepta sola.
 - Rechazar, cancelar y eliminar amigo borran la fila de `friendships`. Desaparece el estado `declined`.
 - **Espera tras un rechazo (EXPANSION):** solo un rechazo crea o actualiza una fila de `friend_request_declines`. Mientras no pasen `module.friendship.decline_cooldown_days` días (por defecto 7), quien envió no puede volver a enviarle a quien rechazó, pero quien rechazó sí puede enviarle a él. Cancelar o eliminar amigo no genera espera. El mensaje es neutro, para no revelar que hubo un rechazo.
@@ -62,9 +62,9 @@ Se corrigen el bug de `sendRequest()`, que bloquea a un receptor para todos, y l
 
 ## Prerequisites
 
-- MySQL en desarrollo y en pruebas (`.env.testing` usa `DB_CONNECTION=mysql`): las columnas generadas almacenadas con `LEAST`/`GREATEST` dependen de ello.
+- MySQL en desarrollo y en pruebas (`.env.testing` usa `DB_CONNECTION=mysql`): las columnas generadas virtuales con `LEAST`/`GREATEST` e índice único dependen de ello.
 - SOC-68 está mergeada: el módulo Notification existe, pero en esta tarea no se toca.
-- La tabla `friendships` nunca estuvo en producción: la migración de reconstrucción puede vaciar las filas locales existentes.
+- El proyecto nunca estuvo en producción (confirmado por el usuario): la migración original se reescribe en su lugar, y cada base local existente necesita `php artisan migrate:fresh --seed`.
 
 ## Non-Goals
 
@@ -79,7 +79,7 @@ Se corrigen el bug de `sendRequest()`, que bloquea a un receptor para todos, y l
 
 ### Esquema de friendships
 
-`friendships`: `id`, `requester_id`, `receiver_id` (ambas FK a `users`, `cascadeOnDelete`), `status` (`pending|accepted`), `accepted_at` (nullable), `user_low_id` y `user_high_id` (`storedAs` `LEAST`/`GREATEST`), único `friendships_user_low_id_user_high_id_unique`, e índices `(receiver_id, status)` y `(requester_id, status)`. Una fila con `requester_id = receiver_id` nunca se escribe: la policy y el servicio lo impiden.
+`friendships`: `id`, `requester_id`, `receiver_id` (ambas FK a `users`, `cascadeOnDelete`), `status` (`pending|accepted`), `accepted_at` (nullable), `user_low_id` y `user_high_id` (`virtualAs` `LEAST`/`GREATEST`), único `friendships_user_low_id_user_high_id_unique`, e índices `(receiver_id, status)` y `(requester_id, status)`. Una fila con `requester_id = receiver_id` nunca se escribe: la policy y el servicio lo impiden.
 
 ### Esquema de friend_request_declines
 
@@ -188,19 +188,19 @@ Registrar `App\Modules\Friendship\Providers\FriendshipServiceProvider` en `boots
 
 **validateCommand:** `php artisan config:show module.friendship && composer phpstan`
 
-### TASK-003: Move the friendships migration and rebuild the schema for one row per pair
+### TASK-003: Move the friendships migration and rewrite it for one row per pair
 
-Tres cambios en la base de datos:
+Mover `database/migrations/2025_09_26_144358_create_friendships_table.php` a `app/Modules/Friendship/Database/Migrations/` con el mismo nombre (`git mv`) y **reescribirla en su lugar** como la migración canónica del módulo. El proyecto nunca estuvo en producción, así que no hace falta una migración de reconstrucción (decisión del usuario). Sigue el precedente de `create_trusted_devices_table.php`, que crea dos tablas.
 
-* Mover `database/migrations/2025_09_26_144358_create_friendships_table.php` a `app/Modules/Friendship/Database/Migrations/` **con el mismo nombre** (`git mv`), para que una base que ya la corrió no la ejecute de nuevo.
-* Crear una migración de reconstrucción que vacía la tabla (el módulo nunca estuvo en producción) y agrega:
-  * `accepted_at`;
-  * `user_low_id` y `user_high_id` como columnas `storedAs('LEAST(requester_id, receiver_id)')` y `storedAs('GREATEST(requester_id, receiver_id)')`;
-  * el índice único `friendships_user_low_id_user_high_id_unique`;
-  * los índices `(receiver_id, status)` y `(requester_id, status)`.
+**`friendships`** queda con:
+* `accepted_at`;
+* `user_low_id` y `user_high_id` como columnas `virtualAs('LEAST(requester_id, receiver_id)')` y `virtualAs('GREATEST(requester_id, receiver_id)')`. No son STORED porque MySQL no admite `cascadeOnDelete` en sus columnas base;
+* el índice único `friendships_user_low_id_user_high_id_unique`;
+* los índices `(receiver_id, status)` y `(requester_id, status)`.
 
-  Su `down()` revierte todo.
-* Crear la migración de `friend_request_declines` según el contrato.
+**`friend_request_declines`** se crea en la misma migración, según el contrato.
+
+Su `down()` borra las dos tablas. Cada base local existente se rehace con `php artisan migrate:fresh --seed`.
 
 **Type:** feature  
 **Effort:** M  
@@ -211,17 +211,15 @@ Tres cambios en la base de datos:
 
 **writeScope:**
 
-- `app/Modules/Friendship/Database/Migrations/2026_11_18_000000_rebuild_friendships_for_unique_pairs.php`
-- `app/Modules/Friendship/Database/Migrations/2026_11_18_000001_create_friend_request_declines_table.php`
 - `app/Modules/Friendship/Database/Migrations/2025_09_26_144358_create_friendships_table.php (moved from database/migrations/)`
 
 **Acceptance Criteria:**
 
-1. `php artisan migrate:fresh` crea `friendships` con las columnas generadas y el índice único, y también `friend_request_declines`. `php artisan migrate:status` lista la migración original con su nombre de siempre.
+1. `php artisan migrate:fresh` crea `friendships` con las columnas generadas y el índice único, y también `friend_request_declines`, desde una sola migración con su nombre de siempre.
 2. Un insert crudo de `(requester 1, receiver 2)` seguido de `(requester 2, receiver 1)` falla con una violación de unicidad: se verifica en TASK-008.
-3. `php artisan migrate:rollback --step=2` revierte ambas migraciones nuevas sin errores y deja la tabla `friendships` con su forma original.
+3. `php artisan migrate:reset` borra las dos tablas sin errores, y volver a migrar las recrea.
 
-**validateCommand:** `php artisan migrate:fresh --env=testing --force && php artisan migrate:rollback --step=2 --env=testing --force && php artisan migrate --env=testing --force`
+**validateCommand:** `php artisan migrate:fresh --env=testing --force && php artisan migrate:reset --env=testing --force && php artisan migrate --env=testing --force`
 
 ### TASK-004: Create the friendship enums
 
@@ -728,7 +726,8 @@ Después, regenerar Wayfinder y `_ide_helper_models.php` (revirtiendo los cambio
 ### TASK-019: Document the Friendship module and update the project map
 
 Crear `docs/architecture/modules/friendship.md`, que explica el **porqué** de cada decisión:
-* una fila por par con columnas generadas, frente a dos filas u ordenar en PHP;
+* una fila por par con columnas generadas virtuales (y por qué no STORED), frente a dos filas u ordenar en PHP;
+* que MySQL reemplaza los índices implícitos de las claves foráneas por los compuestos que las cubren (importa si alguna vez se escribe un `down()` que borre solo esos índices);
 * bloqueos y carreras;
 * el rechazo de la solicitud cruzada;
 * la espera y su mensaje neutro;
@@ -799,7 +798,7 @@ Corregir lo que salga sin agregar alcance nuevo.
 - Límite de pendientes con envíos concurrentes del mismo emisor: el bloqueo de la fila del emisor serializa el conteo.
 - Un receptor suspendido entre la búsqueda y el envío: la policy responde 403 o el servicio devuelve `ReceiverUnavailable`.
 - Usuario borrado: `cascadeOnDelete` limpia sus amistades y rechazos. Los eventos ya despachados no dependen de la fila.
-- Migración de reconstrucción en una base local con datos viejos: vacía `friendships` a propósito, ya que nunca hubo datos en producción. Está documentado.
+- Una base local que ya corrió la migración original la sigue viendo como ejecutada y conserva el esquema viejo: hay que rehacerla con `php artisan migrate:fresh --seed`. No hay datos de producción que perder.
 - El frontend viejo queda roto entre TASK-003 y TASK-017, porque la tabla cambió y el controlador viejo sigue apuntándole: no se pausa en un PR entre esas tareas.
 
 ## Ship Cut
