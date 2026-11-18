@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Filament\Resources\Roles\Pages;
 
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
+use App\Modules\Admin\Filament\Concerns\NotifiesAdminAuthorizationFailure;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
@@ -24,6 +25,7 @@ use Override;
 class ViewRole extends ViewRecord
 {
     use ConfirmsCurrentPassword;
+    use NotifiesAdminAuthorizationFailure;
 
     #[Override]
     protected static string $resource = RoleResource::class;
@@ -115,7 +117,7 @@ class ViewRole extends ViewRecord
         try {
             $copy = $adminAuthorizationService->duplicateRole($role, $label, $administrator);
         } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             return;
         }
@@ -146,7 +148,7 @@ class ViewRole extends ViewRecord
         try {
             $adminAuthorizationService->deleteRole($role, $administrator);
         } catch (AdminAuthorizationException $adminAuthorizationException) {
-            $this->notifyFailure($adminAuthorizationException);
+            self::notifyAdminAuthorizationFailure($adminAuthorizationException);
 
             return;
         }
@@ -184,14 +186,6 @@ class ViewRole extends ViewRecord
         abort_unless(\is_string($currentPassword), 422);
 
         self::ensureCurrentPassword($administrator, $currentPassword, $throttlePrefix, self::CURRENT_PASSWORD_ERROR_KEY);
-    }
-
-    private function notifyFailure(AdminAuthorizationException $adminAuthorizationException): void
-    {
-        Notification::make()
-            ->title($adminAuthorizationException->failure->message())
-            ->danger()
-            ->send();
     }
 
     private function labelField(): TextInput
