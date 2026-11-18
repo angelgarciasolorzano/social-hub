@@ -2,11 +2,11 @@
 
 ## Overview
 
-Agregar Pest Browser y Playwright con Chromium, probar el formulario real de login como invitado y establecer una arquitectura que permita sumar pruebas Browser por módulo. Las pruebas viven en `Tests/Browser`, comparten la preparación Vite mediante un hook Pest, se agrupan como `browser` y se ejecutan con `composer test:browser`, que compila una vez y excluye ese grupo del comando regular paralelo. El action backend instala dependencias npm para que Pest Browser encuentre Playwright al iniciar `composer test`. Documentar instalación, ejecución y organización en las guías y sus espejos.
+Agregar Pest Browser y Playwright con Chromium, probar el formulario real de login como invitado y establecer una arquitectura que permita sumar pruebas Browser por módulo. Las pruebas viven en `Tests/Browser`, comparten la preparación Vite mediante un hook Pest, se agrupan como `browser` y se ejecutan con `composer test:browser`, que compila una vez y excluye ese grupo del comando regular paralelo. El action backend instala dependencias npm para que Pest Browser encuentre Playwright al iniciar `composer test`. La arquitectura se documenta en las guías del proyecto.
 
 ## Scope Challenge
 
-El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80. Después pidió ampliar el alcance para que el comando cubra una suite Browser futura, las pruebas de módulos vivan bajo `Tests/Browser` y la arquitectura quede documentada; confirmó EXPANSION dentro de SOC-80 y mantiene revisión Codex. Tras revisar Pullfrog en el PR 81, confirmó que se implemente la disponibilidad de Playwright en el action de tests y se corrijan las guías que recomiendan `tests/Browser` fuera de la arquitectura modular.
+El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80 y después amplió el alcance para una suite Browser futura organizada bajo `Tests/Browser` por módulo, con revisión Codex. Tras revisar Pullfrog en el PR 81, confirmó que se implemente la disponibilidad de Playwright en el action de tests. Aclaró que los espejos de `testing-best-practices` son skills provistas por Laravel Boost que se actualizan desde upstream, por lo que deben conservarse intactos; se responderá al comentario explicando la precedencia de la documentación y configuración específicas del proyecto.
 
 ## Prerequisites
 
@@ -18,6 +18,7 @@ El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80. Después
 ## Non-Goals
 
 - Ejecutar la suite browser con Chromium en CI; el workflow instala Playwright para que Pest pueda iniciar, y `composer test` sigue excluyendo el grupo browser.
+- Modificar las skills `testing-best-practices` provistas por Laravel Boost; la guía genérica se mantiene upstream y la convención local queda en las reglas y documentación del proyecto.
 - Probar Firefox, WebKit u otros navegadores.
 - Probar el envío de credenciales, autenticación, registro, MFA u otros flujos.
 - Crear `.env.e2e`, una base de datos adicional o un seeder E2E.
@@ -211,44 +212,6 @@ Configurar Node.js 22 y ejecutar `npm run install:ci` en el job `backend-test` a
 
 **validateCommand:** `rtk npx prettier --check .github/workflows/backend-code-quality-test.yml`
 
-### TASK-010: Alinear el resumen de testing Browser con los módulos
-
-Actualizar `SKILL.md` en los tres espejos de `testing-best-practices` para ubicar los Browser tests bajo `app/<Domain>/Tests/Browser/` o `app/<Domain>/Modules/<Feature>/Tests/Browser/`, de acuerdo con la arquitectura del proyecto y el registro de grupos en `tests/Pest.php`.
-
-**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
-**Depends on:** TASK-006
-
-**Acceptance Criteria:**
-1. Las tres copias de `SKILL.md` indican las ubicaciones Browser module-owned y no recomiendan `tests/Browser` como ubicación general.
-2. La guía recuerda que cada ruta debe quedar registrada/configurada por el proyecto en `tests/Pest.php`.
-3. Las tres copias mantienen contenido coincidente para la regla Browser resumida.
-
-**writeScope:**
-- `.agents/skills/testing-best-practices/SKILL.md`
-- `.claude/skills/testing-best-practices/SKILL.md`
-- `.github/skills/testing-best-practices/SKILL.md`
-
-**validateCommand:** `rtk rg -n 'Tests/Browser|tests/Browser|tests/Pest.php' .agents/skills/testing-best-practices/SKILL.md .claude/skills/testing-best-practices/SKILL.md .github/skills/testing-best-practices/SKILL.md`
-
-### TASK-011: Alinear las reglas detalladas de Browser testing
-
-Actualizar `rules/endpoint-tests.md` en los tres espejos de `testing-best-practices`: comandos de ejecución, ubicación, configuración Pest, screenshots y límites de paralelismo deben coincidir con la arquitectura Browser module-owned y `composer test:browser`.
-
-**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
-**Depends on:** TASK-006
-
-**Acceptance Criteria:**
-1. Las reglas indican que Browser tests viven en `Tests/Browser/` bajo su dominio o submódulo y que el grupo `browser` se registra en `tests/Pest.php`.
-2. Los ejemplos de ejecución usan una ruta de módulo para una prueba puntual y `composer test:browser` para toda la suite configurada.
-3. Las tres copias coinciden y no recomiendan una ruta root que el `tests/Pest.php` del proyecto no clasifica como browser.
-
-**writeScope:**
-- `.agents/skills/testing-best-practices/rules/endpoint-tests.md`
-- `.claude/skills/testing-best-practices/rules/endpoint-tests.md`
-- `.github/skills/testing-best-practices/rules/endpoint-tests.md`
-
-**validateCommand:** `rtk rg -n 'Tests/Browser|tests/Browser|composer test:browser|tests/Pest.php' .agents/skills/testing-best-practices/rules/endpoint-tests.md .claude/skills/testing-best-practices/rules/endpoint-tests.md .github/skills/testing-best-practices/rules/endpoint-tests.md`
-
 ## Failure Modes
 
 - Playwright y el binario Chromium quedan en versiones desalineadas: la prueba falla al iniciar el navegador; volver a ejecutar `npx playwright install chromium` con el lockfile vigente.
@@ -261,7 +224,7 @@ Actualizar `rules/endpoint-tests.md` en los tres espejos de `testing-best-practi
 
 ## Ship Cut
 
-Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. Las tareas TASK-009 a TASK-011 responden al review de Pullfrog sobre Playwright en CI y las guías sincronizadas. La regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
+Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. TASK-009 habilita Playwright en el action backend. La respuesta al comentario de Pullfrog explica por qué se mantienen intactas las skills upstream de Boost y dónde se define la convención de este proyecto. La regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
 
 ## Test Coverage Map
 
@@ -273,14 +236,13 @@ Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La ex
 - **Carpeta Browser y runner genérico:** TASK-006
 - **Documentación de arquitectura Browser:** TASK-007, TASK-008
 - **Playwright en el workflow backend:** TASK-009
-- **Ubicación Browser en las skills:** TASK-010, TASK-011
 
 ## Execution Summary
 
 - **Mode:** EXPANSION
 - **Default review:** codex
-- **Task count:** 11
-- **Layers:** [TASK-001, TASK-002] → [TASK-003, TASK-009] → [TASK-004, TASK-005] → [TASK-006] → [TASK-007, TASK-008, TASK-010, TASK-011]
+- **Task count:** 9
+- **Layers:** [TASK-001, TASK-002] → [TASK-003, TASK-009] → [TASK-004, TASK-005] → [TASK-006] → [TASK-007, TASK-008]
 - **Critical path:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007
 
 ## Task Dependencies
@@ -294,6 +256,4 @@ Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La ex
 - **TASK-007:** TASK-006
 - **TASK-008:** TASK-006
 - **TASK-009:** TASK-001, TASK-002
-- **TASK-010:** TASK-006
-- **TASK-011:** TASK-006
 
