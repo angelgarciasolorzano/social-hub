@@ -420,7 +420,7 @@ Después, regenerar los mixins con `php artisan ide-helper:models -RM --env=test
 
 ### TASK-010: Create the friendship domain events
 
-Crear `Events/FriendRequestSent`, `Events/FriendRequestAccepted` y `Events/FriendshipEnded` según el contrato de eventos, con `Dispatchable` y propiedades `readonly`.
+Crear `Events/FriendRequestSent`, `Events/FriendRequestAccepted` y `Events/FriendshipEnded` según el contrato de eventos, como clases `final readonly` que el servicio despacha con `event()`, igual que `LikeToggled` y `CommentDeleted`. `FriendshipEnded` valida su motivo con `FriendshipOperationResult::endsFriendship()`.
 
 `FriendshipEnded` guarda el id de la fila y no el modelo, porque la fila ya se borró cuando se despacha.
 

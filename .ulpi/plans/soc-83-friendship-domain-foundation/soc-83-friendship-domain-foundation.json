@@ -372,7 +372,7 @@
     {
       "id": "TASK-010",
       "title": "Create the friendship domain events",
-      "description": "Crear `Events/FriendRequestSent`, `Events/FriendRequestAccepted` y `Events/FriendshipEnded` según el contrato de eventos, con `Dispatchable` y propiedades `readonly`.\n\n`FriendshipEnded` guarda el id de la fila y no el modelo, porque la fila ya se borró cuando se despacha.\n\nEn esta tarea nadie los escucha: los consumen SOC-85 (notificaciones y activity log).",
+      "description": "Crear `Events/FriendRequestSent`, `Events/FriendRequestAccepted` y `Events/FriendshipEnded` según el contrato de eventos, como clases `final readonly` que el servicio despacha con `event()`, igual que `LikeToggled` y `CommentDeleted`. `FriendshipEnded` valida su motivo con `FriendshipOperationResult::endsFriendship()`.\n\n`FriendshipEnded` guarda el id de la fila y no el modelo, porque la fila ya se borró cuando se despacha.\n\nEn esta tarea nadie los escucha: los consumen SOC-85 (notificaciones y activity log).",
       "type": "feature",
       "priority": "P1",
       "effort": "S",
