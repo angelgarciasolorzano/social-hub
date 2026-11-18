@@ -2,26 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
-use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Models\Role;
+use App\Modules\Admin\Tests\Support\RoleActivity;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-
-/**
- * Record that an administrator gave the role to a user at the given time, as the service would.
- */
-function recordGrantOf(Role $role, User $user, User $administrator, string $grantedAt = '2026-10-01 10:00:00'): ActivityLog
-{
-    return ActivityLogFactory::new()
-        ->forEvent(ActivityLogAdminEvent::RoleGranted)
-        ->performedOn($user)
-        ->causedBy($administrator)
-        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($grantedAt)]);
-}
 
 /**
  * The date of each user's latest grant of the role, as the users table reads it.
@@ -51,8 +38,8 @@ it('returns the latest grant of each user with the administrator who made it', f
     $user = createUser();
     $administrator = createUser();
 
-    recordGrantOf($role, $user, createUser(), '2026-09-01 10:00:00');
-    $activityLog = recordGrantOf($role, $user, $administrator, '2026-10-01 10:00:00');
+    RoleActivity::grant($role, $user, at: '2026-09-01 10:00:00');
+    $activityLog = RoleActivity::grant($role, $user, $administrator, '2026-10-01 10:00:00');
 
     $latestGrants = $role->latestGrantsFor([$user->id]);
 
@@ -67,7 +54,7 @@ it('leaves out users without a recorded grant and grants of other roles', functi
     $userWithOtherRole = createUser();
     $userWithoutGrant = createUser();
 
-    recordGrantOf(RoleFactory::new()->createOne(), $userWithOtherRole, createUser());
+    RoleActivity::grant(RoleFactory::new()->createOne(), $userWithOtherRole, at: '2026-10-01 10:00:00');
 
     expect($role->latestGrantsFor([$userWithOtherRole->id, $userWithoutGrant->id]))
         ->toBeEmpty()
@@ -79,9 +66,8 @@ it('ignores the grants of a deleted role whose name the role reuses', function (
     $deletedRole = RoleFactory::new()->createOne(['name' => 'custom-soporte']);
     $user = createUser();
 
-    recordGrantOf($deletedRole, $user, createUser(), '2026-09-01 10:00:00');
-    ActivityLogFactory::new()->forEvent(ActivityLogAdminEvent::RoleDeleted)->performedOn($deletedRole)
-        ->createOne(['properties' => ['role' => 'custom-soporte']]);
+    RoleActivity::grant($deletedRole, $user, at: '2026-09-01 10:00:00');
+    RoleActivity::record(ActivityLogAdminEvent::RoleDeleted, $deletedRole, ['role' => 'custom-soporte']);
     $deletedRole->delete();
 
     $role = RoleFactory::new()->createOne(['name' => 'custom-soporte']);
@@ -96,7 +82,7 @@ it('loads the latest grants of many users in one query', function (): void {
     $users = [createUser(), createUser(), createUser()];
 
     foreach ($users as $user) {
-        recordGrantOf($role, $user, createUser());
+        RoleActivity::grant($role, $user, at: '2026-10-01 10:00:00');
     }
 
     DB::flushQueryLog();
@@ -116,9 +102,9 @@ it('gives each user the date of the latest grant, or null without one', function
     $userGrantedTwice = createUser();
     $userWithoutGrant = createUser();
 
-    recordGrantOf($role, $userGrantedTwice, createUser(), '2026-09-01 10:00:00');
-    recordGrantOf($role, $userGrantedTwice, createUser(), '2026-10-03 08:30:00');
-    recordGrantOf(RoleFactory::new()->createOne(), $userWithoutGrant, createUser(), '2026-10-05 10:00:00');
+    RoleActivity::grant($role, $userGrantedTwice, at: '2026-09-01 10:00:00');
+    RoleActivity::grant($role, $userGrantedTwice, at: '2026-10-03 08:30:00');
+    RoleActivity::grant(RoleFactory::new()->createOne(), $userWithoutGrant, at: '2026-10-05 10:00:00');
 
     expect(latestGrantDates($role, [$userGrantedTwice, $userWithoutGrant]))->toBe([
         $userGrantedTwice->id => '2026-10-03 08:30:00',

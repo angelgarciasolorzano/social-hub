@@ -2,39 +2,13 @@
 
 declare(strict_types=1);
 
-use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
-use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Models\Role;
-use App\User\Models\User;
+use App\Modules\Admin\Tests\Support\RoleActivity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
-
-/**
- * Record an activity of the role at the given time, as the service would.
- */
-function recordRoleChange(Role $role, ActivityLogAdminEvent $activityLogAdminEvent, User $user, string $changedAt): ActivityLog
-{
-    return ActivityLogFactory::new()
-        ->forEvent($activityLogAdminEvent)
-        ->performedOn($role)
-        ->causedBy($user)
-        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($changedAt)]);
-}
-
-/**
- * Record that an administrator gave the role to a user at the given time.
- */
-function recordRoleGrantToUser(Role $role, User $user, string $grantedAt): ActivityLog
-{
-    return ActivityLogFactory::new()
-        ->forEvent(ActivityLogAdminEvent::RoleGranted)
-        ->performedOn($user)
-        ->causedBy(createUser())
-        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($grantedAt)]);
-}
 
 /**
  * The date of each role's latest change, as the roles table reads it.
@@ -63,9 +37,9 @@ it('returns the latest change of each role with the administrator who made it an
     $role = RoleFactory::new()->createOne();
     $user = createUser();
 
-    recordRoleChange($role, ActivityLogAdminEvent::RoleCreated, createUser(), '2026-09-01 10:00:00');
-    $activityLog = recordRoleChange($role, ActivityLogAdminEvent::RolePermissionGranted, $user, '2026-10-01 10:00:00');
-    recordRoleGrantToUser($role, createUser(), '2026-10-15 10:00:00');
+    RoleActivity::change($role, ActivityLogAdminEvent::RoleCreated, at: '2026-09-01 10:00:00');
+    $activityLog = RoleActivity::change($role, ActivityLogAdminEvent::RolePermissionGranted, $user, '2026-10-01 10:00:00');
+    RoleActivity::grant($role, createUser(), at: '2026-10-15 10:00:00');
 
     $latestChanges = Role::latestChangesFor([$role->id]);
 
@@ -79,8 +53,8 @@ it('takes the author of the latest change from the newest date, even when an old
     $role = RoleFactory::new()->createOne();
     $user = createUser();
 
-    $activityLog = recordRoleChange($role, ActivityLogAdminEvent::RoleUpdated, $user, '2026-10-10 10:00:00');
-    recordRoleChange($role, ActivityLogAdminEvent::RolePermissionGranted, createUser(), '2026-10-01 10:00:00');
+    $activityLog = RoleActivity::change($role, ActivityLogAdminEvent::RoleUpdated, $user, '2026-10-10 10:00:00');
+    RoleActivity::change($role, ActivityLogAdminEvent::RolePermissionGranted, at: '2026-10-01 10:00:00');
 
     $latestChanges = Role::latestChangesFor([$role->id]);
 
@@ -94,7 +68,7 @@ it('loads the latest changes of many roles in two queries and leaves out roles w
     $roleWithoutActivity = RoleFactory::new()->createOne();
 
     foreach ($roles as $role) {
-        recordRoleChange($role, ActivityLogAdminEvent::RoleUpdated, createUser(), '2026-10-01 10:00:00');
+        RoleActivity::change($role, ActivityLogAdminEvent::RoleUpdated, at: '2026-10-01 10:00:00');
     }
 
     DB::enableQueryLog();
@@ -113,9 +87,9 @@ it('returns the creation of a custom role and nothing for a seeded system role',
     $user = createUser();
     $systemRole = RoleFactory::new()->system(AdminRole::AdminPostsReader)->createOne();
 
-    $activityLog = recordRoleChange($customRole, ActivityLogAdminEvent::RoleCreated, $user, '2026-09-01 10:00:00');
-    recordRoleChange($customRole, ActivityLogAdminEvent::RoleUpdated, createUser(), '2026-10-01 10:00:00');
-    recordRoleChange($systemRole, ActivityLogAdminEvent::RolePermissionGranted, createUser(), '2026-10-01 10:00:00');
+    $activityLog = RoleActivity::change($customRole, ActivityLogAdminEvent::RoleCreated, $user, '2026-09-01 10:00:00');
+    RoleActivity::change($customRole, ActivityLogAdminEvent::RoleUpdated, at: '2026-10-01 10:00:00');
+    RoleActivity::change($systemRole, ActivityLogAdminEvent::RolePermissionGranted, at: '2026-10-01 10:00:00');
 
     $creations = Role::creationsFor([$customRole->id, $systemRole->id]);
 
@@ -129,8 +103,8 @@ it('counts the duplication of a copy as its creation, with the administrator who
     $role = RoleFactory::new()->createOne();
     $user = createUser();
 
-    $activityLog = recordRoleChange($role, ActivityLogAdminEvent::RoleDuplicated, $user, '2026-09-01 10:00:00');
-    recordRoleChange($role, ActivityLogAdminEvent::RolePermissionGranted, createUser(), '2026-10-01 10:00:00');
+    $activityLog = RoleActivity::change($role, ActivityLogAdminEvent::RoleDuplicated, $user, '2026-09-01 10:00:00');
+    RoleActivity::change($role, ActivityLogAdminEvent::RolePermissionGranted, at: '2026-10-01 10:00:00');
 
     $creations = Role::creationsFor([$role->id]);
 
@@ -143,9 +117,9 @@ it('selects the date of the latest change of each role, or null without one', fu
     $changedRole = RoleFactory::new()->createOne();
     $grantedOnlyRole = RoleFactory::new()->createOne();
 
-    recordRoleChange($changedRole, ActivityLogAdminEvent::RoleCreated, createUser(), '2026-09-01 10:00:00');
-    recordRoleChange($changedRole, ActivityLogAdminEvent::RoleUpdated, createUser(), '2026-10-01 10:00:00');
-    recordRoleGrantToUser($grantedOnlyRole, createUser(), '2026-10-15 10:00:00');
+    RoleActivity::change($changedRole, ActivityLogAdminEvent::RoleCreated, at: '2026-09-01 10:00:00');
+    RoleActivity::change($changedRole, ActivityLogAdminEvent::RoleUpdated, at: '2026-10-01 10:00:00');
+    RoleActivity::grant($grantedOnlyRole, createUser(), at: '2026-10-15 10:00:00');
 
     expect(lastChangeDates([$changedRole, $grantedOnlyRole]))->toBe([
         $changedRole->id => '2026-10-01 10:00:00',
