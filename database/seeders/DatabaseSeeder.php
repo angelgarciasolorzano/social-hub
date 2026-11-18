@@ -11,6 +11,7 @@ use App\Modules\Admin\Database\Seeders\AdminCustomRoleSeeder;
 use App\Modules\Admin\Database\Seeders\AdminUserSeeder;
 use App\Modules\Announcement\Database\Seeders\AnnouncementSeeder;
 use App\Modules\Comment\Database\Seeders\CommentSeeder;
+use App\Modules\Friendship\Database\Seeders\FriendshipSeeder;
 use App\Modules\Like\Database\Seeders\LikeSeeder;
 use App\Modules\Post\Database\Seeders\PostSeeder;
 use App\User\Database\Seeders\AccountStatusSeeder;
@@ -31,6 +32,7 @@ class DatabaseSeeder extends Seeder
             AdminCustomRoleSeeder::class,
             TrustedDeviceSeeder::class,
             AccountStatusSeeder::class,
+            FriendshipSeeder::class,
             AnnouncementSeeder::class,
             PostSeeder::class,
             CommentSeeder::class,
