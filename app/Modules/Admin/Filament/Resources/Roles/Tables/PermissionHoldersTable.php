@@ -21,8 +21,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
- * The users who hold one permission through any role of the `admin` guard: whether they can use it today
- * (their status and panel MFA), when they last signed in and through which roles they hold it.
+ * The users holding one permission through roles of the `admin` guard: their status, panel MFA, last
+ * sign-in and the roles that grant it.
  */
 class PermissionHoldersTable
 {
@@ -30,8 +30,8 @@ class PermissionHoldersTable
     use DescribesPanelMfa;
 
     /**
-     * Configure the table; `$selectedPermission` returns the chosen permission when the rows are loaded,
-     * so picking another one on the page shows its holders. Without one the table has no rows.
+     * `$selectedPermission` is read when the rows load, so picking another permission shows its holders;
+     * without one the table has no rows.
      *
      * @param  Closure(): ?AdminPermission  $selectedPermission
      */
@@ -84,8 +84,7 @@ class PermissionHoldersTable
     }
 
     /**
-     * The holders of the permission, each once, with only the roles that grant it loaded; no rows
-     * without a permission.
+     * The holders of the permission with only the roles that grant it loaded; no rows without one.
      *
      * @return Builder<User>
      */
@@ -97,9 +96,7 @@ class PermissionHoldersTable
 
         return PermissionHolders::holdersQuery($adminPermission)->with([
             'roles' => static function (Relation $roles) use ($adminPermission): void {
-                $builder = $roles->getQuery();
-                $builder->getQuery()->where('roles.guard_name', Role::GUARD_NAME);
-                $builder->whereHas('permissions', PermissionHolders::grantsPermission($adminPermission));
+                Role::grantingPermission($roles->getQuery(), $adminPermission);
             },
         ]);
     }
