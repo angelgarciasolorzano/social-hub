@@ -111,7 +111,7 @@ it('names and describes every cataloged role, permission and permission area in 
 it('names every role type and describes every authorization failure in both languages', function (string $locale): void {
     $requiredKeys = array_map(
         static fn (string $key): string => 'types.'.$key,
-        ['column', 'filter', 'system', 'custom', 'system_tooltip', 'custom_tooltip'],
+        ['column', 'system', 'custom', 'system_tooltip', 'custom_tooltip'],
     );
 
     foreach (AdminAuthorizationFailure::cases() as $adminAuthorizationFailure) {

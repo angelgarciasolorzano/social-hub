@@ -192,7 +192,6 @@ return [
 
     'types' => [
         'column' => 'Tipo',
-        'filter' => 'Tipo',
         'all' => 'Todos',
         'system' => 'Sistema',
         'custom' => 'Personalizado',

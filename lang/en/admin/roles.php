@@ -192,7 +192,6 @@ return [
 
     'types' => [
         'column' => 'Type',
-        'filter' => 'Type',
         'all' => 'All',
         'system' => 'System',
         'custom' => 'Custom',
