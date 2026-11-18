@@ -534,7 +534,8 @@
         "TASK-025",
         "TASK-026",
         "TASK-027",
-        "TASK-028"
+        "TASK-028",
+        "TASK-029"
       ],
       "acceptanceCriteria": [
         "Cada helper o concern citado existe con ese nombre en el código.",
@@ -846,6 +847,35 @@
         "app/Modules/Admin/Tests/Filament/Concerns/EditsRolePermissionsTest.php"
       ],
       "review": "none"
+    },
+    {
+      "id": "TASK-029",
+      "title": "Tarjetas de los widgets de roles con un helper compartido",
+      "description": "Hallazgo de TASK-024. `rolesOverviewStats()` (`RolesOverviewTest`) y `roleTypesOverviewStats()` (`RoleTypesOverviewTest`) repiten el mismo código: montan el widget, leen `StatsOverviewWidget::getCachedStats` por reflexión, comprueban que haya 3 tarjetas `Stat` y las devuelven con nombre. Crear `Tests/Support/WidgetStats` con un método que reciba la clase del widget y el número de tarjetas esperadas y devuelva la lista tipada (falla con un mensaje claro si no coincide); cada prueba solo nombra sus tarjetas. Solo los widgets de Roles: los helpers parecidos de otros recursos quedan fuera (modo HOLD).",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "acceptanceCriteria": [
+        "La lectura de las tarjetas por reflexión vive solo en `WidgetStats`; los dos archivos de prueba ya no la repiten.",
+        "Si el widget devuelve otro número de tarjetas o algo que no es `Stat`, el helper falla con un mensaje que nombra el widget.",
+        "Ninguna afirmación de las pruebas de los widgets cambia."
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Tests/Support/WidgetStats.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RoleTypesOverviewTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets < /dev/null && composer phpstan",
+      "filesToCreate": [
+        "app/Modules/Admin/Tests/Support/WidgetStats.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RoleTypesOverviewTest.php"
+      ],
+      "review": "none"
     }
   ],
   "failureModes": [
@@ -899,7 +929,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 28,
+    "taskCount": 29,
     "layers": [
       [
         "TASK-001",
@@ -913,7 +943,8 @@
         "TASK-021",
         "TASK-022",
         "TASK-024",
-        "TASK-028"
+        "TASK-028",
+        "TASK-029"
       ],
       [
         "TASK-003",
@@ -1018,7 +1049,8 @@
       "TASK-025",
       "TASK-026",
       "TASK-027",
-      "TASK-028"
+      "TASK-028",
+      "TASK-029"
     ],
     "TASK-018": [
       "TASK-017"
@@ -1040,6 +1072,7 @@
     "TASK-027": [
       "TASK-006"
     ],
-    "TASK-028": []
+    "TASK-028": [],
+    "TASK-029": []
   }
 }

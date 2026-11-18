@@ -422,7 +422,7 @@ Actualizar `docs/architecture/modules/admin.md`: el scope `Role::admin()` y `Rol
 
 **Type:** docs · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P3
 
-**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028
+**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029
 
 **Acceptance Criteria:**
 
@@ -691,6 +691,30 @@ Hallazgo de TASK-023. `EditsRolePermissionsTest` tiene 8 funciones globales (`ed
 
 **Review:** none
 
+### TASK-029: Tarjetas de los widgets de roles con un helper compartido
+
+Hallazgo de TASK-024. `rolesOverviewStats()` (`RolesOverviewTest`) y `roleTypesOverviewStats()` (`RoleTypesOverviewTest`) repiten el mismo código: montan el widget, leen `StatsOverviewWidget::getCachedStats` por reflexión, comprueban que haya 3 tarjetas `Stat` y las devuelven con nombre. Crear `Tests/Support/WidgetStats` con un método que reciba la clase del widget y el número de tarjetas esperadas y devuelva la lista tipada (falla con un mensaje claro si no coincide); cada prueba solo nombra sus tarjetas. Solo los widgets de Roles: los helpers parecidos de otros recursos quedan fuera (modo HOLD).
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+
+1. La lectura de las tarjetas por reflexión vive solo en `WidgetStats`; los dos archivos de prueba ya no la repiten.
+2. Si el widget devuelve otro número de tarjetas o algo que no es `Stat`, el helper falla con un mensaje que nombra el widget.
+3. Ninguna afirmación de las pruebas de los widgets cambia.
+
+**writeScope:**
+
+- `app/Modules/Admin/Tests/Support/WidgetStats.php` (nuevo)
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RoleTypesOverviewTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets < /dev/null && composer phpstan`
+
+**Review:** none
+
 ## Failure Modes
 
 - `RoleResource::canViewAny()` con `shouldSkipAuthorization()` activo permitiría todo: el recurso no lo activa; las pruebas de 403 existentes lo detectarían.
@@ -713,11 +737,11 @@ Mínimo entregable: TASK-001 a TASK-007 (producción sin duplicados) más TASK-0
 
 ## Execution Summary
 
-**Tareas:** 28
+**Tareas:** 29
 
 **Capas:**
 
-1. TASK-001, TASK-002, TASK-005, TASK-008, TASK-009, TASK-010, TASK-019, TASK-020, TASK-021, TASK-022, TASK-024, TASK-028
+1. TASK-001, TASK-002, TASK-005, TASK-008, TASK-009, TASK-010, TASK-019, TASK-020, TASK-021, TASK-022, TASK-024, TASK-028, TASK-029
 2. TASK-003, TASK-006, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-026
 3. TASK-004, TASK-007, TASK-027
 4. TASK-016, TASK-023, TASK-025
@@ -745,7 +769,7 @@ TASK-013 ← TASK-008, TASK-009, TASK-010
 TASK-014 ← TASK-008, TASK-009, TASK-010
 TASK-015 ← TASK-008, TASK-009
 TASK-016 ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007
-TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028
+TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029
 TASK-018 ← TASK-017
 TASK-019 ← —
 TASK-020 ← —
@@ -757,4 +781,5 @@ TASK-025 ← TASK-007
 TASK-026 ← TASK-008
 TASK-027 ← TASK-006
 TASK-028 ← —
+TASK-029 ← —
 ```
