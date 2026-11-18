@@ -2,11 +2,11 @@
 
 ## Overview
 
-Agregar Pest Browser y Playwright con Chromium, una prueba de navegador que compruebe como invitado la visibilidad del formulario real de login, un comando Composer que ejecute esa prueba de forma aislada y la documentación de instalación/ejecución. El comando compila primero los assets Vite porque Tests\TestCase desactiva Vite para las pruebas HTTP habituales.
+Agregar Pest Browser y Playwright con Chromium, probar el formulario real de login como invitado y establecer una arquitectura que permita sumar pruebas Browser por módulo. Las pruebas viven en `Tests/Browser`, comparten la preparación Vite mediante un hook Pest, se agrupan como `browser` y se ejecutan con `composer test:browser`, que compila una vez y excluye ese grupo del comando regular paralelo. Documentar instalación, ejecución y organización.
 
 ## Scope Challenge
 
-El usuario confirmó HOLD con revisión Codex: mantener el alcance exacto de SOC-80. Ya existe la ruta y página de login, un selector estable para el botón y una suite de pruebas del submódulo Login; no están instalados Pest Browser ni Playwright. La prueba debe usar Chromium y .env.testing existente.
+El usuario confirmó inicialmente HOLD con revisión Codex para SOC-80. Después pidió ampliar el alcance para que el comando cubra una suite Browser futura, las pruebas de módulos vivan bajo `Tests/Browser` y la arquitectura quede documentada; confirmó EXPANSION dentro de SOC-80 y mantiene revisión Codex. Ya existe la ruta y página de login, un selector estable para el botón y una suite de pruebas del submódulo Login.
 
 ## Prerequisites
 
@@ -27,6 +27,9 @@ El usuario confirmó HOLD con revisión Codex: mantener el alcance exacto de SOC
 - `GET /login` usa la ruta nombrada `login`, renderiza `auth/login/Login` y permanece accesible para una sesión invitada.
 - La prueba navega con un contexto de navegador nuevo y comprueba visibilidad real de `input[name="email"]`, `input[name="password"]` y `button[data-test="login-button"]`; presencia en el DOM no basta.
 - `Tests\TestCase::setUp()` llama a `withoutVite()` para la suite habitual. El comando browser debe construir `public/build` antes de iniciar el servidor de prueba para que el navegador cargue React real; no debe eliminar el mock global.
+- Cada prueba E2E de un módulo vive en `app/<Domain>/Tests/Browser/` o `app/<Domain>/Modules/<Feature>/Tests/Browser/`; `tests/Pest.php` conserva `Tests\TestCase` y `RefreshDatabase`, y asigna el grupo `browser` y su preparación Vite a esas carpetas.
+- El hook `beforeEach` compartido en `tests/Pest.php` restaura Vite para las pruebas de navegador y usa un hot file temporal sin crear para forzar el manifest compilado, sin cambiar el comportamiento de `Tests\TestCase` para las demás pruebas.
+- `composer test:browser` compila los assets una vez y ejecuta todo el grupo `browser`; `composer test` excluye ese grupo de la suite paralela habitual.
 - El test usa la configuración `.env.testing` existente y `social-hub-testing`; no requiere datos de usuario porque visita el login como invitado.
 - La compatibilidad prevista es Pest 5.2.1 con `pestphp/pest-plugin-browser` 5.0.1 o una versión compatible. Playwright es una dependencia npm de desarrollo; solo se instala Chromium.
 - La guía oficial de Pest documenta el plugin y sus aserciones de visibilidad: https://pestphp.com/docs/browser-testing/. La metadata del plugin 5.0.1 declara Pest `^5.0.4`: https://github.com/pestphp/pest-plugin-browser/blob/v5.0.1/composer.json. Playwright documenta la instalación puntual del navegador: https://playwright.dev/docs/browsers.
@@ -36,7 +39,7 @@ El usuario confirmó HOLD con revisión Codex: mantener el alcance exacto de SOC
 - `app/Auth/routes/login.php` define la ruta GET nombrada `login`.
 - `app/Auth/Modules/Login/Controllers/LoginSessionController.php` renderiza `auth/login/Login`.
 - `resources/js/modules/auth/login/Login.tsx` contiene los campos `email` y `password` y el botón `data-test="login-button"`.
-- `app/Auth/Modules/Login/Tests/AuthenticationTest.php` ya verifica el componente Inertia del login.
+- `app/Auth/Modules/Login/Tests/AuthenticationTest.php` ya verifica el componente Inertia del login; `LoginBrowserTest.php` se trasladará a `app/Auth/Modules/Login/Tests/Browser/`.
 - `phpunit.xml` y `tests/Pest.php` ya registran el submódulo Login y aplican `Tests\TestCase` con `RefreshDatabase`; no requieren nuevo registro de suite.
 - `package.json`, `package-lock.json`, `composer.json`, `composer.lock`, `.gitignore`, `AGENTS.md`, `CLAUDE.md` y `docs/development/backend-commands.md` existen.
 
@@ -116,31 +119,109 @@ Documentar el comando, la instalación puntual de Chromium y el requisito de dep
 
 **validateCommand:** `rtk rg -n 'composer test:browser-login|playwright install chromium|social-hub-testing' AGENTS.md CLAUDE.md docs/development/backend-commands.md`
 
+### TASK-005: Centralizar la configuración común de Browser
+
+Centralizar en `tests/Pest.php` la preparación de las pruebas Browser: restaurar Vite después del mock global, configurar un hot file de pruebas que no exista para servir el manifest compilado y asignar el grupo `browser` a la prueba existente y a las futuras carpetas Browser por módulo. Mantener `Tests\TestCase` como clase base y, por ahora, la ruta y el comando específico actuales para que este paso siga siendo ejecutable.
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+**Depends on:** TASK-003
+
+**Acceptance Criteria:**
+1. El hook Pest se ejecuta después de `Tests\TestCase::setUp()`, conserva el `withoutVite()` global para las pruebas normales y restaura Vite para usar el manifest compilado en las pruebas Browser.
+2. `tests/Pest.php` mantiene `Tests\TestCase` y `RefreshDatabase`, y aplica la preparación Vite y el grupo `browser` a la prueba actual y a las carpetas `Tests/Browser/` de las arquitecturas nueva y antigua.
+3. `composer test:browser-login` sigue pasando y falla si React o Chromium no puede ejecutarse; no se cambia `Tests\TestCase` ni el Vite global de la aplicación.
+
+**writeScope:**
+- `tests/Pest.php`
+- `app/Auth/Modules/Login/Tests/LoginBrowserTest.php`
+
+**validateCommand:** `rtk composer test:browser-login`
+
+### TASK-006: Organizar y ejecutar la suite Browser genérica
+
+Mover la prueba a `app/Auth/Modules/Login/Tests/Browser/LoginBrowserTest.php`. Cambiar el comando específico por `composer test:browser`, que construye Vite y ejecuta `--group=browser`; excluir ese grupo de `composer test` para mantener las pruebas con Chromium fuera de la suite paralela habitual.
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P1
+**Depends on:** TASK-005
+
+**Acceptance Criteria:**
+1. La prueba de login queda bajo la carpeta `Tests/Browser/` de su módulo y Pest la reconoce como parte del grupo `browser`.
+2. `composer test:browser` compila los assets una vez y ejecuta las pruebas de ese grupo, fallando si no encuentra pruebas o si alguna falla.
+3. El comando `composer test` excluye el grupo `browser`, así ejecutar el conjunto habitual no requiere iniciar Chromium.
+
+**writeScope:**
+- `app/Auth/Modules/Login/Tests/LoginBrowserTest.php`
+- `app/Auth/Modules/Login/Tests/Browser/LoginBrowserTest.php`
+- `composer.json`
+
+**validateCommand:** `rtk composer test:browser`
+
+### TASK-007: Documentar la arquitectura y los comandos Browser
+
+Documentar en la guía de arquitectura que las pruebas browser de un módulo viven bajo `Tests/Browser/`, usan el grupo `browser` y comparten la preparación definida en `tests/Pest.php`. Actualizar la guía de comandos con instalación de Chromium, `composer test:browser`, la compilación Vite y la exclusión de la suite normal.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+1. La arquitectura del backend explica la ubicación module-owned `Tests/Browser/`, el grupo `browser` y el hook compartido de `tests/Pest.php`.
+2. La guía de comandos describe `npx playwright install chromium` y que `composer test:browser` construye Vite y corre todos los tests del grupo.
+3. La documentación indica `.env.testing`/`social-hub-testing`, Chromium como único browser y que la suite regular excluye el grupo; no agrega CI.
+
+**writeScope:**
+- `docs/architecture/backend.md`
+- `docs/development/backend-commands.md`
+
+**validateCommand:** `rtk rg -n 'Tests/Browser|beforeEach|composer test:browser|playwright install chromium|social-hub-testing' docs/architecture/backend.md docs/development/backend-commands.md`
+
+### TASK-008: Actualizar los resúmenes de testing para Browser
+
+Actualizar las instrucciones de pruebas de `AGENTS.md` y `CLAUDE.md` al comando `composer test:browser` y a la arquitectura compartida bajo `Tests/Browser/`.
+
+**Type:** docs · **Effort:** S · **Agent:** general-purpose · **Priority:** P2
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+1. Ambas guías describen dónde van las pruebas browser de módulo y que pertenecen al grupo `browser`.
+2. Ambas guías indican instalar solo Chromium y ejecutar `composer test:browser`, que compila los assets.
+3. El texto coincide con Composer: las pruebas browser se omiten de `composer test` y usan `.env.testing` con `social-hub-testing`.
+
+**writeScope:**
+- `AGENTS.md`
+- `CLAUDE.md`
+
+**validateCommand:** `rtk rg -n 'Tests/Browser|tests/Pest.php|composer test:browser|playwright install chromium|social-hub-testing' AGENTS.md CLAUDE.md`
+
 ## Failure Modes
 
 - Playwright y el binario Chromium quedan en versiones desalineadas: la prueba falla al iniciar el navegador; volver a ejecutar `npx playwright install chromium` con el lockfile vigente.
 - El navegador encuentra el contenedor Inertia pero no la interfaz porque Vite no tiene manifest: el comando aislado debe compilar assets antes de Pest.
 - Un elemento está en el DOM pero oculto o el componente React no cargó: `assertVisible` debe hacer fallar la prueba.
 - Falta `.env.testing`, MySQL o la base `social-hub-testing`: la ejecución falla según la configuración existente; no debe crear ni usar una base alterna.
+- Un `public/hot` residual puede apuntar a un Vite apagado: el hook compartido de `tests/Pest.php` debe usar un hot file de prueba propio y resolver los assets desde `public/build`.
+- Un archivo nuevo bajo `Tests/Browser/` debe entrar automáticamente al grupo `browser` y quedar fuera de `composer test`; si no, la suite genérica podría omitirlo o ejecutar Chromium por accidente.
 
 ## Ship Cut
 
-La entrega de SOC-80 requiere completar las cuatro tareas: dependencias PHP y npm, Chromium, test con comando aislado y documentación. La instalación de Pest Browser y Playwright puede hacerse en paralelo técnicamente; la prueba depende de ambas y la documentación depende del comando final. La regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión antes de continuar.
+Las tareas 1 a 4 completaron la instalación y la primera prueba de login. La expansión añade configuración Browser reusable en Pest, mueve el test a Tests/Browser, generaliza el runner y sincroniza arquitectura/documentación. El primer corte revisable tras la expansión es TASK-005; la regla `.ai/rules/linear.md` exige ejecutar un paso atómico por ciclo y pausar para revisión.
 
 ## Test Coverage Map
 
 - **Instalación y compatibilidad de Pest Browser:** TASK-001
 - **Playwright y disponibilidad de Chromium:** TASK-002
 - **Login como invitado y visibilidad del formulario real:** TASK-003
-- **Ejecución aislada y documentación:** TASK-003, TASK-004
+- **Ejecución inicial y documentación:** TASK-003, TASK-004
+- **Configuración Browser reutilizable:** TASK-005
+- **Carpeta Browser y runner genérico:** TASK-006
+- **Documentación de arquitectura Browser:** TASK-007, TASK-008
 
 ## Execution Summary
 
-- **Mode:** HOLD
+- **Mode:** EXPANSION
 - **Default review:** codex
-- **Task count:** 4
-- **Layers:** [TASK-001, TASK-002] → [TASK-003] → [TASK-004]
-- **Critical path:** TASK-001 → TASK-003 → TASK-004
+- **Task count:** 8
+- **Layers:** [TASK-001, TASK-002] → [TASK-003] → [TASK-004] → [TASK-005] → [TASK-006] → [TASK-007, TASK-008]
+- **Critical path:** TASK-001 → TASK-003 → TASK-004 → TASK-005 → TASK-006 → TASK-007
 
 ## Task Dependencies
 
@@ -148,4 +229,8 @@ La entrega de SOC-80 requiere completar las cuatro tareas: dependencias PHP y np
 - **TASK-002:** none
 - **TASK-003:** TASK-001, TASK-002
 - **TASK-004:** TASK-003
+- **TASK-005:** TASK-003
+- **TASK-006:** TASK-005
+- **TASK-007:** TASK-006
+- **TASK-008:** TASK-006
 
