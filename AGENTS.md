@@ -151,6 +151,10 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Test the changed behavior and its important failure modes, but do not add tests beyond them.
 - Read the `testing-best-practices` skill before writing tests.
 
+### Pest Browser
+
+- The login browser test uses Chromium. After installing project dependencies, provision only Chromium with `npx playwright install chromium`, then run it with `composer test:browser-login`. The command builds Vite assets and uses `.env.testing` with the existing `social-hub-testing` database; no alternate database, other browsers, or CI workflow are configured.
+
 === inertia-laravel/core rules ===
 
 # Inertia

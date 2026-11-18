@@ -123,6 +123,7 @@ Each item is explained in the linked module document.
 - Symfony sends `Accept-Language: en-us` on every test request, so a guest gets English. Compare messages with `translatedTextIn()`, never a copied text.
 - Tests that send a wrong OTP use `invalidOtpFor($user)`; tests that reuse a code call `allowOtpReuse()`. Tests that run `UserSeeder` or `PostSeeder` call `Storage::fake('public')` first. Seeder tests never rely on `mt_srand`.
 - In tests, change model data through Eloquent, never `DB::table()->update()` (`.ai/rules/backend.md`).
+- The login browser E2E test runs only in Chromium: install it with `npx playwright install chromium`, then run `composer test:browser-login`. The command builds Vite assets and uses `.env.testing` with the existing `social-hub-testing` database; it does not add other browsers or a CI workflow.
 
 <laravel-boost-guidelines>
 === foundation rules ===

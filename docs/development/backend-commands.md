@@ -112,6 +112,20 @@ Clears the cached config and runs the whole Pest suite **in parallel** (SOC-59):
 - 🚫 Takes no arguments (`composer test -- <path>` fails because Composer also forwards them to `config:clear`); to filter use `php artisan test --compact <path>`
 - ✅ Useful before opening a PR; it is the command the CI workflow runs
 
+### `composer test:browser-login`
+
+```bash
+npx playwright install chromium
+composer test:browser-login
+```
+
+Installs the Chromium browser used by the login E2E test, then builds the frontend and runs only `app/Auth/Modules/Login/Tests/LoginBrowserTest.php` in Pest Browser.
+
+- ✅ Checks the guest login page and visibility of its email, password, and submit controls
+- 🗄️ Uses `.env.testing` and the existing MySQL database `social-hub-testing`; it does not create another database
+- 🌐 Uses Chromium only; no CI workflow or Firefox/WebKit setup is included
+- ⚠️ Requires Composer/npm dependencies, `.env.testing`, and the configured testing database to be available
+
 ### `composer pint-ci`
 
 ```bash
