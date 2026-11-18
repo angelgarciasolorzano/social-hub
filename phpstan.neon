@@ -24,6 +24,7 @@ parameters:
         - config
         - app/Auth/config
         - app/Modules/ActivityLog/config
+        - app/Modules/Friendship/config
 
     type_coverage:
         return: 100
