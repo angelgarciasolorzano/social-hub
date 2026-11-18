@@ -6,11 +6,13 @@ namespace App\Modules\Friendship\Models;
 
 use App\Modules\Friendship\Database\Factories\FriendshipFactory;
 use App\Modules\Friendship\Enums\FriendshipStatus;
+use App\Modules\Friendship\Policies\FriendshipPolicy;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,6 +39,7 @@ use Override;
  * @mixin IdeHelperFriendship
  */
 #[UseFactory(FriendshipFactory::class)]
+#[UsePolicy(FriendshipPolicy::class)]
 #[Fillable([
     'requester_id',
     'receiver_id',
