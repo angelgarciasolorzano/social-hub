@@ -208,10 +208,9 @@
         "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php"
       ],
       "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManagerTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers/RoleUsersBulkRemoveTest.php < /dev/null && composer phpstan",
-      "filesToCreate": [
-        "app/Modules/Admin/Filament/Concerns/NotifiesAdminAuthorizationFailure.php"
-      ],
+      "filesToCreate": [],
       "filesToModify": [
+        "app/Modules/Admin/Filament/Concerns/NotifiesAdminAuthorizationFailure.php",
         "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php",
         "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php"
       ],
@@ -264,10 +263,9 @@
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php"
       ],
       "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php < /dev/null && composer phpstan",
-      "filesToCreate": [
-        "app/Modules/Admin/Tests/Support/QueryLog.php"
-      ],
+      "filesToCreate": [],
       "filesToModify": [
+        "app/Modules/Admin/Tests/Support/QueryLog.php",
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php",
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php"
       ],
@@ -292,10 +290,9 @@
         "app/Modules/Admin/Tests/Models/RoleChangeActivityTest.php"
       ],
       "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Models/RoleGrantActivityTest.php app/Modules/Admin/Tests/Models/RoleChangeActivityTest.php < /dev/null && composer phpstan",
-      "filesToCreate": [
-        "app/Modules/Admin/Tests/Support/RoleActivity.php"
-      ],
+      "filesToCreate": [],
       "filesToModify": [
+        "app/Modules/Admin/Tests/Support/RoleActivity.php",
         "app/Modules/Admin/Tests/Models/RoleGrantActivityTest.php",
         "app/Modules/Admin/Tests/Models/RoleChangeActivityTest.php"
       ],
@@ -501,13 +498,15 @@
       ],
       "writeScope": [
         "lang/en/admin/roles.php",
-        "lang/es/admin/roles.php"
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php"
       ],
       "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations tests/Feature/Translation < /dev/null && composer phpstan",
       "filesToCreate": [],
       "filesToModify": [
         "lang/en/admin/roles.php",
-        "lang/es/admin/roles.php"
+        "lang/es/admin/roles.php",
+        "app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php"
       ],
       "review": "none"
     },
@@ -531,7 +530,10 @@
         "TASK-021",
         "TASK-022",
         "TASK-023",
-        "TASK-024"
+        "TASK-024",
+        "TASK-025",
+        "TASK-026",
+        "TASK-027"
       ],
       "acceptanceCriteria": [
         "Cada helper o concern citado existe con ese nombre en el código.",
@@ -572,7 +574,7 @@
     {
       "id": "TASK-019",
       "title": "Auditoría de convenciones de Filament 5 en el recurso de roles",
-      "description": "Revisar con `search-docs` (Filament 5) todo el recurso: páginas (`ListRecords`, `ViewRecord`, `CreateRecord`/wizard, `EditRecord` y las dos páginas propias), acciones de cabecera y de tabla (`->authorize()` frente a `->visible()`, `->requiresConfirmation()`, modales), `Schemas/RoleInfolist`, `Tables/`, relation managers (`$relatedResource`, `canViewForRecord`), widgets (`$isLazy`, `$sort`, `columnSpan`), iconos con el enum `Heroicon` y las vistas Blade con componentes `x-filament::`. No escribe código: cada mejora encontrada se agrega a este plan como una tarea nueva (TASK-025 en adelante), con su writeScope de 3 archivos como máximo y dependencias para no chocar con TASK-001 a TASK-007.",
+      "description": "Revisar con `search-docs` (Filament 5) todo el recurso: páginas (`ListRecords`, `ViewRecord`, `CreateRecord`/wizard, `EditRecord` y las dos páginas propias), acciones de cabecera y de tabla (`->authorize()` frente a `->visible()`, `->requiresConfirmation()`, modales), `Schemas/RoleInfolist`, `Tables/`, relation managers (`$relatedResource`, `canViewForRecord`), widgets (`$isLazy`, `$sort`, `columnSpan`), iconos con el enum `Heroicon` y las vistas Blade con componentes `x-filament::`. No escribe código: cada mejora encontrada se agrega a este plan como una tarea nueva (TASK-025 en adelante), con su writeScope de 3 archivos como máximo y dependencias para no chocar con TASK-001 a TASK-007. Resultado (2026-11-18): tres mejoras (TASK-025 a TASK-027) y decisiones sin tarea: los esquemas con nombre de las páginas propias (`compareForm`, `permissionForm`) siguen el mecanismo de Filament 5; el `ViewAction` del historial que enlaza al registro de actividad es correcto; «Abrir matriz» no necesita autorización propia (la matriz pide el mismo `viewAny` que el listado); `RoleResource::getEloquentQuery()` parte de `parent::getEloquentQuery()` como pide Filament; las acciones de un solo uso se quedan en su página. Fuera de alcance (cambio visible): la búsqueda global del recurso busca por `name` (identificador guardado) y no por la etiqueta mostrada.",
       "priority": "P0",
       "type": "research",
       "effort": "M",
@@ -736,6 +738,88 @@
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/UsersPerRoleChartTest.php"
       ],
       "review": "none"
+    },
+    {
+      "id": "TASK-025",
+      "title": "Editar desde el detalle con `EditAction`",
+      "description": "Hallazgo de la auditoría de TASK-019. `ViewRole::getHeaderActions()` reimplementa a mano la acción de editar (`Action::make('edit')->authorize('update')->url(...)`). Filament 5 la trae hecha: `EditAction::make()` en una página `ViewRecord` enlaza a la página de edición y consulta `RolePolicy::update` (docs: Actions › Overview › Authorization using a policy; Resources › Viewing records). Se conservan el nombre `edit`, la etiqueta `admin/roles.actions.edit.label` y el icono.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007"
+      ],
+      "acceptanceCriteria": [
+        "La acción `edit` es un `EditAction` y enlaza a `/admin/roles/{record}/edit`.",
+        "Sigue oculta para el rol bloqueado `admin` y para quien no tiene `admin.roles.update` (pruebas existentes de `ViewRoleLifecycleActionsTest` sin cambios)."
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php < /dev/null && composer phpstan",
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php"
+      ],
+      "review": "none"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Crear desde el listado con `CreateAction`",
+      "description": "Hallazgo de la auditoría de TASK-019. `ListRoles::getHeaderActions()` reimplementa la acción de crear (`Action::make('createRole')->authorize('create')->url(...)`), que es lo que hace `CreateAction::make()` en una página `ListRecords` con página de creación. Se conservan la etiqueta y el icono. El nombre de la acción pasa de `createRole` a `create`, así que `ListRolesTest` cambia ese nombre en sus afirmaciones: necesita la aprobación del usuario antes de empezar.",
+      "priority": "P2",
+      "type": "refactor",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008"
+      ],
+      "acceptanceCriteria": [
+        "La acción de crear es un `CreateAction` que enlaza a `/admin/roles/create`.",
+        "Sigue oculta para quien no tiene `admin.roles.create`; la prueba solo cambia el nombre `createRole` por `create`."
+      ],
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php < /dev/null && composer phpstan",
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php"
+      ],
+      "review": "none"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Acciones de la pestaña de usuarios autorizadas por la policy",
+      "description": "Hallazgo de la auditoría de TASK-019. En `RoleUsersRelationManager`, «Agregar usuarios» y «Quitar el rol» (masiva) deciden su visibilidad con `administrator()->can(AdminPermission::AdminUsersRoles->value)`: consultan el permiso de Spatie directamente, fuera de la policy, contra la invariante del proyecto («la autorización vive en la policy»). Añadir a `UserPolicy` una habilidad sin usuario destino (p. ej. `manageAnyRoles(User $authenticatedUser): bool`, que reutiliza `manageRoles()`) y usar `->authorize('manageAnyRoles')` en las dos acciones, como manda Filament para acciones propias. `UserPolicy` vive en `app/User/` (arquitectura antigua): es el dueño legítimo de esa regla.",
+      "priority": "P1",
+      "type": "refactor",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "acceptanceCriteria": [
+        "Ninguna acción de la pestaña consulta un permiso de Spatie directamente; todas pasan por `UserPolicy`.",
+        "Quien no tiene `admin.users.roles` sigue sin ver «Agregar usuarios» ni la acción masiva; quien lo tiene sigue sin poder seleccionarse a sí mismo.",
+        "La nueva habilidad tiene su prueba en `UserPolicyTest` (permitida y denegada)."
+      ],
+      "writeScope": [
+        "app/User/Policies/UserPolicy.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers app/Modules/Admin/Tests/Policies/UserPolicyTest.php < /dev/null && composer phpstan",
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/User/Policies/UserPolicy.php",
+        "app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php",
+        "app/Modules/Admin/Tests/Policies/UserPolicyTest.php"
+      ],
+      "review": "none"
     }
   ],
   "failureModes": [
@@ -789,7 +873,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 24,
+    "taskCount": 27,
     "layers": [
       [
         "TASK-001",
@@ -811,15 +895,18 @@
         "TASK-012",
         "TASK-013",
         "TASK-014",
-        "TASK-015"
+        "TASK-015",
+        "TASK-026"
       ],
       [
         "TASK-004",
-        "TASK-007"
+        "TASK-007",
+        "TASK-027"
       ],
       [
         "TASK-016",
-        "TASK-023"
+        "TASK-023",
+        "TASK-025"
       ],
       [
         "TASK-017"
@@ -900,7 +987,10 @@
       "TASK-021",
       "TASK-022",
       "TASK-023",
-      "TASK-024"
+      "TASK-024",
+      "TASK-025",
+      "TASK-026",
+      "TASK-027"
     ],
     "TASK-018": [
       "TASK-017"
@@ -912,6 +1002,15 @@
     "TASK-023": [
       "TASK-004"
     ],
-    "TASK-024": []
+    "TASK-024": [],
+    "TASK-025": [
+      "TASK-007"
+    ],
+    "TASK-026": [
+      "TASK-008"
+    ],
+    "TASK-027": [
+      "TASK-006"
+    ]
   }
 }

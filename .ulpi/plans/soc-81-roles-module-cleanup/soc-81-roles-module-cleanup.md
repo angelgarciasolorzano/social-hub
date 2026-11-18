@@ -179,7 +179,7 @@ Crear `app/Modules/Admin/Filament/Concerns/NotifiesAdminAuthorizationFailure.php
 
 **writeScope:**
 
-- `app/Modules/Admin/Filament/Concerns/NotifiesAdminAuthorizationFailure.php` (nuevo)
+- `app/Modules/Admin/Filament/Concerns/NotifiesAdminAuthorizationFailure.php`
 - `app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php`
 - `app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php`
 
@@ -224,7 +224,7 @@ Crear `app/Modules/Admin/Tests/Support/QueryLog.php` con `QueryLog::count(Closur
 
 **writeScope:**
 
-- `app/Modules/Admin/Tests/Support/QueryLog.php` (nuevo)
+- `app/Modules/Admin/Tests/Support/QueryLog.php`
 - `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php`
 - `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/RolePermissionMatrixTest.php`
 
@@ -247,7 +247,7 @@ Crear `app/Modules/Admin/Tests/Support/RoleActivity.php` con `grant(Role, User $
 
 **writeScope:**
 
-- `app/Modules/Admin/Tests/Support/RoleActivity.php` (nuevo)
+- `app/Modules/Admin/Tests/Support/RoleActivity.php`
 - `app/Modules/Admin/Tests/Models/RoleGrantActivityTest.php`
 - `app/Modules/Admin/Tests/Models/RoleChangeActivityTest.php`
 
@@ -410,6 +410,7 @@ Confirmar con búsqueda (incluidas las claves armadas por concatenación) y quit
 
 - `lang/en/admin/roles.php`
 - `lang/es/admin/roles.php`
+- `app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php`
 
 **validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations tests/Feature/Translation < /dev/null && composer phpstan`
 
@@ -421,7 +422,7 @@ Actualizar `docs/architecture/modules/admin.md`: el scope `Role::admin()` y `Rol
 
 **Type:** docs · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P3
 
-**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024
+**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027
 
 **Acceptance Criteria:**
 
@@ -460,7 +461,7 @@ Pint, Rector (limpiar caché, dry, aplicar; todo el proyecto), PHPStan, `compose
 
 ### TASK-019: Auditoría de convenciones de Filament 5 en el recurso de roles
 
-Revisar con `search-docs` (Filament 5) todo el recurso: páginas (`ListRecords`, `ViewRecord`, `CreateRecord`/wizard, `EditRecord` y las dos páginas propias), acciones de cabecera y de tabla (`->authorize()` frente a `->visible()`, `->requiresConfirmation()`, modales), `Schemas/RoleInfolist`, `Tables/`, relation managers (`$relatedResource`, `canViewForRecord`), widgets (`$isLazy`, `$sort`, `columnSpan`), iconos con el enum `Heroicon` y las vistas Blade con componentes `x-filament::`. No escribe código: cada mejora encontrada se agrega a este plan como una tarea nueva (TASK-025 en adelante), con su writeScope de 3 archivos como máximo y dependencias para no chocar con TASK-001 a TASK-007.
+Revisar con `search-docs` (Filament 5) todo el recurso: páginas (`ListRecords`, `ViewRecord`, `CreateRecord`/wizard, `EditRecord` y las dos páginas propias), acciones de cabecera y de tabla (`->authorize()` frente a `->visible()`, `->requiresConfirmation()`, modales), `Schemas/RoleInfolist`, `Tables/`, relation managers (`$relatedResource`, `canViewForRecord`), widgets (`$isLazy`, `$sort`, `columnSpan`), iconos con el enum `Heroicon` y las vistas Blade con componentes `x-filament::`. No escribe código: cada mejora encontrada se agrega a este plan como una tarea nueva (TASK-025 en adelante), con su writeScope de 3 archivos como máximo y dependencias para no chocar con TASK-001 a TASK-007. Resultado (2026-11-18): tres mejoras (TASK-025 a TASK-027) y decisiones sin tarea: los esquemas con nombre de las páginas propias (`compareForm`, `permissionForm`) siguen el mecanismo de Filament 5; el `ViewAction` del historial que enlaza al registro de actividad es correcto; «Abrir matriz» no necesita autorización propia (la matriz pide el mismo `viewAny` que el listado); `RoleResource::getEloquentQuery()` parte de `parent::getEloquentQuery()` como pide Filament; las acciones de un solo uso se quedan en su página. Fuera de alcance (cambio visible): la búsqueda global del recurso busca por `name` (identificador guardado) y no por la etiqueta mostrada.
 
 **Type:** research · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P0
 
@@ -601,6 +602,73 @@ Recortar los comentarios de estos archivos, que ninguna otra tarea toca: docbloc
 
 **Review:** none
 
+### TASK-025: Editar desde el detalle con `EditAction`
+
+Hallazgo de la auditoría de TASK-019. `ViewRole::getHeaderActions()` reimplementa a mano la acción de editar (`Action::make('edit')->authorize('update')->url(...)`). Filament 5 la trae hecha: `EditAction::make()` en una página `ViewRecord` enlaza a la página de edición y consulta `RolePolicy::update` (docs: Actions › Overview › Authorization using a policy; Resources › Viewing records). Se conservan el nombre `edit`, la etiqueta `admin/roles.actions.edit.label` y el icono.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-007
+
+**Acceptance Criteria:**
+
+1. La acción `edit` es un `EditAction` y enlaza a `/admin/roles/{record}/edit`.
+2. Sigue oculta para el rol bloqueado `admin` y para quien no tiene `admin.roles.update` (pruebas existentes de `ViewRoleLifecycleActionsTest` sin cambios).
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Pages/ViewRole.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php < /dev/null && composer phpstan`
+
+**Review:** none
+
+### TASK-026: Crear desde el listado con `CreateAction`
+
+Hallazgo de la auditoría de TASK-019. `ListRoles::getHeaderActions()` reimplementa la acción de crear (`Action::make('createRole')->authorize('create')->url(...)`), que es lo que hace `CreateAction::make()` en una página `ListRecords` con página de creación. Se conservan la etiqueta y el icono. El nombre de la acción pasa de `createRole` a `create`, así que `ListRolesTest` cambia ese nombre en sus afirmaciones: necesita la aprobación del usuario antes de empezar.
+
+**Type:** refactor · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-008
+
+**Acceptance Criteria:**
+
+1. La acción de crear es un `CreateAction` que enlaza a `/admin/roles/create`.
+2. Sigue oculta para quien no tiene `admin.roles.create`; la prueba solo cambia el nombre `createRole` por `create`.
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Roles/Pages/ListRoles.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ListRolesTest.php < /dev/null && composer phpstan`
+
+**Review:** none
+
+### TASK-027: Acciones de la pestaña de usuarios autorizadas por la policy
+
+Hallazgo de la auditoría de TASK-019. En `RoleUsersRelationManager`, «Agregar usuarios» y «Quitar el rol» (masiva) deciden su visibilidad con `administrator()->can(AdminPermission::AdminUsersRoles->value)`: consultan el permiso de Spatie directamente, fuera de la policy, contra la invariante del proyecto («la autorización vive en la policy»). Añadir a `UserPolicy` una habilidad sin usuario destino (p. ej. `manageAnyRoles(User $authenticatedUser): bool`, que reutiliza `manageRoles()`) y usar `->authorize('manageAnyRoles')` en las dos acciones, como manda Filament para acciones propias. `UserPolicy` vive en `app/User/` (arquitectura antigua): es el dueño legítimo de esa regla.
+
+**Type:** refactor · **Effort:** M · **Agent:** laravel-senior-engineer · **Priority:** P1
+
+**Depends on:** TASK-006
+
+**Acceptance Criteria:**
+
+1. Ninguna acción de la pestaña consulta un permiso de Spatie directamente; todas pasan por `UserPolicy`.
+2. Quien no tiene `admin.users.roles` sigue sin ver «Agregar usuarios» ni la acción masiva; quien lo tiene sigue sin poder seleccionarse a sí mismo.
+3. La nueva habilidad tiene su prueba en `UserPolicyTest` (permitida y denegada).
+
+**writeScope:**
+
+- `app/User/Policies/UserPolicy.php`
+- `app/Modules/Admin/Filament/Resources/Roles/RelationManagers/RoleUsersRelationManager.php`
+- `app/Modules/Admin/Tests/Policies/UserPolicyTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/RelationManagers app/Modules/Admin/Tests/Policies/UserPolicyTest.php < /dev/null && composer phpstan`
+
+**Review:** none
+
 ## Failure Modes
 
 - `RoleResource::canViewAny()` con `shouldSkipAuthorization()` activo permitiría todo: el recurso no lo activa; las pruebas de 403 existentes lo detectarían.
@@ -623,14 +691,14 @@ Mínimo entregable: TASK-001 a TASK-007 (producción sin duplicados) más TASK-0
 
 ## Execution Summary
 
-**Tareas:** 24
+**Tareas:** 27
 
 **Capas:**
 
 1. TASK-001, TASK-002, TASK-005, TASK-008, TASK-009, TASK-010, TASK-019, TASK-020, TASK-021, TASK-022, TASK-024
-2. TASK-003, TASK-006, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015
-3. TASK-004, TASK-007
-4. TASK-016, TASK-023
+2. TASK-003, TASK-006, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-026
+3. TASK-004, TASK-007, TASK-027
+4. TASK-016, TASK-023, TASK-025
 5. TASK-017
 6. TASK-018
 
@@ -655,7 +723,7 @@ TASK-013 ← TASK-008, TASK-009, TASK-010
 TASK-014 ← TASK-008, TASK-009, TASK-010
 TASK-015 ← TASK-008, TASK-009
 TASK-016 ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007
-TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024
+TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027
 TASK-018 ← TASK-017
 TASK-019 ← —
 TASK-020 ← —
@@ -663,4 +731,7 @@ TASK-021 ← —
 TASK-022 ← —
 TASK-023 ← TASK-004
 TASK-024 ← —
+TASK-025 ← TASK-007
+TASK-026 ← TASK-008
+TASK-027 ← TASK-006
 ```
