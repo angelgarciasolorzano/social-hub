@@ -357,7 +357,7 @@ Agregar a `tests/Pest.php` los helpers que comparten las pruebas del módulo:
 
 ### TASK-008: Add the decline factory and model tests for pair uniqueness and scopes
 
-Crear `FriendRequestDeclineFactory` completo (`requester_id`, `receiver_id`, `declined_at`, con un estado `declinedDaysAgo(int)`) y agregar `#[UseFactory]` a `FriendRequestDecline`.
+Crear `FriendRequestDeclineFactory` completo (`requester_id`, `receiver_id`, `declined_at`, con un estado `declinedDaysAgo(int)`). En `FriendRequestDecline`, que ya usa `HasFactory` y `#[WithoutTimestamps]` desde el commit del usuario, agregar `#[UseFactory]` y el genérico `/** @use HasFactory<FriendRequestDeclineFactory> */`: hoy PHPStan falla con `missingType.generics` hasta que exista la factory, y esta tarea lo deja en verde.
 
 Pruebas de modelos, en `FriendshipModelTest` (incluye las de `FriendRequestDecline`):
 * `friendships` admite una sola fila por par en cualquier dirección: el insert cruzado lanza `UniqueConstraintViolationException`;

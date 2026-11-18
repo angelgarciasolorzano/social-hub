@@ -13,6 +13,8 @@ use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Models\AdminInvitation;
 use App\Modules\Admin\Models\Role as AdminGuardRole;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Friendship\Database\Factories\FriendshipFactory;
+use App\Modules\Friendship\Models\Friendship;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Enums\PreferredLocale;
@@ -56,6 +58,7 @@ pest()->extend(TestCase::class)
         __DIR__.'/../app/Modules/ActivityLog/Tests',
         __DIR__.'/../app/Modules/Announcement/Tests',
         __DIR__.'/../app/Modules/Notification/Tests',
+        __DIR__.'/../app/Modules/Friendship/Tests',
         __DIR__.'/../app/Auth/Modules/TrustedDevice/Tests',
         __DIR__.'/../app/Auth/Modules/Password/Tests',
         __DIR__.'/../app/Auth/Modules/Login/Tests',
@@ -199,6 +202,34 @@ function createLike(?User $user = null, Post|Comment|null $likeable = null): Lik
     }
 
     return $factory->createOne();
+}
+
+/**
+ * Create a pending friend request from the requester to the receiver, new users when omitted.
+ */
+function createFriendRequest(?User $requester = null, ?User $receiver = null): Friendship
+{
+    /** @var FriendshipFactory $factory */
+    $factory = Friendship::factory();
+
+    return $factory
+        ->between($requester ?? createUser(), $receiver ?? createUser())
+        ->pending()
+        ->createOne();
+}
+
+/**
+ * Create an accepted friendship between both users, new users when omitted; the first one sent the request.
+ */
+function createFriendship(?User $first = null, ?User $second = null): Friendship
+{
+    /** @var FriendshipFactory $factory */
+    $factory = Friendship::factory();
+
+    return $factory
+        ->between($first ?? createUser(), $second ?? createUser())
+        ->accepted()
+        ->createOne();
 }
 
 /**

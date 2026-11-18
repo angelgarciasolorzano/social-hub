@@ -32,6 +32,9 @@
         <testsuite name="Notification">
             <directory>app/Modules/Notification/Tests</directory>
         </testsuite>
+        <testsuite name="Friendship">
+            <directory>app/Modules/Friendship/Tests</directory>
+        </testsuite>
         <testsuite name="Login">
             <directory>app/Auth/Modules/Login/Tests</directory>
         </testsuite>
