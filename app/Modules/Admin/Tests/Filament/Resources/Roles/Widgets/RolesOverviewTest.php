@@ -8,9 +8,9 @@ use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Widgets\RolesOverview;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
+use App\Modules\Admin\Tests\Support\WidgetStats;
 use App\User\Enums\PreferredLocale;
 use Carbon\CarbonImmutable;
-use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -20,28 +20,9 @@ use Tests\TestCase;
  */
 function rolesOverviewStats(): array
 {
-    $component = Livewire::test(RolesOverview::class)->instance();
+    [$administrators, $unusedRoles, $changes] = WidgetStats::of(RolesOverview::class, 3);
 
-    throw_unless($component instanceof RolesOverview, LogicException::class, 'The roles overview widget must be mounted.');
-
-    $stats = new ReflectionMethod(StatsOverviewWidget::class, 'getCachedStats')->invoke($component);
-
-    throw_unless(
-        is_array($stats)
-            && count($stats) === 3
-            && $stats[0] instanceof Stat
-            && $stats[1] instanceof Stat
-            && $stats[2] instanceof Stat,
-        LogicException::class,
-        'The roles overview must return three stat cards.',
-    );
-
-    /** @var array{0: Stat, 1: Stat, 2: Stat} $stats */
-    return [
-        'administrators' => $stats[0],
-        'unusedRoles' => $stats[1],
-        'changes' => $stats[2],
-    ];
+    return ['administrators' => $administrators, 'unusedRoles' => $unusedRoles, 'changes' => $changes];
 }
 
 beforeEach(function (): void {
