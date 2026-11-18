@@ -2,16 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Modules\ActivityLog\Database\Factories\ActivityLogFactory;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminPermission;
-use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ListRoles;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
-use Carbon\CarbonImmutable;
+use App\Modules\Admin\Tests\Support\RoleActivity;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -24,37 +22,12 @@ use Tests\TestCase;
  */
 function filterableCustomRolesList(TestCase $testCase): Testable
 {
-    AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
+    AdminFilamentTestContext::actingAsRolesReader($testCase);
 
     return Livewire::test(ListRoles::class)
         ->set('activeTab', 'custom')
         ->call('loadTable')
         ->set('tableRecordsPerPage', 50);
-}
-
-/**
- * A custom role holding the given permissions.
- *
- * @param  list<AdminPermission>  $adminPermissions
- */
-function customRoleWith(array $adminPermissions): Role
-{
-    $role = RoleFactory::new()->createOne();
-    $role->givePermissionTo(array_map(static fn (AdminPermission $adminPermission): string => $adminPermission->value, $adminPermissions));
-
-    return $role;
-}
-
-/**
- * Record a change of the role at the given time.
- */
-function recordFilteredRoleChange(Role $role, string $changedAt): void
-{
-    ActivityLogFactory::new()
-        ->forEvent(ActivityLogAdminEvent::RoleUpdated)
-        ->performedOn($role)
-        ->causedBy(createUser())
-        ->createOne(['properties' => ['role' => $role->name], 'created_at' => CarbonImmutable::parse($changedAt)]);
 }
 
 /**
@@ -82,9 +55,9 @@ beforeEach(function (): void {
 });
 
 it('keeps only the roles that hold every chosen permission', function (): void {
-    $roleWithBoth = customRoleWith([AdminPermission::AdminPostsViewAny, AdminPermission::AdminBackupsView]);
-    customRoleWith([AdminPermission::AdminPostsViewAny]);
-    customRoleWith([AdminPermission::AdminBackupsView]);
+    $roleWithBoth = RoleFactory::new()->withPermissions(AdminPermission::AdminPostsViewAny, AdminPermission::AdminBackupsView)->createOne();
+    RoleFactory::new()->withPermissions(AdminPermission::AdminPostsViewAny)->createOne();
+    RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView)->createOne();
 
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -95,8 +68,8 @@ it('keeps only the roles that hold every chosen permission', function (): void {
 });
 
 it('keeps the roles that hold any permission of the chosen area', function (): void {
-    $roleWithOneBackupPermission = customRoleWith([AdminPermission::AdminBackupsView]);
-    customRoleWith([AdminPermission::AdminPostsViewAny]);
+    $roleWithOneBackupPermission = RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView)->createOne();
+    RoleFactory::new()->withPermissions(AdminPermission::AdminPostsViewAny)->createOne();
 
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -107,8 +80,8 @@ it('keeps the roles that hold any permission of the chosen area', function (): v
 });
 
 it('filters the roles by sensitive permissions', function (bool $hasSensitive): void {
-    $sensitiveRole = customRoleWith([AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsDownload]);
-    $plainRole = customRoleWith([AdminPermission::AdminBackupsView]);
+    $sensitiveRole = RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsDownload)->createOne();
+    $plainRole = RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView)->createOne();
 
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -119,8 +92,8 @@ it('filters the roles by sensitive permissions', function (bool $hasSensitive): 
 })->with([true, false]);
 
 it('filters the roles by whether they have users', function (bool $hasUsers): void {
-    $roleWithUsers = customRoleWith([]);
-    $roleWithoutUsers = customRoleWith([]);
+    $roleWithUsers = RoleFactory::new()->createOne();
+    $roleWithoutUsers = RoleFactory::new()->createOne();
     createUser()->assignRole($roleWithUsers);
 
     /** @var TestCase $testCase */
@@ -132,13 +105,13 @@ it('filters the roles by whether they have users', function (bool $hasUsers): vo
 })->with([true, false]);
 
 it('keeps the roles last changed between the dates and leaves out roles without recorded changes', function (): void {
-    $roleChangedInRange = customRoleWith([]);
-    $roleChangedBefore = customRoleWith([]);
-    customRoleWith([]);
+    $roleChangedInRange = RoleFactory::new()->createOne();
+    $roleChangedBefore = RoleFactory::new()->createOne();
+    RoleFactory::new()->createOne();
 
-    recordFilteredRoleChange($roleChangedInRange, '2026-09-01 10:00:00');
-    recordFilteredRoleChange($roleChangedInRange, '2026-10-10 10:00:00');
-    recordFilteredRoleChange($roleChangedBefore, '2026-09-01 10:00:00');
+    RoleActivity::change($roleChangedInRange, ActivityLogAdminEvent::RoleUpdated, at: '2026-09-01 10:00:00');
+    RoleActivity::change($roleChangedInRange, ActivityLogAdminEvent::RoleUpdated, at: '2026-10-10 10:00:00');
+    RoleActivity::change($roleChangedBefore, ActivityLogAdminEvent::RoleUpdated, at: '2026-09-01 10:00:00');
 
     /** @var TestCase $testCase */
     $testCase = $this;
@@ -149,14 +122,12 @@ it('keeps the roles last changed between the dates and leaves out roles without 
 });
 
 it('combines the filters with each other, with the active tab and with the search', function (): void {
-    $matchingRole = RoleFactory::new()->createOne(['label' => 'Soporte de respaldos']);
-    $matchingRole->givePermissionTo([AdminPermission::AdminBackupsView->value, AdminPermission::AdminBackupsDownload->value]);
+    $matchingRole = RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsDownload)->createOne(['label' => 'Soporte de respaldos']);
 
     createUser()->assignRole($matchingRole);
-    $roleWithoutUsers = RoleFactory::new()->createOne(['label' => 'Soporte sin usuarios']);
-    $roleWithoutUsers->givePermissionTo([AdminPermission::AdminBackupsView->value, AdminPermission::AdminBackupsDownload->value]);
+    $roleWithoutUsers = RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsDownload)->createOne(['label' => 'Soporte sin usuarios']);
 
-    $otherLabelRole = customRoleWith([AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsDownload]);
+    $otherLabelRole = RoleFactory::new()->withPermissions(AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsDownload)->createOne();
     createUser()->assignRole($otherLabelRole);
 
     /** @var TestCase $testCase */
