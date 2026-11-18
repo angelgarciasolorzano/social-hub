@@ -251,7 +251,7 @@
     {
       "id": "TASK-006",
       "title": "Create the Friendship and FriendRequestDecline models and the Friendship factory",
-      "description": "**`Models/Friendship`:**\n* casts: `status`, `accepted_at` immutable y los ids;\n* `#[Fillable]` solo `requester_id`, `receiver_id`, `status` y `accepted_at`, nunca las columnas generadas;\n* `#[UseFactory]`;\n* relaciones `requester()` y `receiver()`;\n* scopes `#[Scope]`: `involving(User)`, `between(User, User)` (vía `user_low_id`/`user_high_id`), `pending()` y `accepted()`;\n* helpers `isPending()`, `isAccepted()` y `otherUser(User)`.\n\n**`Models/FriendRequestDecline`:** casts, relaciones `requester()`/`receiver()`, scope `activeFor(User $requester, User $receiver, int $cooldownDays)` y `#[UseFactory]` (su factory se crea en TASK-008).\n\n**`Database/Factories/FriendshipFactory`:** completo, con los estados `pending()`, `accepted()` (pone `accepted_at`) y `between(User $requester, User $receiver)`.",
+      "description": "**`Models/Friendship`:**\n* casts: `status`, `accepted_at` immutable y los ids;\n* `#[Fillable]` solo `requester_id`, `receiver_id`, `status` y `accepted_at`, nunca las columnas generadas;\n* `#[UseFactory]`;\n* relaciones `requester()` y `receiver()`;\n* scopes `#[Scope]`: `involving(User)`, `between(User, User)` (vía `user_low_id`/`user_high_id`), `pending()` y `accepted()`;\n* helpers `isPending()`, `isAccepted()`, `involves(User)` y `otherUserId(User)`, que devuelve el id del otro sin consultar y lanza `InvalidArgumentException` si el usuario no es parte de la fila.\n\n**`Models/FriendRequestDecline`:** sin timestamps, casts, relaciones `requester()`/`receiver()` y scope `activeFor(User $requester, User $receiver, int $cooldownDays)`. Su `#[UseFactory]` se agrega en TASK-008, junto con la factory, para que PHPStan no vea una clase inexistente.\n\n**`Database/Factories/FriendshipFactory`:** completo, con los estados `pending()`, `accepted()` (pone `accepted_at`) y `between(User $requester, User $receiver)`.\n\nLos mixins `IdeHelper*` salen de `php artisan ide-helper:models -RM --env=testing` (la base de pruebas tiene el esquema nuevo). `_ide_helper_models.php` está en `.gitignore`, y los cambios que el comando deja en los docblocks de otros modelos se revierten.",
       "type": "feature",
       "priority": "P0",
       "effort": "M",
@@ -310,7 +310,7 @@
     {
       "id": "TASK-008",
       "title": "Add the decline factory and model tests for pair uniqueness and scopes",
-      "description": "Crear `FriendRequestDeclineFactory` completo (`requester_id`, `receiver_id`, `declined_at`, con un estado `declinedDaysAgo(int)`).\n\nPruebas de modelos:\n* `friendships` admite una sola fila por par en cualquier dirección: el insert cruzado lanza `UniqueConstraintViolationException`;\n* las columnas generadas se calculan solas;\n* los scopes `between`, `involving`, `pending` y `accepted`, y `otherUser()`;\n* `FriendRequestDecline::activeFor()` respeta los días de espera, en los dos lados del límite;\n* borrar un usuario borra sus filas en cascada.",
+      "description": "Crear `FriendRequestDeclineFactory` completo (`requester_id`, `receiver_id`, `declined_at`, con un estado `declinedDaysAgo(int)`) y agregar `#[UseFactory]` a `FriendRequestDecline`.\n\nPruebas de modelos, en `FriendshipModelTest` (incluye las de `FriendRequestDecline`):\n* `friendships` admite una sola fila por par en cualquier dirección: el insert cruzado lanza `UniqueConstraintViolationException`;\n* las columnas generadas se calculan solas;\n* los scopes `between`, `involving`, `pending` y `accepted`, `involves()` y `otherUserId()` (con el caso de un usuario ajeno);\n* `FriendRequestDecline::activeFor()` respeta los días de espera, en los dos lados del límite;\n* borrar un usuario borra sus filas en cascada.",
       "type": "test",
       "priority": "P1",
       "effort": "M",
@@ -321,10 +321,11 @@
       ],
       "filesToCreate": [
         "app/Modules/Friendship/Database/Factories/FriendRequestDeclineFactory.php",
-        "app/Modules/Friendship/Tests/Models/FriendshipModelTest.php",
-        "app/Modules/Friendship/Tests/Models/FriendRequestDeclineModelTest.php"
+        "app/Modules/Friendship/Tests/Models/FriendshipModelTest.php"
       ],
-      "filesToModify": [],
+      "filesToModify": [
+        "app/Modules/Friendship/Models/FriendRequestDecline.php"
+      ],
       "acceptanceCriteria": [
         "Crear A→B y luego B→A lanza `UniqueConstraintViolationException`, y la tabla queda con una sola fila.",
         "Con una espera de 7 días, un rechazo de hace 6 días está activo y uno de hace 8 no. Un rechazo de B hacia A no afecta a A hacia B.",
@@ -334,14 +335,14 @@
       "writeScope": [
         "app/Modules/Friendship/Database/Factories/FriendRequestDeclineFactory.php",
         "app/Modules/Friendship/Tests/Models/FriendshipModelTest.php",
-        "app/Modules/Friendship/Tests/Models/FriendRequestDeclineModelTest.php"
+        "app/Modules/Friendship/Models/FriendRequestDecline.php"
       ],
       "review": "claude"
     },
     {
       "id": "TASK-009",
       "title": "Add friendship relations and preloaded counters to User",
-      "description": "En `App\\User\\Models\\User`, agregar:\n* las relaciones `sentFriendRequests()` y `receivedFriendRequests()` (`HasMany` pendientes);\n* `friendshipsAsRequester()`/`friendshipsAsReceiver()` si hacen falta para los conteos;\n* `friends(): Builder<User>`, que son los usuarios del otro lado de las amistades aceptadas, mediante una subconsulta y sin cargar ids en PHP;\n* `friendshipWith(User): ?Friendship`;\n* el scope `withFriendshipCounts()`, que precarga `friends_count` y `pending_received_friend_requests_count` con subconsultas;\n* `friendsCount()` y `pendingReceivedFriendRequestsCount()`, que reutilizan esos valores y solo consultan si no están precargados.\n\nDespués, regenerar `_ide_helper_models.php` con `composer ide-helper` y revertir los cambios ajenos que introduzca.",
+      "description": "En `App\\User\\Models\\User`, agregar:\n* las relaciones `sentFriendRequests()` y `receivedFriendRequests()` (`HasMany` pendientes);\n* `friendshipsAsRequester()`/`friendshipsAsReceiver()` si hacen falta para los conteos;\n* `friends(): Builder<User>`, que son los usuarios del otro lado de las amistades aceptadas, mediante una subconsulta y sin cargar ids en PHP;\n* `friendshipWith(User): ?Friendship`;\n* el scope `withFriendshipCounts()`, que precarga `friends_count` y `pending_received_friend_requests_count` con subconsultas;\n* `friendsCount()` y `pendingReceivedFriendRequestsCount()`, que reutilizan esos valores y solo consultan si no están precargados.\n\nDespués, regenerar los mixins con `php artisan ide-helper:models -RM --env=testing` (`_ide_helper_models.php` está en `.gitignore`) y revertir los cambios que deje en los docblocks de otros modelos.",
       "type": "feature",
       "priority": "P1",
       "effort": "M",
@@ -354,8 +355,7 @@
         "app/Modules/Friendship/Tests/Models/UserFriendshipRelationsTest.php"
       ],
       "filesToModify": [
-        "app/User/Models/User.php",
-        "_ide_helper_models.php"
+        "app/User/Models/User.php"
       ],
       "acceptanceCriteria": [
         "`$user->friends()->pluck('id')` devuelve los amigos aceptados sin importar quién envió la solicitud, y excluye las pendientes.",
@@ -365,8 +365,7 @@
       "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Models/UserFriendshipRelationsTest.php && composer phpstan",
       "writeScope": [
         "app/Modules/Friendship/Tests/Models/UserFriendshipRelationsTest.php",
-        "app/User/Models/User.php",
-        "_ide_helper_models.php"
+        "app/User/Models/User.php"
       ],
       "review": "claude"
     },

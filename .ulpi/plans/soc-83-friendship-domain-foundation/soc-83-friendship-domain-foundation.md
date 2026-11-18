@@ -298,11 +298,13 @@ Para ello reutiliza `translationFilesIn()` y `translationFileTexts()`, más un d
 * `#[UseFactory]`;
 * relaciones `requester()` y `receiver()`;
 * scopes `#[Scope]`: `involving(User)`, `between(User, User)` (vía `user_low_id`/`user_high_id`), `pending()` y `accepted()`;
-* helpers `isPending()`, `isAccepted()` y `otherUser(User)`.
+* helpers `isPending()`, `isAccepted()`, `involves(User)` y `otherUserId(User)`, que devuelve el id del otro sin consultar y lanza `InvalidArgumentException` si el usuario no es parte de la fila.
 
-**`Models/FriendRequestDecline`:** casts, relaciones `requester()`/`receiver()`, scope `activeFor(User $requester, User $receiver, int $cooldownDays)` y `#[UseFactory]` (su factory se crea en TASK-008).
+**`Models/FriendRequestDecline`:** sin timestamps, casts, relaciones `requester()`/`receiver()` y scope `activeFor(User $requester, User $receiver, int $cooldownDays)`. Su `#[UseFactory]` se agrega en TASK-008, junto con la factory, para que PHPStan no vea una clase inexistente.
 
 **`Database/Factories/FriendshipFactory`:** completo, con los estados `pending()`, `accepted()` (pone `accepted_at`) y `between(User $requester, User $receiver)`.
+
+Los mixins `IdeHelper*` salen de `php artisan ide-helper:models -RM --env=testing` (la base de pruebas tiene el esquema nuevo). `_ide_helper_models.php` está en `.gitignore`, y los cambios que el comando deja en los docblocks de otros modelos se revierten.
 
 **Type:** feature  
 **Effort:** M  
@@ -355,12 +357,12 @@ Agregar a `tests/Pest.php` los helpers que comparten las pruebas del módulo:
 
 ### TASK-008: Add the decline factory and model tests for pair uniqueness and scopes
 
-Crear `FriendRequestDeclineFactory` completo (`requester_id`, `receiver_id`, `declined_at`, con un estado `declinedDaysAgo(int)`).
+Crear `FriendRequestDeclineFactory` completo (`requester_id`, `receiver_id`, `declined_at`, con un estado `declinedDaysAgo(int)`) y agregar `#[UseFactory]` a `FriendRequestDecline`.
 
-Pruebas de modelos:
+Pruebas de modelos, en `FriendshipModelTest` (incluye las de `FriendRequestDecline`):
 * `friendships` admite una sola fila por par en cualquier dirección: el insert cruzado lanza `UniqueConstraintViolationException`;
 * las columnas generadas se calculan solas;
-* los scopes `between`, `involving`, `pending` y `accepted`, y `otherUser()`;
+* los scopes `between`, `involving`, `pending` y `accepted`, `involves()` y `otherUserId()` (con el caso de un usuario ajeno);
 * `FriendRequestDecline::activeFor()` respeta los días de espera, en los dos lados del límite;
 * borrar un usuario borra sus filas en cascada.
 
@@ -375,7 +377,7 @@ Pruebas de modelos:
 
 - `app/Modules/Friendship/Database/Factories/FriendRequestDeclineFactory.php`
 - `app/Modules/Friendship/Tests/Models/FriendshipModelTest.php`
-- `app/Modules/Friendship/Tests/Models/FriendRequestDeclineModelTest.php`
+- `app/Modules/Friendship/Models/FriendRequestDecline.php`
 
 **Acceptance Criteria:**
 
@@ -395,7 +397,7 @@ En `App\User\Models\User`, agregar:
 * el scope `withFriendshipCounts()`, que precarga `friends_count` y `pending_received_friend_requests_count` con subconsultas;
 * `friendsCount()` y `pendingReceivedFriendRequestsCount()`, que reutilizan esos valores y solo consultan si no están precargados.
 
-Después, regenerar `_ide_helper_models.php` con `composer ide-helper` y revertir los cambios ajenos que introduzca.
+Después, regenerar los mixins con `php artisan ide-helper:models -RM --env=testing` (`_ide_helper_models.php` está en `.gitignore`) y revertir los cambios que deje en los docblocks de otros modelos.
 
 **Type:** feature  
 **Effort:** M  
@@ -408,7 +410,6 @@ Después, regenerar `_ide_helper_models.php` con `composer ide-helper` y reverti
 
 - `app/Modules/Friendship/Tests/Models/UserFriendshipRelationsTest.php`
 - `app/User/Models/User.php`
-- `_ide_helper_models.php`
 
 **Acceptance Criteria:**
 
