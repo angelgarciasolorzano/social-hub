@@ -259,7 +259,7 @@ Crear tres enums:
 
 Crear `lang/{en,es}/friendship/actions.php` con un texto por cada caso de `FriendshipOperationResult` (`results.<valor>`) y los mensajes de validación de la búsqueda.
 
-Los textos de `CooldownActive` y `ReceiverUnavailable` son neutros: no revelan un rechazo ni una suspensión. `IncomingRequestExists` invita a aceptar la solicitud desde las recibidas.
+Los textos de `CooldownActive` y `ReceiverUnavailable` son neutros: no revelan un rechazo ni una suspensión. El de `NoLongerPending` es genérico ('la solicitud o la amistad cambió; recarga'), porque también lo devuelven `remove()` y la carrera de `send()`. `IncomingRequestExists` invita a aceptar la solicitud desde las recibidas.
 
 La prueba del módulo comprueba:
 * que haya las mismas claves en `en` y `es`;
@@ -463,7 +463,7 @@ Todas devuelven un `FriendshipOperationResult`, corren en `DB::transaction` y vu
 * rechaza a un receptor suspendido (`ReceiverUnavailable`);
 * si existe una fila del par, devuelve `AlreadyFriends`, `AlreadyPending` o `IncomingRequestExists`;
 * aplica la espera (`CooldownActive`) y el límite de pendientes (`PendingLimitReached`);
-* trata una `UniqueConstraintViolationException` como una carrera y vuelve a evaluar el estado.
+* trata una `UniqueConstraintViolationException` como una carrera: la captura **dentro** de la transacción, alrededor del `create()` (en MySQL un duplicado solo deshace esa sentencia), y relee el par con bloqueo, que ve la fila que confirmó la otra transacción. Si ya no hay fila, devuelve `NoLongerPending`. Capturarla fuera de la transacción no sirve: el rollback borra el contexto y no se puede explicar el estado.
 
 **Las demás:**
 * `accept()` pone `accepted_at`;
