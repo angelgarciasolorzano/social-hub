@@ -112,6 +112,10 @@
             "@php artisan config:clear --ansi",
             "@php -d memory_limit=2G artisan test --parallel --passthru-php=\"'-d' 'memory_limit=1G'\""
         ],
+        "test:browser-login": [
+            "npm run build",
+            "@php artisan test --compact app/Auth/Modules/Login/Tests/LoginBrowserTest.php"
+        ],
         "doctor": "@php artisan doctor",
         "doctor-ci": "@php artisan doctor --format=github --no-interaction",
         "ide-helper": [
