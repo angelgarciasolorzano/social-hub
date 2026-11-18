@@ -422,7 +422,7 @@ Actualizar `docs/architecture/modules/admin.md`: el scope `Role::admin()` y `Rol
 
 **Type:** docs · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P3
 
-**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029
+**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031
 
 **Acceptance Criteria:**
 
@@ -707,11 +707,57 @@ Hallazgo de TASK-024. `rolesOverviewStats()` (`RolesOverviewTest`) y `roleTypesO
 
 **writeScope:**
 
-- `app/Modules/Admin/Tests/Support/WidgetStats.php` (nuevo)
+- `app/Modules/Admin/Tests/Support/WidgetStats.php`
 - `app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php`
 - `app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RoleTypesOverviewTest.php`
 
 **validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets < /dev/null && composer phpstan`
+
+**Review:** none
+
+### TASK-030: Página de detalle del rol en `tests/Pest.php`
+
+Hallazgo del inventario de TASK-018 (comparando cuerpos, no nombres). `viewRolePage()` (`ViewRoleTest`) y `lifecycleRolePage()` (`ViewRoleLifecycleActionsTest`) montan igual `ViewRole`, y `lifecycleSystemRole()` repite `adminCatalogRole()`. Añadir `viewRolePageFor(Role)` junto a `permissionHoldersPageFor()` en `tests/Pest.php` y usarlo en los dos archivos; `lifecycleSystemRole()` pasa a `adminCatalogRole()`.
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-011, TASK-025
+
+**Acceptance Criteria:**
+
+1. Ninguno de los dos archivos define ya cómo montar `ViewRole` ni cómo buscar un rol del catálogo.
+2. Ninguna afirmación cambia: el rol bloqueado `admin` sigue sin «Editar» ni «Eliminar».
+
+**writeScope:**
+
+- `tests/Pest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php < /dev/null && composer phpstan`
+
+**Review:** none
+
+### TASK-031: Nombres de permisos de un rol en `tests/Pest.php`
+
+Hallazgo del inventario de TASK-018. `editedPermissionNames()` (`EditRoleTest`) y `acknowledgedRolePermissionNames()` (`SensitivePermissionAcknowledgementTest`) devuelven igual los nombres ordenados de los permisos de un rol recargado. Añadir `rolePermissionNames(Role)` a `tests/Pest.php` y usarlo en los dos archivos.
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** TASK-030
+
+**Acceptance Criteria:**
+
+1. La lectura de los nombres de permisos de un rol vive solo en `tests/Pest.php`.
+2. Ninguna afirmación cambia: los permisos guardados al crear y editar siguen comprobándose ordenados y con el rol recargado.
+
+**writeScope:**
+
+- `tests/Pest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/EditRoleTest.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/SensitivePermissionAcknowledgementTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/EditRoleTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/SensitivePermissionAcknowledgementTest.php < /dev/null && composer phpstan`
 
 **Review:** none
 
@@ -737,7 +783,7 @@ Mínimo entregable: TASK-001 a TASK-007 (producción sin duplicados) más TASK-0
 
 ## Execution Summary
 
-**Tareas:** 29
+**Tareas:** 31
 
 **Capas:**
 
@@ -745,10 +791,12 @@ Mínimo entregable: TASK-001 a TASK-007 (producción sin duplicados) más TASK-0
 2. TASK-003, TASK-006, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-026
 3. TASK-004, TASK-007, TASK-027
 4. TASK-016, TASK-023, TASK-025
-5. TASK-017
-6. TASK-018
+5. TASK-030
+6. TASK-031
+7. TASK-017
+8. TASK-018
 
-**Ruta crítica:** TASK-002 → TASK-003 → TASK-004 → TASK-016 → TASK-017 → TASK-018
+**Ruta crítica:** TASK-005 → TASK-006 → TASK-007 → TASK-025 → TASK-030 → TASK-031 → TASK-017 → TASK-018
 
 ## Dependency Map
 
@@ -769,7 +817,7 @@ TASK-013 ← TASK-008, TASK-009, TASK-010
 TASK-014 ← TASK-008, TASK-009, TASK-010
 TASK-015 ← TASK-008, TASK-009
 TASK-016 ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007
-TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029
+TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028, TASK-029, TASK-030, TASK-031
 TASK-018 ← TASK-017
 TASK-019 ← —
 TASK-020 ← —
@@ -782,4 +830,6 @@ TASK-026 ← TASK-008
 TASK-027 ← TASK-006
 TASK-028 ← —
 TASK-029 ← —
+TASK-030 ← TASK-011, TASK-025
+TASK-031 ← TASK-030
 ```

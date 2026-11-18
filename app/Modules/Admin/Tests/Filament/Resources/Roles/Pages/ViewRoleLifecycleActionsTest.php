@@ -12,25 +12,7 @@ use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Support\Translation\TranslatedText;
-use Livewire\Features\SupportTesting\Testable;
-use Livewire\Livewire;
 use Tests\TestCase;
-
-function lifecycleSystemRole(AdminRole $adminRole): Role
-{
-    return Role::query()
-        ->where('name', $adminRole->value)
-        ->where('guard_name', Role::GUARD_NAME)
-        ->sole();
-}
-
-/**
- * @return Testable<ViewRole>
- */
-function lifecycleRolePage(Role $role): Testable
-{
-    return Livewire::test(ViewRole::class, ['record' => $role->getKey()]);
-}
 
 beforeEach(function (): void {
     /** @var TestCase $testCase */
@@ -43,9 +25,9 @@ it('links the edit button to the edit page of custom and system roles', function
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsRolesManager($testCase);
-    $role = $roleType === 'custom' ? RoleFactory::new()->createOne() : lifecycleSystemRole(AdminRole::AdminPostsReader);
+    $role = $roleType === 'custom' ? RoleFactory::new()->createOne() : adminCatalogRole(AdminRole::AdminPostsReader);
 
-    $testable = lifecycleRolePage($role);
+    $testable = viewRolePageFor($role);
     $testable->__call('assertActionVisible', ['edit']);
     $testable->__call('assertActionHasUrl', ['edit', RoleResource::getUrl('edit', ['record' => $role])]);
 })->with(['custom', 'system']);
@@ -55,7 +37,7 @@ it('does not offer editing on the locked admin role', function (): void {
     $testCase = $this;
     AdminFilamentTestContext::actingAsRolesManager($testCase);
 
-    lifecycleRolePage(lifecycleSystemRole(AdminRole::Admin))->__call('assertActionHidden', ['edit']);
+    viewRolePageFor(adminCatalogRole(AdminRole::Admin))->__call('assertActionHidden', ['edit']);
 });
 
 it('does not offer deleting a system role', function (): void {
@@ -63,7 +45,7 @@ it('does not offer deleting a system role', function (): void {
     $testCase = $this;
     AdminFilamentTestContext::actingAsRolesManager($testCase);
 
-    $testable = lifecycleRolePage(lifecycleSystemRole(AdminRole::AdminPostsReader));
+    $testable = viewRolePageFor(adminCatalogRole(AdminRole::AdminPostsReader));
     $testable->__call('assertActionHidden', ['delete']);
     $testable->__call('assertActionVisible', ['duplicate']);
 });
@@ -72,9 +54,9 @@ it('duplicates a system role as a custom role with its permissions and opens it'
     /** @var TestCase $testCase */
     $testCase = $this;
     AdminFilamentTestContext::actingAsRolesManager($testCase);
-    $sourceRole = lifecycleSystemRole(AdminRole::AdminPostsReader);
+    $sourceRole = adminCatalogRole(AdminRole::AdminPostsReader);
 
-    $testable = lifecycleRolePage($sourceRole)
+    $testable = viewRolePageFor($sourceRole)
         ->call('mountAction', 'duplicate')
         ->assertSet('mountedActions.0.data.label', TranslatedText::of('admin/roles.actions.duplicate.copy_label', [
             'role' => $sourceRole->displayName(),
@@ -101,7 +83,7 @@ it('deletes a custom role without users and goes back to the list', function ():
     AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
-    $testable = lifecycleRolePage($role)
+    $testable = viewRolePageFor($role)
         ->call('mountAction', 'delete')
         ->set('mountedActions.0.data.current_password', 'password')
         ->call('callMountedAction');
@@ -120,7 +102,7 @@ it('disables deleting a custom role that has users and explains why', function (
     $role = RoleFactory::new()->createOne();
     createUser()->assignRole($role);
 
-    $testable = lifecycleRolePage($role);
+    $testable = viewRolePageFor($role);
     $testable->__call('assertActionDisabled', ['delete']);
     $testable->assertSee(trans_choice('admin/roles.actions.delete.blocked_by_users', 1, ['count' => 1]));
 
@@ -133,7 +115,7 @@ it('ignores a delete submitted after the role gained users', function (): void {
     AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
-    $testable = lifecycleRolePage($role)
+    $testable = viewRolePageFor($role)
         ->call('mountAction', 'delete')
         ->set('mountedActions.0.data.current_password', 'password');
 
@@ -151,7 +133,7 @@ it('writes nothing with a wrong password', function (string $actionName): void {
     AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
-    lifecycleRolePage($role)
+    viewRolePageFor($role)
         ->call('mountAction', $actionName)
         ->set('mountedActions.0.data.current_password', 'wrong-password')
         ->call('callMountedAction')
@@ -167,7 +149,7 @@ it('hides the lifecycle actions from a roles reader', function (): void {
     AdminFilamentTestContext::actingAsRolesReader($testCase);
     $role = RoleFactory::new()->createOne();
 
-    $testable = lifecycleRolePage($role);
+    $testable = viewRolePageFor($role);
     $testable->__call('assertActionHidden', ['edit']);
     $testable->__call('assertActionHidden', ['duplicate']);
     $testable->__call('assertActionHidden', ['delete']);
@@ -186,7 +168,7 @@ it('updates its user count and the delete action when the users tab changes the 
     AdminFilamentTestContext::actingAsRolesManager($testCase);
     $role = RoleFactory::new()->createOne();
 
-    $testable = lifecycleRolePage($role);
+    $testable = viewRolePageFor($role);
     $testable->__call('assertActionEnabled', ['delete']);
 
     createUser()->assignRole($role);

@@ -535,7 +535,9 @@
         "TASK-026",
         "TASK-027",
         "TASK-028",
-        "TASK-029"
+        "TASK-029",
+        "TASK-030",
+        "TASK-031"
       ],
       "acceptanceCriteria": [
         "Cada helper o concern citado existe con ese nombre en el código.",
@@ -868,12 +870,70 @@
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RoleTypesOverviewTest.php"
       ],
       "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets < /dev/null && composer phpstan",
-      "filesToCreate": [
-        "app/Modules/Admin/Tests/Support/WidgetStats.php"
-      ],
+      "filesToCreate": [],
       "filesToModify": [
+        "app/Modules/Admin/Tests/Support/WidgetStats.php",
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RolesOverviewTest.php",
         "app/Modules/Admin/Tests/Filament/Resources/Roles/Widgets/RoleTypesOverviewTest.php"
+      ],
+      "review": "none"
+    },
+    {
+      "id": "TASK-030",
+      "title": "Página de detalle del rol en `tests/Pest.php`",
+      "description": "Hallazgo del inventario de TASK-018 (comparando cuerpos, no nombres). `viewRolePage()` (`ViewRoleTest`) y `lifecycleRolePage()` (`ViewRoleLifecycleActionsTest`) montan igual `ViewRole`, y `lifecycleSystemRole()` repite `adminCatalogRole()`. Añadir `viewRolePageFor(Role)` junto a `permissionHoldersPageFor()` en `tests/Pest.php` y usarlo en los dos archivos; `lifecycleSystemRole()` pasa a `adminCatalogRole()`.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-011",
+        "TASK-025"
+      ],
+      "acceptanceCriteria": [
+        "Ninguno de los dos archivos define ya cómo montar `ViewRole` ni cómo buscar un rol del catálogo.",
+        "Ninguna afirmación cambia: el rol bloqueado `admin` sigue sin «Editar» ni «Eliminar»."
+      ],
+      "writeScope": [
+        "tests/Pest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php < /dev/null && composer phpstan",
+      "filesToCreate": [],
+      "filesToModify": [
+        "tests/Pest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/ViewRoleLifecycleActionsTest.php"
+      ],
+      "review": "none"
+    },
+    {
+      "id": "TASK-031",
+      "title": "Nombres de permisos de un rol en `tests/Pest.php`",
+      "description": "Hallazgo del inventario de TASK-018. `editedPermissionNames()` (`EditRoleTest`) y `acknowledgedRolePermissionNames()` (`SensitivePermissionAcknowledgementTest`) devuelven igual los nombres ordenados de los permisos de un rol recargado. Añadir `rolePermissionNames(Role)` a `tests/Pest.php` y usarlo en los dos archivos.",
+      "priority": "P2",
+      "type": "test",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-030"
+      ],
+      "acceptanceCriteria": [
+        "La lectura de los nombres de permisos de un rol vive solo en `tests/Pest.php`.",
+        "Ninguna afirmación cambia: los permisos guardados al crear y editar siguen comprobándose ordenados y con el rol recargado."
+      ],
+      "writeScope": [
+        "tests/Pest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/EditRoleTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/SensitivePermissionAcknowledgementTest.php"
+      ],
+      "validateCommand": "rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/EditRoleTest.php app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/SensitivePermissionAcknowledgementTest.php < /dev/null && composer phpstan",
+      "filesToCreate": [],
+      "filesToModify": [
+        "tests/Pest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/EditRoleTest.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Roles/Pages/SensitivePermissionAcknowledgementTest.php"
       ],
       "review": "none"
     }
@@ -929,7 +989,7 @@
     ]
   },
   "executionSummary": {
-    "taskCount": 29,
+    "taskCount": 31,
     "layers": [
       [
         "TASK-001",
@@ -967,6 +1027,12 @@
         "TASK-025"
       ],
       [
+        "TASK-030"
+      ],
+      [
+        "TASK-031"
+      ],
+      [
         "TASK-017"
       ],
       [
@@ -974,10 +1040,12 @@
       ]
     ],
     "criticalPath": [
-      "TASK-002",
-      "TASK-003",
-      "TASK-004",
-      "TASK-016",
+      "TASK-005",
+      "TASK-006",
+      "TASK-007",
+      "TASK-025",
+      "TASK-030",
+      "TASK-031",
       "TASK-017",
       "TASK-018"
     ]
@@ -1050,7 +1118,9 @@
       "TASK-026",
       "TASK-027",
       "TASK-028",
-      "TASK-029"
+      "TASK-029",
+      "TASK-030",
+      "TASK-031"
     ],
     "TASK-018": [
       "TASK-017"
@@ -1073,6 +1143,13 @@
       "TASK-006"
     ],
     "TASK-028": [],
-    "TASK-029": []
+    "TASK-029": [],
+    "TASK-030": [
+      "TASK-011",
+      "TASK-025"
+    ],
+    "TASK-031": [
+      "TASK-030"
+    ]
   }
 }

@@ -6,23 +6,12 @@ use App\Modules\Admin\Database\Factories\RoleFactory;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Enums\AdminRole;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
-use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
 use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\PreferredLocale;
-use Livewire\Features\SupportTesting\Testable;
-use Livewire\Livewire;
 use Tests\TestCase;
-
-/**
- * @return Testable<ViewRole>
- */
-function viewRolePage(Role $role): Testable
-{
-    return Livewire::test(ViewRole::class, ['record' => $role->getKey()]);
-}
 
 beforeEach(function (): void {
     /** @var TestCase $testCase */
@@ -40,7 +29,7 @@ it('shows the role and its permissions grouped by area', function (PreferredLoca
 
     $text = static fn (string $key): string => translatedTextIn($preferredLocale, 'admin/roles.'.$key);
 
-    viewRolePage(adminCatalogRole(AdminRole::AdminRolesManager))
+    viewRolePageFor(adminCatalogRole(AdminRole::AdminRolesManager))
         ->assertOk()
         ->assertSee($text('catalog.roles.admin_roles_manager.label'))
         ->assertSee(AdminRole::AdminRolesManager->value)
@@ -65,7 +54,7 @@ it('titles the page and breadcrumb with the translated role name', function (): 
     expect(RoleResource::getRecordTitle($role))->toBe($label)
         ->and(RoleResource::getRecordTitle(Role::query()->create(['name' => 'legacy-role', 'guard_name' => 'admin'])))->toBe('legacy-role');
 
-    viewRolePage($role)->assertSee($label);
+    viewRolePageFor($role)->assertSee($label);
 });
 
 it('shows a custom role with its label, identifier, type and an empty state without permissions', function (): void {
@@ -74,7 +63,7 @@ it('shows a custom role with its label, identifier, type and an empty state with
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
     $role = RoleFactory::new()->createOne(['name' => 'custom-soporte', 'label' => 'Soporte', 'description' => 'Atiende a los usuarios.']);
 
-    viewRolePage($role)
+    viewRolePageFor($role)
         ->assertOk()
         ->assertSee('Soporte')
         ->assertSee('custom-soporte')
@@ -91,12 +80,12 @@ it('shows that the admin role is locked', function (): void {
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
 
-    viewRolePage(adminCatalogRole(AdminRole::Admin))
+    viewRolePageFor(adminCatalogRole(AdminRole::Admin))
         ->assertOk()
         ->assertSee(TranslatedText::of('admin/roles.locked.notice'))
         ->assertSee(TranslatedText::of('admin/roles.types.system'));
 
-    viewRolePage(adminCatalogRole(AdminRole::AdminPostsReader))
+    viewRolePageFor(adminCatalogRole(AdminRole::AdminPostsReader))
         ->assertDontSee(TranslatedText::of('admin/roles.locked.notice'));
 });
 
@@ -106,7 +95,7 @@ it('does not open a role of another guard', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
     $role = Role::query()->create(['name' => AdminRole::AdminUsersReader->value.'-web', 'guard_name' => 'web']);
 
-    viewRolePage($role)->assertNotFound();
+    viewRolePageFor($role)->assertNotFound();
 });
 
 it('denies the detail to an administrator without admin.roles.view', function (): void {
@@ -114,7 +103,7 @@ it('denies the detail to an administrator without admin.roles.view', function ()
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminUsersModerator);
 
-    viewRolePage(adminCatalogRole(AdminRole::AdminPostsReader))->assertForbidden();
+    viewRolePageFor(adminCatalogRole(AdminRole::AdminPostsReader))->assertForbidden();
 });
 
 it('links each granted permission to who else holds it', function (): void {
@@ -122,7 +111,7 @@ it('links each granted permission to who else holds it', function (): void {
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader, AdminRole::AdminUsersReader);
 
-    $testable = viewRolePage(adminCatalogRole(AdminRole::AdminBackupsOperator))->assertOk();
+    $testable = viewRolePageFor(adminCatalogRole(AdminRole::AdminBackupsOperator))->assertOk();
 
     foreach ([AdminPermission::AdminBackupsView, AdminPermission::AdminBackupsCreate, AdminPermission::AdminBackupsDownload] as $adminPermission) {
         $testable->assertSeeHtml('href="'.e(RoleResource::getUrl('access', ['permission' => $adminPermission->value])).'"');
@@ -136,7 +125,7 @@ it('shows the permissions without links to an administrator who cannot see who h
     $testCase = $this;
     AdminFilamentTestContext::actingAsAdminWithRoles($testCase, AdminRole::Admin, AdminRole::AdminRolesReader);
 
-    viewRolePage(adminCatalogRole(AdminRole::AdminBackupsOperator))
+    viewRolePageFor(adminCatalogRole(AdminRole::AdminBackupsOperator))
         ->assertOk()
         ->assertSee(AdminPermission::AdminBackupsDownload->label())
         ->assertDontSeeHtml(RoleResource::getUrl('access'));
