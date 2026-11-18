@@ -226,9 +226,10 @@ Su `down()` borra las dos tablas. Cada base local existente se rehace con `php a
 Crear tres enums:
 
 * **`FriendshipStatus`:** `Pending`, `Accepted`, en PascalCase y con los mismos valores en minúsculas.
-* **`FriendshipState`:** el estado visto por quien consulta: `None`, `RequestSent`, `RequestReceived`, `Friends`. Tiene `forViewer(?Friendship, User $viewer)`.
+* **`FriendshipState`:** el estado visto por quien consulta: `None`, `RequestSent`, `RequestReceived`, `Friends`. Tiene `forViewer(?FriendshipStatus, ?int $requesterId, int $viewerId)`: recibe las columnas guardadas y no el modelo, así la búsqueda (TASK-013) lo usa con las columnas que selecciona, sin hidratar un `Friendship`, y el enum no depende de un modelo que llega en TASK-006.
 * **`FriendshipOperationResult`:** `Sent`, `Accepted`, `Declined`, `Canceled`, `Removed`, `AlreadyPending`, `AlreadyFriends`, `IncomingRequestExists`, `CooldownActive`, `PendingLimitReached`, `ReceiverUnavailable`, `NoLongerPending`. Sus métodos son:
   * `isSuccessful()`;
+  * `endsFriendship()`: `true` solo para `Declined`, `Canceled` y `Removed`, los motivos que acepta `FriendshipEnded` (TASK-010);
   * `httpStatus()`: 200 si tuvo éxito, 409 si no;
   * `messageKey()`: `friendship/actions.results.<valor>`;
   * `message()` con `TranslatedText::of()`.
@@ -249,7 +250,7 @@ Crear tres enums:
 **Acceptance Criteria:**
 
 1. `FriendshipStatus` tiene solo `Pending='pending'` y `Accepted='accepted'`: no existe `Declined`.
-2. `FriendshipState::forViewer(null, $viewer)` es `None`. Para una pendiente devuelve `RequestSent` si el viewer es el emisor y `RequestReceived` si es el receptor. Para una aceptada devuelve `Friends` en ambos casos.
+2. `FriendshipState::forViewer(null, null, $viewerId)` es `None`. Para una pendiente devuelve `RequestSent` si el viewer es el emisor y `RequestReceived` si es el receptor. Para una aceptada devuelve `Friends` en ambos casos.
 3. Todo caso de éxito devuelve 200 en `httpStatus()` y todo caso de rechazo devuelve 409 (se prueba con un dataset en TASK-005).
 
 **validateCommand:** `vendor/bin/phpstan analyse app/Modules/Friendship/Enums --memory-limit=2G`

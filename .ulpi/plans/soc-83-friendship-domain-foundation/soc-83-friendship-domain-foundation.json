@@ -190,7 +190,7 @@
     {
       "id": "TASK-004",
       "title": "Create the friendship enums",
-      "description": "Crear tres enums:\n\n* **`FriendshipStatus`:** `Pending`, `Accepted`, en PascalCase y con los mismos valores en minúsculas.\n* **`FriendshipState`:** el estado visto por quien consulta: `None`, `RequestSent`, `RequestReceived`, `Friends`. Tiene `forViewer(?Friendship, User $viewer)`.\n* **`FriendshipOperationResult`:** `Sent`, `Accepted`, `Declined`, `Canceled`, `Removed`, `AlreadyPending`, `AlreadyFriends`, `IncomingRequestExists`, `CooldownActive`, `PendingLimitReached`, `ReceiverUnavailable`, `NoLongerPending`. Sus métodos son:\n  * `isSuccessful()`;\n  * `httpStatus()`: 200 si tuvo éxito, 409 si no;\n  * `messageKey()`: `friendship/actions.results.<valor>`;\n  * `message()` con `TranslatedText::of()`.",
+      "description": "Crear tres enums:\n\n* **`FriendshipStatus`:** `Pending`, `Accepted`, en PascalCase y con los mismos valores en minúsculas.\n* **`FriendshipState`:** el estado visto por quien consulta: `None`, `RequestSent`, `RequestReceived`, `Friends`. Tiene `forViewer(?FriendshipStatus, ?int $requesterId, int $viewerId)`: recibe las columnas guardadas y no el modelo, así la búsqueda (TASK-013) lo usa con las columnas que selecciona, sin hidratar un `Friendship`, y el enum no depende de un modelo que llega en TASK-006.\n* **`FriendshipOperationResult`:** `Sent`, `Accepted`, `Declined`, `Canceled`, `Removed`, `AlreadyPending`, `AlreadyFriends`, `IncomingRequestExists`, `CooldownActive`, `PendingLimitReached`, `ReceiverUnavailable`, `NoLongerPending`. Sus métodos son:\n  * `isSuccessful()`;\n  * `endsFriendship()`: `true` solo para `Declined`, `Canceled` y `Removed`, los motivos que acepta `FriendshipEnded` (TASK-010);\n  * `httpStatus()`: 200 si tuvo éxito, 409 si no;\n  * `messageKey()`: `friendship/actions.results.<valor>`;\n  * `message()` con `TranslatedText::of()`.",
       "type": "feature",
       "priority": "P0",
       "effort": "S",
@@ -206,7 +206,7 @@
       "filesToModify": [],
       "acceptanceCriteria": [
         "`FriendshipStatus` tiene solo `Pending='pending'` y `Accepted='accepted'`: no existe `Declined`.",
-        "`FriendshipState::forViewer(null, $viewer)` es `None`. Para una pendiente devuelve `RequestSent` si el viewer es el emisor y `RequestReceived` si es el receptor. Para una aceptada devuelve `Friends` en ambos casos.",
+        "`FriendshipState::forViewer(null, null, $viewerId)` es `None`. Para una pendiente devuelve `RequestSent` si el viewer es el emisor y `RequestReceived` si es el receptor. Para una aceptada devuelve `Friends` en ambos casos.",
         "Todo caso de éxito devuelve 200 en `httpStatus()` y todo caso de rechazo devuelve 409 (se prueba con un dataset en TASK-005)."
       ],
       "validateCommand": "vendor/bin/phpstan analyse app/Modules/Friendship/Enums --memory-limit=2G",
