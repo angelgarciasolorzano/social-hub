@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Filament\Resources\Roles\RelationManagers;
 
 use App\Modules\ActivityLog\Models\ActivityLog;
+use App\Modules\Admin\Filament\Resources\ActivityLogs\ActivityLogResource;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RoleActivityLogsTable;
 use App\Modules\Admin\Models\Role;
 use App\Support\Translation\TranslatedText;
-use App\User\Models\User;
-use Filament\Facades\Filament;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Gate;
 use LogicException;
 use Override;
 
@@ -55,11 +54,7 @@ class RoleActivityLogsRelationManager extends RelationManager
             return false;
         }
 
-        $authenticatedUser = Filament::auth()->user();
-
-        return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('view', $ownerRecord)
-            && Gate::forUser($authenticatedUser)->allows('viewAny', ActivityLog::class);
+        return RoleResource::canView($ownerRecord) && ActivityLogResource::canViewAny();
     }
 
     /**

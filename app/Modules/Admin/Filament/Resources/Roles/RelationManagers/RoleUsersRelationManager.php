@@ -9,7 +9,9 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Exceptions\AdminAuthorizationException;
 use App\Modules\Admin\Filament\Concerns\ConfirmsCurrentPassword;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\ViewRole;
+use App\Modules\Admin\Filament\Resources\Roles\RoleResource;
 use App\Modules\Admin\Filament\Resources\Roles\Tables\RoleUsersTable;
+use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Admin\Models\Role;
 use App\Modules\Admin\Services\AdminAuthorizationService;
 use App\Support\Translation\TranslatedText;
@@ -73,11 +75,7 @@ class RoleUsersRelationManager extends RelationManager
             return false;
         }
 
-        $authenticatedUser = Filament::auth()->user();
-
-        return $authenticatedUser instanceof User
-            && Gate::forUser($authenticatedUser)->allows('view', $ownerRecord)
-            && Gate::forUser($authenticatedUser)->allows('viewAny', User::class);
+        return RoleResource::canView($ownerRecord) && UserResource::canViewAny();
     }
 
     #[Override]
