@@ -736,7 +736,8 @@ Crear `docs/architecture/modules/friendship.md`, que explica el **porqué** de c
 * el contrato JSON y los códigos HTTP;
 * la búsqueda segura;
 * los eventos para SOC-85 (`afterCommit`);
-* el seeder y la configuración.
+* el seeder y la configuración;
+* que `useHttp` recibe su estado inicial como función (`useHttp(() => ({ q: '' }))`): un objeto literal nuevo en cada render dejó `/home` en blanco con `Maximum update depth exceeded` (TASK-017).
 
 En `CLAUDE.md`, la fila de Friendship apunta a `app/Modules/Friendship/` y al documento nuevo. En `docs/architecture/infrastructure.md`, se actualiza el orden de seeders.
 
