@@ -50,15 +50,15 @@ class ListRoles extends ListRecords
     }
 
     /**
-     * Split the roles by type, each tab with how many roles of the `admin` guard it holds.
+     * The roles split by type, each tab with its number of roles of the `admin` guard.
      *
      * @return array<string, Tab>
      */
     #[Override]
     public function getTabs(): array
     {
-        $systemRoleCount = Role::query()->where('guard_name', Role::GUARD_NAME)->where('is_system', true)->count();
-        $roleCount = Role::query()->where('guard_name', Role::GUARD_NAME)->count();
+        $systemRoleCount = Role::query()->admin()->system()->count();
+        $roleCount = Role::query()->admin()->count();
 
         return [
             'all' => Tab::make(TranslatedText::of('admin/roles.types.all'))
