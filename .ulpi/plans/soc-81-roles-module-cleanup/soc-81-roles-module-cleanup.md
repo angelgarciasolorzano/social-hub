@@ -422,7 +422,7 @@ Actualizar `docs/architecture/modules/admin.md`: el scope `Role::admin()` y `Rol
 
 **Type:** docs · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P3
 
-**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027
+**Depends on:** TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028
 
 **Acceptance Criteria:**
 
@@ -669,6 +669,27 @@ Hallazgo de la auditoría de TASK-019. En `RoleUsersRelationManager`, «Agregar 
 
 **Review:** none
 
+### TASK-028: Un solo editor de prueba para `EditsRolePermissions`
+
+Hallazgo de TASK-023. `EditsRolePermissionsTest` tiene 8 funciones globales (`editorPermissionCheckboxLists()`, `editorPermissionsByArea()`, `editorSelectedPermissions()`, `editorAppliedDependencies()`, `editorChangeSummary()`, `editorSelectionOverview()`, `editorSensitivePermissionsText()` y la parte de `editorPermissionDescriptions()` que lee el trait) que crean cada una su propia clase anónima con `use EditsRolePermissions` solo para exponer un método `protected static`, con cada tipo de retorno escrito dos veces. Dejar una sola clase anónima, devuelta por una función `rolePermissionsEditor()`, con un método público por cada método del trait que las pruebas usan, y que las pruebas la llamen directamente.
+
+**Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
+
+**Depends on:** Ninguna
+
+**Acceptance Criteria:**
+
+1. Queda una sola clase anónima con `use EditsRolePermissions` en el archivo; desaparecen las funciones envoltorio repetidas.
+2. Ninguna afirmación cambia y todas las pruebas del archivo siguen en verde, incluidas las de dependencias entre áreas y permisos fuera del catálogo.
+
+**writeScope:**
+
+- `app/Modules/Admin/Tests/Filament/Concerns/EditsRolePermissionsTest.php`
+
+**validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Concerns/EditsRolePermissionsTest.php < /dev/null && composer phpstan`
+
+**Review:** none
+
 ## Failure Modes
 
 - `RoleResource::canViewAny()` con `shouldSkipAuthorization()` activo permitiría todo: el recurso no lo activa; las pruebas de 403 existentes lo detectarían.
@@ -691,11 +712,11 @@ Mínimo entregable: TASK-001 a TASK-007 (producción sin duplicados) más TASK-0
 
 ## Execution Summary
 
-**Tareas:** 27
+**Tareas:** 28
 
 **Capas:**
 
-1. TASK-001, TASK-002, TASK-005, TASK-008, TASK-009, TASK-010, TASK-019, TASK-020, TASK-021, TASK-022, TASK-024
+1. TASK-001, TASK-002, TASK-005, TASK-008, TASK-009, TASK-010, TASK-019, TASK-020, TASK-021, TASK-022, TASK-024, TASK-028
 2. TASK-003, TASK-006, TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-026
 3. TASK-004, TASK-007, TASK-027
 4. TASK-016, TASK-023, TASK-025
@@ -723,7 +744,7 @@ TASK-013 ← TASK-008, TASK-009, TASK-010
 TASK-014 ← TASK-008, TASK-009, TASK-010
 TASK-015 ← TASK-008, TASK-009
 TASK-016 ← TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-006, TASK-007
-TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027
+TASK-017 ← TASK-011, TASK-012, TASK-013, TASK-014, TASK-015, TASK-016, TASK-019, TASK-020, TASK-021, TASK-022, TASK-023, TASK-024, TASK-025, TASK-026, TASK-027, TASK-028
 TASK-018 ← TASK-017
 TASK-019 ← —
 TASK-020 ← —
@@ -734,4 +755,5 @@ TASK-024 ← —
 TASK-025 ← TASK-007
 TASK-026 ← TASK-008
 TASK-027 ← TASK-006
+TASK-028 ← —
 ```
