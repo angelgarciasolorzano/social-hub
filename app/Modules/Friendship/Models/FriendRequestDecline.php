@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Friendship\Models;
 
-use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Modules\Friendship\Database\Factories\FriendRequestDeclineFactory;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Attributes\UseFactory;
+use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Override;
@@ -28,6 +30,7 @@ use Override;
  *
  * @mixin IdeHelperFriendRequestDecline
  */
+#[UseFactory(FriendRequestDeclineFactory::class)]
 #[Fillable([
     'requester_id',
     'receiver_id',
@@ -36,6 +39,7 @@ use Override;
 #[WithoutTimestamps]
 class FriendRequestDecline extends Model
 {
+    /** @use HasFactory<FriendRequestDeclineFactory> */
     use HasFactory;
 
     /**
