@@ -9,6 +9,8 @@ use App\Auth\Models\TrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Friendship\Enums\FriendshipStatus;
+use App\Modules\Friendship\Models\Friendship;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\User\Database\Factories\UserFactory;
@@ -26,11 +28,14 @@ use Filament\Panel;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Attributes\UseFactory;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\Events\RecoveryCodeReplaced;
@@ -52,6 +57,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property CarbonImmutable|null $recovery_codes_regenerated_at
  * @property string|null $app_authentication_secret
  * @property array<string>|null $app_authentication_recovery_codes
+ * @property-read int|null $sent_accepted_friendships_count
+ * @property-read int|null $received_accepted_friendships_count
+ * @property-read int|null $pending_received_friend_requests_count
  *
  * @mixin IdeHelperUser
  */
@@ -284,5 +292,120 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function causedActivityLogs(): MorphMany
     {
         return $this->morphMany(ActivityLog::class, 'causer');
+    }
+
+    /**
+     * Get the friend requests this user sent that still wait for an answer.
+     *
+     * @return HasMany<Friendship, $this>
+     */
+    public function sentFriendRequests(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'requester_id')->pending();
+    }
+
+    /**
+     * Get the friend requests this user received that still wait for an answer.
+     *
+     * @return HasMany<Friendship, $this>
+     */
+    public function receivedFriendRequests(): HasMany
+    {
+        return $this->hasMany(Friendship::class, 'receiver_id')->pending();
+    }
+
+    /**
+     * Query the users on the other side of this user's accepted friendships, whoever sent the request.
+     * Joining the friend ids, read through the `(requester_id, status)` and `(receiver_id, status)`
+     * indexes, grows with the number of friends; an `IN … OR IN …` would scan every user.
+     *
+     * @return Builder<User>
+     */
+    public function friends(): Builder
+    {
+        $builder = $this->acceptedFriendships('requester_id')->toBase()->select('receiver_id as friend_id')
+            ->unionAll($this->acceptedFriendships('receiver_id')->toBase()->select('requester_id as friend_id'));
+
+        $friends = self::query()->select($this->qualifyColumn('*'));
+        $friends->joinSub($builder, 'friend_ids', 'friend_ids.friend_id', '=', $this->qualifyColumn('id'));
+
+        return $friends;
+    }
+
+    /**
+     * Get the row of this user and the given one: a pending request, a friendship or null.
+     */
+    public function friendshipWith(User $user): ?Friendship
+    {
+        return Friendship::query()->between($this, $user)->first();
+    }
+
+    /**
+     * Get the number of friends, reusing the two preloaded counts of `withFriendshipCounts()` when present.
+     */
+    public function friendsCount(): int
+    {
+        $loadedSentCount = $this->getAttributes()['sent_accepted_friendships_count'] ?? null;
+        $loadedReceivedCount = $this->getAttributes()['received_accepted_friendships_count'] ?? null;
+
+        if (is_numeric($loadedSentCount) && is_numeric($loadedReceivedCount)) {
+            return (int) $loadedSentCount + (int) $loadedReceivedCount;
+        }
+
+        return $this->friends()->count();
+    }
+
+    /**
+     * Get the number of received requests waiting for an answer, reusing a preloaded count when present.
+     */
+    public function pendingReceivedFriendRequestsCount(): int
+    {
+        $loadedCount = $this->getAttributes()['pending_received_friend_requests_count'] ?? null;
+
+        return is_numeric($loadedCount) ? (int) $loadedCount : $this->receivedFriendRequests()->count();
+    }
+
+    /**
+     * Preload the accepted friendships on each side of the pair and the pending received requests,
+     * in the same query; each count reads one `(<side>_id, status)` index.
+     *
+     * @param  Builder<static>  $builder
+     */
+    #[Scope]
+    protected function withFriendshipCounts(Builder $builder): void
+    {
+        if ($builder->getQuery()->columns === null) {
+            $builder->select($this->qualifyColumn('*'));
+        }
+
+        $builder
+            ->selectSub($this->acceptedFriendshipsCountOfColumn('requester_id'), 'sent_accepted_friendships_count')
+            ->selectSub($this->acceptedFriendshipsCountOfColumn('receiver_id'), 'received_accepted_friendships_count')
+            ->withCount('receivedFriendRequests as pending_received_friend_requests_count');
+    }
+
+    /**
+     * Query this user's accepted friendships on one side of the pair.
+     *
+     * @param  'requester_id'|'receiver_id'  $userColumn
+     * @return Builder<Friendship>
+     */
+    private function acceptedFriendships(string $userColumn): Builder
+    {
+        return Friendship::query()->accepted()->where($userColumn, $this->id);
+    }
+
+    /**
+     * Count the accepted friendships where the outer user's id sits in the given column.
+     *
+     * @param  'requester_id'|'receiver_id'  $userColumn
+     */
+    private function acceptedFriendshipsCountOfColumn(string $userColumn): QueryBuilder
+    {
+        return Friendship::query()
+            ->toBase()
+            ->selectRaw('count(*)')
+            ->where('status', FriendshipStatus::Accepted->value)
+            ->whereColumn("friendships.{$userColumn}", $this->qualifyColumn('id'));
     }
 }

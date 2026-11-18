@@ -391,10 +391,9 @@ Pruebas de modelos, en `FriendshipModelTest` (incluye las de `FriendRequestDecli
 
 En `App\User\Models\User`, agregar:
 * las relaciones `sentFriendRequests()` y `receivedFriendRequests()` (`HasMany` pendientes);
-* `friendshipsAsRequester()`/`friendshipsAsReceiver()` si hacen falta para los conteos;
-* `friends(): Builder<User>`, que son los usuarios del otro lado de las amistades aceptadas, mediante una subconsulta y sin cargar ids en PHP;
+* `friends(): Builder<User>`, que son los usuarios del otro lado de las amistades aceptadas: un `joinSub` contra la unión (`UNION ALL`) de los ids leídos por los índices `(requester_id, status)` y `(receiver_id, status)`. Comprobado con `EXPLAIN`: un `EXISTS` con `LEAST`/`GREATEST` o un `IN … OR IN …` recorren toda la tabla `users`, mientras que el JOIN busca cada amigo por clave primaria;
 * `friendshipWith(User): ?Friendship`;
-* el scope `withFriendshipCounts()`, que precarga `friends_count` y `pending_received_friend_requests_count` con subconsultas;
+* el scope `withFriendshipCounts()`, que precarga con `selectSub` `sent_accepted_friendships_count` y `received_accepted_friendships_count` (una subconsulta por índice, sin `selectRaw`, porque PHPStan exige un `literal-string`) y `pending_received_friend_requests_count` con `withCount`;
 * `friendsCount()` y `pendingReceivedFriendRequestsCount()`, que reutilizan esos valores y solo consultan si no están precargados.
 
 Después, regenerar los mixins con `php artisan ide-helper:models -RM --env=testing` (`_ide_helper_models.php` está en `.gitignore`) y revertir los cambios que deje en los docblocks de otros modelos.
