@@ -669,9 +669,9 @@ Hallazgo de la auditoría de TASK-019. En `RoleUsersRelationManager`, «Agregar 
 
 **Review:** none
 
-### TASK-028: Un solo editor de prueba para `EditsRolePermissions`
+### TASK-028: Un editor de prueba en `Tests/Support` para `EditsRolePermissions`
 
-Hallazgo de TASK-023. `EditsRolePermissionsTest` tiene 8 funciones globales (`editorPermissionCheckboxLists()`, `editorPermissionsByArea()`, `editorSelectedPermissions()`, `editorAppliedDependencies()`, `editorChangeSummary()`, `editorSelectionOverview()`, `editorSensitivePermissionsText()` y la parte de `editorPermissionDescriptions()` que lee el trait) que crean cada una su propia clase anónima con `use EditsRolePermissions` solo para exponer un método `protected static`, con cada tipo de retorno escrito dos veces. Dejar una sola clase anónima, devuelta por una función `rolePermissionsEditor()`, con un método público por cada método del trait que las pruebas usan, y que las pruebas la llamen directamente.
+Hallazgo de TASK-023. `EditsRolePermissionsTest` tiene 8 funciones globales (`editorPermissionCheckboxLists()`, `editorPermissionsByArea()`, `editorSelectedPermissions()`, `editorAppliedDependencies()`, `editorChangeSummary()`, `editorSelectionOverview()`, `editorSensitivePermissionsText()` y la parte de `editorPermissionDescriptions()` que lee el trait) que crean cada una su propia clase anónima con `use EditsRolePermissions` solo para exponer un método `protected static`, con cada tipo de retorno escrito dos veces. Una clase anónima devuelta por una función perdería su tipo para PHPStan, y una clase con nombre no puede vivir en el archivo de pruebas (rompe el mapa PSR-4), así que va en `Tests/Support/RolePermissionsEditor`, que usa el trait y hace públicos sus métodos con alias (`as public`), sin envoltorios.
 
 **Type:** test · **Effort:** S · **Agent:** laravel-senior-engineer · **Priority:** P2
 
@@ -679,11 +679,12 @@ Hallazgo de TASK-023. `EditsRolePermissionsTest` tiene 8 funciones globales (`ed
 
 **Acceptance Criteria:**
 
-1. Queda una sola clase anónima con `use EditsRolePermissions` en el archivo; desaparecen las funciones envoltorio repetidas.
+1. No queda ninguna clase anónima con `use EditsRolePermissions` en las pruebas; desaparecen las funciones envoltorio repetidas.
 2. Ninguna afirmación cambia y todas las pruebas del archivo siguen en verde, incluidas las de dependencias entre áreas y permisos fuera del catálogo.
 
 **writeScope:**
 
+- `app/Modules/Admin/Tests/Support/RolePermissionsEditor.php`
 - `app/Modules/Admin/Tests/Filament/Concerns/EditsRolePermissionsTest.php`
 
 **validateCommand:** `rtk php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Concerns/EditsRolePermissionsTest.php < /dev/null && composer phpstan`
