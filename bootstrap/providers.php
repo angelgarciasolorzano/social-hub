@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Auth\Providers\AuthServiceProvider;
-use App\Friendship\Providers\FriendshipServiceProvider as LegacyFriendshipServiceProvider;
 use App\Home\Providers\HomeServiceProvider;
 use App\Modules\ActivityLog\Providers\ActivityLogServiceProvider;
 use App\Modules\Admin\Providers\AdminPanelProvider;
@@ -31,7 +30,6 @@ return [
     NotificationServiceProvider::class,
     AnnouncementServiceProvider::class,
     ActivityLogServiceProvider::class,
-    LegacyFriendshipServiceProvider::class,
     FriendshipServiceProvider::class,
     FortifyServiceProvider::class,
 ];
