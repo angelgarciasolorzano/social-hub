@@ -23,8 +23,6 @@ return [
     ],
 
     'validation' => [
-        'search_required' => 'Escribe un nombre para buscar.',
-        'search_min' => 'Escribe al menos :min caracteres para buscar.',
         'search_max' => 'La búsqueda no puede tener más de :max caracteres.',
     ],
 ];

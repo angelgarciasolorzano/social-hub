@@ -23,8 +23,6 @@ return [
     ],
 
     'validation' => [
-        'search_required' => 'Type a name to search.',
-        'search_min' => 'Type at least :min characters to search.',
         'search_max' => 'The search cannot be longer than :max characters.',
     ],
 ];
