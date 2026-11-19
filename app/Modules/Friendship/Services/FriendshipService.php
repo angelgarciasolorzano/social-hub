@@ -12,6 +12,7 @@ use App\Modules\Friendship\Events\FriendshipEnded;
 use App\Modules\Friendship\Models\FriendRequestDecline;
 use App\Modules\Friendship\Models\Friendship;
 use App\User\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ final readonly class FriendshipService
     {
         throw_if($requester->is($receiver), LogicException::class, 'A user cannot send a friend request to themselves.');
 
-        return DB::transaction(fn (): FriendshipOperationResult => $this->sendWithLockedRequester($requester, $receiver));
+        return DB::transaction(fn (): FriendshipOperationResult => $this->sendWithLockedPair($requester, $receiver));
     }
 
     /**
@@ -131,14 +132,12 @@ final readonly class FriendshipService
     }
 
     /**
-     * Apply the rules of a new request with the requester's row locked, which serializes the
-     * pending count of concurrent requests by the same person, and create the request.
+     * Apply the rules of a new request with both users locked, which serializes the pending count
+     * of concurrent requests by the same person and crossed requests of the pair, and create it.
      */
-    private function sendWithLockedRequester(User $requester, User $receiver): FriendshipOperationResult
+    private function sendWithLockedPair(User $requester, User $receiver): FriendshipOperationResult
     {
-        User::query()->lockForUpdate()->whereKey($requester->id)->firstOrFail();
-
-        if (User::query()->whereKey($receiver->id)->firstOrFail()->isSuspended()) {
+        if ($this->lockPair($requester, $receiver)->isSuspended()) {
             return FriendshipOperationResult::ReceiverUnavailable;
         }
 
@@ -169,6 +168,30 @@ final readonly class FriendshipService
         event(new FriendRequestSent($friendship));
 
         return FriendshipOperationResult::Sent;
+    }
+
+    /**
+     * Lock both users in ascending id order and return the locked receiver. The insert's foreign key
+     * checks take a shared lock on both rows, so locking only the requester let A→B and B→A deadlock.
+     *
+     * @throws ModelNotFoundException<User> when either user no longer exists
+     */
+    private function lockPair(User $requester, User $receiver): User
+    {
+        $lockedUsers = User::query()
+            ->whereKey([$requester->id, $receiver->id])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        $lockedReceiver = $lockedUsers->get($receiver->id);
+
+        if (! $lockedReceiver instanceof User || ! $lockedUsers->has($requester->id)) {
+            throw new ModelNotFoundException()->setModel(User::class);
+        }
+
+        return $lockedReceiver;
     }
 
     /**
