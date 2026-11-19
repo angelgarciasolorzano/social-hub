@@ -79,7 +79,9 @@ class FriendshipController extends Controller
     }
 
     /**
-     * Answer with the result and the pair's state read after the action, so the client shows what is stored.
+     * Answer with the result and the pair's state and row id read after the action, so the client shows what
+     * is stored and can act on the row right away (cancel after sending, remove after accepting, accept an
+     * incoming request a refusal revealed). The id is `null` when the pair has no row.
      */
     private function respond(FriendshipOperationResult $friendshipOperationResult, User $viewer, User $otherUser): JsonResponse
     {
@@ -88,6 +90,7 @@ class FriendshipController extends Controller
         return response()->json([
             'result' => $friendshipOperationResult->value,
             'state' => FriendshipState::forViewer($friendship?->status, $friendship?->requester_id, $viewer->id)->value,
+            'friendshipId' => $friendship?->id,
             'message' => $friendshipOperationResult->message(),
         ], $friendshipOperationResult->httpStatus());
     }
