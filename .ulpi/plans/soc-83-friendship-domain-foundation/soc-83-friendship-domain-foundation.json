@@ -739,7 +739,7 @@
     {
       "id": "TASK-022",
       "title": "Turn the search endpoint into an Inertia page with infinite scroll",
-      "description": "La búsqueda deja de responder JSON y pasa a un controlador invocable propio, `FriendshipSearchController` (decisión del usuario durante la tarea, siguiendo `TrustedDeviceIndexController`): `FriendshipController` queda solo con las acciones JSON, y la página de amigos de SOC-84 será `FriendshipIndexController` (`friendships.index`). La página no se llama `index` porque lista personas, no amistades. El controlador nuevo:\n* hace `Inertia::render('friendship/Search', …)` con `filters: {q}`, `searchTermMinLength` y `searchResults: Inertia::scroll(FriendshipSearchResultResource::collection($cursorPaginator))`, como `NotificationController::index`;\n* registra `friendship/search` y `notification/center` (el header compartido los necesita, como en Home) con `FrontendTranslations`.\n\nLa ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throttle), ahora apuntando a `FriendshipSearchController`.\n\n`FriendshipSearchRequest`:\n* `q` pasa a ser opcional, con un máximo de 50 (error de validación si se excede);\n* sin un mínimo que falle: en una página, la búsqueda vive en la URL, y un 422 obligaría a redirigir hacia atrás.\n\n`FriendshipSearchService::search(User, ?string)` no consulta cuando el término está vacío o tiene menos de `FriendshipSearchRequest::TERM_MIN_LENGTH` caracteres: devuelve una página vacía y **nunca lista a todos los usuarios**. Un `LIKE '%'` sin término los traería a todos.",
+      "description": "La búsqueda deja de responder JSON y pasa a un controlador invocable propio, `FriendshipSearchController` (decisión del usuario durante la tarea, siguiendo `TrustedDeviceIndexController`): `FriendshipController` queda solo con las acciones JSON, y la página de amigos de SOC-84 será `FriendshipIndexController` (`friendships.index`). La página no se llama `index` porque lista personas, no amistades. El controlador nuevo:\n* hace `Inertia::render('friendship/Search', …)` con `filters: {q}`, `searchTermMinLength` y `searchResults: Inertia::scroll(FriendshipSearchResultResource::collection($cursorPaginator))`, como `NotificationController::index`;\n* registra `friendship/search` y `notification/center` (el header compartido los necesita, como en Home) con `FrontendTranslations`.\n\nLa ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throttle), ahora apuntando a `FriendshipSearchController`.\n\n`FriendshipSearchRequest`:\n* `q` pasa a ser opcional, con un máximo de 50 (error de validación si se excede);\n* sin un mínimo que falle: en una página, la búsqueda vive en la URL, y un 422 obligaría a redirigir hacia atrás.\n\nLa consulta de `FriendshipSearchService` pasa a métodos privados del controlador (decisión del usuario: era su único consumidor, como la consulta de `TrustedDeviceIndexController`) y el servicio se borra. La búsqueda no consulta cuando el término está vacío o tiene menos de `FriendshipSearchRequest::TERM_MIN_LENGTH` caracteres: devuelve una página vacía y **nunca lista a todos los usuarios**. Un `LIKE '%'` sin término los traería a todos.",
       "type": "feature",
       "priority": "P0",
       "effort": "M",
@@ -754,7 +754,8 @@
         "app/Modules/Friendship/Controllers/FriendshipController.php",
         "app/Modules/Friendship/routes/routes.php",
         "app/Modules/Friendship/Requests/FriendshipSearchRequest.php",
-        "app/Modules/Friendship/Services/FriendshipSearchService.php"
+        "app/Modules/Friendship/Services/FriendshipSearchService.php (deleted, moved into the controller)",
+        "app/Modules/Friendship/Resources/FriendshipSearchResultResource.php (docblock)"
       ],
       "acceptanceCriteria": [
         "`GET friendships/search?q=Ana` renderiza el componente `friendship/Search` con `searchResults` (datos y metadatos de scroll) y `filters.q = 'Ana'`; cada elemento conserva los seis campos del contrato, sin email.",
@@ -767,7 +768,8 @@
         "app/Modules/Friendship/Controllers/FriendshipController.php",
         "app/Modules/Friendship/routes/routes.php",
         "app/Modules/Friendship/Requests/FriendshipSearchRequest.php",
-        "app/Modules/Friendship/Services/FriendshipSearchService.php"
+        "app/Modules/Friendship/Services/FriendshipSearchService.php (deleted, moved into the controller)",
+        "app/Modules/Friendship/Resources/FriendshipSearchResultResource.php (docblock)"
       ],
       "review": "claude"
     },
@@ -938,7 +940,7 @@
     {
       "id": "TASK-029",
       "title": "Document the search page",
-      "description": "En `docs/architecture/modules/friendship.md`:\n* la búsqueda pasa a ser una página Inertia servida por `FriendshipSearchController` (invocable, separada de las acciones JSON como en TrustedDevice), con sus props, `Inertia::scroll`, el término opcional y la lista vacía sin término;\n* el frontend vive en `modules/friendship` (`Search.tsx`, `useFriendshipSearch`, `FriendshipSearchResultRow`, InfiniteScroll + TanStack Virtual);\n* la lupa del header es un enlace;\n* la prueba de navegador.\n\nEn `CLAUDE.md`, el espejo de `FriendshipState` pasa a `modules/friendship/types/friendshipSearch.ts`, y la descripción del módulo menciona la página de búsqueda.",
+      "description": "En `docs/architecture/modules/friendship.md`:\n* la búsqueda pasa a ser una página Inertia servida por `FriendshipSearchController` (invocable, separada de las acciones JSON como en TrustedDevice, y dueño de la consulta en métodos privados: ya no existe `FriendshipSearchService`), con sus props, `Inertia::scroll`, el término opcional y la lista vacía sin término;\n* el frontend vive en `modules/friendship` (`Search.tsx`, `useFriendshipSearch`, `FriendshipSearchResultRow`, InfiniteScroll + TanStack Virtual);\n* la lupa del header es un enlace;\n* la prueba de navegador.\n\nEn `CLAUDE.md`, el espejo de `FriendshipState` pasa a `modules/friendship/types/friendshipSearch.ts`, y la descripción del módulo menciona la página de búsqueda.",
       "type": "docs",
       "priority": "P3",
       "effort": "S",

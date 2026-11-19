@@ -838,7 +838,7 @@ La ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throt
 * `q` pasa a ser opcional, con un máximo de 50 (error de validación si se excede);
 * sin un mínimo que falle: en una página, la búsqueda vive en la URL, y un 422 obligaría a redirigir hacia atrás.
 
-`FriendshipSearchService::search(User, ?string)` no consulta cuando el término está vacío o tiene menos de `FriendshipSearchRequest::TERM_MIN_LENGTH` caracteres: devuelve una página vacía y **nunca lista a todos los usuarios**. Un `LIKE '%'` sin término los traería a todos.
+La consulta de `FriendshipSearchService` pasa a métodos privados del controlador (decisión del usuario: era su único consumidor, como la consulta de `TrustedDeviceIndexController`) y el servicio se borra. La búsqueda no consulta cuando el término está vacío o tiene menos de `FriendshipSearchRequest::TERM_MIN_LENGTH` caracteres: devuelve una página vacía y **nunca lista a todos los usuarios**. Un `LIKE '%'` sin término los traería a todos.
 
 **Type:** feature  
 **Effort:** M  
@@ -853,7 +853,8 @@ La ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throt
 - `app/Modules/Friendship/Controllers/FriendshipController.php`
 - `app/Modules/Friendship/routes/routes.php`
 - `app/Modules/Friendship/Requests/FriendshipSearchRequest.php`
-- `app/Modules/Friendship/Services/FriendshipSearchService.php`
+- `app/Modules/Friendship/Services/FriendshipSearchService.php (deleted, moved into the controller)`
+- `app/Modules/Friendship/Resources/FriendshipSearchResultResource.php (docblock)`
 
 **Acceptance Criteria:**
 
@@ -1037,7 +1038,7 @@ Llama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que 
 ### TASK-029: Document the search page
 
 En `docs/architecture/modules/friendship.md`:
-* la búsqueda pasa a ser una página Inertia servida por `FriendshipSearchController` (invocable, separada de las acciones JSON como en TrustedDevice), con sus props, `Inertia::scroll`, el término opcional y la lista vacía sin término;
+* la búsqueda pasa a ser una página Inertia servida por `FriendshipSearchController` (invocable, separada de las acciones JSON como en TrustedDevice, y dueño de la consulta en métodos privados: ya no existe `FriendshipSearchService`), con sus props, `Inertia::scroll`, el término opcional y la lista vacía sin término;
 * el frontend vive en `modules/friendship` (`Search.tsx`, `useFriendshipSearch`, `FriendshipSearchResultRow`, InfiniteScroll + TanStack Virtual);
 * la lupa del header es un enlace;
 * la prueba de navegador.

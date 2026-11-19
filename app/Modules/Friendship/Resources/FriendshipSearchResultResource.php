@@ -14,7 +14,7 @@ use Override;
 
 /**
  * A person found by the friend search, seen by the user who searched: only public data, never
- * the email. It reads the columns `FriendshipSearchService` preloads, so it runs no query.
+ * the email. It reads the columns `FriendshipSearchController` preloads, so it runs no query.
  *
  * @mixin User
  */
