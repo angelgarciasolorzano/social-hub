@@ -962,6 +962,8 @@ Crear el módulo `resources/js/modules/friendship/`:
 * expone `committedTerm` para los estados vacíos, como `useTrustedDeviceFilters`;
 * usa el patrón `hasInteractedRef` contra el doble efecto de StrictMode.
 
+Al existir `Search.tsx`, en `FriendshipSearchTest` se cambia `component('friendship/Search', false)` por `component('friendship/Search')`, para que la prueba vuelva a comprobar que el archivo del componente existe (TASK-023 la dejó apagada porque el archivo aún no existía).
+
 **Type:** feature  
 **Effort:** L  
 **Agent:** react-vite-tailwind-engineer  
@@ -973,6 +975,7 @@ Crear el módulo `resources/js/modules/friendship/`:
 
 - `resources/js/modules/friendship/Search.tsx`
 - `resources/js/modules/friendship/hooks/useFriendshipSearch.ts`
+- `app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php`
 
 **Acceptance Criteria:**
 

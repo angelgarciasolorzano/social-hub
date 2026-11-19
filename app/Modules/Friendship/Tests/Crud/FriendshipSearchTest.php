@@ -7,19 +7,21 @@ use App\Modules\Friendship\Requests\FriendshipSearchRequest;
 use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
- * Search people as the given user, the way the frontend does.
+ * Open the people search page as the given user, the way the browser does.
  *
  * @param  array<string, string>  $query
  * @return TestResponse<Response>
  */
 function searchPeopleAs(TestCase $testCase, User $user, array $query): TestResponse
 {
-    return $testCase->actingAs($user)->getJson(route('friendships.search', $query));
+    return $testCase->actingAs($user)->get(route('friendships.search', $query));
 }
 
 /**
@@ -34,52 +36,62 @@ function createUserNamed(string $name): User
 }
 
 /**
- * The names of the people a search response lists, in order.
+ * The search results the page received.
+ *
+ * @param  TestResponse<Response>  $testResponse
+ * @return list<array{id: int, name: string, profilePicture: string, friendshipState: string, friendshipId: int|null, mutualFriendsCount: int}>
+ */
+function searchResultsOf(TestResponse $testResponse): array
+{
+    $page = $testResponse->viewData('page');
+
+    expect($page)->toBeArray();
+
+    /** @var array{props: array{searchResults: array{data: list<array{id: int, name: string, profilePicture: string, friendshipState: string, friendshipId: int|null, mutualFriendsCount: int}>}}} $page */
+    return $page['props']['searchResults']['data'];
+}
+
+/**
+ * The names of the people the page lists, in order.
  *
  * @param  TestResponse<Response>  $testResponse
  * @return list<string>
  */
 function searchResultNames(TestResponse $testResponse): array
 {
-    /** @var list<array{name: string}> $results */
-    $results = $testResponse->json('data');
-
-    return array_column($results, 'name');
+    return array_column(searchResultsOf($testResponse), 'name');
 }
 
-it('answers each person with only their public data and the friendship state', function (): void {
+it('renders the search page with the term and each person with only their public data', function (): void {
     $user = createUser();
     $friend = createUserNamed('Ana Amiga');
     $friendship = createFriendship($user, $friend);
 
-    searchPeopleAs($this, $user, ['q' => 'Ana'])
-        ->assertOk()
-        ->assertExactJson([
-            'data' => [[
-                'id' => $friend->id,
-                'name' => 'Ana Amiga',
-                'profilePicture' => $friend->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
-                'friendshipState' => FriendshipState::Friends->value,
-                'friendshipId' => $friendship->id,
-                'mutualFriendsCount' => 0,
-            ]],
-            'path' => route('friendships.search'),
-            'per_page' => 15,
-            'next_cursor' => null,
-            'next_page_url' => null,
-            'prev_cursor' => null,
-            'prev_page_url' => null,
-        ]);
+    $testResponse = searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk();
+
+    $testResponse->assertInertia(fn (AssertableInertia $assertableInertia): AssertableInertia => $assertableInertia
+        ->component('friendship/Search', false)
+        ->where('filters.q', 'Ana')
+        ->where('searchTermMinLength', FriendshipSearchRequest::TERM_MIN_LENGTH));
+
+    expect(searchResultsOf($testResponse))->toBe([[
+        'id' => $friend->id,
+        'name' => 'Ana Amiga',
+        'profilePicture' => $friend->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+        'friendshipState' => FriendshipState::Friends->value,
+        'friendshipId' => $friendship->id,
+        'mutualFriendsCount' => 0,
+    ]]);
 });
 
 it('never exposes the email of the people found', function (): void {
     $user = createUser();
     $person = createUserNamed('Ana Persona');
 
-    searchPeopleAs($this, $user, ['q' => 'Ana'])
-        ->assertOk()
-        ->assertDontSee($person->email)
-        ->assertJsonMissingPath('data.0.email');
+    $testResponse = searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk();
+
+    expect(json_encode($testResponse->viewData('page')))->not->toContain($person->email)
+        ->and(searchResultsOf($testResponse)[0])->not->toHaveKey('email');
 });
 
 it('tells the viewer how they relate to each person', function (): void {
@@ -90,13 +102,13 @@ it('tells the viewer how they relate to each person', function (): void {
     $friendship = createFriendRequest($user, $sentTo);
     $receivedRequest = createFriendRequest($receivedFrom, $user);
 
-    $testResponse = searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk();
+    $searchResults = searchResultsOf(searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk());
 
-    expect($testResponse->json('data.*.friendshipState'))->toBe([
+    expect(array_column($searchResults, 'friendshipState'))->toBe([
         FriendshipState::None->value,
         FriendshipState::RequestSent->value,
         FriendshipState::RequestReceived->value,
-    ])->and($testResponse->json('data.*.friendshipId'))->toBe([null, $friendship->id, $receivedRequest->id]);
+    ])->and(array_column($searchResults, 'friendshipId'))->toBe([null, $friendship->id, $receivedRequest->id]);
 });
 
 it('counts the friends the viewer and each person have in common', function (): void {
@@ -111,9 +123,7 @@ it('counts the friends the viewer and each person have in common', function (): 
     createFriendship($person);
     createFriendRequest($user, createUser());
 
-    searchPeopleAs($this, $user, ['q' => 'Ana'])
-        ->assertOk()
-        ->assertJsonPath('data.0.mutualFriendsCount', 2);
+    expect(searchResultsOf(searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk())[0]['mutualFriendsCount'])->toBe(2);
 });
 
 it('leaves out suspended accounts and the viewer', function (): void {
@@ -145,7 +155,7 @@ it('treats :dataset in the search as a literal character', function (string $ter
     'an underscore' => ['A_', ['A_na']],
 ]);
 
-it('pages the results with a cursor that keeps the search', function (): void {
+it('loads the next page with the cursor the infinite scroll sends, keeping the search', function (): void {
     config(['module.friendship.search_page_size' => 2]);
     $user = createUser();
     createUserNamed('Ana Uno');
@@ -154,30 +164,46 @@ it('pages the results with a cursor that keeps the search', function (): void {
 
     $testResponse = searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk();
 
-    /** @var string $nextPageUrl */
-    $nextPageUrl = $testResponse->json('next_page_url');
-    $secondPage = $this->actingAs($user)->getJson($nextPageUrl)->assertOk();
+    /** @var array{scrollProps: array{searchResults: array{pageName: string, nextPage: string}}} $page */
+    $page = $testResponse->viewData('page');
+    $scrollProps = $page['scrollProps']['searchResults'];
+
+    $secondPage = searchPeopleAs($this, $user, ['q' => 'Ana', $scrollProps['pageName'] => $scrollProps['nextPage']])->assertOk();
 
     expect(searchResultNames($testResponse))->toBe(['Ana Dos', 'Ana Tres'])
-        ->and($nextPageUrl)->toContain('q=Ana')
-        ->and(searchResultNames($secondPage))->toBe(['Ana Uno'])
-        ->and($secondPage->json('next_page_url'))->toBeNull();
+        ->and(searchResultNames($secondPage))->toBe(['Ana Uno']);
 });
 
-it('rejects a search without a term', function (): void {
-    searchPeopleAs($this, createUser(), [])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['q' => translatedTextIn(PreferredLocale::ENGLISH, 'friendship/actions.validation.search_required')]);
-});
+it('lists nobody without querying people when the term is :dataset', function (string $term): void {
+    $user = createUser();
+    createUserNamed('Ana Persona');
+    searchPeopleAs($this, $user, []);
 
-it('rejects a search shorter than the minimum', function (): void {
-    $expectedMessage = str_replace(
-        ':min',
-        (string) FriendshipSearchRequest::TERM_MIN_LENGTH,
-        translatedTextIn(PreferredLocale::ENGLISH, 'friendship/actions.validation.search_min'),
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $testResponse = searchPeopleAs($this, $user, ['q' => $term])->assertOk();
+    $peopleQueries = array_filter(
+        DB::getQueryLog(),
+        fn (array $query): bool => str_contains($query['query'], 'from `users`') && str_contains($query['query'], 'like'),
     );
 
-    searchPeopleAs($this, createUser(), ['q' => 'a'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors(['q' => $expectedMessage]);
+    DB::disableQueryLog();
+
+    expect(searchResultsOf($testResponse))->toBeEmpty()
+        ->and($peopleQueries)->toBeEmpty();
+})->with([
+    'empty' => [''],
+    'one character long' => ['A'],
+]);
+
+it('rejects a term longer than the maximum', function (): void {
+    $expectedMessage = str_replace(
+        ':max',
+        (string) FriendshipSearchRequest::TERM_MAX_LENGTH,
+        translatedTextIn(PreferredLocale::ENGLISH, 'friendship/actions.validation.search_max'),
+    );
+
+    searchPeopleAs($this, createUser(), ['q' => str_repeat('a', FriendshipSearchRequest::TERM_MAX_LENGTH + 1)])
+        ->assertSessionHasErrors(['q' => $expectedMessage]);
 });

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Count the queries of one search request as the given user.
+ * Count the queries of one search page request as the given user.
  */
 function friendshipSearchQueryCount(TestCase $testCase, User $user): int
 {
@@ -17,7 +17,7 @@ function friendshipSearchQueryCount(TestCase $testCase, User $user): int
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $testCase->getJson(route('friendships.search', ['q' => 'Ana']))->assertOk();
+    $testCase->get(route('friendships.search', ['q' => 'Ana']))->assertOk();
 
     $queries = count(DB::getQueryLog());
     DB::disableQueryLog();
@@ -65,8 +65,8 @@ it('asks a guest to sign in before using :dataset', function (string $method, st
     'cancel' => ['DELETE', 'friendships.cancel'],
 ]);
 
-it('asks a guest to sign in before searching', function (): void {
-    $this->getJson(route('friendships.search', ['q' => 'Ana']))->assertUnauthorized();
+it('sends a guest to the login page before searching', function (): void {
+    $this->get(route('friendships.search', ['q' => 'Ana']))->assertRedirect(route('login'));
 });
 
 it('forbids a stranger to :dataset a pending request, whatever the input', function (string $method, string $routeName): void {
@@ -122,15 +122,15 @@ it('allows 60 searches per minute and then answers 429', function (): void {
     $user = createUser();
 
     foreach (range(1, 60) as $attempt) {
-        $this->actingAs($user)->getJson(route('friendships.search', ['q' => 'Ana']))->assertOk();
+        $this->actingAs($user)->get(route('friendships.search', ['q' => 'Ana']))->assertOk();
     }
 
     $this->actingAs($user)
-        ->getJson(route('friendships.search', ['q' => 'Ana']))
+        ->get(route('friendships.search', ['q' => 'Ana']))
         ->assertTooManyRequests();
 });
 
-it('runs the same number of queries for a search with few or many results', function (): void {
+it('runs the same number of queries for a search page with few or many results', function (): void {
     $user = createUser();
     createSearchablePeople($user, 3);
     $fewResultsQueries = friendshipSearchQueryCount($this, $user);

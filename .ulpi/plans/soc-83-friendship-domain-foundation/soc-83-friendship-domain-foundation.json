@@ -859,7 +859,7 @@
     {
       "id": "TASK-026",
       "title": "Build the search page with InfiniteScroll and TanStack Virtual",
-      "description": "**`resources/js/modules/friendship/Search.tsx`:**\n* usa `HomeLayout` con `contentRef` como contenedor del scroll;\n* tiene `Head`, título y campo de búsqueda;\n* lista con `<InfiniteScroll data=\"searchResults\" preserveUrl>` y `useVirtualizer` (`measureElement` y `getItemKey` por id), igual que `Home.tsx`;\n* muestra estados para \"escribe al menos 2 caracteres\", \"sin resultados\" y carga.\n\n**`resources/js/modules/friendship/hooks/useFriendshipSearch.ts`:**\n* guarda el término en la URL con `router.get` (página completa, así que la búsqueda se puede compartir), con debounce, `preserveState`, `replace` y `only: ['searchResults', 'filters']`;\n* expone `committedTerm` para los estados vacíos, como `useTrustedDeviceFilters`;\n* usa el patrón `hasInteractedRef` contra el doble efecto de StrictMode.",
+      "description": "**`resources/js/modules/friendship/Search.tsx`:**\n* usa `HomeLayout` con `contentRef` como contenedor del scroll;\n* tiene `Head`, título y campo de búsqueda;\n* lista con `<InfiniteScroll data=\"searchResults\" preserveUrl>` y `useVirtualizer` (`measureElement` y `getItemKey` por id), igual que `Home.tsx`;\n* muestra estados para \"escribe al menos 2 caracteres\", \"sin resultados\" y carga.\n\n**`resources/js/modules/friendship/hooks/useFriendshipSearch.ts`:**\n* guarda el término en la URL con `router.get` (página completa, así que la búsqueda se puede compartir), con debounce, `preserveState`, `replace` y `only: ['searchResults', 'filters']`;\n* expone `committedTerm` para los estados vacíos, como `useTrustedDeviceFilters`;\n* usa el patrón `hasInteractedRef` contra el doble efecto de StrictMode.\n\nAl existir `Search.tsx`, en `FriendshipSearchTest` se cambia `component('friendship/Search', false)` por `component('friendship/Search')`, para que la prueba vuelva a comprobar que el archivo del componente existe (TASK-023 la dejó apagada porque el archivo aún no existía).",
       "type": "feature",
       "priority": "P1",
       "effort": "L",
@@ -872,7 +872,9 @@
         "resources/js/modules/friendship/Search.tsx",
         "resources/js/modules/friendship/hooks/useFriendshipSearch.ts"
       ],
-      "filesToModify": [],
+      "filesToModify": [
+        "app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php"
+      ],
       "acceptanceCriteria": [
         "Escribir en el campo actualiza `?q=` sin recargar todo el layout, y recargar la página conserva la búsqueda y sus resultados.",
         "Al bajar se cargan más resultados con el cursor. Solo las filas visibles más el `overscan` están en el DOM, y no se repiten ids.",
@@ -881,7 +883,8 @@
       "validateCommand": "npm run types && npm run lint:check && npm run format:check",
       "writeScope": [
         "resources/js/modules/friendship/Search.tsx",
-        "resources/js/modules/friendship/hooks/useFriendshipSearch.ts"
+        "resources/js/modules/friendship/hooks/useFriendshipSearch.ts",
+        "app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php"
       ],
       "review": "claude"
     },
