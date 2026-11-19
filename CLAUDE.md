@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Home | `app/Home/` (old) | Landing and dashboard pages | — |
 | Post | `app/Modules/Post/` | Posts with an image (MediaLibrary), engagement counters | [content.md](docs/architecture/modules/content.md) |
 | Comment | `app/Modules/Comment/` | Polymorphic, single-level comment threads with mentions; edit and delete with tombstones | [content.md](docs/architecture/modules/content.md) |
-| Friendship | `app/Modules/Friendship/` | One row per pair of users, friend requests, cooldown after a decline, safe people search (JSON endpoints) | [friendship.md](docs/architecture/modules/friendship.md) |
+| Friendship | `app/Modules/Friendship/` | One row per pair of users, friend requests (JSON actions), cooldown after a decline, people search page with infinite scroll | [friendship.md](docs/architecture/modules/friendship.md) |
 | Like | `app/Modules/Like/` | Polymorphic likes on posts and comments (JSON toggle endpoint) | [content.md](docs/architecture/modules/content.md) |
 | Announcement | `app/Modules/Announcement/` | System announcements from the panel, approval workflow, toast/dialog display | [announcement.md](docs/architecture/modules/announcement.md) |
 | Notification | `app/Modules/Notification/` | Real-time React notification center (Reverb, private channel, history page) | [notification.md](docs/architecture/modules/notification.md) |
@@ -117,7 +117,6 @@ Each item is explained in the linked module document.
 - Dialogs never mutate the URL for their own filters (`router.reload` with `preserveUrl`); empty states read `committedFilters`, not live `filters`. See `.ai/rules/frontend.md`.
 - React StrictMode double-invokes mount effects in dev: flip "skip first render" refs only in the user-facing setter, never in the effect.
 - `onHttpException` / `onNetworkError` return `false` where a 404/429 must not open Inertia's error modal.
-- `useHttp` takes its initial state as a function (`useHttp(() => ({ q: '' }))`): an object literal is new on every render and loops (`Maximum update depth exceeded`).
 - To check light mode, emulate `prefers-color-scheme`: the app follows the system theme.
 
 ### Tests
