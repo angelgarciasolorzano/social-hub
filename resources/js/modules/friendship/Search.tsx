@@ -1,9 +1,8 @@
 import type { JSX } from "react";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useId, useState } from "react";
 
-import { Head, InfiniteScroll } from "@inertiajs/react";
+import { Head } from "@inertiajs/react";
 
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { Loader2Icon, SearchIcon, X } from "lucide-react";
 
 import { HomeLayout } from "@/modules/home";
@@ -18,6 +17,7 @@ import {
 import { useTranslation } from "@/shared/hooks";
 
 import FriendshipSearchResultRow from "./components/FriendshipSearchResultRow";
+import VirtualInfiniteList from "./components/VirtualInfiniteList";
 import { useFriendshipSearch } from "./hooks/useFriendshipSearch";
 import type { FriendSearchFilters, FriendSearchResultCollection } from "./types/friendshipSearch";
 
@@ -108,87 +108,18 @@ function Search({ filters, searchResults, searchTermMinLength }: SearchProps): J
             title={t("friendship/search.states.empty_title", { term: committedTerm })}
           />
         ) : (
-          <VirtualSearchResults scrollElement={scrollElement} searchResults={searchResults} />
+          <VirtualInfiniteList
+            data="searchResults"
+            estimateSize={ESTIMATED_ROW_HEIGHT}
+            getItemKey={(searchResult) => searchResult.id}
+            items={searchResults.data}
+            loadingMoreLabel={t("friendship/search.states.loading_more")}
+            renderItem={(searchResult) => <FriendshipSearchResultRow searchResult={searchResult} />}
+            scrollElement={scrollElement}
+          />
         )}
       </main>
     </HomeLayout>
-  );
-}
-
-interface VirtualSearchResultsProps {
-  scrollElement: HTMLDivElement | null;
-  searchResults: FriendSearchResultCollection;
-}
-
-function VirtualSearchResults({
-  scrollElement,
-  searchResults,
-}: VirtualSearchResultsProps): JSX.Element {
-  const { t } = useTranslation();
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const [scrollMargin, setScrollMargin] = useState<number>(0);
-
-  useLayoutEffect(() => {
-    if (scrollElement === null || listRef.current === null) return;
-
-    setScrollMargin(
-      listRef.current.getBoundingClientRect().top -
-        scrollElement.getBoundingClientRect().top +
-        scrollElement.scrollTop,
-    );
-  }, [scrollElement]);
-
-  const rowVirtualizer = useVirtualizer<HTMLDivElement, Element>({
-    count: searchResults.data.length,
-    getScrollElement: () => scrollElement,
-    estimateSize: () => ESTIMATED_ROW_HEIGHT,
-    overscan: 5,
-    scrollMargin,
-    getItemKey: (index) => searchResults.data[index]?.id ?? index,
-  });
-
-  return (
-    <InfiniteScroll buffer={200} data="searchResults" onlyNext preserveUrl>
-      {({ loadingNext }) => (
-        <>
-          <div
-            className="relative w-full"
-            ref={listRef}
-            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const searchResult = searchResults.data[virtualRow.index];
-
-              if (!searchResult) {
-                return null;
-              }
-
-              return (
-                <div
-                  className="absolute top-0 left-0 w-full pb-3"
-                  data-index={virtualRow.index}
-                  key={virtualRow.key}
-                  ref={rowVirtualizer.measureElement}
-                  style={{ transform: `translateY(${virtualRow.start - scrollMargin}px)` }}
-                >
-                  <FriendshipSearchResultRow searchResult={searchResult} />
-                </div>
-              );
-            })}
-          </div>
-
-          {loadingNext && (
-            <p
-              aria-live="polite"
-              className="py-4 text-center text-sm text-muted-foreground"
-              role="status"
-            >
-              {t("friendship/search.states.loading_more")}
-            </p>
-          )}
-        </>
-      )}
-    </InfiniteScroll>
   );
 }
 

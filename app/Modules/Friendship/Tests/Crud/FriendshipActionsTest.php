@@ -11,15 +11,21 @@ use App\User\Enums\PreferredLocale;
 use Illuminate\Support\Facades\Route;
 
 /**
- * The JSON body an action answers, with the message in the given language.
+ * The JSON body an action answers, with the pair's row id after the action (`null` when it has none) and
+ * the message in the given language.
  *
- * @return array{result: string, state: string, message: string}
+ * @return array{result: string, state: string, friendshipId: int|null, message: string}
  */
-function friendshipActionBody(FriendshipOperationResult $friendshipOperationResult, FriendshipState $friendshipState, PreferredLocale $preferredLocale = PreferredLocale::ENGLISH): array
-{
+function friendshipActionBody(
+    FriendshipOperationResult $friendshipOperationResult,
+    FriendshipState $friendshipState,
+    ?int $friendshipId,
+    PreferredLocale $preferredLocale = PreferredLocale::ENGLISH,
+): array {
     return [
         'result' => $friendshipOperationResult->value,
         'state' => $friendshipState->value,
+        'friendshipId' => $friendshipId,
         'message' => translatedTextIn($preferredLocale, $friendshipOperationResult->messageKey()),
     ];
 }
@@ -31,7 +37,11 @@ it('sends a friend request', function (): void {
     $this->actingAs($user)
         ->postJson(route('friendships.store', $receiver))
         ->assertOk()
-        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Sent, FriendshipState::RequestSent));
+        ->assertExactJson(friendshipActionBody(
+            FriendshipOperationResult::Sent,
+            FriendshipState::RequestSent,
+            Friendship::query()->between($user, $receiver)->sole()->id,
+        ));
 
     expect(Friendship::query()->between($user, $receiver)->sole()->requester_id)->toBe($user->id);
 });
@@ -39,18 +49,18 @@ it('sends a friend request', function (): void {
 it('answers 409 when the request was already sent', function (): void {
     $user = createUser();
     $receiver = createUser();
-    createFriendRequest($user, $receiver);
+    $friendship = createFriendRequest($user, $receiver);
 
     $this->actingAs($user)
         ->postJson(route('friendships.store', $receiver))
         ->assertConflict()
-        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::AlreadyPending, FriendshipState::RequestSent));
+        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::AlreadyPending, FriendshipState::RequestSent, $friendship->id));
 });
 
-it('answers 409 in the user language when the other person already sent a request', function (): void {
+it('answers 409 in the user language with the existing row when the other person already sent a request', function (): void {
     $user = createUserPreferring(PreferredLocale::SPANISH);
     $receiver = createUser();
-    createFriendRequest($receiver, $user);
+    $friendship = createFriendRequest($receiver, $user);
 
     $this->actingAs($user)
         ->postJson(route('friendships.store', $receiver))
@@ -58,6 +68,7 @@ it('answers 409 in the user language when the other person already sent a reques
         ->assertExactJson(friendshipActionBody(
             FriendshipOperationResult::IncomingRequestExists,
             FriendshipState::RequestReceived,
+            $friendship->id,
             PreferredLocale::SPANISH,
         ));
 });
@@ -69,7 +80,7 @@ it('accepts a received request', function (): void {
     $this->actingAs($user)
         ->postJson(route('friendships.accept', $friendship))
         ->assertOk()
-        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Accepted, FriendshipState::Friends));
+        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Accepted, FriendshipState::Friends, $friendship->id));
 
     expect($friendship->refresh()->status)->toBe(FriendshipStatus::Accepted);
 });
@@ -82,7 +93,7 @@ it('declines a received request and starts the cooldown', function (): void {
     $this->actingAs($receiver)
         ->deleteJson(route('friendships.decline', $friendship))
         ->assertOk()
-        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Declined, FriendshipState::None));
+        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Declined, FriendshipState::None, null));
 
     expect(Friendship::query()->exists())->toBeFalse()
         ->and(FriendRequestDecline::query()->sole()->requester_id)->toBe($user->id);
@@ -95,7 +106,7 @@ it('cancels a sent request', function (): void {
     $this->actingAs($user)
         ->deleteJson(route('friendships.cancel', $friendship))
         ->assertOk()
-        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Canceled, FriendshipState::None));
+        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Canceled, FriendshipState::None, null));
 
     expect(Friendship::query()->exists())->toBeFalse();
 });
@@ -107,7 +118,7 @@ it('removes an accepted friendship', function (): void {
     $this->actingAs($user)
         ->deleteJson(route('friendships.destroy', $friendship))
         ->assertOk()
-        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Removed, FriendshipState::None));
+        ->assertExactJson(friendshipActionBody(FriendshipOperationResult::Removed, FriendshipState::None, null));
 
     expect(Friendship::query()->exists())->toBeFalse();
 });
@@ -151,6 +162,7 @@ it('exposes exactly the friendship routes, each signed in, verified and with its
         'friendships.cancel',
         'friendships.decline',
         'friendships.destroy',
+        'friendships.index',
         'friendships.search',
         'friendships.store',
     ]);

@@ -46,7 +46,7 @@ it('shares exactly the translation groups of each settings page', function (stri
         ->inertiaProps('translations');
 
     expect($translations)->toBeArray()
-        ->and(array_keys($translations))->toEqualCanonicalizing([...$groups, 'dates']);
+        ->and(array_keys($translations))->toEqualCanonicalizing([...$groups, 'dates', 'friendship/button', 'home/sidebar']);
 })->with('setting pages')->with([PreferredLocale::ENGLISH, PreferredLocale::SPANISH]);
 
 it('shares each settings page in the language of the user', function (string $routeName, array $groups, PreferredLocale $preferredLocale, string $profileLabel): void {

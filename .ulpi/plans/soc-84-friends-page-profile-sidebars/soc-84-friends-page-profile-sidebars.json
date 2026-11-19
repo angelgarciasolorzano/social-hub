@@ -1,0 +1,886 @@
+{
+  "title": "SOC-84 — Friends page, profile friendship button and sidebars",
+  "slug": "soc-84-friends-page-profile-sidebars",
+  "linear": "SOC-84",
+  "epic": "SOC-82",
+  "mode": "EXPANSION",
+  "review": "claude",
+  "overview": "Completar la interfaz de amistades sobre la base de SOC-83. Hoy desde la búsqueda solo se puede **enviar** una solicitud; no hay dónde aceptar, rechazar, cancelar ni eliminar. Se agregan cuatro piezas:\n\n* **Página de amigos** (`GET friendships`): pestañas Amigos, Recibidas y Enviadas en la URL, con un filtro por nombre y scroll infinito virtualizado.\n* **`FriendshipButton` reutilizable**: con todos los estados, se usa en la búsqueda, la página de amigos, el perfil y el lateral derecho.\n* **Perfil**: el número real de amigos, los amigos en común y el botón.\n* **Laterales del `HomeLayout`**, hoy vacíos: el izquierdo pasa a ser una navegación con el contador de solicitudes recibidas, y el derecho muestra las últimas solicitudes recibidas para aceptarlas o rechazarlas ahí mismo.",
+  "scopeChallenge": {
+    "exists": [
+      "Desde SOC-83: las acciones JSON de `FriendshipController` (`store`, `accept`, `decline`, `cancel` y `destroy`), `FriendshipPolicy`, `FriendshipSearchController` y la página `friendship/Search`.",
+      "Desde SOC-83: `User::friends()`, `sentFriendRequests()`, `receivedFriendRequests()` y `withFriendshipCounts()`, y `FriendshipSearchResultRow`, que incluye un botón que solo sabe enviar.",
+      "`HomeLayout` con `HomeSidebarLeft` y `HomeSidebarRight` vacíos (\"Sidebar left\" y \"Sidebar right\"), usados por Home, Perfil, Notificaciones y la búsqueda.",
+      "`Profile.tsx` con un \"344 amigos\" fijo; `ProfileController::index` y `show` renderizan `profile/Profile`.",
+      "`NotificationProps` como ejemplo de prop compartida diferida (`unreadNotificationsCount`), registrada con `Inertia::share` en `HandleInertiaRequests`. `ALWAYS_SHARED_TRANSLATION_GROUPS` solo tiene `dates`.",
+      "Un `search_results` viejo que `HandleInertiaRequests` todavía comparte."
+    ],
+    "reuse": [
+      "El patrón de controlador invocable para páginas (`FriendshipSearchController`, `TrustedDeviceIndexController`).",
+      "`Inertia::scroll` + `<InfiniteScroll>` + `useVirtualizer` con `scrollMargin` de `Search.tsx`, que se extrae a un componente común.",
+      "El escape de `LIKE` de `FriendshipSearchController`, que se extrae a un helper común.",
+      "El hook `useFriendshipSearch` (debounce, `committedTerm`, `hasInteractedRef`) como modelo del filtro de la página de amigos.",
+      "El patrón de `NotificationProps` para la prop compartida diferida de solicitudes.",
+      "`FriendshipState::forViewer()` y `User::friendshipWith()` para el estado del perfil."
+    ],
+    "new": [
+      "`friendshipId` en las respuestas de las acciones, para que el botón pueda cancelar o eliminar justo después de enviar o aceptar.",
+      "`FriendshipIndexController`, `FriendshipIndexRequest`, el enum `FriendshipListTab` y `FriendshipListItemResource`.",
+      "`FriendshipProps` (prop compartida diferida `friendRequests`) y `ProfileFriendshipProps` (la amistad entre quien mira y el dueño del perfil).",
+      "Los catálogos `friendship/button`, `friendship/friends` y `home/sidebar`.",
+      "En React: `FriendshipButton`, el diálogo de eliminar amigo, `VirtualInfiniteList`, la página `Friends.tsx` con su hook y su fila, la navegación lateral, el panel de solicitudes y los cambios en el perfil.",
+      "El componente `tabs` de shadcn en `shared/components/shadcn/ui/`, instalado con su CLI."
+    ],
+    "decisions": [
+      "**Pestañas en la URL** (decisión del usuario): `GET friendships?tab=friends|received|sent&q=…`. El servidor solo consulta la pestaña activa con `Inertia::scroll`, y la pestaña se puede compartir y recargar. Las pestañas usan el componente `Tabs` de shadcn (decisión del usuario), que se instala con su CLI en TASK-022. No suma dependencias: sale del paquete `radix-ui`, que ya está instalado. `Tabs` se controla con la pestaña de la URL (`value` + `onValueChange`) y usa `activationMode=\"manual\"`, para que moverse con las flechas no dispare una visita por pestaña.",
+      "**Navegación en el lateral izquierdo** (decisión del usuario): Inicio, Buscar personas, Amigos (con el contador de recibidas), Notificaciones (con el contador de no leídas) y Mi perfil, con el enlace activo resaltado.",
+      "**Lateral derecho** (propuesto por mí): hasta 5 solicitudes recibidas, con aceptar y rechazar en línea y un enlace a \"ver todas\". Sin sugerencias de personas, porque la épica las excluye.",
+      "**Extras de EXPANSION** (usuario): el número real de amigos en el perfil, los amigos en común en el perfil, el lateral como navegación y el filtro por nombre en la página de amigos.",
+      "**Agregados por mí**: `friendshipId` en las respuestas de las acciones (sin él, el botón no puede cancelar después de enviar), la limpieza de `search_results` y la extracción de `LikePattern` y `VirtualInfiniteList`, que pasan a tener dos usos.",
+      "**Actualización optimista**: el botón muestra el estado nuevo al instante y lo revierte si el servidor responde 409, 429 o un error de red, en cuyo caso muestra el mensaje del servidor o el genérico.",
+      "**Cuentas suspendidas**: no aparecen en ninguna lista ni en el panel; la fila de la amistad se conserva."
+    ],
+    "directExecution": "No: son más de 25 archivos entre backend, frontend, pruebas y documentación."
+  },
+  "prerequisites": [
+    "SOC-83 está mergeada: el módulo `app/Modules/Friendship/`, las acciones JSON, la página de búsqueda y las relaciones de `User`.",
+    "La base de desarrollo tiene el esquema de SOC-83 (`migrate:fresh --seed`), y Angel tiene amigos y solicitudes en los dos sentidos gracias a `FriendshipSeeder`."
+  ],
+  "nonGoals": [
+    "Notificaciones en tiempo real de solicitudes y el activity log (SOC-85).",
+    "El feed de amigos (SOC-86) y el panel de Filament (SOC-87).",
+    "Sugerencias de \"personas que quizá conozcas\", bloquear usuarios y privacidad por publicación.",
+    "Traducir el resto del header de `home` (la lupa, el botón de publicar y el menú del perfil), que sigue en español a mano.",
+    "Una versión móvil de los laterales: siguen ocultos o fijos como hoy; adaptarlos es otra tarea.",
+    "El bucle `Maximum update depth exceeded` después del login, que es preexistente y va en su propia tarea."
+  ],
+  "contracts": [
+    {
+      "name": "Respuesta de las acciones",
+      "detail": "`{result, state, message, friendshipId}`. `friendshipId` es el id de la fila del par después de la acción, o `null` si ya no existe (rechazada, cancelada o eliminada). Los códigos HTTP no cambian (200, 409, 403, 404, 429)."
+    },
+    {
+      "name": "Página de amigos",
+      "detail": "`GET friendships` (`friendships.index`, `throttle:60,1,friendships.index`), servida por `FriendshipIndexController`, que es invocable. `tab` es opcional (`friends` por defecto; un valor desconocido da un error de validación) y `q` también (máximo 50, filtro por inicio del nombre con `LikePattern`). Renderiza `friendship/Friends` con estas props:\n* `filters: {tab, q}`;\n* `tabCounts: {friends, received, sent}`, sin filtro;\n* `friendships`: `Inertia::scroll` de `FriendshipListItemResource`, con la forma `{friendshipId, friendshipState, since, user: {id, name, profilePicture}}`, sin email;\n* `searchTermMinLength` no hace falta: el filtro funciona desde 1 carácter.\n\nOrden: amigos por `accepted_at` descendente; solicitudes por `created_at` descendente; el id desempata."
+    },
+    {
+      "name": "Prop compartida friendRequests",
+      "detail": "`FriendshipProps`, compartida con `Inertia::share` en `HandleInertiaRequests` como `NotificationProps`. Expone `friendRequests: Inertia::defer(…)` con la forma `{pendingCount, recent: FriendshipListItem[] (hasta 5, las más recientes)}`, o `null` para un invitado. Excluye remitentes suspendidos y hace un número constante de consultas."
+    },
+    {
+      "name": "Prop del perfil profileFriendship",
+      "detail": "`ProfileFriendshipProps::for(User $profileUser)`, usado por `ProfileController::index` y `show`. Devuelve `profileFriendship: {friendsCount, isOwnProfile, friendshipState, friendshipId, mutualFriendsCount}`. En el perfil propio, `friendshipState` es `null` y `mutualFriendsCount` es `0`."
+    },
+    {
+      "name": "Traducciones",
+      "detail": "`friendship/button`: los estados, el menú, el diálogo de eliminar y el error genérico. Se comparte siempre, porque el botón aparece en varias páginas y en el lateral.\n`friendship/friends`: la página de amigos, registrada por su controlador.\n`home/sidebar`: los dos laterales, compartido siempre.\n\n`friendship/search.button.*` se elimina cuando la fila de búsqueda pasa a usar `FriendshipButton`."
+    }
+  ],
+  "existingCodeLeverage": [
+    "`app/Modules/Friendship/Controllers/FriendshipSearchController.php`: página invocable, consulta en métodos privados, escape de `LIKE`.",
+    "`resources/js/modules/friendship/Search.tsx` y `resources/js/modules/friendship/hooks/useFriendshipSearch.ts`: InfiniteScroll + virtualización con `scrollMargin`, término en la URL con debounce.",
+    "`resources/js/modules/friendship/components/FriendshipSearchResultRow.tsx`: el botón actual y su manejo de 409, 429 y errores de red con `useHttp`.",
+    "`app/Modules/Notification/Props/NotificationProps.php`: prop compartida diferida.",
+    "`app/Http/Middleware/HandleInertiaRequests.php`: `Inertia::share`, `ALWAYS_SHARED_TRANSLATION_GROUPS`.",
+    "`resources/js/modules/notification/components/NotificationDropdown.tsx`: badge de contador con `Deferred`.",
+    "`app/Modules/Comment/Props/CommentThreadProps.php`: props inyectados en `ProfileController`."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Add the shared friendship button texts in English and Spanish",
+      "description": "Crear `lang/{en,es}/friendship/button.php` con los textos del botón reutilizable:\n* los estados: Agregar amigo, Solicitud enviada, Aceptar, Rechazar, Amigos;\n* el menú: Cancelar solicitud, Eliminar amigo;\n* el diálogo de eliminar amigo: título con `:name`, descripción, confirmar y cancelar;\n* los textos accesibles mientras se procesa (con `:name`) y el error genérico.\n\n`FriendshipTranslationKeysTest` ya recorre `friendship/*`.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "filesToCreate": [
+        "lang/en/friendship/button.php",
+        "lang/es/friendship/button.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Los dos idiomas tienen las mismas claves y placeholders, y `FriendshipTranslationKeysTest` pasa.",
+        "Cada texto accesible que menciona a una persona usa `:name`, nunca concatenación."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Translations",
+      "writeScope": [
+        "lang/en/friendship/button.php",
+        "lang/es/friendship/button.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Add the friends page texts in English and Spanish",
+      "description": "Crear `lang/{en,es}/friendship/friends.php` con los textos de la página de amigos:\n* título, descripción y la navegación de pestañas (etiqueta accesible);\n* las pestañas con su contador en plural;\n* el filtro: etiqueta, `placeholder` y borrar;\n* los estados vacíos por pestaña, con y sin filtro (`:term`), y los de carga;\n* \"amigos desde :date\" y \"enviada :date\", con la fecha formateada en React;\n* el mensaje de validación de `q` (`:max`) y el de `tab`.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "filesToCreate": [
+        "lang/en/friendship/friends.php",
+        "lang/es/friendship/friends.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Paridad de claves y placeholders en `en` y `es` (`FriendshipTranslationKeysTest`).",
+        "Los contadores de pestañas usan el plural de Laravel con `:count`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Translations",
+      "writeScope": [
+        "lang/en/friendship/friends.php",
+        "lang/es/friendship/friends.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Add the sidebar texts in English and Spanish",
+      "description": "Crear `lang/{en,es}/home/sidebar.php`:\n* la navegación: etiqueta accesible, Inicio, Buscar personas, Amigos, Notificaciones y Mi perfil;\n* los contadores accesibles en plural (\":count solicitudes pendientes\");\n* el panel de solicitudes: título, vacío, ver todas y carga.\n\nComo el grupo `home/` no tiene prueba de paridad, se agrega la carpeta al dataset de la prueba de paridad global.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "filesToCreate": [
+        "lang/en/home/sidebar.php",
+        "lang/es/home/sidebar.php"
+      ],
+      "filesToModify": [
+        "tests/Feature/Translation/SettingTranslationKeysTest.php"
+      ],
+      "acceptanceCriteria": [
+        "`home/sidebar` tiene las mismas claves y placeholders en `en` y `es`, y la prueba de paridad lo cubre (falla si se borra una clave en `es`).",
+        "Las etiquetas de los contadores usan plural con `:count`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/Translation/SettingTranslationKeysTest.php",
+      "writeScope": [
+        "lang/en/home/sidebar.php",
+        "lang/es/home/sidebar.php",
+        "tests/Feature/Translation/SettingTranslationKeysTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Return the friendship id in the action responses",
+      "description": "`FriendshipController::respond()` agrega `friendshipId` (la fila del par después de la acción, o `null`) a `{result, state, message}`.\n\nSin este dato, el botón no puede cancelar justo después de enviar, ni eliminar justo después de aceptar, sin recargar la página.\n\nSe actualizan los cuerpos exactos de `FriendshipActionsTest`.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Friendship/Controllers/FriendshipController.php",
+        "app/Modules/Friendship/Tests/Crud/FriendshipActionsTest.php"
+      ],
+      "acceptanceCriteria": [
+        "Después de `store` y de `accept`, `friendshipId` es el id de la fila; después de `decline`, `cancel` y `destroy` es `null`.",
+        "Un 409 (por ejemplo `incoming_request_exists`) devuelve el `friendshipId` de la fila que ya existe, para poder aceptarla desde el botón."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Crud/FriendshipActionsTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Controllers/FriendshipController.php",
+        "app/Modules/Friendship/Tests/Crud/FriendshipActionsTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Extract the LIKE escaping into a shared helper",
+      "description": "Crear `app/Support/Database/LikePattern.php` con `startsWith(string $term): string`, que escapa `\\`, `%` y `_` y agrega `%`, más su prueba unitaria.\n\n`FriendshipSearchController` deja su método privado `escapedForLike()` y usa el helper. La página de amigos (TASK-007) será su segundo consumidor.",
+      "type": "refactor",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "app/Support/Database/LikePattern.php",
+        "tests/Unit/Support/Database/LikePatternTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Friendship/Controllers/FriendshipSearchController.php"
+      ],
+      "acceptanceCriteria": [
+        "`LikePattern::startsWith('a%_\\\\b')` devuelve `'a\\\\%\\\\_\\\\\\\\b%'`, con el backslash escapado primero.",
+        "`FriendshipSearchTest` sigue pasando sin cambios: la búsqueda conserva los comodines como texto literal."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact tests/Unit/Support/Database app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php",
+      "writeScope": [
+        "app/Support/Database/LikePattern.php",
+        "tests/Unit/Support/Database/LikePatternTest.php",
+        "app/Modules/Friendship/Controllers/FriendshipSearchController.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Add the friends page request, tab enum and list item resource",
+      "description": "Crear tres piezas:\n* **`Enums/FriendshipListTab`**: `Friends`, `Received`, `Sent`.\n* **`Requests/FriendshipIndexRequest`** (`HasFluentRules`): `tab` opcional dentro del enum y `q` opcional con máximo 50, con mensajes de `friendship/friends`.\n* **`Resources/FriendshipListItemResource`**: sobre una `Friendship`, con el otro usuario ya cargado, devuelve `{friendshipId, friendshipState, since, user: {id, name, profilePicture}}`. `since` es `accepted_at` para amigos y `created_at` para solicitudes, en ISO 8601. No incluye el email y no hace consultas propias.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "filesToCreate": [
+        "app/Modules/Friendship/Enums/FriendshipListTab.php",
+        "app/Modules/Friendship/Requests/FriendshipIndexRequest.php",
+        "app/Modules/Friendship/Resources/FriendshipListItemResource.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "El recurso elige al otro usuario según quién mira: el receptor si mira el emisor, y el emisor si mira el receptor.",
+        "Un `tab` desconocido o un `q` de 51 caracteres no pasan la validación (se prueba en TASK-008).",
+        "PHPStan pasa."
+      ],
+      "validateCommand": "vendor/bin/phpstan analyse app/Modules/Friendship/Enums app/Modules/Friendship/Requests app/Modules/Friendship/Resources --memory-limit=2G",
+      "writeScope": [
+        "app/Modules/Friendship/Enums/FriendshipListTab.php",
+        "app/Modules/Friendship/Requests/FriendshipIndexRequest.php",
+        "app/Modules/Friendship/Resources/FriendshipListItemResource.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Add FriendshipIndexController and its route",
+      "description": "**`FriendshipIndexController` (invocable):**\n* registra `friendship/friends` y `notification/center`;\n* resuelve la pestaña activa y consulta solo esa;\n* amigos: las amistades aceptadas donde participa el usuario;\n* recibidas y enviadas: las solicitudes pendientes por `receiver_id` o por `requester_id`;\n* en todos los casos excluye al otro usuario si está suspendido y filtra por el inicio de su nombre con `LikePattern`;\n* precarga `requester.media` y `receiver.media` y pagina con cursor.\n\n`tabCounts` cuenta cada pestaña con la misma consulta base que su lista, sin el filtro de nombre: así excluye también a las cuentas suspendidas y cada contador coincide con su lista. Son 3 `count()`, un número constante de consultas. (No usa `User::withFriendshipCounts()`, que cuenta también a las personas suspendidas.)\n\n**Ruta:** `GET friendships` (`friendships.index`, `throttle:60,1,friendships.index`) en el archivo de rutas del módulo. **Configuración:** `module.friendship.list_page_size` (20).",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-005",
+        "TASK-006"
+      ],
+      "filesToCreate": [
+        "app/Modules/Friendship/Controllers/FriendshipIndexController.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Friendship/routes/routes.php",
+        "app/Modules/Friendship/config/friendship.php"
+      ],
+      "acceptanceCriteria": [
+        "`GET friendships?tab=received&q=An` renderiza `friendship/Friends` solo con las solicitudes recibidas cuyo remitente empieza por \"An\".",
+        "La consulta de las otras pestañas no se ejecuta, y `tabCounts` no depende del filtro.",
+        "La ruta tiene `auth`, `verified` y su throttle con prefijo, y no choca con `POST friendships/{user}`."
+      ],
+      "validateCommand": "composer phpstan && php artisan route:list --name=friendships.index",
+      "writeScope": [
+        "app/Modules/Friendship/Controllers/FriendshipIndexController.php",
+        "app/Modules/Friendship/routes/routes.php",
+        "app/Modules/Friendship/config/friendship.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Test the friends page",
+      "description": "`Tests/Crud/FriendshipIndexTest` cubre:\n* cada pestaña, con el contenido y el orden correctos;\n* el filtro por nombre, incluidos los comodines literales;\n* la forma exacta de cada elemento, sin email;\n* `tabCounts`;\n* la exclusión de cuentas suspendidas;\n* la pestaña por defecto y los errores de `tab` y `q`;\n* la paginación con el cursor de `scrollProps`.\n\n`Tests/Security/FriendshipIndexSecurityTest` cubre:\n* que un invitado es redirigido al login;\n* que nunca se listan amistades de otras personas;\n* el throttle de 60;\n* el mismo número de consultas con 3 y con 20 filas.\n\nVa después de TASK-015: `assertInertia` exige que exista el componente de la página (`inertia.testing.ensure_pages_exist` está activado), y `friendship/Friends.tsx` se crea ahí.",
+      "type": "test",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007",
+        "TASK-015"
+      ],
+      "filesToCreate": [
+        "app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php",
+        "app/Modules/Friendship/Tests/Security/FriendshipIndexSecurityTest.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Una amistad entre otras dos personas nunca aparece en ninguna pestaña.",
+        "`?tab=unknown` y un `q` de 51 caracteres fallan en la validación, y sin `tab` se muestra `friends`.",
+        "El número de consultas es igual con 3 y con 20 filas."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php app/Modules/Friendship/Tests/Security/FriendshipIndexSecurityTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php",
+        "app/Modules/Friendship/Tests/Security/FriendshipIndexSecurityTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Share the received friend requests as a deferred prop",
+      "description": "**`Props/FriendshipProps`** (`ProvidesInertiaProperties`, como `NotificationProps`) expone `friendRequests: Inertia::defer(…)`:\n* `pendingCount`;\n* `recent`: las 5 solicitudes recibidas más recientes, con `FriendshipListItemResource`;\n* excluye remitentes suspendidos;\n* para un invitado, `null`.\n\n**`HandleInertiaRequests`:**\n* la comparte con `Inertia::share`;\n* agrega `friendship/button` y `home/sidebar` a `ALWAYS_SHARED_TRANSLATION_GROUPS`, porque los laterales y el botón aparecen en todas las páginas con `HomeLayout`;\n* quita el `search_results` viejo.\n\n**Prueba:** `Tests/Props/FriendshipPropsTest`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-003",
+        "TASK-006"
+      ],
+      "filesToCreate": [
+        "app/Modules/Friendship/Props/FriendshipProps.php",
+        "app/Modules/Friendship/Tests/Props/FriendshipPropsTest.php"
+      ],
+      "filesToModify": [
+        "app/Http/Middleware/HandleInertiaRequests.php"
+      ],
+      "acceptanceCriteria": [
+        "Con 7 solicitudes recibidas, `pendingCount` es 7 y `recent` trae las 5 más recientes. Una solicitud de una cuenta suspendida no cuenta ni aparece.",
+        "Un invitado recibe `null`, y la prop solo se resuelve en la petición diferida.",
+        "`search_results` ya no se comparte (`grep` sin resultados en `app/`)."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Props app/Modules/Notification/Tests/Props",
+      "writeScope": [
+        "app/Modules/Friendship/Props/FriendshipProps.php",
+        "app/Modules/Friendship/Tests/Props/FriendshipPropsTest.php",
+        "app/Http/Middleware/HandleInertiaRequests.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Give the profile its friendship data",
+      "description": "**`Props/ProfileFriendshipProps::for(User $profileUser)`** devuelve `profileFriendship`, según el contrato:\n* `friendsCount` del dueño del perfil;\n* `isOwnProfile`;\n* para quien mira, `friendshipState` y `friendshipId`, con `FriendshipState::forViewer()` sobre `friendshipWith()`;\n* `mutualFriendsCount`, con una sola consulta que intersecta los ids de amigos de los dos.\n\n**`ProfileController::index` y `show`** lo incluyen en sus props.\n\n**Prueba:** `Tests/Props/ProfileFriendshipPropsTest`, por la página real.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "app/Modules/Friendship/Props/ProfileFriendshipProps.php",
+        "app/Modules/Friendship/Tests/Props/ProfileFriendshipPropsTest.php"
+      ],
+      "filesToModify": [
+        "app/User/Profile/Controllers/ProfileController.php"
+      ],
+      "acceptanceCriteria": [
+        "En el perfil de otra persona: el estado y el id correctos para los cuatro estados, y 2 amigos en común cuando comparten dos.",
+        "En el perfil propio: `isOwnProfile` es `true`, `friendshipState` es `null`, `mutualFriendsCount` es `0` y `friendsCount` es real.",
+        "Las amistades pendientes no cuentan como amigos ni como amigos en común."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Props/ProfileFriendshipPropsTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Props/ProfileFriendshipProps.php",
+        "app/Modules/Friendship/Tests/Props/ProfileFriendshipPropsTest.php",
+        "app/User/Profile/Controllers/ProfileController.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Build the reusable FriendshipButton",
+      "description": "**`resources/js/modules/friendship/components/FriendshipButton.tsx`**, con un control por estado:\n* `none`: Agregar amigo;\n* `request_sent`: un menú con Cancelar solicitud;\n* `request_received`: Aceptar y Rechazar;\n* `friends`: un menú con Eliminar amigo, que pide confirmación.\n\n**Comportamiento:**\n* hace la actualización optimista y la revierte si el servidor responde 409, 429 o un error de red, mostrando el `message` del servidor o el error genérico, sin el modal de Inertia;\n* toma `state` y `friendshipId` de la respuesta;\n* bloquea los clics mientras hay una petición;\n* tiene una prop `onChange(state, friendshipId)` para que la página o el panel recarguen sus contadores;\n* usa `useHttp(() => ({}))`, con el estado inicial como función, por estilo.\n\n**`resources/js/modules/friendship/components/FriendshipRemoveDialog.tsx`:** la confirmación con el `Dialog` de shadcn.\n\n**`resources/js/modules/friendship/types/friendshipSearch.ts`:** agrega `friendshipId` a `FriendshipActionResponse`.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "L",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-004"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendshipButton.tsx",
+        "resources/js/modules/friendship/components/FriendshipRemoveDialog.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/friendship/types/friendshipSearch.ts"
+      ],
+      "acceptanceCriteria": [
+        "Cada estado muestra el control que le corresponde, y cada acción llama a su ruta de Wayfinder (`store`, `accept`, `decline`, `cancel`, `destroy`) con el `friendshipId` vigente.",
+        "Un 409 revierte el estado optimista al `state` del servidor y muestra su mensaje. Eliminar amigo no se envía sin confirmar en el diálogo.",
+        "Todo el texto viene de `friendship/button`, y pasan `types`, `lint` y `format`."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendshipButton.tsx",
+        "resources/js/modules/friendship/components/FriendshipRemoveDialog.tsx",
+        "resources/js/modules/friendship/types/friendshipSearch.ts"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Use FriendshipButton in the search results and drop the old button texts",
+      "description": "`FriendshipSearchResultRow` reemplaza su botón interno por `FriendshipButton`, pasándole el estado y el `friendshipId` del resultado.\n\nSe borran las claves `button.*` de `lang/{en,es}/friendship/search.php`, que ya viven en `friendship/button`.",
+      "type": "refactor",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-011"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/friendship/components/FriendshipSearchResultRow.tsx",
+        "lang/en/friendship/search.php",
+        "lang/es/friendship/search.php"
+      ],
+      "acceptanceCriteria": [
+        "Desde la búsqueda ahora también se puede aceptar, rechazar o cancelar sin salir de la página.",
+        "`grep 'friendship/search.button' resources/js` no devuelve nada, y las pruebas de traducción y de claves pasan."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check && php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Translations tests/Feature/Translation/FrontendTranslationKeysTest.php",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendshipSearchResultRow.tsx",
+        "lang/en/friendship/search.php",
+        "lang/es/friendship/search.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Extract the virtualized infinite list into a shared component",
+      "description": "**`resources/js/modules/friendship/components/VirtualInfiniteList.tsx`**, un componente genérico:\n* recibe `data` (el nombre de la prop de `Inertia::scroll`), `items`, `getItemKey`, `renderItem`, `scrollElement` y `estimateSize`;\n* contiene `<InfiniteScroll onlyNext preserveUrl>`, `useVirtualizer` con el `scrollMargin` medido en `useLayoutEffect` y el estado de \"cargando más\".\n\n`Search.tsx` lo usa en lugar de su `VirtualSearchResults`.",
+      "type": "refactor",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/VirtualInfiniteList.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/friendship/Search.tsx"
+      ],
+      "acceptanceCriteria": [
+        "La búsqueda sigue cargando las páginas al bajar y dibujando solo las filas visibles: `FriendshipSearchBrowserTest` pasa sin cambios.",
+        "`Search.tsx` ya no importa `useVirtualizer` ni `InfiniteScroll`."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check && composer test:browser",
+      "writeScope": [
+        "resources/js/modules/friendship/components/VirtualInfiniteList.tsx",
+        "resources/js/modules/friendship/Search.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-022",
+      "title": "Install the shadcn tabs component",
+      "description": "Instalar el componente `tabs` de shadcn con su CLI (`npx shadcn@latest add tabs`), que lo escribe en `resources/js/shared/components/shadcn/ui/tabs.tsx` según `components.json`.\n\nImporta `Tabs` del paquete `radix-ui`, que ya está instalado, así que `package.json` no cambia. Si la CLI intenta agregar `@radix-ui/react-tabs`, se descarta ese cambio y el import queda en `radix-ui`, como en `dialog.tsx`.\n\nSe revisa que el archivo pase Prettier y ESLint sin tocar su lógica.",
+      "type": "chore",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "resources/js/shared/components/shadcn/ui/tabs.tsx"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "`tabs.tsx` exporta `Tabs`, `TabsList`, `TabsTrigger` y `TabsContent`, e importa de `radix-ui`.",
+        "`git diff package.json package-lock.json` no muestra cambios, y la CLI no sobrescribió ningún otro componente de `shadcn/ui`."
+      ],
+      "validateCommand": "test -f resources/js/shared/components/shadcn/ui/tabs.tsx && git diff --exit-code package.json package-lock.json && npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/shared/components/shadcn/ui/tabs.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Create the friends list row",
+      "description": "**`resources/js/modules/friendship/components/FriendshipListRow.tsx`:**\n* foto, nombre enlazado al perfil y la fecha (\"amigos desde\" o \"enviada\") con `useDateTime`;\n* `FriendshipButton` con el estado y el id del elemento;\n* la misma container query que la fila de búsqueda.\n\n**`resources/js/modules/friendship/types/friendshipList.ts`:** `FriendshipListItem`, `FriendshipListTab` (espejo del enum PHP), `FriendshipListFilters` y `FriendshipTabCounts`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-011"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendshipListRow.tsx",
+        "resources/js/modules/friendship/types/friendshipList.ts"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "La fecha se formatea con `useDateTime()`, nunca con `dayjs(...).format(...)`.",
+        "La fila no tiene texto escrito a mano (`FrontendTranslationKeysTest` pasa)."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check && php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/Translation/FrontendTranslationKeysTest.php",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendshipListRow.tsx",
+        "resources/js/modules/friendship/types/friendshipList.ts"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Build the friends page",
+      "description": "**`resources/js/modules/friendship/Friends.tsx`:**\n* usa `HomeLayout` con `contentRef`, `Head` y un título;\n* las pestañas usan `Tabs`, `TabsList`, `TabsTrigger` y `TabsContent` de shadcn: `value` es la pestaña ya aplicada, `onValueChange` llama al cambio de pestaña del hook y `activationMode=\"manual\"`; cada `TabsTrigger` muestra su contador de `tabCounts`, y solo el `TabsContent` activo monta la lista;\n* tiene el filtro por nombre y el estado vacío por pestaña (con y sin filtro, según el término ya aplicado);\n* lista con `VirtualInfiniteList` y `FriendshipListRow`;\n* tras una acción, recarga solo `tabCounts` y `friendRequests` (`router.reload({ only: [...] })`).\n\n**`resources/js/modules/friendship/hooks/useFriendsFilters.ts`:** como `useFriendshipSearch`, pero con `tab` y `q` en la URL. Cambiar de pestaña aplica de inmediato y el filtro con debounce; usa `reset: ['friendships']`, `committedFilters` y `hasInteractedRef`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-007",
+        "TASK-013",
+        "TASK-014",
+        "TASK-022"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/Friends.tsx",
+        "resources/js/modules/friendship/hooks/useFriendsFilters.ts"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Cambiar de pestaña actualiza `?tab=` y muestra solo esa lista. Recargar conserva la pestaña y el filtro, y la pestaña activa tiene `aria-selected=\"true\"`. Moverse con las flechas no hace ninguna visita: Enter o Espacio activa la pestaña.",
+        "Durante el debounce, el estado vacío sigue el filtro ya aplicado y no el texto escrito, así que no muestra el mensaje equivocado. StrictMode no dispara una petición al montar.",
+        "Aceptar una solicitud en la pestaña Recibidas actualiza sus contadores sin recargar toda la página."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/friendship/Friends.tsx",
+        "resources/js/modules/friendship/hooks/useFriendsFilters.ts"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Turn the left sidebar into the app navigation",
+      "description": "**`HomeSidebarLeft.tsx`** es una `<nav>` con su etiqueta accesible y estos enlaces: Inicio, Buscar personas, Amigos, Notificaciones y Mi perfil.\n* Amigos muestra el badge de `friendRequests.pendingCount`, y Notificaciones el de `unreadNotificationsCount`; los dos son props diferidas, con `Deferred` y un esqueleto.\n* El enlace activo se resalta con `aria-current`, según `usePage().url`.\n* Todo el texto viene de `home/sidebar`.\n\nLos ítems van en `modules/home/data/homeSidebarNavigation.ts` (URL de Wayfinder, icono y clave de traducción).\n\n`shared/types/index.d.ts` agrega `friendRequests` a `SharedData`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-007",
+        "TASK-009"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/home/data/homeSidebarNavigation.ts"
+      ],
+      "filesToModify": [
+        "resources/js/modules/home/components/sidebar/HomeSidebarLeft.tsx",
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "acceptanceCriteria": [
+        "Cada enlace lleva a su página, y el de la página actual tiene `aria-current=\"page\"`.",
+        "Los badges aparecen solo cuando el contador es mayor que 0, y su texto accesible está en plural y traducido."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/home/data/homeSidebarNavigation.ts",
+        "resources/js/modules/home/components/sidebar/HomeSidebarLeft.tsx",
+        "resources/js/shared/types/index.d.ts"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Show the received requests in the right sidebar",
+      "description": "**`HomeSidebarRight.tsx`** muestra **`FriendRequestsPanel`**:\n* lee `friendRequests` con `Deferred` y un esqueleto;\n* muestra hasta 5 solicitudes con foto, nombre enlazado y `FriendshipButton` en estado `request_received`;\n* tiene un estado vacío y \"ver todas\", que lleva a `friendships.index?tab=received`;\n* tras aceptar o rechazar, recarga solo `friendRequests`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-009",
+        "TASK-011",
+        "TASK-016"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendRequestsPanel.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/home/components/sidebar/HomeSidebarRight.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Aceptar desde el panel quita la solicitud de la lista y baja el badge de la navegación sin recargar toda la página.",
+        "Sin solicitudes se ve el estado vacío, nunca un hueco en blanco."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendRequestsPanel.tsx",
+        "resources/js/modules/home/components/sidebar/HomeSidebarRight.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Show real friendship data on the profile",
+      "description": "`Profile.tsx` lee `profileFriendship`:\n* reemplaza el \"344 amigos\" fijo por `friendsCount` en plural, que enlaza a la página de amigos en el perfil propio;\n* en el perfil de otra persona muestra los amigos en común (si hay) y `FriendshipButton`, que al cambiar recarga `profileFriendship`.\n\nLos tipos van en `modules/profile/types/profileFriendship.ts`. Los textos nuevos van en `friendship/button` o `home/sidebar` (compartidos siempre) para no registrar otro grupo en el perfil.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-010",
+        "TASK-011"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/profile/types/profileFriendship.ts"
+      ],
+      "filesToModify": [
+        "resources/js/modules/profile/Profile.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Ya no aparece \"344 amigos\" (`grep` sin resultados), y el número coincide con `friendsCount`.",
+        "En el perfil propio no hay botón de amistad ni amigos en común. En el de otra persona, el botón refleja el estado real."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/profile/types/profileFriendship.ts",
+        "resources/js/modules/profile/Profile.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Add a browser test for the friends page and the sidebars",
+      "description": "**`app/Modules/Friendship/Tests/Browser/FriendshipFriendsBrowserTest.php`**, con un usuario autenticado que tiene solicitudes recibidas y amigos:\n* ve el badge de Amigos en el lateral izquierdo;\n* acepta una solicitud desde el panel derecho, y el badge baja;\n* abre la página de amigos y cambia de pestaña, comprobando `?tab=`;\n* elimina un amigo confirmando el diálogo;\n* llama a `assertNoJavaScriptErrors()`.",
+      "type": "test",
+      "priority": "P2",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-015",
+        "TASK-016",
+        "TASK-017"
+      ],
+      "filesToCreate": [
+        "app/Modules/Friendship/Tests/Browser/FriendshipFriendsBrowserTest.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "La prueba recorre aceptar, cambiar de pestaña y eliminar, y pasa con `composer test:browser`.",
+        "Comprueba en la base que la solicitud quedó aceptada y la amistad eliminada."
+      ],
+      "validateCommand": "composer test:browser",
+      "writeScope": [
+        "app/Modules/Friendship/Tests/Browser/FriendshipFriendsBrowserTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Document the friends page, the button, the profile and the sidebars",
+      "description": "**`docs/architecture/modules/friendship.md`** documenta:\n* la página de amigos: controlador, pestañas, filtro y props;\n* `friendshipId` en las acciones;\n* `FriendshipProps` y `ProfileFriendshipProps`;\n* `FriendshipButton` con sus estados y la actualización optimista;\n* `VirtualInfiniteList`, `LikePattern` y los catálogos.\n\n**`CLAUDE.md`:** la descripción del módulo menciona la página de amigos; la tabla de enums con espejo en TypeScript agrega `FriendshipListTab`; y los laterales del `HomeLayout` ya no están vacíos.",
+      "type": "docs",
+      "priority": "P3",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-012",
+        "TASK-018",
+        "TASK-019"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/modules/friendship.md",
+        "CLAUDE.md"
+      ],
+      "acceptanceCriteria": [
+        "Cada clase, prop, ruta y componente que nombra existe (contrastado con `grep`).",
+        "El documento ya no dice que la página de amigos, el botón o el contador quedan para SOC-84."
+      ],
+      "validateCommand": "grep -n 'FriendshipIndexController' docs/architecture/modules/friendship.md",
+      "writeScope": [
+        "docs/architecture/modules/friendship.md",
+        "CLAUDE.md"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-021",
+      "title": "Run the full gates",
+      "description": "Ejecutar los gates completos:\n1. Pint, PHPStan y Rector (`rector-clear-cache` → `rector-dry` → `rector`);\n2. `composer test` y `composer test:browser`;\n3. `composer doctor`;\n4. `npm run format:check`, `lint:check`, `types`, `build` y `build:ssr`;\n5. una comprobación manual en el navegador, en modo claro y oscuro, con la pestaña al frente (el scroll infinito no funciona en una pestaña oculta).",
+      "type": "chore",
+      "priority": "P3",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-020"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Pint, PHPStan y Rector no reportan cambios ni errores, y `composer test` y `composer test:browser` pasan.",
+        "Los dos builds compilan, y la página de amigos y los laterales se ven bien en modo claro y oscuro."
+      ],
+      "validateCommand": "composer phpstan && composer rector-dry && composer test && composer test:browser && npm run build && npm run build:ssr",
+      "writeScope": [],
+      "review": "claude"
+    }
+  ],
+  "failureModes": [
+    "Acciones simultáneas desde dos lugares (el panel y la página): el servicio ya relee con bloqueo y responde `NoLongerPending`. El botón revierte al `state` del servidor y muestra su mensaje.",
+    "Una prop diferida que tarda: los badges y el panel muestran un esqueleto (`Deferred`), nunca un 0 falso.",
+    "Un `tab` manipulado en la URL: falla la validación, sin error 500.",
+    "Cambiar de pestaña sin `reset: ['friendships']`: las filas de dos pestañas se mezclarían, porque `Inertia::scroll` concatena las páginas.",
+    "Las pruebas de los catálogos fallan si se borra una clave en un idioma; TASK-003 agrega `home/` a la prueba de paridad."
+  ],
+  "shipCut": "El mínimo entregable es TASK-001 a TASK-015, más TASK-012: la página de amigos completa y el botón reutilizable, con lo que se cierra el flujo de enviar, aceptar, rechazar, cancelar y eliminar. Los laterales (TASK-016 y TASK-017) y el perfil (TASK-010 y TASK-018) son recortables como bloques, con la aprobación del usuario. La documentación y los gates no se recortan.",
+  "testCoverage": [
+    [
+      "friendshipId en las respuestas de las acciones",
+      "TASK-004"
+    ],
+    [
+      "LikePattern",
+      "TASK-005"
+    ],
+    [
+      "Página de amigos: pestañas, filtro, orden, exclusiones, validación, cursor",
+      "TASK-008"
+    ],
+    [
+      "Seguridad y consultas constantes de la página de amigos",
+      "TASK-008"
+    ],
+    [
+      "friendRequests compartida: conteo, últimas 5, suspendidas, invitado",
+      "TASK-009"
+    ],
+    [
+      "Datos de amistad del perfil",
+      "TASK-010"
+    ],
+    [
+      "Paridad de traducciones de home/sidebar",
+      "TASK-003"
+    ],
+    [
+      "Búsqueda tras extraer la lista virtual",
+      "TASK-013"
+    ],
+    [
+      "Aceptar desde el panel, pestañas y eliminar en el navegador",
+      "TASK-019"
+    ]
+  ],
+  "executionSummary": {
+    "taskCount": 22,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-010",
+        "TASK-013",
+        "TASK-022"
+      ],
+      [
+        "TASK-006",
+        "TASK-011"
+      ],
+      [
+        "TASK-007",
+        "TASK-009",
+        "TASK-012",
+        "TASK-014",
+        "TASK-018"
+      ],
+      [
+        "TASK-015",
+        "TASK-016"
+      ],
+      [
+        "TASK-008",
+        "TASK-017"
+      ],
+      [
+        "TASK-019"
+      ],
+      [
+        "TASK-020"
+      ],
+      [
+        "TASK-021"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-002",
+      "TASK-006",
+      "TASK-007",
+      "TASK-016",
+      "TASK-017",
+      "TASK-019",
+      "TASK-020",
+      "TASK-021"
+    ]
+  },
+  "dependencies": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [],
+    "TASK-004": [],
+    "TASK-005": [],
+    "TASK-006": [
+      "TASK-002"
+    ],
+    "TASK-007": [
+      "TASK-001",
+      "TASK-002",
+      "TASK-005",
+      "TASK-006"
+    ],
+    "TASK-008": [
+      "TASK-007",
+      "TASK-015"
+    ],
+    "TASK-009": [
+      "TASK-001",
+      "TASK-003",
+      "TASK-006"
+    ],
+    "TASK-010": [],
+    "TASK-011": [
+      "TASK-001",
+      "TASK-004"
+    ],
+    "TASK-012": [
+      "TASK-011"
+    ],
+    "TASK-013": [],
+    "TASK-022": [],
+    "TASK-014": [
+      "TASK-002",
+      "TASK-011"
+    ],
+    "TASK-015": [
+      "TASK-007",
+      "TASK-013",
+      "TASK-014",
+      "TASK-022"
+    ],
+    "TASK-016": [
+      "TASK-003",
+      "TASK-007",
+      "TASK-009"
+    ],
+    "TASK-017": [
+      "TASK-009",
+      "TASK-011",
+      "TASK-016"
+    ],
+    "TASK-018": [
+      "TASK-010",
+      "TASK-011"
+    ],
+    "TASK-019": [
+      "TASK-015",
+      "TASK-016",
+      "TASK-017"
+    ],
+    "TASK-020": [
+      "TASK-012",
+      "TASK-018",
+      "TASK-019"
+    ],
+    "TASK-021": [
+      "TASK-008",
+      "TASK-020"
+    ]
+  }
+}

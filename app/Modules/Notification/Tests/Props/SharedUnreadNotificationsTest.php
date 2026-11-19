@@ -59,7 +59,7 @@ it('shares the deferred count and existing props with a user without notificatio
             ->where('auth.user.id', $user->id)
             ->has('announcements')
             ->where('locale', $user->preferred_locale->value)
-            ->where('search_results', null)
+            ->missing('search_results')
             ->where('translations.dates.never', translatedTextIn($user->preferred_locale, 'dates.never'))
             ->where(
                 'translations.notification/center.page.title',

@@ -6,6 +6,7 @@ namespace App\Http\Middleware;
 
 use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Resources\AnnouncementBannerResource;
+use App\Modules\Friendship\Props\FriendshipProps;
 use App\Modules\Notification\Props\NotificationProps;
 use App\Support\Translation\FrontendTranslations;
 use App\User\Models\User;
@@ -20,11 +21,12 @@ class HandleInertiaRequests extends Middleware
 {
     /**
      * Translation groups every page receives, on top of the ones its controller registers in
-     * FrontendTranslations. `dates` feeds the date helpers that several modules use.
+     * FrontendTranslations. `dates` feeds the date helpers that several modules use; `friendship/button`
+     * and `home/sidebar` feed the friendship button and the sidebars of every page with `HomeLayout`.
      *
      * @var list<string>
      */
-    private const array ALWAYS_SHARED_TRANSLATION_GROUPS = ['dates'];
+    private const array ALWAYS_SHARED_TRANSLATION_GROUPS = ['dates', 'friendship/button', 'home/sidebar'];
 
     /**
      * The root template that's loaded on the first page visit.
@@ -60,6 +62,7 @@ class HandleInertiaRequests extends Middleware
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         Inertia::share(new NotificationProps($request));
+        Inertia::share(new FriendshipProps($request));
 
         return [
             ...parent::share($request),
@@ -70,7 +73,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'notification' => fn () => $request->session()->get('notification'),
-            'search_results' => fn () => $request->session()->get('search_results'),
             'announcements' => fn (): array => $this->sharedAnnouncements($request),
             'locale' => Inertia::always(app()->getLocale()),
             'translations' => Inertia::always(fn (): array => resolve(FrontendTranslations::class)

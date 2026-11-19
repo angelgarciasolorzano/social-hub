@@ -18,6 +18,7 @@ export interface FriendSearchFilters {
 }
 
 export interface FriendshipActionResponse {
+  friendshipId: null | number;
   message: string;
   result: string;
   state: FriendshipState;

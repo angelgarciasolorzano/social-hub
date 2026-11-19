@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /**
  * The catalogs the React settings pages read: every file of `lang/{locale}/setting/`, the date texts every
- * page receives and Laravel's validation messages, whose Spanish copy the settings forms rely on.
+ * page receives and Laravel's validation messages, whose Spanish copy the settings forms rely on. It also
+ * covers every file of `lang/{locale}/home/` (the sidebars of `HomeLayout`), which has no test of its own.
  *
  * @return array<string, array{string}>
  */
@@ -12,6 +13,7 @@ function settingTranslationFiles(): array
 {
     return [
         ...translationFilesIn('setting'),
+        ...translationFilesIn('home'),
         'dates' => ['dates'],
         'validation' => ['validation'],
     ];
@@ -40,11 +42,11 @@ it('has no empty texts and the same placeholders in both languages', function (s
     }
 })->with(settingTranslationFiles());
 
-it('has the same settings catalogs in both languages', function (): void {
+it('has the same :dataset catalogs in both languages', function (string $directory): void {
     $catalogNames = static fn (string $locale): array => array_map(
         basename(...),
-        glob(lang_path("{$locale}/setting/*.php")) ?: [],
+        glob(lang_path("{$locale}/{$directory}/*.php")) ?: [],
     );
 
     expect($catalogNames('es'))->toBe($catalogNames('en'));
-});
+})->with(['setting', 'home']);

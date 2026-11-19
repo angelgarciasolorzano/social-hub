@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Friendship\Controllers\FriendshipController;
+use App\Modules\Friendship\Controllers\FriendshipIndexController;
 use App\Modules\Friendship\Controllers\FriendshipSearchController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,6 +12,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->prefix('friendships')
         ->name('friendships.')
         ->group(function (): void {
+            Route::get('/', FriendshipIndexController::class)
+                ->middleware('throttle:60,1,friendships.index')
+                ->name('index');
+
             Route::get('search', FriendshipSearchController::class)
                 ->middleware('throttle:60,1,friendships.search')
                 ->name('search');

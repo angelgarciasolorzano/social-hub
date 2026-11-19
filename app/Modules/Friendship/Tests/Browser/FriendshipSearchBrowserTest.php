@@ -40,8 +40,8 @@ it('searches people, loads more results while scrolling and sends a friend reque
     $webpage->assertSee('Zeta Person 12')
         ->assertNoJavaScriptErrors();
 
-    $webpage->click(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/search.button.add'))
-        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/search.button.request_sent'));
+    $webpage->click(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.add'))
+        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.request_sent'));
 
     expect(Friendship::query()->where('requester_id', $user->id)->count())->toBe(1)
         ->and(User::query()->whereKey(Friendship::query()->value('receiver_id'))->value('name'))->toStartWith('Zeta Person');
