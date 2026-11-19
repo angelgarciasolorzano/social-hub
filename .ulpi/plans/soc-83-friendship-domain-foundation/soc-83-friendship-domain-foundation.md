@@ -1024,6 +1024,8 @@ Crear `app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php`, qu
 
 Llama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que ya existen (el `createRoot` doble y `getSnapshot should be cached`), se reporta al usuario y no se oculta.
 
+Hallado al implementarla: `composer test:browser` moría por memoria (128 MB) por la misma causa que `composer test`, así que el script llama a `vendor/bin/pest` con `-d memory_limit=2G` (documentado en `backend-commands.md`); el campo recibe `name="q"`, porque `type()` de Pest Browser busca por nombre, id o etiqueta; y `waitForText()` está obsoleto en v5 (`assertSee()` ya espera).
+
 **Type:** test  
 **Effort:** M  
 **Agent:** laravel-senior-engineer  
@@ -1034,6 +1036,8 @@ Llama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que 
 **writeScope:**
 
 - `app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php`
+- `composer.json`
+- `resources/js/modules/friendship/Search.tsx`
 
 **Acceptance Criteria:**
 

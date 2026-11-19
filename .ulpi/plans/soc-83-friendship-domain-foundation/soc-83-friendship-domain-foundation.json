@@ -918,7 +918,7 @@
     {
       "id": "TASK-028",
       "title": "Add a browser test for the search page",
-      "description": "Crear `app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php`, que entra al grupo `browser` por la ruta configurada en `tests/Pest.php`. Con un usuario autenticado:\n* visita la página;\n* escribe un nombre y ve los resultados;\n* baja hasta cargar la página siguiente;\n* envía una solicitud y ve \"Solicitud enviada\".\n\nLlama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que ya existen (el `createRoot` doble y `getSnapshot should be cached`), se reporta al usuario y no se oculta.",
+      "description": "Crear `app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php`, que entra al grupo `browser` por la ruta configurada en `tests/Pest.php`. Con un usuario autenticado:\n* visita la página;\n* escribe un nombre y ve los resultados;\n* baja hasta cargar la página siguiente;\n* envía una solicitud y ve \"Solicitud enviada\".\n\nLlama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que ya existen (el `createRoot` doble y `getSnapshot should be cached`), se reporta al usuario y no se oculta.\n\nHallado al implementarla: `composer test:browser` moría por memoria (128 MB) por la misma causa que `composer test`, así que el script llama a `vendor/bin/pest` con `-d memory_limit=2G` (documentado en `backend-commands.md`); el campo recibe `name=\"q\"`, porque `type()` de Pest Browser busca por nombre, id o etiqueta; y `waitForText()` está obsoleto en v5 (`assertSee()` ya espera).",
       "type": "test",
       "priority": "P2",
       "effort": "M",
@@ -929,14 +929,19 @@
       "filesToCreate": [
         "app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php"
       ],
-      "filesToModify": [],
+      "filesToModify": [
+        "composer.json",
+        "resources/js/modules/friendship/Search.tsx"
+      ],
       "acceptanceCriteria": [
         "La prueba recorre buscar, cargar más resultados y enviar una solicitud en Chromium, y pasa con `composer test:browser`.",
         "`composer test` no la ejecuta, porque está en el grupo `browser`."
       ],
       "validateCommand": "composer test:browser",
       "writeScope": [
-        "app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php"
+        "app/Modules/Friendship/Tests/Browser/FriendshipSearchBrowserTest.php",
+        "composer.json",
+        "resources/js/modules/friendship/Search.tsx"
       ],
       "review": "claude"
     },

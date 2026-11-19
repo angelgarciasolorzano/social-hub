@@ -124,6 +124,9 @@ composer test:browser
 Install Chromium once for Pest Browser. `composer test:browser` builds the frontend once, then runs every Pest test in the `browser` group, including the module-owned tests under `Tests/Browser/`. It fails when the group has no tests.
 
 - ✅ The login browser test checks the guest login page and visibility of its email, password, and submit controls
+- ✅ The friendship search browser test (SOC-83) signs in, types a name, scrolls until the infinite scroll loads every page and sends a friend request
+- 🧠 Like `composer test` (SOC-83), the script calls `vendor/bin/pest` with `-d memory_limit=2G`: `php artisan test` starts Pest as a subprocess without the parent's `-d`, and a browser test, which also boots the application server in that process, ran out of PHP's default 128 MB
+- 🖱️ A test scrolls the `HomeLayout` content with `script(…scrollTo…)`: the infinite scroll's `IntersectionObserver` fires in headless Chromium, but not in a hidden browser tab, so a manual check needs the tab in front
 - 🗄️ Uses `.env.testing` and the existing MySQL database `social-hub-testing`; it does not create another database
 - 🌐 Uses Chromium only; no CI workflow or Firefox/WebKit setup is included
 - 🚫 The `browser` group is excluded from `composer test`, so the regular parallel suite does not launch Chromium

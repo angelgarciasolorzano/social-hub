@@ -119,7 +119,7 @@
         ],
         "test:browser": [
             "npm run build",
-            "@php artisan test --compact --group=browser --fail-on-empty-test-suite"
+            "@php -d memory_limit=2G vendor/bin/pest --compact --group=browser --fail-on-empty-test-suite"
         ],
         "doctor": "@php artisan doctor",
         "doctor-ci": "@php artisan doctor --format=github --no-interaction",

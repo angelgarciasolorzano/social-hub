@@ -65,6 +65,7 @@ function Search({ filters, searchResults, searchTermMinLength }: SearchProps): J
           <InputGroupInput
             autoComplete="off"
             id={searchInputId}
+            name="q"
             onChange={(event) => {
               updateTerm(event.target.value);
             }}
