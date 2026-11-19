@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use App\Auth\Providers\AuthServiceProvider;
-use App\Friendship\Providers\FriendshipServiceProvider;
 use App\Home\Providers\HomeServiceProvider;
 use App\Modules\ActivityLog\Providers\ActivityLogServiceProvider;
 use App\Modules\Admin\Providers\AdminPanelProvider;
 use App\Modules\Admin\Providers\AdminServiceProvider;
 use App\Modules\Announcement\Providers\AnnouncementServiceProvider;
 use App\Modules\Comment\Providers\CommentServiceProvider;
+use App\Modules\Friendship\Providers\FriendshipServiceProvider;
 use App\Modules\Like\Providers\LikeServiceProvider;
 use App\Modules\Notification\Providers\NotificationServiceProvider;
 use App\Modules\Post\Providers\PostServiceProvider;

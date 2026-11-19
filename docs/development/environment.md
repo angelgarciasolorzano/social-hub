@@ -39,6 +39,13 @@ How the disks are wired is described in [infrastructure.md](../architecture/infr
 
 `SOCIALHUB_ACTIVITY_LOG_<LOG>_RETENTION_DAYS` sets the days each log is kept before `activity-log:purge` deletes it (defaults: auth 180, content 365, likes 30, trusted_devices 180, account 365, admin 730). See [activity-log.md](../architecture/modules/activity-log.md).
 
+## Friendships
+
+- `SOCIALHUB_FRIENDSHIP_DECLINE_COOLDOWN_DAYS` — days a requester waits before asking again someone who declined them (default `7`).
+- `SOCIALHUB_FRIENDSHIP_MAX_PENDING_SENT` — sent friend requests a user may have waiting for an answer (default `50`).
+
+See [friendship.md](../architecture/modules/friendship.md).
+
 ## Database backups
 
 The application creates encrypted backups of the MySQL database on the private `backups` disk, with its own bucket (`BACKUP_S3_BUCKET`). The panel side is described in [admin.md](../architecture/modules/admin.md#database-backups-soc-55) and the restore procedure in [database-backup-restore.md](database-backup-restore.md).

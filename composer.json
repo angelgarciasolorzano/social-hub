@@ -110,11 +110,16 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php -d memory_limit=2G artisan test --parallel --exclude-group=browser --passthru-php=\"'-d' 'memory_limit=1G'\""
+            "@putenv LARAVEL_PARALLEL_TESTING=1",
+            "@php -d memory_limit=2G vendor/bin/pest --parallel --exclude-group=browser --passthru-php=\"'-d' 'memory_limit=1G'\""
+        ],
+        "test:recreate": [
+            "@putenv LARAVEL_PARALLEL_TESTING_RECREATE_DATABASES=1",
+            "@test"
         ],
         "test:browser": [
             "npm run build",
-            "@php artisan test --compact --group=browser --fail-on-empty-test-suite"
+            "@php -d memory_limit=2G vendor/bin/pest --compact --group=browser --fail-on-empty-test-suite"
         ],
         "doctor": "@php artisan doctor",
         "doctor-ci": "@php artisan doctor --format=github --no-interaction",
@@ -135,7 +140,8 @@
     },
     "script-descriptions": {
         "dev": "Start the development environment with hot reloading and concurrent processes.",
-        "test": "Run the test suite in parallel, excluding the browser group (one database per process, 1G memory limit per worker).",
+        "test": "Run the test suite in parallel, excluding the browser group (one database per process, 2G for the coordinator and 1G per worker).",
+        "test:recreate": "Run the parallel test suite after recreating every worker's test database (after changing migrations).",
         "test:browser": "Build frontend assets and run the Pest Browser group with Chromium.",
         "pint-ci": "Run Laravel Pint in CI mode to check code style across the whole codebase.",
         "pint-fix": "Run Laravel Pint to fix code style issues.",

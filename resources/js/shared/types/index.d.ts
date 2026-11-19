@@ -1,6 +1,6 @@
 import type { Announcement } from "@/modules/announcement/types/announcement";
 
-import type { Auth, User } from "./user";
+import type { Auth } from "./user";
 
 export interface BreadcrumbItem {
   href: string;
@@ -20,7 +20,6 @@ export interface SharedData {
   locale: Locale;
   name: string;
   quote: { message: string; author: string };
-  search_results: User[] | null;
   sidebarOpen: boolean;
   translations: Record<string, TranslationTree>;
   unreadNotificationsCount?: number;

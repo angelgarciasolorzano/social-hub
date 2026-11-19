@@ -19,9 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Auth | `app/Auth/` (old) | Login, register, email verification, password reset (Fortify), the 2FA login challenge and trusted devices | [auth.md](docs/architecture/modules/auth.md) |
 | User | `app/User/` (old) | The `User` model, account settings, account status (suspension), 2FA settings, account events | [user.md](docs/architecture/modules/user.md) |
 | Home | `app/Home/` (old) | Landing and dashboard pages | — |
-| Friendship | `app/Friendship/` (old) | Friend requests and relationships | — |
 | Post | `app/Modules/Post/` | Posts with an image (MediaLibrary), engagement counters | [content.md](docs/architecture/modules/content.md) |
 | Comment | `app/Modules/Comment/` | Polymorphic, single-level comment threads with mentions; edit and delete with tombstones | [content.md](docs/architecture/modules/content.md) |
+| Friendship | `app/Modules/Friendship/` | One row per pair of users, friend requests (JSON actions), cooldown after a decline, people search page with infinite scroll | [friendship.md](docs/architecture/modules/friendship.md) |
 | Like | `app/Modules/Like/` | Polymorphic likes on posts and comments (JSON toggle endpoint) | [content.md](docs/architecture/modules/content.md) |
 | Announcement | `app/Modules/Announcement/` | System announcements from the panel, approval workflow, toast/dialog display | [announcement.md](docs/architecture/modules/announcement.md) |
 | Notification | `app/Modules/Notification/` | Real-time React notification center (Reverb, private channel, history page) | [notification.md](docs/architecture/modules/notification.md) |
@@ -45,7 +45,7 @@ All commands run from the repo root; details in [`docs/development/backend-comma
 
 - `composer run dev` — `serve`, `queue:listen`, `pail`, `vite` and `reverb:start` together (preferred). `npm run dev` runs only Vite.
 - `npm run build` / `npm run build:ssr` — production / SSR bundle (both must compile before a PR).
-- `composer test` — the regular Pest suite **in parallel**, excluding the `browser` group (one MySQL database per worker, `--recreate-databases` after changing migrations).
+- `composer test` — the regular Pest suite **in parallel**, excluding the `browser` group (one MySQL database per worker). `composer test:recreate` recreates those databases first (after changing migrations); `composer test -- --recreate-databases` does not work.
 - `composer test:browser` — builds Vite assets once and runs every test in the `browser` group with Chromium.
 - `php artisan test --compact <path>` or `--filter=testName` — narrow runs (after every edit).
 - `composer ide-helper` — regenerates `_ide_helper_models.php` (PHPStan scans it).
@@ -103,11 +103,12 @@ Each item is explained in the linked module document.
 
 ### Data
 
+- **A pair of users has one `friendships` row at most:** the virtual generated columns `user_low_id`/`user_high_id` are unique together (virtual, because MySQL rejects `cascadeOnDelete` on the base columns of a stored one). `FriendshipService` is the only writer and handles the race to that index inside its transaction. ([friendship](docs/architecture/modules/friendship.md))
 - **The morph map is enforced** (`AppServiceProvider::registerMorphMap()`): `user`, `post`, `like`, `comment`, `admin_invitation`, `trusted_device_event`, `account_status_change`, `announcement`, `role`. A new polymorphic model needs a key there.
 - **Moved migrations keep their original file name**, so a database that already ran them does not run them again. Published package migrations stay in `database/migrations/`.
 - **`likes` has no foreign key:** deleting a post or comment deletes its likes explicitly. `Comment` uses `SoftDeletes` (tombstones), which changes the default queries of every module and of the panel.
 - **Listings keep a constant number of queries:** counters and "liked by me" are preloaded (`withCount`, `withExists`, `Post::withEngagementFor()`) and reused by accessors; viewer flags never run a query per row.
-- **Values mirrored in TypeScript change together:** `Comment::CONTENT_MAX_LENGTH` ↔ `modules/comment/constants/commentContent.ts`, and backend enums ↔ their TS mirrors (`AccountStatus`, `AnnouncementType`, `AnnouncementDisplay`, `NotificationType`, `PreferredLocale`).
+- **Values mirrored in TypeScript change together:** `Comment::CONTENT_MAX_LENGTH` ↔ `modules/comment/constants/commentContent.ts`, and backend enums ↔ their TS mirrors (`AccountStatus`, `AnnouncementType`, `AnnouncementDisplay`, `FriendshipState`, `NotificationType`, `PreferredLocale`).
 - The route placeholder must match the controller's typed parameter for implicit binding (`{userImageType}` ↔ `UserImageType $userImageType`); Rector renames parameters to their type, so fix the route.
 - Media paths come from `MediaLibraryCustomPathGenerator`; changing it orphans stored files. ([infrastructure](docs/architecture/infrastructure.md))
 

@@ -101,13 +101,14 @@ composer phpstan   # Rector can introduce type issues
 composer test
 ```
 
-Clears the cached config and runs the Pest suite **in parallel**, excluding the `browser` group (SOC-59): `php -d memory_limit=2G artisan test --parallel --exclude-group=browser --passthru-php="'-d' 'memory_limit=1G'"`.
+Clears the cached config and runs the Pest suite **in parallel**, excluding the `browser` group (SOC-59): `LARAVEL_PARALLEL_TESTING=1 php -d memory_limit=2G vendor/bin/pest --parallel --exclude-group=browser --passthru-php="'-d' 'memory_limit=1G'"`. `composer test:recreate` does the same after recreating every worker's database (`LARAVEL_PARALLEL_TESTING_RECREATE_DATABASES=1`).
 
-- ⚡ Laravel spreads the files over one process per core and creates one MySQL database per process (`social-hub-testing_test_1`, `_test_2`, …) that it reuses on later runs; the database user must be able to create databases (locally and in the CI MySQL service `root` does). To recreate them after changing migrations, add `--recreate-databases`
+- ⚡ Laravel spreads the files over one process per core and creates one MySQL database per process (`social-hub-testing_test_1`, `_test_2`, …) that it reuses on later runs; the database user must be able to create databases (locally and in the CI MySQL service `root` does). To recreate them after changing migrations, run `composer test:recreate`; `composer test -- --recreate-databases` does not work, because Composer forwards the option to the first command of the script (`config:clear`)
 - 🧠 Each paratest worker is a new PHP process that does not inherit the parent's `-d`, so the 1G limit is passed with `--passthru-php`. `artisan test -d …` does not work with `--parallel`: paratest does not accept that option
+- 🧠 The script calls Pest directly instead of `php artisan test --parallel` (SOC-83): `artisan test` starts the Pest coordinator as `[PHP_BINARY, vendor/pestphp/pest/bin/pest, --parallel]`, without the parent's `-d`, so the coordinator ran with PHP's default 128 MB and, past about 2 500 tests, died with `Allowed memory size … exhausted` while booting. Calling Pest directly gives the coordinator the 2G; `LARAVEL_PARALLEL_TESTING=1` (set with Composer's `@putenv`) is the variable `artisan test` sets so Laravel creates one database per worker
 - 🐞 To debug a failure, run it serially, where test order is stable: `php -d memory_limit=2G vendor/bin/pest --compact <path>` (the whole suite run serially needs the 2G limit)
 - ⚠️ A test file without a `namespace` cannot `use` a global class (`use LogicException;`): PHP ignores it with a warning, which Laravel turns into an `ErrorException` in paratest workers, aborting the run. Write the class without `use`
-- ⏱️ SOC-59 reference on a 14-core machine: 1211 tests in 13–25 s in parallel (depending on machine load) versus ~56 s serially
+- ⏱️ SOC-59 reference on a 14-core machine: 1211 tests in 13–25 s in parallel (depending on machine load) versus ~56 s serially; SOC-83: 2512 tests in about 50 s
 - ⚠️ **Not** for quick tests: it clears the cache before running
 - 🌐 Excludes the `browser` group; use `composer test:browser` to run browser tests with Chromium
 - 🚫 Takes no arguments (`composer test -- <path>` fails because Composer also forwards them to `config:clear`); to filter use `php artisan test --compact <path>`
@@ -123,6 +124,9 @@ composer test:browser
 Install Chromium once for Pest Browser. `composer test:browser` builds the frontend once, then runs every Pest test in the `browser` group, including the module-owned tests under `Tests/Browser/`. It fails when the group has no tests.
 
 - ✅ The login browser test checks the guest login page and visibility of its email, password, and submit controls
+- ✅ The friendship search browser test (SOC-83) signs in, types a name, scrolls until the infinite scroll loads every page and sends a friend request
+- 🧠 Like `composer test` (SOC-83), the script calls `vendor/bin/pest` with `-d memory_limit=2G`: `php artisan test` starts Pest as a subprocess without the parent's `-d`, and a browser test, which also boots the application server in that process, ran out of PHP's default 128 MB
+- 🖱️ A test scrolls the `HomeLayout` content with `script(…scrollTo…)`: the infinite scroll's `IntersectionObserver` fires in headless Chromium, but not in a hidden browser tab, so a manual check needs the tab in front
 - 🗄️ Uses `.env.testing` and the existing MySQL database `social-hub-testing`; it does not create another database
 - 🌐 Uses Chromium only; no CI workflow or Firefox/WebKit setup is included
 - 🚫 The `browser` group is excluded from `composer test`, so the regular parallel suite does not launch Chromium
@@ -336,6 +340,7 @@ Each gate runs in its own GitHub Actions workflow, in parallel, with the same tr
 | `composer rector-dry`          | Rector preview                     | After any PHP change               |
 | `composer rector`              | Apply Rector                       | After `rector-dry`                 |
 | `composer test`                | Whole Pest suite (parallel)        | Before a PR                        |
+| `composer test:recreate`       | Same, recreating worker databases  | After changing migrations          |
 | `composer pint-ci`             | Read-only Pint, whole repo         | CI workflow gate                   |
 | `composer pint-fix`            | Format every PHP file              | When the whole repo needs it       |
 | `composer doctor`              | Local Laravel diagnostics          | Last local gate of a backend task  |
