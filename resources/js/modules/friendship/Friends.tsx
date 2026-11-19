@@ -25,14 +25,27 @@ import VirtualInfiniteList from "./components/VirtualInfiniteList";
 import { useFriendsFilters } from "./hooks/useFriendsFilters";
 import type {
   FriendshipListFilters,
+  FriendshipListItem,
   FriendshipListItemCollection,
   FriendshipListTab,
   FriendshipTabCounts,
 } from "./types/friendshipList";
+import type { FriendshipState } from "./types/friendshipSearch";
 
 const ESTIMATED_ROW_HEIGHT = 88;
 
 const FRIENDSHIP_LIST_TABS: FriendshipListTab[] = ["friends", "received", "sent"];
+
+const FRIENDSHIP_STATE_OF_TAB: Record<FriendshipListTab, FriendshipState> = {
+  friends: "friends",
+  received: "request_received",
+  sent: "request_sent",
+};
+
+interface HiddenFriendships {
+  friendshipIds: number[];
+  listKey: string;
+}
 
 interface FriendsProps {
   filters: FriendshipListFilters;
@@ -52,8 +65,44 @@ function Friends(props: FriendsProps): JSX.Element {
   const { changeTab, committedFilters, isLoading, pendingTab, term, updateTerm } =
     useFriendsFilters(filters);
 
-  const reloadCounters = (): void => {
-    router.reload({ only: ["tabCounts", "friendRequests"] });
+  const listKey = `${committedFilters.tab}:${committedFilters.q}`;
+
+  const [hiddenFriendships, setHiddenFriendships] = useState<HiddenFriendships>({
+    friendshipIds: [],
+    listKey,
+  });
+
+  const hiddenFriendshipIds =
+    hiddenFriendships.listKey === listKey ? hiddenFriendships.friendshipIds : [];
+
+  const visibleFriendships = friendships.data.filter(
+    (friendshipListItem) => !hiddenFriendshipIds.includes(friendshipListItem.friendshipId),
+  );
+
+  const handleFriendshipChange = (
+    friendshipListItem: FriendshipListItem,
+    friendshipState: FriendshipState,
+  ): void => {
+    const stillBelongsToTab = friendshipState === FRIENDSHIP_STATE_OF_TAB[committedFilters.tab];
+
+    if (stillBelongsToTab) {
+      router.reload({ only: ["tabCounts", "friendRequests"] });
+
+      return;
+    }
+
+    setHiddenFriendships({
+      friendshipIds: [...hiddenFriendshipIds, friendshipListItem.friendshipId],
+      listKey,
+    });
+
+    const hidesLastLoadedRow = visibleFriendships.length <= 1;
+
+    router.reload(
+      hidesLastLoadedRow
+        ? { only: ["tabCounts", "friendRequests", "friendships"], reset: ["friendships"] }
+        : { only: ["tabCounts", "friendRequests"] },
+    );
   };
 
   return (
@@ -153,19 +202,21 @@ function Friends(props: FriendsProps): JSX.Element {
 
           {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
             <TabsContent className="mt-4" key={friendshipListTab} value={friendshipListTab}>
-              {friendships.data.length === 0 ? (
+              {visibleFriendships.length === 0 ? (
                 <FriendsEmptyState committedFilters={committedFilters} />
               ) : (
                 <VirtualInfiniteList
                   data="friendships"
                   estimateSize={ESTIMATED_ROW_HEIGHT}
                   getItemKey={(friendshipListItem) => friendshipListItem.friendshipId}
-                  items={friendships.data}
+                  items={visibleFriendships}
                   loadingMoreLabel={t("friendship/friends.states.loading_more")}
                   renderItem={(friendshipListItem) => (
                     <FriendshipListRow
                       friendshipListItem={friendshipListItem}
-                      onFriendshipChange={reloadCounters}
+                      onFriendshipChange={(friendshipState) => {
+                        handleFriendshipChange(friendshipListItem, friendshipState);
+                      }}
                     />
                   )}
                   scrollElement={scrollElement}

@@ -28,7 +28,7 @@ function friendsBadgeScript(): string
     return 'document.querySelector(\'nav a[href="/friendships"] span[aria-hidden="true"]\')?.textContent ?? null';
 }
 
-it('accepts a request from the sidebar, switches tabs and removes a friend', function (): void {
+it('accepts a request from the sidebar, removes a friend, switches tabs and accepts from the list', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     $user = createUser();
@@ -61,16 +61,22 @@ it('accepts a request from the sidebar, switches tabs and removes a friend', fun
         ->click('[role="menuitem"]')
         ->assertSee(str_replace(':name', 'Carla Friend', translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.remove_dialog.title')))
         ->click('[role="dialog"] [data-slot="dialog-footer"] button:last-child')
-        ->assertDontSee(str_replace(':name', 'Carla Friend', translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.remove_dialog.title')));
+        ->assertDontSee(str_replace(':name', 'Carla Friend', translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.remove_dialog.title')))
+        ->assertDontSee('Carla Friend')
+        ->assertSee('Ana Request');
 
     $webpage->click('[role="tab"]:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")')
         ->assertQueryStringHas('tab', 'received')
         ->assertSee('Bruno Request')
         ->assertDontSee('Carla Friend')
-        ->assertScript('document.querySelector(\'[role="tab"][aria-selected="true"]\')?.textContent?.startsWith("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")')
+        ->assertScript('document.querySelector(\'[role="tab"][aria-selected="true"]\')?.textContent?.startsWith("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")');
+
+    $webpage->click('main article button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
+        ->assertDontSee('Bruno Request')
+        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.states.received_empty_title'))
         ->assertNoJavaScriptErrors();
 
     expect($newerRequest->refresh()->status)->toBe(FriendshipStatus::Accepted)
-        ->and($olderRequest->refresh()->status)->toBe(FriendshipStatus::Pending)
+        ->and($olderRequest->refresh()->status)->toBe(FriendshipStatus::Accepted)
         ->and(Friendship::query()->whereKey($friendship->id)->exists())->toBeFalse();
 });
