@@ -70,7 +70,7 @@ it('renders the search page with the term and each person with only their public
     $testResponse = searchPeopleAs($this, $user, ['q' => 'Ana'])->assertOk();
 
     $testResponse->assertInertia(fn (AssertableInertia $assertableInertia): AssertableInertia => $assertableInertia
-        ->component('friendship/Search', false)
+        ->component('friendship/Search')
         ->where('filters.q', 'Ana')
         ->where('searchTermMinLength', FriendshipSearchRequest::TERM_MIN_LENGTH));
 
