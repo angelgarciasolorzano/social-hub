@@ -6,6 +6,7 @@ namespace App\User\Profile\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Comment\Props\CommentThreadProps;
+use App\Modules\Friendship\Props\ProfileFriendshipProps;
 use App\Modules\Post\Models\Post;
 use App\Modules\Post\Resources\PostResource;
 use App\Support\Translation\FrontendTranslations;
@@ -46,6 +47,7 @@ class ProfileController extends Controller
             'user' => new UserResource(Auth::user())->resolve(request()),
             'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
             $commentThreadProps,
+            ProfileFriendshipProps::for($this->viewer(), $this->viewer()),
         ]);
     }
 
@@ -67,6 +69,7 @@ class ProfileController extends Controller
             'user' => new UserResource($user)->resolve(request()),
             'posts' => Inertia::scroll(fn () => PostResource::collection($cursorPaginator)),
             $commentThreadProps,
+            ProfileFriendshipProps::for($user, $this->viewer()),
         ]);
     }
 }
