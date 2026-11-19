@@ -9,6 +9,7 @@ use App\Modules\Friendship\Enums\FriendshipStatus;
 use App\Modules\Friendship\Models\Friendship;
 use App\Modules\Friendship\Requests\FriendshipSearchRequest;
 use App\Modules\Friendship\Resources\FriendshipSearchResultResource;
+use App\Support\Database\LikePattern;
 use App\Support\Translation\FrontendTranslations;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
@@ -60,7 +61,7 @@ final class FriendshipSearchController extends Controller
             ->select(['users.id', 'users.name'])
             ->whereKeyNot($user->id)
             ->where('status', AccountStatus::Active->value)
-            ->where('name', 'like', $this->escapedForLike($term).'%')
+            ->where('name', 'like', LikePattern::startsWith($term))
             ->addSelect([
                 'friendship_id' => $this->pairWith($user)->select('friendships.id'),
                 'friendship_status' => $this->pairWith($user)->select('friendships.status'),
@@ -72,14 +73,6 @@ final class FriendshipSearchController extends Controller
             ->orderBy('name')
             ->orderBy('id')
             ->cursorPaginate($perPage);
-    }
-
-    /**
-     * Escape the characters with a meaning in `LIKE`, backslash first, MySQL's default escape character.
-     */
-    private function escapedForLike(string $term): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
     }
 
     /**
