@@ -31,13 +31,4 @@ return [
         'mutual_friends' => '{1} :count amigo en común|[2,*] :count amigos en común',
         'view_profile' => 'Ver perfil',
     ],
-
-    'button' => [
-        'add' => 'Agregar amigo',
-        'sending' => 'Enviando la solicitud de amistad a :name',
-        'request_sent' => 'Solicitud enviada',
-        'request_received' => 'Te envió una solicitud',
-        'friends' => 'Amigos',
-        'error' => 'No se pudo enviar la solicitud de amistad. Inténtalo de nuevo.',
-    ],
 ];

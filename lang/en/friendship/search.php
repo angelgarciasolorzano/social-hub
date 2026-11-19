@@ -31,13 +31,4 @@ return [
         'mutual_friends' => '{1} :count friend in common|[2,*] :count friends in common',
         'view_profile' => 'View profile',
     ],
-
-    'button' => [
-        'add' => 'Add friend',
-        'sending' => 'Sending the friend request to :name',
-        'request_sent' => 'Request sent',
-        'request_received' => 'Sent you a request',
-        'friends' => 'Friends',
-        'error' => 'The friend request could not be sent. Try again.',
-    ],
 ];
