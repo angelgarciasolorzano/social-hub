@@ -17,11 +17,6 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
-/**
- * The only writer of friendships. Every action runs in a transaction on locked rows and answers
- * with a result instead of throwing for business rules. Authorization belongs to FriendshipPolicy
- * and is applied by the caller, so an actor outside the row is a programming error.
- */
 final readonly class FriendshipService
 {
     /**

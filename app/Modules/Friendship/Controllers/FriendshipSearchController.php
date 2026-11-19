@@ -21,17 +21,8 @@ use Illuminate\Support\Facades\Config;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * Renders the people search page. It is a page of its own, apart from the JSON actions of
- * `FriendshipController`, like `TrustedDeviceIndexController`; the friends page (SOC-84) is the index.
- * Each result carries, in the same query, the row the viewer shares with that person and how many
- * friends they have in common, so a page costs the same number of queries whatever its size.
- */
 final class FriendshipSearchController extends Controller
 {
-    /**
-     * Render the page: the term lives in the URL and the results scroll by cursor.
-     */
     public function __invoke(FriendshipSearchRequest $friendshipSearchRequest, FrontendTranslations $frontendTranslations): Response
     {
         $frontendTranslations->use('friendship/search', 'notification/center');

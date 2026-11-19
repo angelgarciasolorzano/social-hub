@@ -14,18 +14,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Attributes\Controllers\Authorize;
 
-/**
- * The JSON actions of friendships, consumed by React with `useHttp`. Every action answers
- * `{result, state, message}` with the result's HTTP status; the policy runs before any of them.
- * The pages live in their own invokable controllers, such as `FriendshipSearchController`.
- */
 class FriendshipController extends Controller
 {
     public function __construct(private readonly FriendshipService $friendshipService) {}
 
-    /**
-     * Send a friend request to the user of the route.
-     */
     #[Authorize('create', [Friendship::class, 'user'])]
     public function store(Request $request, User $user): JsonResponse
     {
@@ -34,9 +26,6 @@ class FriendshipController extends Controller
         return $this->respond($this->friendshipService->send($viewer, $user), $viewer, $user);
     }
 
-    /**
-     * Accept a received friend request.
-     */
     #[Authorize('accept', 'friendship')]
     public function accept(Request $request, Friendship $friendship): JsonResponse
     {
@@ -45,9 +34,6 @@ class FriendshipController extends Controller
         return $this->respondFor($this->friendshipService->accept($friendship, $user), $user, $friendship);
     }
 
-    /**
-     * Decline a received friend request.
-     */
     #[Authorize('decline', 'friendship')]
     public function decline(Request $request, Friendship $friendship): JsonResponse
     {
@@ -56,9 +42,6 @@ class FriendshipController extends Controller
         return $this->respondFor($this->friendshipService->decline($friendship, $user), $user, $friendship);
     }
 
-    /**
-     * Cancel a sent friend request.
-     */
     #[Authorize('cancel', 'friendship')]
     public function cancel(Request $request, Friendship $friendship): JsonResponse
     {
@@ -67,9 +50,6 @@ class FriendshipController extends Controller
         return $this->respondFor($this->friendshipService->cancel($friendship, $user), $user, $friendship);
     }
 
-    /**
-     * Remove an accepted friendship.
-     */
     #[Authorize('delete', 'friendship')]
     public function destroy(Request $request, Friendship $friendship): JsonResponse
     {
