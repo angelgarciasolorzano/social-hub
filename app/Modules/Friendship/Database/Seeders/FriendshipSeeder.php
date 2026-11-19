@@ -14,11 +14,6 @@ use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
-/**
- * Seeds accepted friendships, pending requests and a few declines with dates over the last
- * 60 days. Every pair of users gets one row at most and nobody relates to themselves; the
- * test user always has friends, requests in both directions and a recent decline.
- */
 class FriendshipSeeder extends Seeder
 {
     private const int MAX_FRIENDS_PER_USER = 25;

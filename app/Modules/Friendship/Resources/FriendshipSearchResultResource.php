@@ -13,9 +13,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Override;
 
 /**
- * A person found by the friend search, seen by the user who searched: only public data, never
- * the email. It reads the columns `FriendshipSearchController` preloads, so it runs no query.
- *
  * @mixin User
  */
 class FriendshipSearchResultResource extends JsonResource
@@ -48,7 +45,7 @@ class FriendshipSearchResultResource extends JsonResource
         $viewer = $request->user();
 
         return FriendshipState::forViewer(
-            is_string($friendshipStatus) ? FriendshipStatus::tryFrom($friendshipStatus) : null,
+            \is_string($friendshipStatus) ? FriendshipStatus::tryFrom($friendshipStatus) : null,
             $this->preloadedInteger('friendship_requester_id'),
             $viewer instanceof User ? $viewer->id : 0,
         );

@@ -7,9 +7,6 @@ namespace App\Modules\Friendship\Enums;
 use App\Support\Translation\TranslatedText;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * The outcome of a friendship action: the value sent to the client, its HTTP status and its message.
- */
 enum FriendshipOperationResult: string
 {
     case Sent = 'sent';

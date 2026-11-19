@@ -18,9 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Override;
 
 /**
- * The last time a user declined another user's friend request: while the cooldown lasts,
- * the requester cannot ask the same person again.
- *
  * @property int $id
  * @property int $requester_id
  * @property int $receiver_id

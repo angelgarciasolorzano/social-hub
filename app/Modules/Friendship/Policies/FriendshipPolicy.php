@@ -7,10 +7,6 @@ namespace App\Modules\Friendship\Policies;
 use App\Modules\Friendship\Models\Friendship;
 use App\User\Models\User;
 
-/**
- * Who may act on a friend request or a friendship. Only the two users of a row see or change it;
- * a row is never edited, restored or force deleted, so those abilities are denied explicitly.
- */
 final class FriendshipPolicy
 {
     /**

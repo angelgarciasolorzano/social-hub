@@ -21,9 +21,6 @@ use InvalidArgumentException;
 use Override;
 
 /**
- * A friend request or an accepted friendship. A pair of users has one row at most, whoever
- * sent the request: the generated `user_low_id` and `user_high_id` columns are unique together.
- *
  * @property int $id
  * @property int $requester_id
  * @property int $receiver_id

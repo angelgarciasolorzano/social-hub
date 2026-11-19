@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Friendship\Enums;
 
-/**
- * How a pair of users relate, seen by one of them: what the friendship button shows.
- */
 enum FriendshipState: string
 {
     case None = 'none';

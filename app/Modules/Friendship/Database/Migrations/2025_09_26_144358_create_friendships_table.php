@@ -6,13 +6,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * The friendships of the application: one row per pair of users, and the declined requests.
- *
- * `user_low_id` and `user_high_id` are virtual generated columns: MySQL rejects a cascading
- * foreign key on the base column of a stored generated column, while an indexed virtual one
- * keeps both the unique pair and `cascadeOnDelete` of `requester_id` and `receiver_id`.
- */
 return new class extends Migration
 {
     /**
