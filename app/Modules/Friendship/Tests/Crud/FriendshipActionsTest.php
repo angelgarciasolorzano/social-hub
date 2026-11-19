@@ -162,6 +162,7 @@ it('exposes exactly the friendship routes, each signed in, verified and with its
         'friendships.cancel',
         'friendships.decline',
         'friendships.destroy',
+        'friendships.index',
         'friendships.search',
         'friendships.store',
     ]);

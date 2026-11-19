@@ -40,4 +40,15 @@ return [
     */
 
     'search_page_size' => 15,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Friends page size
+    |--------------------------------------------------------------------------
+    |
+    | Number of friends or requests each page of the friends page returns.
+    |
+    */
+
+    'list_page_size' => 20,
 ];
