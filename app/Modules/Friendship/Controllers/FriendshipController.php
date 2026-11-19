@@ -8,9 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Modules\Friendship\Enums\FriendshipOperationResult;
 use App\Modules\Friendship\Enums\FriendshipState;
 use App\Modules\Friendship\Models\Friendship;
-use App\Modules\Friendship\Requests\FriendshipSearchRequest;
-use App\Modules\Friendship\Resources\FriendshipSearchResultResource;
-use App\Modules\Friendship\Services\FriendshipSearchService;
 use App\Modules\Friendship\Services\FriendshipService;
 use App\User\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -18,30 +15,13 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Attributes\Controllers\Authorize;
 
 /**
- * The JSON endpoints of friendships, consumed by React with `useHttp`. Every action answers
+ * The JSON actions of friendships, consumed by React with `useHttp`. Every action answers
  * `{result, state, message}` with the result's HTTP status; the policy runs before any of them.
+ * The pages live in their own invokable controllers, such as `FriendshipSearchController`.
  */
 class FriendshipController extends Controller
 {
-    public function __construct(
-        private readonly FriendshipService $friendshipService,
-        private readonly FriendshipSearchService $friendshipSearchService,
-    ) {}
-
-    /**
-     * Search people by name, one cursor page at a time.
-     */
-    public function search(FriendshipSearchRequest $friendshipSearchRequest): JsonResponse
-    {
-        $viewer = $this->authenticatedUser($friendshipSearchRequest);
-
-        $cursorPaginator = $this->friendshipSearchService
-            ->search($viewer, $friendshipSearchRequest->string('q')->toString())
-            ->withQueryString()
-            ->through(fn (User $user): array => new FriendshipSearchResultResource($user)->resolve($friendshipSearchRequest));
-
-        return response()->json($cursorPaginator);
-    }
+    public function __construct(private readonly FriendshipService $friendshipService) {}
 
     /**
      * Send a friend request to the user of the route.

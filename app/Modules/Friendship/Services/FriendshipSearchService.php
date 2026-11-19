@@ -6,11 +6,13 @@ namespace App\Modules\Friendship\Services;
 
 use App\Modules\Friendship\Enums\FriendshipStatus;
 use App\Modules\Friendship\Models\Friendship;
+use App\Modules\Friendship\Requests\FriendshipSearchRequest;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\CursorPaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -22,12 +24,18 @@ final readonly class FriendshipSearchService
 {
     /**
      * Search active accounts whose name starts with the term, except the viewer, ordered by name.
-     * `%`, `_` and `\` in the term match themselves instead of acting as wildcards.
+     * `%`, `_` and `\` match themselves; a term shorter than the minimum lists nobody without a query.
      *
      * @return CursorPaginator<int, User>
      */
     public function search(User $user, string $term): CursorPaginator
     {
+        $perPage = Config::integer('module.friendship.search_page_size');
+
+        if (mb_strlen($term) < FriendshipSearchRequest::TERM_MIN_LENGTH) {
+            return new CursorPaginator([], $perPage, null, ['path' => Paginator::resolveCurrentPath()]);
+        }
+
         return User::query()
             ->select(['users.id', 'users.name'])
             ->whereKeyNot($user->id)
@@ -43,7 +51,7 @@ final readonly class FriendshipSearchService
             ->with('media')
             ->orderBy('name')
             ->orderBy('id')
-            ->cursorPaginate(Config::integer('module.friendship.search_page_size'));
+            ->cursorPaginate($perPage);
     }
 
     /**

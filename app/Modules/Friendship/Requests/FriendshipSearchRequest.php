@@ -16,6 +16,7 @@ class FriendshipSearchRequest extends FormRequest
 
     /**
      * The fewest characters a search needs, so a single letter does not list half of the users.
+     * It is not a validation rule: the term lives in the page URL, so a shorter one lists nobody.
      */
     public const int TERM_MIN_LENGTH = 2;
 
@@ -41,8 +42,7 @@ class FriendshipSearchRequest extends FormRequest
     {
         return [
             'q' => FluentRule::string()
-                ->required(message: TranslatedText::of('friendship/actions.validation.search_required'))
-                ->min(self::TERM_MIN_LENGTH, message: TranslatedText::of('friendship/actions.validation.search_min'))
+                ->nullable()
                 ->max(self::TERM_MAX_LENGTH, message: TranslatedText::of('friendship/actions.validation.search_max')),
         ];
     }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Friendship\Controllers\FriendshipController;
+use App\Modules\Friendship\Controllers\FriendshipSearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
@@ -10,7 +11,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->prefix('friendships')
         ->name('friendships.')
         ->group(function (): void {
-            Route::get('search', [FriendshipController::class, 'search'])
+            Route::get('search', FriendshipSearchController::class)
                 ->middleware('throttle:60,1,friendships.search')
                 ->name('search');
 

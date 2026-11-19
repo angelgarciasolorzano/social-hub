@@ -828,11 +828,11 @@ Crear `lang/{en,es}/friendship/search.php` con los textos de la página:
 
 ### TASK-022: Turn the search endpoint into an Inertia page with infinite scroll
 
-`FriendshipController::search` deja de responder JSON:
-* hace `Inertia::render('friendship/Search', …)` con `filters: {q}` y `searchResults: Inertia::scroll(FriendshipSearchResultResource::collection($cursorPaginator))`, como `NotificationController::index`;
+La búsqueda deja de responder JSON y pasa a un controlador invocable propio, `FriendshipSearchController` (decisión del usuario durante la tarea, siguiendo `TrustedDeviceIndexController`): `FriendshipController` queda solo con las acciones JSON, y la página de amigos de SOC-84 será `FriendshipIndexController` (`friendships.index`). La página no se llama `index` porque lista personas, no amistades. El controlador nuevo:
+* hace `Inertia::render('friendship/Search', …)` con `filters: {q}`, `searchTermMinLength` y `searchResults: Inertia::scroll(FriendshipSearchResultResource::collection($cursorPaginator))`, como `NotificationController::index`;
 * registra `friendship/search` y `notification/center` (el header compartido los necesita, como en Home) con `FrontendTranslations`.
 
-La ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throttle).
+La ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throttle), ahora apuntando a `FriendshipSearchController`.
 
 `FriendshipSearchRequest`:
 * `q` pasa a ser opcional, con un máximo de 50 (error de validación si se excede);
@@ -849,7 +849,9 @@ La ruta sigue siendo `GET friendships/search` (`friendships.search`, mismo throt
 
 **writeScope:**
 
+- `app/Modules/Friendship/Controllers/FriendshipSearchController.php`
 - `app/Modules/Friendship/Controllers/FriendshipController.php`
+- `app/Modules/Friendship/routes/routes.php`
 - `app/Modules/Friendship/Requests/FriendshipSearchRequest.php`
 - `app/Modules/Friendship/Services/FriendshipSearchService.php`
 
@@ -1035,7 +1037,7 @@ Llama a `assertNoJavaScriptErrors()`. Si fallara por los errores de consola que 
 ### TASK-029: Document the search page
 
 En `docs/architecture/modules/friendship.md`:
-* la búsqueda pasa a ser una página Inertia (props, `Inertia::scroll`, término opcional, lista vacía sin término);
+* la búsqueda pasa a ser una página Inertia servida por `FriendshipSearchController` (invocable, separada de las acciones JSON como en TrustedDevice), con sus props, `Inertia::scroll`, el término opcional y la lista vacía sin término;
 * el frontend vive en `modules/friendship` (`Search.tsx`, `useFriendshipSearch`, `FriendshipSearchResultRow`, InfiniteScroll + TanStack Virtual);
 * la lupa del header es un enlace;
 * la prueba de navegador.
