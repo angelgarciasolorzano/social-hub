@@ -962,6 +962,8 @@ Crear el módulo `resources/js/modules/friendship/`:
 * expone `committedTerm` para los estados vacíos, como `useTrustedDeviceFilters`;
 * usa el patrón `hasInteractedRef` contra el doble efecto de StrictMode.
 
+Hallado al probar en TASK-027: la lista empieza debajo del título y del buscador, así que el virtualizador necesita `scrollMargin` (la distancia de la lista al inicio del contenedor, medida en un `useLayoutEffect`) y cada fila resta ese margen en su `translateY`; sin él dibujaba una ventana corrida y faltaba la última fila. El Home no lo necesita porque su feed empieza arriba.
+
 Al existir `Search.tsx`, en `FriendshipSearchTest` se cambia `component('friendship/Search', false)` por `component('friendship/Search')`, para que la prueba vuelva a comprobar que el archivo del componente existe (TASK-023 la dejó apagada porque el archivo aún no existía).
 
 **Type:** feature  
@@ -990,6 +992,8 @@ Al existir `Search.tsx`, en `FriendshipSearchTest` se cambia `component('friends
 `HomeSearchHeader.tsx` queda como un enlace (Inertia `Link` con la URL de Wayfinder `friendshipsSearch` o la acción `search`) con la lupa y su tooltip. Se borran el diálogo y `modules/home/types/friendSearch.ts`.
 
 El tooltip sigue en español a mano, como el resto del header de `home`: traducir el header es otra tarea.
+
+Ajustes de la prueba en el navegador: el campo pasa a `type="text"` (con `type="search"` el navegador agregaba una segunda X), y la fila usa una container query (`@container` + `@lg:`) en lugar de `sm:`, porque la columna central es más angosta que la ventana y cortaba los nombres.
 
 **Type:** refactor  
 **Effort:** S  
@@ -1047,6 +1051,8 @@ En `docs/architecture/modules/friendship.md`:
 * la prueba de navegador.
 
 En `CLAUDE.md`, el espejo de `FriendshipState` pasa a `modules/friendship/types/friendshipSearch.ts`, y la descripción del módulo menciona la página de búsqueda.
+
+**Corrección:** la invariante de TASK-017/019 ("`useHttp` con un objeto literal entra en bucle") no se sostiene. En TASK-027, `/home` cargado directo no tiene bucle aunque otros componentes usan literales, y el bucle `Maximum update depth exceeded` aparece al navegar del login al Home sin que el header use `useHttp`. Se quita esa afirmación de `CLAUDE.md` y `friendship.md` (el inicializador como función se puede conservar como estilo) y se deja anotado el bucle tras el login como problema preexistente por investigar. También se documentan `scrollMargin` y la container query de la fila.
 
 **Type:** docs  
 **Effort:** S  

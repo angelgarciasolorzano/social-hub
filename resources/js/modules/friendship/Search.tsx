@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 
 import { Head, InfiniteScroll } from "@inertiajs/react";
 
@@ -29,10 +29,6 @@ interface SearchProps {
   searchTermMinLength: number;
 }
 
-/**
- * The people search page: the term lives in the URL, the results load by cursor as the page
- * scrolls and only the rows near the viewport are rendered.
- */
 function Search({ filters, searchResults, searchTermMinLength }: SearchProps): JSX.Element {
   const { t } = useTranslation();
   const searchInputId = useId();
@@ -73,7 +69,7 @@ function Search({ filters, searchResults, searchTermMinLength }: SearchProps): J
               updateTerm(event.target.value);
             }}
             placeholder={t("friendship/search.form.placeholder")}
-            type="search"
+            type="text"
             value={term}
           />
 
@@ -123,20 +119,30 @@ interface VirtualSearchResultsProps {
   searchResults: FriendSearchResultCollection;
 }
 
-/**
- * The results list, loaded page by page with `InfiniteScroll` and virtualized like the Home feed.
- */
 function VirtualSearchResults({
   scrollElement,
   searchResults,
 }: VirtualSearchResultsProps): JSX.Element {
   const { t } = useTranslation();
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [scrollMargin, setScrollMargin] = useState<number>(0);
+
+  useLayoutEffect(() => {
+    if (scrollElement === null || listRef.current === null) return;
+
+    setScrollMargin(
+      listRef.current.getBoundingClientRect().top -
+        scrollElement.getBoundingClientRect().top +
+        scrollElement.scrollTop,
+    );
+  }, [scrollElement]);
 
   const rowVirtualizer = useVirtualizer<HTMLDivElement, Element>({
     count: searchResults.data.length,
     getScrollElement: () => scrollElement,
     estimateSize: () => ESTIMATED_ROW_HEIGHT,
     overscan: 5,
+    scrollMargin,
     getItemKey: (index) => searchResults.data[index]?.id ?? index,
   });
 
@@ -144,7 +150,11 @@ function VirtualSearchResults({
     <InfiniteScroll buffer={200} data="searchResults" onlyNext preserveUrl>
       {({ loadingNext }) => (
         <>
-          <div className="relative w-full" style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
+          <div
+            className="relative w-full"
+            ref={listRef}
+            style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+          >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const searchResult = searchResults.data[virtualRow.index];
 
@@ -158,7 +168,7 @@ function VirtualSearchResults({
                   data-index={virtualRow.index}
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                  style={{ transform: `translateY(${virtualRow.start - scrollMargin}px)` }}
                 >
                   <FriendshipSearchResultRow searchResult={searchResult} />
                 </div>
