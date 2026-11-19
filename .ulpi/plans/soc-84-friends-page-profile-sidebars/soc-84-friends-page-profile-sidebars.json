@@ -250,7 +250,7 @@
     {
       "id": "TASK-007",
       "title": "Add FriendshipIndexController and its route",
-      "description": "**`FriendshipIndexController` (invocable):**\n* registra `friendship/friends` y `notification/center`;\n* resuelve la pestaña activa y consulta solo esa;\n* amigos: las amistades aceptadas donde participa el usuario;\n* recibidas y enviadas: las solicitudes pendientes por `receiver_id` o por `requester_id`;\n* en todos los casos excluye al otro usuario si está suspendido y filtra por el inicio de su nombre con `LikePattern`;\n* precarga `requester.media` y `receiver.media` y pagina con cursor.\n\n`tabCounts` sale de `User::withFriendshipCounts()` más el conteo de solicitudes enviadas, en un número constante de consultas.\n\n**Ruta:** `GET friendships` (`friendships.index`, `throttle:60,1,friendships.index`) en el archivo de rutas del módulo. **Configuración:** `module.friendship.list_page_size` (20).",
+      "description": "**`FriendshipIndexController` (invocable):**\n* registra `friendship/friends` y `notification/center`;\n* resuelve la pestaña activa y consulta solo esa;\n* amigos: las amistades aceptadas donde participa el usuario;\n* recibidas y enviadas: las solicitudes pendientes por `receiver_id` o por `requester_id`;\n* en todos los casos excluye al otro usuario si está suspendido y filtra por el inicio de su nombre con `LikePattern`;\n* precarga `requester.media` y `receiver.media` y pagina con cursor.\n\n`tabCounts` cuenta cada pestaña con la misma consulta base que su lista, sin el filtro de nombre: así excluye también a las cuentas suspendidas y cada contador coincide con su lista. Son 3 `count()`, un número constante de consultas. (No usa `User::withFriendshipCounts()`, que cuenta también a las personas suspendidas.)\n\n**Ruta:** `GET friendships` (`friendships.index`, `throttle:60,1,friendships.index`) en el archivo de rutas del módulo. **Configuración:** `module.friendship.list_page_size` (20).",
       "type": "feature",
       "priority": "P1",
       "effort": "L",
@@ -284,13 +284,14 @@
     {
       "id": "TASK-008",
       "title": "Test the friends page",
-      "description": "`Tests/Crud/FriendshipIndexTest` cubre:\n* cada pestaña, con el contenido y el orden correctos;\n* el filtro por nombre, incluidos los comodines literales;\n* la forma exacta de cada elemento, sin email;\n* `tabCounts`;\n* la exclusión de cuentas suspendidas;\n* la pestaña por defecto y los errores de `tab` y `q`;\n* la paginación con el cursor de `scrollProps`.\n\n`Tests/Security/FriendshipIndexSecurityTest` cubre:\n* que un invitado es redirigido al login;\n* que nunca se listan amistades de otras personas;\n* el throttle de 60;\n* el mismo número de consultas con 3 y con 20 filas.",
+      "description": "`Tests/Crud/FriendshipIndexTest` cubre:\n* cada pestaña, con el contenido y el orden correctos;\n* el filtro por nombre, incluidos los comodines literales;\n* la forma exacta de cada elemento, sin email;\n* `tabCounts`;\n* la exclusión de cuentas suspendidas;\n* la pestaña por defecto y los errores de `tab` y `q`;\n* la paginación con el cursor de `scrollProps`.\n\n`Tests/Security/FriendshipIndexSecurityTest` cubre:\n* que un invitado es redirigido al login;\n* que nunca se listan amistades de otras personas;\n* el throttle de 60;\n* el mismo número de consultas con 3 y con 20 filas.\n\nVa después de TASK-015: `assertInertia` exige que exista el componente de la página (`inertia.testing.ensure_pages_exist` está activado), y `friendship/Friends.tsx` se crea ahí.",
       "type": "test",
       "priority": "P1",
       "effort": "M",
       "agent": "laravel-senior-engineer",
       "dependsOn": [
-        "TASK-007"
+        "TASK-007",
+        "TASK-015"
       ],
       "filesToCreate": [
         "app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php",
@@ -781,11 +782,11 @@
         "TASK-018"
       ],
       [
-        "TASK-008",
         "TASK-015",
         "TASK-016"
       ],
       [
+        "TASK-008",
         "TASK-017"
       ],
       [
@@ -825,7 +826,8 @@
       "TASK-006"
     ],
     "TASK-008": [
-      "TASK-007"
+      "TASK-007",
+      "TASK-015"
     ],
     "TASK-009": [
       "TASK-001",

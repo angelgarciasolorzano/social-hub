@@ -288,7 +288,7 @@ Crear tres piezas:
 * en todos los casos excluye al otro usuario si está suspendido y filtra por el inicio de su nombre con `LikePattern`;
 * precarga `requester.media` y `receiver.media` y pagina con cursor.
 
-`tabCounts` sale de `User::withFriendshipCounts()` más el conteo de solicitudes enviadas, en un número constante de consultas.
+`tabCounts` cuenta cada pestaña con la misma consulta base que su lista, sin el filtro de nombre: así excluye también a las cuentas suspendidas y cada contador coincide con su lista. Son 3 `count()`, un número constante de consultas. (No usa `User::withFriendshipCounts()`, que cuenta también a las personas suspendidas.)
 
 **Ruta:** `GET friendships` (`friendships.index`, `throttle:60,1,friendships.index`) en el archivo de rutas del módulo. **Configuración:** `module.friendship.list_page_size` (20).
 
@@ -330,11 +330,13 @@ Crear tres piezas:
 * el throttle de 60;
 * el mismo número de consultas con 3 y con 20 filas.
 
+Va después de TASK-015: `assertInertia` exige que exista el componente de la página (`inertia.testing.ensure_pages_exist` está activado), y `friendship/Friends.tsx` se crea ahí.
+
 **Type:** test  
 **Effort:** M  
 **Agent:** laravel-senior-engineer  
 **Priority:** P1  
-**Depends on:** TASK-007  
+**Depends on:** TASK-007, TASK-015  
 **Review:** claude
 
 **writeScope:**
@@ -798,8 +800,8 @@ El mínimo entregable es TASK-001 a TASK-015, más TASK-012: la página de amigo
 - **Capa 1:** TASK-001, TASK-002, TASK-003, TASK-004, TASK-005, TASK-010, TASK-013, TASK-022
 - **Capa 2:** TASK-006, TASK-011
 - **Capa 3:** TASK-007, TASK-009, TASK-012, TASK-014, TASK-018
-- **Capa 4:** TASK-008, TASK-015, TASK-016
-- **Capa 5:** TASK-017
+- **Capa 4:** TASK-015, TASK-016
+- **Capa 5:** TASK-008, TASK-017
 - **Capa 6:** TASK-019
 - **Capa 7:** TASK-020
 - **Capa 8:** TASK-021
@@ -816,7 +818,7 @@ El mínimo entregable es TASK-001 a TASK-015, más TASK-012: la página de amigo
 | TASK-005 | — |
 | TASK-006 | TASK-002 |
 | TASK-007 | TASK-001, TASK-002, TASK-005, TASK-006 |
-| TASK-008 | TASK-007 |
+| TASK-008 | TASK-007, TASK-015 |
 | TASK-009 | TASK-001, TASK-003, TASK-006 |
 | TASK-010 | — |
 | TASK-011 | TASK-001, TASK-004 |
