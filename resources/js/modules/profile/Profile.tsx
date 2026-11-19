@@ -1,12 +1,15 @@
 import type { JSX } from "react";
 
-import { InfiniteScroll, usePage } from "@inertiajs/react";
+import { InfiniteScroll, Link, router, usePage } from "@inertiajs/react";
 
 import { GoPlus } from "react-icons/go";
 import { MdOutlineEditNote } from "react-icons/md";
 
+import { index as friendshipsIndex } from "@/shared/wayfinder/routes/friendships";
+
 import { Button } from "@/shared/components/shadcn/ui/button";
 
+import { useTranslation } from "@/shared/hooks";
 import { useDialog } from "@/shared/hooks/useDialog";
 
 import { validImage } from "@/shared/lib";
@@ -15,19 +18,29 @@ import type { SharedData, User } from "@/shared/types";
 
 import { profileCoverPlaceholder, profilePicturePlaceholder } from "@/shared/assets";
 
+import FriendshipButton from "../friendship/components/FriendshipButton";
 import { HomeLayout } from "../home";
 import { PostCard, type PostCollection, PostDialog } from "../post";
 import ProfileCover from "./components/ProfileCover";
 import ProfilePicture from "./components/ProfilePicture";
+import type { ProfileFriendship } from "./types/profileFriendship";
 
 interface ProfileProps {
   posts: PostCollection;
+  profileFriendship: ProfileFriendship;
   user: User;
 }
 
-function Profile({ posts, user }: ProfileProps): JSX.Element {
+function Profile({ posts, profileFriendship, user }: ProfileProps): JSX.Element {
   const { open, setOpen } = useDialog();
   const { auth } = usePage<SharedData>().props;
+  const { tChoice } = useTranslation();
+
+  const friendsCountText = tChoice(
+    "friendship/button.profile.friends_count",
+    profileFriendship.friendsCount,
+    { count: profileFriendship.friendsCount },
+  );
 
   return (
     <HomeLayout>
@@ -42,8 +55,42 @@ function Profile({ posts, user }: ProfileProps): JSX.Element {
 
         <div className="px-6 pt-8">
           <h4 className="text-lg font-bold dark:text-white">{user.name}</h4>
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">344 amigos</span>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+            {profileFriendship.isOwnProfile ? (
+              <Link className="hover:underline" href={friendshipsIndex()}>
+                {friendsCountText}
+              </Link>
+            ) : (
+              <span>{friendsCountText}</span>
+            )}
+
+            {!profileFriendship.isOwnProfile && profileFriendship.mutualFriendsCount > 0 && (
+              <span>
+                {tChoice(
+                  "friendship/button.profile.mutual_friends",
+                  profileFriendship.mutualFriendsCount,
+                  { count: profileFriendship.mutualFriendsCount },
+                )}
+              </span>
+            )}
+          </div>
         </div>
+
+        {!profileFriendship.isOwnProfile && profileFriendship.friendshipState !== null && (
+          <div className="flex px-6">
+            <FriendshipButton
+              friendshipId={profileFriendship.friendshipId}
+              friendshipState={profileFriendship.friendshipState}
+              key={user.id}
+              onChange={() => {
+                router.reload({ only: ["profileFriendship", "friendRequests"] });
+              }}
+              userId={user.id}
+              userName={user.name}
+            />
+          </div>
+        )}
 
         <div className="flex items-center gap-4">
           {auth.user.id === user.id && (

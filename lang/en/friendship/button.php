@@ -37,5 +37,10 @@ return [
         'removing' => 'Removing :name from your friends',
     ],
 
+    'profile' => [
+        'friends_count' => '{0} No friends|{1} :count friend|[2,*] :count friends',
+        'mutual_friends' => '{1} :count friend in common|[2,*] :count friends in common',
+    ],
+
     'error' => 'The action could not be completed. Try again.',
 ];
