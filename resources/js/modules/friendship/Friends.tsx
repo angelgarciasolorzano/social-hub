@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Head, Link, router } from "@inertiajs/react";
 
@@ -79,30 +79,35 @@ function Friends(props: FriendsProps): JSX.Element {
     (friendshipListItem) => !hiddenFriendshipIds.includes(friendshipListItem.friendshipId),
   );
 
+  const reloadedEmptyListRef = useRef<FriendshipListItem[] | null>(null);
+
+  const hidesEveryLoadedRow = friendships.data.length > 0 && visibleFriendships.length === 0;
+
+  useEffect(() => {
+    if (!hidesEveryLoadedRow || reloadedEmptyListRef.current === friendships.data) return;
+
+    reloadedEmptyListRef.current = friendships.data;
+
+    router.reload({ only: ["friendships"], reset: ["friendships"] });
+  }, [friendships.data, hidesEveryLoadedRow]);
+
   const handleFriendshipChange = (
     friendshipListItem: FriendshipListItem,
     friendshipState: FriendshipState,
   ): void => {
-    const stillBelongsToTab = friendshipState === FRIENDSHIP_STATE_OF_TAB[committedFilters.tab];
-
-    if (stillBelongsToTab) {
-      router.reload({ only: ["tabCounts", "friendRequests"] });
-
-      return;
+    if (friendshipState !== FRIENDSHIP_STATE_OF_TAB[committedFilters.tab]) {
+      setHiddenFriendships((currentHiddenFriendships) => ({
+        friendshipIds: [
+          ...(currentHiddenFriendships.listKey === listKey
+            ? currentHiddenFriendships.friendshipIds
+            : []),
+          friendshipListItem.friendshipId,
+        ],
+        listKey,
+      }));
     }
 
-    setHiddenFriendships({
-      friendshipIds: [...hiddenFriendshipIds, friendshipListItem.friendshipId],
-      listKey,
-    });
-
-    const hidesLastLoadedRow = visibleFriendships.length <= 1;
-
-    router.reload(
-      hidesLastLoadedRow
-        ? { only: ["tabCounts", "friendRequests", "friendships"], reset: ["friendships"] }
-        : { only: ["tabCounts", "friendRequests"] },
-    );
+    router.reload({ async: true, only: ["tabCounts", "friendRequests"] });
   };
 
   return (

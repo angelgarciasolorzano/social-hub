@@ -28,7 +28,7 @@ function friendsBadgeScript(): string
     return 'document.querySelector(\'nav a[href="/friendships"] span[aria-hidden="true"]\')?.textContent ?? null';
 }
 
-it('accepts a request from the sidebar, removes a friend, switches tabs and accepts from the list', function (): void {
+it('accepts a request from the sidebar, removes a friend, switches tabs and accepts two requests at once from the list', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     $user = createUser();
@@ -36,6 +36,8 @@ it('accepts a request from the sidebar, removes a friend, switches tabs and acce
 
     Date::setTestNow($now->copy()->subDay());
     $olderRequest = createFriendRequest(friendsBrowserUserNamed('Bruno Request'), $user);
+    Date::setTestNow($now->copy()->subHours(12));
+    $middleRequest = createFriendRequest(friendsBrowserUserNamed('Dora Request'), $user);
     Date::setTestNow($now->copy()->subHour());
     $newerRequest = createFriendRequest(friendsBrowserUserNamed('Ana Request'), $user);
     Date::setTestNow();
@@ -47,11 +49,11 @@ it('accepts a request from the sidebar, removes a friend, switches tabs and acce
     $webpage = visit(route('home', absolute: false))
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'home/sidebar.friend_requests.title'))
         ->assertSee('Ana Request')
-        ->assertScript(friendsBadgeScript(), '2');
+        ->assertScript(friendsBadgeScript(), '3');
 
     $webpage->click('aside li:first-of-type button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
         ->assertDontSee('Ana Request')
-        ->assertScript(friendsBadgeScript(), '1');
+        ->assertScript(friendsBadgeScript(), '2');
 
     $webpage = visit(route('friendships.index', absolute: false))
         ->assertSee('Carla Friend')
@@ -68,15 +70,20 @@ it('accepts a request from the sidebar, removes a friend, switches tabs and acce
     $webpage->click('[role="tab"]:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")')
         ->assertQueryStringHas('tab', 'received')
         ->assertSee('Bruno Request')
+        ->assertSee('Dora Request')
         ->assertDontSee('Carla Friend')
         ->assertScript('document.querySelector(\'[role="tab"][aria-selected="true"]\')?.textContent?.startsWith("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")');
 
-    $webpage->click('main article button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
-        ->assertDontSee('Bruno Request')
+    // Both rows' actions start in the same tick, so their callbacks come from the same render.
+    $webpage->script('document.querySelectorAll("main article").forEach((article) => [...article.querySelectorAll("button")].find((button) => button.textContent === "'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")?.click())');
+
+    $webpage->assertDontSee('Bruno Request')
+        ->assertDontSee('Dora Request')
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.states.received_empty_title'))
         ->assertNoJavaScriptErrors();
 
     expect($newerRequest->refresh()->status)->toBe(FriendshipStatus::Accepted)
+        ->and($middleRequest->refresh()->status)->toBe(FriendshipStatus::Accepted)
         ->and($olderRequest->refresh()->status)->toBe(FriendshipStatus::Accepted)
         ->and(Friendship::query()->whereKey($friendship->id)->exists())->toBeFalse();
 });
