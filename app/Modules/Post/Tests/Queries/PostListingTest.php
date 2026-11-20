@@ -19,6 +19,25 @@ function postListingUrl(string $routeName, ?User $user = null): string
 }
 
 /**
+ * The author whose posts the page lists to the given user: the user on their own profile, otherwise
+ * someone else, who is a friend on the home page because the feed only shows friends.
+ */
+function postListingAuthorFor(string $routeName, User $user): User
+{
+    if ($routeName === 'profile.index') {
+        return $user;
+    }
+
+    $author = createUser();
+
+    if ($routeName === 'home') {
+        createFriendship($user, $author);
+    }
+
+    return $author;
+}
+
+/**
  * Count the queries the page runs for the given user; the first visit of a process also loads one-time data.
  */
 function countListingQueries(TestCase $testCase, string $url, User $user): int
@@ -53,7 +72,7 @@ dataset('post listing pages', [
 
 it('serves the real comments and likes of each post', function (string $routeName, string $component): void {
     $user = createUser();
-    $profileOwner = $routeName === 'profile.index' ? $user : createUser();
+    $profileOwner = postListingAuthorFor($routeName, $user);
     $post = createPost($profileOwner);
     addEngagementTo($post, $user);
 
@@ -68,7 +87,7 @@ it('serves the real comments and likes of each post', function (string $routeNam
 
 it('serves each post with its own author, not the authenticated user', function (): void {
     $user = createUser();
-    $author = createUser();
+    $author = postListingAuthorFor('home', $user);
     createPost($author);
 
     $this->actingAs($user)
@@ -81,7 +100,7 @@ it('serves each post with its own author, not the authenticated user', function 
 
 it('counts zero comments and likes for a post without activity', function (string $routeName, string $component): void {
     $user = createUser();
-    $profileOwner = $routeName === 'profile.index' ? $user : createUser();
+    $profileOwner = postListingAuthorFor($routeName, $user);
     createPost($profileOwner);
 
     $this->actingAs($user)
@@ -108,12 +127,12 @@ it('counts only the replies of a deleted comment when the comment itself is dele
 it('uses the same number of queries when the posts come from many different authors', function (): void {
     $user = createUser();
 
-    createPost(createUser());
+    createPost(postListingAuthorFor('home', $user));
     countListingQueries($this, route('home'), $user);
     $queriesWithOneAuthor = countListingQueries($this, route('home'), $user);
 
     foreach (range(1, 9) as $attempt) {
-        createPost(createUser());
+        createPost(postListingAuthorFor('home', $user));
     }
 
     expect(countListingQueries($this, route('home'), $user))->toBe($queriesWithOneAuthor);
@@ -121,7 +140,7 @@ it('uses the same number of queries when the posts come from many different auth
 
 it('uses the same number of queries however many posts the page lists', function (string $routeName): void {
     $user = createUser();
-    $profileOwner = $routeName === 'profile.index' ? $user : createUser();
+    $profileOwner = postListingAuthorFor($routeName, $user);
 
     addEngagementTo(createPost($profileOwner), $user);
     countListingQueries($this, postListingUrl($routeName, $profileOwner), $user);

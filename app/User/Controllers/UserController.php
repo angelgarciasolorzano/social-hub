@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\User\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Post\Models\Post;
 use App\User\Enums\UserImageType;
 use App\User\Events\AccountDeleted;
 use App\User\Events\AccountImageUpdated;
@@ -15,6 +16,7 @@ use App\User\Requests\UserUpdateRequest;
 use Illuminate\Http\RedirectResponse as HttpRedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileDoesNotExist;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileIsTooBig;
@@ -63,7 +65,11 @@ class UserController extends Controller
 
         Auth::logout();
 
-        $user->delete();
+        DB::transaction(function () use ($user): void {
+            $user->posts()->lazyById()->each(fn (Post $post) => $post->deleteWithEngagement());
+
+            $user->delete();
+        });
 
         event(new AccountDeleted($user));
 

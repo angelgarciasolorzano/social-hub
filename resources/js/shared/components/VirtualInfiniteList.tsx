@@ -1,12 +1,13 @@
 import type { JSX, Key, ReactNode } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { InfiniteScroll } from "@inertiajs/react";
+import { InfiniteScroll, usePage } from "@inertiajs/react";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 interface VirtualInfiniteListProps<Item> {
   data: string;
+  endLabel?: string;
   estimateSize: number;
   getItemKey: (item: Item) => Key;
   items: Item[];
@@ -16,12 +17,24 @@ interface VirtualInfiniteListProps<Item> {
 }
 
 function VirtualInfiniteList<Item>(props: VirtualInfiniteListProps<Item>): JSX.Element {
-  const { data, estimateSize, getItemKey, items, loadingMoreLabel, renderItem, scrollElement } =
-    props;
+  const {
+    data,
+    endLabel,
+    estimateSize,
+    getItemKey,
+    items,
+    loadingMoreLabel,
+    renderItem,
+    scrollElement,
+  } = props;
+
+  const { scrollProps } = usePage();
 
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const [scrollMargin, setScrollMargin] = useState<number>(0);
+
+  const hasNextPage = (scrollProps?.[data]?.nextPage ?? null) !== null;
 
   useLayoutEffect(() => {
     if (scrollElement === null || listRef.current === null) return;
@@ -39,6 +52,7 @@ function VirtualInfiniteList<Item>(props: VirtualInfiniteListProps<Item>): JSX.E
     estimateSize: () => estimateSize,
     overscan: 5,
     scrollMargin,
+    useFlushSync: false,
     getItemKey: (index) => {
       const item = items[index];
 
@@ -84,6 +98,10 @@ function VirtualInfiniteList<Item>(props: VirtualInfiniteListProps<Item>): JSX.E
             >
               {loadingMoreLabel}
             </p>
+          )}
+
+          {endLabel !== undefined && !loadingNext && !hasNextPage && items.length > 0 && (
+            <p className="py-4 text-center text-sm text-muted-foreground">{endLabel}</p>
           )}
         </>
       )}

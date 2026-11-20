@@ -30,7 +30,7 @@ Files are handled via `spatie/laravel-medialibrary` with a custom path generator
 
 ## Frontend layout (`resources/js/`)
 
-- `app/app.tsx` — Inertia + React entrypoint.
+- `app/app.tsx` — Inertia + React entrypoint. It must not define components (SOC-86): Fast Refresh adds a self-import to any module that does, and after an edit that import carries `?t=`, so the browser runs a second copy of `app.tsx` (two `createInertiaApp`, two `createRoot`, `removeChild` errors). Components it mounts, such as `shared/components/DocumentLanguageSync.tsx` (keeps `<html lang>` in sync on every visit), live in their own files. `TanStackDevtools` is mounted unconditionally because the `@tanstack/devtools-vite` plugin in `vite.config.ts` strips it from production builds (`removeDevtoolsOnBuild`, on by default).
 - `modules/<domain>/...` — feature pages/components mirrored to PHP domains (`auth`, `home`, `post`, `comment`, `profile`, `setting`, `account`, `static`, `announcement`).
 - `shared/` — reusable code:
   - `components/shadcn/ui/` — shadcn/ui primitives (style: `new-york`, base: `neutral`, see `components.json`). Includes `chart` (Recharts wrapper) for any chart blocks — use `ChartContainer` + `ChartConfig` with `theme: { light, dark }` for theme-aware segments.

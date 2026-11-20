@@ -1,6 +1,4 @@
-import { useEffect } from "react";
-
-import { createInertiaApp, router } from "@inertiajs/react";
+import { createInertiaApp } from "@inertiajs/react";
 
 import { configureEcho } from "@laravel/echo-react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -19,6 +17,7 @@ import AuthCardLayout from "@/modules/auth/layouts/AuthCardLayout";
 import NotificationRealtimeListener from "@/modules/notification/components/NotificationRealtimeListener";
 import SettingLayout from "@/modules/setting/shared/layouts/SettingLayout";
 
+import DocumentLanguageSync from "@/shared/components/DocumentLanguageSync";
 import FlashToaster from "@/shared/components/FlashToaster";
 import { TooltipProvider } from "@/shared/components/shadcn/ui/tooltip";
 
@@ -50,22 +49,6 @@ configureEcho({
   wsPort: reverbPort,
   wssPort: reverbPort,
 });
-
-interface DocumentLanguageSyncProps {
-  initialLocale: SharedData["locale"];
-}
-
-function DocumentLanguageSync({ initialLocale }: DocumentLanguageSyncProps): null {
-  useEffect(() => {
-    document.documentElement.lang = initialLocale;
-
-    return router.on("navigate", (event) => {
-      document.documentElement.lang = (event.detail.page.props as unknown as SharedData).locale;
-    });
-  }, [initialLocale]);
-
-  return null;
-}
 
 void createInertiaApp({
   pages: "../modules",

@@ -8,6 +8,7 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Database\Factories\PostFactory;
 use App\Modules\Post\Policies\PostPolicy;
+use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -108,6 +110,57 @@ class Post extends Model implements HasMedia
     public function likes(): MorphMany
     {
         return $this->morphMany(Like::class, Like::MORPH_COLUMN);
+    }
+
+    /**
+     * Delete the post with everything hanging from it that no foreign key cascades: the likes of the
+     * post, its comments and their replies (tombstones included) and the likes of those comments.
+     * Deleting the post through Eloquent lets MediaLibrary remove its image.
+     */
+    public function deleteWithEngagement(): void
+    {
+        DB::transaction(function (): void {
+            $rootCommentIds = $this->comments()->withTrashed()->pluck('id')->all();
+
+            $replyIds = Comment::withTrashed()
+                ->where('commentable_type', Comment::MORPH_NAME)
+                ->whereIn('commentable_id', $rootCommentIds)
+                ->pluck('id')
+                ->all();
+
+            $commentIds = [...$replyIds, ...$rootCommentIds];
+
+            Like::query()
+                ->where('likeable_type', Comment::MORPH_NAME)
+                ->whereIn('likeable_id', $commentIds)
+                ->delete();
+
+            $this->likes()->delete();
+
+            Comment::withTrashed()->whereKey($replyIds)->forceDelete();
+            Comment::withTrashed()->whereKey($rootCommentIds)->forceDelete();
+
+            $this->delete();
+        });
+    }
+
+    /**
+     * Limit the query to the home feed of the given user: their own posts and the posts of their
+     * accepted friends whose account is active. The friends stay a subquery of `User::friends()`,
+     * so no id is loaded into PHP and the `(user_id, id)` index of `posts` serves each author.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function visibleInFeedOf(Builder $query, User $user): void
+    {
+        $activeFriendIds = $user->friends()
+            ->where('status', AccountStatus::Active)
+            ->select($user->qualifyColumn('id'));
+
+        $query->where(fn (Builder $builder): Builder => $builder
+            ->where($this->qualifyColumn('user_id'), $user->id)
+            ->orWhereIn($this->qualifyColumn('user_id'), $activeFriendIds));
     }
 
     /**

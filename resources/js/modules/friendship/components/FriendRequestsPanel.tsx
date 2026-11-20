@@ -18,7 +18,24 @@ import type { SharedData } from "@/shared/types";
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import type { FriendshipListItem } from "../types/friendshipList";
+import type { FriendshipState } from "../types/friendshipSearch";
 import FriendshipButton from "./FriendshipButton";
+
+interface FriendshipDependentProps {
+  only: string[];
+  onlyWhenFriends: boolean;
+  reset: string[];
+}
+
+const FRIENDSHIP_DEPENDENT_PROPS_OF_PAGE: Record<string, FriendshipDependentProps> = {
+  "home/Home": { only: ["posts"], onlyWhenFriends: true, reset: ["posts"] },
+  "friendship/Friends": {
+    only: ["tabCounts", "friendships"],
+    onlyWhenFriends: false,
+    reset: ["friendships"],
+  },
+  "profile/Profile": { only: ["profileFriendship"], onlyWhenFriends: false, reset: [] },
+};
 
 function FriendRequestsPanel(): JSX.Element {
   const { t } = useTranslation();
@@ -41,12 +58,20 @@ function FriendRequestsPanel(): JSX.Element {
 function FriendRequestsList(): JSX.Element {
   const { t } = useTranslation();
 
-  const { friendRequests } = usePage<SharedData>().props;
+  const { component, props } = usePage<SharedData>();
 
-  const recentFriendRequests = friendRequests?.recent ?? [];
+  const recentFriendRequests = props.friendRequests?.recent ?? [];
 
-  const reloadFriendRequests = (): void => {
-    router.reload({ only: ["friendRequests"] });
+  const reloadFriendRequests = (friendshipState: FriendshipState): void => {
+    const pageProps = FRIENDSHIP_DEPENDENT_PROPS_OF_PAGE[component];
+
+    const reloadsPageProps =
+      pageProps !== undefined && (!pageProps.onlyWhenFriends || friendshipState === "friends");
+
+    router.reload({
+      only: reloadsPageProps ? ["friendRequests", ...pageProps.only] : ["friendRequests"],
+      reset: reloadsPageProps ? pageProps.reset : [],
+    });
   };
 
   if (recentFriendRequests.length === 0) {
@@ -85,7 +110,7 @@ function FriendRequestsList(): JSX.Element {
 
 interface FriendRequestItemProps {
   friendRequest: FriendshipListItem;
-  onFriendshipChange: () => void;
+  onFriendshipChange: (friendshipState: FriendshipState) => void;
 }
 
 function FriendRequestItem(props: FriendRequestItemProps): JSX.Element {
