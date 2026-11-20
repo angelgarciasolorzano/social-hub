@@ -17,4 +17,12 @@ class PostServiceProvider extends ServiceProvider
     {
         $this->app->register(PostRouteServiceProvider::class);
     }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+    }
 }
