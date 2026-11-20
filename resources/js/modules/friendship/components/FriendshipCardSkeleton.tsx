@@ -7,16 +7,17 @@ import { useTranslation } from "@/shared/hooks";
 interface FriendshipCardSkeletonProps {
   className?: string;
   count?: number;
+  label?: string;
 }
 
 function FriendshipCardSkeleton(props: FriendshipCardSkeletonProps): JSX.Element {
-  const { className, count = 6 } = props;
+  const { className, count = 6, label } = props;
 
   const { t } = useTranslation();
 
   return (
     <div className={className} role="status">
-      <span className="sr-only">{t("friendship/friends.states.loading")}</span>
+      <span className="sr-only">{label ?? t("friendship/friends.states.loading")}</span>
 
       {Array.from({ length: count }, (_, position) => (
         <div
