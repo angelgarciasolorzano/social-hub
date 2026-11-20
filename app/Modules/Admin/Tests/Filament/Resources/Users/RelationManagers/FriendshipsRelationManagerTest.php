@@ -120,6 +120,55 @@ it('filters the friendships by status seen from the user', function (string $sta
     'received' => ['pending_received', 'pending_received'],
 ]);
 
+it('filters the requests by who sent them', function (string $direction): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createUser();
+    $sent = [createFriendRequest($user), createFriendship($user)];
+    $received = [createFriendRequest(createUser(), $user), createFriendship(createUser(), $user)];
+
+    $testable = friendshipsRelationManagerFor($user);
+    $testable->__call('filterTable', ['direction', $direction]);
+
+    expect(FilamentTableRecords::shownKeys($testable, Friendship::class))->toEqualCanonicalizing(array_map(
+        static fn (Friendship $friendship): string => (string) $friendship->id,
+        $direction === 'sent' ? $sent : $received,
+    ));
+})->with(['sent', 'received']);
+
+it('searches by the start of the other user name, never the owner name', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createUserNamed('Alma Owner');
+    $friendship = createFriendship($user, createUserNamed('Alba Sent'));
+    $albert = createFriendRequest(createUserNamed('Albert Received'), $user);
+    createFriendship($user, createUserNamed('Bruno Alba'));
+
+    $testable = friendshipsRelationManagerFor($user);
+    $testable->__call('searchTable', ['Alb']);
+
+    expect(FilamentTableRecords::shownKeys($testable, Friendship::class))
+        ->toEqualCanonicalizing([(string) $friendship->id, (string) $albert->id]);
+
+    $testable->__call('searchTable', ['Alma']);
+
+    expect(FilamentTableRecords::shownKeys($testable, Friendship::class))
+        ->toBeEmpty();
+});
+
+it('searches a percent sign literally', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createUser();
+    $friendship = createFriendship($user, createUserNamed('100% Real'));
+    createFriendship($user, createUserNamed('1000 Fake'));
+
+    $testable = friendshipsRelationManagerFor($user);
+    $testable->__call('searchTable', ['100%']);
+
+    expect(FilamentTableRecords::shownKeys($testable, Friendship::class))->toBe([(string) $friendship->id]);
+});
+
 it('sorts by the date of the friendship, newest first', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
 

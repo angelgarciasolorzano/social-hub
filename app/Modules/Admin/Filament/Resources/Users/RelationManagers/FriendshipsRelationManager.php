@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\UserResource;
 use App\Modules\Friendship\Enums\FriendshipStatus;
 use App\Modules\Friendship\Models\Friendship;
+use App\Support\Database\LikePattern;
 use App\Support\Translation\TranslatedText;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
@@ -22,10 +23,6 @@ use Illuminate\Support\Facades\Gate;
 use LogicException;
 use Override;
 
-/**
- * The friends and pending friend requests of a user, read only. The relationship only lets Filament
- * resolve the related model: the table lists every row the user is part of, in both directions.
- */
 class FriendshipsRelationManager extends RelationManager
 {
     /**
@@ -39,6 +36,14 @@ class FriendshipsRelationManager extends RelationManager
     private const string PENDING_RECEIVED_STATUS = 'pending_received';
 
     private const string SINCE_COLUMN = 'since';
+
+    /**
+     * Direction keys of a request seen from the owner; each one is also its key under
+     * `admin/users.relations.friendships.filters`.
+     */
+    private const string SENT_DIRECTION = 'sent';
+
+    private const string RECEIVED_DIRECTION = 'received';
 
     #[Override]
     protected static string $relationship = 'sentFriendRequests';
@@ -79,6 +84,7 @@ class FriendshipsRelationManager extends RelationManager
                 TextColumn::make('other_user')
                     ->label(TranslatedText::of('admin/users.relations.friendships.other_user'))
                     ->state(fn (Friendship $friendship): string => $this->getOtherUser($friendship)->name)
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->searchByOtherUserName($query, $search))
                     ->url(function (Friendship $friendship): ?string {
                         $otherUser = $this->getOtherUser($friendship);
 
@@ -109,6 +115,7 @@ class FriendshipsRelationManager extends RelationManager
                         : $query->orderByRaw('COALESCE(accepted_at, created_at) desc')->orderByDesc('id')),
             ])
             ->defaultSort(self::SINCE_COLUMN, 'desc')
+            ->searchPlaceholder(TranslatedText::of('admin/users.relations.friendships.search'))
             ->filters([
                 SelectFilter::make('status')
                     ->label(TranslatedText::of('admin/users.relations.friendships.filters.status'))
@@ -118,6 +125,13 @@ class FriendshipsRelationManager extends RelationManager
                         self::PENDING_RECEIVED_STATUS => TranslatedText::of('admin/users.relations.friendships.statuses.pending_received'),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $this->filterByStatus($query, is_string($data['value'] ?? null) ? $data['value'] : null)),
+                SelectFilter::make('direction')
+                    ->label(TranslatedText::of('admin/users.relations.friendships.filters.direction'))
+                    ->options([
+                        self::SENT_DIRECTION => TranslatedText::of('admin/users.relations.friendships.filters.sent'),
+                        self::RECEIVED_DIRECTION => TranslatedText::of('admin/users.relations.friendships.filters.received'),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $this->filterByDirection($query, is_string($data['value'] ?? null) ? $data['value'] : null)),
             ])
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
@@ -169,5 +183,43 @@ class FriendshipsRelationManager extends RelationManager
             self::PENDING_RECEIVED_STATUS => $query->where('status', FriendshipStatus::Pending)->where('receiver_id', $ownerId),
             default => $query,
         };
+    }
+
+    /**
+     * Who sent the request, seen from the owner: the requests the owner sent or the ones they received.
+     *
+     * @param  Builder<Friendship>  $query
+     * @return Builder<Friendship>
+     */
+    private function filterByDirection(Builder $query, ?string $direction): Builder
+    {
+        $ownerId = $this->getOwner()->id;
+
+        return match ($direction) {
+            self::SENT_DIRECTION => $query->where('requester_id', $ownerId),
+            self::RECEIVED_DIRECTION => $query->where('receiver_id', $ownerId),
+            default => $query,
+        };
+    }
+
+    /**
+     * The rows whose other user's name starts with the term; the owner's own name never matches, and
+     * `LIKE` wildcards in the term are searched literally.
+     *
+     * @param  Builder<Friendship>  $query
+     * @return Builder<Friendship>
+     */
+    private function searchByOtherUserName(Builder $query, string $search): Builder
+    {
+        $ownerId = $this->getOwner()->id;
+        $pattern = LikePattern::startsWith($search);
+
+        return $query->where(static fn (Builder $builder): Builder => $builder
+            ->where(static fn (Builder $sentRequests): Builder => $sentRequests
+                ->where('requester_id', $ownerId)
+                ->whereHas('receiver', static fn (Builder $receiver): Builder => $receiver->where('name', 'like', $pattern)))
+            ->orWhere(static fn (Builder $receivedRequests): Builder => $receivedRequests
+                ->where('receiver_id', $ownerId)
+                ->whereHas('requester', static fn (Builder $requester): Builder => $requester->where('name', 'like', $pattern))));
     }
 }
