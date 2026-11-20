@@ -9,6 +9,7 @@ use App\Modules\ActivityLog\Enums\Events\ActivityLogAccountEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAuthEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogFriendshipEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use BackedEnum;
@@ -26,6 +27,7 @@ interface ActivityLogEvent extends BackedEnum
         ActivityLogAuthEvent::class,
         ActivityLogContentEvent::class,
         ActivityLogLikeEvent::class,
+        ActivityLogFriendshipEvent::class,
         ActivityLogTrustedDeviceEvent::class,
         ActivityLogAccountEvent::class,
         ActivityLogAdminEvent::class,
