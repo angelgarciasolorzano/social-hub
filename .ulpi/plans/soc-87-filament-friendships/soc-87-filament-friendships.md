@@ -400,6 +400,75 @@ En `UserInfolist`, dos entradas en "actividad de la cuenta": amigos (`friendsCou
 
 **validateCommand:** `composer phpstan && composer rector-dry && composer test && composer doctor`
 
+### TASK-014: Add the texts of the richer Friends table
+
+En `lang/{en,es}/admin/users.php`, bajo `relations.friendships`: el resumen de la tabla (amigos, solicitudes recibidas y enviadas), la foto y su texto alternativo, la cuenta y el último acceso de la otra persona, la fecha de la solicitud y la de aceptación, el estado vacío y los filtros por estado de la cuenta y por rango de fechas.
+
+**Type:** feature  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Depends on:** TASK-013  
+**Review:** claude
+
+**writeScope:**
+
+- `lang/en/admin/users.php`
+- `lang/es/admin/users.php`
+
+**Acceptance Criteria:**
+
+1. Los dos idiomas tienen las mismas claves y los mismos placeholders.
+2. La prueba de paridad falla si falta una clave nueva en `es`.
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations`
+
+### TASK-015: Make the Friends table richer
+
+En `FriendshipsRelationManager`: un resumen en la descripción de la tabla (una consulta agregada), la foto de perfil de la otra persona, su correo bajo el nombre, el estado de su cuenta, su último acceso, la fecha relativa bajo "Desde", las fechas de solicitud y aceptación como columnas ocultables, un estado vacío, y filtros por estado de la cuenta de la otra persona y por rango de fechas. La foto y los datos se precargan, así que la tabla sigue con un número constante de consultas.
+
+**Type:** feature  
+**Effort:** M  
+**Agent:** laravel-senior-engineer  
+**Priority:** P2  
+**Depends on:** TASK-014  
+**Review:** claude
+
+**writeScope:**
+
+- `app/Modules/Admin/Filament/Resources/Users/RelationManagers/FriendshipsRelationManager.php`
+- `app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/FriendshipsRelationManagerTest.php`
+
+**Acceptance Criteria:**
+
+1. El resumen cuenta amigos y solicitudes recibidas y enviadas del dueño, y no aparece sin filas.
+2. El filtro por cuenta deja solo las filas cuya otra persona tiene ese estado (nunca el dueño), y el de fechas usa la fecha de aceptación o, si está pendiente, la de envío.
+3. Listar 3 o 15 amistades sigue haciendo el mismo número de consultas.
+
+**validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/FriendshipsRelationManagerTest.php`
+
+### TASK-016: Document the richer Friends table
+
+Actualizar la sección SOC-87 de `docs/architecture/modules/admin.md` con las columnas, el resumen y los filtros nuevos.
+
+**Type:** docs  
+**Effort:** S  
+**Agent:** laravel-senior-engineer  
+**Priority:** P3  
+**Depends on:** TASK-015  
+**Review:** claude
+
+**writeScope:**
+
+- `docs/architecture/modules/admin.md`
+
+**Acceptance Criteria:**
+
+1. La sección describe cada columna, el resumen y cada filtro tal como quedaron en el código.
+2. Menciona que la tabla sigue con consultas constantes.
+
+**validateCommand:** `grep -n "SOC-87" docs/architecture/modules/admin.md`
+
 ## Failure Modes
 
 - `AdminTranslationKeysTest` exige nombre para cada permiso: queda en rojo entre TASK-001 y TASK-002, por eso TASK-001 se valida solo con las pruebas de enums.
@@ -430,13 +499,16 @@ El mínimo entregable es TASK-001 a TASK-004, TASK-006 y TASK-008: el permiso, l
 
 ## Execution Summary
 
-- **Tareas:** 13
+- **Tareas:** 16
 - **Capa 1:** TASK-001, TASK-005, TASK-006, TASK-007
 - **Capa 2:** TASK-002, TASK-003, TASK-004
 - **Capa 3:** TASK-008, TASK-010, TASK-011
 - **Capa 4:** TASK-009
 - **Capa 5:** TASK-012
 - **Capa 6:** TASK-013
+- **Capa 7:** TASK-014
+- **Capa 8:** TASK-015
+- **Capa 9:** TASK-016
 - **Ruta crítica:** TASK-001 → TASK-004 → TASK-008 → TASK-009 → TASK-012 → TASK-013
 
 ## Task Dependencies
@@ -456,3 +528,6 @@ El mínimo entregable es TASK-001 a TASK-004, TASK-006 y TASK-008: el permiso, l
 | TASK-011 | TASK-004, TASK-005, TASK-007 |
 | TASK-012 | TASK-003, TASK-009, TASK-010, TASK-011 |
 | TASK-013 | TASK-002, TASK-012 |
+| TASK-014 | TASK-013 |
+| TASK-015 | TASK-014 |
+| TASK-016 | TASK-015 |

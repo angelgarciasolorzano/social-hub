@@ -434,6 +434,86 @@
       "validateCommand": "composer phpstan && composer rector-dry && composer test && composer doctor",
       "writeScope": [],
       "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Add the texts of the richer Friends table",
+      "description": "En `lang/{en,es}/admin/users.php`, bajo `relations.friendships`: el resumen de la tabla (amigos, solicitudes recibidas y enviadas), la foto y su texto alternativo, la cuenta y el último acceso de la otra persona, la fecha de la solicitud y la de aceptación, el estado vacío y los filtros por estado de la cuenta y por rango de fechas.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/admin/users.php",
+        "lang/es/admin/users.php"
+      ],
+      "acceptanceCriteria": [
+        "Los dos idiomas tienen las mismas claves y los mismos placeholders.",
+        "La prueba de paridad falla si falta una clave nueva en `es`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations",
+      "writeScope": [
+        "lang/en/admin/users.php",
+        "lang/es/admin/users.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Make the Friends table richer",
+      "description": "En `FriendshipsRelationManager`: un resumen en la descripción de la tabla (una consulta agregada), la foto de perfil de la otra persona, su correo bajo el nombre, el estado de su cuenta, su último acceso, la fecha relativa bajo \"Desde\", las fechas de solicitud y aceptación como columnas ocultables, un estado vacío, y filtros por estado de la cuenta de la otra persona y por rango de fechas. La foto y los datos se precargan, así que la tabla sigue con un número constante de consultas.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-014"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/FriendshipsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/FriendshipsRelationManagerTest.php"
+      ],
+      "acceptanceCriteria": [
+        "El resumen cuenta amigos y solicitudes recibidas y enviadas del dueño, y no aparece sin filas.",
+        "El filtro por cuenta deja solo las filas cuya otra persona tiene ese estado (nunca el dueño), y el de fechas usa la fecha de aceptación o, si está pendiente, la de envío.",
+        "Listar 3 o 15 amistades sigue haciendo el mismo número de consultas."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/FriendshipsRelationManagerTest.php",
+      "writeScope": [
+        "app/Modules/Admin/Filament/Resources/Users/RelationManagers/FriendshipsRelationManager.php",
+        "app/Modules/Admin/Tests/Filament/Resources/Users/RelationManagers/FriendshipsRelationManagerTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Document the richer Friends table",
+      "description": "Actualizar la sección SOC-87 de `docs/architecture/modules/admin.md` con las columnas, el resumen y los filtros nuevos.",
+      "type": "docs",
+      "priority": "P3",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-015"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/modules/admin.md"
+      ],
+      "acceptanceCriteria": [
+        "La sección describe cada columna, el resumen y cada filtro tal como quedaron en el código.",
+        "Menciona que la tabla sigue con consultas constantes."
+      ],
+      "validateCommand": "grep -n \"SOC-87\" docs/architecture/modules/admin.md",
+      "writeScope": [
+        "docs/architecture/modules/admin.md"
+      ],
+      "review": "claude"
     }
   ],
   "failureModes": [
@@ -488,7 +568,7 @@
     ]
   ],
   "executionSummary": {
-    "taskCount": 13,
+    "taskCount": 16,
     "layers": [
       [
         "TASK-001",
@@ -514,6 +594,15 @@
       ],
       [
         "TASK-013"
+      ],
+      [
+        "TASK-014"
+      ],
+      [
+        "TASK-015"
+      ],
+      [
+        "TASK-016"
       ]
     ],
     "criticalPath": [
@@ -564,6 +653,15 @@
     "TASK-013": [
       "TASK-002",
       "TASK-012"
+    ],
+    "TASK-014": [
+      "TASK-013"
+    ],
+    "TASK-015": [
+      "TASK-014"
+    ],
+    "TASK-016": [
+      "TASK-015"
     ]
   }
 }

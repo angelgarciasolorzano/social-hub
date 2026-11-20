@@ -11,7 +11,9 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Admin\Tests\Support\FilamentTableRecords;
 use App\Modules\Admin\Tests\Support\QueryLog;
 use App\Modules\Friendship\Models\Friendship;
+use App\User\Enums\AccountStatus;
 use App\User\Models\User;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
@@ -161,6 +163,83 @@ it('searches a percent sign literally', function (): void {
     expect(FilamentTableRecords::shownKeys($testable, Friendship::class))->toBe([(string) $friendship->id]);
 });
 
+it('summarizes the friends and the requests of both directions', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createUser();
+    createFriendship($user);
+    createFriendship(createUser(), $user);
+    createFriendRequest(createUser(), $user);
+    createFriendRequest($user);
+    createFriendRequest($user);
+    createFriendship();
+
+    $table = FilamentTableRecords::table(friendshipsRelationManagerFor($user))->getTable();
+
+    expect($table->getDescription())->toBe('Friends: 2 · Requests received: 1 · Requests sent: 2');
+});
+
+it('shows no summary and an empty state without friendships', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $testable = friendshipsRelationManagerFor(createUser())
+        ->assertSeeText('No friends or requests');
+
+    expect(FilamentTableRecords::table($testable)->getTable()->getDescription())->toBeNull();
+});
+
+it('shows the picture, email and account of the other user', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createUser();
+    $friend = createSuspendedUser();
+    $friendship = createFriendship($user, $friend);
+
+    $table = FilamentTableRecords::table(friendshipsRelationManagerFor($user)->assertSeeText($friend->email))->getTable();
+    $accountColumn = $table->getColumn('account');
+    $pictureColumn = $table->getColumn('profile_picture');
+
+    throw_unless($accountColumn instanceof TextColumn && $pictureColumn instanceof ImageColumn, LogicException::class, 'The friendships table must expose the account and picture columns.');
+
+    expect($accountColumn->record($friendship)->getState())->toBe(AccountStatus::Suspended)
+        ->and($pictureColumn->record($friendship)->getState())->toBe(url(User::DEFAULT_PROFILE_PICTURE_PATH));
+});
+
+it('filters by the account status of the other user, never the owner', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createSuspendedUser();
+    $friendship = createFriendship($user, createSuspendedUser());
+    $suspendedRequester = createFriendRequest(createSuspendedUser(), $user);
+    createFriendship($user);
+
+    $testable = friendshipsRelationManagerFor($user);
+    $testable->__call('filterTable', ['account', AccountStatus::Suspended->value]);
+
+    expect(FilamentTableRecords::shownKeys($testable, Friendship::class))
+        ->toEqualCanonicalizing([(string) $friendship->id, (string) $suspendedRequester->id]);
+});
+
+it('filters by the date the friendship was accepted, or the request sent while pending', function (): void {
+    AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
+
+    $user = createUser();
+    $friendship = createFriendship($user);
+    $friendship->forceFill(['created_at' => '2026-01-01 10:00:00', 'accepted_at' => '2026-03-10 10:00:00'])->save();
+    $sentInRange = createFriendRequest($user);
+    $sentInRange->forceFill(['created_at' => '2026-03-20 23:00:00'])->save();
+    $acceptedBefore = createFriendship($user);
+    $acceptedBefore->forceFill(['created_at' => '2026-03-05 10:00:00', 'accepted_at' => '2026-03-09 10:00:00'])->save();
+    $sentAfter = createFriendRequest(createUser(), $user);
+    $sentAfter->forceFill(['created_at' => '2026-03-21 00:00:00'])->save();
+
+    $testable = friendshipsRelationManagerFor($user);
+    $testable->__call('filterTable', ['date', ['date_from' => '2026-03-10', 'date_until' => '2026-03-20']]);
+
+    expect(FilamentTableRecords::shownKeys($testable, Friendship::class))
+        ->toEqualCanonicalizing([(string) $friendship->id, (string) $sentInRange->id]);
+});
+
 it('sorts by the date of the friendship, newest first', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminUsersReader);
 
@@ -198,7 +277,7 @@ it('defines the friendship columns without any action', function (): void {
 
     $table = FilamentTableRecords::table(friendshipsRelationManagerFor($user)->assertOk())->getTable();
 
-    expect(array_keys($table->getColumns()))->toBe(['other_user', 'status', 'sent_by', 'since'])
+    expect(array_keys($table->getColumns()))->toBe(['profile_picture', 'other_user', 'account', 'status', 'sent_by', 'since', 'created_at', 'accepted_at', 'last_login'])
         ->and($table->getRecordActions())->toBeEmpty()
         ->and($table->getHeaderActions())->toBeEmpty()
         ->and($table->getToolbarActions())->toBeEmpty();
