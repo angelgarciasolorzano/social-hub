@@ -20,17 +20,15 @@ class HomeController extends Controller
         CommentThreadProps $commentThreadProps,
         FrontendTranslations $frontendTranslations,
     ): Response {
-        // $friendsId = Auth::user()->friends()->pluck('id')->toArray();
-
         $viewer = Auth::user();
 
         abort_unless($viewer instanceof User, 401);
 
-        $frontendTranslations->use('notification/center');
+        $frontendTranslations->use('home/feed', 'notification/center');
 
         $cursorPaginator = Post::with(['user.media', 'media'])
+            ->visibleInFeedOf($viewer)
             ->withEngagementFor($viewer)
-            // ->whereIn('user_id', $friendsId)
             ->orderByDesc('id')
             ->cursorPaginate(10);
 
