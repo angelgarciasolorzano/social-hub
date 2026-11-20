@@ -75,6 +75,7 @@ void createInertiaApp({
         <DocumentLanguageSync initialLocale={locale} />
 
         <NotificationRealtimeListener
+          initialComponent={page.component}
           initialUnreadNotificationsCount={sharedData.unreadNotificationsCount}
           initialUserId={authenticatedUserId}
         />
