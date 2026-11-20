@@ -8,6 +8,7 @@ use App\Modules\Admin\Filament\Resources\Users\Pages\ListUsers;
 use App\Modules\Admin\Filament\Resources\Users\Pages\ViewUser;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\AccountStatusChangesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\ActivityLogsRelationManager;
+use App\Modules\Admin\Filament\Resources\Users\RelationManagers\FriendshipsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\PostsRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\RolesRelationManager;
 use App\Modules\Admin\Filament\Resources\Users\RelationManagers\TrustedDevicesRelationManager;
@@ -87,6 +88,7 @@ class UserResource extends Resource
         return [
             TrustedDevicesRelationManager::class,
             PostsRelationManager::class,
+            FriendshipsRelationManager::class,
             ActivityLogsRelationManager::class,
             AccountStatusChangesRelationManager::class,
             RolesRelationManager::class,
