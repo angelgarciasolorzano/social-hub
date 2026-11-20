@@ -28,6 +28,7 @@ test('admin RBAC catalogs retain every existing public identifier', function ():
         'admin.users.suspend',
         'admin.users.reactivate',
         'admin.users.roles',
+        'admin.users.friendships',
         'admin.posts.viewAny',
         'admin.posts.view',
         'admin.activity.viewAny',
