@@ -12,6 +12,7 @@ use App\Modules\Admin\Tests\Support\AdminFilamentTestContext;
 use App\Modules\Post\Models\Post;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -237,7 +238,7 @@ it('denies post detail when the post has no existing owner', function (): void {
     ]);
 
     $post = createPost();
-    $post->forceFill(['user_id' => PHP_INT_MAX])->save();
+    Schema::withoutForeignKeyConstraints(fn (): bool => $post->forceFill(['user_id' => PHP_INT_MAX])->save());
 
     $this->actingAs($authenticatedUser, 'admin');
 

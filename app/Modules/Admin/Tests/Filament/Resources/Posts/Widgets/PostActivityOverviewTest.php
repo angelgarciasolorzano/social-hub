@@ -12,6 +12,7 @@ use App\User\Enums\PreferredLocale;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -185,7 +186,7 @@ it('forbids access when the admin cannot view posts', function (): void {
 it('hides metrics when the selected post no longer has a valid owner', function (): void {
     AdminFilamentTestContext::actingAsAdminWithRoles($this, AdminRole::Admin, AdminRole::AdminPostsReader);
     $post = createPost();
-    $post->forceFill(['user_id' => PHP_INT_MAX])->save();
+    Schema::withoutForeignKeyConstraints(fn (): bool => $post->forceFill(['user_id' => PHP_INT_MAX])->save());
 
     Livewire::test(PostActivityOverview::class, ['record' => $post])
         ->assertDontSeeText('Comments')
