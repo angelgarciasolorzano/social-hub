@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Friendship\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Friendship\Enums\FriendshipStatus;
 use App\Modules\Friendship\Models\Friendship;
+use App\Modules\Friendship\Queries\MutualFriendsQuery;
 use App\Modules\Friendship\Requests\FriendshipSearchRequest;
 use App\Modules\Friendship\Resources\FriendshipSearchResultResource;
 use App\Support\Database\LikePattern;
@@ -14,7 +14,6 @@ use App\Support\Translation\FrontendTranslations;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\Paginator;
@@ -24,6 +23,8 @@ use Inertia\Response;
 
 final class FriendshipSearchController extends Controller
 {
+    public function __construct(private readonly MutualFriendsQuery $mutualFriendsQuery) {}
+
     public function __invoke(FriendshipSearchRequest $friendshipSearchRequest, FrontendTranslations $frontendTranslations): Response
     {
         $frontendTranslations->use('friendship/search', 'notification/center');
@@ -66,8 +67,7 @@ final class FriendshipSearchController extends Controller
                 'friendship_id' => $this->pairWith($user)->select('friendships.id'),
                 'friendship_status' => $this->pairWith($user)->select('friendships.status'),
                 'friendship_requester_id' => $this->pairWith($user)->select('friendships.requester_id'),
-                'mutual_friends_as_requester_count' => $this->mutualFriendsCount($user, 'requester_id', 'receiver_id'),
-                'mutual_friends_as_receiver_count' => $this->mutualFriendsCount($user, 'receiver_id', 'requester_id'),
+                'mutual_friends_count' => $this->mutualFriendsQuery->countFor($user, 'users.id'),
             ])
             ->with('media')
             ->orderBy('name')
@@ -88,38 +88,5 @@ final class FriendshipSearchController extends Controller
             ->limit(1);
 
         return $builder;
-    }
-
-    /**
-     * Count the outer user's accepted friendships on one side of the pair whose other side is a friend of the viewer.
-     *
-     * @param  'requester_id'|'receiver_id'  $userColumn
-     * @param  'requester_id'|'receiver_id'  $friendColumn
-     */
-    private function mutualFriendsCount(User $user, string $userColumn, string $friendColumn): QueryBuilder
-    {
-        return Friendship::query()
-            ->toBase()
-            ->selectRaw('count(*)')
-            ->where('friendships.status', FriendshipStatus::Accepted->value)
-            ->whereColumn("friendships.{$userColumn}", 'users.id')
-            ->whereIn("friendships.{$friendColumn}", $this->friendIdsOf($user));
-    }
-
-    /**
-     * The ids of the viewer's friends, read through both `(<side>_id, status)` indexes.
-     */
-    private function friendIdsOf(User $user): QueryBuilder
-    {
-        return Friendship::query()
-            ->toBase()
-            ->select('receiver_id')
-            ->where('status', FriendshipStatus::Accepted->value)
-            ->where('requester_id', $user->id)
-            ->unionAll(Friendship::query()
-                ->toBase()
-                ->select('requester_id')
-                ->where('status', FriendshipStatus::Accepted->value)
-                ->where('receiver_id', $user->id));
     }
 }

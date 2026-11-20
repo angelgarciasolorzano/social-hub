@@ -97,8 +97,8 @@ La vista de amigos funciona, pero se ve simple. Este plan aplica la propuesta B 
 `App\Modules\Friendship\Queries\MutualFriendsQuery`:
 
 * `friendIdsOf(User): QueryBuilder` es la unión de los dos índices `(<side>_id, status)`.
-* `countFor(User $viewer, Expression|string $otherUserIdColumn): QueryBuilder` es una subconsulta escalar que cuenta las amistades aceptadas de la otra persona cuyo otro lado está entre los amigos del viewer.
-* La búsqueda la usa con `users.id`, y la lista y `FriendshipProps` con la expresión `CASE` de la otra persona.
+* `countFor(User $viewer, string $otherUserIdColumn): QueryBuilder` es una subconsulta escalar que cuenta las amistades aceptadas de la otra persona cuyo otro lado está entre los amigos del viewer. Recibe solo un nombre de columna: PHPStan no acepta una `Expression` armada con el id del viewer.
+* La búsqueda la usa con `users.id`; la lista, con la columna `id` del `users` unido sobre el `CASE` de la otra persona (en los dos órdenes); y `FriendshipProps`, con `friendships.requester_id`.
 * **Resource:** `FriendshipListItemResource` agrega `mutualFriendsCount: int` y lanza `LogicException` si la consulta no seleccionó `mutual_friends_count`, igual que con las relaciones.
 
 ### friendRequests compartida
@@ -241,7 +241,7 @@ Crear `Queries/MutualFriendsQuery` con `friendIdsOf()` y `countFor()` según el 
 **Acceptance Criteria:**
 
 1. `countFor()` cuenta solo amistades aceptadas en común: no cuenta las pendientes ni al propio viewer.
-2. Funciona con una columna (`users.id`) y con la expresión `CASE` de la otra persona.
+2. Funciona con `users.id` y con una columna de una fila externa de `friendships`, sin chocar con las filas que cuenta.
 3. `FriendshipSearchTest` sigue pasando sin cambios, incluida la de consultas constantes.
 
 **validateCommand:** `php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Queries/MutualFriendsQueryTest.php app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php`
