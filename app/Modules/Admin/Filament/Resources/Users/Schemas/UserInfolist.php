@@ -8,6 +8,7 @@ use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Admin\Filament\Concerns\DescribesAccountStatus;
 use App\Modules\Admin\Filament\Resources\Roles\Pages\PermissionHolders;
 use App\Modules\Admin\Models\Role;
+use App\Modules\Friendship\Models\Friendship;
 use App\Support\Translation\TranslatedText;
 use App\User\Enums\AccountStatus;
 use App\User\Enums\UserImageType;
@@ -111,6 +112,16 @@ class UserInfolist
                             ->since()
                             ->dateTimeTooltip()
                             ->placeholder(TranslatedText::of('admin/users.infolist.never_signed_in')),
+                        TextEntry::make('friends_count')
+                            ->label(TranslatedText::of('admin/users.infolist.account_activity.friends_count'))
+                            ->icon(Heroicon::OutlinedUsers)
+                            ->state(fn (User $record): int => $record->friendsCount())
+                            ->visible(self::canViewFriendships(...)),
+                        TextEntry::make('pending_friend_requests')
+                            ->label(TranslatedText::of('admin/users.infolist.account_activity.pending_friend_requests'))
+                            ->icon(Heroicon::OutlinedUserPlus)
+                            ->state(fn (User $record): int => $record->receivedFriendRequests()->count())
+                            ->visible(self::canViewFriendships(...)),
                     ])
                     ->columns([
                         'sm' => 2,
@@ -130,6 +141,14 @@ class UserInfolist
                         ...array_map(self::effectivePermissionsEntry(...), self::permissionAreas()),
                     ]),
             ]);
+    }
+
+    private static function canViewFriendships(): bool
+    {
+        $authenticatedUser = Filament::auth()->user();
+
+        return $authenticatedUser instanceof User
+            && Gate::forUser($authenticatedUser)->allows('viewAny', Friendship::class);
     }
 
     private static function canViewRoles(): bool

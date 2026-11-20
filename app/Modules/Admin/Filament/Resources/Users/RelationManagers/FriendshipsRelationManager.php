@@ -124,14 +124,14 @@ class FriendshipsRelationManager extends RelationManager
                         self::PENDING_SENT_STATUS => TranslatedText::of('admin/users.relations.friendships.statuses.pending_sent'),
                         self::PENDING_RECEIVED_STATUS => TranslatedText::of('admin/users.relations.friendships.statuses.pending_received'),
                     ])
-                    ->query(fn (Builder $query, array $data): Builder => $this->filterByStatus($query, is_string($data['value'] ?? null) ? $data['value'] : null)),
+                    ->query(fn (Builder $query, array $data): Builder => $this->filterByStatus($query, \is_string($data['value'] ?? null) ? $data['value'] : null)),
                 SelectFilter::make('direction')
                     ->label(TranslatedText::of('admin/users.relations.friendships.filters.direction'))
                     ->options([
                         self::SENT_DIRECTION => TranslatedText::of('admin/users.relations.friendships.filters.sent'),
                         self::RECEIVED_DIRECTION => TranslatedText::of('admin/users.relations.friendships.filters.received'),
                     ])
-                    ->query(fn (Builder $query, array $data): Builder => $this->filterByDirection($query, is_string($data['value'] ?? null) ? $data['value'] : null)),
+                    ->query(fn (Builder $query, array $data): Builder => $this->filterByDirection($query, \is_string($data['value'] ?? null) ? $data['value'] : null)),
             ])
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(10)
