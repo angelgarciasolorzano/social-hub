@@ -25,6 +25,8 @@ enum AdminPermission: string
 
     case AdminUsersRoles = 'admin.users.roles';
 
+    case AdminUsersFriendships = 'admin.users.friendships';
+
     case AdminPostsViewAny = 'admin.posts.viewAny';
 
     case AdminPostsView = 'admin.posts.view';
@@ -138,7 +140,8 @@ enum AdminPermission: string
             self::AdminUsersCreate => [self::AdminUsersViewAny],
             self::AdminUsersSuspend,
             self::AdminUsersReactivate,
-            self::AdminUsersRoles => [self::AdminUsersViewAny, self::AdminUsersView],
+            self::AdminUsersRoles,
+            self::AdminUsersFriendships => [self::AdminUsersViewAny, self::AdminUsersView],
             self::AdminPostsView => [self::AdminPostsViewAny],
             self::AdminActivityView => [self::AdminActivityViewAny],
             self::AdminBackupsCreate,

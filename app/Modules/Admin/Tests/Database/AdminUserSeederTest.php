@@ -44,6 +44,7 @@ it('assigns Angel backup operations, user moderation, role management and all re
         AdminPermission::AdminBackupsDownload->value,
         AdminPermission::AdminUsersSuspend->value,
         AdminPermission::AdminUsersReactivate->value,
+        AdminPermission::AdminUsersFriendships->value,
         AdminPermission::AdminAnnouncementsViewAny->value,
         AdminPermission::AdminAnnouncementsView->value,
         AdminPermission::AdminAnnouncementsReview->value,

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Modules\Admin\Database\Seeders\AdminAuthorizationSeeder;
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Friendship\Models\Friendship;
 use App\Modules\Friendship\Policies\FriendshipPolicy;
 use App\User\Models\User;
@@ -104,3 +106,46 @@ it('denies everyone to :dataset a row', function (string $ability): void {
 
     expect(Gate::forUser($user)->allows($ability, $friendship))->toBeFalse();
 })->with(['update', 'restore', 'forceDelete']);
+
+it('lets an administrator with admin.users.friendships list and view the friendships of others', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    $user = createUser();
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminUsersFriendships);
+    $friendship = createFriendRequest(createUser(), createUser());
+
+    expect(Gate::forUser($user)->allows('viewAny', Friendship::class))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('view', $friendship))->toBeTrue();
+});
+
+it('denies listing friendships in the panel without admin.users.friendships', function (): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    $user = createUser();
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminUsersView);
+    $friendship = createFriendship($user);
+
+    expect(Gate::forUser($user)->allows('viewAny', Friendship::class))->toBeFalse()
+        ->and(Gate::forUser($user)->allows('view', $friendship))->toBeTrue()
+        ->and(Gate::forUser($user)->allows('view', createFriendship()))->toBeFalse();
+});
+
+it('does not let an administrator with admin.users.friendships :dataset the friendship of others', function (string $ability, string $state): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    $user = createUser();
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminUsersFriendships);
+    $friendship = $state === 'pending' ? createFriendRequest() : createFriendship();
+
+    expect(Gate::forUser($user)->allows($ability, $friendship))->toBeFalse();
+})->with([
+    'accept' => ['accept', 'pending'],
+    'decline' => ['decline', 'pending'],
+    'cancel' => ['cancel', 'pending'],
+    'delete' => ['delete', 'accepted'],
+]);
+
+it('denies every bulk ability, even with admin.users.friendships', function (string $ability): void {
+    $this->seed(AdminAuthorizationSeeder::class);
+    $user = createUser();
+    grantAdminPermissionThroughTestRole($user, AdminPermission::AdminUsersFriendships);
+
+    expect(Gate::forUser($user)->allows($ability, Friendship::class))->toBeFalse();
+})->with(['deleteAny', 'restoreAny', 'forceDeleteAny']);

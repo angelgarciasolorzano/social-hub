@@ -10,10 +10,6 @@ use App\User\Events\AccountDeleted;
 use App\User\Events\AccountImageUpdated;
 use App\User\Events\AccountUpdated;
 
-/**
- * Records changes to a user's own account in the `account` log. Updates keep
- * only the names of the changed attributes, never their values.
- */
 final readonly class AccountActivitySubscriber
 {
     public function __construct(private ActivityLogger $activityLogger) {}

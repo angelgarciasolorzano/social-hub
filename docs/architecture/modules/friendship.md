@@ -34,7 +34,9 @@ The only writer. `send()`, `accept()`, `decline()`, `cancel()` and `remove()` ru
 
 ## Authorization: `FriendshipPolicy`
 
-`create(User, User $receiver)` (never oneself, never from or to a suspended account), `accept` / `decline` (the receiver, while pending), `cancel` (the requester, while pending), `delete` (either friend, once accepted), `view` (either user of the row), and `update`, `restore` and `forceDelete` denied explicitly. The controller applies it with `#[Authorize]`; `store` uses `#[Authorize('create', [Friendship::class, 'user'])]`, which passes the class as is and resolves `user` from the route.
+`create(User, User $receiver)` (never oneself, never from or to a suspended account), `accept` / `decline` (the receiver, while pending), `cancel` (the requester, while pending), `delete` (either friend, once accepted), `view` (either user of the row, or an administrator with `admin.users.friendships`), and `update`, `restore` and `forceDelete` denied explicitly. The controller applies it with `#[Authorize]`; `store` uses `#[Authorize('create', [Friendship::class, 'user'])]`, which passes the class as is and resolves `user` from the route.
+
+The Admin panel shares this policy (SOC-87): `viewAny` requires `admin.users.friendships` and gates the user detail's Friends tab, the friendship counts of its infolist and the dashboard widget, and `deleteAny`, `restoreAny` and `forceDeleteAny` are denied. The panel has no friendship actions, so it never asks the site abilities, and the permission does not let an administrator accept, decline, cancel or remove someone else's friendship. See [Admin](admin.md).
 
 ## Endpoints
 

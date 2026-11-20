@@ -70,6 +70,15 @@ test('each permission belongs to the panel area named after admin', function ():
         ))))->toBe(['access', 'dashboard', 'users', 'posts', 'activity', 'backups', 'announcements', 'roles']);
 });
 
+test('the friendships of a user belong to the users area and need its list and detail', function (): void {
+    $adminPermission = AdminPermission::from('admin.users.friendships');
+
+    expect($adminPermission)->toBe(AdminPermission::AdminUsersFriendships)
+        ->and($adminPermission->area())->toBe('users')
+        ->and($adminPermission->requires())->toBe([AdminPermission::AdminUsersViewAny, AdminPermission::AdminUsersView])
+        ->and(AdminPermission::sensitive())->not->toContain($adminPermission);
+});
+
 test('the entry permissions of the panel require nothing', function (AdminPermission $adminPermission): void {
     expect($adminPermission->requires())
         ->toBeEmpty();
@@ -136,6 +145,7 @@ test('the dependents of a permission are the ones that need it', function (): vo
         AdminPermission::AdminUsersSuspend,
         AdminPermission::AdminUsersReactivate,
         AdminPermission::AdminUsersRoles,
+        AdminPermission::AdminUsersFriendships,
     ])->and(AdminPermission::AdminRolesDelete->dependents())
         ->toBeEmpty();
 

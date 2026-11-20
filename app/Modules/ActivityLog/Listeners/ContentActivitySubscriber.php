@@ -12,10 +12,6 @@ use App\Modules\Comment\Events\CommentUpdated;
 use App\Modules\Post\Events\PostCreated;
 use App\User\Models\User;
 
-/**
- * Records posts and comments in the `content` log by reference only:
- * the text of a post or comment is never stored.
- */
 final readonly class ContentActivitySubscriber
 {
     public function __construct(private ActivityLogger $activityLogger) {}

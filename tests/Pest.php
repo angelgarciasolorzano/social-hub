@@ -119,6 +119,17 @@ function createUser(): User
 }
 
 /**
+ * Create a persisted User with the given name.
+ */
+function createUserNamed(string $name): User
+{
+    $user = createUser();
+    $user->forceFill(['name' => $name])->save();
+
+    return $user;
+}
+
+/**
  * Create a persisted Post, same #[UseFactory] workaround as createUser().
  * Pass `$user` to attach it to an existing owner, or omit it to let the
  * factory create its own.

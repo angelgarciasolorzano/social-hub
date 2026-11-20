@@ -28,13 +28,15 @@ beforeEach(function (): void {
 /**
  * @return array{components: array<string, Entry>, html: string}
  */
-function renderUserDetailAsAuthorizedAdmin(TestCase $testCase, User $targetUser): array
+function renderUserDetailAsAuthorizedAdmin(TestCase $testCase, User $targetUser, ?User $authenticatedUser = null): array
 {
-    $authenticatedUser = createUser();
-    $authenticatedUser->assignRole([
-        AdminRole::Admin->value,
-        AdminRole::AdminUsersReader->value,
-    ]);
+    if (! $authenticatedUser instanceof User) {
+        $authenticatedUser = createUser();
+        $authenticatedUser->assignRole([
+            AdminRole::Admin->value,
+            AdminRole::AdminUsersReader->value,
+        ]);
+    }
 
     $testCase->actingAs($authenticatedUser, 'admin');
 
@@ -75,6 +77,8 @@ it('limits the user detail to allowlisted fields', function (): void {
         'email_verified_at',
         'created_at',
         'last_login_at',
+        'friends_count',
+        'pending_friend_requests',
         'no_effective_permissions',
         'effective_permissions_access',
         'effective_permissions_dashboard',
@@ -198,6 +202,39 @@ it('shows profile and cover images from their respective media collections', fun
         ->and($components['cover_image']->getState())->toBe($coverImageUrl)
         ->and($detail['html'])->toContain($profilePictureUrl)
         ->toContain($coverImageUrl);
+});
+
+it('counts the friends of both directions and the pending requests the user received', function (): void {
+    $targetUser = createUser();
+    createFriendship($targetUser);
+    createFriendship(createUser(), $targetUser);
+    createFriendRequest(createUser(), $targetUser);
+    createFriendRequest($targetUser);
+    createFriendship();
+
+    $components = renderUserDetailAsAuthorizedAdmin($this, $targetUser)['components'];
+
+    expect($components['friends_count']->isVisible())->toBeTrue()
+        ->and($components['friends_count']->getState())->toBe(2)
+        ->and($components['pending_friend_requests']->isVisible())->toBeTrue()
+        ->and($components['pending_friend_requests']->getState())->toBe(1);
+});
+
+it('hides the friendship counts without admin.users.friendships', function (): void {
+    $authenticatedUser = createUser();
+    $authenticatedUser->assignRole(AdminRole::Admin->value);
+    grantAdminPermissionThroughTestRole($authenticatedUser, AdminPermission::AdminUsersViewAny);
+    grantAdminPermissionThroughTestRole($authenticatedUser, AdminPermission::AdminUsersView);
+
+    $targetUser = createUser();
+    createFriendship($targetUser);
+
+    $detail = renderUserDetailAsAuthorizedAdmin($this, $targetUser, $authenticatedUser);
+
+    expect($detail['components']['friends_count']->isVisible())->toBeFalse()
+        ->and($detail['components']['pending_friend_requests']->isVisible())->toBeFalse()
+        ->and($detail['components']['last_login_at']->isVisible())->toBeTrue()
+        ->and($detail['html'])->not->toContain('Pending friend requests');
 });
 
 it('denies a user detail when the admin lacks users view permission', function (): void {
