@@ -4,11 +4,20 @@ declare(strict_types=1);
 
 namespace App\Modules\Friendship\Policies;
 
+use App\Modules\Admin\Enums\AdminPermission;
 use App\Modules\Friendship\Models\Friendship;
 use App\User\Models\User;
 
 final class FriendshipPolicy
 {
+    /**
+     * List the friendships of a user in the Admin panel.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->can(AdminPermission::AdminUsersFriendships->value);
+    }
+
     /**
      * Send a request to the receiver: never to oneself, and never from or to a suspended account.
      */
@@ -19,9 +28,13 @@ final class FriendshipPolicy
             && ! $receiver->isSuspended();
     }
 
+    /**
+     * Either of the two users of the row, or an administrator who reads friendships in the panel.
+     */
     public function view(User $user, Friendship $friendship): bool
     {
-        return $friendship->involves($user);
+        return $friendship->involves($user)
+            || $user->can(AdminPermission::AdminUsersFriendships->value);
     }
 
     public function accept(User $user, Friendship $friendship): bool
@@ -58,6 +71,21 @@ final class FriendshipPolicy
     }
 
     public function forceDelete(): bool
+    {
+        return false;
+    }
+
+    public function deleteAny(): bool
+    {
+        return false;
+    }
+
+    public function restoreAny(): bool
+    {
+        return false;
+    }
+
+    public function forceDeleteAny(): bool
     {
         return false;
     }
