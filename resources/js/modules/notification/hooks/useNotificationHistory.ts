@@ -15,6 +15,8 @@ import { useNotificationStore } from "../stores/notificationStore";
 import type { Notification } from "../types/notification";
 import { excludeRemovedNotifications } from "../utils/excludeRemovedNotifications";
 
+const EMPTY_NOTIFICATIONS: Notification[] = [];
+
 interface UseNotificationHistoryParams {
   initialUnreadCount: number;
   pageNotifications: Notification[];
@@ -43,7 +45,7 @@ function useNotificationHistory({
   const storeUserId = useNotificationStore((state) => state.authenticatedUserId);
 
   const realtimeNotifications = useNotificationStore((state) =>
-    state.authenticatedUserId === userId ? state.notifications : [],
+    state.authenticatedUserId === userId ? state.notifications : EMPTY_NOTIFICATIONS,
   );
 
   const removedNotificationIds = useNotificationStore((state) =>
