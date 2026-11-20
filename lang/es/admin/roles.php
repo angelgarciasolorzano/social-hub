@@ -104,6 +104,10 @@ return [
                 'label' => 'Gestionar roles de usuarios',
                 'description' => 'Asignar y quitar los roles de otros usuarios.',
             ],
+            'admin_users_friendships' => [
+                'label' => 'Ver amistades de usuarios',
+                'description' => 'Ver los amigos y las solicitudes de amistad pendientes de un usuario, solo lectura.',
+            ],
             'admin_posts_view_any' => [
                 'label' => 'Listar publicaciones',
                 'description' => 'Abrir la lista de publicaciones.',

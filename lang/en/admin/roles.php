@@ -104,6 +104,10 @@ return [
                 'label' => 'Manage user roles',
                 'description' => 'Assign and remove the roles of other users.',
             ],
+            'admin_users_friendships' => [
+                'label' => 'View user friendships',
+                'description' => 'See the friends and pending friend requests of a user, read only.',
+            ],
             'admin_posts_view_any' => [
                 'label' => 'List posts',
                 'description' => 'Open the list of posts.',
