@@ -85,6 +85,7 @@ return [
         'auth' => 'Autenticación',
         'content' => 'Contenido',
         'likes' => 'Me gusta',
+        'friendships' => 'Amistades',
         'trusted_devices' => 'Dispositivos de confianza',
         'account' => 'Cuenta',
         'admin' => 'Administración',
@@ -111,6 +112,13 @@ return [
         'likes' => [
             'added' => 'Me gusta agregado',
             'removed' => 'Me gusta quitado',
+        ],
+        'friendship' => [
+            'request_sent' => 'Solicitud de amistad enviada',
+            'request_accepted' => 'Solicitud de amistad aceptada',
+            'request_declined' => 'Solicitud de amistad rechazada',
+            'request_canceled' => 'Solicitud de amistad cancelada',
+            'removed' => 'Amistad eliminada',
         ],
         'trusted_devices' => [
             'created' => 'Dispositivo de confianza agregado',
