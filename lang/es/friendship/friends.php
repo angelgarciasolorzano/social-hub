@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /**
  * Textos de la página de amigos (`modules/friendship/Friends`): sus pestañas, el filtro por
- * nombre, los estados vacíos y de carga, las filas de la lista y los mensajes de validación.
+ * nombre, el orden, el bloque de solicitudes, las tarjetas, los estados vacíos y de carga, los
+ * atajos de teclado y los mensajes de validación.
  */
 return [
     'page' => [
@@ -24,8 +25,20 @@ return [
 
     'filter' => [
         'label' => 'Filtrar por nombre',
-        'placeholder' => 'Escribe un nombre',
+        'placeholder' => 'Filtrar por nombre',
         'clear' => 'Borrar el filtro',
+    ],
+
+    'sort' => [
+        'label' => 'Ordenar la lista',
+        'recent' => 'Más recientes',
+        'name' => 'Nombre (A-Z)',
+    ],
+
+    'requests' => [
+        'title' => 'Solicitudes de amistad',
+        'view_all' => '{1} Ver la solicitud|[2,*] Ver las :count solicitudes',
+        'label' => 'Últimas solicitudes de amistad que recibiste',
     ],
 
     'states' => [
@@ -40,6 +53,7 @@ return [
         'find_people' => 'Buscar personas',
         'loading' => 'Cargando la lista',
         'loading_more' => 'Cargando más personas',
+        'end_of_list' => 'Llegaste al final de la lista',
     ],
 
     'row' => [
@@ -48,8 +62,28 @@ return [
         'request_sent_at' => 'Enviada :date',
     ],
 
+    'card' => [
+        'profile_picture_alt' => 'Foto de perfil de :name',
+        'mutual_friends' => '{0} Ningún amigo en común|{1} :count amigo en común|[2,*] :count amigos en común',
+        'view_profile' => 'Ver perfil',
+        'more_options' => 'Más opciones para :name',
+    ],
+
+    'shortcuts' => [
+        'title' => 'Atajos de teclado',
+        'description' => 'Muévete por la página de amigos sin el ratón. Los atajos no actúan mientras escribes en un campo.',
+        'open' => 'Ver los atajos de teclado',
+        'focus_filter' => 'Enfocar el filtro por nombre',
+        'friends_tab' => 'Ir a Amigos',
+        'received_tab' => 'Ir a Recibidas',
+        'sent_tab' => 'Ir a Enviadas',
+        'toggle_sort' => 'Cambiar entre más recientes y nombre',
+        'show_help' => 'Ver esta ayuda',
+    ],
+
     'validation' => [
         'tab_invalid' => 'La lista seleccionada no existe.',
+        'sort_invalid' => 'El orden seleccionado no existe.',
         'q_max' => 'El filtro no puede tener más de :max caracteres.',
     ],
 ];

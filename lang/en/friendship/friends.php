@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /**
  * Texts of the friends page (`modules/friendship/Friends`): its tabs, the name filter, the
- * empty and loading states, the list rows and the validation messages of its request.
+ * sort, the friend requests block, the cards, the empty and loading states, the keyboard
+ * shortcuts and the validation messages of its request.
  */
 return [
     'page' => [
@@ -24,8 +25,20 @@ return [
 
     'filter' => [
         'label' => 'Filter by name',
-        'placeholder' => 'Type a name',
+        'placeholder' => 'Filter by name',
         'clear' => 'Clear the filter',
+    ],
+
+    'sort' => [
+        'label' => 'Sort the list',
+        'recent' => 'Most recent',
+        'name' => 'Name (A-Z)',
+    ],
+
+    'requests' => [
+        'title' => 'Friend requests',
+        'view_all' => '{1} View the request|[2,*] View all :count requests',
+        'label' => 'Latest friend requests you received',
     ],
 
     'states' => [
@@ -40,6 +53,7 @@ return [
         'find_people' => 'Find people',
         'loading' => 'Loading the list',
         'loading_more' => 'Loading more people',
+        'end_of_list' => 'You reached the end of the list',
     ],
 
     'row' => [
@@ -48,8 +62,28 @@ return [
         'request_sent_at' => 'Sent :date',
     ],
 
+    'card' => [
+        'profile_picture_alt' => 'Profile picture of :name',
+        'mutual_friends' => '{0} No friends in common|{1} :count friend in common|[2,*] :count friends in common',
+        'view_profile' => 'View profile',
+        'more_options' => 'More options for :name',
+    ],
+
+    'shortcuts' => [
+        'title' => 'Keyboard shortcuts',
+        'description' => 'Move around the friends page without the mouse. Shortcuts do not work while you type in a field.',
+        'open' => 'Show the keyboard shortcuts',
+        'focus_filter' => 'Focus the name filter',
+        'friends_tab' => 'Go to Friends',
+        'received_tab' => 'Go to Received',
+        'sent_tab' => 'Go to Sent',
+        'toggle_sort' => 'Switch between most recent and name',
+        'show_help' => 'Show this help',
+    ],
+
     'validation' => [
         'tab_invalid' => 'The selected list does not exist.',
+        'sort_invalid' => 'The selected order does not exist.',
         'q_max' => 'The filter cannot be longer than :max characters.',
     ],
 ];
