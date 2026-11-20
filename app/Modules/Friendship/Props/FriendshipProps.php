@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Friendship\Props;
 
 use App\Modules\Friendship\Models\Friendship;
+use App\Modules\Friendship\Queries\MutualFriendsQuery;
 use App\Modules\Friendship\Resources\FriendshipListItemResource;
 use App\User\Enums\AccountStatus;
 use App\User\Models\User;
@@ -17,9 +18,9 @@ use Inertia\RenderContext;
 final readonly class FriendshipProps implements ProvidesInertiaProperties
 {
     /**
-     * The number of recent requests the right sidebar shows.
+     * The number of recent requests the requests block of the friends page shows.
      */
-    public const int RECENT_REQUESTS_LIMIT = 5;
+    public const int RECENT_REQUESTS_LIMIT = 2;
 
     public function __construct(private Request $request) {}
 
@@ -47,6 +48,8 @@ final readonly class FriendshipProps implements ProvidesInertiaProperties
         }
 
         $recentFriendRequests = $this->receivedFrom($user)
+            ->select('friendships.*')
+            ->addSelect(['mutual_friends_count' => new MutualFriendsQuery()->countFor($user, 'friendships.requester_id')])
             ->with('requester.media')
             ->latest()
             ->latest('id')

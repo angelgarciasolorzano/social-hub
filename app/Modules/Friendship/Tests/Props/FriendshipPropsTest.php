@@ -20,7 +20,7 @@ beforeEach(function (): void {
     ]));
 });
 
-it('defers the received requests and shares the count and the five newest', function (): void {
+it('defers the received requests and shares the count and the two newest', function (): void {
     $user = createUser();
     $friendRequests = array_map(function (int $daysAgo) use ($user): Friendship {
         $friendship = createFriendRequest(createUser(), $user);
@@ -47,7 +47,8 @@ it('defers the received requests and shares the count and the five newest', func
             ->where('friendRequests.pendingCount', 7)
             ->has('friendRequests.recent', FriendshipProps::RECENT_REQUESTS_LIMIT)
             ->where('friendRequests.recent.0.friendshipId', $friendRequests[0]->id)
-            ->where('friendRequests.recent.4.friendshipId', $friendRequests[4]->id)
+            ->where('friendRequests.recent.1.friendshipId', $friendRequests[1]->id)
+            ->where('friendRequests.recent.0.mutualFriendsCount', 0)
             ->where('friendRequests.recent.0.friendshipState', 'request_received')
             ->where('friendRequests.recent.0.user.id', $friendRequests[0]->requester_id)
             ->missing('friendRequests.recent.0.user.email')
@@ -70,6 +71,32 @@ it("leaves out sent requests, friendships, other people's requests and suspended
                 ->where('friendRequests.pendingCount', 1)
                 ->has('friendRequests.recent', 1)
                 ->where('friendRequests.recent.0.friendshipId', $friendship->id)
+            )
+        );
+});
+
+it('counts the friends each sender shares with the viewer', function (): void {
+    $user = createUser();
+    $sender = createUser();
+    createFriendRequest($sender, $user);
+
+    foreach (range(1, 2) as $position) {
+        $sharedFriend = createUser();
+        createFriendship($user, $sharedFriend);
+        createFriendship($sharedFriend, $sender);
+    }
+
+    createFriendship($sender, createUser());
+    $pendingWithViewer = createUser();
+    createFriendRequest($user, $pendingWithViewer);
+    createFriendship($sender, $pendingWithViewer);
+
+    actingAs($user)
+        ->get('/__test/friendship-props')
+        ->assertInertia(fn (Assert $assert): Assert => $assert
+            ->loadDeferredProps(fn (Assert $deferredAssert): Assert => $deferredAssert
+                ->where('friendRequests.recent.0.user.id', $sender->id)
+                ->where('friendRequests.recent.0.mutualFriendsCount', 2)
             )
         );
 });
