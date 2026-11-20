@@ -17,11 +17,11 @@ import {
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/shadcn/ui/tabs";
+import VirtualInfiniteList from "@/shared/components/VirtualInfiniteList";
 
 import { useTranslation } from "@/shared/hooks";
 
 import FriendshipListRow from "./components/FriendshipListRow";
-import VirtualInfiniteList from "./components/VirtualInfiniteList";
 import { useFriendsFilters } from "./hooks/useFriendsFilters";
 import type {
   FriendshipListFilters,

@@ -13,11 +13,11 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
+import VirtualInfiniteList from "@/shared/components/VirtualInfiniteList";
 
 import { useTranslation } from "@/shared/hooks";
 
 import FriendshipSearchResultRow from "./components/FriendshipSearchResultRow";
-import VirtualInfiniteList from "./components/VirtualInfiniteList";
 import { useFriendshipSearch } from "./hooks/useFriendshipSearch";
 import type { FriendSearchFilters, FriendSearchResultCollection } from "./types/friendshipSearch";
 
