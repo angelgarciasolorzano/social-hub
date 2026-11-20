@@ -8,6 +8,7 @@ use App\Modules\Comment\Models\Comment;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Database\Factories\PostFactory;
 use App\Modules\Post\Policies\PostPolicy;
+use App\User\Enums\AccountStatus;
 use App\User\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -108,6 +109,25 @@ class Post extends Model implements HasMedia
     public function likes(): MorphMany
     {
         return $this->morphMany(Like::class, Like::MORPH_COLUMN);
+    }
+
+    /**
+     * Limit the query to the home feed of the given user: their own posts and the posts of their
+     * accepted friends whose account is active. The friends stay a subquery of `User::friends()`,
+     * so no id is loaded into PHP and the `(user_id, id)` index of `posts` serves each author.
+     *
+     * @param  Builder<static>  $query
+     */
+    #[Scope]
+    protected function visibleInFeedOf(Builder $query, User $user): void
+    {
+        $activeFriendIds = $user->friends()
+            ->where('status', AccountStatus::Active)
+            ->select($user->qualifyColumn('id'));
+
+        $query->where(fn (Builder $builder): Builder => $builder
+            ->where($this->qualifyColumn('user_id'), $user->id)
+            ->orWhereIn($this->qualifyColumn('user_id'), $activeFriendIds));
     }
 
     /**
