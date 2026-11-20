@@ -91,4 +91,20 @@ return [
             'month' => 'M Y',
         ],
     ],
+
+    'friendships_overview' => [
+        'heading' => 'Friendships',
+        'accepted' => [
+            'label' => 'Friendships',
+            'description' => 'Accepted friendships, by day accepted over the last 30 days',
+        ],
+        'pending' => [
+            'label' => 'Pending requests',
+            'description' => 'Requests waiting for an answer, by day sent over the last 30 days',
+        ],
+        'new' => [
+            'label' => 'New friendships (30 days)',
+            'description' => 'Friend requests accepted in the last 30 days',
+        ],
+    ],
 ];

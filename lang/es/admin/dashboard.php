@@ -91,4 +91,20 @@ return [
             'month' => 'M Y',
         ],
     ],
+
+    'friendships_overview' => [
+        'heading' => 'Amistades',
+        'accepted' => [
+            'label' => 'Amistades',
+            'description' => 'Amistades aceptadas, por día de aceptación en los últimos 30 días',
+        ],
+        'pending' => [
+            'label' => 'Solicitudes pendientes',
+            'description' => 'Solicitudes que esperan respuesta, por día de envío en los últimos 30 días',
+        ],
+        'new' => [
+            'label' => 'Amistades nuevas (30 días)',
+            'description' => 'Solicitudes de amistad aceptadas en los últimos 30 días',
+        ],
+    ],
 ];
