@@ -25,7 +25,7 @@ function NotificationDropdown(): JSX.Element {
   const popoverTitleId = `${popoverId}-title`;
 
   const {
-    getNotificationPostUrl,
+    getNotificationUrl,
     hasLoadError,
     isLoading,
     isOpen,
@@ -126,7 +126,7 @@ function NotificationDropdown(): JSX.Element {
           ) : (
             <ul aria-label={t("notification/center.dropdown.title")}>
               {notifications.map((notification: Notification) => {
-                const postUrl = getNotificationPostUrl(notification);
+                const notificationUrl = getNotificationUrl(notification);
                 const isRead = notification.readAt !== null;
                 const isMarkingRead = markingNotificationId === notification.id;
 
@@ -141,14 +141,14 @@ function NotificationDropdown(): JSX.Element {
                       />
 
                       <div className="min-w-0 flex-1">
-                        {postUrl === null ? (
+                        {notificationUrl === null ? (
                           <p className="wrap-break-words text-sm font-medium">
                             {notification.summary}
                           </p>
                         ) : (
                           <Link
                             className="wrap-break-words block text-left text-sm font-medium hover:text-primary focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                            href={postUrl}
+                            href={notificationUrl}
                             onClick={(event) => {
                               if (isModifiedClick(event)) {
                                 return;
@@ -179,7 +179,7 @@ function NotificationDropdown(): JSX.Element {
                           </time>
                         </div>
 
-                        {postUrl === null && (
+                        {notificationUrl === null && (
                           <p className="mt-1 text-xs text-muted-foreground">
                             {t("notification/center.target.content_unavailable")}
                           </p>

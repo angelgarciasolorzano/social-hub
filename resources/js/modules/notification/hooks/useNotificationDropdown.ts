@@ -8,7 +8,6 @@ import {
   markAsRead,
   recent,
 } from "@/shared/wayfinder/actions/App/Modules/Notification/Controllers/NotificationController";
-import { show as showPost } from "@/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController";
 
 import { useTranslation } from "@/shared/hooks";
 
@@ -17,6 +16,7 @@ import type { SharedData } from "@/shared/types";
 import { useNotificationStore } from "../stores/notificationStore";
 import type { Notification } from "../types/notification";
 import { excludeRemovedNotifications } from "../utils/excludeRemovedNotifications";
+import { getNotificationLink } from "../utils/notificationUrl";
 
 const EMPTY_NOTIFICATIONS: Notification[] = [];
 
@@ -33,7 +33,7 @@ interface UseNotificationDropdownReturn {
   markingNotificationId: string | null;
   notifications: Notification[];
   unreadCount: number;
-  getNotificationPostUrl: (notification: Notification) => string | null;
+  getNotificationUrl: (notification: Notification) => string | null;
   markNotificationAsRead: (notification: Notification) => Promise<boolean>;
   onOpenChange: (open: boolean) => void;
   openNotification: (notification: Notification) => Promise<void>;
@@ -140,21 +140,8 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
     );
   }, [realtimeNotifications, recentNotifications, removedNotificationIds]);
 
-  const getNotificationPostUrl = useCallback<(notification: Notification) => string | null>(
-    (notification) => {
-      const { postId, commentId } = notification.target;
-
-      if (postId === null) {
-        return null;
-      }
-
-      return showPost(postId, {
-        query:
-          commentId === null
-            ? { comments_post: postId }
-            : { comments_post: postId, replies_comment: commentId },
-      }).url;
-    },
+  const getNotificationUrl = useCallback<(notification: Notification) => string | null>(
+    (notification) => getNotificationLink(notification)?.url ?? null,
     [],
   );
 
@@ -254,9 +241,9 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
 
   const openNotification = useCallback<(notification: Notification) => Promise<void>>(
     async (notification) => {
-      const postUrl = getNotificationPostUrl(notification);
+      const notificationUrl = getNotificationUrl(notification);
 
-      if (postUrl === null) {
+      if (notificationUrl === null) {
         return;
       }
 
@@ -267,9 +254,9 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
       }
 
       setIsOpen(false);
-      router.visit(postUrl);
+      router.visit(notificationUrl);
     },
-    [getNotificationPostUrl, markNotificationAsRead],
+    [getNotificationUrl, markNotificationAsRead],
   );
 
   return {
@@ -279,7 +266,7 @@ function useNotificationDropdown(): UseNotificationDropdownReturn {
     markingNotificationId,
     notifications,
     unreadCount,
-    getNotificationPostUrl,
+    getNotificationUrl,
     markNotificationAsRead,
     onOpenChange,
     openNotification,
