@@ -42,6 +42,8 @@ return [
         'mark_read' => 'Marcar como leída',
         'open_post' => 'Abrir publicación relacionada',
         'open_comment' => 'Abrir comentario relacionado',
+        'open_friend_requests' => 'Abrir solicitudes de amistad',
+        'open_profile' => 'Abrir perfil',
         'view_all' => 'Ver todas las notificaciones',
     ],
 
@@ -68,5 +70,15 @@ return [
         'reply_to_comment' => ':actor respondió a tu comentario',
         'liked_post' => '{0}A nadie le gustó tu publicación|{1}A :actor le gustó tu publicación|{2}A :actor y a otra persona les gustó tu publicación|[3,*]A :actor y a :others personas más les gustó tu publicación',
         'liked_comment' => '{0}A nadie le gustó tu comentario|{1}A :actor le gustó tu comentario|{2}A :actor y a otra persona les gustó tu comentario|[3,*]A :actor y a :others personas más les gustó tu comentario',
+        'friend_request_received' => ':actor te envió una solicitud de amistad',
+        'friend_request_accepted' => ':actor aceptó tu solicitud de amistad',
+    ],
+
+    'types' => [
+        'comment_on_post' => 'Comentario',
+        'comment_reply' => 'Respuesta',
+        'likes_grouped' => 'Me gusta',
+        'friend_request_received' => 'Solicitud de amistad',
+        'friend_request_accepted' => 'Nuevo amigo',
     ],
 ];
