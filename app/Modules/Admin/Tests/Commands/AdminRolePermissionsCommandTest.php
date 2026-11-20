@@ -69,13 +69,13 @@ it('revokes a cataloged permission without changing role assignments', function 
     $user = createUser();
     $user->assignRole(AdminRole::AdminUsersReader->value);
 
-    $exitCode = runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersView->value, createAdminCommandActor());
+    $exitCode = runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersFriendships->value, createAdminCommandActor());
     $user->refresh();
 
     expect($exitCode)->toBe(Command::SUCCESS)
         ->and($user->hasRole(AdminRole::AdminUsersReader->value))->toBeTrue()
-        ->and($user->can(AdminPermission::AdminUsersView->value))->toBeFalse()
-        ->and($user->can(AdminPermission::AdminUsersViewAny->value))->toBeTrue();
+        ->and($user->can(AdminPermission::AdminUsersFriendships->value))->toBeFalse()
+        ->and($user->can(AdminPermission::AdminUsersView->value))->toBeTrue();
 });
 
 it('uses the admin guard when matching role and permission names exist in web', function (): void {
@@ -201,7 +201,7 @@ it('refuses to revoke a permission that another permission of the role requires'
     $exitCode = runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersViewAny->value, createAdminCommandActor());
 
     expect($exitCode)->toBe(Command::FAILURE)
-        ->and(Artisan::output())->toContain('Permission admin.users.viewAny is required by admin.users.view on role admin-users-reader. Revoke them first.')
+        ->and(Artisan::output())->toContain('Permission admin.users.viewAny is required by admin.users.view, admin.users.friendships on role admin-users-reader. Revoke them first.')
         ->and(adminRoleHasPermission(AdminRole::AdminUsersReader, AdminPermission::AdminUsersViewAny))->toBeTrue()
         ->and(Activity::query()->where('log_name', 'admin')->exists())->toBeFalse();
 });
@@ -260,7 +260,7 @@ it('records a revoked permission', function (): void {
 
     $user = createAdminCommandActor();
 
-    runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersView->value, $user);
+    runAdminRolePermissions('revoke', AdminRole::AdminUsersReader->value, AdminPermission::AdminUsersFriendships->value, $user);
 
     expect(Activity::query()->where('event', 'admin.role_permission_revoked')->sole()->causer_id)->toBe($user->id);
 });

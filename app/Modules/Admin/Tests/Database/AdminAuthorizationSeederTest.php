@@ -93,11 +93,16 @@ it('seeds each role with only its intended permissions', function (): void {
         ->toBe([AdminPermission::AdminAccess->value])
         ->and($usersReaderRole->permissions->pluck('name')->sort()->values()
             ->all())
-        ->toBe([AdminPermission::AdminUsersView->value, AdminPermission::AdminUsersViewAny->value])
+        ->toBe([
+            AdminPermission::AdminUsersFriendships->value,
+            AdminPermission::AdminUsersView->value,
+            AdminPermission::AdminUsersViewAny->value,
+        ])
         ->and($usersProvisionerRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([AdminPermission::AdminUsersCreate->value, AdminPermission::AdminUsersViewAny->value])
         ->and($usersModeratorRole->permissions->pluck('name')->sort()->values()->all())
         ->toBe([
+            AdminPermission::AdminUsersFriendships->value,
             AdminPermission::AdminUsersReactivate->value,
             AdminPermission::AdminUsersSuspend->value,
             AdminPermission::AdminUsersView->value,
@@ -303,7 +308,7 @@ it('preserves role assignments and revoked permissions when the seeder runs agai
         'model_id' => $user->getKey(),
     ]);
 
-    expect($remainingPermissions)->toBe([AdminPermission::AdminUsersView->value])
+    expect($remainingPermissions)->toBe([AdminPermission::AdminUsersFriendships->value, AdminPermission::AdminUsersView->value])
         ->and($user->hasRole(AdminRole::AdminUsersReader->value, 'admin'))->toBeTrue()
         ->and($user->hasPermissionTo(AdminPermission::AdminUsersView->value, 'admin'))->toBeTrue()
         ->and($user->hasPermissionTo(AdminPermission::AdminUsersViewAny->value, 'admin'))->toBeFalse();

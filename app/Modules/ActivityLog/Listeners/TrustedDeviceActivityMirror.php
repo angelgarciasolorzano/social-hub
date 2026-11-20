@@ -9,10 +9,6 @@ use App\Auth\Modules\TrustedDevice\Events\TrustedDeviceEventRecorded;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Services\ActivityLogger;
 
-/**
- * Mirrors each recorded trusted device event into the `trusted_devices` log. The subject
- * is the TrustedDeviceEvent row, which keeps the device snapshot, so nothing is copied.
- */
 final readonly class TrustedDeviceActivityMirror
 {
     public function __construct(private ActivityLogger $activityLogger) {}

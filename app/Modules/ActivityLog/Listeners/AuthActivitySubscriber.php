@@ -16,10 +16,6 @@ use Laravel\Fortify\Events\RecoveryCodesGenerated;
 use Laravel\Fortify\Events\TwoFactorAuthenticationConfirmed;
 use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 
-/**
- * Records sign-in, password and two-factor activity in the `auth` log.
- * Credentials, codes and secrets carried by the events are never stored.
- */
 final readonly class AuthActivitySubscriber
 {
     public function __construct(private ActivityLogger $activityLogger) {}

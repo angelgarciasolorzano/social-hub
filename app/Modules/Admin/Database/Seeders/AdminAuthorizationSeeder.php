@@ -37,6 +37,7 @@ class AdminAuthorizationSeeder extends Seeder
                 AdminRole::AdminUsersReader->value => [
                     AdminPermission::AdminUsersViewAny,
                     AdminPermission::AdminUsersView,
+                    AdminPermission::AdminUsersFriendships,
                 ],
                 AdminRole::AdminUsersProvisioner->value => [
                     AdminPermission::AdminUsersViewAny,
@@ -47,6 +48,7 @@ class AdminAuthorizationSeeder extends Seeder
                     AdminPermission::AdminUsersView,
                     AdminPermission::AdminUsersSuspend,
                     AdminPermission::AdminUsersReactivate,
+                    AdminPermission::AdminUsersFriendships,
                 ],
                 AdminRole::AdminPostsReader->value => [
                     AdminPermission::AdminPostsViewAny,

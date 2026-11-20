@@ -198,6 +198,7 @@ it('refuses to revoke a permission that another permission of the role requires'
 
     expect($failure)->toBe(AdminAuthorizationFailure::PermissionDependencyMissing)
         ->and($role->refresh()->permissions->pluck('name')->sort()->values()->all())->toBe([
+            AdminPermission::AdminUsersFriendships->value,
             AdminPermission::AdminUsersView->value,
             AdminPermission::AdminUsersViewAny->value,
         ])
