@@ -1,0 +1,751 @@
+{
+  "title": "SOC-85 — Friend request notifications and friendship activity",
+  "slug": "soc-85-friendship-notifications-activity",
+  "linear": "SOC-85",
+  "epic": "SOC-82",
+  "mode": "EXPANSION",
+  "review": "claude",
+  "overview": "Hoy una solicitud de amistad solo se ve al recargar o navegar, y nada de lo que pasa con una amistad queda en el activity log. Este plan agrega:\n\n* **Notificaciones en tiempo real:** \"te envió una solicitud\" al receptor y \"aceptó tu solicitud\" a quien la envió, en la campana, en el historial y como toast, en el idioma de quien la recibe.\n* **Limpieza:** cuando una solicitud deja de estar pendiente (aceptada, rechazada o cancelada), su notificación sin leer se borra de la base y de la campana.\n* **Refresco de la página abierta:** al llegar una notificación de amistad se recarga el panel de solicitudes con su contador y, según la página, el feed, la página de Amigos o el perfil.\n* **Activity log:** un log `friendships` con los cinco eventos de amistad, su retención, su seeder y sus traducciones del panel.\n* **Mejoras de experiencia (EXPANSION):** un icono por tipo de notificación y el enlace correcto para cada tipo en la campana y en el historial.",
+  "scopeChallenge": {
+    "exists": [
+      "`FriendshipService` (SOC-83) despacha `FriendRequestSent` y `FriendRequestAccepted` con la fila, y `FriendshipEnded` con `friendshipId`, `actor`, `otherUser` y `reason` (`declined`, `canceled` o `removed`), todos **dentro** de su transacción.",
+      "`NotificationType` tiene `comment_on_post`, `comment_reply` y `likes_grouped`; su espejo vive en `resources/js/modules/notification/types/notification.ts`.",
+      "`CommentedOnPostNotification` usa los canales `database` y `broadcast` en cola; `User` implementa `HasLocalePreference`, así que el resumen sale en el idioma del destinatario.",
+      "`LikeNotificationGroupService` ya borra un grupo sin leer y emite un broadcast `{deleted: true}` con `DB::afterCommit`; `NotificationRealtimeListener` solo atiende ese borrado para `likes_grouped`.",
+      "`NotificationResource` expone `target: {postId, commentId}` y descarta cualquier otra clave; `NotificationListItem` y `useNotificationDropdown` solo saben enlazar a una publicación.",
+      "La cola tiene `after_commit` en `false` y `.env.testing` usa `QUEUE_CONNECTION=sync`.",
+      "El activity log tiene seis logs (`ActivityLogName`), un enum de eventos por dominio registrado en `ActivityLogEvent::ENUMS`, retención por log en `app/Modules/ActivityLog/config/activity-log.php` y una prueba que exige que cada evento lo registre algún listener, comando o servicio.",
+      "`FriendRequestsPanel` (SOC-86) tiene su propia tabla de props a recargar por página."
+    ],
+    "reuse": [
+      "El patrón de `CommentedOnPostNotification` y `CommentNotificationSubscriber` para las dos notificaciones nuevas.",
+      "El borrado con broadcast `{deleted: true}` después del commit de `LikeNotificationGroupService`.",
+      "`LikeActivitySubscriber` y `ActivityLogger::record()` para el suscriptor del activity log.",
+      "La tabla de recargas por página de `FriendRequestsPanel`, que pasa a un helper compartido.",
+      "`ActivityLogEventCatalog`: su `default` ya da un nombre en inglés a cualquier evento nuevo."
+    ],
+    "new": [
+      "Dos tipos de notificación (`friend_request_received` y `friend_request_accepted`), sus dos clases y su suscriptor.",
+      "El log `friendships` con `ActivityLogFriendshipEvent` y `FriendshipActivitySubscriber`.",
+      "Un helper de URL por tipo de notificación, un icono por tipo y el refresco de la página al llegar una notificación de amistad."
+    ],
+    "decisions": [
+      "Modo EXPANSION, revisión `claude` después de cada tarea.",
+      "La notificación \"te envió una solicitud\" **sin leer** se borra cuando la solicitud deja de estar pendiente (aceptada, rechazada o cancelada), con un broadcast de borrado. Las ya leídas se quedan: su enlace lleva a la pestaña de recibidas, que nunca da 404.",
+      "Al llegar una notificación de amistad se recarga siempre `friendRequests` (panel y contador), y además las props de la página abierta: el feed solo cuando la amistad quedó aceptada, la página de Amigos y el perfil siempre."
+    ],
+    "directExecution": "No: toca dos módulos de backend, el frontend de notificaciones y el seeder."
+  },
+  "prerequisites": [
+    "SOC-83, SOC-84 y SOC-86 están mergeadas: eventos de dominio, `FriendRequestsPanel` y su recarga por página.",
+    "Reverb corre en local (`composer run dev`) para la revisión a mano del tiempo real."
+  ],
+  "nonGoals": [
+    "Notificar cuando alguien rechaza o cancela una solicitud, o elimina una amistad: solo se registra en el activity log.",
+    "Agrupar varias solicitudes en una notificación, como `likes_grouped`.",
+    "Preferencias para silenciar tipos de notificación y correo electrónico.",
+    "Mostrar amistades en Filament (SOC-87).",
+    "Una prueba de navegador del tiempo real: las pruebas de navegador no levantan Reverb; el broadcast se prueba en PHP y el refresco se revisa a mano."
+  ],
+  "contracts": [
+    {
+      "name": "Tipos de notificación",
+      "detail": "`NotificationType::FriendRequestReceived = 'friend_request_received'` y `NotificationType::FriendRequestAccepted = 'friend_request_accepted'`, en el mismo orden en el enum de PHP y en la tupla de TypeScript."
+    },
+    {
+      "name": "Datos de la notificación",
+      "detail": "`{summary, actors: [{id, name}], target: {postId: null, commentId: null, friendshipId}}`. `actors[0]` es quien hizo la acción. `friendshipId` se guarda para encontrar la notificación al borrarla; `NotificationResource` no lo expone y el contrato público de `target` no cambia."
+    },
+    {
+      "name": "Entrega",
+      "detail": "Las dos clases van en cola con `afterCommit()`, porque el evento se despacha dentro de la transacción del servicio. `shouldSend()` vuelve a leer la amistad: la recibida solo se envía si sigue pendiente y la aceptada solo si sigue aceptada; ninguna se envía a una cuenta suspendida ni a quien hizo la acción."
+    },
+    {
+      "name": "Borrado de la solicitud",
+      "detail": "Con `FriendRequestAccepted` o con `FriendshipEnded` por `declined` o `canceled`, el suscriptor borra la notificación `friend_request_received` **sin leer** del receptor cuyo `data->target->friendshipId` coincide, dentro de la transacción del servicio, y emite un broadcast `{deleted: true}` con su id después del commit. Una notificación leída no se borra."
+    },
+    {
+      "name": "Enlaces por tipo",
+      "detail": "`comment_on_post`, `comment_reply` y `likes_grouped`: la publicación como hoy. `friend_request_received`: `friendships.index?tab=received`. `friend_request_accepted`: `profile.show(actors[0].id)`."
+    },
+    {
+      "name": "Activity log de amistades",
+      "detail": "`ActivityLogName::Friendships = 'friendships'`, retención `SOCIALHUB_ACTIVITY_LOG_FRIENDSHIPS_RETENTION_DAYS` (365 por defecto). `ActivityLogFriendshipEvent`: `friendship.request_sent`, `friendship.request_accepted`, `friendship.request_declined`, `friendship.request_canceled` y `friendship.removed`. El causante es quien actúa, sin `subject`, y las propiedades son solo `{friendship_id, target_user_id}`."
+    },
+    {
+      "name": "Recarga de props por amistad",
+      "detail": "`reloadFriendshipDependentProps(component, friendshipState)` en `resources/js/modules/friendship/utils/` hace un solo `router.reload` con `friendRequests` y las props de la página según la tabla que hoy vive en `FriendRequestsPanel`."
+    }
+  ],
+  "existingCodeLeverage": [
+    "`app/Modules/Notification/Notifications/CommentedOnPostNotification.php`: canales, tipo y `toArray`.",
+    "`app/Modules/Notification/Listeners/CommentNotificationSubscriber.php`: suscriptor y reglas de destinatario.",
+    "`app/Modules/Notification/Services/LikeNotificationGroupService.php`: borrado y broadcast después del commit.",
+    "`app/Modules/ActivityLog/Listeners/LikeActivitySubscriber.php` y `app/Modules/ActivityLog/Services/ActivityLogger.php`.",
+    "`app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php`: `queue()` para derivar filas de datos sembrados.",
+    "`resources/js/modules/friendship/components/FriendRequestsPanel.tsx`: la tabla de recargas por página."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Add the two friendship notification types in PHP and TypeScript",
+      "description": "Agregar `FriendRequestReceived` y `FriendRequestAccepted` a `NotificationType` y a la tupla de `resources/js/modules/notification/types/notification.ts`, en el mismo orden, y actualizar `NotificationTypeTest`.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Notification/Enums/NotificationType.php",
+        "resources/js/modules/notification/types/notification.ts",
+        "app/Modules/Notification/Tests/Enums/NotificationTypeTest.php"
+      ],
+      "acceptanceCriteria": [
+        "`NotificationType::values()` devuelve los cinco tipos en el orden del contrato.",
+        "`isNotificationType('friend_request_received')` es `true` y un tipo de Filament sigue siendo rechazado."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Notification/Tests/Enums/NotificationTypeTest.php && npm run types",
+      "writeScope": [
+        "app/Modules/Notification/Enums/NotificationType.php",
+        "resources/js/modules/notification/types/notification.ts",
+        "app/Modules/Notification/Tests/Enums/NotificationTypeTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Add the friendship notification texts in English and Spanish",
+      "description": "En `lang/{en,es}/notification/center.php`:\n* `summaries.friend_request_received` (\":actor te envió una solicitud de amistad\") y `summaries.friend_request_accepted` (\":actor aceptó tu solicitud de amistad\");\n* `actions.open_friend_requests` y `actions.open_profile`;\n* `types.<tipo>` con un nombre corto de cada uno de los cinco tipos, para el `aria-label` del icono.\n\n`lang/*/notification/` no tiene prueba de paridad: se agrega `app/Modules/Notification/Tests/Translations/NotificationTranslationKeysTest.php`, igual que `FriendshipTranslationKeysTest`.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "filesToCreate": [
+        "app/Modules/Notification/Tests/Translations/NotificationTranslationKeysTest.php"
+      ],
+      "filesToModify": [
+        "lang/en/notification/center.php",
+        "lang/es/notification/center.php"
+      ],
+      "acceptanceCriteria": [
+        "Los dos idiomas tienen las mismas claves y los mismos placeholders.",
+        "La prueba nueva falla si se borra una de las claves nuevas en `es`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Notification/Tests/Translations/NotificationTranslationKeysTest.php tests/Feature/Translation/FrontendTranslationKeysTest.php",
+      "writeScope": [
+        "app/Modules/Notification/Tests/Translations/NotificationTranslationKeysTest.php",
+        "lang/en/notification/center.php",
+        "lang/es/notification/center.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Create the received and accepted friend request notifications",
+      "description": "`app/Modules/Notification/Notifications/FriendRequestReceivedNotification.php` y `FriendRequestAcceptedNotification.php`, con el patrón de `CommentedOnPostNotification`:\n* canales `database` y `broadcast`, en cola con `afterCommit()`;\n* `toArray`: resumen en el idioma del destinatario, `actors` con quien actúa y `target` con `postId` y `commentId` en `null` más `friendshipId`;\n* `shouldSend()` vuelve a leer la amistad: la recibida solo si sigue pendiente, la aceptada solo si sigue aceptada, y nunca a una cuenta suspendida.\n\nLa recibida ofrece además un constructor de borrado (`FriendRequestReceivedNotification::deletion(string $id)`) que solo usa `broadcast` y envía `{deleted: true}`.\n\n**Prueba:** `app/Modules/Notification/Tests/Notifications/FriendshipNotificationsTest.php`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Notifications/FriendRequestReceivedNotification.php",
+        "app/Modules/Notification/Notifications/FriendRequestAcceptedNotification.php",
+        "app/Modules/Notification/Tests/Notifications/FriendshipNotificationsTest.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Los datos guardados tienen el tipo, el resumen en el idioma del destinatario (en y es), `actors` y `target.friendshipId`; `NotificationResource` no expone `friendshipId`.",
+        "`shouldSend()` es `false` si la solicitud se canceló antes de entregarse, si la amistad ya no está aceptada o si el destinatario está suspendido.",
+        "El broadcast de borrado solo usa `broadcast` y su payload es `{deleted: true}`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Notification/Tests/Notifications/FriendshipNotificationsTest.php",
+      "writeScope": [
+        "app/Modules/Notification/Notifications/FriendRequestReceivedNotification.php",
+        "app/Modules/Notification/Notifications/FriendRequestAcceptedNotification.php",
+        "app/Modules/Notification/Tests/Notifications/FriendshipNotificationsTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Notify friend requests and remove the stale ones",
+      "description": "`app/Modules/Notification/Listeners/FriendshipNotificationSubscriber.php`, registrado en `NotificationServiceProvider::boot()`:\n* `FriendRequestSent`: notifica al receptor;\n* `FriendRequestAccepted`: notifica a quien envió la solicitud y borra la notificación recibida sin leer del receptor;\n* `FriendshipEnded` por `declined` o `canceled`: borra la notificación recibida sin leer del receptor. Por `removed` no hace nada.\n\nEl borrado busca por `data->target->friendshipId`, ocurre dentro de la transacción del servicio y emite el broadcast con `DB::afterCommit`.\n\n**Prueba:** `app/Modules/Notification/Tests/Listeners/FriendshipNotificationSubscriberTest.php`, a través de `FriendshipService`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Listeners/FriendshipNotificationSubscriber.php",
+        "app/Modules/Notification/Tests/Listeners/FriendshipNotificationSubscriberTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php"
+      ],
+      "acceptanceCriteria": [
+        "Enviar una solicitud deja una notificación al receptor y ninguna a quien la envió; aceptarla deja una a quien la envió y borra la del receptor.",
+        "Cancelar o rechazar borra la notificación sin leer y emite su broadcast de borrado; una notificación ya leída se conserva y eliminar una amistad no borra nada.",
+        "Una acción rechazada por el servicio (repetida, en cooldown o a una cuenta suspendida) no crea ni borra notificaciones."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Notification/Tests/Listeners/FriendshipNotificationSubscriberTest.php",
+      "writeScope": [
+        "app/Modules/Notification/Listeners/FriendshipNotificationSubscriber.php",
+        "app/Modules/Notification/Tests/Listeners/FriendshipNotificationSubscriberTest.php",
+        "app/Modules/Notification/Providers/NotificationServiceProvider.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Add the friendships activity log and its event enum",
+      "description": "`ActivityLogName::Friendships = 'friendships'`, su retención en `app/Modules/ActivityLog/config/activity-log.php` (`SOCIALHUB_ACTIVITY_LOG_FRIENDSHIPS_RETENTION_DAYS`, 365) y `app/Modules/ActivityLog/Enums/Events/ActivityLogFriendshipEvent.php` con los cinco eventos del contrato.\n\nEl enum todavía no se registra en `ActivityLogEvent::ENUMS`: lo hace TASK-006.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "app/Modules/ActivityLog/Enums/Events/ActivityLogFriendshipEvent.php"
+      ],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Enums/ActivityLogName.php",
+        "app/Modules/ActivityLog/config/activity-log.php"
+      ],
+      "acceptanceCriteria": [
+        "`ActivityLogName::Friendships->retentionDays()` devuelve 365 sin variable de entorno.",
+        "Cada caso de `ActivityLogFriendshipEvent` devuelve el log `friendships` y un nombre `friendship.<acción>`.",
+        "`activity-log:purge` sigue pasando sus pruebas con el log nuevo."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/ActivityLog/Tests/Console/ActivityLogPurgeCommandTest.php && composer phpstan",
+      "writeScope": [
+        "app/Modules/ActivityLog/Enums/Events/ActivityLogFriendshipEvent.php",
+        "app/Modules/ActivityLog/Enums/ActivityLogName.php",
+        "app/Modules/ActivityLog/config/activity-log.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Register the friendship events in the activity log catalog",
+      "description": "Agregar `ActivityLogFriendshipEvent::class` a `ActivityLogEvent::ENUMS` y la variable `SOCIALHUB_ACTIVITY_LOG_FRIENDSHIPS_RETENTION_DAYS=365` a `.env.example`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Contracts/ActivityLogEvent.php",
+        ".env.example"
+      ],
+      "acceptanceCriteria": [
+        "`ActivityLogEventTest` pasa: cada log tiene eventos y cada enum de `Enums/Events/` está registrado.",
+        "`ActivityLogEventCatalog::eventOptions()` incluye el grupo de amistades."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/ActivityLog/Tests/Contracts/ActivityLogEventTest.php app/Modules/ActivityLog/Tests/Support/ActivityLogEventCatalogTest.php",
+      "writeScope": [
+        "app/Modules/ActivityLog/Contracts/ActivityLogEvent.php",
+        ".env.example"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Translate the friendships log and its events for the panel",
+      "description": "En `lang/{en,es}/admin/activity-log.php`: `logs.friendships` y `events.friendship.{request_sent, request_accepted, request_declined, request_canceled, removed}`.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/admin/activity-log.php",
+        "lang/es/admin/activity-log.php"
+      ],
+      "acceptanceCriteria": [
+        "Los dos idiomas tienen las mismas claves.",
+        "La prueba de claves del panel falla si falta una de las claves nuevas en `es`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Admin/Tests/Translations/AdminTranslationKeysTest.php",
+      "writeScope": [
+        "lang/en/admin/activity-log.php",
+        "lang/es/admin/activity-log.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Record every friendship action in the activity log",
+      "description": "`app/Modules/ActivityLog/Listeners/FriendshipActivitySubscriber.php`, registrado en `ActivityLogServiceProvider::boot()`:\n* `FriendRequestSent`: `request_sent`, causante quien envía;\n* `FriendRequestAccepted`: `request_accepted`, causante quien acepta;\n* `FriendshipEnded`: `request_declined`, `request_canceled` o `removed` según `reason`, causante `actor`.\n\nPropiedades `{friendship_id, target_user_id}` (la otra persona), sin `subject`.\n\n**Prueba:** `app/Modules/ActivityLog/Tests/Listeners/FriendshipActivitySubscriberTest.php`, a través de `FriendshipService`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "filesToCreate": [
+        "app/Modules/ActivityLog/Listeners/FriendshipActivitySubscriber.php",
+        "app/Modules/ActivityLog/Tests/Listeners/FriendshipActivitySubscriberTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php"
+      ],
+      "acceptanceCriteria": [
+        "Cada una de las cinco acciones deja un registro con el causante, el evento y `target_user_id` correctos.",
+        "Una acción rechazada por el servicio no registra nada.",
+        "`ActivityLogPrivacyTest` pasa: cada evento del catálogo lo registra un listener y ningún registro guarda nombres ni emails."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/ActivityLog/Tests/Listeners/FriendshipActivitySubscriberTest.php app/Modules/ActivityLog/Tests/Security/ActivityLogPrivacyTest.php",
+      "writeScope": [
+        "app/Modules/ActivityLog/Listeners/FriendshipActivitySubscriber.php",
+        "app/Modules/ActivityLog/Tests/Listeners/FriendshipActivitySubscriberTest.php",
+        "app/Modules/ActivityLog/Providers/ActivityLogServiceProvider.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Derive the friendship activity from the seeded friendships",
+      "description": "`ActivityLogSeeder::seedFriendshipActivity()`: por cada amistad sembrada, `request_sent` del solicitante en `created_at` y, si está aceptada, `request_accepted` del receptor en `accepted_at`, con `{friendship_id, target_user_id}`. `FriendshipSeeder` ya corre antes en `DatabaseSeeder`.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-006"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php",
+        "app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php"
+      ],
+      "acceptanceCriteria": [
+        "Hay un `request_sent` por amistad y un `request_accepted` por cada amistad aceptada, con sus fechas.",
+        "Sin amistades sembradas no se agrega ningún registro de `friendships`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php",
+      "writeScope": [
+        "app/Modules/ActivityLog/Database/Seeders/ActivityLogSeeder.php",
+        "app/Modules/ActivityLog/Tests/Seeders/ActivityLogSeederTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Link each notification type to its page in the history",
+      "description": "`resources/js/modules/notification/utils/notificationUrl.ts` devuelve la URL y la etiqueta de la acción de cada tipo, según el contrato de enlaces. `NotificationListItem` la usa en lugar de armar la URL de la publicación.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/notification/utils/notificationUrl.ts"
+      ],
+      "filesToModify": [
+        "resources/js/modules/notification/components/NotificationListItem.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Una notificación de comentario sigue enlazando a la misma URL de antes.",
+        "`friend_request_received` enlaza a `friendships.index?tab=received` y `friend_request_accepted` al perfil de `actors[0]`; sin actor no se muestra enlace."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/notification/utils/notificationUrl.ts",
+        "resources/js/modules/notification/components/NotificationListItem.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Open friendship notifications from the bell",
+      "description": "`useNotificationDropdown` reemplaza `getNotificationPostUrl` por `getNotificationUrl`, que usa el helper de TASK-010, y `NotificationDropdown` lo llama con el nombre nuevo.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-010"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/notification/hooks/useNotificationDropdown.ts",
+        "resources/js/modules/notification/components/NotificationDropdown.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Abrir una notificación de amistad desde la campana la marca como leída y navega a su página.",
+        "Las notificaciones de comentarios y likes siguen abriendo la misma publicación."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/notification/hooks/useNotificationDropdown.ts",
+        "resources/js/modules/notification/components/NotificationDropdown.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Share the friendship-dependent reloads",
+      "description": "`resources/js/modules/friendship/utils/reloadFriendshipDependentProps.ts` con la tabla de recargas por página y un solo `router.reload`. `FriendRequestsPanel` lo usa en lugar de su propia tabla.",
+      "type": "refactor",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "resources/js/modules/friendship/utils/reloadFriendshipDependentProps.ts"
+      ],
+      "filesToModify": [
+        "resources/js/modules/friendship/components/FriendRequestsPanel.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Aceptar desde el panel en el inicio sigue mostrando las publicaciones del nuevo amigo (la prueba de navegador de SOC-86 sigue pasando).",
+        "Rechazar en el inicio no recarga `posts`; en una página fuera de la tabla solo se recarga `friendRequests`."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check && composer test:browser",
+      "writeScope": [
+        "resources/js/modules/friendship/utils/reloadFriendshipDependentProps.ts",
+        "resources/js/modules/friendship/components/FriendRequestsPanel.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Refresh the open page when a friendship notification arrives",
+      "description": "En `NotificationRealtimeListener`:\n* un broadcast de borrado de `friend_request_received` quita la notificación del store, como `likes_grouped`;\n* al recibir o borrar una notificación de amistad llama a `reloadFriendshipDependentProps` con el componente de la página y el estado (`friends` para la aceptada).",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-012"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/notification/components/NotificationRealtimeListener.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Con Reverb, recibir una solicitud actualiza el panel y el contador del menú sin recargar; en Amigos también la pestaña y los contadores.",
+        "Una notificación de comentario no provoca ninguna recarga de props."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/notification/components/NotificationRealtimeListener.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Show an icon for each notification type",
+      "description": "`resources/js/modules/notification/components/NotificationTypeIcon.tsx` (comentario, respuesta, like, solicitud recibida, solicitud aceptada), con `aria-label` desde `notification/center.types.*`. Se muestra en `NotificationListItem` y en las filas de `NotificationDropdown`.",
+      "type": "feature",
+      "priority": "P3",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-010",
+        "TASK-011"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/notification/components/NotificationTypeIcon.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/notification/components/NotificationListItem.tsx",
+        "resources/js/modules/notification/components/NotificationDropdown.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Cada uno de los cinco tipos muestra un icono distinto en el historial y en la campana.",
+        "El icono tiene nombre accesible en los dos idiomas y la fila no cambia de alto."
+      ],
+      "validateCommand": "npm run types && npm run lint:check && npm run format:check",
+      "writeScope": [
+        "resources/js/modules/notification/components/NotificationTypeIcon.tsx",
+        "resources/js/modules/notification/components/NotificationListItem.tsx",
+        "resources/js/modules/notification/components/NotificationDropdown.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Add a browser test for the friend request notification",
+      "description": "`app/Modules/Notification/Tests/Browser/FriendshipNotificationsBrowserTest.php`:\n* después de recibir una solicitud, el historial muestra su resumen y su enlace lleva a la pestaña de recibidas;\n* después de que la persona cancela la solicitud, la notificación ya no aparece;\n* `assertNoJavaScriptErrors()`.",
+      "type": "test",
+      "priority": "P2",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-010",
+        "TASK-014"
+      ],
+      "filesToCreate": [
+        "app/Modules/Notification/Tests/Browser/FriendshipNotificationsBrowserTest.php"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "La prueba pasa con `composer test:browser`.",
+        "Falla si el suscriptor deja de borrar la notificación al cancelar."
+      ],
+      "validateCommand": "composer test:browser",
+      "writeScope": [
+        "app/Modules/Notification/Tests/Browser/FriendshipNotificationsBrowserTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Document the friendship notifications and the shared reloads",
+      "description": "`docs/architecture/modules/notification.md`: los tipos nuevos, `afterCommit`, `shouldSend`, el borrado de la solicitud, los enlaces y el icono por tipo.\n\n`docs/architecture/modules/friendship.md`: el helper de recargas compartido por el panel y el listener.",
+      "type": "docs",
+      "priority": "P3",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-004",
+        "TASK-011",
+        "TASK-013"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/modules/notification.md",
+        "docs/architecture/modules/friendship.md"
+      ],
+      "acceptanceCriteria": [
+        "Cada clase, archivo y tipo que se nombra existe (`grep`).",
+        "`notification.md` ya no dice que el borrado en tiempo real solo existe para `likes_grouped`."
+      ],
+      "validateCommand": "grep -n 'friend_request_received' docs/architecture/modules/notification.md",
+      "writeScope": [
+        "docs/architecture/modules/notification.md",
+        "docs/architecture/modules/friendship.md"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Document the friendships activity log",
+      "description": "`docs/architecture/modules/activity-log.md`: el log `friendships`, sus eventos, sus propiedades y su seeder. `docs/development/environment.md`: la variable de retención nueva. `CLAUDE.md`: el mapa de módulos de Notification y ActivityLog.",
+      "type": "docs",
+      "priority": "P3",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-008",
+        "TASK-009"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/modules/activity-log.md",
+        "docs/development/environment.md",
+        "CLAUDE.md"
+      ],
+      "acceptanceCriteria": [
+        "La retención documentada coincide con `config/activity-log.php` y `.env.example`.",
+        "Cada clase y evento que se nombra existe (`grep`)."
+      ],
+      "validateCommand": "grep -n 'SOCIALHUB_ACTIVITY_LOG_FRIENDSHIPS_RETENTION_DAYS' docs/development/environment.md docs/architecture/modules/activity-log.md",
+      "writeScope": [
+        "docs/architecture/modules/activity-log.md",
+        "docs/development/environment.md",
+        "CLAUDE.md"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Run the full gates",
+      "description": "1. Pint, PHPStan y Rector (`rector-clear-cache` → `rector-dry` → `rector`);\n2. `composer test:recreate`, `composer test` y `composer test:browser`;\n3. `composer doctor`;\n4. `npm run format:check`, `lint:check`, `types`, `build` y `build:ssr`;\n5. a mano con `composer run dev` y dos sesiones: enviar, aceptar, rechazar y cancelar, y comprobar la campana, el toast, el panel, la página de Amigos y el activity log del panel.",
+      "type": "chore",
+      "priority": "P3",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-007",
+        "TASK-015",
+        "TASK-016",
+        "TASK-017"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Pint, PHPStan y Rector no reportan cambios ni errores, y las tres suites pasan.",
+        "En la revisión a mano, una solicitud cancelada desaparece de la campana del receptor sin recargar y la consola no tiene errores."
+      ],
+      "validateCommand": "composer phpstan && composer rector-dry && composer test && composer test:browser && npm run build && npm run build:ssr",
+      "writeScope": [],
+      "review": "claude"
+    }
+  ],
+  "failureModes": [
+    "La notificación se encola antes del commit y llega aunque la transacción se revierta: `afterCommit()` en las dos clases (TASK-003).",
+    "La solicitud se cancela entre el commit y la entrega de la cola: `shouldSend()` vuelve a leer la amistad (TASK-003).",
+    "Borrar una notificación ya leída descontaría de más el contador del cliente: solo se borran las sin leer (TASK-004).",
+    "Un evento del catálogo sin listener rompe `ActivityLogPrivacyTest`: TASK-008 registra los cinco.",
+    "`ActivityLogEventTest` exige que cada log tenga eventos registrados: queda rojo entre TASK-005 y TASK-006, por eso TASK-005 no lo usa como validación.",
+    "Recargar `posts` del feed al rechazar perdería el scroll: el helper solo lo hace con `friends` (TASK-012)."
+  ],
+  "shipCut": "El mínimo entregable es TASK-001 a TASK-004, TASK-010, TASK-011 y TASK-013: las notificaciones con su borrado, sus enlaces y el refresco. El activity log (TASK-005 a TASK-009, TASK-017) se recorta como bloque. TASK-012 es necesaria para TASK-013. TASK-014 y TASK-015 son recortables; los gates no.",
+  "testCoverage": [
+    [
+      "Tipos de notificación en PHP y TypeScript",
+      "TASK-001"
+    ],
+    [
+      "Paridad de lang/*/notification (prueba nueva)",
+      "TASK-002"
+    ],
+    [
+      "Datos, idioma, shouldSend y borrado de las notificaciones",
+      "TASK-003"
+    ],
+    [
+      "Notificar y borrar desde los eventos de amistad",
+      "TASK-004"
+    ],
+    [
+      "Retención del log friendships",
+      "TASK-005"
+    ],
+    [
+      "Catálogo del activity log",
+      "TASK-006"
+    ],
+    [
+      "Traducciones del panel",
+      "TASK-007"
+    ],
+    [
+      "Registro de las cinco acciones y privacidad",
+      "TASK-008"
+    ],
+    [
+      "Seeder del activity log",
+      "TASK-009"
+    ],
+    [
+      "Panel de solicitudes con el helper compartido",
+      "TASK-012"
+    ],
+    [
+      "Historial de notificaciones en el navegador",
+      "TASK-015"
+    ]
+  ],
+  "executionSummary": {
+    "taskCount": 18,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-005",
+        "TASK-007",
+        "TASK-012"
+      ],
+      [
+        "TASK-003",
+        "TASK-006",
+        "TASK-010",
+        "TASK-013"
+      ],
+      [
+        "TASK-004",
+        "TASK-008",
+        "TASK-009",
+        "TASK-011"
+      ],
+      [
+        "TASK-014",
+        "TASK-016",
+        "TASK-017"
+      ],
+      [
+        "TASK-015"
+      ],
+      [
+        "TASK-018"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-010",
+      "TASK-011",
+      "TASK-014",
+      "TASK-015",
+      "TASK-018"
+    ]
+  },
+  "dependencies": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [
+      "TASK-001",
+      "TASK-002"
+    ],
+    "TASK-004": [
+      "TASK-003"
+    ],
+    "TASK-005": [],
+    "TASK-006": [
+      "TASK-005"
+    ],
+    "TASK-007": [],
+    "TASK-008": [
+      "TASK-006"
+    ],
+    "TASK-009": [
+      "TASK-006"
+    ],
+    "TASK-010": [
+      "TASK-001",
+      "TASK-002"
+    ],
+    "TASK-011": [
+      "TASK-010"
+    ],
+    "TASK-012": [],
+    "TASK-013": [
+      "TASK-001",
+      "TASK-012"
+    ],
+    "TASK-014": [
+      "TASK-010",
+      "TASK-011"
+    ],
+    "TASK-015": [
+      "TASK-004",
+      "TASK-010",
+      "TASK-014"
+    ],
+    "TASK-016": [
+      "TASK-004",
+      "TASK-011",
+      "TASK-013"
+    ],
+    "TASK-017": [
+      "TASK-008",
+      "TASK-009"
+    ],
+    "TASK-018": [
+      "TASK-007",
+      "TASK-015",
+      "TASK-016",
+      "TASK-017"
+    ]
+  }
+}
