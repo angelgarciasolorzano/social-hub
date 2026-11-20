@@ -31,6 +31,9 @@ import {
 
 import { useTranslation } from "@/shared/hooks";
 
+import { buttonVariants } from "@/shared/lib/styling";
+import { cn } from "@/shared/lib/utils";
+
 import type { FriendshipActionResponse, FriendshipState } from "../types/friendshipSearch";
 import FriendshipRemoveDialog from "./FriendshipRemoveDialog";
 
@@ -169,6 +172,11 @@ function FriendshipButton({
           <>
             <Button
               aria-label={processingLabel("accept")}
+              className={cn(
+                buttonVariants.blue,
+                "focus-visible:ring-blue-600/50",
+                pendingAction === "accept" && "disabled:opacity-100",
+              )}
               disabled={friendshipRequest.processing}
               onClick={() => {
                 runAction("accept");
