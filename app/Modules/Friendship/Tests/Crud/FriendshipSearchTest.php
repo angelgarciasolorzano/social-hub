@@ -25,17 +25,6 @@ function searchPeopleAs(TestCase $testCase, User $user, array $query): TestRespo
 }
 
 /**
- * Create a user with the given name.
- */
-function createUserNamed(string $name): User
-{
-    $user = createUser();
-    $user->forceFill(['name' => $name])->save();
-
-    return $user;
-}
-
-/**
  * The search results the page received.
  *
  * @param  TestResponse<Response>  $testResponse

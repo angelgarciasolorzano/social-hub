@@ -41,14 +41,6 @@ function friendshipsStatusColumn(Testable $testable): TextColumn
     return $statusColumn;
 }
 
-function createUserNamed(string $name): User
-{
-    $user = createUser();
-    $user->forceFill(['name' => $name])->save();
-
-    return $user;
-}
-
 beforeEach(function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
