@@ -16,6 +16,7 @@ import { useDateTime, useTranslation } from "@/shared/hooks";
 
 import useNotificationDropdown from "../hooks/useNotificationDropdown";
 import type { Notification } from "../types/notification";
+import NotificationTypeIcon from "./NotificationTypeIcon";
 
 function NotificationDropdown(): JSX.Element {
   const { t, tChoice } = useTranslation();
@@ -139,6 +140,8 @@ function NotificationDropdown(): JSX.Element {
                           isRead ? "bg-muted-foreground/40" : "bg-primary"
                         }`}
                       />
+
+                      <NotificationTypeIcon className="mt-0.5" type={notification.type} />
 
                       <div className="min-w-0 flex-1">
                         {notificationUrl === null ? (

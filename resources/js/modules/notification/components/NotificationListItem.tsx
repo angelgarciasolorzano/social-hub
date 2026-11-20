@@ -10,6 +10,7 @@ import { cn } from "@/shared/lib/utils";
 
 import type { Notification } from "../types/notification";
 import { getNotificationLink } from "../utils/notificationUrl";
+import NotificationTypeIcon from "./NotificationTypeIcon";
 
 interface NotificationListItemProps {
   isMarkingRead: boolean;
@@ -44,6 +45,8 @@ function NotificationListItem({
               isRead ? "bg-muted-foreground/40" : "bg-primary",
             )}
           />
+
+          <NotificationTypeIcon className="mt-0.5" type={notification.type} />
 
           <div className="min-w-0 space-y-2">
             <p className="wrap-break-words text-sm font-medium">{notification.summary}</p>
