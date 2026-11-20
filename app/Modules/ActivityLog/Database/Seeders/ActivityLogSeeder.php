@@ -9,6 +9,7 @@ use App\Modules\ActivityLog\Contracts\ActivityLogEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAdminEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogAuthEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogContentEvent;
+use App\Modules\ActivityLog\Enums\Events\ActivityLogFriendshipEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogLikeEvent;
 use App\Modules\ActivityLog\Enums\Events\ActivityLogTrustedDeviceEvent;
 use App\Modules\ActivityLog\Models\ActivityLog;
@@ -20,6 +21,7 @@ use App\Modules\Announcement\Models\Announcement;
 use App\Modules\Announcement\Models\AnnouncementReview;
 use App\Modules\Comment\Enums\CommentType;
 use App\Modules\Comment\Models\Comment;
+use App\Modules\Friendship\Models\Friendship;
 use App\Modules\Like\Models\Like;
 use App\Modules\Post\Models\Post;
 use App\Providers\AppServiceProvider;
@@ -87,6 +89,7 @@ class ActivityLogSeeder extends Seeder
         $this->seedPostActivity();
         $this->seedCommentActivity();
         $this->seedLikeActivity();
+        $this->seedFriendshipActivity();
         $this->seedTrustedDeviceActivity();
         $this->seedAuthActivity();
         $this->seedAdminActivity();
@@ -148,6 +151,31 @@ class ActivityLogSeeder extends Seeder
                 $this->queue(ActivityLogLikeEvent::Added, $like->user_id, $like->likeable_type, $like->likeable_id, $this->randomPastDate(), web: true);
             }
         });
+    }
+
+    /**
+     * Each seeded friendship was sent by its requester when it was created and, once accepted,
+     * accepted by its receiver at `accepted_at`; the friendship is kept by id, never as the subject.
+     */
+    private function seedFriendshipActivity(): void
+    {
+        Friendship::query()
+            ->select(['id', 'requester_id', 'receiver_id', 'accepted_at', 'created_at'])
+            ->chunkById(self::RECORDS_PER_CHUNK, function (Collection $friendships): void {
+                foreach ($friendships as $friendship) {
+                    $this->queue(ActivityLogFriendshipEvent::RequestSent, $friendship->requester_id, null, null, $friendship->created_at ?? $this->randomPastDate(), [
+                        'friendship_id' => $friendship->id,
+                        'target_user_id' => $friendship->receiver_id,
+                    ], web: true);
+
+                    if ($friendship->accepted_at !== null) {
+                        $this->queue(ActivityLogFriendshipEvent::RequestAccepted, $friendship->receiver_id, null, null, $friendship->accepted_at, [
+                            'friendship_id' => $friendship->id,
+                            'target_user_id' => $friendship->requester_id,
+                        ], web: true);
+                    }
+                }
+            });
     }
 
     /**

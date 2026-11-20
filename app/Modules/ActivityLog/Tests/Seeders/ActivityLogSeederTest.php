@@ -458,3 +458,45 @@ it('never stores review comments or announcement content in activity properties'
         ->not->toContain(ACTIVITY_LOG_SEEDER_SENTINEL_TEXT)
         ->not->toContain(ACTIVITY_LOG_SEEDER_REVIEW_SENTINEL_COMMENT);
 });
+
+it('records every seeded friend request at its creation and every acceptance at its acceptance date', function (): void {
+    $user = createUser();
+    $receiver = createUser();
+    $friendRequest = createFriendRequest($user, $receiver);
+    $friendRequest->forceFill(['created_at' => '2026-10-01 10:00:00'])->save();
+    $friend = createUser();
+    $friendship = createFriendship($friend, $user);
+    $friendship->forceFill(['created_at' => '2026-10-02 10:00:00', 'accepted_at' => '2026-10-03 10:00:00'])->save();
+
+    $this->seed(ActivityLogSeeder::class);
+
+    $friendshipActivities = ActivityLog::query()
+        ->where('log_name', 'friendships')
+        ->oldest()
+        ->get()
+        ->map(fn (ActivityLog $activityLog): array => [
+            $activityLog->event,
+            $activityLog->causer_id,
+            $activityLog->subject_type,
+            $activityLog->properties?->get('friendship_id'),
+            $activityLog->properties?->get('target_user_id'),
+            $activityLog->created_at?->toDateTimeString(),
+        ])
+        ->all();
+
+    expect($friendshipActivities)->toBe([
+        ['friendship.request_sent', $user->id, null, $friendRequest->id, $receiver->id, '2026-10-01 10:00:00'],
+        ['friendship.request_sent', $friend->id, null, $friendship->id, $user->id, '2026-10-02 10:00:00'],
+        ['friendship.request_accepted', $user->id, null, $friendship->id, $friend->id, '2026-10-03 10:00:00'],
+    ])
+        ->and(ActivityLog::query()->where('event', 'friendship.request_accepted')->sole()->properties?->keys()->all())
+        ->toEqualCanonicalizing(['friendship_id', 'target_user_id', 'ip', 'user_agent']);
+});
+
+it('adds no friendship activity without seeded friendships', function (): void {
+    seedActivityLogSourceData($this);
+
+    $this->seed(ActivityLogSeeder::class);
+
+    expect(ActivityLog::query()->where('log_name', 'friendships')->exists())->toBeFalse();
+});
