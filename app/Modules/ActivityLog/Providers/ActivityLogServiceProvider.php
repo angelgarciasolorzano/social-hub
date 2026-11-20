@@ -9,6 +9,7 @@ use App\Modules\ActivityLog\Console\Commands\ActivityLogPurgeCommand;
 use App\Modules\ActivityLog\Listeners\AccountActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\AuthActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\ContentActivitySubscriber;
+use App\Modules\ActivityLog\Listeners\FriendshipActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\LikeActivitySubscriber;
 use App\Modules\ActivityLog\Listeners\TrustedDeviceActivityMirror;
 use Illuminate\Support\Facades\Event;
@@ -52,6 +53,7 @@ class ActivityLogServiceProvider extends ServiceProvider
         Event::subscribe(AuthActivitySubscriber::class);
         Event::subscribe(ContentActivitySubscriber::class);
         Event::subscribe(LikeActivitySubscriber::class);
+        Event::subscribe(FriendshipActivitySubscriber::class);
         Event::subscribe(AccountActivitySubscriber::class);
         Event::listen(TrustedDeviceEventRecorded::class, TrustedDeviceActivityMirror::class);
     }
