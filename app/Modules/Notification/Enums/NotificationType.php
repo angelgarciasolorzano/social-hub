@@ -12,6 +12,10 @@ enum NotificationType: string
 
     case LikesGrouped = 'likes_grouped';
 
+    case FriendRequestReceived = 'friend_request_received';
+
+    case FriendRequestAccepted = 'friend_request_accepted';
+
     /**
      * @return list<string>
      */
