@@ -16,6 +16,7 @@ import { useDateTime, useTranslation } from "@/shared/hooks";
 
 import useNotificationDropdown from "../hooks/useNotificationDropdown";
 import type { Notification } from "../types/notification";
+import NotificationTypeIcon from "./NotificationTypeIcon";
 
 function NotificationDropdown(): JSX.Element {
   const { t, tChoice } = useTranslation();
@@ -25,7 +26,7 @@ function NotificationDropdown(): JSX.Element {
   const popoverTitleId = `${popoverId}-title`;
 
   const {
-    getNotificationPostUrl,
+    getNotificationUrl,
     hasLoadError,
     isLoading,
     isOpen,
@@ -126,7 +127,7 @@ function NotificationDropdown(): JSX.Element {
           ) : (
             <ul aria-label={t("notification/center.dropdown.title")}>
               {notifications.map((notification: Notification) => {
-                const postUrl = getNotificationPostUrl(notification);
+                const notificationUrl = getNotificationUrl(notification);
                 const isRead = notification.readAt !== null;
                 const isMarkingRead = markingNotificationId === notification.id;
 
@@ -140,15 +141,17 @@ function NotificationDropdown(): JSX.Element {
                         }`}
                       />
 
+                      <NotificationTypeIcon className="mt-0.5" type={notification.type} />
+
                       <div className="min-w-0 flex-1">
-                        {postUrl === null ? (
+                        {notificationUrl === null ? (
                           <p className="wrap-break-words text-sm font-medium">
                             {notification.summary}
                           </p>
                         ) : (
                           <Link
                             className="wrap-break-words block text-left text-sm font-medium hover:text-primary focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                            href={postUrl}
+                            href={notificationUrl}
                             onClick={(event) => {
                               if (isModifiedClick(event)) {
                                 return;
@@ -179,7 +182,7 @@ function NotificationDropdown(): JSX.Element {
                           </time>
                         </div>
 
-                        {postUrl === null && (
+                        {notificationUrl === null && (
                           <p className="mt-1 text-xs text-muted-foreground">
                             {t("notification/center.target.content_unavailable")}
                           </p>

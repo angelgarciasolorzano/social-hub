@@ -1,14 +1,17 @@
-import type { JSX } from "react";
-import { useCallback, useEffect, useState } from "react";
+import type { JSX, RefObject } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
 import { useEchoNotification } from "@laravel/echo-react";
 import { toast } from "sonner";
 
+import type { FriendshipState } from "@/modules/friendship/types/friendshipSearch";
+import { reloadFriendshipDependentProps } from "@/modules/friendship/utils/reloadFriendshipDependentProps";
+
 import { useNotificationStore } from "../stores/notificationStore";
 import { isNotificationType } from "../types/notification";
-import type { Notification } from "../types/notification";
+import type { Notification, NotificationType } from "../types/notification";
 
 type NotificationBroadcastData = Pick<Notification, "actors" | "summary" | "target">;
 
@@ -24,12 +27,19 @@ interface NotificationBroadcastDeletion extends NotificationBroadcastEnvelope {
 type NotificationBroadcastPayload = NotificationBroadcastEnvelope &
   (NotificationBroadcastData | { deleted: true });
 
+const FRIENDSHIP_STATE_OF_NOTIFICATION_TYPE: Partial<Record<NotificationType, FriendshipState>> = {
+  friend_request_accepted: "friends",
+  friend_request_received: "request_received",
+};
+
 interface NotificationRealtimeListenerProps {
+  initialComponent: string;
   initialUnreadNotificationsCount: number | undefined;
   initialUserId: number | null;
 }
 
 interface AuthenticatedNotificationListenerProps {
+  componentRef: RefObject<string>;
   unreadNotificationsCount: number | undefined;
   userId: number;
 }
@@ -63,9 +73,12 @@ function unreadCountFromPageProps(pageProps: Record<string, unknown>): number | 
 }
 
 function NotificationRealtimeListener({
+  initialComponent,
   initialUnreadNotificationsCount,
   initialUserId,
 }: NotificationRealtimeListenerProps): JSX.Element | null {
+  const componentRef = useRef<string>(initialComponent);
+
   const [userId, setUserId] = useState<number | null>(initialUserId);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number | undefined>(
     initialUnreadNotificationsCount,
@@ -74,6 +87,8 @@ function NotificationRealtimeListener({
   useEffect(() => {
     return router.on("navigate", (event) => {
       const pageProps = event.detail.page.props as Record<string, unknown>;
+
+      componentRef.current = event.detail.page.component;
 
       setUserId(userIdFromPageProps(pageProps));
       setUnreadNotificationsCount(unreadCountFromPageProps(pageProps));
@@ -86,6 +101,7 @@ function NotificationRealtimeListener({
 
   return (
     <AuthenticatedNotificationListener
+      componentRef={componentRef}
       key={userId}
       unreadNotificationsCount={unreadNotificationsCount}
       userId={userId}
@@ -94,6 +110,7 @@ function NotificationRealtimeListener({
 }
 
 function AuthenticatedNotificationListener({
+  componentRef,
   unreadNotificationsCount,
   userId,
 }: AuthenticatedNotificationListenerProps): null {
@@ -111,9 +128,15 @@ function AuthenticatedNotificationListener({
         return;
       }
 
+      const friendshipState = FRIENDSHIP_STATE_OF_NOTIFICATION_TYPE[payload.type];
+
       if (isNotificationDeletionPayload(payload)) {
-        if (payload.type === "likes_grouped") {
+        if (payload.type === "likes_grouped" || payload.type === "friend_request_received") {
           removeNotification(payload.id);
+        }
+
+        if (friendshipState !== undefined) {
+          reloadFriendshipDependentProps(componentRef.current, "none");
         }
 
         return;
@@ -132,8 +155,12 @@ function AuthenticatedNotificationListener({
       if (receiveNotification(notification)) {
         toast.info(notification.summary);
       }
+
+      if (friendshipState !== undefined) {
+        reloadFriendshipDependentProps(componentRef.current, friendshipState);
+      }
     },
-    [receiveNotification, removeNotification],
+    [componentRef, receiveNotification, removeNotification],
   );
 
   useEchoNotification<NotificationBroadcastData | { deleted: true }>(

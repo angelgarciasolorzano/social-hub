@@ -42,6 +42,8 @@ return [
         'mark_read' => 'Mark as read',
         'open_post' => 'Open related post',
         'open_comment' => 'Open related comment',
+        'open_friend_requests' => 'Open friend requests',
+        'open_profile' => 'Open profile',
         'view_all' => 'View all notifications',
     ],
 
@@ -68,5 +70,15 @@ return [
         'reply_to_comment' => ':actor replied to your comment',
         'liked_post' => '{0}No one liked your post|{1}:actor liked your post|{2}:actor and one other person liked your post|[3,*]:actor and :others others liked your post',
         'liked_comment' => '{0}No one liked your comment|{1}:actor liked your comment|{2}:actor and one other person liked your comment|[3,*]:actor and :others others liked your comment',
+        'friend_request_received' => ':actor sent you a friend request',
+        'friend_request_accepted' => ':actor accepted your friend request',
+    ],
+
+    'types' => [
+        'comment_on_post' => 'Comment',
+        'comment_reply' => 'Reply',
+        'likes_grouped' => 'Likes',
+        'friend_request_received' => 'Friend request',
+        'friend_request_accepted' => 'New friend',
     ],
 ];

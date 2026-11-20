@@ -14,6 +14,8 @@ enum ActivityLogName: string
 
     case Likes = 'likes';
 
+    case Friendships = 'friendships';
+
     case TrustedDevices = 'trusted_devices';
 
     case Account = 'account';

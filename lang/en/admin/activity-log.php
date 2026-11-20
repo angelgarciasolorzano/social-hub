@@ -85,6 +85,7 @@ return [
         'auth' => 'Auth',
         'content' => 'Content',
         'likes' => 'Likes',
+        'friendships' => 'Friendships',
         'trusted_devices' => 'Trusted Devices',
         'account' => 'Account',
         'admin' => 'Admin',
@@ -111,6 +112,13 @@ return [
         'likes' => [
             'added' => 'Like Added',
             'removed' => 'Like Removed',
+        ],
+        'friendship' => [
+            'request_sent' => 'Friend Request Sent',
+            'request_accepted' => 'Friend Request Accepted',
+            'request_declined' => 'Friend Request Declined',
+            'request_canceled' => 'Friend Request Canceled',
+            'removed' => 'Friendship Removed',
         ],
         'trusted_devices' => [
             'created' => 'Trusted Device Added',

@@ -37,7 +37,7 @@ How the disks are wired is described in [infrastructure.md](../architecture/infr
 
 ## Activity log retention
 
-`SOCIALHUB_ACTIVITY_LOG_<LOG>_RETENTION_DAYS` sets the days each log is kept before `activity-log:purge` deletes it (defaults: auth 180, content 365, likes 30, trusted_devices 180, account 365, admin 730). See [activity-log.md](../architecture/modules/activity-log.md).
+`SOCIALHUB_ACTIVITY_LOG_<LOG>_RETENTION_DAYS` sets the days each log is kept before `activity-log:purge` deletes it (defaults: auth 180, content 365, likes 30, friendships 365, trusted_devices 180, account 365, admin 730). See [activity-log.md](../architecture/modules/activity-log.md).
 
 ## Friendships
 

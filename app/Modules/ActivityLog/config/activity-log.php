@@ -19,6 +19,7 @@ return [
         'auth' => (int) env('SOCIALHUB_ACTIVITY_LOG_AUTH_RETENTION_DAYS', 180),
         'content' => (int) env('SOCIALHUB_ACTIVITY_LOG_CONTENT_RETENTION_DAYS', 365),
         'likes' => (int) env('SOCIALHUB_ACTIVITY_LOG_LIKES_RETENTION_DAYS', 30),
+        'friendships' => (int) env('SOCIALHUB_ACTIVITY_LOG_FRIENDSHIPS_RETENTION_DAYS', 365),
         'trusted_devices' => (int) env('SOCIALHUB_ACTIVITY_LOG_TRUSTED_DEVICES_RETENTION_DAYS', 180),
         'account' => (int) env('SOCIALHUB_ACTIVITY_LOG_ACCOUNT_RETENTION_DAYS', 365),
         'admin' => (int) env('SOCIALHUB_ACTIVITY_LOG_ADMIN_RETENTION_DAYS', 730),

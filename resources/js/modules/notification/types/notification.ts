@@ -1,4 +1,10 @@
-const supportedNotificationTypes = ["comment_on_post", "comment_reply", "likes_grouped"] as const;
+const supportedNotificationTypes = [
+  "comment_on_post",
+  "comment_reply",
+  "likes_grouped",
+  "friend_request_received",
+  "friend_request_accepted",
+] as const;
 
 export type NotificationType = (typeof supportedNotificationTypes)[number];
 

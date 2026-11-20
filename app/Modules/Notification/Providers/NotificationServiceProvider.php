@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Notification\Providers;
 
 use App\Modules\Notification\Listeners\CommentNotificationSubscriber;
+use App\Modules\Notification\Listeners\FriendshipNotificationSubscriber;
 use App\Modules\Notification\Listeners\LikeNotificationSubscriber;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -28,5 +29,6 @@ class NotificationServiceProvider extends ServiceProvider
     {
         Event::subscribe(CommentNotificationSubscriber::class);
         Event::subscribe(LikeNotificationSubscriber::class);
+        Event::subscribe(FriendshipNotificationSubscriber::class);
     }
 }

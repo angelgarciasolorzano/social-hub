@@ -24,8 +24,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | Friendship | `app/Modules/Friendship/` | One row per pair of users, friend requests (JSON actions), cooldown after a decline, people search and friends pages with infinite scroll, the reusable friendship button, the profile's friendship data and the sidebars' friend requests | [friendship.md](docs/architecture/modules/friendship.md) |
 | Like | `app/Modules/Like/` | Polymorphic likes on posts and comments (JSON toggle endpoint) | [content.md](docs/architecture/modules/content.md) |
 | Announcement | `app/Modules/Announcement/` | System announcements from the panel, approval workflow, toast/dialog display | [announcement.md](docs/architecture/modules/announcement.md) |
-| Notification | `app/Modules/Notification/` | Real-time React notification center (Reverb, private channel, history page) | [notification.md](docs/architecture/modules/notification.md) |
-| ActivityLog | `app/Modules/ActivityLog/` | Activity log of user actions and the administrative audit | [activity-log.md](docs/architecture/modules/activity-log.md) |
+| Notification | `app/Modules/Notification/` | Real-time React notification center (Reverb, private channel, history page): comments, replies, grouped likes and friend requests received or accepted, with a link and an icon per type | [notification.md](docs/architecture/modules/notification.md) |
+| ActivityLog | `app/Modules/ActivityLog/` | Activity log of user actions (auth, content, likes, friendships, account) and the administrative audit | [activity-log.md](docs/architecture/modules/activity-log.md) |
 | Admin | `app/Modules/Admin/` | System module: Filament panel, roles and permissions, backups, Admin commands | [admin.md](docs/architecture/modules/admin.md) |
 
 Cross-cutting documents: [languages (panel and application)](docs/architecture/i18n.md) and [global infrastructure, morph map, media, seeders, test infrastructure, frontend layout and tooling](docs/architecture/infrastructure.md).
