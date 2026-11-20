@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\DB;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -109,6 +110,38 @@ class Post extends Model implements HasMedia
     public function likes(): MorphMany
     {
         return $this->morphMany(Like::class, Like::MORPH_COLUMN);
+    }
+
+    /**
+     * Delete the post with everything hanging from it that no foreign key cascades: the likes of the
+     * post, its comments and their replies (tombstones included) and the likes of those comments.
+     * Deleting the post through Eloquent lets MediaLibrary remove its image.
+     */
+    public function deleteWithEngagement(): void
+    {
+        DB::transaction(function (): void {
+            $rootCommentIds = $this->comments()->withTrashed()->pluck('id')->all();
+
+            $replyIds = Comment::withTrashed()
+                ->where('commentable_type', Comment::MORPH_NAME)
+                ->whereIn('commentable_id', $rootCommentIds)
+                ->pluck('id')
+                ->all();
+
+            $commentIds = [...$replyIds, ...$rootCommentIds];
+
+            Like::query()
+                ->where('likeable_type', Comment::MORPH_NAME)
+                ->whereIn('likeable_id', $commentIds)
+                ->delete();
+
+            $this->likes()->delete();
+
+            Comment::withTrashed()->whereKey($replyIds)->forceDelete();
+            Comment::withTrashed()->whereKey($rootCommentIds)->forceDelete();
+
+            $this->delete();
+        });
     }
 
     /**
