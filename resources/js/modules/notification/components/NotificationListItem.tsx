@@ -2,8 +2,6 @@ import type { JSX } from "react";
 
 import { Link } from "@inertiajs/react";
 
-import { show as showPost } from "@/shared/wayfinder/actions/App/Modules/Post/Controllers/PostController";
-
 import { Button } from "@/shared/components/shadcn/ui/button";
 
 import { useDateTime, useTranslation } from "@/shared/hooks";
@@ -11,6 +9,7 @@ import { useDateTime, useTranslation } from "@/shared/hooks";
 import { cn } from "@/shared/lib/utils";
 
 import type { Notification } from "../types/notification";
+import { getNotificationLink } from "../utils/notificationUrl";
 
 interface NotificationListItemProps {
   isMarkingRead: boolean;
@@ -27,17 +26,7 @@ function NotificationListItem({
 }: NotificationListItemProps): JSX.Element {
   const { formatFullDate, fromNow } = useDateTime();
   const { t } = useTranslation();
-  const postId = notification.target.postId;
-  const commentId = notification.target.commentId;
-  const postUrl =
-    postId === null
-      ? null
-      : showPost(postId, {
-          query:
-            commentId === null
-              ? { comments_post: postId }
-              : { comments_post: postId, replies_comment: commentId },
-        }).url;
+  const notificationLink = getNotificationLink(notification);
 
   return (
     <li>
@@ -77,20 +66,16 @@ function NotificationListItem({
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 pl-5 sm:pl-0">
-          {postUrl === null ? (
+          {notificationLink === null ? (
             <span className="text-sm text-muted-foreground">
               {t("notification/center.target.content_unavailable")}
             </span>
           ) : (
             <Link
               className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-              href={postUrl}
+              href={notificationLink.url}
             >
-              {t(
-                commentId === null
-                  ? "notification/center.actions.open_post"
-                  : "notification/center.actions.open_comment",
-              )}
+              {t(notificationLink.labelKey)}
             </Link>
           )}
 
