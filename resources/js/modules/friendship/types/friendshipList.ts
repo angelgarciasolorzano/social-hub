@@ -1,5 +1,7 @@
 import type { FriendshipState } from "./friendshipSearch";
 
+export type FriendshipListSort = "name" | "recent";
+
 export type FriendshipListTab = "friends" | "received" | "sent";
 
 export interface FriendshipListUser {
@@ -11,6 +13,7 @@ export interface FriendshipListUser {
 export interface FriendshipListItem {
   friendshipId: number;
   friendshipState: FriendshipState;
+  mutualFriendsCount: number;
   since: null | string;
   user: FriendshipListUser;
 }
@@ -21,6 +24,7 @@ export interface FriendshipListItemCollection {
 
 export interface FriendshipListFilters {
   q: string;
+  sort: FriendshipListSort;
   tab: FriendshipListTab;
 }
 

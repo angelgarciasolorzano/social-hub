@@ -62,7 +62,7 @@ function Friends(props: FriendsProps): JSX.Element {
 
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
 
-  const { changeTab, committedFilters, isLoading, pendingTab, term, updateTerm } =
+  const { changeTab, committedFilters, isLoading, loadingTab, term, updateTerm } =
     useFriendsFilters(filters);
 
   const listKey = `${committedFilters.tab}:${committedFilters.q}`;
@@ -135,7 +135,7 @@ function Friends(props: FriendsProps): JSX.Element {
           <TabsList aria-label={t("friendship/friends.tabs.label")} className="w-full">
             {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
               <TabsTrigger key={friendshipListTab} value={friendshipListTab}>
-                {pendingTab === friendshipListTab && (
+                {loadingTab === friendshipListTab && (
                   <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
                 )}
 
@@ -165,7 +165,7 @@ function Friends(props: FriendsProps): JSX.Element {
             </label>
 
             <InputGroupAddon>
-              {isLoading && pendingTab === null ? (
+              {isLoading && loadingTab === null ? (
                 <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
               ) : (
                 <SearchIcon aria-hidden="true" className="size-4" />
