@@ -1,21 +1,28 @@
+import type { JSX } from "react";
+
 import { useDialog } from "@/shared/hooks/useDialog";
 
+import HomeMobileNavigation from "../sidebar/HomeMobileNavigation";
 import HomeNotificationHeader from "./HomeNotificationHeader";
 import HomePostHeader from "./HomePostHeader";
 import HomeProfileHeader from "./HomeProfileHeader";
 import HomeSearchHeader from "./HomeSearchHeader";
 
-function HomeHeader() {
+function HomeHeader(): JSX.Element {
   return (
     <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3.5">
-      <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">SOCIAL HUB</h3>
+      <div className="flex items-center gap-1">
+        <HomeMobileNavigation />
+
+        <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">SOCIAL HUB</h3>
+      </div>
 
       <HeaderAction />
     </div>
   );
 }
 
-function HeaderAction() {
+function HeaderAction(): JSX.Element {
   const { open: isOpenModal, setOpen: setIsOpenModal } = useDialog();
 
   return (
