@@ -3,10 +3,11 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Head, router } from "@inertiajs/react";
 
-import { SearchIcon, X } from "lucide-react";
+import { KeyboardIcon, SearchIcon, X } from "lucide-react";
 
 import { HomeLayout } from "@/modules/home";
 
+import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   InputGroup,
   InputGroupAddon,
@@ -29,7 +30,9 @@ import { cn } from "@/shared/lib/utils";
 import FriendRequestsHighlight from "./components/FriendRequestsHighlight";
 import FriendsEmptyState from "./components/FriendsEmptyState";
 import FriendshipCardGrid from "./components/FriendshipCardGrid";
+import FriendsKeyboardShortcutsDialog from "./components/FriendsKeyboardShortcutsDialog";
 import { useFriendsFilters } from "./hooks/useFriendsFilters";
+import { useFriendsShortcuts } from "./hooks/useFriendsShortcuts";
 import type {
   FriendshipListFilters,
   FriendshipListItem,
@@ -74,18 +77,49 @@ function Friends(props: FriendsProps): JSX.Element {
 
   const filterInputId = useId();
 
-  const filterInputRef = useRef<HTMLInputElement | null>(null);
+  const [filterInput, setFilterInput] = useState<HTMLInputElement | null>(null);
+
+  const [isShortcutsDialogOpen, setIsShortcutsDialogOpen] = useState<boolean>(false);
+
+  const tabChangedByShortcutRef = useRef<boolean>(false);
 
   const focusFilter = (): void => {
-    filterInputRef.current?.focus();
+    filterInput?.focus();
+  };
+
+  const focusFilterAfterTabLoad = (): void => {
+    if (tabChangedByShortcutRef.current) {
+      tabChangedByShortcutRef.current = false;
+
+      return;
+    }
+
+    focusFilter();
   };
 
   const { changeSort, changeTab, committedFilters, isLoading, loadingTab, sort, term, updateTerm } =
-    useFriendsFilters(filters, { onTabLoaded: focusFilter });
+    useFriendsFilters(filters, { onTabLoaded: focusFilterAfterTabLoad });
 
   useEffect(() => {
-    filterInputRef.current?.focus();
-  }, []);
+    filterInput?.focus();
+  }, [filterInput]);
+
+  useFriendsShortcuts({
+    enabled: !isShortcutsDialogOpen,
+    filterInput,
+    onChangeTab: (tab) => {
+      tabChangedByShortcutRef.current = tab !== (loadingTab ?? committedFilters.tab);
+
+      changeTab(tab);
+    },
+    onFocusFilter: focusFilter,
+    onOpenHelp: () => {
+      setIsShortcutsDialogOpen(true);
+    },
+    onToggleSort: () => {
+      changeSort(sort === "recent" ? "name" : "recent");
+    },
+  });
 
   const listKey = `${committedFilters.tab}:${committedFilters.q}:${committedFilters.sort}`;
 
@@ -216,7 +250,7 @@ function Friends(props: FriendsProps): JSX.Element {
                     updateTerm(event.target.value);
                   }}
                   placeholder={t("friendship/friends.filter.placeholder")}
-                  ref={filterInputRef}
+                  ref={setFilterInput}
                   type="text"
                   value={term}
                 />
@@ -255,6 +289,19 @@ function Friends(props: FriendsProps): JSX.Element {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Button
+                aria-label={t("friendship/friends.shortcuts.open")}
+                className="hidden shrink-0 md:inline-flex"
+                onClick={() => {
+                  setIsShortcutsDialogOpen(true);
+                }}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <KeyboardIcon aria-hidden="true" />
+              </Button>
             </div>
           </div>
 
@@ -273,6 +320,11 @@ function Friends(props: FriendsProps): JSX.Element {
           ))}
         </Tabs>
       </main>
+
+      <FriendsKeyboardShortcutsDialog
+        onOpenChange={setIsShortcutsDialogOpen}
+        open={isShortcutsDialogOpen}
+      />
     </HomeLayout>
   );
 }

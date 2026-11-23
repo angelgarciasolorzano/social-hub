@@ -79,6 +79,8 @@ return [
         'sent_tab' => 'Go to Sent',
         'toggle_sort' => 'Switch between most recent and name',
         'show_help' => 'Show this help',
+        'leave_filter' => 'Leave the name filter so the shortcuts work',
+        'close' => 'Close',
     ],
 
     'validation' => [

@@ -79,6 +79,8 @@ return [
         'sent_tab' => 'Ir a Enviadas',
         'toggle_sort' => 'Cambiar entre más recientes y nombre',
         'show_help' => 'Ver esta ayuda',
+        'leave_filter' => 'Salir del filtro para usar los atajos',
+        'close' => 'Cerrar',
     ],
 
     'validation' => [
