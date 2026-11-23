@@ -34,11 +34,12 @@ function HomeSidebarLeft(): JSX.Element {
 }
 
 interface HomeNavigationListProps {
+  hidesSectionLabel?: boolean;
   onNavigate?: () => void;
 }
 
 export function HomeNavigationList(props: HomeNavigationListProps): JSX.Element {
-  const { onNavigate } = props;
+  const { hidesSectionLabel = false, onNavigate } = props;
 
   const { t } = useTranslation();
 
@@ -48,9 +49,11 @@ export function HomeNavigationList(props: HomeNavigationListProps): JSX.Element 
 
   return (
     <div className="space-y-2">
-      <p className="px-3 text-xs font-medium text-muted-foreground">
-        {t("home/sidebar.navigation.section")}
-      </p>
+      {!hidesSectionLabel && (
+        <p className="px-3 text-xs font-medium text-muted-foreground">
+          {t("home/sidebar.navigation.section")}
+        </p>
+      )}
 
       <ul className="space-y-0.5">
         {homeSidebarNavigationItems.map((navigationItem) => {

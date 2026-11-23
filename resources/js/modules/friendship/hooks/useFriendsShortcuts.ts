@@ -78,12 +78,16 @@ export function useFriendsShortcuts({
 }
 
 /**
- * Runs the action unless a dialog, a menu or an open select list is on screen, so a shortcut never
- * acts behind them.
+ * Runs the action unless a dialog, a menu or a select list is open, so a shortcut never acts behind
+ * them. Only `data-state="open"` counts: a dialog that is still animating out stays in the DOM.
  */
 function whenNothingIsOpen(action: () => void): () => void {
   return (): void => {
-    if (document.querySelector('[role="dialog"], [role="menu"], [role="listbox"]') !== null) return;
+    const openOverlay = document.querySelector(
+      '[role="dialog"][data-state="open"], [role="menu"][data-state="open"], [role="listbox"][data-state="open"]',
+    );
+
+    if (openOverlay !== null) return;
 
     action();
   };

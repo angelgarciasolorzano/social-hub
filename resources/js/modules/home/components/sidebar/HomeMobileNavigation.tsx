@@ -59,6 +59,7 @@ function HomeMobileNavigation(): JSX.Element {
 
         <nav aria-label={t("home/sidebar.navigation.label")}>
           <HomeNavigationList
+            hidesSectionLabel
             onNavigate={() => {
               setIsOpen(false);
             }}
