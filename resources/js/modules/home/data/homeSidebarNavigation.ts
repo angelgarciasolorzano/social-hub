@@ -1,5 +1,5 @@
-import type { IconType } from "react-icons";
-import { LuBell, LuHouse, LuSearch, LuUserRound, LuUsers } from "react-icons/lu";
+import type { LucideIcon } from "lucide-react";
+import { BellIcon, HouseIcon, SearchIcon, UserRoundIcon, UsersIcon } from "lucide-react";
 
 import { home } from "@/shared/wayfinder/routes";
 import { index as friendshipsIndex, search } from "@/shared/wayfinder/routes/friendships";
@@ -11,24 +11,24 @@ export type HomeSidebarBadge = "pendingFriendRequests" | "unreadNotifications";
 export interface HomeSidebarNavigationItem {
   badge?: HomeSidebarBadge;
   href: string;
-  icon: IconType;
+  icon: LucideIcon;
   labelKey: string;
 }
 
 export const homeSidebarNavigationItems: HomeSidebarNavigationItem[] = [
-  { href: home.url(), icon: LuHouse, labelKey: "home/sidebar.navigation.home" },
-  { href: search.url(), icon: LuSearch, labelKey: "home/sidebar.navigation.search" },
+  { href: home.url(), icon: HouseIcon, labelKey: "home/sidebar.navigation.home" },
+  { href: search.url(), icon: SearchIcon, labelKey: "home/sidebar.navigation.search" },
   {
     badge: "pendingFriendRequests",
     href: friendshipsIndex.url(),
-    icon: LuUsers,
+    icon: UsersIcon,
     labelKey: "home/sidebar.navigation.friends",
   },
   {
     badge: "unreadNotifications",
     href: notificationsIndex.url(),
-    icon: LuBell,
+    icon: BellIcon,
     labelKey: "home/sidebar.navigation.notifications",
   },
-  { href: profileIndex.url(), icon: LuUserRound, labelKey: "home/sidebar.navigation.profile" },
+  { href: profileIndex.url(), icon: UserRoundIcon, labelKey: "home/sidebar.navigation.profile" },
 ];
