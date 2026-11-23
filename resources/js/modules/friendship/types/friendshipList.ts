@@ -5,6 +5,7 @@ export type FriendshipListSort = "name" | "recent";
 export type FriendshipListTab = "friends" | "received" | "sent";
 
 export interface FriendshipListUser {
+  coverImage: null | string;
   id: number;
   name: string;
   profilePicture: string;

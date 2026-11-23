@@ -197,7 +197,7 @@ function Friends(props: FriendsProps): JSX.Element {
           }}
           value={selectedTab}
         >
-          <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background/95 px-1 pt-5 pb-3 backdrop-blur supports-backdrop-filter:bg-background/80 md:flex-row md:items-end md:justify-between">
+          <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background px-1 pt-5 pb-3 md:flex-row md:items-end md:justify-between">
             <TabsList
               aria-label={t("friendship/friends.tabs.label")}
               className="h-auto w-full justify-start gap-5 border-b p-0 md:w-fit"

@@ -2,6 +2,8 @@ import type { JSX } from "react";
 
 import { Link } from "@inertiajs/react";
 
+import { ImageIcon } from "lucide-react";
+
 import { show } from "@/shared/wayfinder/routes/profile";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
@@ -10,22 +12,12 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { useDateTime, useTranslation } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
-import { cn } from "@/shared/lib/utils";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import type { FriendshipListItem } from "../types/friendshipList";
 import type { FriendshipState } from "../types/friendshipSearch";
 import FriendshipButton from "./FriendshipButton";
-
-const COVER_COLORS = [
-  "bg-blue-200 dark:bg-blue-900/60",
-  "bg-pink-200 dark:bg-pink-900/60",
-  "bg-green-200 dark:bg-green-900/60",
-  "bg-amber-200 dark:bg-amber-900/60",
-  "bg-violet-200 dark:bg-violet-900/60",
-  "bg-cyan-200 dark:bg-cyan-900/60",
-] as const;
 
 interface FriendshipCardProps {
   friendshipListItem: FriendshipListItem;
@@ -48,13 +40,17 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
         ? t("friendship/friends.row.friends_since", { date: formatFullDate(since) })
         : t("friendship/friends.row.request_sent_at", { date: fromNow(since) });
 
-  const coverColorFor = (userId: number): string => {
-    return COVER_COLORS[userId % COVER_COLORS.length] ?? COVER_COLORS[0];
-  };
-
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground">
-      <div aria-hidden="true" className={cn("h-16", coverColorFor(user.id))} />
+      <div aria-hidden="true" className="h-16 bg-muted">
+        {user.coverImage !== null ? (
+          <img alt="" className="size-full object-cover" loading="lazy" src={user.coverImage} />
+        ) : (
+          <div className="flex size-full items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 text-slate-400 dark:from-slate-800 dark:to-slate-900 dark:text-slate-500">
+            <ImageIcon className="size-5" />
+          </div>
+        )}
+      </div>
 
       <div className="-mt-7 flex flex-1 flex-col gap-3 px-4 pb-4">
         <Avatar className="size-14 border-3 border-card">

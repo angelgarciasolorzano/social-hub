@@ -21,7 +21,7 @@ class FriendshipListItemResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @return array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string}}
+     * @return array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string, coverImage: string|null}}
      */
     #[Override]
     public function toArray(Request $request): array
@@ -39,8 +39,20 @@ class FriendshipListItemResource extends JsonResource
                 'id' => $otherUser->id,
                 'name' => $otherUser->name,
                 'profilePicture' => $otherUser->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+                'coverImage' => $this->coverImageOf($otherUser),
             ],
         ];
+    }
+
+    /**
+     * The URL of the person's own cover image, or null without one so the card draws its placeholder
+     * instead of the collection's fallback. Reads the eager-loaded media, so it runs no query.
+     */
+    private function coverImageOf(User $user): ?string
+    {
+        $coverImageCollection = UserImageType::COVER_IMAGE->value();
+
+        return $user->hasMedia($coverImageCollection) ? $user->getFirstMediaUrl($coverImageCollection) : null;
     }
 
     /**

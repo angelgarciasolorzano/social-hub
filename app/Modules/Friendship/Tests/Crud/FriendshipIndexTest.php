@@ -11,8 +11,10 @@ use App\User\Enums\PreferredLocale;
 use App\User\Enums\UserImageType;
 use App\User\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,7 +46,7 @@ function friendsPageUserNamed(string $name): User
  * The rows the friends page received.
  *
  * @param  TestResponse<Response>  $testResponse
- * @return list<array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string}}>
+ * @return list<array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string, coverImage: string|null}}>
  */
 function friendsPageRows(TestResponse $testResponse): array
 {
@@ -52,7 +54,7 @@ function friendsPageRows(TestResponse $testResponse): array
 
     expect($page)->toBeArray();
 
-    /** @var array{props: array{friendships: array{data: list<array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string}}>}}} $page */
+    /** @var array{props: array{friendships: array{data: list<array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string, coverImage: string|null}}>}}} $page */
     return $page['props']['friendships']['data'];
 }
 
@@ -128,8 +130,24 @@ it("serializes each row with only the other person's public data", function (): 
             'id' => $friend->id,
             'name' => 'Ana Amiga',
             'profilePicture' => $friend->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+            'coverImage' => null,
         ],
     ]]);
+});
+
+it("serializes the other person's own cover image when they have one", function (): void {
+    Storage::fake('public');
+    $user = createUser();
+    $friend = friendsPageUserNamed('Ana Amiga');
+    $friend->addMedia(UploadedFile::fake()->image('cover.jpg'))
+        ->toMediaCollection(UserImageType::COVER_IMAGE->value());
+    createFriendship($friend, $user);
+
+    $rows = friendsPageRows(visitFriendsPageAs($this, $user)->assertOk());
+
+    expect($rows[0]['user']['coverImage'] ?? null)
+        ->toBe($friend->refresh()->getFirstMediaUrl(UserImageType::COVER_IMAGE->value()))
+        ->not->toBe(User::DEFAULT_COVER_IMAGE_PATH);
 });
 
 it('lists in :dataset only its rows, newest first, with the matching state', function (FriendshipListTab $friendshipListTab, string $friendshipState): void {
