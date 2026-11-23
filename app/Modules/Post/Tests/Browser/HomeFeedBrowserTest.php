@@ -5,7 +5,7 @@ declare(strict_types=1);
 use App\User\Enums\PreferredLocale;
 use Tests\TestCase;
 
-it('shows the posts of friends, adds the posts of an accepted request and hides the posts of strangers', function (): void {
+it('shows the posts of friends, adds the posts of a request accepted on the friends page and hides the posts of strangers', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     $user = createUser();
@@ -26,7 +26,11 @@ it('shows the posts of friends, adds the posts of an accepted request and hides 
         ->assertDontSee('A post from the requester')
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'home/feed.states.end'));
 
-    $webpage->click('aside li:first-of-type button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
+    visit(route('friendships.index', absolute: false))
+        ->click('section li button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
+        ->assertScript('document.querySelector("main section") === null');
+
+    $webpage = visit(route('home', absolute: false))
         ->assertSee('A post from the requester')
         ->assertSee('A post from a friend')
         ->assertDontSee('A post from a stranger')

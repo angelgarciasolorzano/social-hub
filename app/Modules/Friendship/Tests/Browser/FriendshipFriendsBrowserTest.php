@@ -28,7 +28,15 @@ function friendsBadgeScript(): string
     return 'document.querySelector(\'nav a[href="/friendships"] span[aria-hidden="true"]\')?.textContent ?? null';
 }
 
-it('accepts a request from the sidebar, removes a friend, switches tabs and accepts two requests at once from the list', function (): void {
+/**
+ * The script that reads the number shown on the counter of a friends page tab, with its color classes.
+ */
+function friendsTabCountScript(string $tabLabel): string
+{
+    return '(() => { const count = [...document.querySelectorAll(\'[role="tab"]\')].find((tab) => tab.textContent.startsWith("'.$tabLabel.'"))?.querySelector(\'span[aria-hidden="true"]\'); return count === undefined || count === null ? null : count.textContent + "|" + count.classList.contains("bg-blue-100"); })()';
+}
+
+it('accepts a request from the requests block, removes a friend, switches tabs and accepts two requests at once from the cards', function (): void {
     /** @var TestCase $testCase */
     $testCase = $this;
     $user = createUser();
@@ -46,18 +54,21 @@ it('accepts a request from the sidebar, removes a friend, switches tabs and acce
 
     $testCase->actingAs($user);
 
-    $webpage = visit(route('home', absolute: false))
-        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'home/sidebar.friend_requests.title'))
-        ->assertSee('Ana Request')
-        ->assertScript(friendsBadgeScript(), '3');
-
-    $webpage->click('aside li:first-of-type button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
-        ->assertDontSee('Ana Request')
-        ->assertScript(friendsBadgeScript(), '2');
+    $acceptLabel = translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept');
+    $friendsTabLabel = translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.friends');
 
     $webpage = visit(route('friendships.index', absolute: false))
+        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.requests.title'))
+        ->assertSee('Ana Request')
         ->assertSee('Carla Friend')
-        ->assertSee('Ana Request');
+        ->assertScript(friendsBadgeScript(), '3')
+        ->assertScript(friendsTabCountScript($friendsTabLabel), '1|true');
+
+    $webpage->click('section li:has-text("Ana Request") button:has-text("'.$acceptLabel.'")')
+        ->assertSee('Ana Request')
+        ->assertScript('[...document.querySelectorAll("main article")].some((article) => article.textContent.includes("Ana Request"))')
+        ->assertScript(friendsBadgeScript(), '2')
+        ->assertScript(friendsTabCountScript($friendsTabLabel), '2|true');
 
     $webpage->click('[aria-label="'.str_replace(':name', 'Carla Friend', translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.menu.label')).'"]')
         ->click('[role="menuitem"]')
@@ -65,7 +76,8 @@ it('accepts a request from the sidebar, removes a friend, switches tabs and acce
         ->click('[role="dialog"] [data-slot="dialog-footer"] button:last-child')
         ->assertDontSee(str_replace(':name', 'Carla Friend', translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.remove_dialog.title')))
         ->assertDontSee('Carla Friend')
-        ->assertSee('Ana Request');
+        ->assertSee('Ana Request')
+        ->assertScript(friendsTabCountScript($friendsTabLabel), '1|true');
 
     $webpage->click('[role="tab"]:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")')
         ->assertQueryStringHas('tab', 'received')
@@ -75,11 +87,13 @@ it('accepts a request from the sidebar, removes a friend, switches tabs and acce
         ->assertScript('document.querySelector(\'[role="tab"][aria-selected="true"]\')?.textContent?.startsWith("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.tabs.received').'")');
 
     // Both rows' actions start in the same tick, so their callbacks come from the same render.
-    $webpage->script('document.querySelectorAll("main article").forEach((article) => [...article.querySelectorAll("button")].find((button) => button.textContent === "'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")?.click())');
+    $webpage->script('document.querySelectorAll("main article").forEach((article) => [...article.querySelectorAll("button")].find((button) => button.textContent === "'.$acceptLabel.'")?.click())');
 
     $webpage->assertDontSee('Bruno Request')
         ->assertDontSee('Dora Request')
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.states.received_empty_title'))
+        ->assertScript('document.querySelector("main section") === null')
+        ->assertScript(friendsBadgeScript(), null)
         ->assertNoJavaScriptErrors();
 
     expect($newerRequest->refresh()->status)->toBe(FriendshipStatus::Accepted)
