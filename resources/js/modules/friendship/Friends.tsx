@@ -1,45 +1,59 @@
 import type { JSX } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 
-import { Loader2Icon, SearchIcon, X } from "lucide-react";
+import { SearchIcon, X } from "lucide-react";
 
 import { HomeLayout } from "@/modules/home";
 
-import { search } from "@/shared/wayfinder/routes/friendships";
-
-import { Button } from "@/shared/components/shadcn/ui/button";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/shadcn/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/shadcn/ui/tabs";
-import VirtualInfiniteList from "@/shared/components/VirtualInfiniteList";
 
 import { useTranslation } from "@/shared/hooks";
 
-import FriendshipListRow from "./components/FriendshipListRow";
+import { cn } from "@/shared/lib/utils";
+
+import FriendRequestsHighlight from "./components/FriendRequestsHighlight";
+import FriendsEmptyState from "./components/FriendsEmptyState";
+import FriendshipCardGrid from "./components/FriendshipCardGrid";
 import { useFriendsFilters } from "./hooks/useFriendsFilters";
 import type {
   FriendshipListFilters,
   FriendshipListItem,
   FriendshipListItemCollection,
+  FriendshipListSort,
   FriendshipListTab,
   FriendshipTabCounts,
 } from "./types/friendshipList";
 import type { FriendshipState } from "./types/friendshipSearch";
 
-const ESTIMATED_ROW_HEIGHT = 88;
-
 const FRIENDSHIP_LIST_TABS: FriendshipListTab[] = ["friends", "received", "sent"];
+
+const FRIENDSHIP_LIST_SORTS: FriendshipListSort[] = ["recent", "name"];
 
 const FRIENDSHIP_STATE_OF_TAB: Record<FriendshipListTab, FriendshipState> = {
   friends: "friends",
   received: "request_received",
   sent: "request_sent",
+};
+
+const TAB_COUNT_CLASS_NAMES: Record<FriendshipListTab, string> = {
+  friends: "bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-100",
+  received: "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-100",
+  sent: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100",
 };
 
 interface HiddenFriendships {
@@ -60,12 +74,20 @@ function Friends(props: FriendsProps): JSX.Element {
 
   const filterInputId = useId();
 
-  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
+  const filterInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { changeTab, committedFilters, isLoading, loadingTab, term, updateTerm } =
-    useFriendsFilters(filters);
+  const focusFilter = (): void => {
+    filterInputRef.current?.focus();
+  };
 
-  const listKey = `${committedFilters.tab}:${committedFilters.q}`;
+  const { changeSort, changeTab, committedFilters, isLoading, loadingTab, sort, term, updateTerm } =
+    useFriendsFilters(filters, { onTabLoaded: focusFilter });
+
+  useEffect(() => {
+    filterInputRef.current?.focus();
+  }, []);
+
+  const listKey = `${committedFilters.tab}:${committedFilters.q}:${committedFilters.sort}`;
 
   const [hiddenFriendships, setHiddenFriendships] = useState<HiddenFriendships>({
     friendshipIds: [],
@@ -110,13 +132,15 @@ function Friends(props: FriendsProps): JSX.Element {
     router.reload({ async: true, only: ["tabCounts", "friendRequests"] });
   };
 
+  const selectedTab = loadingTab ?? committedFilters.tab;
+
   return (
-    <HomeLayout contentRef={setScrollElement}>
+    <HomeLayout>
       <Head title={t("friendship/friends.page.title")} />
 
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-2 py-4 sm:px-4">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight">
             {t("friendship/friends.page.title")}
           </h1>
 
@@ -125,106 +149,124 @@ function Friends(props: FriendsProps): JSX.Element {
           </p>
         </header>
 
+        <FriendRequestsHighlight
+          onViewAll={() => {
+            changeTab("received");
+          }}
+        />
+
         <Tabs
           activationMode="manual"
+          className="gap-0"
           onValueChange={(value) => {
             changeTab(value as FriendshipListTab);
           }}
-          value={committedFilters.tab}
+          value={selectedTab}
         >
-          <TabsList aria-label={t("friendship/friends.tabs.label")} className="w-full">
-            {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
-              <TabsTrigger key={friendshipListTab} value={friendshipListTab}>
-                {loadingTab === friendshipListTab && (
-                  <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
-                )}
-
-                {t(`friendship/friends.tabs.${friendshipListTab}`)}
-
-                <span
-                  aria-hidden="true"
-                  className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground tabular-nums"
+          <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background/95 px-1 pt-5 pb-3 backdrop-blur supports-backdrop-filter:bg-background/80 md:flex-row md:items-end md:justify-between">
+            <TabsList
+              aria-label={t("friendship/friends.tabs.label")}
+              className="h-auto w-full justify-start gap-5 border-b p-0 md:w-fit"
+              variant="line"
+            >
+              {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
+                <TabsTrigger
+                  className="flex-none px-0.5 pb-2.5 after:bg-blue-600 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300"
+                  key={friendshipListTab}
+                  value={friendshipListTab}
                 >
-                  {tabCounts[friendshipListTab]}
-                </span>
+                  {t(`friendship/friends.tabs.${friendshipListTab}`)}
 
-                <span className="sr-only">
-                  {tChoice(
-                    `friendship/friends.tabs.${friendshipListTab}_count`,
-                    tabCounts[friendshipListTab],
-                    { count: tabCounts[friendshipListTab] },
-                  )}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "min-w-5 rounded-full px-1.5 text-xs font-semibold tabular-nums",
+                      TAB_COUNT_CLASS_NAMES[friendshipListTab],
+                    )}
+                  >
+                    {tabCounts[friendshipListTab]}
+                  </span>
 
-          <InputGroup className="mt-4">
-            <label className="sr-only" htmlFor={filterInputId}>
-              {t("friendship/friends.filter.label")}
-            </label>
+                  <span className="sr-only">
+                    {tChoice(
+                      `friendship/friends.tabs.${friendshipListTab}_count`,
+                      tabCounts[friendshipListTab],
+                      { count: tabCounts[friendshipListTab] },
+                    )}
+                  </span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-            <InputGroupAddon>
-              {isLoading && loadingTab === null ? (
-                <Loader2Icon aria-hidden="true" className="size-4 animate-spin" />
-              ) : (
-                <SearchIcon aria-hidden="true" className="size-4" />
-              )}
-            </InputGroupAddon>
+            <div className="flex gap-2">
+              <InputGroup className="w-full md:w-64">
+                <label className="sr-only" htmlFor={filterInputId}>
+                  {t("friendship/friends.filter.label")}
+                </label>
 
-            <InputGroupInput
-              autoComplete="off"
-              id={filterInputId}
-              name="q"
-              onChange={(event) => {
-                updateTerm(event.target.value);
-              }}
-              placeholder={t("friendship/friends.filter.placeholder")}
-              type="text"
-              value={term}
-            />
+                <InputGroupAddon>
+                  <SearchIcon aria-hidden="true" className="size-4" />
+                </InputGroupAddon>
 
-            {term !== "" && (
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  aria-label={t("friendship/friends.filter.clear")}
-                  onClick={() => {
-                    updateTerm("");
+                <InputGroupInput
+                  autoComplete="off"
+                  id={filterInputId}
+                  name="q"
+                  onChange={(event) => {
+                    updateTerm(event.target.value);
                   }}
-                  size="icon-xs"
-                >
-                  <X />
-                </InputGroupButton>
-              </InputGroupAddon>
-            )}
-          </InputGroup>
+                  placeholder={t("friendship/friends.filter.placeholder")}
+                  ref={filterInputRef}
+                  type="text"
+                  value={term}
+                />
 
-          {isLoading && (
-            <p className="sr-only" role="status">
-              {t("friendship/friends.states.loading")}
-            </p>
-          )}
+                {term !== "" && (
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      aria-label={t("friendship/friends.filter.clear")}
+                      onClick={() => {
+                        updateTerm("");
+                        focusFilter();
+                      }}
+                      size="icon-xs"
+                    >
+                      <X />
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                )}
+              </InputGroup>
+
+              <Select
+                onValueChange={(value) => {
+                  changeSort(value as FriendshipListSort);
+                }}
+                value={sort}
+              >
+                <SelectTrigger aria-label={t("friendship/friends.sort.label")} className="shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+
+                <SelectContent align="end">
+                  {FRIENDSHIP_LIST_SORTS.map((friendshipListSort) => (
+                    <SelectItem key={friendshipListSort} value={friendshipListSort}>
+                      {t(`friendship/friends.sort.${friendshipListSort}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
-            <TabsContent className="mt-4" key={friendshipListTab} value={friendshipListTab}>
-              {visibleFriendships.length === 0 ? (
+            <TabsContent className="mt-3" key={friendshipListTab} value={friendshipListTab}>
+              {!isLoading && visibleFriendships.length === 0 ? (
                 <FriendsEmptyState committedFilters={committedFilters} />
               ) : (
-                <VirtualInfiniteList
-                  data="friendships"
-                  estimateSize={ESTIMATED_ROW_HEIGHT}
-                  getItemKey={(friendshipListItem) => friendshipListItem.friendshipId}
-                  items={visibleFriendships}
-                  loadingMoreLabel={t("friendship/friends.states.loading_more")}
-                  renderItem={(friendshipListItem) => (
-                    <FriendshipListRow
-                      friendshipListItem={friendshipListItem}
-                      onFriendshipChange={(friendshipState) => {
-                        handleFriendshipChange(friendshipListItem, friendshipState);
-                      }}
-                    />
-                  )}
-                  scrollElement={scrollElement}
+                <FriendshipCardGrid
+                  friendshipListItems={visibleFriendships}
+                  isLoadingTab={isLoading}
+                  onFriendshipChange={handleFriendshipChange}
                 />
               )}
             </TabsContent>
@@ -232,61 +274,6 @@ function Friends(props: FriendsProps): JSX.Element {
         </Tabs>
       </main>
     </HomeLayout>
-  );
-}
-
-interface FriendsEmptyStateProps {
-  committedFilters: FriendshipListFilters;
-}
-
-function FriendsEmptyState(props: FriendsEmptyStateProps): JSX.Element {
-  const { committedFilters } = props;
-
-  const { t } = useTranslation();
-
-  if (committedFilters.q !== "") {
-    return (
-      <FriendsStateMessage
-        description={t("friendship/friends.states.filtered_empty_description")}
-        title={t("friendship/friends.states.filtered_empty_title", { term: committedFilters.q })}
-      />
-    );
-  }
-
-  return (
-    <FriendsStateMessage
-      description={t(`friendship/friends.states.${committedFilters.tab}_empty_description`)}
-      title={t(`friendship/friends.states.${committedFilters.tab}_empty_title`)}
-    >
-      {committedFilters.tab !== "received" && (
-        <Button asChild className="mt-4" size="sm" variant="secondary">
-          <Link href={search()}>
-            <SearchIcon aria-hidden="true" className="size-4" />
-            {t("friendship/friends.states.find_people")}
-          </Link>
-        </Button>
-      )}
-    </FriendsStateMessage>
-  );
-}
-
-interface FriendsStateMessageProps {
-  children?: React.ReactNode;
-  description: string;
-  title: string;
-}
-
-function FriendsStateMessage(props: FriendsStateMessageProps): JSX.Element {
-  const { children, description, title } = props;
-
-  return (
-    <div className="rounded-xl border border-dashed px-6 py-12 text-center">
-      <h2 className="text-lg font-medium">{title}</h2>
-
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{description}</p>
-
-      {children}
-    </div>
   );
 }
 
