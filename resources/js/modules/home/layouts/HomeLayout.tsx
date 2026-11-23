@@ -1,4 +1,4 @@
-import type { PropsWithChildren, Ref } from "react";
+import type { JSX, PropsWithChildren, Ref } from "react";
 
 import HomeHeader from "../components/header/HomeHeader";
 import HomeSidebarLeft from "../components/sidebar/HomeSidebarLeft";
@@ -8,7 +8,7 @@ interface HomeLayoutProps extends PropsWithChildren {
   contentRef?: Ref<HTMLDivElement>;
 }
 
-function HomeLayout({ children, contentRef }: HomeLayoutProps) {
+function HomeLayout({ children, contentRef }: HomeLayoutProps): JSX.Element {
   return (
     <div className="flex h-screen flex-col">
       <HomeHeader />
@@ -16,7 +16,7 @@ function HomeLayout({ children, contentRef }: HomeLayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         <HomeSidebarLeft />
 
-        <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4" ref={contentRef}>
+        <div className="flex flex-1 flex-col overflow-y-auto px-3 py-4 lg:px-6" ref={contentRef}>
           {children}
         </div>
 

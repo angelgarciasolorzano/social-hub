@@ -26,7 +26,7 @@ function HomeSidebarLeft(): JSX.Element {
   return (
     <nav
       aria-label={t("home/sidebar.navigation.label")}
-      className="w-64 shrink-0 overflow-y-auto border-r px-3 py-4"
+      className="hidden w-64 shrink-0 overflow-y-auto border-r px-3 py-4 lg:block"
     >
       <HomeNavigationList />
     </nav>

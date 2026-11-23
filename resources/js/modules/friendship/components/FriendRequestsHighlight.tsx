@@ -136,7 +136,7 @@ function FriendRequestHighlightItem(props: FriendRequestHighlightItemProps): JSX
         <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
       </Avatar>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-40 flex-1 flex-col">
         <Link className="truncate text-sm font-semibold hover:underline" href={show(user.id)}>
           {user.name}
         </Link>

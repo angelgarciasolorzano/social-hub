@@ -14,7 +14,9 @@ function HomeHeader(): JSX.Element {
       <div className="flex items-center gap-1">
         <HomeMobileNavigation />
 
-        <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">SOCIAL HUB</h3>
+        <h3 className="scroll-m-20 text-xl font-semibold tracking-tight whitespace-nowrap sm:text-2xl">
+          SOCIAL HUB
+        </h3>
       </div>
 
       <HeaderAction />
