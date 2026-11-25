@@ -10,7 +10,7 @@ import type { FriendshipState } from "../types/friendshipSearch";
 import FriendshipCard from "./FriendshipCard";
 import FriendshipCardSkeleton from "./FriendshipCardSkeleton";
 
-const GRID_CLASS_NAME = "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3";
+const GRID_CLASS_NAME = "grid grid-cols-1 gap-4 @lg/friends:grid-cols-2 @4xl/friends:grid-cols-3";
 
 const TAB_SKELETON_COUNT = 6;
 

@@ -181,7 +181,7 @@ function Friends(props: FriendsProps): JSX.Element {
     <HomeLayout>
       <Head title={t("friendship/friends.page.title")} />
 
-      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4">
+      <main className="@container/friends mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4">
         <header className="flex flex-wrap items-center gap-4">
           <div
             aria-hidden="true"
@@ -203,8 +203,8 @@ function Friends(props: FriendsProps): JSX.Element {
             </p>
           </div>
 
-          <div className="flex w-full gap-2 sm:w-auto">
-            <Button asChild className="flex-1 sm:flex-none" variant="outline">
+          <div className="flex w-full gap-2 @xl/friends:w-auto">
+            <Button asChild className="flex-1 @xl/friends:flex-none" variant="outline">
               <Link href={search()}>
                 <SearchIcon aria-hidden="true" />
 
@@ -242,10 +242,10 @@ function Friends(props: FriendsProps): JSX.Element {
           }}
           value={selectedTab}
         >
-          <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background px-1 pt-5 pb-3 md:flex-row md:items-end md:justify-between">
+          <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background px-1 pt-5 pb-3 @4xl/friends:flex-row @4xl/friends:items-end @4xl/friends:justify-between">
             <TabsList
               aria-label={t("friendship/friends.tabs.label")}
-              className="h-auto w-full justify-start gap-5 border-b p-0 md:w-fit"
+              className="h-auto w-full justify-start gap-5 border-b p-0 @4xl/friends:w-fit"
               variant="line"
             >
               {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
@@ -277,8 +277,8 @@ function Friends(props: FriendsProps): JSX.Element {
               ))}
             </TabsList>
 
-            <div className="flex gap-2">
-              <InputGroup className="w-full md:w-64">
+            <div className="flex w-full flex-wrap gap-2 @4xl/friends:w-auto @4xl/friends:flex-nowrap">
+              <InputGroup className="w-full @md/friends:w-auto @md/friends:flex-1 @4xl/friends:w-64 @4xl/friends:flex-none">
                 <label className="sr-only" htmlFor={filterInputId}>
                   {t("friendship/friends.filter.label")}
                 </label>
@@ -316,7 +316,11 @@ function Friends(props: FriendsProps): JSX.Element {
                 )}
               </InputGroup>
 
-              <FriendsSortPopover onSortChange={changeSort} sort={sort} />
+              <FriendsSortPopover
+                className="flex-1 @md/friends:flex-none"
+                onSortChange={changeSort}
+                sort={sort}
+              />
 
               <Button
                 aria-label={t("friendship/friends.toolbar.reload")}

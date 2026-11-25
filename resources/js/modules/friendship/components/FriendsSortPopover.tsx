@@ -10,6 +10,8 @@ import { Separator } from "@/shared/components/shadcn/ui/separator";
 
 import { useTranslation } from "@/shared/hooks";
 
+import { cn } from "@/shared/lib/utils";
+
 import type { FriendshipListSort } from "../types/friendshipList";
 
 const FRIENDSHIP_LIST_SORTS: FriendshipListSort[] = ["recent", "name"];
@@ -17,12 +19,13 @@ const FRIENDSHIP_LIST_SORTS: FriendshipListSort[] = ["recent", "name"];
 const DEFAULT_FRIENDSHIP_LIST_SORT: FriendshipListSort = "recent";
 
 interface FriendsSortPopoverProps {
+  className?: string;
   onSortChange: (sort: FriendshipListSort) => void;
   sort: FriendshipListSort;
 }
 
 function FriendsSortPopover(props: FriendsSortPopoverProps): JSX.Element {
-  const { onSortChange, sort } = props;
+  const { className, onSortChange, sort } = props;
 
   const { t } = useTranslation();
 
@@ -33,7 +36,7 @@ function FriendsSortPopover(props: FriendsSortPopoverProps): JSX.Element {
       <PopoverTrigger asChild>
         <Button
           aria-label={`${t("friendship/friends.sort.label")}: ${t(`friendship/friends.sort.${sort}`)}`}
-          className="shrink-0"
+          className={cn("shrink-0", className)}
           type="button"
           variant="outline"
         >

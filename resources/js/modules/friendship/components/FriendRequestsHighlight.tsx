@@ -86,7 +86,7 @@ function FriendRequestsHighlightContent(props: FriendRequestsHighlightProps): JS
 
   return (
     <Card aria-labelledby={titleId} className="gap-4 py-4 shadow-xs" role="region">
-      <CardHeader className="flex items-center gap-3 px-4">
+      <CardHeader className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4">
         <div
           aria-hidden="true"
           className={cn(
@@ -97,7 +97,7 @@ function FriendRequestsHighlightContent(props: FriendRequestsHighlightProps): JS
           <UserPlusIcon className={cn("size-4", iconColorVariants.blue.iconFgClass)} />
         </div>
 
-        <CardTitle className="flex items-center gap-2 text-sm" id={titleId}>
+        <CardTitle className="flex items-center gap-2 text-sm whitespace-nowrap" id={titleId}>
           {t("friendship/friends.requests.title")}
 
           <Badge aria-hidden="true" className="tabular-nums" variant="secondary">
@@ -105,7 +105,7 @@ function FriendRequestsHighlightContent(props: FriendRequestsHighlightProps): JS
           </Badge>
         </CardTitle>
 
-        <CardAction className="ml-auto self-center">
+        <CardAction className="-mr-2 ml-auto self-center">
           <Button asChild size="sm" variant="ghost">
             <Link href={friendshipsIndex({ query: { tab: "received" } })} onClick={handleViewAll}>
               {tChoice("friendship/friends.requests.view_all", friendRequests.pendingCount, {
@@ -121,7 +121,7 @@ function FriendRequestsHighlightContent(props: FriendRequestsHighlightProps): JS
       <CardContent className="px-4">
         <ul
           aria-label={t("friendship/friends.requests.label")}
-          className="grid gap-3 md:grid-cols-2"
+          className="grid gap-3 @2xl/friends:grid-cols-2"
         >
           {friendRequests.recent.map((friendRequest) => (
             <FriendRequestHighlightItem
@@ -210,7 +210,7 @@ function FriendRequestsHighlightSkeleton(): JSX.Element {
 
       <Skeleton aria-hidden="true" className="h-8 w-48" />
 
-      <div aria-hidden="true" className="grid gap-3 md:grid-cols-2">
+      <div aria-hidden="true" className="grid gap-3 @2xl/friends:grid-cols-2">
         <Skeleton className="h-16 rounded-md" />
 
         <Skeleton className="h-16 rounded-md" />
