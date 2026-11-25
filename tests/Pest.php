@@ -28,12 +28,14 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Testing\TestResponse;
 use Livewire\Component;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PragmaRX\Google2FA\Google2FA;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /*
@@ -260,6 +262,33 @@ function inertiaPartialHeaders(TestCase $testCase, string $component, string $pr
         'X-Inertia-Partial-Component' => $component,
         'X-Inertia-Partial-Data' => $prop,
     ];
+}
+
+/**
+ * Follow a full Inertia visit with the request the browser sends for its deferred props, adding the
+ * given props that are not deferred, and return that response. Any answer other than a page (a
+ * redirect, an error) is returned as it is.
+ *
+ * @param  TestResponse<Response>  $testResponse
+ * @param  list<string>  $props
+ * @return TestResponse<Response>
+ */
+function loadInertiaDeferredProps(TestCase $testCase, TestResponse $testResponse, array $props = []): TestResponse
+{
+    if ($testResponse->getStatusCode() !== Response::HTTP_OK) {
+        return $testResponse;
+    }
+
+    /** @var array{component: string, url: string, version: string, deferredProps?: array<string, list<string>>} $page */
+    $page = $testResponse->viewData('page');
+
+    $deferredProps = array_merge(...array_values($page['deferredProps'] ?? []));
+
+    return $testCase->get($page['url'], [
+        'X-Inertia-Version' => $page['version'],
+        'X-Inertia-Partial-Component' => $page['component'],
+        'X-Inertia-Partial-Data' => implode(',', [...$deferredProps, ...$props]),
+    ]);
 }
 
 /**

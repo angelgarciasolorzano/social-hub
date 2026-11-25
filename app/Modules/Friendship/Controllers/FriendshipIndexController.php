@@ -47,10 +47,10 @@ final class FriendshipIndexController extends Controller
 
         return Inertia::render('friendship/pages/Friends', [
             'filters' => ['tab' => $friendshipListTab->value, 'q' => $term, 'sort' => $friendshipListSort->value],
-            'tabCounts' => fn (): array => $this->tabCounts($viewer),
+            'tabCounts' => Inertia::defer(fn (): array => $this->tabCounts($viewer)),
             'friendships' => Inertia::scroll(fn (): AnonymousResourceCollection => FriendshipListItemResource::collection(
                 $this->friendships($viewer, $friendshipListTab, $term, $friendshipListSort),
-            )),
+            ))->defer(),
         ]);
     }
 

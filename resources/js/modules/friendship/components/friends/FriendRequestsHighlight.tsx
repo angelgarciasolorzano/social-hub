@@ -26,7 +26,6 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/shared/components/shadcn/ui/item";
-import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDateTime, useTranslation } from "@/shared/hooks";
 
@@ -41,6 +40,7 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 import type { FriendshipListItem } from "../../types/friendshipList";
 import type { FriendshipState } from "../../types/friendshipSearch";
 import { reloadFriendshipDependentProps } from "../../utils/reloadFriendshipDependentProps";
+import FriendRequestsHighlightSkeleton from "../skeleton/FriendRequestsHighlightSkeleton";
 import FriendshipButton from "../ui/FriendshipButton";
 
 interface FriendRequestsHighlightProps {
@@ -198,24 +198,6 @@ function FriendRequestHighlightItem(props: FriendRequestHighlightItemProps): JSX
         </ItemActions>
       </li>
     </Item>
-  );
-}
-
-function FriendRequestsHighlightSkeleton(): JSX.Element {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex flex-col gap-4 rounded-xl border p-4" role="status">
-      <span className="sr-only">{t("friendship/friends.states.loading")}</span>
-
-      <Skeleton aria-hidden="true" className="h-8 w-48" />
-
-      <div aria-hidden="true" className="grid gap-3 @2xl/friends:grid-cols-2">
-        <Skeleton className="h-16 rounded-md" />
-
-        <Skeleton className="h-16 rounded-md" />
-      </div>
-    </div>
   );
 }
 

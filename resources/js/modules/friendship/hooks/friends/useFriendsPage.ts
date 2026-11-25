@@ -23,6 +23,8 @@ const FRIENDSHIP_STATE_OF_TAB: Record<FriendshipListTab, FriendshipState> = {
 interface UseFriendsPageOptions {
   filters: FriendshipListFilters;
   friendships: FriendshipListItemCollection;
+  isShortcutsDialogOpen: boolean;
+  onOpenShortcuts: () => void;
 }
 
 interface UseFriendsPageReturn {
@@ -36,11 +38,9 @@ interface UseFriendsPageReturn {
   committedFilters: FriendshipListFilters;
   isLoading: boolean;
   isReloading: boolean;
-  isShortcutsDialogOpen: boolean;
   reloadFriendships: () => void;
   selectedTab: FriendshipListTab;
   setFilterInput: (filterInput: HTMLInputElement | null) => void;
-  setIsShortcutsDialogOpen: (isOpen: boolean) => void;
   sort: FriendshipListSort;
   term: string;
   updateTerm: (value: string) => void;
@@ -48,17 +48,18 @@ interface UseFriendsPageReturn {
 }
 
 /**
- * The state of the friends page: the filters, the keyboard shortcuts, the manual reload and the rows
- * hidden after a friendship leaves the tab. The name filter gets the focus on load and after a tab
+ * The state of the friends list once its deferred props arrive: the filters, the keyboard shortcuts
+ * (off while their help is open), the manual reload and the rows hidden after a friendship leaves the
+ * tab. The name filter gets the focus on load and after a tab
  * loads, except when a shortcut changed the tab (the keyboard stays on the page).
  */
 export function useFriendsPage({
   filters,
   friendships,
+  isShortcutsDialogOpen,
+  onOpenShortcuts,
 }: UseFriendsPageOptions): UseFriendsPageReturn {
   const [filterInput, setFilterInput] = useState<HTMLInputElement | null>(null);
-
-  const [isShortcutsDialogOpen, setIsShortcutsDialogOpen] = useState<boolean>(false);
 
   const [isReloading, setIsReloading] = useState<boolean>(false);
 
@@ -101,9 +102,7 @@ export function useFriendsPage({
       changeTab(tab);
     },
     onFocusFilter: focusFilter,
-    onOpenHelp: () => {
-      setIsShortcutsDialogOpen(true);
-    },
+    onOpenHelp: onOpenShortcuts,
     onToggleSort: () => {
       changeSort(sort === "recent" ? "name" : "recent");
     },
@@ -147,11 +146,9 @@ export function useFriendsPage({
     committedFilters,
     isLoading,
     isReloading,
-    isShortcutsDialogOpen,
     reloadFriendships,
     selectedTab,
     setFilterInput,
-    setIsShortcutsDialogOpen,
     sort,
     term,
     updateTerm,

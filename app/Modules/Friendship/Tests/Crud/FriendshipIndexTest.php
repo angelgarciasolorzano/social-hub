@@ -21,14 +21,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
- * Open the friends page as the given user, the way the browser does.
+ * Open the friends page as the given user and load its deferred list and counters, the way the browser
+ * does; the response also carries the filters.
  *
  * @param  array<string, string>  $query
  * @return TestResponse<Response>
  */
 function visitFriendsPageAs(TestCase $testCase, User $user, array $query = []): TestResponse
 {
-    return $testCase->actingAs($user)->get(route('friendships.index', $query));
+    return loadInertiaDeferredProps($testCase, $testCase->actingAs($user)->get(route('friendships.index', $query)), ['filters']);
 }
 
 /**
@@ -99,6 +100,24 @@ function friendsPageQueriesWith(TestCase $testCase, User $user, array $query): i
 
     return $queryCount;
 }
+
+it('renders the page without the list and the counters and defers them with the friend requests', function (): void {
+    $user = createUser();
+    createFriendship($user, createUser());
+
+    $this->actingAs($user)
+        ->get(route('friendships.index'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $assertableInertia): AssertableInertia => $assertableInertia
+            ->component('friendship/pages/Friends')
+            ->has('filters')
+            ->missing('friendships')
+            ->missing('tabCounts')
+            ->loadDeferredProps('default', fn (AssertableInertia $deferredAssertableInertia): AssertableInertia => $deferredAssertableInertia
+                ->has('friendships.data', 1)
+                ->where('tabCounts', ['friends' => 1, 'received' => 0, 'sent' => 0])
+                ->has('friendRequests')));
+});
 
 it('shows the friends tab by default with the filters and the counters', function (): void {
     $user = createUser();

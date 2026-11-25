@@ -1,5 +1,5 @@
 import type { JSX } from "react";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { Head, Link } from "@inertiajs/react";
 
@@ -28,6 +28,7 @@ import FriendsKeyboardShortcutsDialog from "../components/dialog/FriendsKeyboard
 import FriendRequestsHighlight from "../components/friends/FriendRequestsHighlight";
 import FriendsEmptyState from "../components/friends/FriendsEmptyState";
 import FriendsSortPopover from "../components/friends/FriendsSortPopover";
+import FriendsPageSkeleton from "../components/skeleton/FriendsPageSkeleton";
 import { useFriendsPage } from "../hooks/friends/useFriendsPage";
 import type {
   FriendshipListFilters,
@@ -49,14 +50,59 @@ const TAB_COUNT_CLASS_NAMES: Record<FriendshipListTab, string> = {
 
 interface FriendsProps {
   filters: FriendshipListFilters;
-  friendships: FriendshipListItemCollection;
-  tabCounts: FriendshipTabCounts;
+  friendships?: FriendshipListItemCollection;
+  tabCounts?: FriendshipTabCounts;
 }
 
 function Friends(props: FriendsProps): JSX.Element {
   const { filters, friendships, tabCounts } = props;
 
   const { t } = useTranslation();
+
+  const [isShortcutsDialogOpen, setIsShortcutsDialogOpen] = useState<boolean>(false);
+
+  const openShortcutsDialog = (): void => {
+    setIsShortcutsDialogOpen(true);
+  };
+
+  return (
+    <HomeLayout>
+      <Head title={t("friendship/friends.page.title")} />
+
+      <main className="@container/friends mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4">
+        <FriendsHeader onOpenKeyboardShortcuts={openShortcutsDialog} />
+
+        {friendships === undefined || tabCounts === undefined ? (
+          <FriendsPageSkeleton />
+        ) : (
+          <FriendsPageContent
+            filters={filters}
+            friendships={friendships}
+            isShortcutsDialogOpen={isShortcutsDialogOpen}
+            onOpenShortcuts={openShortcutsDialog}
+            tabCounts={tabCounts}
+          />
+        )}
+      </main>
+
+      <FriendsKeyboardShortcutsDialog
+        onOpenChange={setIsShortcutsDialogOpen}
+        open={isShortcutsDialogOpen}
+      />
+    </HomeLayout>
+  );
+}
+
+interface FriendsPageContentProps {
+  filters: FriendshipListFilters;
+  friendships: FriendshipListItemCollection;
+  isShortcutsDialogOpen: boolean;
+  onOpenShortcuts: () => void;
+  tabCounts: FriendshipTabCounts;
+}
+
+function FriendsPageContent(props: FriendsPageContentProps): JSX.Element {
+  const { filters, friendships, isShortcutsDialogOpen, onOpenShortcuts, tabCounts } = props;
 
   const {
     changeFriendship,
@@ -66,71 +112,54 @@ function Friends(props: FriendsProps): JSX.Element {
     committedFilters,
     isLoading,
     isReloading,
-    isShortcutsDialogOpen,
     reloadFriendships,
     selectedTab,
     setFilterInput,
-    setIsShortcutsDialogOpen,
     sort,
     term,
     updateTerm,
     visibleFriendships,
-  } = useFriendsPage({ filters, friendships });
+  } = useFriendsPage({ filters, friendships, isShortcutsDialogOpen, onOpenShortcuts });
 
   return (
-    <HomeLayout>
-      <Head title={t("friendship/friends.page.title")} />
-
-      <main className="@container/friends mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4">
-        <FriendsHeader
-          onOpenKeyboardShortcuts={() => {
-            setIsShortcutsDialogOpen(true);
-          }}
-        />
-
-        <FriendRequestsHighlight
-          onViewAll={() => {
-            changeTab("received");
-          }}
-        />
-
-        <Tabs
-          activationMode="manual"
-          className="gap-0"
-          onValueChange={(value) => {
-            changeTab(value as FriendshipListTab);
-          }}
-          value={selectedTab}
-        >
-          <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background px-1 pt-5 pb-3 @4xl/friends:flex-row @4xl/friends:items-end @4xl/friends:justify-between">
-            <FriendsTabsList tabCounts={tabCounts} />
-
-            <FriendsListControls
-              filterInputRef={setFilterInput}
-              isReloading={isReloading}
-              onClearTerm={clearTerm}
-              onReload={reloadFriendships}
-              onSortChange={changeSort}
-              onTermChange={updateTerm}
-              sort={sort}
-              term={term}
-            />
-          </div>
-
-          <FriendsTabPanels
-            committedFilters={committedFilters}
-            isLoading={isLoading}
-            onFriendshipChange={changeFriendship}
-            visibleFriendships={visibleFriendships}
-          />
-        </Tabs>
-      </main>
-
-      <FriendsKeyboardShortcutsDialog
-        onOpenChange={setIsShortcutsDialogOpen}
-        open={isShortcutsDialogOpen}
+    <>
+      <FriendRequestsHighlight
+        onViewAll={() => {
+          changeTab("received");
+        }}
       />
-    </HomeLayout>
+
+      <Tabs
+        activationMode="manual"
+        className="gap-0"
+        onValueChange={(value) => {
+          changeTab(value as FriendshipListTab);
+        }}
+        value={selectedTab}
+      >
+        <div className="sticky -top-4 z-10 -mx-1 -mt-4 flex flex-col gap-3 bg-background px-1 pt-5 pb-3 @4xl/friends:flex-row @4xl/friends:items-end @4xl/friends:justify-between">
+          <FriendsTabsList tabCounts={tabCounts} />
+
+          <FriendsListControls
+            filterInputRef={setFilterInput}
+            isReloading={isReloading}
+            onClearTerm={clearTerm}
+            onReload={reloadFriendships}
+            onSortChange={changeSort}
+            onTermChange={updateTerm}
+            sort={sort}
+            term={term}
+          />
+        </div>
+
+        <FriendsTabPanels
+          committedFilters={committedFilters}
+          isLoading={isLoading}
+          onFriendshipChange={changeFriendship}
+          visibleFriendships={visibleFriendships}
+        />
+      </Tabs>
+    </>
   );
 }
 

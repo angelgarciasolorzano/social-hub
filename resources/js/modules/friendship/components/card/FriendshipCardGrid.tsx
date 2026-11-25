@@ -5,12 +5,11 @@ import { InfiniteScroll, usePage } from "@inertiajs/react";
 
 import { useTranslation } from "@/shared/hooks";
 
+import { FRIENDSHIP_CARD_GRID_CLASS_NAME } from "../../constants/friendshipCardGrid";
 import type { FriendshipListItem } from "../../types/friendshipList";
 import type { FriendshipState } from "../../types/friendshipSearch";
+import FriendshipCardSkeleton from "../skeleton/FriendshipCardSkeleton";
 import FriendshipCard from "./FriendshipCard";
-import FriendshipCardSkeleton from "./FriendshipCardSkeleton";
-
-const GRID_CLASS_NAME = "grid grid-cols-1 gap-4 @lg/friends:grid-cols-2 @4xl/friends:grid-cols-3";
 
 const TAB_SKELETON_COUNT = 6;
 
@@ -37,7 +36,12 @@ function FriendshipCardGrid(props: FriendshipCardGridProps): JSX.Element {
   const hasNextPage = (scrollProps?.["friendships"]?.nextPage ?? null) !== null;
 
   if (isLoadingTab) {
-    return <FriendshipCardSkeleton className={GRID_CLASS_NAME} count={TAB_SKELETON_COUNT} />;
+    return (
+      <FriendshipCardSkeleton
+        className={FRIENDSHIP_CARD_GRID_CLASS_NAME}
+        count={TAB_SKELETON_COUNT}
+      />
+    );
   }
 
   return (
@@ -47,7 +51,7 @@ function FriendshipCardGrid(props: FriendshipCardGridProps): JSX.Element {
       itemsElement={itemsRef}
       loading={
         <FriendshipCardSkeleton
-          className={`mt-4 ${GRID_CLASS_NAME}`}
+          className={`mt-4 ${FRIENDSHIP_CARD_GRID_CLASS_NAME}`}
           count={NEXT_PAGE_SKELETON_COUNT}
           label={t("friendship/friends.states.loading_more")}
         />
@@ -55,7 +59,7 @@ function FriendshipCardGrid(props: FriendshipCardGridProps): JSX.Element {
       onlyNext
       preserveUrl
     >
-      <div className={GRID_CLASS_NAME} ref={itemsRef}>
+      <div className={FRIENDSHIP_CARD_GRID_CLASS_NAME} ref={itemsRef}>
         {friendshipListItems.map((friendshipListItem) => (
           <FriendshipCard
             friendshipListItem={friendshipListItem}
