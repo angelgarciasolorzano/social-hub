@@ -47,21 +47,16 @@ interface FriendshipStatus {
 interface FriendshipButtonProps {
   friendshipId: null | number;
   friendshipState: FriendshipState;
+  fullWidth?: boolean;
   onChange?: (friendshipState: FriendshipState, friendshipId: null | number) => void;
   userId: number;
   userName: string;
 }
 
-/**
- * The friendship control of a person, one per state: add, a menu to cancel a sent request, accept or
- * decline a received one, and a menu to remove a friend after confirming. Each action shows its result
- * at once and is reverted if the server refuses it (409, 429) or the network fails; a refusal shows the
- * server's message and the state it stored, without Inertia's error modal. The initial state is read
- * once per mount.
- */
 function FriendshipButton({
   friendshipId: initialFriendshipId,
   friendshipState: initialFriendshipState,
+  fullWidth = false,
   onChange,
   userId,
   userName,
@@ -150,12 +145,13 @@ function FriendshipButton({
       : undefined;
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div aria-busy={pendingAction !== null} className="flex gap-2">
+    <div className={cn("flex flex-col gap-1", fullWidth ? "w-full items-stretch" : "items-end")}>
+      <div aria-busy={pendingAction !== null} className={cn("flex gap-2", fullWidth && "w-full")}>
         {friendshipStatus.friendshipState === "none" && (
           <Button
             aria-label={processingLabel("send")}
             disabled={friendshipRequest.processing}
+            className={cn(fullWidth && "flex-1")}
             onClick={() => {
               runAction("send");
             }}
@@ -175,6 +171,7 @@ function FriendshipButton({
               className={cn(
                 buttonVariants.blue,
                 "focus-visible:ring-blue-600/50",
+                fullWidth && "flex-1",
                 pendingAction === "accept" && "disabled:opacity-100",
               )}
               disabled={friendshipRequest.processing}
@@ -190,6 +187,7 @@ function FriendshipButton({
 
             <Button
               aria-label={processingLabel("decline")}
+              className={cn(fullWidth && "flex-1")}
               disabled={friendshipRequest.processing}
               onClick={() => {
                 runAction("decline");
@@ -208,6 +206,7 @@ function FriendshipButton({
           <FriendshipMenu
             actionIcon={LuUserRoundX}
             actionLabel={t("friendship/button.menu.cancel_request")}
+            fullWidth={fullWidth}
             isPending={pendingAction === "cancel"}
             isProcessing={friendshipRequest.processing}
             menuLabel={
@@ -225,6 +224,7 @@ function FriendshipButton({
           <FriendshipMenu
             actionIcon={LuUserRoundMinus}
             actionLabel={t("friendship/button.menu.remove_friend")}
+            fullWidth={fullWidth}
             isPending={pendingAction === "remove"}
             isProcessing={friendshipRequest.processing}
             menuLabel={
@@ -261,6 +261,7 @@ function FriendshipButton({
 interface FriendshipMenuProps {
   actionIcon: typeof LuUserRoundX;
   actionLabel: string;
+  fullWidth: boolean;
   isPending: boolean;
   isProcessing: boolean;
   menuLabel: string;
@@ -276,6 +277,7 @@ interface FriendshipMenuProps {
 function FriendshipMenu({
   actionIcon: ActionMenuIcon,
   actionLabel,
+  fullWidth,
   isPending,
   isProcessing,
   menuLabel,
@@ -288,6 +290,7 @@ function FriendshipMenu({
       <DropdownMenuTrigger asChild>
         <Button
           aria-label={menuLabel}
+          className={cn(fullWidth && "flex-1")}
           disabled={isProcessing}
           size="sm"
           type="button"

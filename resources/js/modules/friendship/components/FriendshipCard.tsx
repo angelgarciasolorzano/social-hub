@@ -12,6 +12,7 @@ import { Button } from "@/shared/components/shadcn/ui/button";
 import { useDateTime, useTranslation } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
+import { cn } from "@/shared/lib/utils";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
@@ -39,6 +40,25 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
       : friendshipState === "friends"
         ? t("friendship/friends.row.friends_since", { date: formatFullDate(since) })
         : t("friendship/friends.row.request_sent_at", { date: fromNow(since) });
+
+  const isFriend = friendshipState === "friends";
+
+  const viewProfileButton = (
+    <Button asChild className={cn(isFriend && "flex-1")} size="sm" variant="outline">
+      <Link href={show(user.id)}>{t("friendship/friends.card.view_profile")}</Link>
+    </Button>
+  );
+
+  const friendshipButton = (
+    <FriendshipButton
+      friendshipId={friendshipId}
+      friendshipState={friendshipState}
+      fullWidth={!isFriend}
+      onChange={onFriendshipChange}
+      userId={user.id}
+      userName={user.name}
+    />
+  );
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground">
@@ -80,19 +100,19 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
           </p>
         )}
 
-        <div className="mt-auto flex flex-wrap items-start gap-2">
-          <Button asChild className="flex-1" size="sm" variant="outline">
-            <Link href={show(user.id)}>{t("friendship/friends.card.view_profile")}</Link>
-          </Button>
+        {isFriend ? (
+          <div className="mt-auto flex flex-wrap items-start gap-2">
+            {viewProfileButton}
 
-          <FriendshipButton
-            friendshipId={friendshipId}
-            friendshipState={friendshipState}
-            onChange={onFriendshipChange}
-            userId={user.id}
-            userName={user.name}
-          />
-        </div>
+            {friendshipButton}
+          </div>
+        ) : (
+          <div className="mt-auto flex flex-col gap-2">
+            {viewProfileButton}
+
+            {friendshipButton}
+          </div>
+        )}
       </div>
     </article>
   );
