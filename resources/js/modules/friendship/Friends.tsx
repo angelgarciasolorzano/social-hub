@@ -1,11 +1,13 @@
 import type { JSX } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 
-import { Head, router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 
-import { KeyboardIcon, SearchIcon, X } from "lucide-react";
+import { KeyboardIcon, SearchIcon, UsersRoundIcon, X } from "lucide-react";
 
 import { HomeLayout } from "@/modules/home";
+
+import { search } from "@/shared/wayfinder/routes/friendships";
 
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -18,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/sh
 
 import { useTranslation } from "@/shared/hooks";
 
+import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import FriendRequestsHighlight from "./components/FriendRequestsHighlight";
@@ -164,14 +167,34 @@ function Friends(props: FriendsProps): JSX.Element {
       <Head title={t("friendship/friends.page.title")} />
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 pb-4">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">
-            {t("friendship/friends.page.title")}
-          </h1>
+        <header className="flex flex-wrap items-center gap-4">
+          <div
+            aria-hidden="true"
+            className={cn(
+              "flex size-12 shrink-0 items-center justify-center rounded-xl ring-1 ring-blue-600/10 dark:ring-blue-400/15",
+              iconColorVariants.blue.iconBgClass,
+            )}
+          >
+            <UsersRoundIcon className={cn("size-6", iconColorVariants.blue.iconFgClass)} />
+          </div>
 
-          <p className="text-sm text-muted-foreground">
-            {t("friendship/friends.page.description")}
-          </p>
+          <div className="min-w-0 flex-1 space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {t("friendship/friends.page.title")}
+            </h1>
+
+            <p className="text-sm text-muted-foreground">
+              {t("friendship/friends.page.description")}
+            </p>
+          </div>
+
+          <Button asChild className="w-full sm:w-auto" variant="outline">
+            <Link href={search()}>
+              <SearchIcon aria-hidden="true" />
+
+              {t("friendship/friends.states.find_people")}
+            </Link>
+          </Button>
         </header>
 
         <FriendRequestsHighlight
