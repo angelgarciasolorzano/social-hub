@@ -41,7 +41,7 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 import type { FriendshipListItem } from "../../types/friendshipList";
 import type { FriendshipState } from "../../types/friendshipSearch";
 import { reloadFriendshipDependentProps } from "../../utils/reloadFriendshipDependentProps";
-import FriendshipButton from "../button/FriendshipButton";
+import FriendshipButton from "../ui/FriendshipButton";
 
 interface FriendRequestsHighlightProps {
   onViewAll?: () => void;

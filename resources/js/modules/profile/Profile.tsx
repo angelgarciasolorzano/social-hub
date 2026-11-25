@@ -18,7 +18,7 @@ import type { SharedData, User } from "@/shared/types";
 
 import { profileCoverPlaceholder, profilePicturePlaceholder } from "@/shared/assets";
 
-import FriendshipButton from "../friendship/components/button/FriendshipButton";
+import FriendshipButton from "../friendship/components/ui/FriendshipButton";
 import { HomeLayout } from "../home";
 import { PostCard, type PostCollection, PostDialog } from "../post";
 import ProfileCover from "./components/ProfileCover";

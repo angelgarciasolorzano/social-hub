@@ -24,9 +24,9 @@ import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import FriendshipCardGrid from "../components/card/FriendshipCardGrid";
+import FriendsKeyboardShortcutsDialog from "../components/dialog/FriendsKeyboardShortcutsDialog";
 import FriendRequestsHighlight from "../components/friends/FriendRequestsHighlight";
 import FriendsEmptyState from "../components/friends/FriendsEmptyState";
-import FriendsKeyboardShortcutsDialog from "../components/friends/FriendsKeyboardShortcutsDialog";
 import FriendsSortPopover from "../components/friends/FriendsSortPopover";
 import { useFriendsPage } from "../hooks/useFriendsPage";
 import type {

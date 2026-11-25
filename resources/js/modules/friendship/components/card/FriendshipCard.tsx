@@ -18,7 +18,7 @@ import { profilePicturePlaceholder } from "@/shared/assets";
 
 import type { FriendshipListItem } from "../../types/friendshipList";
 import type { FriendshipState } from "../../types/friendshipSearch";
-import FriendshipButton from "../button/FriendshipButton";
+import FriendshipButton from "../ui/FriendshipButton";
 
 interface FriendshipCardProps {
   friendshipListItem: FriendshipListItem;

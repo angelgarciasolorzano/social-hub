@@ -35,7 +35,7 @@ import { buttonVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
 import type { FriendshipActionResponse, FriendshipState } from "../../types/friendshipSearch";
-import FriendshipRemoveDialog from "./FriendshipRemoveDialog";
+import FriendshipRemoveDialog from "../dialog/FriendshipRemoveDialog";
 
 type FriendshipAction = "accept" | "cancel" | "decline" | "remove" | "send";
 
