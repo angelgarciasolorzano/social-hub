@@ -45,7 +45,7 @@ final class FriendshipIndexController extends Controller
         $term = $friendshipIndexRequest->term();
         $friendshipListSort = $friendshipIndexRequest->sort();
 
-        return Inertia::render('friendship/Friends', [
+        return Inertia::render('friendship/pages/Friends', [
             'filters' => ['tab' => $friendshipListTab->value, 'q' => $term, 'sort' => $friendshipListSort->value],
             'tabCounts' => fn (): array => $this->tabCounts($viewer),
             'friendships' => Inertia::scroll(fn (): AnonymousResourceCollection => FriendshipListItemResource::collection(

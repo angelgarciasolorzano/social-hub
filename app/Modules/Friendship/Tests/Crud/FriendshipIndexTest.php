@@ -110,7 +110,7 @@ it('shows the friends tab by default with the filters and the counters', functio
     visitFriendsPageAs($this, $user)
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $assertableInertia): AssertableInertia => $assertableInertia
-            ->component('friendship/Friends')
+            ->component('friendship/pages/Friends')
             ->where('filters', ['tab' => FriendshipListTab::Friends->value, 'q' => '', 'sort' => FriendshipListSort::Recent->value])
             ->where('tabCounts', ['friends' => 1, 'received' => 1, 'sent' => 2])
             ->has('friendships.data', 1));

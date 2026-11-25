@@ -23,12 +23,12 @@ import { useTranslation } from "@/shared/hooks";
 import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import FriendRequestsHighlight from "./components/FriendRequestsHighlight";
-import FriendsEmptyState from "./components/FriendsEmptyState";
-import FriendshipCardGrid from "./components/FriendshipCardGrid";
-import FriendsKeyboardShortcutsDialog from "./components/FriendsKeyboardShortcutsDialog";
-import FriendsSortPopover from "./components/FriendsSortPopover";
-import { useFriendsPage } from "./hooks/useFriendsPage";
+import FriendRequestsHighlight from "../components/FriendRequestsHighlight";
+import FriendsEmptyState from "../components/FriendsEmptyState";
+import FriendshipCardGrid from "../components/FriendshipCardGrid";
+import FriendsKeyboardShortcutsDialog from "../components/FriendsKeyboardShortcutsDialog";
+import FriendsSortPopover from "../components/FriendsSortPopover";
+import { useFriendsPage } from "../hooks/useFriendsPage";
 import type {
   FriendshipListFilters,
   FriendshipListItem,
@@ -36,8 +36,8 @@ import type {
   FriendshipListSort,
   FriendshipListTab,
   FriendshipTabCounts,
-} from "./types/friendshipList";
-import type { FriendshipState } from "./types/friendshipSearch";
+} from "../types/friendshipList";
+import type { FriendshipState } from "../types/friendshipSearch";
 
 const FRIENDSHIP_LIST_TABS: FriendshipListTab[] = ["friends", "received", "sent"];
 

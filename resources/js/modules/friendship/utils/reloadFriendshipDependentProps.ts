@@ -10,7 +10,7 @@ interface FriendshipDependentProps {
 
 const FRIENDSHIP_DEPENDENT_PROPS_OF_PAGE: Record<string, FriendshipDependentProps> = {
   "home/Home": { only: ["posts"], onlyWhenFriends: true, reset: ["posts"] },
-  "friendship/Friends": {
+  "friendship/pages/Friends": {
     only: ["tabCounts", "friendships"],
     onlyWhenFriends: false,
     reset: ["friendships"],

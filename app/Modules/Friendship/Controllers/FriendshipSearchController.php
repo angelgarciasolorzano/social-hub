@@ -35,7 +35,7 @@ final class FriendshipSearchController extends Controller
 
         $term = $friendshipSearchRequest->string('q')->trim()->toString();
 
-        return Inertia::render('friendship/Search', [
+        return Inertia::render('friendship/pages/Search', [
             'filters' => ['q' => $term],
             'searchTermMinLength' => FriendshipSearchRequest::TERM_MIN_LENGTH,
             'searchResults' => Inertia::scroll(fn (): AnonymousResourceCollection => FriendshipSearchResultResource::collection(
