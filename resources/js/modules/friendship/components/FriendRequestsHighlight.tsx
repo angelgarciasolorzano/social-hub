@@ -85,7 +85,7 @@ function FriendRequestsHighlightContent(props: FriendRequestsHighlightProps): JS
   };
 
   return (
-    <Card aria-labelledby={titleId} className="gap-4 py-4" role="region">
+    <Card aria-labelledby={titleId} className="gap-4 py-4 shadow-xs" role="region">
       <CardHeader className="flex items-center gap-3 px-4">
         <div
           aria-hidden="true"

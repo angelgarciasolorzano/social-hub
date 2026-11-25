@@ -205,7 +205,7 @@ function Friends(props: FriendsProps): JSX.Element {
             >
               {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
                 <TabsTrigger
-                  className="flex-none px-0.5 pb-2.5 after:bg-blue-600 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300"
+                  className="flex-none px-0.5 pb-2.5 after:bg-blue-600 group-data-[orientation=horizontal]/tabs:after:-bottom-[1.5px] data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300"
                   key={friendshipListTab}
                   value={friendshipListTab}
                 >
