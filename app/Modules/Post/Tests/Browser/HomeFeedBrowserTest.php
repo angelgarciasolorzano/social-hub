@@ -27,8 +27,8 @@ it('shows the posts of friends, adds the posts of a request accepted on the frie
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'home/feed.states.end'));
 
     visit(route('friendships.index', absolute: false))
-        ->click('section li button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
-        ->assertScript('document.querySelector("main section") === null');
+        ->click('[role=region] li button:has-text("'.translatedTextIn(PreferredLocale::ENGLISH, 'friendship/button.states.accept').'")')
+        ->assertScript('document.querySelector("main [role=region]") === null');
 
     $webpage = visit(route('home', absolute: false))
         ->assertSee('A post from the requester')

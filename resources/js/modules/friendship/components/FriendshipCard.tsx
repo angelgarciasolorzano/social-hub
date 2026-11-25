@@ -46,7 +46,7 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
         {user.coverImage !== null ? (
           <img alt="" className="size-full object-cover" loading="lazy" src={user.coverImage} />
         ) : (
-          <div className="flex size-full items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 text-slate-400 dark:from-slate-800 dark:to-slate-900 dark:text-slate-500">
+          <div className="flex size-full items-center justify-center text-muted-foreground/60">
             <ImageIcon className="size-5" />
           </div>
         )}

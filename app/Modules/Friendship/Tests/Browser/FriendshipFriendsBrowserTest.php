@@ -64,7 +64,7 @@ it('accepts a request from the requests block, removes a friend, switches tabs a
         ->assertScript(friendsBadgeScript(), '3')
         ->assertScript(friendsTabCountScript($friendsTabLabel), '1|true');
 
-    $webpage->click('section li:has-text("Ana Request") button:has-text("'.$acceptLabel.'")')
+    $webpage->click('[role=region] li:has-text("Ana Request") button:has-text("'.$acceptLabel.'")')
         ->assertSee('Ana Request')
         ->assertScript('[...document.querySelectorAll("main article")].some((article) => article.textContent.includes("Ana Request"))')
         ->assertScript(friendsBadgeScript(), '2')
@@ -92,7 +92,7 @@ it('accepts a request from the requests block, removes a friend, switches tabs a
     $webpage->assertDontSee('Bruno Request')
         ->assertDontSee('Dora Request')
         ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'friendship/friends.states.received_empty_title'))
-        ->assertScript('document.querySelector("main section") === null')
+        ->assertScript('document.querySelector("main [role=region]") === null')
         ->assertScript(friendsBadgeScript(), null)
         ->assertNoJavaScriptErrors();
 

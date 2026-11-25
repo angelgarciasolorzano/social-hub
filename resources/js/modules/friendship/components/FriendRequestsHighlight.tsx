@@ -3,15 +3,36 @@ import { useId } from "react";
 
 import { Deferred, Link, usePage } from "@inertiajs/react";
 
+import { ArrowRightIcon, UserPlusIcon } from "lucide-react";
+
 import { index as friendshipsIndex } from "@/shared/wayfinder/routes/friendships";
 import { show } from "@/shared/wayfinder/routes/profile";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
+import { Badge } from "@/shared/components/shadcn/ui/badge";
+import { Button } from "@/shared/components/shadcn/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/shadcn/ui/card";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/shared/components/shadcn/ui/item";
 import { Skeleton } from "@/shared/components/shadcn/ui/skeleton";
 
 import { useDateTime, useTranslation } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
+import { iconColorVariants } from "@/shared/lib/styling";
+import { cn } from "@/shared/lib/utils";
 
 import type { SharedData } from "@/shared/types";
 
@@ -64,41 +85,56 @@ function FriendRequestsHighlightContent(props: FriendRequestsHighlightProps): JS
   };
 
   return (
-    <section
-      aria-labelledby={titleId}
-      className="flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3.5 dark:border-blue-900 dark:bg-blue-950/40"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-blue-900 dark:text-blue-100" id={titleId}>
-          {t("friendship/friends.requests.title")}
-        </h2>
-
-        <Link
-          className="text-sm font-medium text-blue-700 hover:underline dark:text-blue-300"
-          href={friendshipsIndex({ query: { tab: "received" } })}
-          onClick={handleViewAll}
+    <Card aria-labelledby={titleId} className="gap-4 py-4" role="region">
+      <CardHeader className="flex items-center gap-3 px-4">
+        <div
+          aria-hidden="true"
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center rounded-md",
+            iconColorVariants.blue.iconBgClass,
+          )}
         >
-          {tChoice("friendship/friends.requests.view_all", friendRequests.pendingCount, {
-            count: friendRequests.pendingCount,
-          })}
-        </Link>
-      </div>
+          <UserPlusIcon className={cn("size-4", iconColorVariants.blue.iconFgClass)} />
+        </div>
 
-      <ul
-        aria-label={t("friendship/friends.requests.label")}
-        className="grid gap-2.5 md:grid-cols-2"
-      >
-        {friendRequests.recent.map((friendRequest) => (
-          <FriendRequestHighlightItem
-            friendRequest={friendRequest}
-            key={friendRequest.friendshipId}
-            onFriendshipChange={(friendshipState) => {
-              reloadFriendshipDependentProps(component, friendshipState);
-            }}
-          />
-        ))}
-      </ul>
-    </section>
+        <CardTitle className="flex items-center gap-2 text-sm" id={titleId}>
+          {t("friendship/friends.requests.title")}
+
+          <Badge aria-hidden="true" className="tabular-nums" variant="secondary">
+            {friendRequests.pendingCount}
+          </Badge>
+        </CardTitle>
+
+        <CardAction className="ml-auto self-center">
+          <Button asChild size="sm" variant="ghost">
+            <Link href={friendshipsIndex({ query: { tab: "received" } })} onClick={handleViewAll}>
+              {tChoice("friendship/friends.requests.view_all", friendRequests.pendingCount, {
+                count: friendRequests.pendingCount,
+              })}
+
+              <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          </Button>
+        </CardAction>
+      </CardHeader>
+
+      <CardContent className="px-4">
+        <ul
+          aria-label={t("friendship/friends.requests.label")}
+          className="grid gap-3 md:grid-cols-2"
+        >
+          {friendRequests.recent.map((friendRequest) => (
+            <FriendRequestHighlightItem
+              friendRequest={friendRequest}
+              key={friendRequest.friendshipId}
+              onFriendshipChange={(friendshipState) => {
+                reloadFriendshipDependentProps(component, friendshipState);
+              }}
+            />
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -126,34 +162,42 @@ function FriendRequestHighlightItem(props: FriendRequestHighlightItemProps): JSX
   ].filter((detail) => detail !== null);
 
   return (
-    <li className="flex flex-wrap items-center gap-2.5 rounded-lg bg-card px-3 py-2.5 text-card-foreground">
-      <Avatar className="size-10">
-        <AvatarImage
-          alt={t("friendship/friends.card.profile_picture_alt", { name: user.name })}
-          src={validImage(user.profilePicture, profilePicturePlaceholder)}
-        />
+    <Item asChild className="bg-muted/30" size="sm" variant="outline">
+      <li>
+        <ItemMedia>
+          <Avatar className="size-10">
+            <AvatarImage
+              alt={t("friendship/friends.card.profile_picture_alt", { name: user.name })}
+              src={validImage(user.profilePicture, profilePicturePlaceholder)}
+            />
 
-        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-      </Avatar>
+            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        </ItemMedia>
 
-      <div className="flex min-w-40 flex-1 flex-col">
-        <Link className="truncate text-sm font-semibold hover:underline" href={show(user.id)}>
-          {user.name}
-        </Link>
+        <ItemContent className="min-w-40 gap-0.5">
+          <ItemTitle className="max-w-full">
+            <Link className="truncate font-semibold hover:underline" href={show(user.id)}>
+              {user.name}
+            </Link>
+          </ItemTitle>
 
-        {details.length > 0 && (
-          <span className="truncate text-xs text-muted-foreground">{details.join(" · ")}</span>
-        )}
-      </div>
+          {details.length > 0 && (
+            <ItemDescription className="truncate text-xs">{details.join(" · ")}</ItemDescription>
+          )}
+        </ItemContent>
 
-      <FriendshipButton
-        friendshipId={friendRequest.friendshipId}
-        friendshipState={friendRequest.friendshipState}
-        onChange={onFriendshipChange}
-        userId={user.id}
-        userName={user.name}
-      />
-    </li>
+        <ItemActions>
+          <FriendshipButton
+            friendshipId={friendRequest.friendshipId}
+            friendshipState={friendRequest.friendshipState}
+            onChange={onFriendshipChange}
+            userId={user.id}
+            userName={user.name}
+          />
+        </ItemActions>
+      </li>
+    </Item>
   );
 }
 
@@ -161,12 +205,16 @@ function FriendRequestsHighlightSkeleton(): JSX.Element {
   const { t } = useTranslation();
 
   return (
-    <div className="grid gap-2.5 md:grid-cols-2" role="status">
+    <div className="flex flex-col gap-4 rounded-xl border p-4" role="status">
       <span className="sr-only">{t("friendship/friends.states.loading")}</span>
 
-      <Skeleton aria-hidden="true" className="h-16 rounded-xl" />
+      <Skeleton aria-hidden="true" className="h-8 w-48" />
 
-      <Skeleton aria-hidden="true" className="h-16 rounded-xl" />
+      <div aria-hidden="true" className="grid gap-3 md:grid-cols-2">
+        <Skeleton className="h-16 rounded-md" />
+
+        <Skeleton className="h-16 rounded-md" />
+      </div>
     </div>
   );
 }
