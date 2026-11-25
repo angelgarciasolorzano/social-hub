@@ -30,8 +30,19 @@ final readonly class FriendshipProps implements ProvidesInertiaProperties
     public function toInertiaProperties(RenderContext $context): array
     {
         return [
-            'friendRequests' => Inertia::defer(fn (): ?array => $this->friendRequests()),
+            'friendRequests' => Inertia::defer(fn (): ?array => $this->friendRequests())
+                ->once(as: $this->onceKey()),
         ];
+    }
+
+    /**
+     * The key the client stores the requests under, one per viewer.
+     */
+    private function onceKey(): string
+    {
+        $user = $this->request->user();
+
+        return $user instanceof User ? 'friendRequests.'.$user->id : 'friendRequests.guest';
     }
 
     /**

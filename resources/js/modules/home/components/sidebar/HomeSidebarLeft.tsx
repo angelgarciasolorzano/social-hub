@@ -98,6 +98,16 @@ function NavigationBadge(props: NavigationBadgeProps): JSX.Element {
 
   const { t } = useTranslation();
 
+  const { auth } = usePage<SharedData>().props;
+
+  const hasStoredUnreadCount = useNotificationStore(
+    (state) => state.authenticatedUserId === auth.user.id && state.unreadCount !== null,
+  );
+
+  if (badge === "unreadNotifications" && hasStoredUnreadCount) {
+    return <UnreadNotificationsBadge />;
+  }
+
   const deferredProp =
     badge === "pendingFriendRequests" ? "friendRequests" : "unreadNotificationsCount";
 
