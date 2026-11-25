@@ -550,7 +550,7 @@ function TrustedDeviceSortPopover({
               <label
                 key={option.value}
                 htmlFor={`sort-${option.value}`}
-                className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-accent/50 has-data-[state=checked]:bg-blue-100/50 has-data-[state=checked]:dark:bg-blue-950/20"
+                className="flex cursor-pointer items-start gap-3 rounded-md p-2 transition-colors hover:bg-accent/50 has-data-[state=checked]:bg-accent"
               >
                 <RadioGroupItem
                   className="mt-0.5"
