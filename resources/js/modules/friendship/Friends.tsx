@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { Head, Link, router } from "@inertiajs/react";
 
-import { KeyboardIcon, SearchIcon, UsersRoundIcon, X } from "lucide-react";
+import { KeyboardIcon, RefreshCwIcon, SearchIcon, UsersRoundIcon, X } from "lucide-react";
 
 import { HomeLayout } from "@/modules/home";
 
@@ -74,6 +74,8 @@ function Friends(props: FriendsProps): JSX.Element {
   const [filterInput, setFilterInput] = useState<HTMLInputElement | null>(null);
 
   const [isShortcutsDialogOpen, setIsShortcutsDialogOpen] = useState<boolean>(false);
+
+  const [isReloading, setIsReloading] = useState<boolean>(false);
 
   const tabChangedByShortcutRef = useRef<boolean>(false);
 
@@ -162,6 +164,19 @@ function Friends(props: FriendsProps): JSX.Element {
 
   const selectedTab = loadingTab ?? committedFilters.tab;
 
+  const reloadFriendships = (): void => {
+    router.reload({
+      only: ["friendships", "tabCounts", "friendRequests"],
+      onFinish: () => {
+        setIsReloading(false);
+      },
+      onStart: () => {
+        setIsReloading(true);
+      },
+      reset: ["friendships"],
+    });
+  };
+
   return (
     <HomeLayout>
       <Head title={t("friendship/friends.page.title")} />
@@ -188,13 +203,29 @@ function Friends(props: FriendsProps): JSX.Element {
             </p>
           </div>
 
-          <Button asChild className="w-full sm:w-auto" variant="outline">
-            <Link href={search()}>
-              <SearchIcon aria-hidden="true" />
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Button asChild className="flex-1 sm:flex-none" variant="outline">
+              <Link href={search()}>
+                <SearchIcon aria-hidden="true" />
 
-              {t("friendship/friends.states.find_people")}
-            </Link>
-          </Button>
+                {t("friendship/friends.states.find_people")}
+              </Link>
+            </Button>
+
+            <Button
+              aria-label={t("friendship/friends.shortcuts.open")}
+              className="hidden shrink-0 md:inline-flex"
+              onClick={() => {
+                setIsShortcutsDialogOpen(true);
+              }}
+              size="icon"
+              title={t("friendship/friends.shortcuts.open")}
+              type="button"
+              variant="outline"
+            >
+              <KeyboardIcon aria-hidden="true" />
+            </Button>
+          </div>
         </header>
 
         <FriendRequestsHighlight
@@ -288,16 +319,16 @@ function Friends(props: FriendsProps): JSX.Element {
               <FriendsSortPopover onSortChange={changeSort} sort={sort} />
 
               <Button
-                aria-label={t("friendship/friends.shortcuts.open")}
-                className="hidden shrink-0 md:inline-flex"
-                onClick={() => {
-                  setIsShortcutsDialogOpen(true);
-                }}
+                aria-label={t("friendship/friends.toolbar.reload")}
+                className="shrink-0"
+                disabled={isReloading}
+                onClick={reloadFriendships}
                 size="icon"
+                title={t("friendship/friends.toolbar.reload")}
                 type="button"
                 variant="outline"
               >
-                <KeyboardIcon aria-hidden="true" />
+                <RefreshCwIcon aria-hidden="true" className={cn(isReloading && "animate-spin")} />
               </Button>
             </div>
           </div>

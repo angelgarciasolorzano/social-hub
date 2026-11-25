@@ -29,6 +29,10 @@ return [
         'clear' => 'Clear the filter',
     ],
 
+    'toolbar' => [
+        'reload' => 'Reload the list',
+    ],
+
     'sort' => [
         'label' => 'Sort the list',
         'recent' => 'Most recent',

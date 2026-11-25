@@ -29,6 +29,10 @@ return [
         'clear' => 'Borrar el filtro',
     ],
 
+    'toolbar' => [
+        'reload' => 'Recargar la lista',
+    ],
+
     'sort' => [
         'label' => 'Ordenar la lista',
         'recent' => 'Más recientes',
