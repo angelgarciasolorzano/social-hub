@@ -17,6 +17,13 @@ export interface FriendSearchFilters {
   q: string;
 }
 
+export interface FriendshipPerson {
+  friendsSince?: null | string;
+  mutualFriendsCount?: number;
+  name: string;
+  profilePicture?: null | string;
+}
+
 export type FriendshipAction = "accept" | "cancel" | "decline" | "remove" | "send";
 
 export interface FriendshipActionResponse {

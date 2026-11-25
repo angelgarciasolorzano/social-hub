@@ -24,8 +24,17 @@ return [
 
     'remove_dialog' => [
         'title' => '¿Eliminar a :name de tus amigos?',
-        'description' => 'Dejarán de ser amigos. Para volver a serlo, uno de los dos tendrá que enviar una nueva solicitud.',
+        'description' => 'Eliminarás a :name de tu lista de amigos.',
+        'friends_since' => 'Amigos desde :date',
+        'mutual_friends' => '{1} :count amigo en común|[2,*] :count amigos en común',
+        'consequences_title' => 'Qué pasará',
+        'consequences' => [
+            'feed' => 'Dejarás de ver sus publicaciones en tu inicio y :name dejará de ver las tuyas.',
+            'no_notification' => ':name no recibirá ninguna notificación.',
+            'request_again' => 'Para volver a ser amigos, uno de los dos tendrá que enviar una nueva solicitud. Pueden enviarla cuando quieran.',
+        ],
         'confirm' => 'Eliminar amigo',
+        'removing' => 'Eliminando…',
         'cancel' => 'Mantener como amigo',
     ],
 

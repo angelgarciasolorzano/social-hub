@@ -30,14 +30,27 @@ import FriendshipRemoveDialog from "../dialog/FriendshipRemoveDialog";
 interface FriendshipButtonProps {
   friendshipId: null | number;
   friendshipState: FriendshipState;
+  friendsSince?: null | string;
   fullWidth?: boolean;
+  mutualFriendsCount?: number;
   onChange?: (friendshipState: FriendshipState, friendshipId: null | number) => void;
+  profilePicture?: null | string;
   userId: number;
   userName: string;
 }
 
 function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
-  const { friendshipId, friendshipState, fullWidth = false, onChange, userId, userName } = props;
+  const {
+    friendshipId,
+    friendshipState,
+    friendsSince,
+    fullWidth = false,
+    mutualFriendsCount,
+    onChange,
+    profilePicture,
+    userId,
+    userName,
+  } = props;
 
   const { t } = useTranslation();
 
@@ -160,7 +173,7 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
           runAction("remove");
         }}
         onOpenChange={setIsRemoveDialogOpen}
-        userName={userName}
+        person={{ friendsSince, mutualFriendsCount, name: userName, profilePicture }}
       />
     </div>
   );

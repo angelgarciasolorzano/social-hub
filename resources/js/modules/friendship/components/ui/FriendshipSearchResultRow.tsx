@@ -59,6 +59,8 @@ function FriendshipSearchResultRow({ searchResult }: FriendshipSearchResultRowPr
           <FriendshipButton
             friendshipId={searchResult.friendshipId}
             friendshipState={searchResult.friendshipState}
+            mutualFriendsCount={searchResult.mutualFriendsCount}
+            profilePicture={searchResult.profilePicture}
             userId={searchResult.id}
             userName={searchResult.name}
           />

@@ -83,9 +83,11 @@ function Profile({ posts, profileFriendship, user }: ProfileProps): JSX.Element 
               friendshipId={profileFriendship.friendshipId}
               friendshipState={profileFriendship.friendshipState}
               key={user.id}
+              mutualFriendsCount={profileFriendship.mutualFriendsCount}
               onChange={() => {
                 router.reload({ only: ["profileFriendship", "friendRequests"] });
               }}
+              profilePicture={user.profilePicture}
               userId={user.id}
               userName={user.name}
             />

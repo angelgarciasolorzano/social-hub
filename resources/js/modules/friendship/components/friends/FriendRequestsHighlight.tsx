@@ -191,7 +191,9 @@ function FriendRequestHighlightItem(props: FriendRequestHighlightItemProps): JSX
           <FriendshipButton
             friendshipId={friendRequest.friendshipId}
             friendshipState={friendRequest.friendshipState}
+            mutualFriendsCount={friendRequest.mutualFriendsCount}
             onChange={onFriendshipChange}
+            profilePicture={user.profilePicture}
             userId={user.id}
             userName={user.name}
           />

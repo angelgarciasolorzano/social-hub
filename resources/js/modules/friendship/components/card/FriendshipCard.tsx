@@ -53,8 +53,11 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
     <FriendshipButton
       friendshipId={friendshipId}
       friendshipState={friendshipState}
+      friendsSince={isFriend ? since : null}
       fullWidth={!isFriend}
+      mutualFriendsCount={mutualFriendsCount}
       onChange={onFriendshipChange}
+      profilePicture={user.profilePicture}
       userId={user.id}
       userName={user.name}
     />
