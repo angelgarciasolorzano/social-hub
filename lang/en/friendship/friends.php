@@ -33,6 +33,11 @@ return [
         'label' => 'Sort the list',
         'recent' => 'Most recent',
         'name' => 'Name (A-Z)',
+        'title' => 'Sort by',
+        'recent_description' => 'Newest friendship or request first',
+        'name_description' => 'Name of the person, A to Z',
+        'default' => 'Default',
+        'reset' => 'Reset',
     ],
 
     'requests' => [

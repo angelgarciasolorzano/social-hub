@@ -14,13 +14,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/shared/components/shadcn/ui/input-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/shadcn/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/shadcn/ui/tabs";
 
 import { useTranslation } from "@/shared/hooks";
@@ -31,21 +24,19 @@ import FriendRequestsHighlight from "./components/FriendRequestsHighlight";
 import FriendsEmptyState from "./components/FriendsEmptyState";
 import FriendshipCardGrid from "./components/FriendshipCardGrid";
 import FriendsKeyboardShortcutsDialog from "./components/FriendsKeyboardShortcutsDialog";
+import FriendsSortPopover from "./components/FriendsSortPopover";
 import { useFriendsFilters } from "./hooks/useFriendsFilters";
 import { useFriendsShortcuts } from "./hooks/useFriendsShortcuts";
 import type {
   FriendshipListFilters,
   FriendshipListItem,
   FriendshipListItemCollection,
-  FriendshipListSort,
   FriendshipListTab,
   FriendshipTabCounts,
 } from "./types/friendshipList";
 import type { FriendshipState } from "./types/friendshipSearch";
 
 const FRIENDSHIP_LIST_TABS: FriendshipListTab[] = ["friends", "received", "sent"];
-
-const FRIENDSHIP_LIST_SORTS: FriendshipListSort[] = ["recent", "name"];
 
 const FRIENDSHIP_STATE_OF_TAB: Record<FriendshipListTab, FriendshipState> = {
   friends: "friends",
@@ -205,7 +196,7 @@ function Friends(props: FriendsProps): JSX.Element {
             >
               {FRIENDSHIP_LIST_TABS.map((friendshipListTab) => (
                 <TabsTrigger
-                  className="flex-none px-0.5 pb-2.5 after:bg-blue-600 group-data-[orientation=horizontal]/tabs:after:-bottom-[1.5px] data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300"
+                  className="flex-none px-0.5 pb-2.5 after:bg-blue-600 group-data-[orientation=horizontal]/tabs:after:bottom-[-1.5px] data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300"
                   key={friendshipListTab}
                   value={friendshipListTab}
                 >
@@ -271,24 +262,7 @@ function Friends(props: FriendsProps): JSX.Element {
                 )}
               </InputGroup>
 
-              <Select
-                onValueChange={(value) => {
-                  changeSort(value as FriendshipListSort);
-                }}
-                value={sort}
-              >
-                <SelectTrigger aria-label={t("friendship/friends.sort.label")} className="shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-
-                <SelectContent align="end">
-                  {FRIENDSHIP_LIST_SORTS.map((friendshipListSort) => (
-                    <SelectItem key={friendshipListSort} value={friendshipListSort}>
-                      {t(`friendship/friends.sort.${friendshipListSort}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FriendsSortPopover onSortChange={changeSort} sort={sort} />
 
               <Button
                 aria-label={t("friendship/friends.shortcuts.open")}

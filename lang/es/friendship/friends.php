@@ -33,6 +33,11 @@ return [
         'label' => 'Ordenar la lista',
         'recent' => 'Más recientes',
         'name' => 'Nombre (A-Z)',
+        'title' => 'Ordenar por',
+        'recent_description' => 'La amistad o solicitud más nueva primero',
+        'name_description' => 'Nombre de la persona, de la A a la Z',
+        'default' => 'Predeterminado',
+        'reset' => 'Restablecer',
     ],
 
     'requests' => [
