@@ -82,14 +82,13 @@ return [
         'title' => 'Atajos de teclado',
         'description' => 'Muévete por la página de amigos sin el ratón. Los atajos no actúan mientras escribes en un campo.',
         'open' => 'Ver los atajos de teclado',
+        'tabs' => 'Cambiar de pestaña',
+        'tabs_description' => 'Amigos, Recibidas y Enviadas',
         'focus_filter' => 'Enfocar el filtro por nombre',
-        'friends_tab' => 'Ir a Amigos',
-        'received_tab' => 'Ir a Recibidas',
-        'sent_tab' => 'Ir a Enviadas',
         'toggle_sort' => 'Cambiar entre más recientes y nombre',
         'show_help' => 'Ver esta ayuda',
         'leave_filter' => 'Salir del filtro para usar los atajos',
-        'close' => 'Cerrar',
+        'got_it' => 'Entendido',
     ],
 
     'validation' => [

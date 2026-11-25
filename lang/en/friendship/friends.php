@@ -82,14 +82,13 @@ return [
         'title' => 'Keyboard shortcuts',
         'description' => 'Move around the friends page without the mouse. Shortcuts do not work while you type in a field.',
         'open' => 'Show the keyboard shortcuts',
+        'tabs' => 'Switch tabs',
+        'tabs_description' => 'Friends, Received and Sent',
         'focus_filter' => 'Focus the name filter',
-        'friends_tab' => 'Go to Friends',
-        'received_tab' => 'Go to Received',
-        'sent_tab' => 'Go to Sent',
         'toggle_sort' => 'Switch between most recent and name',
         'show_help' => 'Show this help',
         'leave_filter' => 'Leave the name filter so the shortcuts work',
-        'close' => 'Close',
+        'got_it' => 'Got it',
     ],
 
     'validation' => [
