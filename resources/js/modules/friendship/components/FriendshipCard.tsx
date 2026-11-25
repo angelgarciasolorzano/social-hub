@@ -61,7 +61,7 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
   );
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground">
+    <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
       <div aria-hidden="true" className="h-16 bg-muted">
         {user.coverImage !== null ? (
           <img alt="" className="size-full object-cover" loading="lazy" src={user.coverImage} />
