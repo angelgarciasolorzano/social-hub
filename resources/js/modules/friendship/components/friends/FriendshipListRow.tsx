@@ -12,9 +12,9 @@ import { validImage } from "@/shared/lib";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import type { FriendshipListItem } from "../types/friendshipList";
-import type { FriendshipState } from "../types/friendshipSearch";
-import FriendshipButton from "./FriendshipButton";
+import type { FriendshipListItem } from "../../types/friendshipList";
+import type { FriendshipState } from "../../types/friendshipSearch";
+import FriendshipButton from "../button/FriendshipButton";
 
 interface FriendshipListRowProps {
   friendshipListItem: FriendshipListItem;

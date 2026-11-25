@@ -38,10 +38,10 @@ import type { SharedData } from "@/shared/types";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import type { FriendshipListItem } from "../types/friendshipList";
-import type { FriendshipState } from "../types/friendshipSearch";
-import { reloadFriendshipDependentProps } from "../utils/reloadFriendshipDependentProps";
-import FriendshipButton from "./FriendshipButton";
+import type { FriendshipListItem } from "../../types/friendshipList";
+import type { FriendshipState } from "../../types/friendshipSearch";
+import { reloadFriendshipDependentProps } from "../../utils/reloadFriendshipDependentProps";
+import FriendshipButton from "../button/FriendshipButton";
 
 interface FriendRequestsHighlightProps {
   onViewAll?: () => void;

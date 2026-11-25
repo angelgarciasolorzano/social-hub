@@ -12,7 +12,7 @@ import { useTranslation } from "@/shared/hooks";
 
 import { cn } from "@/shared/lib/utils";
 
-import type { FriendshipListSort } from "../types/friendshipList";
+import type { FriendshipListSort } from "../../types/friendshipList";
 
 const FRIENDSHIP_LIST_SORTS: FriendshipListSort[] = ["recent", "name"];
 

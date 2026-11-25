@@ -15,8 +15,8 @@ import { validImage } from "@/shared/lib";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import type { FriendSearchResult } from "../types/friendshipSearch";
-import FriendshipButton from "./FriendshipButton";
+import type { FriendSearchResult } from "../../types/friendshipSearch";
+import FriendshipButton from "../button/FriendshipButton";
 
 interface FriendshipSearchResultRowProps {
   searchResult: FriendSearchResult;

@@ -17,7 +17,7 @@ import VirtualInfiniteList from "@/shared/components/VirtualInfiniteList";
 
 import { useTranslation } from "@/shared/hooks";
 
-import FriendshipSearchResultRow from "../components/FriendshipSearchResultRow";
+import FriendshipSearchResultRow from "../components/search/FriendshipSearchResultRow";
 import { useFriendshipSearch } from "../hooks/useFriendshipSearch";
 import type { FriendSearchFilters, FriendSearchResultCollection } from "../types/friendshipSearch";
 

@@ -5,8 +5,8 @@ import { InfiniteScroll, usePage } from "@inertiajs/react";
 
 import { useTranslation } from "@/shared/hooks";
 
-import type { FriendshipListItem } from "../types/friendshipList";
-import type { FriendshipState } from "../types/friendshipSearch";
+import type { FriendshipListItem } from "../../types/friendshipList";
+import type { FriendshipState } from "../../types/friendshipSearch";
 import FriendshipCard from "./FriendshipCard";
 import FriendshipCardSkeleton from "./FriendshipCardSkeleton";
 

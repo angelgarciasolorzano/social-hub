@@ -15,7 +15,7 @@ import type { IconColorVariant } from "@/shared/lib/styling";
 import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import type { FriendshipListFilters, FriendshipListTab } from "../types/friendshipList";
+import type { FriendshipListFilters, FriendshipListTab } from "../../types/friendshipList";
 
 interface TabEmptyStateVisual {
   color: IconColorVariant;

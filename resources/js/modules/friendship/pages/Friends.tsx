@@ -23,11 +23,11 @@ import { useTranslation } from "@/shared/hooks";
 import { iconColorVariants } from "@/shared/lib/styling";
 import { cn } from "@/shared/lib/utils";
 
-import FriendRequestsHighlight from "../components/FriendRequestsHighlight";
-import FriendsEmptyState from "../components/FriendsEmptyState";
-import FriendshipCardGrid from "../components/FriendshipCardGrid";
-import FriendsKeyboardShortcutsDialog from "../components/FriendsKeyboardShortcutsDialog";
-import FriendsSortPopover from "../components/FriendsSortPopover";
+import FriendshipCardGrid from "../components/card/FriendshipCardGrid";
+import FriendRequestsHighlight from "../components/friends/FriendRequestsHighlight";
+import FriendsEmptyState from "../components/friends/FriendsEmptyState";
+import FriendsKeyboardShortcutsDialog from "../components/friends/FriendsKeyboardShortcutsDialog";
+import FriendsSortPopover from "../components/friends/FriendsSortPopover";
 import { useFriendsPage } from "../hooks/useFriendsPage";
 import type {
   FriendshipListFilters,
