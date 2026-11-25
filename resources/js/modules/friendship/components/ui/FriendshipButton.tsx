@@ -209,8 +209,11 @@ function FriendshipMenu(props: FriendshipMenuProps): JSX.Element {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={onSelect} variant="destructive">
-          <ActionMenuIcon aria-hidden="true" className="size-4" />
+        <DropdownMenuItem
+          className="text-red-700 hover:bg-red-100/50 focus:bg-red-100/50 focus:text-red-700 dark:text-red-500 dark:hover:bg-red-800/20 dark:focus:bg-red-900/20 dark:focus:text-red-500"
+          onSelect={onSelect}
+        >
+          <ActionMenuIcon aria-hidden="true" className="size-4 text-red-600 dark:text-red-500" />
           {actionLabel}
         </DropdownMenuItem>
       </DropdownMenuContent>
