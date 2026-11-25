@@ -260,3 +260,54 @@ it('does not send the two-factor status when management is unavailable', functio
     fn (): bool => ! Features::canManageTwoFactorAuthentication(),
     'Two-factor authentication is not enabled.'
 );
+
+it('keeps the new secret while the page loads its deferred props a second after enabling two-factor', function (): void {
+    $user = createUser()->refresh();
+
+    getTwoFactorSettingsAs($this, $user)->assertOk();
+
+    $this->postJson(route('two-factor.enable'))->assertOk();
+
+    /** @var array{version: string} $page */
+    $page = $this->get(route('setting.security.two-factor-authentication.index'))->assertOk()->viewData('page');
+
+    expect(session('two_factor_confirming_at'))->toBeInt();
+
+    session()->put('two_factor_confirming_at', Date::now()
+        ->subSeconds(2)
+        ->getTimestamp());
+
+    $this->get(route('setting.security.two-factor-authentication.index'), [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $page['version'],
+        'X-Inertia-Partial-Component' => 'setting/modules/twoFactor/TwoFactor',
+        'X-Inertia-Partial-Data' => 'unreadNotificationsCount',
+    ])->assertOk();
+
+    expect($user->refresh()->two_factor_secret)->not->toBeNull();
+
+    $this->getJson(route('two-factor.secret-key'))->assertOk();
+})->skip(
+    fn (): bool => ! Features::canManageTwoFactorAuthentication(),
+    'Two-factor authentication is not enabled.'
+);
+
+it('still drops a setup left unconfirmed when the page is opened again', function (): void {
+    $user = createUser()->refresh();
+
+    getTwoFactorSettingsAs($this, $user)->assertOk();
+
+    $this->postJson(route('two-factor.enable'))->assertOk();
+    $this->get(route('setting.security.two-factor-authentication.index'))->assertOk();
+
+    session()->put('two_factor_confirming_at', Date::now()
+        ->subSeconds(2)
+        ->getTimestamp());
+
+    $this->get(route('setting.security.two-factor-authentication.index'))->assertOk();
+
+    expect($user->refresh()->two_factor_secret)->toBeNull();
+})->skip(
+    fn (): bool => ! Features::canManageTwoFactorAuthentication(),
+    'Two-factor authentication is not enabled.'
+);

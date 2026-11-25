@@ -20,6 +20,7 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Inertia\Support\Header;
 use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use Laravel\Fortify\Features;
@@ -33,6 +34,17 @@ class TwoFactorController extends Controller implements HasMiddleware
             && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword')
                 ? [new Middleware('password.confirm', only: ['index'])]
                 : [];
+    }
+
+    /**
+     * Whether the request only reloads some props of the page already open (its deferred props or a
+     * manual reload). Fortify disables a setup that was not confirmed in the same second it began, so
+     * running that check on these follow-up requests wiped the secret the user had just created and
+     * the QR code and setup key answered 404 until the page was reloaded.
+     */
+    private function isPartialReload(TwoFactorRequest $twoFactorRequest): bool
+    {
+        return $twoFactorRequest->headers->has(Header::PARTIAL_COMPONENT);
     }
 
     private function getAuthenticatedUser(): User
@@ -67,7 +79,9 @@ class TwoFactorController extends Controller implements HasMiddleware
         ];
 
         if (Features::canManageTwoFactorAuthentication()) {
-            $twoFactorRequest->ensureStateIsValid();
+            if (! $this->isPartialReload($twoFactorRequest)) {
+                $twoFactorRequest->ensureStateIsValid();
+            }
 
             $twoFactorEnabled = $user->hasEnabledTwoFactorAuthentication();
 
