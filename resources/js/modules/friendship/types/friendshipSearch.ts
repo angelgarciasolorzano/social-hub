@@ -17,6 +17,8 @@ export interface FriendSearchFilters {
   q: string;
 }
 
+export type FriendshipAction = "accept" | "cancel" | "decline" | "remove" | "send";
+
 export interface FriendshipActionResponse {
   friendshipId: null | number;
   message: string;
