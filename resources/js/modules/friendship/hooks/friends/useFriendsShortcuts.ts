@@ -1,6 +1,6 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
 
-import type { FriendshipListTab } from "../types/friendshipList";
+import type { FriendshipListTab } from "../../types/friendshipList";
 
 interface UseFriendsShortcutsOptions {
   enabled: boolean;

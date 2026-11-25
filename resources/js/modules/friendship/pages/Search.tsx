@@ -18,7 +18,7 @@ import VirtualInfiniteList from "@/shared/components/VirtualInfiniteList";
 import { useTranslation } from "@/shared/hooks";
 
 import FriendshipSearchResultRow from "../components/ui/FriendshipSearchResultRow";
-import { useFriendshipSearch } from "../hooks/useFriendshipSearch";
+import { useFriendshipSearch } from "../hooks/search/useFriendshipSearch";
 import type { FriendSearchFilters, FriendSearchResultCollection } from "../types/friendshipSearch";
 
 const ESTIMATED_ROW_HEIGHT = 88;

@@ -8,8 +8,8 @@ import type {
   FriendshipListItemCollection,
   FriendshipListSort,
   FriendshipListTab,
-} from "../types/friendshipList";
-import type { FriendshipState } from "../types/friendshipSearch";
+} from "../../types/friendshipList";
+import type { FriendshipState } from "../../types/friendshipSearch";
 import { useFriendsFilters } from "./useFriendsFilters";
 import { useFriendsShortcuts } from "./useFriendsShortcuts";
 import { useHiddenFriendships } from "./useHiddenFriendships";

@@ -8,7 +8,7 @@ import type {
   FriendshipListFilters,
   FriendshipListSort,
   FriendshipListTab,
-} from "../types/friendshipList";
+} from "../../types/friendshipList";
 
 interface UseFriendsFiltersOptions {
   delay?: number;

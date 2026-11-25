@@ -28,7 +28,7 @@ import FriendsKeyboardShortcutsDialog from "../components/dialog/FriendsKeyboard
 import FriendRequestsHighlight from "../components/friends/FriendRequestsHighlight";
 import FriendsEmptyState from "../components/friends/FriendsEmptyState";
 import FriendsSortPopover from "../components/friends/FriendsSortPopover";
-import { useFriendsPage } from "../hooks/useFriendsPage";
+import { useFriendsPage } from "../hooks/friends/useFriendsPage";
 import type {
   FriendshipListFilters,
   FriendshipListItem,

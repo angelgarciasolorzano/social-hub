@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { router } from "@inertiajs/react";
 
-import type { FriendshipListFilters, FriendshipListItem } from "../types/friendshipList";
+import type { FriendshipListFilters, FriendshipListItem } from "../../types/friendshipList";
 
 interface HiddenFriendships {
   friendshipIds: number[];
