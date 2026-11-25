@@ -1,9 +1,8 @@
 import type { JSX } from "react";
-import { useId } from "react";
 
-import { AlertTriangleIcon, UserMinusIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { BellOffIcon, EyeOffIcon, UserMinusIcon, UserPlusIcon } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/shared/components/shadcn/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/shadcn/ui/avatar";
 import { Button } from "@/shared/components/shadcn/ui/button";
 import {
@@ -20,11 +19,35 @@ import { Spinner } from "@/shared/components/shadcn/ui/spinner";
 import { useDateTime, useTranslation } from "@/shared/hooks";
 
 import { validImage } from "@/shared/lib";
-import { alertVariants, buttonVariants } from "@/shared/lib/styling";
+import { buttonVariants } from "@/shared/lib/styling";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
 import type { FriendshipPerson } from "../../types/friendshipSearch";
+
+interface RemoveConsequence {
+  descriptionKey: string;
+  icon: LucideIcon;
+  titleKey: string;
+}
+
+const REMOVE_CONSEQUENCES: RemoveConsequence[] = [
+  {
+    descriptionKey: "friendship/button.remove_dialog.consequences.feed",
+    icon: EyeOffIcon,
+    titleKey: "friendship/button.remove_dialog.consequences.feed_title",
+  },
+  {
+    descriptionKey: "friendship/button.remove_dialog.consequences.no_notification",
+    icon: BellOffIcon,
+    titleKey: "friendship/button.remove_dialog.consequences.no_notification_title",
+  },
+  {
+    descriptionKey: "friendship/button.remove_dialog.consequences.request_again",
+    icon: UserPlusIcon,
+    titleKey: "friendship/button.remove_dialog.consequences.request_again_title",
+  },
+];
 
 interface FriendshipRemoveDialogProps {
   isOpen: boolean;
@@ -47,26 +70,20 @@ function FriendshipRemoveDialog(props: FriendshipRemoveDialogProps): JSX.Element
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={isOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserMinusIcon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+      <DialogContent className="gap-6 pt-8 sm:max-w-md">
+        <FriendshipRemoveHeader person={person} />
 
-            {t("friendship/button.remove_dialog.title", { name: person.name })}
-          </DialogTitle>
+        <ul className="flex flex-col gap-6 border-t pt-5">
+          {REMOVE_CONSEQUENCES.map((removeConsequence) => (
+            <FriendshipRemoveConsequenceItem
+              key={removeConsequence.titleKey}
+              name={person.name}
+              removeConsequence={removeConsequence}
+            />
+          ))}
+        </ul>
 
-          <DialogDescription>
-            {t("friendship/button.remove_dialog.description", { name: person.name })}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-4">
-          <FriendshipRemovePersonCard person={person} />
-
-          <FriendshipRemoveConsequences name={person.name} />
-        </div>
-
-        <DialogFooter>
+        <DialogFooter className="grid grid-cols-2 gap-2 sm:grid sm:grid-cols-2">
           <DialogClose asChild>
             <Button disabled={isRemoving} type="button" variant="outline">
               {t("friendship/button.remove_dialog.cancel")}
@@ -95,11 +112,11 @@ function FriendshipRemoveDialog(props: FriendshipRemoveDialogProps): JSX.Element
   );
 }
 
-interface FriendshipRemovePersonCardProps {
+interface FriendshipRemoveHeaderProps {
   person: FriendshipPerson;
 }
 
-function FriendshipRemovePersonCard(props: FriendshipRemovePersonCardProps): JSX.Element {
+function FriendshipRemoveHeader(props: FriendshipRemoveHeaderProps): JSX.Element {
   const { person } = props;
 
   const { t, tChoice } = useTranslation();
@@ -108,70 +125,80 @@ function FriendshipRemovePersonCard(props: FriendshipRemovePersonCardProps): JSX
 
   const { friendsSince = null, mutualFriendsCount = 0, name, profilePicture } = person;
 
+  const personDetails = [
+    friendsSince !== null
+      ? t("friendship/button.remove_dialog.friends_since", { date: formatFullDate(friendsSince) })
+      : null,
+    mutualFriendsCount > 0
+      ? tChoice("friendship/button.remove_dialog.mutual_friends", mutualFriendsCount, {
+          count: mutualFriendsCount,
+        })
+      : null,
+  ].filter((personDetail) => personDetail !== null);
+
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
-      <Avatar className="size-12">
-        <AvatarImage
-          alt=""
-          className="object-cover"
-          src={validImage(profilePicture ?? null, profilePicturePlaceholder)}
-        />
+    <DialogHeader className="items-center gap-3.5 text-center sm:text-center">
+      <div className="relative">
+        <Avatar className="size-18 ring-4 ring-background">
+          <AvatarImage
+            alt=""
+            className="object-cover"
+            src={validImage(profilePicture ?? null, profilePicturePlaceholder)}
+          />
 
-        <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
-      </Avatar>
+          <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
 
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="truncate text-sm font-medium">{name}</p>
-
-        {friendsSince !== null && (
-          <p className="text-xs text-muted-foreground">
-            {t("friendship/button.remove_dialog.friends_since", {
-              date: formatFullDate(friendsSince),
-            })}
-          </p>
-        )}
-
-        {mutualFriendsCount > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {tChoice("friendship/button.remove_dialog.mutual_friends", mutualFriendsCount, {
-              count: mutualFriendsCount,
-            })}
-          </p>
-        )}
+        <span
+          aria-hidden="true"
+          className="absolute -right-1 -bottom-1 flex size-7 items-center justify-center rounded-full bg-red-600 text-white ring-4 ring-background dark:bg-red-700"
+        >
+          <UserMinusIcon className="size-3.5" strokeWidth={2.25} />
+        </span>
       </div>
-    </div>
+
+      <div className="flex flex-col gap-1.5">
+        <DialogTitle className="text-lg leading-snug">
+          {t("friendship/button.remove_dialog.title", { name })}
+        </DialogTitle>
+
+        <DialogDescription>
+          {personDetails.length > 0
+            ? personDetails.join(" · ")
+            : t("friendship/button.remove_dialog.description", { name })}
+        </DialogDescription>
+      </div>
+    </DialogHeader>
   );
 }
 
-interface FriendshipRemoveConsequencesProps {
+interface FriendshipRemoveConsequenceItemProps {
   name: string;
+  removeConsequence: RemoveConsequence;
 }
 
-function FriendshipRemoveConsequences(props: FriendshipRemoveConsequencesProps): JSX.Element {
-  const { name } = props;
+function FriendshipRemoveConsequenceItem(props: FriendshipRemoveConsequenceItemProps): JSX.Element {
+  const { name, removeConsequence } = props;
 
   const { t } = useTranslation();
 
-  const titleId = useId();
+  const { descriptionKey, icon: ConsequenceIcon, titleKey } = removeConsequence;
 
   return (
-    <Alert aria-labelledby={titleId} className={alertVariants.warning}>
-      <AlertTriangleIcon aria-hidden="true" />
+    <li className="flex items-start gap-3">
+      <span
+        aria-hidden="true"
+        className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+      >
+        <ConsequenceIcon className="size-4" />
+      </span>
 
-      <h3 className="col-start-2 min-h-4 text-sm font-medium tracking-tight" id={titleId}>
-        {t("friendship/button.remove_dialog.consequences_title")}
-      </h3>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-sm font-medium">{t(titleKey)}</span>
 
-      <AlertDescription>
-        <ul className="mt-1 list-inside list-disc space-y-1.5">
-          <li>{t("friendship/button.remove_dialog.consequences.feed", { name })}</li>
-
-          <li>{t("friendship/button.remove_dialog.consequences.no_notification", { name })}</li>
-
-          <li>{t("friendship/button.remove_dialog.consequences.request_again")}</li>
-        </ul>
-      </AlertDescription>
-    </Alert>
+        <span className="text-sm text-muted-foreground">{t(descriptionKey, { name })}</span>
+      </div>
+    </li>
   );
 }
 
