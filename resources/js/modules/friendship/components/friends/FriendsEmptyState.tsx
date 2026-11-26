@@ -46,7 +46,7 @@ function FriendsEmptyState(props: FriendsEmptyStateProps): JSX.Element {
   const Icon = isFiltered ? SearchXIcon : icon;
 
   return (
-    <div className="flex flex-col items-center rounded-xl border border-dashed px-6 py-12 text-center">
+    <div className="flex flex-col items-center rounded-xl border border-dashed bg-muted/30 px-6 py-12 text-center dark:bg-muted/20">
       <div
         aria-hidden="true"
         className={cn(
