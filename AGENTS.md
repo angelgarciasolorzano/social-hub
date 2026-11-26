@@ -10,6 +10,14 @@ Before editing files for a substantial task:
 <!-- intent-skills:end -->
 
 <laravel-boost-guidelines>
+=== .ai/rector/core rules ===
+
+# Rector
+
+- Los agentes de IA DEBEN ejecutar `composer rector-clear-cache`, después `composer rector-dry` y después `composer rector` en toda tarea que modifique archivos PHP, aunque el cambio no sea un refactor grande.
+- Limpia la caché de Rector (`composer rector-clear-cache`) antes de `composer rector-dry`: la caché local (`storage/rector`) puede dar un resultado limpio mientras el CI sí marca cambios. Ejecuta Rector sobre todo el proyecto, sin rutas parciales, para que las reglas de renombrado resuelvan los tipos de otros archivos.
+- `composer rector` es un gate obligatorio y debe aplicarse automáticamente después de revisar el resultado de `composer rector-dry`; no requiere aprobación adicional del usuario.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -42,6 +50,12 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - Stick to existing directory structure; don't create new base folders without approval.
 - Do not change the application's dependencies without approval.
+
+### Data and Resources
+
+- Use `spatie/laravel-data` classes under `app/**/Data/` for typed request filters, input objects, and internal structures that do not represent Eloquent models.
+- Use Laravel `JsonResource` classes under `app/**/Resources/` to serialize Eloquent models for Inertia or API output.
+- Do not duplicate a model transformation in both a Data class and a Resource.
 
 ### Admin: Filament and Spatie Permission
 
@@ -125,14 +139,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Follow existing application Enum naming conventions.
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
-
-=== rector/core rules ===
-
-# Rector
-
-- Los agentes de IA DEBEN ejecutar `composer rector-clear-cache`, después `composer rector-dry` y después `composer rector` en toda tarea que modifique archivos PHP, aunque el cambio no sea un refactor grande.
-- Limpia la caché de Rector (`composer rector-clear-cache`) antes de `composer rector-dry`: la caché local (`storage/rector`) puede dar un resultado limpio mientras el CI sí marca cambios. Ejecuta Rector sobre todo el proyecto, sin rutas parciales, para que las reglas de renombrado resuelvan los tipos de otros archivos.
-- `composer rector` es un gate obligatorio y debe aplicarse automáticamente después de revisar el resultado de `composer rector-dry`; no requiere aprobación adicional del usuario.
 
 === deployments rules ===
 
