@@ -43,8 +43,10 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
 
   const isFriend = friendshipState === "friends";
 
+  const hasCoverImage = user.coverImage !== null;
+
   const viewProfileButton = (
-    <Button asChild className={cn(isFriend && "flex-1")} size="sm" variant="outline">
+    <Button asChild className="flex-1" size="sm" variant="outline">
       <Link href={show(user.id)}>{t("friendship/friends.card.view_profile")}</Link>
     </Button>
   );
@@ -54,7 +56,6 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
       friendshipId={friendshipId}
       friendshipState={friendshipState}
       friendsSince={isFriend ? since : null}
-      fullWidth={!isFriend}
       mutualFriendsCount={mutualFriendsCount}
       onChange={onFriendshipChange}
       profilePicture={user.profilePicture}
@@ -65,57 +66,87 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
 
   return (
     <article className="flex flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
-      <div aria-hidden="true" className="h-16 bg-muted">
-        {user.coverImage !== null ? (
-          <img alt="" className="size-full object-cover" loading="lazy" src={user.coverImage} />
+      <div className="relative aspect-[16/10] bg-muted">
+        {hasCoverImage ? (
+          <img
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 size-full object-cover"
+            loading="lazy"
+            src={user.coverImage ?? undefined}
+          />
         ) : (
-          <div className="flex size-full items-center justify-center text-muted-foreground/60">
-            <ImageIcon className="size-5" />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 flex items-center justify-center pb-16 text-muted-foreground/60"
+          >
+            <ImageIcon className="size-6" />
           </div>
         )}
+
+        {hasCoverImage && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-linear-to-t from-black/80 via-black/35 via-40% to-transparent to-65%"
+          />
+        )}
+
+        <div className="absolute inset-x-4 bottom-3.5 flex items-center gap-3">
+          <Avatar className={cn("size-11 ring-2", hasCoverImage ? "ring-white/85" : "ring-card")}>
+            <AvatarImage
+              alt={t("friendship/friends.card.profile_picture_alt", { name: user.name })}
+              src={validImage(user.profilePicture, profilePicturePlaceholder)}
+            />
+
+            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+          </Avatar>
+
+          <div className="min-w-0 space-y-0.5">
+            <h2
+              className={cn(
+                "truncate text-base font-semibold",
+                hasCoverImage ? "text-white" : "text-foreground",
+              )}
+            >
+              <Link
+                className={cn(
+                  "rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none",
+                  hasCoverImage ? "focus-visible:ring-white/80" : "focus-visible:ring-ring",
+                )}
+                href={show(user.id)}
+              >
+                {user.name}
+              </Link>
+            </h2>
+
+            {sinceText !== null && (
+              <p
+                className={cn(
+                  "truncate text-xs",
+                  hasCoverImage ? "text-white/80" : "text-muted-foreground",
+                )}
+              >
+                {sinceText}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="-mt-7 flex flex-1 flex-col gap-3 px-4 pb-4">
-        <Avatar className="size-14 border-3 border-card">
-          <AvatarImage
-            alt={t("friendship/friends.card.profile_picture_alt", { name: user.name })}
-            src={validImage(user.profilePicture, profilePicturePlaceholder)}
-          />
-
-          <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
-
-        <div className="min-w-0 space-y-0.5">
-          <h2 className="truncate text-[15px] font-semibold">
-            <Link className="hover:underline" href={show(user.id)}>
-              {user.name}
-            </Link>
-          </h2>
-
-          {sinceText !== null && <p className="text-xs text-muted-foreground">{sinceText}</p>}
-        </div>
-
+      <div className="flex flex-1 flex-col gap-3 p-4">
         {mutualFriendsCount > 0 && (
-          <p className="text-xs text-foreground/80">
+          <p className="text-xs text-muted-foreground">
             {tChoice("friendship/friends.card.mutual_friends", mutualFriendsCount, {
               count: mutualFriendsCount,
             })}
           </p>
         )}
 
-        {isFriend ? (
-          <div className="mt-auto flex flex-wrap items-start gap-2">
-            {viewProfileButton}
+        <div className="mt-auto flex flex-wrap items-start gap-2">
+          {viewProfileButton}
 
-            {friendshipButton}
-          </div>
-        ) : (
-          <div className="mt-auto flex flex-col gap-2">
-            {viewProfileButton}
-
-            {friendshipButton}
-          </div>
-        )}
+          {friendshipButton}
+        </div>
       </div>
     </article>
   );

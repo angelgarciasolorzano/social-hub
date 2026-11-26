@@ -25,16 +25,20 @@ function FriendshipCardSkeleton(props: FriendshipCardSkeletonProps): JSX.Element
           className="flex flex-col overflow-hidden rounded-xl border bg-card"
           key={position}
         >
-          <Skeleton className="h-16 rounded-none" />
+          <div className="relative aspect-[16/10]">
+            <Skeleton className="absolute inset-0 rounded-none" />
 
-          <div className="-mt-7 flex flex-col gap-3 px-4 pb-4">
-            <Skeleton className="size-14 rounded-full border-3 border-card" />
+            <div className="absolute inset-x-4 bottom-3.5 flex items-center gap-3">
+              <Skeleton className="size-11 shrink-0 rounded-full bg-foreground/10" />
 
-            <div className="space-y-1.5">
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-3 w-1/2" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-2/3 bg-foreground/10" />
+                <Skeleton className="h-3 w-1/2 bg-foreground/10" />
+              </div>
             </div>
+          </div>
 
+          <div className="flex flex-col gap-3 p-4">
             <Skeleton className="h-3 w-1/3" />
 
             <div className="flex gap-2">

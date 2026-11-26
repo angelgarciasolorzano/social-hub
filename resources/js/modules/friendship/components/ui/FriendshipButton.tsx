@@ -31,7 +31,6 @@ interface FriendshipButtonProps {
   friendshipId: null | number;
   friendshipState: FriendshipState;
   friendsSince?: null | string;
-  fullWidth?: boolean;
   mutualFriendsCount?: number;
   onChange?: (friendshipState: FriendshipState, friendshipId: null | number) => void;
   profilePicture?: null | string;
@@ -44,7 +43,6 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
     friendshipId,
     friendshipState,
     friendsSince,
-    fullWidth = false,
     mutualFriendsCount,
     onChange,
     profilePicture,
@@ -66,12 +64,11 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
   } = useFriendshipButton({ friendshipId, friendshipState, onChange, userId, userName });
 
   return (
-    <div className={cn("flex flex-col gap-1", fullWidth ? "w-full items-stretch" : "items-end")}>
-      <div aria-busy={pendingAction !== null} className={cn("flex gap-2", fullWidth && "w-full")}>
+    <div className="flex flex-col items-end gap-1">
+      <div aria-busy={pendingAction !== null} className="flex gap-2">
         {currentFriendshipState === "none" && (
           <Button
             aria-label={processingLabel("send")}
-            className={cn(fullWidth && "flex-1")}
             disabled={isProcessing}
             onClick={() => {
               runAction("send");
@@ -92,7 +89,6 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
               className={cn(
                 buttonVariants.blue,
                 "focus-visible:ring-blue-600/50",
-                fullWidth && "flex-1",
                 pendingAction === "accept" && "disabled:opacity-100",
               )}
               disabled={isProcessing}
@@ -108,7 +104,6 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
 
             <Button
               aria-label={processingLabel("decline")}
-              className={cn(fullWidth && "flex-1")}
               disabled={isProcessing}
               onClick={() => {
                 runAction("decline");
@@ -127,7 +122,6 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
           <FriendshipMenu
             actionIcon={LuUserRoundX}
             actionLabel={t("friendship/button.menu.cancel_request")}
-            fullWidth={fullWidth}
             isPending={pendingAction === "cancel"}
             isProcessing={isProcessing}
             menuLabel={
@@ -145,7 +139,6 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
           <FriendshipMenu
             actionIcon={LuUserRoundMinus}
             actionLabel={t("friendship/button.menu.remove_friend")}
-            fullWidth={fullWidth}
             isPending={pendingAction === "remove"}
             isProcessing={isProcessing}
             menuLabel={
@@ -182,7 +175,6 @@ function FriendshipButton(props: FriendshipButtonProps): JSX.Element {
 interface FriendshipMenuProps {
   actionIcon: typeof LuUserRoundX;
   actionLabel: string;
-  fullWidth: boolean;
   isPending: boolean;
   isProcessing: boolean;
   menuLabel: string;
@@ -195,7 +187,6 @@ function FriendshipMenu(props: FriendshipMenuProps): JSX.Element {
   const {
     actionIcon: ActionMenuIcon,
     actionLabel,
-    fullWidth,
     isPending,
     isProcessing,
     menuLabel,
@@ -209,7 +200,6 @@ function FriendshipMenu(props: FriendshipMenuProps): JSX.Element {
       <DropdownMenuTrigger asChild>
         <Button
           aria-label={menuLabel}
-          className={cn(fullWidth && "flex-1")}
           disabled={isProcessing}
           size="sm"
           type="button"
