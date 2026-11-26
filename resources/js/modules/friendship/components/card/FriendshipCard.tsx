@@ -43,10 +43,12 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
 
   const isFriend = friendshipState === "friends";
 
+  const isReceived = friendshipState === "request_received";
+
   const hasCoverImage = user.coverImage !== null;
 
   const viewProfileButton = (
-    <Button asChild className="flex-1" size="sm" variant="outline">
+    <Button asChild className={cn(!isReceived && "flex-1")} size="sm" variant="outline">
       <Link href={show(user.id)}>{t("friendship/friends.card.view_profile")}</Link>
     </Button>
   );
@@ -56,6 +58,7 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
       friendshipId={friendshipId}
       friendshipState={friendshipState}
       friendsSince={isFriend ? since : null}
+      fullWidth={isReceived}
       mutualFriendsCount={mutualFriendsCount}
       onChange={onFriendshipChange}
       profilePicture={user.profilePicture}
@@ -142,7 +145,9 @@ function FriendshipCard(props: FriendshipCardProps): JSX.Element {
           </p>
         )}
 
-        <div className="mt-auto flex flex-wrap items-start gap-2">
+        <div
+          className={cn("mt-auto flex gap-2", isReceived ? "flex-col" : "flex-wrap items-start")}
+        >
           {viewProfileButton}
 
           {friendshipButton}
