@@ -1,0 +1,803 @@
+{
+  "title": "SOC-88 — Polish the friends page and the home layout",
+  "slug": "soc-88-friends-page-polish",
+  "linear": "SOC-88",
+  "epic": "SOC-82",
+  "mode": "EXPANSION",
+  "review": "claude",
+  "overview": "La vista de amigos funciona, pero se ve simple. Este plan aplica la propuesta B del lienzo de Claude Design y mejora el layout de inicio:\n\n* **Vista de amigos:**\n  * cuadrícula de tarjetas con `<InfiniteScroll>`, sin virtualizar;\n  * bloque azul con las solicitudes recibidas;\n  * pestañas subrayadas con contadores de color;\n  * filtro con foco al abrir y al cambiar de pestaña;\n  * selector de orden (recientes o por nombre) en las tres pestañas;\n  * skeleton de tarjetas al cambiar de pestaña;\n  * estados vacíos con ícono y color;\n  * barra fija al hacer scroll;\n  * atajos de teclado con `@tanstack/react-hotkeys`.\n* **Backend:**\n  * amigos en común por tarjeta, en la misma consulta de la lista, con la lógica de la búsqueda extraída a una clase compartida;\n  * parámetro `sort` validado;\n  * las solicitudes recientes de `friendRequests` con sus amigos en común.\n* **Layout:**\n  * menos margen;\n  * sidebars del mismo ancho;\n  * el derecho reservado para módulos futuros;\n  * el izquierdo rediseñado con `lucide-react` y badges de color;\n  * en pantallas chicas, el menú pasa a un panel lateral (`Sheet`) y los sidebars se ocultan.",
+  "scopeChallenge": {
+    "exists": [
+      "`FriendshipIndexController` arma cada pestaña con `tabQuery()` (otra persona activa, filtro con `LikePattern`), ordena por `accepted_at`/`created_at` + `id` y pagina con `cursorPaginate` (`module.friendship.list_page_size`, 20) a través de `Inertia::scroll`.",
+      "`FriendshipSearchController` ya calcula los amigos en común en la misma consulta (`mutualFriendsCount()` + `friendIdsOf()`, dos subconsultas por lado del par).",
+      "`FriendshipListItemResource` serializa `{friendshipId, friendshipState, since, user}` y lanza `LogicException` si falta la relación de la otra persona. `FriendshipProps` lo reutiliza para `friendRequests.recent` (5 solicitudes).",
+      "`Friends.tsx`:\n  * renderiza `Tabs` de shadcn con un `Loader2Icon` en la pestaña pendiente y contadores grises;\n  * usa `VirtualInfiniteList` y un `main` con `max-w-3xl`.\n  * `useFriendsFilters` guarda `tab` y `q` en la URL.",
+      "`HomeLayout` monta `HomeSidebarLeft` (`w-64`, íconos de `react-icons/lu`, badges negros) y `HomeSidebarRight` (`w-64`, solo `FriendRequestsPanel`); el contenido central suma `px-4`.",
+      "`@tanstack/react-hotkeys` ya se usa en `useTrustedDeviceShortcuts` con `useHotkey` y `useHotkeySequences`, `ignoreInputs` y un diálogo de atajos.",
+      "shadcn ya trae `Skeleton`, `Sheet`, `Select`, `Kbd`, `Tabs`, `Card`, `DropdownMenu` y `Avatar`."
+    ],
+    "reuse": [
+      "La subconsulta de amigos en común de la búsqueda, extraída a `Queries/MutualFriendsQuery`.",
+      "`FriendshipButton` en cada tarjeta y en el bloque de solicitudes, con sus estados, menús y manejo de 409/429.",
+      "`reloadFriendshipDependentProps` para recargar contadores, lista y `friendRequests` después de una acción.",
+      "El patrón de `useTrustedDeviceShortcuts` y su diálogo de atajos."
+    ],
+    "new": [
+      "El enum `FriendshipListSort` (`recent`, `name`) y su espejo en TypeScript.",
+      "`mutualFriendsCount` en `FriendshipListItemResource`.",
+      "Los componentes `FriendshipCard`, `FriendshipCardSkeleton`, `FriendshipCardGrid`, `FriendRequestsHighlight`, `FriendsEmptyState`, `FriendsKeyboardShortcutsDialog` y `HomeMobileNavigation`, y el hook `useFriendsShortcuts`."
+    ],
+    "decisions": [
+      "Modo EXPANSION y revisión `claude` después de cada tarea.",
+      "Propuesta B de Claude Design (https://claude.ai/artifact/7QncCbdbsrP6bohSGEB3BX).",
+      "`<InfiniteScroll>` sin virtualizar para la cuadrícula; `VirtualInfiniteList` no se toca porque el feed la usa.",
+      "El orden aplica a las tres pestañas y vive en la URL (`?sort=name`; `recent` se omite).",
+      "Extras de EXPANSION: atajo `/`, atajos de pestañas, orden y ayuda; estados vacíos con ícono; barra sticky; sidebars responsive.",
+      "`friendRequests.recent` se queda: deja el sidebar derecho y alimenta el bloque de la vista de amigos, que muestra 2 solicitudes."
+    ],
+    "directExecution": "No: toca la consulta paginada de la lista, una clase compartida con la búsqueda, una prop compartida en todas las páginas, el layout de todas las páginas y dos pruebas de navegador."
+  },
+  "prerequisites": [
+    "SOC-84, SOC-85 y SOC-86 están mergeadas: vista de amigos, notificaciones de amistad y feed.",
+    "`FriendshipSeeder` deja amigos, solicitudes recibidas y enviadas en local para revisar a mano.",
+    "Chromium instalado para `composer test:browser`."
+  ],
+  "nonGoals": [
+    "Contenido nuevo del panel derecho (sugerencias, actividad): solo se reserva el espacio.",
+    "Mensajes entre amigos.",
+    "Virtualizar la cuadrícula: se evalúa en otra tarea si el DOM llega a pesar.",
+    "Cambios en las reglas de amistad, en sus endpoints de acción o en el panel de Filament.",
+    "Usar el componente `Sidebar` de shadcn: solo se toma su estilo."
+  ],
+  "contracts": [
+    {
+      "name": "Orden de la lista",
+      "detail": "`App\\Modules\\Friendship\\Enums\\FriendshipListSort: string` con `Recent = 'recent'` y `Name = 'name'`.\n\n* **Request:** `FriendshipIndexRequest` valida `sort` como enum nullable (mensaje `friendship/friends.validation.sort_invalid`) y expone `sort(): FriendshipListSort` (`Recent` por defecto).\n* **Orden `recent`:** como hoy, por `accepted_at` o `created_at` desc + `id` desc.\n* **Orden `name`:** por el nombre de la otra persona asc + `friendships.id` asc. La otra persona se une con `users` sobre `CASE WHEN requester_id = viewer THEN receiver_id ELSE requester_id END`, para que `cursorPaginate` compare una columna real.\n* **Props:** `filters` pasa a ser `{tab, q, sort}`.\n* **Mirror en TypeScript:** `FriendshipListSort = \"recent\" | \"name\"` en `types/friendshipList.ts`."
+    },
+    {
+      "name": "Amigos en común",
+      "detail": "`App\\Modules\\Friendship\\Queries\\MutualFriendsQuery`:\n\n* `friendIdsOf(User): QueryBuilder` es la unión de los dos índices `(<side>_id, status)`.\n* `countFor(User $viewer, string $otherUserIdColumn): QueryBuilder` es una subconsulta escalar que cuenta las amistades aceptadas de la otra persona cuyo otro lado está entre los amigos del viewer. Recibe solo un nombre de columna: PHPStan no acepta una `Expression` armada con el id del viewer.\n* La búsqueda la usa con `users.id`; la lista, con la columna `id` del `users` unido sobre el `CASE` de la otra persona (en los dos órdenes); y `FriendshipProps`, con `friendships.requester_id`.\n* **Resource:** `FriendshipListItemResource` agrega `mutualFriendsCount: int` y lanza `LogicException` si la consulta no seleccionó `mutual_friends_count`, igual que con las relaciones."
+    },
+    {
+      "name": "friendRequests compartida",
+      "detail": "`{pendingCount: int, recent: FriendshipListItem[]}` con `RECENT_REQUESTS_LIMIT = 2`. Cada elemento trae `mutualFriendsCount`. Sigue siendo deferred y con consultas constantes; el badge del menú sigue leyendo `pendingCount`."
+    },
+    {
+      "name": "Vista de amigos",
+      "detail": "* **Cuadrícula:** 3 columnas en `xl`, 2 en `md` y 1 en pantallas chicas, dentro de `<InfiniteScroll data=\"friendships\" onlyNext preserveUrl>`.\n* **Carga:** mientras carga una pestaña, la cuadrícula muestra 6 `FriendshipCardSkeleton`; el slot `loading` muestra 3 más.\n* **Foco:** el filtro recibe el foco al montar la página y en `onSuccess` de cada cambio de pestaña.\n* **Orden:** el selector recarga con `only: ['friendships', 'filters']` y `reset: ['friendships']`.\n* **Bloque de solicitudes:** lee `friendRequests` con `<Deferred>`. Aparece solo si `pendingCount > 0`, en cualquier pestaña, y enlaza a `?tab=received`.\n* **Atajos:** se ignoran dentro de inputs y con un diálogo o menú abierto:\n  * `/` enfoca el filtro;\n  * `1`, `2` y `3` cambian de pestaña;\n  * `o` alterna el orden;\n  * `Shift+?` abre la ayuda."
+    },
+    {
+      "name": "Layout",
+      "detail": "* **Sidebars:** los dos miden `w-64` desde `lg`; por debajo, se ocultan.\n* **Contenido central:** usa `px-3 lg:px-6`, y la vista de amigos usa `max-w-6xl`.\n* **Pantallas chicas:** el header muestra un botón de menú que abre `HomeMobileNavigation` (`Sheet` a la izquierda) con la misma lista de navegación.\n* **Panel derecho:** muestra un espacio reservado, con texto de `home/sidebar.reserved.*`.\n* **Badges del menú:** Amigos en azul (`bg-blue-600`) y Notificaciones en naranja (`bg-orange-500`), con texto blanco."
+    }
+  ],
+  "existingCodeLeverage": [
+    "`app/Modules/Friendship/Controllers/FriendshipSearchController.php`: amigos en común en la misma consulta.",
+    "`app/Modules/Friendship/Controllers/FriendshipIndexController.php`: `tabQuery()`, `withOtherUser()` y la paginación.",
+    "`resources/js/modules/friendship/components/FriendshipButton.tsx`: acciones por estado, menús `modal={false}` y errores.",
+    "`resources/js/modules/friendship/components/FriendRequestsPanel.tsx`: lectura de `friendRequests` con `<Deferred>` y recarga.",
+    "`resources/js/modules/setting/modules/trustedDevice/hooks/useTrustedDeviceShortcuts.ts`: atajos con `@tanstack/react-hotkeys`.",
+    "`resources/js/shared/components/shadcn/ui/sheet.tsx`, `skeleton.tsx`, `select.tsx` y `kbd.tsx`."
+  ],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Add the texts of the redesigned friends page",
+      "description": "En `lang/{en,es}/friendship/friends.php`:\n\n* **`sort.*`:** etiqueta, `recent` y `name`.\n* **`validation.sort_invalid`.**\n* **`requests.*`:** título del bloque, `view_all` con `:count` y el texto de accesibilidad.\n* **`card.*`:** amigos en común con plural, \"Ver perfil\", \"Más opciones\" y el texto alternativo de la foto.\n* **`states.end_of_list`.**\n* **`shortcuts.*`:** título, descripción y cada atajo.\n* **Placeholder del filtro:** cambia a \"Filtrar por nombre\" / \"Filter by name\".",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/friendship/friends.php",
+        "lang/es/friendship/friends.php"
+      ],
+      "acceptanceCriteria": [
+        "Los dos idiomas tienen las mismas claves y placeholders; `card.mutual_friends` usa `trans_choice` con 0, 1 y varios.",
+        "La prueba de paridad falla si falta una clave nueva en `es`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Translations/FriendshipTranslationKeysTest.php",
+      "writeScope": [
+        "lang/en/friendship/friends.php",
+        "lang/es/friendship/friends.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Add the texts of the reserved panel and the mobile menu",
+      "description": "En `lang/{en,es}/home/sidebar.php`:\n\n* **`reserved.{title, description}`:** el panel derecho reservado.\n* **`mobile.{open, close, title}`:** el menú en pantallas chicas.\n* **`navigation.section`:** la etiqueta de la sección del menú.\n\nLas claves `friend_requests.*` se quedan hasta TASK-018.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [],
+      "filesToModify": [
+        "lang/en/home/sidebar.php",
+        "lang/es/home/sidebar.php"
+      ],
+      "acceptanceCriteria": [
+        "Los dos idiomas tienen las mismas claves.",
+        "`SettingTranslationKeysTest` (paridad de `lang/*/home/`) falla si falta una clave en `es`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/Translation",
+      "writeScope": [
+        "lang/en/home/sidebar.php",
+        "lang/es/home/sidebar.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-003",
+      "title": "Validate the sort of the friends list",
+      "description": "Crear `Enums/FriendshipListSort` (`recent`, `name`). En `FriendshipIndexRequest`, agregar la regla `sort` (enum nullable con `validation.sort_invalid`) y `sort(): FriendshipListSort`. Prueba nueva de la request.",
+      "type": "feature",
+      "priority": "P0",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-001"
+      ],
+      "filesToCreate": [
+        "app/Modules/Friendship/Enums/FriendshipListSort.php",
+        "app/Modules/Friendship/Tests/Requests/FriendshipIndexRequestTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Friendship/Requests/FriendshipIndexRequest.php"
+      ],
+      "acceptanceCriteria": [
+        "Sin `sort`, `sort()` devuelve `Recent`; con `name`, devuelve `Name`.",
+        "`sort=oldest` falla con el mensaje traducido de `validation.sort_invalid`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Requests/FriendshipIndexRequestTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Enums/FriendshipListSort.php",
+        "app/Modules/Friendship/Tests/Requests/FriendshipIndexRequestTest.php",
+        "app/Modules/Friendship/Requests/FriendshipIndexRequest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-004",
+      "title": "Extract the mutual friends count into a shared query",
+      "description": "Crear `Queries/MutualFriendsQuery` con `friendIdsOf()` y `countFor()` según el contrato, y hacer que `FriendshipSearchController` lo use en lugar de sus métodos privados. La búsqueda no cambia de resultado ni de número de consultas.",
+      "type": "refactor",
+      "priority": "P0",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [],
+      "filesToCreate": [
+        "app/Modules/Friendship/Queries/MutualFriendsQuery.php",
+        "app/Modules/Friendship/Tests/Queries/MutualFriendsQueryTest.php"
+      ],
+      "filesToModify": [
+        "app/Modules/Friendship/Controllers/FriendshipSearchController.php"
+      ],
+      "acceptanceCriteria": [
+        "`countFor()` cuenta solo amistades aceptadas en común: no cuenta las pendientes ni al propio viewer.",
+        "Funciona con `users.id` y con una columna de una fila externa de `friendships`, sin chocar con las filas que cuenta.",
+        "`FriendshipSearchTest` sigue pasando sin cambios, incluida la de consultas constantes."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Queries/MutualFriendsQueryTest.php app/Modules/Friendship/Tests/Crud/FriendshipSearchTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Queries/MutualFriendsQuery.php",
+        "app/Modules/Friendship/Tests/Queries/MutualFriendsQueryTest.php",
+        "app/Modules/Friendship/Controllers/FriendshipSearchController.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-005",
+      "title": "Sort the friends list and add the mutual friends count",
+      "description": "**En `FriendshipIndexController`:**\n\n* aplica `sort()`; `name` une `users` con la otra persona según el contrato;\n* selecciona `mutual_friends_count` con `MutualFriendsQuery`;\n* devuelve `filters.sort`.\n\n**En `FriendshipListItemResource`:** agregar `mutualFriendsCount`.\n\n**En `FriendshipIndexTest`:** casos de orden por nombre, cursor estable, amigos en común y consultas constantes.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-003",
+        "TASK-004"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Friendship/Controllers/FriendshipIndexController.php",
+        "app/Modules/Friendship/Resources/FriendshipListItemResource.php",
+        "app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php"
+      ],
+      "acceptanceCriteria": [
+        "`sort=name` ordena por el nombre de la otra persona en las tres pestañas, y la segunda página del cursor sigue sin repetir ni saltar filas.",
+        "Cada elemento trae `mutualFriendsCount` correcto, y listar 3 o 15 filas hace las mismas consultas.",
+        "El resource lanza `LogicException` si la consulta no seleccionó `mutual_friends_count`."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php app/Modules/Friendship/Tests/Security/FriendshipIndexSecurityTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Controllers/FriendshipIndexController.php",
+        "app/Modules/Friendship/Resources/FriendshipListItemResource.php",
+        "app/Modules/Friendship/Tests/Crud/FriendshipIndexTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-006",
+      "title": "Send two recent requests with their mutual friends",
+      "description": "En `FriendshipProps`:\n\n* `RECENT_REQUESTS_LIMIT = 2`;\n* las solicitudes recientes seleccionan `mutual_friends_count` con `MutualFriendsQuery`;\n* el docblock deja de mencionar el sidebar derecho.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Friendship/Props/FriendshipProps.php",
+        "app/Modules/Friendship/Tests/Props/FriendshipPropsTest.php"
+      ],
+      "acceptanceCriteria": [
+        "`recent` trae como máximo 2 solicitudes, las más nuevas, cada una con `mutualFriendsCount`.",
+        "Las solicitudes de cuentas suspendidas siguen fuera, y las consultas no dependen del número de solicitudes."
+      ],
+      "validateCommand": "php -d memory_limit=2G vendor/bin/pest --compact app/Modules/Friendship/Tests/Props/FriendshipPropsTest.php",
+      "writeScope": [
+        "app/Modules/Friendship/Props/FriendshipProps.php",
+        "app/Modules/Friendship/Tests/Props/FriendshipPropsTest.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-007",
+      "title": "Type the sort and keep it in the URL",
+      "description": "**En `types/friendshipList.ts`:**\n\n* `FriendshipListSort` y `filters.sort`;\n* `mutualFriendsCount` en `FriendshipListItem`.\n\n**En `useFriendsFilters`:**\n\n* `sort` en la URL (se omite `recent`) y `changeSort()`;\n* `loadingTab` en lugar de `pendingTab`, para el skeleton;\n* `onTabLoaded`, que la página usa para enfocar el filtro.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-005"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/friendship/types/friendshipList.ts",
+        "resources/js/modules/friendship/hooks/useFriendsFilters.ts"
+      ],
+      "acceptanceCriteria": [
+        "Cambiar el orden hace una sola visita con `only: ['friendships', 'filters']` y `reset: ['friendships']`, y conserva `tab` y `q`.",
+        "Una visita cancelada por otra más nueva no deja `loadingTab` ni los filtros a medias."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/types/friendshipList.ts resources/js/modules/friendship/hooks/useFriendsFilters.ts && npx prettier --check resources/js/modules/friendship/types/friendshipList.ts resources/js/modules/friendship/hooks/useFriendsFilters.ts",
+      "writeScope": [
+        "resources/js/modules/friendship/types/friendshipList.ts",
+        "resources/js/modules/friendship/hooks/useFriendsFilters.ts"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-008",
+      "title": "Make the accept button blue",
+      "description": "En `FriendshipButton`:\n\n* \"Aceptar\" usa azul (`bg-blue-600 hover:bg-blue-700 text-white`, con foco visible);\n* \"Rechazar\" queda en `outline`.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/friendship/components/FriendshipButton.tsx"
+      ],
+      "acceptanceCriteria": [
+        "El botón \"Aceptar\" es azul en sus estados normal, hover y de carga, con contraste ≥ 4.5:1.",
+        "Los demás estados del botón y su manejo de 409/429 no cambian."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/components/FriendshipButton.tsx && npx prettier --check resources/js/modules/friendship/components/FriendshipButton.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendshipButton.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-009",
+      "title": "Build the friend card and its skeleton",
+      "description": "**`FriendshipCard`:**\n\n* portada de color derivada del id del usuario;\n* `Avatar`, nombre con enlace al perfil, \"Amigos desde\" o \"Enviada\" y los amigos en común;\n* \"Ver perfil\" y `FriendshipButton` para las acciones de cada estado.\n\n**`FriendshipCardSkeleton`:** el `Skeleton` de shadcn con la misma forma.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-007",
+        "TASK-008"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendshipCard.tsx",
+        "resources/js/modules/friendship/components/FriendshipCardSkeleton.tsx"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "La tarjeta muestra el texto de amigos en común con plural, y lo omite cuando es 0.",
+        "La portada no usa imágenes externas y su color es estable para un mismo usuario.",
+        "El skeleton se anuncia como carga una sola vez, no por tarjeta."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/components/FriendshipCard.tsx resources/js/modules/friendship/components/FriendshipCardSkeleton.tsx && npx prettier --check resources/js/modules/friendship/components/FriendshipCard.tsx resources/js/modules/friendship/components/FriendshipCardSkeleton.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendshipCard.tsx",
+        "resources/js/modules/friendship/components/FriendshipCardSkeleton.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-010",
+      "title": "Lay the cards in an infinite grid",
+      "description": "`FriendshipCardGrid`: `<InfiniteScroll data=\"friendships\" onlyNext preserveUrl>` con la cuadrícula del contrato. Sus slots:\n\n* **siguiente página:** 3 skeletons;\n* **fin de la lista:** \"No hay más\", cuando `scrollProps.friendships.nextPage` es `null`;\n* **carga de pestaña:** 6 skeletons.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-009"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendshipCardGrid.tsx"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Al llegar al final se pide la siguiente página una sola vez, y las tarjetas nuevas se agregan sin mover el scroll.",
+        "Con la lista cargando muestra solo skeletons, nunca tarjetas de la pestaña anterior."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/components/FriendshipCardGrid.tsx && npx prettier --check resources/js/modules/friendship/components/FriendshipCardGrid.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendshipCardGrid.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-011",
+      "title": "Highlight the received requests on the friends page",
+      "description": "`FriendRequestsHighlight`: un bloque azul que lee `friendRequests` con `<Deferred>` (skeleton mientras llega). Muestra las 2 solicitudes recientes con `FriendshipButton` y un enlace \"Ver las N\" a `?tab=received`. Después de una acción llama a `reloadFriendshipDependentProps`.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendRequestsHighlight.tsx"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Con `pendingCount` en 0 no renderiza nada (ni el título).",
+        "Aceptar o rechazar desde el bloque actualiza los contadores, la lista y el badge del menú sin recargar la página."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/components/FriendRequestsHighlight.tsx && npx prettier --check resources/js/modules/friendship/components/FriendRequestsHighlight.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendRequestsHighlight.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-012",
+      "title": "Give each tab its own empty state",
+      "description": "`FriendsEmptyState`, extraído de `Friends.tsx`. Cada pestaña lleva su ícono de lucide y su color suave: azul en Amigos, naranja en Recibidas y gris en Enviadas. Muestra \"Buscar personas\" en Amigos y Enviadas, y el mensaje de \"nadie coincide\" cuando hay filtro.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-001",
+        "TASK-007"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/components/FriendsEmptyState.tsx"
+      ],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Lee `committedFilters`, no los filtros en vivo, así que no parpadea mientras se escribe.",
+        "Recibidas no ofrece \"Buscar personas\"."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/components/FriendsEmptyState.tsx && npx prettier --check resources/js/modules/friendship/components/FriendsEmptyState.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/components/FriendsEmptyState.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-013",
+      "title": "Rebuild the friends page with the B design",
+      "description": "`Friends.tsx`:\n\n* `main` con `max-w-6xl`;\n* el bloque de solicitudes;\n* barra sticky con pestañas subrayadas, contadores de color, filtro y `Select` de orden;\n* foco en el filtro al montar y al terminar de cargar una pestaña;\n* skeleton de carga en lugar del spinner;\n* la cuadrícula y el estado vacío.\n\nSe mantiene ocultar la tarjeta que deja de pertenecer a la pestaña y recargar la lista cuando todas quedan ocultas.",
+      "type": "feature",
+      "priority": "P1",
+      "effort": "L",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-010",
+        "TASK-011",
+        "TASK-012"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/friendship/Friends.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Ninguna pestaña muestra `Loader2Icon`. Mientras carga, la cuadrícula muestra skeletons y el foco vuelve al filtro al terminar.",
+        "Los contadores tienen color (azul, naranja y gris oscuro) con contraste ≥ 4.5:1 y su texto accesible con plural.",
+        "Aceptar una solicitud en Recibidas la quita de la cuadrícula y actualiza los contadores sin perder el scroll, como hoy."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/Friends.tsx && npx prettier --check resources/js/modules/friendship/Friends.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/Friends.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-014",
+      "title": "Add keyboard shortcuts to the friends page",
+      "description": "**`useFriendsShortcuts`** (`@tanstack/react-hotkeys`):\n\n* `/` enfoca el filtro;\n* `1`, `2` y `3` cambian de pestaña;\n* `o` alterna el orden;\n* `Shift+?` abre `FriendsKeyboardShortcutsDialog`, que lista los atajos con `Kbd`.\n\n**Comportamiento:** usa `ignoreInputs` y no actúa con un diálogo o menú abierto. `Friends.tsx` lo conecta.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-013"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/friendship/hooks/useFriendsShortcuts.ts",
+        "resources/js/modules/friendship/components/FriendsKeyboardShortcutsDialog.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/friendship/Friends.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Escribir `/`, `1` u `o` dentro del filtro escribe el carácter y no dispara el atajo.",
+        "Con el menú de una tarjeta o un diálogo abierto, ningún atajo actúa.",
+        "El diálogo de ayuda lista cada atajo con su texto traducido."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/friendship/hooks/useFriendsShortcuts.ts resources/js/modules/friendship/components/FriendsKeyboardShortcutsDialog.tsx resources/js/modules/friendship/Friends.tsx && npx prettier --check resources/js/modules/friendship/hooks/useFriendsShortcuts.ts resources/js/modules/friendship/components/FriendsKeyboardShortcutsDialog.tsx resources/js/modules/friendship/Friends.tsx",
+      "writeScope": [
+        "resources/js/modules/friendship/hooks/useFriendsShortcuts.ts",
+        "resources/js/modules/friendship/components/FriendsKeyboardShortcutsDialog.tsx",
+        "resources/js/modules/friendship/Friends.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-015",
+      "title": "Redesign the left sidebar with lucide icons",
+      "description": "* **Íconos:** `homeSidebarNavigation.ts` pasa de `react-icons/lu` a `lucide-react` (`House`, `Search`, `Users`, `Bell`, `UserRound`).\n* **Estilo:** `HomeSidebarLeft` toma el estilo minimalista de shadcn: etiqueta de sección, ítem activo con fondo suave azul y texto azul, e íconos de 18 px.\n* **Badges:** Amigos en azul y Notificaciones en naranja.\n* **Reutilización:** exporta la lista de navegación para el menú móvil.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-002"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/home/components/sidebar/HomeSidebarLeft.tsx",
+        "resources/js/modules/home/data/homeSidebarNavigation.ts"
+      ],
+      "acceptanceCriteria": [
+        "El ítem de la página actual sigue con `aria-current=\"page\"`, y los badges solo aparecen con un valor mayor que 0 (99+ arriba de 99).",
+        "Ningún archivo de `modules/home` importa `react-icons` para el menú."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/home/components/sidebar/HomeSidebarLeft.tsx resources/js/modules/home/data/homeSidebarNavigation.ts && npx prettier --check resources/js/modules/home/components/sidebar/HomeSidebarLeft.tsx resources/js/modules/home/data/homeSidebarNavigation.ts",
+      "writeScope": [
+        "resources/js/modules/home/components/sidebar/HomeSidebarLeft.tsx",
+        "resources/js/modules/home/data/homeSidebarNavigation.ts"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-016",
+      "title": "Open the navigation from a sheet on small screens",
+      "description": "`HomeMobileNavigation`: un `Sheet` a la izquierda con la lista de navegación exportada en TASK-015. `HomeHeader` muestra el botón de menú solo por debajo de `lg`, con su `aria-label`. El sheet se cierra al navegar.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "M",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-015"
+      ],
+      "filesToCreate": [
+        "resources/js/modules/home/components/sidebar/HomeMobileNavigation.tsx"
+      ],
+      "filesToModify": [
+        "resources/js/modules/home/components/header/HomeHeader.tsx"
+      ],
+      "acceptanceCriteria": [
+        "A 375 px de ancho el botón abre el menú con los mismos ítems y badges, y elegir uno cierra el sheet.",
+        "Desde `lg` el botón no se muestra."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/home/components/sidebar/HomeMobileNavigation.tsx resources/js/modules/home/components/header/HomeHeader.tsx && npx prettier --check resources/js/modules/home/components/sidebar/HomeMobileNavigation.tsx resources/js/modules/home/components/header/HomeHeader.tsx",
+      "writeScope": [
+        "resources/js/modules/home/components/sidebar/HomeMobileNavigation.tsx",
+        "resources/js/modules/home/components/header/HomeHeader.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-017",
+      "title": "Tighten the layout and reserve the right panel",
+      "description": "* **`HomeLayout`:** padding central `px-3 lg:px-6`, y los dos sidebars ocultos por debajo de `lg`.\n* **`HomeSidebarRight`:** `w-64` como el izquierdo, con el espacio reservado de `home/sidebar.reserved.*`.\n* **`FriendRequestsPanel.tsx`:** se borra, porque su trabajo lo hace el bloque de TASK-011.",
+      "type": "feature",
+      "priority": "P2",
+      "effort": "S",
+      "agent": "react-vite-tailwind-engineer",
+      "dependsOn": [
+        "TASK-002",
+        "TASK-011",
+        "TASK-015"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "resources/js/modules/home/layouts/HomeLayout.tsx",
+        "resources/js/modules/home/components/sidebar/HomeSidebarRight.tsx",
+        "resources/js/modules/friendship/components/FriendRequestsPanel.tsx"
+      ],
+      "acceptanceCriteria": [
+        "Los dos sidebars miden lo mismo, y el derecho ya no muestra solicitudes.",
+        "Nada importa `FriendRequestsPanel`, y `npm run build` y `npm run build:ssr` compilan."
+      ],
+      "validateCommand": "npm run types && npx eslint resources/js/modules/home/layouts/HomeLayout.tsx resources/js/modules/home/components/sidebar/HomeSidebarRight.tsx && npx prettier --check resources/js/modules/home/layouts/HomeLayout.tsx resources/js/modules/home/components/sidebar/HomeSidebarRight.tsx && npm run build",
+      "writeScope": [
+        "resources/js/modules/home/layouts/HomeLayout.tsx",
+        "resources/js/modules/home/components/sidebar/HomeSidebarRight.tsx",
+        "resources/js/modules/friendship/components/FriendRequestsPanel.tsx"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-018",
+      "title": "Move the browser test to the requests block and drop the old panel texts",
+      "description": "* **`FriendshipFriendsBrowserTest`:** acepta la solicitud desde el bloque de la vista de amigos en lugar del sidebar derecho, y comprueba la tarjeta, el contador de color y el badge.\n* **Textos:** se quitan las claves `home/sidebar.friend_requests.*`, que ya nada usa.",
+      "type": "test",
+      "priority": "P1",
+      "effort": "M",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-013",
+        "TASK-017"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "app/Modules/Friendship/Tests/Browser/FriendshipFriendsBrowserTest.php",
+        "lang/en/home/sidebar.php",
+        "lang/es/home/sidebar.php"
+      ],
+      "acceptanceCriteria": [
+        "La prueba acepta desde el bloque, y la tarjeta aparece en Amigos con el badge del menú en uno menos.",
+        "`FriendshipNotificationsBrowserTest` y las pruebas de traducción siguen pasando sin `friend_requests`."
+      ],
+      "validateCommand": "composer test:browser && php -d memory_limit=2G vendor/bin/pest --compact tests/Feature/Translation",
+      "writeScope": [
+        "app/Modules/Friendship/Tests/Browser/FriendshipFriendsBrowserTest.php",
+        "lang/en/home/sidebar.php",
+        "lang/es/home/sidebar.php"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-019",
+      "title": "Document the redesigned friends page and layout",
+      "description": "* **`friendship.md`:**\n  * en Endpoints, `sort` y `mutualFriendsCount`;\n  * en Shared props, `recent` de 2 para el bloque;\n  * en Frontend, las tarjetas, `<InfiniteScroll>`, los atajos, el bloque, el layout y el menú móvil.\n* **`CLAUDE.md`:** agregar `FriendshipListSort` a la lista de enums con espejo en TypeScript.",
+      "type": "docs",
+      "priority": "P3",
+      "effort": "S",
+      "agent": "general-purpose",
+      "dependsOn": [
+        "TASK-014",
+        "TASK-016",
+        "TASK-018"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [
+        "docs/architecture/modules/friendship.md",
+        "CLAUDE.md"
+      ],
+      "acceptanceCriteria": [
+        "La doc describe cada contrato del plan tal como quedó en el código.",
+        "`CLAUDE.md` lista `FriendshipListSort` junto a `FriendshipListTab`."
+      ],
+      "validateCommand": "grep -n \"FriendshipListSort\" CLAUDE.md docs/architecture/modules/friendship.md",
+      "writeScope": [
+        "docs/architecture/modules/friendship.md",
+        "CLAUDE.md"
+      ],
+      "review": "claude"
+    },
+    {
+      "id": "TASK-020",
+      "title": "Run the quality gates and check the pages by hand",
+      "description": "**Gates:**\n\n1. Pint, PHPStan y Rector;\n2. `composer test`, `composer test:browser` y `composer doctor`;\n3. `npm run format:check`, `npm run lint:check`, `npm run types`, `npm run build` y `npm run build:ssr`.\n\n**Revisión a mano** (Chrome, en/es, claro y oscuro, 1440 px y 375 px):\n\n* las pestañas;\n* el orden;\n* los atajos;\n* el bloque;\n* el menú móvil.",
+      "type": "chore",
+      "priority": "P1",
+      "effort": "S",
+      "agent": "laravel-senior-engineer",
+      "dependsOn": [
+        "TASK-019"
+      ],
+      "filesToCreate": [],
+      "filesToModify": [],
+      "acceptanceCriteria": [
+        "Todos los gates pasan sin cambios pendientes de Pint ni de Rector.",
+        "En la revisión a mano no hay errores de consola, y el foco y los atajos funcionan en los dos idiomas."
+      ],
+      "validateCommand": "composer phpstan && composer rector-dry && composer test && composer doctor && npm run format:check && npm run lint:check && npm run types && npm run build && npm run build:ssr",
+      "writeScope": [],
+      "review": "claude"
+    }
+  ],
+  "failureModes": [
+    "**Orden por nombre con `cursorPaginate`:** el cursor necesita una columna real.\n  * TASK-005 une `users` con la otra persona y ordena por `other_users.name` + `friendships.id`.\n  * Un alias calculado rompería la segunda página; lo cubre la prueba del cursor.",
+    "**`mutual_friends_count` faltante:** el resource lanza `LogicException`, así que `FriendshipProps` (TASK-006) debe seleccionarlo. Hasta que TASK-006 termine, `FriendshipPropsTest` queda en rojo; por eso TASK-006 depende de TASK-005.",
+    "**DOM pesado:** sin virtualizar, la página crece con cientos de tarjetas. Se aceptó con el volumen actual; si molesta, se virtualiza por filas en otra tarea.",
+    "**`FriendRequestsPanel` borrado antes de tiempo:** TASK-017 depende de TASK-011, así que el bloque nuevo existe antes del borrado.",
+    "**Pruebas de navegador:** `FriendshipFriendsBrowserTest` busca el texto del panel viejo y queda en rojo entre TASK-017 y TASK-018. Por eso TASK-018 corre `composer test:browser` como validación.",
+    "**Atajos dentro del filtro:** escribir `1` o `o` en el filtro no debe cambiar de pestaña. TASK-014 usa `ignoreInputs: true` y lo prueba a mano en TASK-020."
+  ],
+  "shipCut": "* **Mínimo entregable:** TASK-001, TASK-003 a TASK-011, TASK-013, TASK-017 y TASK-018: la vista B con orden, amigos en común, bloque, skeleton y foco, más el panel derecho reservado.\n* **Recortables como bloque:** los atajos (TASK-014), los estados vacíos (TASK-012) y el menú móvil (TASK-016).\n* **No recortables:** la doc y los gates.",
+  "testCoverage": [
+    [
+      "Paridad de textos de amigos y del layout",
+      "TASK-001, TASK-002"
+    ],
+    [
+      "Validación de `sort`",
+      "TASK-003"
+    ],
+    [
+      "Amigos en común compartidos con la búsqueda",
+      "TASK-004"
+    ],
+    [
+      "Orden, cursor, amigos en común y consultas de la lista",
+      "TASK-005"
+    ],
+    [
+      "`friendRequests.recent` con 2 y amigos en común",
+      "TASK-006"
+    ],
+    [
+      "Aceptar desde el bloque y tarjeta en Amigos (navegador)",
+      "TASK-018"
+    ],
+    [
+      "Tipos, lint y builds del frontend",
+      "TASK-007 a TASK-017, TASK-020"
+    ],
+    [
+      "Foco, atajos, responsive y modo oscuro (a mano)",
+      "TASK-020"
+    ]
+  ],
+  "executionSummary": {
+    "taskCount": 20,
+    "layers": [
+      [
+        "TASK-001",
+        "TASK-002",
+        "TASK-004",
+        "TASK-008"
+      ],
+      [
+        "TASK-003",
+        "TASK-015"
+      ],
+      [
+        "TASK-005",
+        "TASK-016"
+      ],
+      [
+        "TASK-006",
+        "TASK-007"
+      ],
+      [
+        "TASK-009",
+        "TASK-011",
+        "TASK-012"
+      ],
+      [
+        "TASK-010",
+        "TASK-017"
+      ],
+      [
+        "TASK-013"
+      ],
+      [
+        "TASK-014",
+        "TASK-018"
+      ],
+      [
+        "TASK-019"
+      ],
+      [
+        "TASK-020"
+      ]
+    ],
+    "criticalPath": [
+      "TASK-001",
+      "TASK-003",
+      "TASK-005",
+      "TASK-007",
+      "TASK-009",
+      "TASK-010",
+      "TASK-013",
+      "TASK-014",
+      "TASK-019",
+      "TASK-020"
+    ]
+  },
+  "dependencies": {
+    "TASK-001": [],
+    "TASK-002": [],
+    "TASK-003": [
+      "TASK-001"
+    ],
+    "TASK-004": [],
+    "TASK-005": [
+      "TASK-003",
+      "TASK-004"
+    ],
+    "TASK-006": [
+      "TASK-005"
+    ],
+    "TASK-007": [
+      "TASK-005"
+    ],
+    "TASK-008": [],
+    "TASK-009": [
+      "TASK-001",
+      "TASK-007",
+      "TASK-008"
+    ],
+    "TASK-010": [
+      "TASK-009"
+    ],
+    "TASK-011": [
+      "TASK-001",
+      "TASK-006",
+      "TASK-007",
+      "TASK-008"
+    ],
+    "TASK-012": [
+      "TASK-001",
+      "TASK-007"
+    ],
+    "TASK-013": [
+      "TASK-010",
+      "TASK-011",
+      "TASK-012"
+    ],
+    "TASK-014": [
+      "TASK-013"
+    ],
+    "TASK-015": [
+      "TASK-002"
+    ],
+    "TASK-016": [
+      "TASK-015"
+    ],
+    "TASK-017": [
+      "TASK-002",
+      "TASK-011",
+      "TASK-015"
+    ],
+    "TASK-018": [
+      "TASK-013",
+      "TASK-017"
+    ],
+    "TASK-019": [
+      "TASK-014",
+      "TASK-016",
+      "TASK-018"
+    ],
+    "TASK-020": [
+      "TASK-019"
+    ]
+  }
+}

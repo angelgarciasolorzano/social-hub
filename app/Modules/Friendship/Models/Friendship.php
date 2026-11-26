@@ -158,7 +158,7 @@ class Friendship extends Model
     #[Scope]
     protected function pending(Builder $builder): void
     {
-        $builder->where('status', FriendshipStatus::Pending);
+        $builder->where($builder->qualifyColumn('status'), FriendshipStatus::Pending);
     }
 
     /**
@@ -169,6 +169,6 @@ class Friendship extends Model
     #[Scope]
     protected function accepted(Builder $builder): void
     {
-        $builder->where('status', FriendshipStatus::Accepted);
+        $builder->where($builder->qualifyColumn('status'), FriendshipStatus::Accepted);
     }
 }

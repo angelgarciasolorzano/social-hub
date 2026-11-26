@@ -9,7 +9,7 @@ use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 /**
- * Count the queries of one friends page request as the given user. Call it once before measuring: the
+ * Count the queries of one friends page visit as the given user, with the request of its deferred props. Call it once before measuring: the
  * first request of a session runs one more query than the next ones.
  */
 function friendsPageQueryCount(TestCase $testCase, User $user, FriendshipListTab $friendshipListTab): int
@@ -19,7 +19,7 @@ function friendsPageQueryCount(TestCase $testCase, User $user, FriendshipListTab
     DB::flushQueryLog();
     DB::enableQueryLog();
 
-    $testCase->get(route('friendships.index', ['tab' => $friendshipListTab->value]))->assertOk();
+    loadInertiaDeferredProps($testCase, $testCase->get(route('friendships.index', ['tab' => $friendshipListTab->value])))->assertOk();
 
     $queries = count(DB::getQueryLog());
     DB::disableQueryLog();
@@ -55,8 +55,9 @@ it('never lists the friendships or requests of other people in :dataset', functi
         ->get(route('friendships.index', ['tab' => $friendshipListTab->value]))
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $assertableInertia): AssertableInertia => $assertableInertia
-            ->has('friendships.data', 0)
-            ->where('tabCounts', ['friends' => 0, 'received' => 0, 'sent' => 0]));
+            ->loadDeferredProps(fn (AssertableInertia $deferredAssertableInertia): AssertableInertia => $deferredAssertableInertia
+                ->has('friendships.data', 0)
+                ->where('tabCounts', ['friends' => 0, 'received' => 0, 'sent' => 0])));
 })->with([
     'friends' => [FriendshipListTab::Friends],
     'received' => [FriendshipListTab::Received],

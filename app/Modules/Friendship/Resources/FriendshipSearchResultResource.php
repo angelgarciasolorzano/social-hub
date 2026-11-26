@@ -31,8 +31,7 @@ class FriendshipSearchResultResource extends JsonResource
             'profilePicture' => $this->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
             'friendshipState' => $this->friendshipState($request)->value,
             'friendshipId' => $this->preloadedInteger('friendship_id'),
-            'mutualFriendsCount' => (int) $this->preloadedInteger('mutual_friends_as_requester_count')
-                + (int) $this->preloadedInteger('mutual_friends_as_receiver_count'),
+            'mutualFriendsCount' => (int) $this->preloadedInteger('mutual_friends_count'),
         ];
     }
 

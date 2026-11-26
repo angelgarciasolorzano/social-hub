@@ -24,8 +24,19 @@ return [
 
     'remove_dialog' => [
         'title' => 'Remove :name from your friends?',
-        'description' => 'You will stop being friends. To become friends again, one of you will have to send a new request.',
+        'description' => 'You will remove :name from your friends list.',
+        'friends_since' => 'Friends since :date',
+        'mutual_friends' => '{1} :count mutual friend|[2,*] :count mutual friends',
+        'consequences' => [
+            'feed_title' => 'Their posts leave your home feed',
+            'feed' => 'And yours stop showing up in :name\'s home feed.',
+            'no_notification_title' => 'They will not be told',
+            'no_notification' => ':name will not get any notification.',
+            'request_again_title' => 'You can be friends again',
+            'request_again' => 'Either of you can send a request at any time.',
+        ],
         'confirm' => 'Remove friend',
+        'removing' => 'Removing…',
         'cancel' => 'Keep as friend',
     ],
 

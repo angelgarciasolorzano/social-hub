@@ -21,6 +21,6 @@ it('signs in with the form and lands on the home page without JavaScript errors'
         ->fill('password', 'password')
         ->click('button[data-test="login-button"]')
         ->assertPathIs('/home')
-        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'home/sidebar.friend_requests.title'))
+        ->assertSee(translatedTextIn(PreferredLocale::ENGLISH, 'home/sidebar.navigation.home'))
         ->assertNoJavaScriptErrors();
 });

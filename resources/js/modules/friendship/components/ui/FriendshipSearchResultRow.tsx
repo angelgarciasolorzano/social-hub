@@ -15,7 +15,7 @@ import { validImage } from "@/shared/lib";
 
 import { profilePicturePlaceholder } from "@/shared/assets";
 
-import type { FriendSearchResult } from "../types/friendshipSearch";
+import type { FriendSearchResult } from "../../types/friendshipSearch";
 import FriendshipButton from "./FriendshipButton";
 
 interface FriendshipSearchResultRowProps {
@@ -59,6 +59,8 @@ function FriendshipSearchResultRow({ searchResult }: FriendshipSearchResultRowPr
           <FriendshipButton
             friendshipId={searchResult.friendshipId}
             friendshipState={searchResult.friendshipState}
+            mutualFriendsCount={searchResult.mutualFriendsCount}
+            profilePicture={searchResult.profilePicture}
             userId={searchResult.id}
             userName={searchResult.name}
           />

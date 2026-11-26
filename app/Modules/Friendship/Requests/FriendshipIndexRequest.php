@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Friendship\Requests;
 
+use App\Modules\Friendship\Enums\FriendshipListSort;
 use App\Modules\Friendship\Enums\FriendshipListTab;
 use App\Support\Translation\TranslatedText;
 use Illuminate\Foundation\Http\FormRequest;
@@ -42,6 +43,9 @@ class FriendshipIndexRequest extends FormRequest
             'q' => FluentRule::string()
                 ->nullable()
                 ->max(self::TERM_MAX_LENGTH, message: TranslatedText::of('friendship/friends.validation.q_max')),
+            'sort' => FluentRule::string()
+                ->nullable()
+                ->enum(FriendshipListSort::class, message: TranslatedText::of('friendship/friends.validation.sort_invalid')),
         ];
     }
 
@@ -51,6 +55,14 @@ class FriendshipIndexRequest extends FormRequest
     public function tab(): FriendshipListTab
     {
         return $this->enum('tab', FriendshipListTab::class) ?? FriendshipListTab::Friends;
+    }
+
+    /**
+     * The order of the list: the validated `sort`, or the most recent first when it is missing.
+     */
+    public function sort(): FriendshipListSort
+    {
+        return $this->enum('sort', FriendshipListSort::class) ?? FriendshipListSort::Recent;
     }
 
     /**

@@ -21,7 +21,7 @@ class FriendshipListItemResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @return array{friendshipId: int, friendshipState: string, since: string|null, user: array{id: int, name: string, profilePicture: string}}
+     * @return array{friendshipId: int, friendshipState: string, since: string|null, mutualFriendsCount: int, user: array{id: int, name: string, profilePicture: string, coverImage: string|null}}
      */
     #[Override]
     public function toArray(Request $request): array
@@ -34,12 +34,40 @@ class FriendshipListItemResource extends JsonResource
             'friendshipId' => $this->id,
             'friendshipState' => FriendshipState::forViewer($this->status, $this->requester_id, $viewerId)->value,
             'since' => ($this->isAccepted() ? $this->accepted_at : $this->created_at)?->toIso8601String(),
+            'mutualFriendsCount' => $this->mutualFriendsCount(),
             'user' => [
                 'id' => $otherUser->id,
                 'name' => $otherUser->name,
                 'profilePicture' => $otherUser->getFirstMediaUrl(UserImageType::PROFILE_PICTURE->value()),
+                'coverImage' => $this->coverImageOf($otherUser),
             ],
         ];
+    }
+
+    /**
+     * The URL of the person's own cover image, or null without one so the card draws its placeholder
+     * instead of the collection's fallback. Reads the eager-loaded media, so it runs no query.
+     */
+    private function coverImageOf(User $user): ?string
+    {
+        $coverImageCollection = UserImageType::COVER_IMAGE->value();
+
+        return $user->hasMedia($coverImageCollection) ? $user->getFirstMediaUrl($coverImageCollection) : null;
+    }
+
+    /**
+     * The friends the other person shares with the viewer, preloaded by the listing's query so a row
+     * never runs a query of its own.
+     *
+     * @throws LogicException
+     */
+    private function mutualFriendsCount(): int
+    {
+        $mutualFriendsCount = $this->getAttributes()['mutual_friends_count'] ?? null;
+
+        throw_unless(is_numeric($mutualFriendsCount), LogicException::class, "Select mutual_friends_count before serializing friendship {$this->id}.");
+
+        return (int) $mutualFriendsCount;
     }
 
     /**

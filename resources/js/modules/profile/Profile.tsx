@@ -18,7 +18,7 @@ import type { SharedData, User } from "@/shared/types";
 
 import { profileCoverPlaceholder, profilePicturePlaceholder } from "@/shared/assets";
 
-import FriendshipButton from "../friendship/components/FriendshipButton";
+import FriendshipButton from "../friendship/components/ui/FriendshipButton";
 import { HomeLayout } from "../home";
 import { PostCard, type PostCollection, PostDialog } from "../post";
 import ProfileCover from "./components/ProfileCover";
@@ -83,9 +83,11 @@ function Profile({ posts, profileFriendship, user }: ProfileProps): JSX.Element 
               friendshipId={profileFriendship.friendshipId}
               friendshipState={profileFriendship.friendshipState}
               key={user.id}
+              mutualFriendsCount={profileFriendship.mutualFriendsCount}
               onChange={() => {
                 router.reload({ only: ["profileFriendship", "friendRequests"] });
               }}
+              profilePicture={user.profilePicture}
               userId={user.id}
               userName={user.name}
             />

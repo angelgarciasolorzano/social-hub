@@ -17,9 +17,9 @@ import VirtualInfiniteList from "@/shared/components/VirtualInfiniteList";
 
 import { useTranslation } from "@/shared/hooks";
 
-import FriendshipSearchResultRow from "./components/FriendshipSearchResultRow";
-import { useFriendshipSearch } from "./hooks/useFriendshipSearch";
-import type { FriendSearchFilters, FriendSearchResultCollection } from "./types/friendshipSearch";
+import FriendshipSearchResultRow from "../components/ui/FriendshipSearchResultRow";
+import { useFriendshipSearch } from "../hooks/search/useFriendshipSearch";
+import type { FriendSearchFilters, FriendSearchResultCollection } from "../types/friendshipSearch";
 
 const ESTIMATED_ROW_HEIGHT = 88;
 
@@ -32,6 +32,7 @@ interface SearchProps {
 function Search({ filters, searchResults, searchTermMinLength }: SearchProps): JSX.Element {
   const { t } = useTranslation();
   const searchInputId = useId();
+
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const { committedTerm, isSearching, term, updateTerm } = useFriendshipSearch(filters.q);
 
@@ -128,9 +129,6 @@ interface SearchStateMessageProps {
   title: string;
 }
 
-/**
- * The message shown instead of results: before searching or when nobody matches.
- */
 function SearchStateMessage({ description, title }: SearchStateMessageProps): JSX.Element {
   return (
     <div className="rounded-xl border border-dashed px-6 py-12 text-center">
